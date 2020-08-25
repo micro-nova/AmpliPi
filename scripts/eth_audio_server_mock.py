@@ -10,24 +10,22 @@ import threading
 
 
 # ╔══════════════════════════════════════════════════╗
-# ║                 TDS API class                    ║
-# ║ Provides a REST-based JSON API to the TDS system  ║
+# ║               Eth Audio API class                ║
+# ║ Provides a REST-based JSON API to the TDS system ║
 # ╚══════════════════════════════════════════════════╝
-class MOCK_API():
+class EthAudioServer():
 
   # ================
   #  initialization
   # ================
-  def __init__(self, tds_rt_instance, tds_hc_instance, rx_callback):
-    # tds_rt_instance = system's instance of TDS_RT
-    # rx_callback     = function to handle recieved commands
-    # tds_hc_instance = system's instance of TDS_HEATER_CONTROL
+  def __init__(self, eth_audio_instance, rx_callback):
+    # eth_audio_instance = system's instance of eth_audio runtime
+    # rx_callback        = function to handle recieved commands
 
-    print("TDS API Server instance created")
+    print("EthAudio API Server instance created")
 
     # store reference to TDS_RT, TDS_HEATER_CONTROL, RX callback
-    self.tds_rt_instance = tds_rt_instance
-    self.tds_hc_instance = tds_hc_instance
+    self.eth_audio_instance = eth_audio_instance
     self.rx_callback     = rx_callback
 
     # definition of RequestHandler only with arguments expected for BaseHTTPRequestHandler
@@ -70,10 +68,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
   # ================
   #  initialization
   # ================
-  def __init__(self, tds_api_instance, *args):
+  def __init__(self, eth_audio_instance, *args):
 
     # store reference to TDS_API instance
-    self.tds_api = tds_api_instance
+    self.eth_audio_instance = eth_audio_instance
 
     # NOTE: BaseHTTPRequestHandler calls do_GET, do_POST, etc. from INSIDE __init__()
     # So we must set any custom attributes BEFORE CALLING super().__init__
@@ -100,7 +98,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       self.send_header("Content-type", "application/json")
       self.end_headers()
       # send standard response
-      self.wfile.write(self.tds_api.craft_response()) # TODO: plumb this
+      self.wfile.write(self.eth_audio_instance.craft_response())
 
     # ======= unimplemented path ===========
     else:
@@ -121,7 +119,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       content = self.rfile.read(content_length)
 
       # attempt to parse
-      parse_error = self.tds_api.parse_command(content) # TODO: plumb this
+      parse_error = self.eth_audio_instance.parse_command(content)
       # reply with appropriate HTTP code
       if(parse_error == None):
         # send HTTP code 200 "OK"
@@ -129,7 +127,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         # send standard response
-        self.wfile.write(self.tds_api.craft_response()) # TODO: plumb this
+        self.wfile.write(self.eth_audio_instance.craft_response())
 
       else:
         # send HTTP code 400 "Bad Request"
@@ -137,7 +135,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         # send error response
-        self.wfile.write(self.tds_api.craft_error(parse_error)) # TODO: plumb this
+        self.wfile.write(self.eth_audio_instance.craft_error(parse_error))
 
     # ======= unimplemented path ===========
     else:
@@ -146,8 +144,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
 
-def reply(j):
-    print(j) # TODO: really respond over http
+# TODO: make this a class
 
 def encode(pydata):
     return json.dumps(pydata)
@@ -159,25 +156,25 @@ def test_cmd(cmd):
     try:
         command = cmd['command']
         if command is None:
-            return_error('No command specified')
+            return error('No command specified')
         elif command is 'return_state':
-            return_state()
+            return state()
         elif command is 'set_power':
-            set_power(cmd['audio_power'], cmd['usb_power'])
+            return set_power(cmd['audio_power'], cmd['usb_power'])
         elif command is 'set_source':
-            set_source(cmd['id'], cmd['name'], cmd['digital'])
+            return set_source(cmd['id'], cmd['name'], cmd['digital'])
         elif command is 'set_zone':
-            set_zone(cmd['id'], cmd['name'], cmd['source_id'], cmd['mute'], cmd['stby'], cmd['vol'], cmd['disabled'])
+            return set_zone(cmd['id'], cmd['name'], cmd['source_id'], cmd['mute'], cmd['stby'], cmd['vol'], cmd['disabled'])
         elif command is 'set_group':
-            return_error('set_group unimplemented')
+            return error('set_group unimplemented')
         elif command is 'create_group':
-            return_error('create_group unimplemented')
+            return error('create_group unimplemented')
         elif command is 'delete_group':
-            return_error('delete_group unimplemented')
+            return error('delete_group unimplemented')
         else:
-            return_error('command {} is not supported'.format(command))
+            return error('command {} is not supported'.format(command))
     except Exception as e:
-        return_error(str(e))
+        return error(str(e)) # TODO: handle exception more verbosely
 
 def parse_int(i, options):
     if int(i) in options:
@@ -213,15 +210,15 @@ status = { # This is the system state response that will come back from the etha
     ]
 }
 
-def return_error(msg):
-    reply(encode({'error': msg}))
+def error(msg):
+    return encode({'error': msg})
 
 # This command can be used to return the system state
 #{
 #    "command":"return_state"
 #}
-def return_state():
-    reply(encode(status))
+def state():
+    return encode(status)
 
 
 # This command can be used to enable / disable the 9V audio power and 5V usb power
@@ -235,7 +232,7 @@ def return_state():
 def set_power(audio_on, usb_on):
     status['power']['audio_power'] = audio_on
     status['power']['usb_power'] = usb_on
-    return_state()
+    return state
 
 # This command can be used to modify any of the 4 system sources
 # Along with the command one or more of the parameters can be passed
@@ -255,11 +252,11 @@ def set_source(id, name, digital):
         try:
             status['sources'][idx]['name'] = str(name)
             status['sources'][idx]['digital'] = bool(digital)
-            return_state()
+            return state()
         except Exception as e:
-            return_error('set source ' + str(e))
+            return error('set source ' + str(e))
     else:
-        return_error('set source: index {} out of bounds'.format(idx))
+        return error('set source: index {} out of bounds'.format(idx))
 
 # This command can be used to modify any zone
 # Along with the command one or more of the parameters can be passed
@@ -288,12 +285,13 @@ def set_zone(id, name, source_id, mute, stby, vol, disabled):
             status['zones'][idx]['stby'] = bool(stby)
             status['zones'][idx]['vol'] = parse_int(vol, range(-79, 1))
             status['zones'][idx]['disabled'] = bool(disabled)
-            return_state()
+            return state()
         except Exception as e:
-            return_error('set zone'  + str(e))
+            return error('set zone'  + str(e))
     else:
-        return_error('set zone: index {} out of bounds'.format(idx))
+        return error('set zone: index {} out of bounds'.format(idx))
 
+# TODO: make set group
 # This command can be used to set any EXISTING group
 # Along with the command one or more of the parameters can be passed
 # check the system state for a list of existing group
@@ -309,6 +307,7 @@ def set_zone(id, name, source_id, mute, stby, vol, disabled):
 #    "vol_delta": 0 to 79 # CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
 #}
 
+# TODO: make create new group
 # This command can be used to create a NEW group
 # Along with the command ALL parameters must also be passed
 # The system state struct will be returned if the command was successfully processed, error response otherwise
@@ -319,6 +318,7 @@ def set_zone(id, name, source_id, mute, stby, vol, disabled):
 #    "zones": [0,1,2...] # specify new array of zones that make up the group
 #}
 
+# TODO: make delete group
 # This command can be used to delete an EXISTING group
 # Along with the command ALL parameters must also be passed
 # The system state struct will be returned if the command was successfully processed, error response otherwise
@@ -326,6 +326,8 @@ def set_zone(id, name, source_id, mute, stby, vol, disabled):
 #    "command":"delete_group"
 #    "id":"new group name"
 #}
+
+# TODO: end of class
 
 test_cmds = [
 {
@@ -407,7 +409,7 @@ def show_change():
 
 if __name__ == "__main__":
     # Test emulated commands
-    return_state()
+    print(state())
     show_change()
     set_power(audio_on=False, usb_on=True)
     show_change()
