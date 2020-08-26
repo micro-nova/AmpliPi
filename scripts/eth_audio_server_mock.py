@@ -9,6 +9,22 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
 
+# Helper functions
+def encode(pydata):
+    return json.dumps(pydata)
+
+def decode(j):
+    return json.loads(j)
+
+def parse_int(i, options):
+    if int(i) in options:
+        return int(i)
+    else:
+        raise ValueError('{} is not in [{}]'.format(i, options))
+
+def error(msg):
+    return encode({'error': msg})
+
 # ╔══════════════════════════════════════════════════╗
 # ║               Eth Audio API class                ║
 # ║ Provides a REST-based JSON API to the TDS system ║
@@ -56,7 +72,7 @@ class EthAudioServer():
   # =========================================
   def parse_command(self, command_json_text):
       cmd = decode(command_json_text)
-      test_cmd(cmd)
+      self.eth_audio_instance.test_cmd(cmd)
 
 # ╔══════════════════════════════════════════════════════════╗
 # ║                HTTP REQUEST HANDLER class                ║
@@ -143,24 +159,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
 
-
-# Helper functions
-def encode(pydata):
-    return json.dumps(pydata)
-
-def decode(j):
-    return json.loads(j)
-
-def parse_int(i, options):
-    if int(i) in options:
-        return int(i)
-    else:
-        raise ValueError('{} is not in [{}]'.format(i, options))
-
-def error(msg):
-    return encode({'error': msg})
-
-# TODO: make this a class
+# Eth Audio Api, TODO: make this either a base class, put it in another file, and make both a mock class and a real implementation
+# For now this is just a mock implementation
 class EthAudioApi:
 
     def __init__(self):
