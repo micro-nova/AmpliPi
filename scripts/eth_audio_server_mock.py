@@ -8,8 +8,11 @@ import deepdiff
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
+import http.client
+
 
 # Helper functions
+# TODO: use the standard python comment blocks thoughout this file to document functions and classes
 def encode(pydata):
     return json.dumps(pydata)
 
@@ -25,24 +28,22 @@ def parse_int(i, options):
 def error(msg):
     return encode({'error': msg})
 
-# ╔══════════════════════════════════════════════════╗
-# ║               Eth Audio API class                ║
-# ║ Provides a REST-based JSON API to the TDS system ║
-# ╚══════════════════════════════════════════════════╝
+# ╔════════════════════════════════════════════════════════╗
+# ║               Eth Audio API class                      ║
+# ║ Provides a REST-based JSON API to the Eth Audio system ║
+# ╚════════════════════════════════════════════════════════╝
 class EthAudioServer():
 
   # ================
   #  initialization
   # ================
-  def __init__(self, eth_audio_instance, rx_callback):
+  def __init__(self, eth_audio_instance):
     # eth_audio_instance = system's instance of eth_audio runtime
-    # rx_callback        = function to handle recieved commands
 
     print("EthAudio API Server instance created")
 
-    # store reference to TDS_RT, TDS_HEATER_CONTROL, RX callback
+    # store reference to eth_audio
     self.eth_audio_instance = eth_audio_instance
-    self.rx_callback     = rx_callback
 
     # definition of RequestHandler only with arguments expected for BaseHTTPRequestHandler
     def __request_handler(*args):
@@ -72,22 +73,34 @@ class EthAudioServer():
   # =========================================
   def parse_command(self, command_json_text):
       cmd = decode(command_json_text)
-      self.eth_audio_instance.test_cmd(cmd)
+      return self.eth_audio_instance.test_cmd(cmd)
+
+  # =================================================
+  #  create byte array containing API error response
+  # =================================================
+  def craft_error(self, description):
+    # expects string containing error description
+    return error(description).encode('utf-8')
+
+  # ===========================================
+  #  create byte array containing API response
+  # ===========================================
+  def craft_response(self):
+      return encode(self.eth_audio_instance.state()).encode('utf-8')
 
 # ╔══════════════════════════════════════════════════════════╗
 # ║                HTTP REQUEST HANDLER class                ║
 # ║ Used by HTTPServer in TDS_API to react to HTTP requests  ║
 # ╚══════════════════════════════════════════════════════════╝
-
 class HTTPRequestHandler(BaseHTTPRequestHandler):
 
   # ================
   #  initialization
   # ================
-  def __init__(self, eth_audio_instance, *args):
+  def __init__(self, eth_audio_server, *args):
 
-    # store reference to TDS_API instance
-    self.eth_audio_instance = eth_audio_instance
+    # store reference to underlying server instance
+    self.eth_audio_server = eth_audio_server
 
     # NOTE: BaseHTTPRequestHandler calls do_GET, do_POST, etc. from INSIDE __init__()
     # So we must set any custom attributes BEFORE CALLING super().__init__
@@ -114,7 +127,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       self.send_header("Content-type", "application/json")
       self.end_headers()
       # send standard response
-      self.wfile.write(self.eth_audio_instance.craft_response())
+      self.wfile.write(self.eth_audio_server.craft_response())
 
     # ======= unimplemented path ===========
     else:
@@ -135,7 +148,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       content = self.rfile.read(content_length)
 
       # attempt to parse
-      parse_error = self.eth_audio_instance.parse_command(content)
+      parse_error = self.eth_audio_server.parse_command(content)
       # reply with appropriate HTTP code
       if(parse_error == None):
         # send HTTP code 200 "OK"
@@ -143,7 +156,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         # send standard response
-        self.wfile.write(self.eth_audio_instance.craft_response())
+        self.wfile.write(self.eth_audio_server.craft_response())
 
       else:
         # send HTTP code 400 "Bad Request"
@@ -151,7 +164,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         # send error response
-        self.wfile.write(self.eth_audio_instance.craft_error(parse_error))
+        self.wfile.write(self.eth_audio_server.craft_error(parse_error))
 
     # ======= unimplemented path ===========
     else:
@@ -196,19 +209,19 @@ class EthAudioApi:
             command = cmd['command']
             if command is None:
                 return error('No command specified')
-            elif command is 'return_state':
+            elif command == 'return_state':
                 return self.state()
-            elif command is 'set_power':
+            elif command == 'set_power':
                 return self.set_power(cmd['audio_power'], cmd['usb_power'])
-            elif command is 'set_source':
+            elif command == 'set_source':
                 return self.set_source(cmd['id'], cmd['name'], cmd['digital'])
-            elif command is 'set_zone':
+            elif command == 'set_zone':
                 return self.set_zone(cmd['id'], cmd['name'], cmd['source_id'], cmd['mute'], cmd['stby'], cmd['vol'], cmd['disabled'])
-            elif command is 'set_group':
+            elif command == 'set_group':
                 return error('set_group unimplemented')
-            elif command is 'create_group':
+            elif command == 'create_group':
                 return error('create_group unimplemented')
-            elif command is 'delete_group':
+            elif command == 'delete_group':
                 return error('delete_group unimplemented')
             else:
                 return error('command {} is not supported'.format(command))
@@ -234,6 +247,7 @@ class EthAudioApi:
     def set_power(self, audio_on, usb_on):
         self.status['power']['audio_power'] = audio_on
         self.status['power']['usb_power'] = usb_on
+        return None
 
     # This command can be used to modify any of the 4 system sources
     # Along with the command one or more of the parameters can be passed
@@ -253,6 +267,7 @@ class EthAudioApi:
             try:
                 self.status['sources'][idx]['name'] = str(name)
                 self.status['sources'][idx]['digital'] = bool(digital)
+                return None
             except Exception as e:
                 return error('set source ' + str(e))
         else:
@@ -285,6 +300,7 @@ class EthAudioApi:
                 self.status['zones'][idx]['stby'] = bool(stby)
                 self.status['zones'][idx]['vol'] = parse_int(vol, range(-79, 1))
                 self.status['zones'][idx]['disabled'] = bool(disabled)
+                return None
             except Exception as e:
                 return error('set zone'  + str(e))
         else:
@@ -325,6 +341,36 @@ class EthAudioApi:
     #    "command":"delete_group"
     #    "id":"new group name"
     #}
+
+class EthAudioClient():
+
+    def __init__(self, host = '0.0.0.0', port = 8080):
+        self.__host = host
+        self.__port = port
+        self.__client = http.client.HTTPConnection(host, port)
+        pass
+
+    def send_cmd(self, cmd):
+        return self.__post(encode(cmd))
+
+    def __post(self, json):
+        headers = {'Content-type': 'application/json'}
+        try:
+            self.__client.request('POST', '/api', json, headers)
+            response = self.__client.getresponse()
+            if response.getcode() == 200:
+                return decode(response.read().decode())
+            else:
+                return None
+        except Exception as ex:
+            print(ex)
+            # reset connection on fail, a little hacky, there is probably a simpler way
+            print('resetting connection')
+            try:
+                self.__client = http.client.HTTPConnection(self.__host, self.__port)
+            except:
+                print('Failed to reset connection')
+            return None
 
 # Temporary placmemnt until we finish testing
 eth_audio = EthAudioApi()
@@ -464,7 +510,11 @@ if __name__ == "__main__":
         show_change()
 
 
-    # TODO: Start HTTP server (in new thread)
+    # Start HTTP server (behind the scenes it runs in new thread)
+    srv = EthAudioServer(eth_audio)
 
-    # TODO: Send HTTP requests and print output
-
+    # Send HTTP requests and print output
+    client = EthAudioClient()
+    for cmd in test_cmds:
+        client.send_cmd(cmd) # TODO: add expected result checker here
+        show_change()
