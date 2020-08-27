@@ -12,27 +12,28 @@ import http.client
 
 
 # Helper functions
-# TODO: use the standard python comment blocks thoughout this file to document functions and classes
+# TODO: use the standard python docstrings to document functionality thoughout this file
 def encode(pydata):
-    return json.dumps(pydata)
+  """ Encode a dictionary as JSON """
+  return json.dumps(pydata)
 
 def decode(j):
-    return json.loads(j)
+  """ Decode JSON into dictionary """
+  return json.loads(j)
 
 def parse_int(i, options):
-    if int(i) in options:
-        return int(i)
-    else:
-        raise ValueError('{} is not in [{}]'.format(i, options))
+  """ Parse an integer into one of the given options """
+  if int(i) in options:
+    return int(i)
+  else:
+    raise ValueError('{} is not in [{}]'.format(i, options))
 
 def error(msg):
-    return encode({'error': msg})
+  """ Encode the error message specified by msg """
+  return encode({'error': msg})
 
-# ╔════════════════════════════════════════════════════════╗
-# ║               Eth Audio API class                      ║
-# ║ Provides a REST-based JSON API to the Eth Audio system ║
-# ╚════════════════════════════════════════════════════════╝
 class EthAudioServer():
+  """ A REST based JSON server for the EthAudio system """
 
   # ================
   #  initialization
@@ -63,7 +64,6 @@ class EthAudioServer():
   #  server run command (started in background thread)
   # ====================================================
   def __server_run(self):
-
     print("HTTP server started on %s:%s" % self.httpd.server_address)
     self.httpd.serve_forever() # will block here until app close
     print("HTTP server stopped!")
@@ -72,8 +72,8 @@ class EthAudioServer():
   #  parse byte array containing API command
   # =========================================
   def parse_command(self, command_json_text):
-      cmd = decode(command_json_text)
-      return self.eth_audio_instance.test_cmd(cmd)
+    cmd = decode(command_json_text)
+    return self.eth_audio_instance.test_cmd(cmd)
 
   # =================================================
   #  create byte array containing API error response
@@ -86,7 +86,7 @@ class EthAudioServer():
   #  create byte array containing API response
   # ===========================================
   def craft_response(self):
-      return encode(self.eth_audio_instance.state()).encode('utf-8')
+    return encode(self.eth_audio_instance.state()).encode('utf-8')
 
 # ╔══════════════════════════════════════════════════════════╗
 # ║                HTTP REQUEST HANDLER class                ║
@@ -105,7 +105,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     # NOTE: BaseHTTPRequestHandler calls do_GET, do_POST, etc. from INSIDE __init__()
     # So we must set any custom attributes BEFORE CALLING super().__init__
     super().__init__(*args)
-        #TODO: connect if necessary then send
+    #TODO: connect if necessary then send
 
   # =============
   #  server logs
@@ -131,9 +131,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     # ======= unimplemented path ===========
     else:
-        # send HTTP code 404 "Not Found"
-        self.send_response(404)
-        self.end_headers()
+      # send HTTP code 404 "Not Found"
+      self.send_response(404)
+      self.end_headers()
 
   # ================================
   #  called upon a POST from client
@@ -168,72 +168,72 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     # ======= unimplemented path ===========
     else:
-        # send HTTP code 404 "Not Found"
-        self.send_response(404)
-        self.end_headers()
+      # send HTTP code 404 "Not Found"
+      self.send_response(404)
+      self.end_headers()
 
 # Eth Audio Api, TODO: make this either a base class, put it in another file, and make both a mock class and a real implementation
 # For now this is just a mock implementation
 class EthAudioApi:
 
     def __init__(self):
-        # This script emulates the JSON command/response server hosted on an EthAudio box
-        self.status = { # This is the system state response that will come back from the ethaudio box
-            "power": {
-                "audio_power": False, # this needs to be on for any zone to work
-                "usb_power": False     # this turns on/off the usb power port
-            },
-            "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
-                { "id": 0, "name": "Source 1", "digital": False  },
-                { "id": 1, "name": "Source 2", "digital": False  },
-                { "id": 2, "name": "Source 3", "digital": False  },
-                { "id": 3, "name": "Source 4", "digital": False  }
-            ],
-            "zones": [ # this is an array of zones, array length depends on # of boxes connected
-                { "id": 0, "name": "Zone 1", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-                { "id": 1, "name": "Zone 2", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-                { "id": 2, "name": "Zone 3", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-                { "id": 3, "name": "Zone 4", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-                { "id": 4, "name": "Zone 5", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-                { "id": 5, "name": "Zone 6", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 }
-            ],
-            "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-                { "id": 0, "name": "Group 1", "zones": [0,1,2] },
-                { "id": 1, "name": "Group 2", "zones": [2,3,4] },
-                { "id": 2, "name": "Group 3", "zones": [5] }
-            ]
-        }
+      # This script emulates the JSON command/response server hosted on an EthAudio box
+      self.status = { # This is the system state response that will come back from the ethaudio box
+        "power": {
+          "audio_power": False, # this needs to be on for any zone to work
+          "usb_power": False     # this turns on/off the usb power port
+        },
+        "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
+          { "id": 0, "name": "Source 1", "digital": False  },
+          { "id": 1, "name": "Source 2", "digital": False  },
+          { "id": 2, "name": "Source 3", "digital": False  },
+          { "id": 3, "name": "Source 4", "digital": False  }
+        ],
+        "zones": [ # this is an array of zones, array length depends on # of boxes connected
+          { "id": 0, "name": "Zone 1", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
+          { "id": 1, "name": "Zone 2", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
+          { "id": 2, "name": "Zone 3", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
+          { "id": 3, "name": "Zone 4", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
+          { "id": 4, "name": "Zone 5", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
+          { "id": 5, "name": "Zone 6", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 }
+        ],
+        "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
+          { "id": 0, "name": "Group 1", "zones": [0,1,2] },
+          { "id": 1, "name": "Group 2", "zones": [2,3,4] },
+          { "id": 2, "name": "Group 3", "zones": [5] }
+        ]
+      }
 
     def test_cmd(self, cmd):
-        try:
-            command = cmd['command']
-            if command is None:
-                return error('No command specified')
-            elif command == 'return_state':
-                return self.state()
-            elif command == 'set_power':
-                return self.set_power(cmd['audio_power'], cmd['usb_power'])
-            elif command == 'set_source':
-                return self.set_source(cmd['id'], cmd['name'], cmd['digital'])
-            elif command == 'set_zone':
-                return self.set_zone(cmd['id'], cmd['name'], cmd['source_id'], cmd['mute'], cmd['stby'], cmd['vol'], cmd['disabled'])
-            elif command == 'set_group':
-                return error('set_group unimplemented')
-            elif command == 'create_group':
-                return error('create_group unimplemented')
-            elif command == 'delete_group':
-                return error('delete_group unimplemented')
-            else:
-                return error('command {} is not supported'.format(command))
-        except Exception as e:
-            return error(str(e)) # TODO: handle exception more verbosely
+      try:
+        command = cmd['command']
+        if command is None:
+          return error('No command specified')
+        elif command == 'return_state':
+          return self.state()
+        elif command == 'set_power':
+          return self.set_power(cmd['audio_power'], cmd['usb_power'])
+        elif command == 'set_source':
+          return self.set_source(cmd['id'], cmd['name'], cmd['digital'])
+        elif command == 'set_zone':
+          return self.set_zone(cmd['id'], cmd['name'], cmd['source_id'], cmd['mute'], cmd['stby'], cmd['vol'], cmd['disabled'])
+        elif command == 'set_group':
+          return error('set_group unimplemented')
+        elif command == 'create_group':
+          return error('create_group unimplemented')
+        elif command == 'delete_group':
+          return error('delete_group unimplemented')
+        else:
+          return error('command {} is not supported'.format(command))
+      except Exception as e:
+        return error(str(e)) # TODO: handle exception more verbosely
 
     # This command can be used to return the system state
     #{
     #    "command":"return_state"
     #}
     def state(self):
-        return encode(self.status)
+      return encode(self.status)
 
 
     # This command can be used to enable / disable the 9V audio power and 5V usb power
@@ -245,9 +245,9 @@ class EthAudioApi:
     #    "usb_power": False | True
     #}
     def set_power(self, audio_on, usb_on):
-        self.status['power']['audio_power'] = audio_on
-        self.status['power']['usb_power'] = usb_on
-        return None
+      self.status['power']['audio_power'] = audio_on
+      self.status['power']['usb_power'] = usb_on
+      return None
 
     # This command can be used to modify any of the 4 system sources
     # Along with the command one or more of the parameters can be passed
@@ -259,19 +259,19 @@ class EthAudioApi:
     #    "digital": False | True # sets the connection for the source, either analog (RCA) or digital (sharpoint)
     #}
     def set_source(self, id, name, digital):
-        idx = None
-        for i, s in enumerate(self.status['sources']):
-            if s['id'] == id:
-                idx = i
-        if idx is not None:
-            try:
-                self.status['sources'][idx]['name'] = str(name)
-                self.status['sources'][idx]['digital'] = bool(digital)
-                return None
-            except Exception as e:
-                return error('set source ' + str(e))
-        else:
-            return error('set source: index {} out of bounds'.format(idx))
+      idx = None
+      for i, s in enumerate(self.status['sources']):
+        if s['id'] == id:
+          idx = i
+      if idx is not None:
+        try:
+          self.status['sources'][idx]['name'] = str(name)
+          self.status['sources'][idx]['digital'] = bool(digital)
+          return None
+        except Exception as e:
+          return error('set source ' + str(e))
+      else:
+        return error('set source: index {} out of bounds'.format(idx))
 
     # This command can be used to modify any zone
     # Along with the command one or more of the parameters can be passed
@@ -288,23 +288,23 @@ class EthAudioApi:
     #    "disabled": False | True # set this to True if the zone is not connected to any speakers and not in use
     #}
     def set_zone(self, id, name, source_id, mute, stby, vol, disabled):
-        idx = None
-        for i, s in enumerate(self.status['zones']):
-            if s['id'] == id:
-                idx = i
-        if idx is not None:
-            try:
-                self.status['zones'][idx]['name'] = str(name)
-                self.status['zones'][idx]['source_id'] = parse_int(source_id, [1, 2, 3, 4])
-                self.status['zones'][idx]['mute'] = bool(mute)
-                self.status['zones'][idx]['stby'] = bool(stby)
-                self.status['zones'][idx]['vol'] = parse_int(vol, range(-79, 1))
-                self.status['zones'][idx]['disabled'] = bool(disabled)
-                return None
-            except Exception as e:
-                return error('set zone'  + str(e))
-        else:
-            return error('set zone: index {} out of bounds'.format(idx))
+      idx = None
+      for i, s in enumerate(self.status['zones']):
+        if s['id'] == id:
+          idx = i
+      if idx is not None:
+        try:
+          self.status['zones'][idx]['name'] = str(name)
+          self.status['zones'][idx]['source_id'] = parse_int(source_id, [1, 2, 3, 4])
+          self.status['zones'][idx]['mute'] = bool(mute)
+          self.status['zones'][idx]['stby'] = bool(stby)
+          self.status['zones'][idx]['vol'] = parse_int(vol, range(-79, 1))
+          self.status['zones'][idx]['disabled'] = bool(disabled)
+          return None
+        except Exception as e:
+          return error('set zone'  + str(e))
+      else:
+          return error('set zone: index {} out of bounds'.format(idx))
 
     # TODO: make set group
     # This command can be used to set any EXISTING group
@@ -344,33 +344,33 @@ class EthAudioApi:
 
 class EthAudioClient():
 
-    def __init__(self, host = '0.0.0.0', port = 8080):
-        self.__host = host
-        self.__port = port
-        self.__client = http.client.HTTPConnection(host, port)
-        pass
+  def __init__(self, host = '0.0.0.0', port = 8080):
+    self.__host = host
+    self.__port = port
+    self.__client = http.client.HTTPConnection(host, port)
+    pass
 
-    def send_cmd(self, cmd):
-        return self.__post(encode(cmd))
+  def send_cmd(self, cmd):
+    return self.__post(encode(cmd))
 
-    def __post(self, json):
-        headers = {'Content-type': 'application/json'}
-        try:
-            self.__client.request('POST', '/api', json, headers)
-            response = self.__client.getresponse()
-            if response.getcode() == 200:
-                return decode(response.read().decode())
-            else:
-                return None
-        except Exception as ex:
-            print(ex)
-            # reset connection on fail, a little hacky, there is probably a simpler way
-            print('resetting connection')
-            try:
-                self.__client = http.client.HTTPConnection(self.__host, self.__port)
-            except:
-                print('Failed to reset connection')
-            return None
+  def __post(self, json):
+    headers = {'Content-type': 'application/json'}
+    try:
+      self.__client.request('POST', '/api', json, headers)
+      response = self.__client.getresponse()
+      if response.getcode() == 200:
+        return decode(response.read().decode())
+      else:
+        return None
+    except Exception as ex:
+      print(ex)
+      # reset connection on fail, a little hacky, there is probably a simpler way
+      print('resetting connection')
+      try:
+        self.__client = http.client.HTTPConnection(self.__host, self.__port)
+      except:
+        print('Failed to reset connection')
+      return None
 
 # Temporary placmemnt until we finish testing
 eth_audio = EthAudioApi()
@@ -378,35 +378,35 @@ last_status = deepcopy(eth_audio.state())
 
 test_cmds = [
 {
-    "command" : "set_power",
-    "audio_power" : True,
-    "usb_power" : True
+  "command" : "set_power",
+  "audio_power" : True,
+  "usb_power" : True
 },
 {
-    "command" : "set_source",
-    "id" : 1,
-    "name" : "cd player",
-    "digital": False
+  "command" : "set_source",
+  "id" : 1,
+  "name" : "cd player",
+  "digital": False
 },
 {
-    "command" : "set_zone",
-    "id" : 2,
-    "name" : "whole house",
-    "source_id" : 2,
-    "mute" : False,
-    "stby" : False,
-    "vol" : -9,
-    "disabled" : False
+  "command" : "set_zone",
+  "id" : 2,
+  "name" : "whole house",
+  "source_id" : 2,
+  "mute" : False,
+  "stby" : False,
+  "vol" : -9,
+  "disabled" : False
 },
 {
-    "command" : "set_zone",
-    "id" : 2,
-    "name" : "whole house",
-    "source_id" : 2,
-    "mute" : False,
-    "stby" : False,
-    "vol" : -9,
-    "disabled" : False
+  "command" : "set_zone",
+  "id" : 2,
+  "name" : "whole house",
+  "source_id" : 2,
+  "mute" : False,
+  "stby" : False,
+  "vol" : -9,
+  "disabled" : False
 },
 #{
 #    "command":"set_group",
@@ -430,25 +430,25 @@ test_cmds = [
 
 # Rewind state back to initialization
 {
-    "command" : "set_power",
-    "audio_power" : False,
-    "usb_power" : True
+  "command" : "set_power",
+  "audio_power" : False,
+  "usb_power" : True
 },
 {
-    "command" : "set_source",
-    "id" : 1,
-    "name" : "Pandora",
-    "digital": True
+  "command" : "set_source",
+  "id" : 1,
+  "name" : "Pandora",
+  "digital": True
 },
 {
-    "command" : "set_zone",
-    "id" : 2,
-    "name" : "Sleep Zone",
-    "source_id" : 3,
-    "mute" : False,
-    "stby" : False,
-    "vol" : -40,
-    "disabled" : False
+  "command" : "set_zone",
+  "id" : 2,
+  "name" : "Sleep Zone",
+  "source_id" : 3,
+  "mute" : False,
+  "stby" : False,
+  "vol" : -40,
+  "disabled" : False
 },
 ]
 
@@ -459,22 +459,22 @@ def pretty_field(field):
 # show the difference between status when this was last called
 #   we use this for debugging
 def show_change():
-    global last_status
-    diff = deepdiff.DeepDiff(last_status, eth_audio.status, ignore_order=True)
-    if any(k in diff for k in ('values_changed', 'dictionary_item_added', 'dictionary_item_removed')):
-        print('changes:')
-        if 'values_changed' in diff:
-            for field, change in diff['values_changed'].items():
-                print('  {} {} -> {}'.format(pretty_field(field), change['old_value'], change['new_value']))
-        if 'dictionary_item_added' in diff:
-            for field in diff['dictionary_item_added']:
-                print('added {}'.format(pretty_field(field)))
-        if 'dictionary_item_removed' in diff:
-            for field in diff['dictionary_item_removed']:
-                print('added {}'.format(pretty_field(field)))
-    else:
-        print('no change!')
-    last_status = deepcopy(eth_audio.status)
+  global last_status
+  diff = deepdiff.DeepDiff(last_status, eth_audio.status, ignore_order=True)
+  if any(k in diff for k in ('values_changed', 'dictionary_item_added', 'dictionary_item_removed')):
+    print('changes:')
+    if 'values_changed' in diff:
+      for field, change in diff['values_changed'].items():
+        print('  {} {} -> {}'.format(pretty_field(field), change['old_value'], change['new_value']))
+    if 'dictionary_item_added' in diff:
+      for field in diff['dictionary_item_added']:
+        print('added {}'.format(pretty_field(field)))
+    if 'dictionary_item_removed' in diff:
+      for field in diff['dictionary_item_removed']:
+        print('added {}'.format(pretty_field(field)))
+  else:
+    print('no change!')
+  last_status = deepcopy(eth_audio.status)
 
 if __name__ == "__main__":
 
@@ -506,8 +506,8 @@ if __name__ == "__main__":
 
     # Test string/json based command handler
     for cmd in test_cmds:
-        eth_audio.test_cmd(cmd) # TODO: add expected result checker here
-        show_change()
+      eth_audio.test_cmd(cmd) # TODO: add expected result checker here
+      show_change()
 
 
     # Start HTTP server (behind the scenes it runs in new thread)
@@ -516,5 +516,5 @@ if __name__ == "__main__":
     # Send HTTP requests and print output
     client = EthAudioClient()
     for cmd in test_cmds:
-        client.send_cmd(cmd) # TODO: add expected result checker here
-        show_change()
+      client.send_cmd(cmd) # TODO: add expected result checker here
+      show_change()
