@@ -88,7 +88,7 @@ class EthAudioServer():
 
   def craft_response(self):
     """ create byte array containing API response """
-    json = encode(self.eth_audio_instance.state())
+    json = encode(self.eth_audio_instance.get_state())
     return json.encode('utf-8')
 
 
@@ -103,7 +103,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     # NOTE: BaseHTTPRequestHandler calls do_GET, do_POST, etc. from INSIDE __init__()
     # So we must set any custom attributes BEFORE CALLING super().__init__
     super().__init__(*args)
-    #TODO: connect if necessary then send
 
   def log_message(self, format, *args):
     """ prevent HTTP server logs from printing to console """
@@ -228,7 +227,7 @@ class EthAudioApi:
     except Exception as e:
       return error(str(e)) # TODO: handle exception more verbosely
 
-  def state(self):
+  def get_state(self):
     """ get the system state (dict) """
     return self.status
 
@@ -363,8 +362,9 @@ class EthAudioClient():
 
 # Temporary placmemnt until we finish testing
 eth_audio = EthAudioApi()
-last_status = deepcopy(eth_audio.state())
+last_status = deepcopy(eth_audio.get_state())
 
+# TODO: encode expected change after each one of these commands to form a tuple similar to (cmd, {field1: value_expected, field2:value_expected})
 test_cmds = [
 {
   "command" : "set_power",
@@ -470,8 +470,9 @@ def show_change():
 if __name__ == "__main__":
 
     # Test emulated commands
+    # TODO: add verification to these tests
     print('intial state:')
-    print(eth_audio.state())
+    print(eth_audio.get_state())
     print('testing commands:')
     show_change()
     eth_audio.set_power(audio_on=False, usb_on=True)
@@ -497,9 +498,8 @@ if __name__ == "__main__":
 
     # Test string/json based command handler
     for cmd in test_cmds:
-      eth_audio.test_cmd(cmd) # TODO: add expected result checker here
+      eth_audio.test_cmd(cmd)
       show_change()
-
 
     # Start HTTP server (behind the scenes it runs in new thread)
     srv = EthAudioServer(eth_audio)
@@ -507,5 +507,5 @@ if __name__ == "__main__":
     # Send HTTP requests and print output
     client = EthAudioClient()
     for cmd in test_cmds:
-      client.send_cmd(cmd) # TODO: add expected result checker here
+      client.send_cmd(cmd)
       show_change()
