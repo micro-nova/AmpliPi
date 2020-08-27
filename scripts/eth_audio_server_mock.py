@@ -351,7 +351,8 @@ test_cmds = [
     "stby" : False,
     "vol" : -9,
     "disabled" : False
-},{
+},
+{
     "command" : "set_zone",
     "id" : 2,
     "name" : "whole house",
@@ -379,7 +380,30 @@ test_cmds = [
 #{
 #    "command":"delete_group"
 #    "id":"new group name"
-#},
+#}
+
+# Rewind state back to initialization
+{
+    "command" : "set_power",
+    "audio_power" : False,
+    "usb_power" : True
+},
+{
+    "command" : "set_source",
+    "id" : 1,
+    "name" : "Pandora",
+    "digital": True
+},
+{
+    "command" : "set_zone",
+    "id" : 2,
+    "name" : "Sleep Zone",
+    "source_id" : 3,
+    "mute" : False,
+    "stby" : False,
+    "vol" : -40,
+    "disabled" : False
+},
 ]
 
 # pretty print deepdiff's @field name
