@@ -1,3 +1,3 @@
-from .api import EthAudioApi
-from .server import EthAudioServer
-from .client import EthAudioClient
+from .api import EthAudioApi as Api
+from .server import EthAudioServer as Server
+from .client import EthAudioClient as Client
