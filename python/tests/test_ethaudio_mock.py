@@ -4,11 +4,11 @@ from copy import deepcopy
 import deepdiff
 
 # use the internal ethaudio library
-from context import ethaudio as ea
+from context import ethaudio
 
 # Temporary placmemnt until we finish testing
-eth_audio = ea.EthAudioApi()
-last_status = deepcopy(eth_audio.get_state())
+eth_audio_api = ethaudio.Api()
+last_status = deepcopy(eth_audio_api.get_state())
 
 # TODO: encode expected change after each one of these commands to form a tuple similar to (cmd, {field1: value_expected, field2:value_expected})
 test_cmds = [
@@ -97,7 +97,7 @@ def show_change():
     we use this for debugging
   """
   global last_status
-  diff = deepdiff.DeepDiff(last_status, eth_audio.status, ignore_order=True)
+  diff = deepdiff.DeepDiff(last_status, eth_audio_api.status, ignore_order=True)
   if any(k in diff for k in ('values_changed', 'dictionary_item_added', 'dictionary_item_removed')):
     print('changes:')
     if 'values_changed' in diff:
@@ -111,47 +111,47 @@ def show_change():
         print('added {}'.format(pretty_field(field)))
   else:
     print('no change!')
-  last_status = deepcopy(eth_audio.status)
+  last_status = deepcopy(eth_audio_api.status)
 
 if __name__ == "__main__":
 
     # Test emulated commands
     # TODO: add verification to these tests
     print('intial state:')
-    print(eth_audio.get_state())
+    print(eth_audio_api.get_state())
     print('testing commands:')
     show_change()
-    eth_audio.set_power(audio_on=False, usb_on=True)
+    eth_audio_api.set_power(audio_on=False, usb_on=True)
     show_change()
-    eth_audio.set_source(0, 'Spotify', True)
+    eth_audio_api.set_source(0, 'Spotify', True)
     show_change()
-    eth_audio.set_source(1, 'Pandora', True)
+    eth_audio_api.set_source(1, 'Pandora', True)
     show_change()
-    eth_audio.set_source(2, 'TV', False)
+    eth_audio_api.set_source(2, 'TV', False)
     show_change()
-    eth_audio.set_source(3, 'PC', False)
+    eth_audio_api.set_source(3, 'PC', False)
     show_change()
-    eth_audio.set_zone(0, 'Party Zone', 1, False, False, 0, False)
+    eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False)
     show_change()
-    eth_audio.set_zone(1, 'Drone Zone', 2, False, False, -20, False)
+    eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False)
     show_change()
-    eth_audio.set_zone(2, 'Sleep Zone', 3, True, False, -40, False)
+    eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, -40, False)
     show_change()
-    eth_audio.set_zone(3, "Standby Zone", 4, False, True, -50, False)
+    eth_audio_api.set_zone(3, "Standby Zone", 4, False, True, -50, False)
     show_change()
-    eth_audio.set_zone(4, "Disabled Zone", 1, False, False, 0, True)
+    eth_audio_api.set_zone(4, "Disabled Zone", 1, False, False, 0, True)
     show_change()
 
     # Test string/json based command handler
     for cmd in test_cmds:
-      eth_audio.parse_cmd(cmd)
+      eth_audio_api.parse_cmd(cmd)
       show_change()
 
     # Start HTTP server (behind the scenes it runs in new thread)
-    srv = ea.EthAudioServer(eth_audio)
+    srv = ethaudio.Server(eth_audio_api)
 
     # Send HTTP requests and print output
-    client = ea.EthAudioClient()
+    client = ethaudio.Client()
     for cmd in test_cmds:
       client.send_cmd(cmd)
       show_change()
