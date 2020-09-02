@@ -125,17 +125,10 @@ def test_http(result):
   else:
     show_change()
 
-if __name__ == "__main__":
+def run_all_tests(api):
+  global last_status, eth_audio_api
 
-  parser = argparse.ArgumentParser(description="Test EthAudio interfaces")
-  parser.add_argument('--runtime', type=str, default='mock')
-  args = parser.parse_args()
-
-  # Temporary placmemnt until we finish testing
-  if args.runtime == 'mock':
-    eth_audio_api = ethaudio.Api()
-  else:
-    eth_audio_api = ethaudio.Api(ethaudio.api.RpiRt())
+  eth_audio_api = api
 
   last_status = deepcopy(eth_audio_api.get_state())
 
@@ -169,3 +162,6 @@ if __name__ == "__main__":
   client = ethaudio.Client()
   for cmd in test_cmds:
     test_http(client.send_cmd(cmd))
+
+if __name__ == "__main__":
+  run_all_tests(ethaudio.Api(ethaudio.api.MockRt()))
