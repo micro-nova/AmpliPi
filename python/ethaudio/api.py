@@ -34,7 +34,11 @@ class MockRt:
     pass
 
   def set_power(self, audio_on, usb_on):
-    """ enable / disable the 9V audio power and 5V usb power """
+    """ enable / disable the 9V audio power and 5V usb power
+
+          Returns:
+            True on success, False on hw failure
+    """
     return True
 
   def set_source(self, id, name, digital):
@@ -45,12 +49,72 @@ class MockRt:
         name (str): user friendly source name, ie. "cd player" or "stream 1"
 
       Returns:
-        'None' on success, otherwise error (dict)
+        True on success, False on hw failure
     """
     return True
 
   def set_zone(self, id, name, source_id, mute, stby, vol, disabled):
+    """ modify any zone
+
+          Args:
+            id (int): any valid zone [0,p*6-1] (6 zones per preamp)
+            name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
+            source_id (int): source to connect to [0,3]
+            mute (bool): mute the zone regardless of set volume
+            stby (bool): set the zone to standby, very low power consumption state
+            vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
+            disabled (bool): disable zone, for when the zone is not connected to any speakers and not in use
+
+          Returns:
+            True on success, False on hw failure
+    """
     return True
+
+class RpiRt:
+  """ Actual EthAudio Runtime
+
+      This acts as an EthAudio Runtime, expected to be executed on a raspberrypi
+  """
+
+  def __init__(self):
+    pass
+
+  def set_power(self, audio_on, usb_on):
+    """ enable / disable the 9V audio power and 5V usb power
+
+      Returns:
+        True on success, False on hw failure
+    """
+    return False
+
+  def set_source(self, id, name, digital):
+    """ modify any of the 4 system sources
+
+      Args:
+        id (int): source id [0,4]
+        name (str): user friendly source name, ie. "cd player" or "stream 1"
+
+      Returns:
+        True on success, False on hw failure
+    """
+    return False
+
+  def set_zone(self, id, name, source_id, mute, stby, vol, disabled):
+    """ modify any zone
+
+          Args:
+            id (int): any valid zone [0,p*6-1] (6 zones per preamp)
+            name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
+            source_id (int): source to connect to [0,3]
+            mute (bool): mute the zone regardless of set volume
+            stby (bool): set the zone to standby, very low power consumption state
+            vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
+            disabled (bool): disable zone, for when the zone is not connected to any speakers and not in use
+
+          Returns:
+            True on success, False on hw failure
+    """
+    return False
 
 class EthAudioApi:
   """ EthAudio API
