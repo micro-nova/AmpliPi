@@ -7,7 +7,6 @@ import deepdiff
 # import HTTP server and request handler, threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
-
 import http.client
 
 
@@ -73,7 +72,7 @@ class EthAudioServer():
         'None' on success, otherwise a json encoded error
     """
     cmd = decode(command_json_text)
-    return self.eth_audio_instance.test_cmd(cmd)
+    return self.eth_audio_instance.parse_cmd(cmd)
 
   def craft_error(self, error):
     """ create byte array containing API error response
@@ -196,7 +195,7 @@ class EthAudioApi:
       ]
     }
 
-  def test_cmd(self, cmd):
+  def parse_cmd(self, cmd):
     """ process an individual command
 
       Args:
@@ -498,7 +497,7 @@ if __name__ == "__main__":
 
     # Test string/json based command handler
     for cmd in test_cmds:
-      eth_audio.test_cmd(cmd)
+      eth_audio.parse_cmd(cmd)
       show_change()
 
     # Start HTTP server (behind the scenes it runs in new thread)
