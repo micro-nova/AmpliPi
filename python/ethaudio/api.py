@@ -24,6 +24,34 @@ def error(msg):
   """ wrap the error message specified by msg into an error """
   return {'error': msg}
 
+class MockRt:
+  """ Mock of an EthAudio Runtime
+
+      This pretends to be the runtime of EthAudio, but actually does nothing
+  """
+
+  def __init__(self):
+    pass
+
+  def set_power(self, audio_on, usb_on):
+    """ enable / disable the 9V audio power and 5V usb power """
+    return True
+
+  def set_source(self, id, name, digital):
+    """ modify any of the 4 system sources
+
+      Args:
+        id (int): source id [0,4]
+        name (str): user friendly source name, ie. "cd player" or "stream 1"
+
+      Returns:
+        'None' on success, otherwise error (dict)
+    """
+    return True
+
+  def set_zone(self, id, name, source_id, mute, stby, vol, disabled):
+    return True
+
 class EthAudioApi:
   """ EthAudio API
 
@@ -31,7 +59,8 @@ class EthAudioApi:
     For now this is just a mock implementation
    """
 
-  def __init__(self):
+  def __init__(self, rt = MockRt()):
+    self._rt = rt
     """ intitialize the mock system to to base configuration """
     self.status = { # This is the system state response that will come back from the ethaudio box
       "power": {
@@ -96,9 +125,12 @@ class EthAudioApi:
 
   def set_power(self, audio_on, usb_on):
     """ enable / disable the 9V audio power and 5V usb power """
-    self.status['power']['audio_power'] = audio_on
-    self.status['power']['usb_power'] = usb_on
-    return None
+    if self._rt.set_power(bool(audio_on), bool(usb_on)):
+      self.status['power']['audio_power'] = bool(audio_on)
+      self.status['power']['usb_power'] = bool(usb_on)
+      return None
+    else:
+      return error('failed to set power')
 
   def set_source(self, id, name, digital):
     """ modify any of the 4 system sources
@@ -116,9 +148,13 @@ class EthAudioApi:
         idx = i
     if idx is not None:
       try:
-        self.status['sources'][idx]['name'] = str(name)
-        self.status['sources'][idx]['digital'] = bool(digital)
-        return None
+        if self._rt.set_source(idx, str(name), bool(digital)):
+          # update the status
+          self.status['sources'][idx]['name'] = str(name)
+          self.status['sources'][idx]['digital'] = bool(digital)
+          return None
+        else:
+          return error('failed to set source')
       except Exception as e:
         return error('set source ' + str(e))
     else:
@@ -144,13 +180,18 @@ class EthAudioApi:
         idx = i
     if idx is not None:
       try:
-        self.status['zones'][idx]['name'] = str(name)
-        self.status['zones'][idx]['source_id'] = parse_int(source_id, [1, 2, 3, 4])
-        self.status['zones'][idx]['mute'] = bool(mute)
-        self.status['zones'][idx]['stby'] = bool(stby)
-        self.status['zones'][idx]['vol'] = parse_int(vol, range(-79, 1))
-        self.status['zones'][idx]['disabled'] = bool(disabled)
-        return None
+        sid = parse_int(source_id, [1, 2, 3, 4])
+        vol = parse_int(vol, range(-79, 1))
+        if self._rt.set_zone(idx, str(name), sid, bool(mute), bool(stby), vol, bool(disabled)):
+          self.status['zones'][idx]['name'] = str(name)
+          self.status['zones'][idx]['source_id'] = sid
+          self.status['zones'][idx]['mute'] = bool(mute)
+          self.status['zones'][idx]['stby'] = bool(stby)
+          self.status['zones'][idx]['vol'] = vol
+          self.status['zones'][idx]['disabled'] = bool(disabled)
+          return None
+        else:
+          return error('failed to set zone')
       except Exception as e:
         return error('set zone'  + str(e))
     else:

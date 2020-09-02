@@ -113,6 +113,20 @@ def show_change():
     print('no change!')
   last_status = deepcopy(eth_audio_api.status)
 
+def test(result):
+  if result == None:
+    show_change()
+  else:
+    print(result)
+
+def test_http(result):
+  if result == None:
+    print("None?")
+  elif 'error' in result:
+    print(result['error'])
+  else:
+    show_change()
+
 if __name__ == "__main__":
 
     # Test emulated commands
@@ -120,32 +134,23 @@ if __name__ == "__main__":
     print('intial state:')
     print(eth_audio_api.get_state())
     print('testing commands:')
-    show_change()
-    eth_audio_api.set_power(audio_on=False, usb_on=True)
-    show_change()
-    eth_audio_api.set_source(0, 'Spotify', True)
-    show_change()
-    eth_audio_api.set_source(1, 'Pandora', True)
-    show_change()
-    eth_audio_api.set_source(2, 'TV', False)
-    show_change()
-    eth_audio_api.set_source(3, 'PC', False)
-    show_change()
-    eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False)
-    show_change()
-    eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False)
-    show_change()
-    eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, -40, False)
-    show_change()
-    eth_audio_api.set_zone(3, "Standby Zone", 4, False, True, -50, False)
-    show_change()
-    eth_audio_api.set_zone(4, "Disabled Zone", 1, False, False, 0, True)
-    show_change()
+    test(eth_audio_api.set_power(audio_on=False, usb_on=True))
+    test(eth_audio_api.set_source(0, 'Spotify', True))
+    test(eth_audio_api.set_source(1, 'Pandora', True))
+    test(eth_audio_api.set_source(2, 'TV', False))
+    test(eth_audio_api.set_source(3, 'PC', False))
+    test(eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False))
+    test(eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False))
+    test(eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, -40, False))
+    test(eth_audio_api.set_zone(3, "Standby Zone", 4, False, True, -50, False))
+    test(eth_audio_api.set_zone(4, "Disabled Zone", 1, False, False, 0, True))
 
     # Test string/json based command handler
+    print('\ntesting json:')
     for cmd in test_cmds:
-      eth_audio_api.parse_cmd(cmd)
-      show_change()
+      test(eth_audio_api.parse_cmd(cmd))
+
+    print('\ntesting json over http:')
 
     # Start HTTP server (behind the scenes it runs in new thread)
     srv = ethaudio.Server(eth_audio_api)
@@ -153,5 +158,4 @@ if __name__ == "__main__":
     # Send HTTP requests and print output
     client = ethaudio.Client()
     for cmd in test_cmds:
-      client.send_cmd(cmd)
-      show_change()
+      test_http(client.send_cmd(cmd))
