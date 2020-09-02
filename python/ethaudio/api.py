@@ -41,24 +41,22 @@ class MockRt:
     """
     return True
 
-  def set_source(self, id, name, digital):
+  def set_source(self, id, digital):
     """ modify any of the 4 system sources
 
       Args:
         id (int): source id [0,4]
-        name (str): user friendly source name, ie. "cd player" or "stream 1"
 
       Returns:
         True on success, False on hw failure
     """
     return True
 
-  def set_zone(self, id, name, source_id, mute, stby, vol, disabled):
+  def set_zone(self, id, source_id, mute, stby, vol, disabled):
     """ modify any zone
 
           Args:
             id (int): any valid zone [0,p*6-1] (6 zones per preamp)
-            name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
             source_id (int): source to connect to [0,3]
             mute (bool): mute the zone regardless of set volume
             stby (bool): set the zone to standby, very low power consumption state
@@ -85,26 +83,26 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
+    # TODO: actually configure the power and verify the configuration
     return False
 
-  def set_source(self, id, name, digital):
+  def set_source(self, id, digital):
     """ modify any of the 4 system sources
 
       Args:
         id (int): source id [0,4]
-        name (str): user friendly source name, ie. "cd player" or "stream 1"
 
       Returns:
         True on success, False on hw failure
     """
+    # TODO: actually configure the source and verify it
     return False
 
-  def set_zone(self, id, name, source_id, mute, stby, vol, disabled):
+  def set_zone(self, id, source_id, mute, stby, vol, disabled):
     """ modify any zone
 
           Args:
             id (int): any valid zone [0,p*6-1] (6 zones per preamp)
-            name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
             source_id (int): source to connect to [0,3]
             mute (bool): mute the zone regardless of set volume
             stby (bool): set the zone to standby, very low power consumption state
@@ -114,6 +112,7 @@ class RpiRt:
           Returns:
             True on success, False on hw failure
     """
+    # TODO: actually configure the zone and verfy it
     return False
 
 class EthAudioApi:
@@ -126,6 +125,7 @@ class EthAudioApi:
   def __init__(self, rt = MockRt()):
     self._rt = rt
     """ intitialize the mock system to to base configuration """
+    # TODO: this status will need to be loaded from a file
     self.status = { # This is the system state response that will come back from the ethaudio box
       "power": {
         "audio_power": False, # this needs to be on for any zone to work
@@ -212,7 +212,7 @@ class EthAudioApi:
         idx = i
     if idx is not None:
       try:
-        if self._rt.set_source(idx, str(name), bool(digital)):
+        if self._rt.set_source(idx, bool(digital)):
           # update the status
           self.status['sources'][idx]['name'] = str(name)
           self.status['sources'][idx]['digital'] = bool(digital)
@@ -246,7 +246,7 @@ class EthAudioApi:
       try:
         sid = parse_int(source_id, [1, 2, 3, 4])
         vol = parse_int(vol, range(-79, 1))
-        if self._rt.set_zone(idx, str(name), sid, bool(mute), bool(stby), vol, bool(disabled)):
+        if self._rt.set_zone(idx, sid, bool(mute), bool(stby), vol, bool(disabled)):
           self.status['zones'][idx]['name'] = str(name)
           self.status['zones'][idx]['source_id'] = sid
           self.status['zones'][idx]['mute'] = bool(mute)

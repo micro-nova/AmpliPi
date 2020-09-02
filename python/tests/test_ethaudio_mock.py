@@ -94,7 +94,7 @@ def show_change():
 
     we use this for debugging
   """
-  global last_status
+  global last_status, eth_audio_api
   diff = deepdiff.DeepDiff(last_status, eth_audio_api.status, ignore_order=True)
   if any(k in diff for k in ('values_changed', 'dictionary_item_added', 'dictionary_item_removed')):
     print('changes:')
