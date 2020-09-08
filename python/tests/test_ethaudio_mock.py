@@ -11,6 +11,7 @@ from context import ethaudio
 # TODO: encode expected change after each one of these commands to form a tuple similar to (cmd, {field1: value_expected, field2:value_expected})
 test_sequence = [
 (
+  "Enable Audio",
   {
     "command" : "set_power",
     "audio_power" : True,
@@ -22,6 +23,7 @@ test_sequence = [
   }
 ),
 (
+  "Add CD Player (in place of Pandora)",
   {
     "command" : "set_source",
     "id" : 1,
@@ -35,6 +37,7 @@ test_sequence = [
   }
 ),
 (
+  "Add Whole House zone",
   {
     "command" : "set_zone",
     "id" : 2,
@@ -54,6 +57,7 @@ test_sequence = [
   }
 ),
 (
+  "Try adding the whole house zone again",
   {
     "command" : "set_zone",
     "id" : 2,
@@ -90,6 +94,7 @@ test_sequence = [
 # TODO: test zone following group changes
 # Rewind state back to initialization
 (
+  "Disbale Audio",
   {
     "command" : "set_power",
     "audio_power" : False,
@@ -101,6 +106,7 @@ test_sequence = [
   },
 ),
 (
+  "Change source back to Pandora",
   {
     "command" : "set_source",
     "id" : 1,
@@ -114,6 +120,7 @@ test_sequence = [
   }
 ),
 (
+  "Change zone 2 back to Sleep Zone",
   {
     "command" : "set_zone",
     "id" : 2,
@@ -183,9 +190,9 @@ def get_state_changes():
   last_status = deepcopy(eth_audio_api.status)
   return changes
 
-def test(result, expected_result, expected_changes):
+def test(name, result, expected_result, expected_changes):
   global test_num
-  print('Test {}:'.format(test_num))
+  print('Test {}: {}'.format(test_num, name))
   test_num += 1
   success = True # optistic, any single failure will set to False
   # check state changes
@@ -200,18 +207,18 @@ def test(result, expected_result, expected_changes):
   if result != expected_result: success = False; print('  Expected Result = {}, Actual Result = {}'.format(expected_result, result))
   print('  SUCCESS') if success else print(' FAILURE')
 
-def test_http(result, expected_result, expected_changes):
+def test_http(name, result, expected_result, expected_changes):
   if result == None:
     global test_num
-    print('Test {}:'.format(test_num))
+    print('Test {}: {}'.format(test_num, name))
     test_num += 1
     print("  Error: JSON response expected over http")
     print("  FAILURE")
   else:
     if 'error' in result:
-      test(result, expected_result, expected_changes)
+      test(name, result, expected_result, expected_changes)
     else:
-      test(None, expected_result, expected_changes)
+      test(name, None, expected_result, expected_changes)
 
 def run_all_tests(api):
   global last_status, eth_audio_api, test_num
@@ -225,21 +232,21 @@ def run_all_tests(api):
   print('intial state:')
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
-  test(eth_audio_api.set_power(audio_on=False, usb_on=True), None, {'power.usb_power' : True})
-  test(eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify', 'sources[0].digital' : True})
-  test(eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
-  test(eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
-  test(eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC'})
-  test(eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1})
-  test(eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20})
-  test(eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, -40, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3, 'zones[2].vol': -40, 'zones[2].mute' : True})
-  test(eth_audio_api.set_zone(3, 'Standby Zone', 4, False, True, -50, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4, 'zones[3].stby' : True, 'zones[3].vol' : -50})
-  test(eth_audio_api.set_zone(4, 'Disabled Zone', 1, False, False, 0, True), None, {'zones[4].name' : 'Disabled Zone', 'zones[4].source_id' : 1, 'zones[4].disabled' : True})
+  test('Enable USB', eth_audio_api.set_power(audio_on=False, usb_on=True), None, {'power.usb_power' : True})
+  test('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify', 'sources[0].digital' : True})
+  test('Configure source 1 (digital)',eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
+  test('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
+  test('Configure source 3 (Analog)', eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC'})
+  test('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1})
+  test('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20})
+  test('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, -40, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3, 'zones[2].vol': -40, 'zones[2].mute' : True})
+  test('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 4, False, True, -50, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4, 'zones[3].stby' : True, 'zones[3].vol' : -50})
+  test('Configure zone 4, Disabled Zone', eth_audio_api.set_zone(4, 'Disabled Zone', 1, False, False, 0, True), None, {'zones[4].name' : 'Disabled Zone', 'zones[4].source_id' : 1, 'zones[4].disabled' : True})
 
   # Test string/json based command handler
   print('\ntesting json:')
-  for cmd, expected_result, expected_changes  in test_sequence:
-    test(eth_audio_api.parse_cmd(cmd), expected_result, expected_changes)
+  for name, cmd, expected_result, expected_changes  in test_sequence:
+    test(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes)
 
   print('\ntesting json over http:')
 
@@ -248,8 +255,8 @@ def run_all_tests(api):
 
   # Send HTTP requests and print output
   client = ethaudio.Client()
-  for cmd, expected_result, expected_changes in test_sequence:
-    test_http(client.send_cmd(cmd), expected_result, expected_changes)
+  for name, cmd, expected_result, expected_changes in test_sequence:
+    test_http(name, client.send_cmd(cmd), expected_result, expected_changes)
 
 if __name__ == "__main__":
   run_all_tests(ethaudio.Api(ethaudio.api.MockRt()))
