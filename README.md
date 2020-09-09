@@ -18,6 +18,13 @@ From the base of the git repo in bash
 ssh $RPI_IP_ADDRESS
 export DISPLAY=:0 # use the connected display, this is set weird over ssh by default
 ```
+### Running tests
+```bash
+pip3 install pytest # add pytest
+cd python
+pip install -e # local install of ethaudio so we can test against it
+pytest tests/test_ethaudio_rpi.py
+```
 
 ## TODO add howto configure USB audio for shairport
 ## TODO follow strategy for handling 7.1 channel audio -> 4 stereo output

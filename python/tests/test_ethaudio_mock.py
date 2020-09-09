@@ -1,11 +1,12 @@
 #!/usr/bin/python3
+# this file is expected to be run using pytest, ie. pytest python/tests/test_ethaudio_mock.py
 
 import argparse
 from copy import deepcopy
 import deepdiff
 
 # use the internal ethaudio library
-from .context import ethaudio
+import ethaudio
 
 # TODO: port this to a standard python test framework such as unittest
 # TODO: encode expected change after each one of these commands to form a tuple similar to (cmd, {field1: value_expected, field2:value_expected})
@@ -246,6 +247,3 @@ def check_all_tsts(api):
 
 def test_mock():
   check_all_tsts(ethaudio.Api(ethaudio.api.MockRt()))
-
-if __name__ == "__main__":
-  test_mock()
