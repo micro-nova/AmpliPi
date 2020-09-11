@@ -1,8 +1,11 @@
 # ethaudio-rpi-controller
 Implementation of the EthAudio Controller on the Raspberry Pi
-## configuration
+## Configuration (Compute Module)
 Download Raspberry Pi OS from [here](https://www.raspberrypi.org/downloads/raspberry-pi-os/) we are currently using the "Raspberry Pi OS (32-bit) with desktop and recommended software"
 Follow steps on [rpi](https://www.raspberrypi.org/documentation/hardware/computemodule/cm-emmc-flashing.md) to flash the eMMC on the device
+## Configuration (RPi 4)
+Download and install Raspberry Pi Imager from [here.](https://www.raspberrypi.org/downloads/) We are currently using v1.4
+Using this program with an SD card reader, install "Raspberry Pi OS (32-bit) onto the SD card.
 
 ## Development setup
 1. Use vscode with its python plugin, this should highlight errors
