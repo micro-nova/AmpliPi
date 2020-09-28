@@ -1,11 +1,12 @@
 #!/usr/bin/python3
+# this file is expected to be run using pytest, ie. pytest python/tests/test_ethaudio_mock.py
 
 import argparse
 from copy import deepcopy
 import deepdiff
 
 # use the internal ethaudio library
-from context import ethaudio
+import ethaudio
 
 # TODO: port this to a standard python test framework such as unittest
 # TODO: encode expected change after each one of these commands to form a tuple similar to (cmd, {field1: value_expected, field2:value_expected})
@@ -190,37 +191,23 @@ def get_state_changes():
   last_status = deepcopy(eth_audio_api.status)
   return changes
 
-def test(name, result, expected_result, expected_changes):
-  global test_num
-  print('Test {}: {}'.format(test_num, name))
-  test_num += 1
-  success = True # optistic, any single failure will set to False
+def check_json_tst(name, result, expected_result, expected_changes):
   # check state changes
   changes, added, removed = get_state_changes()
-  if changes != expected_changes:
-    success = False
-    print('  Changes do not match:')
-    print('    changes: ' + str(changes))
-    print('    expected_changes: ' + str(expected_changes))
-  if len(added) != 0: success = False; print('  Unexpected fields addded: {}'.format(added))
-  if len(added) != 0: success = False; print('  Unexpected fields removed: {}'.format(removed))
-  if result != expected_result: success = False; print('  Expected Result = {}, Actual Result = {}'.format(expected_result, result))
-  print('  SUCCESS') if success else print(' FAILURE')
+  assert changes == expected_changes
+  assert len(added) == 0
+  assert len(removed) == 0
+  assert result == expected_result
 
-def test_http(name, result, expected_result, expected_changes):
-  if result == None:
-    global test_num
-    print('Test {}: {}'.format(test_num, name))
-    test_num += 1
-    print("  Error: JSON response expected over http")
-    print("  FAILURE")
+def check_http_tst(name, result, expected_result, expected_changes):
+  assert result != None
+  if 'error' in result:
+    check_json_tst(name, result, expected_result, expected_changes)
   else:
-    if 'error' in result:
-      test(name, result, expected_result, expected_changes)
-    else:
-      test(name, None, expected_result, expected_changes)
+    check_json_tst(name, None, expected_result, expected_changes)
 
-def run_all_tests(api):
+# TODO: now that we are actually using pytest, we will need to break up these tests into modular pieces, we will need a test fixture that we can use to start from a known configuration
+def check_all_tsts(api):
   global last_status, eth_audio_api, test_num
   test_num = 0
 
@@ -232,21 +219,21 @@ def run_all_tests(api):
   print('intial state:')
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
-  test('Enable USB', eth_audio_api.set_power(audio_on=False, usb_on=True), None, {'power.usb_power' : True})
-  test('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify', 'sources[0].digital' : True})
-  test('Configure source 1 (digital)',eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
-  test('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
-  test('Configure source 3 (Analog)', eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC'})
-  test('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1})
-  test('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20})
-  test('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, -40, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3, 'zones[2].vol': -40, 'zones[2].mute' : True})
-  test('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 4, False, True, -50, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4, 'zones[3].stby' : True, 'zones[3].vol' : -50})
-  test('Configure zone 4, Disabled Zone', eth_audio_api.set_zone(4, 'Disabled Zone', 1, False, False, 0, True), None, {'zones[4].name' : 'Disabled Zone', 'zones[4].source_id' : 1, 'zones[4].disabled' : True})
+  check_json_tst('Enable USB', eth_audio_api.set_power(audio_on=False, usb_on=True), None, {'power.usb_power' : True})
+  check_json_tst('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify', 'sources[0].digital' : True})
+  check_json_tst('Configure source 1 (digital)',eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
+  check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
+  check_json_tst('Configure source 3 (Analog)', eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC'})
+  check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1})
+  check_json_tst('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20})
+  check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, -40, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3, 'zones[2].vol': -40, 'zones[2].mute' : True})
+  check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 4, False, True, -50, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4, 'zones[3].stby' : True, 'zones[3].vol' : -50})
+  check_json_tst('Configure zone 4, Disabled Zone', eth_audio_api.set_zone(4, 'Disabled Zone', 1, False, False, 0, True), None, {'zones[4].name' : 'Disabled Zone', 'zones[4].source_id' : 1, 'zones[4].disabled' : True})
 
   # Test string/json based command handler
   print('\ntesting json:')
   for name, cmd, expected_result, expected_changes  in test_sequence:
-    test(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes)
+    check_json_tst(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes)
 
   print('\ntesting json over http:')
 
@@ -256,7 +243,7 @@ def run_all_tests(api):
   # Send HTTP requests and print output
   client = ethaudio.Client()
   for name, cmd, expected_result, expected_changes in test_sequence:
-    test_http(name, client.send_cmd(cmd), expected_result, expected_changes)
+    check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes)
 
-if __name__ == "__main__":
-  run_all_tests(ethaudio.Api(ethaudio.api.MockRt()))
+def test_mock():
+  check_all_tsts(ethaudio.Api(ethaudio.api.MockRt()))
