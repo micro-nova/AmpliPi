@@ -6,6 +6,9 @@ import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
+# get my ip
+import socket
+
 # Helper functions for encoding and decoding JSON
 def encode(pydata):
   """ Encode a dictionary as JSON """
@@ -44,7 +47,16 @@ class EthAudioServer():
 
   def __server_run(self):
     """ run the server (started in a background thread) """
-    print("HTTP server started on %s:%s" % self.httpd.server_address)
+    print("HTTP server started on {}:{}".format(*self.httpd.server_address))
+
+    """ Try to figure out the system IP address for convenience, this assumes the HTTP server is started locally"""
+    try:
+      s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+      s.connect(("8.8.8.8", 80))
+      print('This server can probably be connected to with: {}:{}'.format(s.getsockname()[0], self.httpd.server_address[1]))
+    except Exception as e:
+      print('Failed to figure out local ip address: {}'.format(e))
+
     self.httpd.serve_forever() # will block here until app close
     print("HTTP server stopped!")
 
