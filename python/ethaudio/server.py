@@ -106,6 +106,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
   def do_GET(self):
     """ handle an http GET request """
+    # console write 
+    print('received GET request')
+    
     # ================ /api ===============
     if(self.path == "/api"):
 
@@ -124,6 +127,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
   def do_POST(self):
     """ handle an http POST request """
+    # console write 
+    print('received POST request')
 
     # ================ /api ===============
     if(self.path == "/api"):
