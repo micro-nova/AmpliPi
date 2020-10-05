@@ -23,7 +23,7 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 # Start HTTP server (behind the scenes it runs in new thread)
-ethaudio.Server(ethaudio.api.MockRt())
+ethaudio.Server(ethaudio.Api(ethaudio.api.MockRt()))
 
 while True:
   sleep(0.1)
