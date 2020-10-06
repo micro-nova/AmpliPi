@@ -24,6 +24,13 @@ def error(msg):
   """ wrap the error message specified by msg into an error """
   return {'error': msg}
 
+def updated_val(update, val):
+  """ get the potentially updated value, @update, defaulting to the current value, @val, if it is None """
+  if update is None:
+    return val
+  else:
+    return update
+
 class MockRt:
   """ Mock of an EthAudio Runtime
 
@@ -187,16 +194,19 @@ class EthAudioApi:
     """ get the system state (dict) """
     return self.status
 
-  def set_power(self, audio_on, usb_on):
+  def set_power(self, audio_power=None, usb_power=None):
     """ enable / disable the 9V audio power and 5V usb power """
-    if self._rt.set_power(bool(audio_on), bool(usb_on)):
-      self.status['power']['audio_power'] = bool(audio_on)
-      self.status['power']['usb_power'] = bool(usb_on)
+    p = self.status['power']
+    audio_power = updated_val(audio_power, p['audio_power'])
+    usb_power = updated_val(usb_power, p['usb_power'])
+    if self._rt.set_power(bool(audio_power), bool(usb_power)):
+      self.status['power']['audio_power'] = bool(audio_power)
+      self.status['power']['usb_power'] = bool(usb_power)
       return None
     else:
       return error('failed to set power')
 
-  def set_source(self, id, name, digital):
+  def set_source(self, id, name = None, digital = None):
     """ modify any of the 4 system sources
 
       Args:
@@ -212,6 +222,12 @@ class EthAudioApi:
         idx = i
     if idx is not None:
       try:
+        src = self.status['sources'][idx]
+        name = updated_val(name, src['name'])
+        digital = updated_val(digital, src['digital'])
+      except Exception as e:
+        return error('failed to set source, error getting current state: {}'.format(e))
+      try:
         if self._rt.set_source(idx, bool(digital)):
           # update the status
           self.status['sources'][idx]['name'] = str(name)
@@ -224,7 +240,7 @@ class EthAudioApi:
     else:
       return error('set source: index {} out of bounds'.format(idx))
 
-  def set_zone(self, id, name, source_id, mute, stby, vol, disabled):
+  def set_zone(self, id, name=None, source_id=None, mute=None, stby=None, vol=None, disabled=None):
     """ modify any zone
 
           Args:
@@ -243,6 +259,16 @@ class EthAudioApi:
       if s['id'] == id:
         idx = i
     if idx is not None:
+      try:
+        z = self.status['zones'][idx]
+        name = updated_val(name, z['name'])
+        source_id = updated_val(source_id, z['source_id'])
+        mute = updated_val(mute, z['mute'])
+        stby = updated_val(stby, z['stby'])
+        vol = updated_val(vol, z['vol'])
+        disabled = updated_val(disabled, z['disabled'])
+      except Exception as e:
+        return error('failed to set zone, error getting current state: {}'.format(e))
       try:
         sid = parse_int(source_id, [1, 2, 3, 4])
         vol = parse_int(vol, range(-79, 1))

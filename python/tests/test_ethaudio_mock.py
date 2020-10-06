@@ -219,7 +219,7 @@ def check_all_tsts(api):
   print('intial state:')
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
-  check_json_tst('Enable USB', eth_audio_api.set_power(audio_on=False, usb_on=True), None, {'power.usb_power' : True})
+  check_json_tst('Enable USB', eth_audio_api.set_power(audio_power=False, usb_power=True), None, {'power.usb_power' : True})
   check_json_tst('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify', 'sources[0].digital' : True})
   check_json_tst('Configure source 1 (digital)',eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
   check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
