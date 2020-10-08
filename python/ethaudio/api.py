@@ -182,9 +182,9 @@ class EthAudioApi:
       elif command == 'set_group':
         return error('set_group unimplemented')
       elif command == 'create_group':
-        return error('create_group unimplemented')
+        return self.create_group(cmd['name'], cmd['zones'])
       elif command == 'delete_group':
-        return error('delete_group unimplemented')
+        return self.delete_group(cmd['id'])
       else:
         return error('command {} is not supported'.format(command))
     except Exception as e:
@@ -287,6 +287,12 @@ class EthAudioApi:
     else:
         return error('set zone: index {} out of bounds'.format(idx))
 
+  def get_group(self, id):
+    for i, g in enumerate(self.status['groups']):
+      if g['id'] == id:
+        return i,g
+    return -1, None
+
   # TODO: make set group
   # This command can be used to set any EXISTING group
   # Along with the command one or more of the parameters can be passed
@@ -303,22 +309,37 @@ class EthAudioApi:
   #    "vol_delta": 0 to 79 # CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
   #}
 
-  # TODO: make create new group
-  # This command can be used to create a NEW group
-  # Along with the command ALL parameters must also be passed
-  # The system state struct will be returned if the command was successfully processed, error response otherwise
-  # Refer to the returned system state to obtain the id for the newly created group
-  #{
-  #    "command":"create_group"
-  #    "name":"new group name"
-  #    "zones": [0,1,2...] # specify new array of zones that make up the group
-  #}
+  def new_group_id(self):
+    # get next available id
+    ids = [ g['id'] for g in self.status['groups'] ]
+    ids = set(ids) # simpler/faster access
+    new_gid = len(ids)
+    for i in range(0, len(ids)):
+      if i not in ids:
+        new_gid = i
+        break
+    return new_gid
 
-  # TODO: make delete group
-  # This command can be used to delete an EXISTING group
-  # Along with the command ALL parameters must also be passed
-  # The system state struct will be returned if the command was successfully processed, error response otherwise
-  #{
-  #    "command":"delete_group"
-  #    "id":"new group name"
-  #}
+  def create_group(self, name, zones):
+    """create a new group with a list of zones
+    Refer to the returned system state to obtain the id for the newly created group
+    """
+    # verify new group's name is unique
+    names = [ g['name'] for g in self.status['groups'] ]
+    if name in names:
+      return error('create group failed: {} already exists'.format(name))
+
+    # get the new groug's id
+    id = self.new_group_id()
+
+    # add the new group
+    group = { 'id': id, 'name' : name, 'zones' : zones }
+    self.status['groups'].append(group)
+
+  def delete_group(self, id):
+    """delete an existing group"""
+    try:
+      i, _ = self.get_group(id)
+      del self.status['groups'][i]
+    except KeyError:
+      return error('delete group failed: {} does not exist'.format(id))

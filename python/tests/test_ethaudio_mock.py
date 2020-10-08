@@ -73,6 +73,23 @@ test_sequence = [
   {
   }
 ),
+(
+  "Create a new group",
+  {
+      "command" : "create_group",
+      "name" : "super_group",
+      "zones": [0, 1, 2, 3, 4, 5],
+  },
+  None,
+  {
+    'added' :
+    {
+      'groups[3].id'    : 3,
+      'groups[3].name'  : 'super_group',
+      'groups[3].zones' : [0, 1, 2, 3, 4, 5],
+    }
+  }
+),
 #{
 #    "command":"set_group",
 #    "id":any vaild group,
@@ -83,15 +100,22 @@ test_sequence = [
 #    "stby": False | True # sets all zone in group to standby
 #    "vol_delta": 0 to 79 # CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
 #},
-#{
-#    "command":"create_group"
-#    "name":"new group name"
-#    "zones": [0,1,2...] # specify new array of zones that make up the group
-#},
-#{
-#    "command":"delete_group"
-#    "id":"new group name"
-#}
+(
+  "Delete the newly created group",
+  {
+      "command" : "delete_group",
+      "id" : 3,
+  },
+  None,
+  {
+    'removed' :
+    {
+      'groups[3].id'    : 3,
+      'groups[3].name'  : 'super_group',
+      'groups[3].zones' : [0, 1, 2, 3, 4, 5],
+    }
+  }
+),
 # TODO: test zone following group changes
 # Rewind state back to initialization
 (
@@ -178,25 +202,47 @@ def get_state_changes():
   """
   global last_status, eth_audio_api
   diff = deepdiff.DeepDiff(last_status, eth_audio_api.status, ignore_order=True)
-  changes = ({}, [], [])
+  changes = ({}, {}, {})
   if 'values_changed' in diff:
     for field, change in diff['values_changed'].items():
       changes[0][pretty_field(field)] = change['new_value']
-  if 'dictionary_item_added' in diff:
-    for field in diff['dictionary_item_added']:
-      changes[1].append(format(pretty_field(field)))
-  if 'dictionary_item_removed' in diff:
-    for field in diff['dictionary_item_removed']:
-      changes[2].append(format(pretty_field(field)))
+  if 'iterable_item_added' in diff:
+    for field in diff['iterable_item_added']:
+      pretty = format(pretty_field(field))
+      actual = 'eth_audio_api.status' + field.replace('root', '')
+      result = eval(actual)
+      if type(result) == dict:
+        for key, val in result.items():
+          changes[1][pretty + '.' + key] = val
+      else:
+        changes[1][pretty] = result
+  if 'iterable_item_removed' in diff:
+    for field in diff['iterable_item_removed']:
+      pretty = format(pretty_field(field))
+      actual = 'last_status' + field.replace('root', '')
+      result = eval(actual)
+      if type(result) == dict:
+        for key, val in result.items():
+          changes[2][pretty + '.' + key] = val
+      else:
+        changes[2][pretty] = result
   last_status = deepcopy(eth_audio_api.status)
   return changes
 
 def check_json_tst(name, result, expected_result, expected_changes):
   # check state changes
   changes, added, removed = get_state_changes()
-  assert changes == expected_changes
-  assert len(added) == 0
-  assert len(removed) == 0
+  # handle additions and removals in expected changes as optional, making sure to remove them from the actual changes comparison
+  expected_changes2 = dict(expected_changes)
+  if 'added' in expected_changes:
+    assert added == expected_changes['added']
+    del expected_changes2['added']
+  else:
+    assert len(added) == 0
+  if 'removed' in expected_changes:
+    assert removed == expected_changes['removed']
+    del expected_changes2['removed']
+  assert changes == expected_changes2
   assert result == expected_result
 
 def check_http_tst(name, result, expected_result, expected_changes):
@@ -247,3 +293,7 @@ def check_all_tsts(api):
 
 def test_mock():
   check_all_tsts(ethaudio.Api(ethaudio.api.MockRt()))
+
+
+if __name__ == '__main__':
+  test_mock()
