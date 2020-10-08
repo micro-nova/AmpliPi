@@ -192,6 +192,29 @@ def show_change():
     print('no change!')
   last_status = deepcopy(eth_audio_api.status)
 
+def add_field_entries(diff, changes, name, status_ref):
+  """ Get the full field name and values that were either added or removed from the status (@status_ref)
+
+      Args:
+        diff : dict of items added or removed
+        changes : field changes to update
+        name: field name (deepdiff names) (ie. dictionary_item_added, dictionary_item_removed, iterable_item_added, iterable_item_removed)
+        status_ref: status to get values from
+  """
+  if name in diff:
+    for field in diff[name]:
+      # get a simplified name of the field
+      pretty = format(pretty_field(field))
+      # get the value of this particular field
+      actual = 'status_ref' + field.replace('root', '')
+      result = eval(actual)
+      # add field and its old/new value
+      if type(result) == dict:
+        for key, val in result.items():
+          changes[pretty + '.' + key] = val
+      else:
+        changes[pretty] = result
+
 def get_state_changes():
   """ get difference between status when this was last called
 
@@ -206,26 +229,12 @@ def get_state_changes():
   if 'values_changed' in diff:
     for field, change in diff['values_changed'].items():
       changes[0][pretty_field(field)] = change['new_value']
-  if 'iterable_item_added' in diff:
-    for field in diff['iterable_item_added']:
-      pretty = format(pretty_field(field))
-      actual = 'eth_audio_api.status' + field.replace('root', '')
-      result = eval(actual)
-      if type(result) == dict:
-        for key, val in result.items():
-          changes[1][pretty + '.' + key] = val
-      else:
-        changes[1][pretty] = result
-  if 'iterable_item_removed' in diff:
-    for field in diff['iterable_item_removed']:
-      pretty = format(pretty_field(field))
-      actual = 'last_status' + field.replace('root', '')
-      result = eval(actual)
-      if type(result) == dict:
-        for key, val in result.items():
-          changes[2][pretty + '.' + key] = val
-      else:
-        changes[2][pretty] = result
+  # get added fields
+  add_field_entries(diff, changes[1], 'dictionary_item_added', eth_audio_api.status)
+  add_field_entries(diff, changes[1], 'iterable_item_added', eth_audio_api.status)
+  # get removed fields
+  add_field_entries(diff, changes[2], 'dictionary_item_removed', last_status)
+  add_field_entries(diff, changes[2], 'iterable_item_removed', last_status)
   last_status = deepcopy(eth_audio_api.status)
   return changes
 
