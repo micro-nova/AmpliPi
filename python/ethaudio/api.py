@@ -43,39 +43,92 @@ class MockRt:
   def __init__(self):
     pass
 
-  def set_power(self, audio_on, usb_on):
-    """ enable / disable the 9V audio power and 5V usb power
-
-          Returns:
-            True on success, False on hw failure
-    """
-    return True
-
-  def set_source(self, id, digital):
-    """ modify any of the 4 system sources
+  def update_sources(self, digital):
+    """ modify all of the 4 system sources
 
       Args:
-        id (int): source id [0,4]
+        digital [bool*4]: array of configuration for sources where
+          Analog is False and Digital True
 
       Returns:
         True on success, False on hw failure
     """
+    assert len(digital) == 4
+    for d in digital:
+      assert type(d) == bool
     return True
 
-  def set_zone(self, id, source_id, mute, stby, vol, disabled):
-    """ modify any zone
+  def update_zone_mutes(self, zone, mutes):
+    """ Update the mute level to all of the zones
 
-          Args:
-            id (int): any valid zone [0,p*6-1] (6 zones per preamp)
-            source_id (int): source to connect to [0,3]
-            mute (bool): mute the zone regardless of set volume
-            stby (bool): set the zone to standby, very low power consumption state
-            vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
-            disabled (bool): disable zone, for when the zone is not connected to any speakers and not in use
+      Args:
+        zone int: zone to muted/unmute
+        mutes [bool*zones]: array of configuration for zones where
+          Unmuted is False and Muted True
 
-          Returns:
-            True on success, False on hw failure
+      Returns:
+        True on success, False on hw failure
     """
+    assert len(mutes) >= 6
+    num_preamps = int(len(mutes) / 6)
+    assert len(mutes) == num_preamps * 6
+    for preamp in range(num_preamps):
+      for zone in range(6):
+        assert type(mutes[preamp * 6 + zone]) == bool
+    return True
+
+  def update_zone_stbys(self, zone, stbys):
+    """ Update the standby to all of the zones
+
+      Args:
+        zone int: zone to standby/unstandby
+        stbys [bool*zones]: array of configuration for zones where
+          On is False and Standby True
+
+      Returns:
+        True on success, False on hw failure
+    """
+    assert len(stbys) >= 6
+    num_preamps = int(len(stbys) / 6)
+    assert len(stbys) == num_preamps * 6
+    for preamp in range(num_preamps):
+      for zone in range(6):
+        assert type(stbys[preamp * 6 + zone]) == bool
+    return True
+
+  def update_zone_sources(self, zone, sources):
+    """ Update the sources to all of the zones
+
+      Args:
+        zone int: zone to change source
+        sources [int*zones]: array of source ids for zones (None in place of source id indicates disconnect)
+
+      Returns:
+        True on success, False on hw failure
+    """
+    assert len(sources) >= 6
+    num_preamps = int(len(sources) / 6)
+    assert len(sources) == num_preamps * 6
+    for preamp in range(num_preamps):
+      for zone in range(6):
+        src = sources[preamp * 6 + zone]
+        assert type(src) == int or src == None
+    return True
+
+  def update_zone_vol(self, zone, vol):
+    """ Update the sources to all of the zones
+
+      Args:
+        zone: zone to adjust vol
+        vol: int in range[-79, 0]
+
+      Returns:
+        True on success, False on hw failure
+    """
+    preamp = int(zone / 6)
+    assert zone > 0
+    assert preamp <= 15
+    assert vol <= 0 and vol >= -79
     return True
 
 class RpiRt:
@@ -87,25 +140,70 @@ class RpiRt:
   def __init__(self):
     pass
 
-  def set_power(self, audio_on, usb_on):
-    """ enable / disable the 9V audio power and 5V usb power
-
-      Returns:
-        True on success, False on hw failure
-    """
-    # TODO: actually configure the power and verify the configuration
-    return False
-
-  def set_source(self, id, digital):
-    """ modify any of the 4 system sources
+  def update_zone_mutes(self, zone, mutes):
+    """ Update the mute level to all of the zones
 
       Args:
-        id (int): source id [0,3]
+        zone int: zone to muted/unmute
+        mutes [bool*zones]: array of configuration for zones where
+          Unmuted is False and Muted True
 
       Returns:
         True on success, False on hw failure
     """
-    # TODO: actually configure the source and verify it
+    return False
+
+  def update_zone_stbys(self, zone, stbys):
+    """ Update the standby to all of the zones
+
+      Args:
+        zone int: zone to standby/unstandby
+        stbys [bool*zones]: array of configuration for zones where
+          On is False and Standby True
+
+      Returns:
+        True on success, False on hw failure
+    """
+    # TODO: actually configure the stbys
+    return False
+
+  def update_zone_sources(self, zone, sources):
+    """ Update the sources to all of the zones
+
+      Args:
+        zone int: zone to change source
+        sources [int*zones]: array of source ids for zones (None in place of source id indicates disconnect)
+
+      Returns:
+        True on success, False on hw failure
+    """
+    # TODO: actually configure the sources
+    return False
+
+  def update_zone_vol(self, zone, vol):
+    """ Update the sources to all of the zones
+
+      Args:
+        zone: zone to adjust vol
+        vol: int in range[-79, 0]
+
+      Returns:
+        True on success, False on hw failure
+    """
+    # TODO: configure zone's volume on preamp
+    return False
+
+  def update_sources(self, digital):
+    """ modify all of the 4 system sources
+
+      Args:
+        digital [bool*4]: array of configuration for sources where
+          Analog is False and Digital True
+
+      Returns:
+        True on success, False on hw failure
+    """
+    # TODO: actually configure the sources
     return False
 
   def set_zone(self, id, source_id, mute, stby, vol, disabled):
@@ -137,10 +235,6 @@ class EthAudioApi:
     """ intitialize the mock system to to base configuration """
     # TODO: this status will need to be loaded from a file
     self.status = { # This is the system state response that will come back from the ethaudio box
-      "power": {
-        "audio_power": False, # this needs to be on for any zone to work
-        "usb_power": False     # this turns on/off the usb power port
-      },
       "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
         { "id": 0, "name": "Source 1", "digital": False  },
         { "id": 1, "name": "Source 2", "digital": False  },
@@ -176,8 +270,6 @@ class EthAudioApi:
         return error('No command specified')
       elif command == 'return_state':
         return None # state is returned at a higher level on success
-      elif command == 'set_power':
-        return self.set_power(cmd.get('audio_power'), cmd.get('usb_power'))
       elif command == 'set_source':
         return self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('digital'))
       elif command == 'set_zone':
@@ -196,18 +288,6 @@ class EthAudioApi:
   def get_state(self):
     """ get the system state (dict) """
     return self.status
-
-  def set_power(self, audio_power=None, usb_power=None):
-    """ enable / disable the 9V audio power and 5V usb power """
-    p = self.status['power']
-    audio_power, _ = updated_val(audio_power, p['audio_power'])
-    usb_power, _ = updated_val(usb_power, p['usb_power'])
-    if self._rt.set_power(bool(audio_power), bool(usb_power)):
-      self.status['power']['audio_power'] = bool(audio_power)
-      self.status['power']['usb_power'] = bool(usb_power)
-      return None
-    else:
-      return error('failed to set power')
 
   def set_source(self, id, name = None, digital = None):
     """ modify any of the 4 system sources
@@ -231,10 +311,15 @@ class EthAudioApi:
       except Exception as e:
         return error('failed to set source, error getting current state: {}'.format(e))
       try:
-        if self._rt.set_source(idx, bool(digital)):
+        # get the current digital state of all of the sources
+        digital_cfg = [ self.status['sources'][s]['digital'] for s in range(4) ]
+        # update this source
+        digital_cfg[idx] = bool(digital)
+        # update the name
+        src['name'] = str(name)
+        if self._rt.update_sources(digital_cfg):
           # update the status
-          self.status['sources'][idx]['name'] = str(name)
-          self.status['sources'][idx]['digital'] = bool(digital)
+          src['digital'] = bool(digital)
           return None
         else:
           return error('failed to set source')
@@ -266,26 +351,48 @@ class EthAudioApi:
         z = self.status['zones'][idx]
         # TODO: use updated? value
         name, _ = updated_val(name, z['name'])
-        source_id, _ = updated_val(source_id, z['source_id'])
-        mute, _ = updated_val(mute, z['mute'])
-        stby, _ = updated_val(stby, z['stby'])
-        vol, _ = updated_val(vol, z['vol'])
+        source_id, update_source_id = updated_val(source_id, z['source_id'])
+        mute, update_mutes = updated_val(mute, z['mute'])
+        stby, update_stbys = updated_val(stby, z['stby'])
+        vol, update_vol = updated_val(vol, z['vol'])
         disabled, _ = updated_val(disabled, z['disabled'])
       except Exception as e:
         return error('failed to set zone, error getting current state: {}'.format(e))
       try:
         sid = parse_int(source_id, [0, 1, 2, 3, 4])
         vol = parse_int(vol, range(-79, 1))
-        if self._rt.set_zone(idx, sid, bool(mute), bool(stby), vol, bool(disabled)):
-          self.status['zones'][idx]['name'] = str(name)
-          self.status['zones'][idx]['source_id'] = sid
-          self.status['zones'][idx]['mute'] = bool(mute)
-          self.status['zones'][idx]['stby'] = bool(stby)
-          self.status['zones'][idx]['vol'] = vol
-          self.status['zones'][idx]['disabled'] = bool(disabled)
-          return None
-        else:
-          return error('failed to set zone')
+        zones = self.status['zones']
+        # update non hw state
+        z['name'] = name
+        z['disabled'] = disabled
+        # TODO: figure out an order of operations here, like does mute need to be done before changing sources?
+        if True or update_source_id:
+          zone_sources = [ zone['source_id'] for zone in zones ]
+          zone_sources[idx] = sid
+          if self._rt.update_zone_sources(idx, zone_sources):
+            z['source_id'] = sid
+          else:
+            return error('set zone failed: unable to update zone source')
+        if update_mutes:
+          mutes = [ zone['mute'] for zone in zones ]
+          mutes[idx] = mute
+          if self._rt.update_zone_mutes(idx, mutes):
+            z['mute'] = mute
+          else:
+            return error('set zone failed: unable to update zone mute')
+        if update_stbys:
+          stbys = [ zone['stby'] for zone in zones ]
+          stbys[idx] = stby
+          if self._rt.update_zone_stbys(idx, stbys):
+            z['stby'] = stby
+          else:
+            return error('set zone failed: unable to update zone stby')
+        if update_vol:
+          if self._rt.update_zone_vol(idx, vol):
+            z['vol'] = vol
+          else:
+            return error('set zone failed: unable to update zone volume')
+        return None
       except Exception as e:
         return error('set zone'  + str(e))
     else:
