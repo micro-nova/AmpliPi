@@ -297,23 +297,11 @@ class EthAudioApi:
         return i,g
     return -1, None
 
-  # TODO: make set group
-  # This command can be used to set any EXISTING group
-  # Along with the command one or more of the parameters can be passed
-  # check the system state for a list of existing group
-  # The system state struct will be returned if the command was successfully processed, error response otherwise
-  #{
-  #    "command":"set_group",
-  #    "id":any vaild group,
-  #    "name":"new name" # sets the friendly name for the group, ie "upstairs" or "back yard"
-  #    "source_id": 0 | 1 | 2 | 3 # change all zones in group to different source
-  #    "zones": [0,1,2...] # specify new array of zones that make up the group
-  #    "mute": False | True # mutes all zones in group
-  #    "stby": False | True # sets all zone in group to standby
-  #    "vol_delta": 0 to 79 # CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
-  #}
-
   def set_group(self, id, name=None, source_id=None, zones=None, mute=None, stby=None, vol_delta=None):
+    """ Configure an existing group
+        parameters will be used to configure each sone in the group's zones
+        all parameters besides the group id, @id, are optional
+    """
     _, g = self.get_group(id)
     if g is None:
       return error('set group failed, group {} not found'.format(id))
