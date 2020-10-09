@@ -27,9 +27,12 @@ def error(msg):
 def updated_val(update, val):
   """ get the potentially updated value, @update, defaulting to the current value, @val, if it is None """
   if update is None:
-    return val
+    return val, False
   else:
-    return update
+    return update, update != val
+
+def clamp(x, xmin, xmax):
+    return max(xmin, min(x, xmax))
 
 class MockRt:
   """ Mock of an EthAudio Runtime
@@ -97,7 +100,7 @@ class RpiRt:
     """ modify any of the 4 system sources
 
       Args:
-        id (int): source id [0,4]
+        id (int): source id [0,3]
 
       Returns:
         True on success, False on hw failure
@@ -174,17 +177,17 @@ class EthAudioApi:
       elif command == 'return_state':
         return None # state is returned at a higher level on success
       elif command == 'set_power':
-        return self.set_power(cmd['audio_power'], cmd['usb_power'])
+        return self.set_power(cmd.get('audio_power'), cmd.get('usb_power'))
       elif command == 'set_source':
-        return self.set_source(cmd['id'], cmd['name'], cmd['digital'])
+        return self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('digital'))
       elif command == 'set_zone':
-        return self.set_zone(cmd['id'], cmd['name'], cmd['source_id'], cmd['mute'], cmd['stby'], cmd['vol'], cmd['disabled'])
+        return self.set_zone(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol'), cmd.get('disabled'))
       elif command == 'set_group':
-        return error('set_group unimplemented')
+        return self.set_group(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('zones'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol_delta'))
       elif command == 'create_group':
-        return self.create_group(cmd['name'], cmd['zones'])
+        return self.create_group(cmd.get('name'), cmd.get('zones'))
       elif command == 'delete_group':
-        return self.delete_group(cmd['id'])
+        return self.delete_group(cmd.get('id'))
       else:
         return error('command {} is not supported'.format(command))
     except Exception as e:
@@ -197,8 +200,8 @@ class EthAudioApi:
   def set_power(self, audio_power=None, usb_power=None):
     """ enable / disable the 9V audio power and 5V usb power """
     p = self.status['power']
-    audio_power = updated_val(audio_power, p['audio_power'])
-    usb_power = updated_val(usb_power, p['usb_power'])
+    audio_power, _ = updated_val(audio_power, p['audio_power'])
+    usb_power, _ = updated_val(usb_power, p['usb_power'])
     if self._rt.set_power(bool(audio_power), bool(usb_power)):
       self.status['power']['audio_power'] = bool(audio_power)
       self.status['power']['usb_power'] = bool(usb_power)
@@ -223,8 +226,8 @@ class EthAudioApi:
     if idx is not None:
       try:
         src = self.status['sources'][idx]
-        name = updated_val(name, src['name'])
-        digital = updated_val(digital, src['digital'])
+        name, _ = updated_val(name, src['name'])
+        digital, _ = updated_val(digital, src['digital'])
       except Exception as e:
         return error('failed to set source, error getting current state: {}'.format(e))
       try:
@@ -246,7 +249,7 @@ class EthAudioApi:
           Args:
             id (int): any valid zone [0,p*6-1] (6 zones per preamp)
             name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
-            source_id (int): source to connect to [0,3]
+            source_id (int): source to connect to [0,4]
             mute (bool): mute the zone regardless of set volume
             stby (bool): set the zone to standby, very low power consumption state
             vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
@@ -261,16 +264,17 @@ class EthAudioApi:
     if idx is not None:
       try:
         z = self.status['zones'][idx]
-        name = updated_val(name, z['name'])
-        source_id = updated_val(source_id, z['source_id'])
-        mute = updated_val(mute, z['mute'])
-        stby = updated_val(stby, z['stby'])
-        vol = updated_val(vol, z['vol'])
-        disabled = updated_val(disabled, z['disabled'])
+        # TODO: use updated? value
+        name, _ = updated_val(name, z['name'])
+        source_id, _ = updated_val(source_id, z['source_id'])
+        mute, _ = updated_val(mute, z['mute'])
+        stby, _ = updated_val(stby, z['stby'])
+        vol, _ = updated_val(vol, z['vol'])
+        disabled, _ = updated_val(disabled, z['disabled'])
       except Exception as e:
         return error('failed to set zone, error getting current state: {}'.format(e))
       try:
-        sid = parse_int(source_id, [1, 2, 3, 4])
+        sid = parse_int(source_id, [0, 1, 2, 3, 4])
         vol = parse_int(vol, range(-79, 1))
         if self._rt.set_zone(idx, sid, bool(mute), bool(stby), vol, bool(disabled)):
           self.status['zones'][idx]['name'] = str(name)
@@ -309,8 +313,26 @@ class EthAudioApi:
   #    "vol_delta": 0 to 79 # CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
   #}
 
+  def set_group(self, id, name=None, source_id=None, zones=None, mute=None, stby=None, vol_delta=None):
+    _, g = self.get_group(id)
+    if g is None:
+      return error('set group failed, group {} not found'.format(id))
+    try:
+      name, _ = updated_val(name, g['name'])
+      zones, _ = updated_val(zones, g['zones'])
+    except Exception as e:
+      return error('failed to configure group, error getting current state: {}'.format(e))
+    g['name'] = name
+    g['zones'] = zones
+    for z in [ self.status['zones'][zone] for zone in zones ]:
+      if vol_delta is not None:
+        vol = clamp(z['vol'] + vol_delta, -79, 0)
+      else:
+        vol = None
+      self.set_zone(z['id'], None, source_id, mute, stby, vol)
+
   def new_group_id(self):
-    # get next available id
+    """ get next available group id """
     ids = [ g['id'] for g in self.status['groups'] ]
     ids = set(ids) # simpler/faster access
     new_gid = len(ids)

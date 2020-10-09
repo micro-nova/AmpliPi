@@ -90,16 +90,70 @@ test_sequence = [
     }
   }
 ),
-#{
-#    "command":"set_group",
-#    "id":any vaild group,
-#    "name":"new name" # sets the friendly name for the group, ie "upstairs" or "back yard"
-#    "source_id": 0 | 1 | 2 | 3 # change all zones in group to different source
-#    "zones": [0,1,2...] # specify new array of zones that make up the group
-#    "mute": False | True # mutes all zones in group
-#    "stby": False | True # sets all zone in group to standby
-#    "vol_delta": 0 to 79 # CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
-#},
+(
+  "Update super group to use source 1",
+  {
+    "command" : "set_group",
+    "id" : 3,
+    "source_id" : 1,
+  },
+  None,
+  {
+    'zones[1].source_id' : 1,
+    'zones[2].source_id' : 1,
+    'zones[3].source_id' : 1,
+    'zones[5].source_id' : 1,
+  }
+),
+(
+  "Fix zone",
+  {
+    "command" : "set_zone",
+    "id" : 1,
+    "source_id" : 2,
+  },
+  None,
+  {
+    'zones[1].source_id' : 2
+  }
+),
+(
+  "Fix zone",
+  {
+    "command" : "set_zone",
+    "id" : 2,
+    "source_id" : 2,
+  },
+  None,
+  {
+    'zones[2].source_id' : 2
+  }
+),
+(
+  "Fix zone",
+  {
+    "command" : "set_zone",
+    "id" : 3,
+    "source_id" : 3,
+  },
+  None,
+  {
+    'zones[3].source_id' : 3
+  }
+),
+(
+  "Fix zone",
+  {
+    "command" : "set_zone",
+    "id" : 5,
+    "source_id" : 0,
+  },
+  None,
+  {
+    'zones[5].source_id' : 0
+  }
+),
+# TODO: add more group commands here
 (
   "Delete the newly created group",
   {
