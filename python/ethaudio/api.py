@@ -24,6 +24,16 @@ def error(msg):
   """ wrap the error message specified by msg into an error """
   return {'error': msg}
 
+def updated_val(update, val):
+  """ get the potentially updated value, @update, defaulting to the current value, @val, if it is None """
+  if update is None:
+    return val, False
+  else:
+    return update, update != val
+
+def clamp(x, xmin, xmax):
+    return max(xmin, min(x, xmax))
+
 class MockRt:
   """ Mock of an EthAudio Runtime
 
@@ -90,7 +100,7 @@ class RpiRt:
     """ modify any of the 4 system sources
 
       Args:
-        id (int): source id [0,4]
+        id (int): source id [0,3]
 
       Returns:
         True on success, False on hw failure
@@ -167,17 +177,17 @@ class EthAudioApi:
       elif command == 'return_state':
         return None # state is returned at a higher level on success
       elif command == 'set_power':
-        return self.set_power(cmd['audio_power'], cmd['usb_power'])
+        return self.set_power(cmd.get('audio_power'), cmd.get('usb_power'))
       elif command == 'set_source':
-        return self.set_source(cmd['id'], cmd['name'], cmd['digital'])
+        return self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('digital'))
       elif command == 'set_zone':
-        return self.set_zone(cmd['id'], cmd['name'], cmd['source_id'], cmd['mute'], cmd['stby'], cmd['vol'], cmd['disabled'])
+        return self.set_zone(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol'), cmd.get('disabled'))
       elif command == 'set_group':
-        return error('set_group unimplemented')
+        return self.set_group(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('zones'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol_delta'))
       elif command == 'create_group':
-        return error('create_group unimplemented')
+        return self.create_group(cmd.get('name'), cmd.get('zones'))
       elif command == 'delete_group':
-        return error('delete_group unimplemented')
+        return self.delete_group(cmd.get('id'))
       else:
         return error('command {} is not supported'.format(command))
     except Exception as e:
@@ -187,16 +197,19 @@ class EthAudioApi:
     """ get the system state (dict) """
     return self.status
 
-  def set_power(self, audio_on, usb_on):
+  def set_power(self, audio_power=None, usb_power=None):
     """ enable / disable the 9V audio power and 5V usb power """
-    if self._rt.set_power(bool(audio_on), bool(usb_on)):
-      self.status['power']['audio_power'] = bool(audio_on)
-      self.status['power']['usb_power'] = bool(usb_on)
+    p = self.status['power']
+    audio_power, _ = updated_val(audio_power, p['audio_power'])
+    usb_power, _ = updated_val(usb_power, p['usb_power'])
+    if self._rt.set_power(bool(audio_power), bool(usb_power)):
+      self.status['power']['audio_power'] = bool(audio_power)
+      self.status['power']['usb_power'] = bool(usb_power)
       return None
     else:
       return error('failed to set power')
 
-  def set_source(self, id, name, digital):
+  def set_source(self, id, name = None, digital = None):
     """ modify any of the 4 system sources
 
       Args:
@@ -212,6 +225,12 @@ class EthAudioApi:
         idx = i
     if idx is not None:
       try:
+        src = self.status['sources'][idx]
+        name, _ = updated_val(name, src['name'])
+        digital, _ = updated_val(digital, src['digital'])
+      except Exception as e:
+        return error('failed to set source, error getting current state: {}'.format(e))
+      try:
         if self._rt.set_source(idx, bool(digital)):
           # update the status
           self.status['sources'][idx]['name'] = str(name)
@@ -224,13 +243,13 @@ class EthAudioApi:
     else:
       return error('set source: index {} out of bounds'.format(idx))
 
-  def set_zone(self, id, name, source_id, mute, stby, vol, disabled):
+  def set_zone(self, id, name=None, source_id=None, mute=None, stby=None, vol=None, disabled=None):
     """ modify any zone
 
           Args:
             id (int): any valid zone [0,p*6-1] (6 zones per preamp)
             name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
-            source_id (int): source to connect to [0,3]
+            source_id (int): source to connect to [0,4]
             mute (bool): mute the zone regardless of set volume
             stby (bool): set the zone to standby, very low power consumption state
             vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
@@ -244,7 +263,18 @@ class EthAudioApi:
         idx = i
     if idx is not None:
       try:
-        sid = parse_int(source_id, [1, 2, 3, 4])
+        z = self.status['zones'][idx]
+        # TODO: use updated? value
+        name, _ = updated_val(name, z['name'])
+        source_id, _ = updated_val(source_id, z['source_id'])
+        mute, _ = updated_val(mute, z['mute'])
+        stby, _ = updated_val(stby, z['stby'])
+        vol, _ = updated_val(vol, z['vol'])
+        disabled, _ = updated_val(disabled, z['disabled'])
+      except Exception as e:
+        return error('failed to set zone, error getting current state: {}'.format(e))
+      try:
+        sid = parse_int(source_id, [0, 1, 2, 3, 4])
         vol = parse_int(vol, range(-79, 1))
         if self._rt.set_zone(idx, sid, bool(mute), bool(stby), vol, bool(disabled)):
           self.status['zones'][idx]['name'] = str(name)
@@ -261,38 +291,65 @@ class EthAudioApi:
     else:
         return error('set zone: index {} out of bounds'.format(idx))
 
-  # TODO: make set group
-  # This command can be used to set any EXISTING group
-  # Along with the command one or more of the parameters can be passed
-  # check the system state for a list of existing group
-  # The system state struct will be returned if the command was successfully processed, error response otherwise
-  #{
-  #    "command":"set_group",
-  #    "id":any vaild group,
-  #    "name":"new name" # sets the friendly name for the group, ie "upstairs" or "back yard"
-  #    "source_id": 0 | 1 | 2 | 3 # change all zones in group to different source
-  #    "zones": [0,1,2...] # specify new array of zones that make up the group
-  #    "mute": False | True # mutes all zones in group
-  #    "stby": False | True # sets all zone in group to standby
-  #    "vol_delta": 0 to 79 # CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
-  #}
+  def get_group(self, id):
+    for i, g in enumerate(self.status['groups']):
+      if g['id'] == id:
+        return i,g
+    return -1, None
 
-  # TODO: make create new group
-  # This command can be used to create a NEW group
-  # Along with the command ALL parameters must also be passed
-  # The system state struct will be returned if the command was successfully processed, error response otherwise
-  # Refer to the returned system state to obtain the id for the newly created group
-  #{
-  #    "command":"create_group"
-  #    "name":"new group name"
-  #    "zones": [0,1,2...] # specify new array of zones that make up the group
-  #}
+  def set_group(self, id, name=None, source_id=None, zones=None, mute=None, stby=None, vol_delta=None):
+    """ Configure an existing group
+        parameters will be used to configure each sone in the group's zones
+        all parameters besides the group id, @id, are optional
+    """
+    _, g = self.get_group(id)
+    if g is None:
+      return error('set group failed, group {} not found'.format(id))
+    try:
+      name, _ = updated_val(name, g['name'])
+      zones, _ = updated_val(zones, g['zones'])
+    except Exception as e:
+      return error('failed to configure group, error getting current state: {}'.format(e))
+    g['name'] = name
+    g['zones'] = zones
+    for z in [ self.status['zones'][zone] for zone in zones ]:
+      if vol_delta is not None:
+        vol = clamp(z['vol'] + vol_delta, -79, 0)
+      else:
+        vol = None
+      self.set_zone(z['id'], None, source_id, mute, stby, vol)
 
-  # TODO: make delete group
-  # This command can be used to delete an EXISTING group
-  # Along with the command ALL parameters must also be passed
-  # The system state struct will be returned if the command was successfully processed, error response otherwise
-  #{
-  #    "command":"delete_group"
-  #    "id":"new group name"
-  #}
+  def new_group_id(self):
+    """ get next available group id """
+    ids = [ g['id'] for g in self.status['groups'] ]
+    ids = set(ids) # simpler/faster access
+    new_gid = len(ids)
+    for i in range(0, len(ids)):
+      if i not in ids:
+        new_gid = i
+        break
+    return new_gid
+
+  def create_group(self, name, zones):
+    """create a new group with a list of zones
+    Refer to the returned system state to obtain the id for the newly created group
+    """
+    # verify new group's name is unique
+    names = [ g['name'] for g in self.status['groups'] ]
+    if name in names:
+      return error('create group failed: {} already exists'.format(name))
+
+    # get the new groug's id
+    id = self.new_group_id()
+
+    # add the new group
+    group = { 'id': id, 'name' : name, 'zones' : zones }
+    self.status['groups'].append(group)
+
+  def delete_group(self, id):
+    """delete an existing group"""
+    try:
+      i, _ = self.get_group(id)
+      del self.status['groups'][i]
+    except KeyError:
+      return error('delete group failed: {} does not exist'.format(id))

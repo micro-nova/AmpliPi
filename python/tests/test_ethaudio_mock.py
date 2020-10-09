@@ -73,25 +73,103 @@ test_sequence = [
   {
   }
 ),
-#{
-#    "command":"set_group",
-#    "id":any vaild group,
-#    "name":"new name" # sets the friendly name for the group, ie "upstairs" or "back yard"
-#    "source_id": 0 | 1 | 2 | 3 # change all zones in group to different source
-#    "zones": [0,1,2...] # specify new array of zones that make up the group
-#    "mute": False | True # mutes all zones in group
-#    "stby": False | True # sets all zone in group to standby
-#    "vol_delta": 0 to 79 # CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
-#},
-#{
-#    "command":"create_group"
-#    "name":"new group name"
-#    "zones": [0,1,2...] # specify new array of zones that make up the group
-#},
-#{
-#    "command":"delete_group"
-#    "id":"new group name"
-#}
+(
+  "Create a new group",
+  {
+      "command" : "create_group",
+      "name" : "super_group",
+      "zones": [0, 1, 2, 3, 4, 5],
+  },
+  None,
+  {
+    'added' :
+    {
+      'groups[3].id'    : 3,
+      'groups[3].name'  : 'super_group',
+      'groups[3].zones' : [0, 1, 2, 3, 4, 5],
+    }
+  }
+),
+(
+  "Update super group to use source 1",
+  {
+    "command" : "set_group",
+    "id" : 3,
+    "source_id" : 1,
+  },
+  None,
+  {
+    'zones[1].source_id' : 1,
+    'zones[2].source_id' : 1,
+    'zones[3].source_id' : 1,
+    'zones[5].source_id' : 1,
+  }
+),
+(
+  "Fix zone",
+  {
+    "command" : "set_zone",
+    "id" : 1,
+    "source_id" : 2,
+  },
+  None,
+  {
+    'zones[1].source_id' : 2
+  }
+),
+(
+  "Fix zone",
+  {
+    "command" : "set_zone",
+    "id" : 2,
+    "source_id" : 2,
+  },
+  None,
+  {
+    'zones[2].source_id' : 2
+  }
+),
+(
+  "Fix zone",
+  {
+    "command" : "set_zone",
+    "id" : 3,
+    "source_id" : 3,
+  },
+  None,
+  {
+    'zones[3].source_id' : 3
+  }
+),
+(
+  "Fix zone",
+  {
+    "command" : "set_zone",
+    "id" : 5,
+    "source_id" : 0,
+  },
+  None,
+  {
+    'zones[5].source_id' : 0
+  }
+),
+# TODO: add more group commands here
+(
+  "Delete the newly created group",
+  {
+      "command" : "delete_group",
+      "id" : 3,
+  },
+  None,
+  {
+    'removed' :
+    {
+      'groups[3].id'    : 3,
+      'groups[3].name'  : 'super_group',
+      'groups[3].zones' : [0, 1, 2, 3, 4, 5],
+    }
+  }
+),
 # TODO: test zone following group changes
 # Rewind state back to initialization
 (
@@ -168,6 +246,29 @@ def show_change():
     print('no change!')
   last_status = deepcopy(eth_audio_api.status)
 
+def add_field_entries(diff, changes, name, status_ref):
+  """ Get the full field name and values that were either added or removed from the status (@status_ref)
+
+      Args:
+        diff : dict of items added or removed
+        changes : field changes to update
+        name: field name (deepdiff names) (ie. dictionary_item_added, dictionary_item_removed, iterable_item_added, iterable_item_removed)
+        status_ref: status to get values from
+  """
+  if name in diff:
+    for field in diff[name]:
+      # get a simplified name of the field
+      pretty = format(pretty_field(field))
+      # get the value of this particular field
+      actual = 'status_ref' + field.replace('root', '')
+      result = eval(actual)
+      # add field and its old/new value
+      if type(result) == dict:
+        for key, val in result.items():
+          changes[pretty + '.' + key] = val
+      else:
+        changes[pretty] = result
+
 def get_state_changes():
   """ get difference between status when this was last called
 
@@ -178,25 +279,33 @@ def get_state_changes():
   """
   global last_status, eth_audio_api
   diff = deepdiff.DeepDiff(last_status, eth_audio_api.status, ignore_order=True)
-  changes = ({}, [], [])
+  changes = ({}, {}, {})
   if 'values_changed' in diff:
     for field, change in diff['values_changed'].items():
       changes[0][pretty_field(field)] = change['new_value']
-  if 'dictionary_item_added' in diff:
-    for field in diff['dictionary_item_added']:
-      changes[1].append(format(pretty_field(field)))
-  if 'dictionary_item_removed' in diff:
-    for field in diff['dictionary_item_removed']:
-      changes[2].append(format(pretty_field(field)))
+  # get added fields
+  add_field_entries(diff, changes[1], 'dictionary_item_added', eth_audio_api.status)
+  add_field_entries(diff, changes[1], 'iterable_item_added', eth_audio_api.status)
+  # get removed fields
+  add_field_entries(diff, changes[2], 'dictionary_item_removed', last_status)
+  add_field_entries(diff, changes[2], 'iterable_item_removed', last_status)
   last_status = deepcopy(eth_audio_api.status)
   return changes
 
 def check_json_tst(name, result, expected_result, expected_changes):
   # check state changes
   changes, added, removed = get_state_changes()
-  assert changes == expected_changes
-  assert len(added) == 0
-  assert len(removed) == 0
+  # handle additions and removals in expected changes as optional, making sure to remove them from the actual changes comparison
+  expected_changes2 = dict(expected_changes)
+  if 'added' in expected_changes:
+    assert added == expected_changes['added']
+    del expected_changes2['added']
+  else:
+    assert len(added) == 0
+  if 'removed' in expected_changes:
+    assert removed == expected_changes['removed']
+    del expected_changes2['removed']
+  assert changes == expected_changes2
   assert result == expected_result
 
 def check_http_tst(name, result, expected_result, expected_changes):
@@ -219,7 +328,7 @@ def check_all_tsts(api):
   print('intial state:')
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
-  check_json_tst('Enable USB', eth_audio_api.set_power(audio_on=False, usb_on=True), None, {'power.usb_power' : True})
+  check_json_tst('Enable USB', eth_audio_api.set_power(audio_power=False, usb_power=True), None, {'power.usb_power' : True})
   check_json_tst('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify', 'sources[0].digital' : True})
   check_json_tst('Configure source 1 (digital)',eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
   check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
@@ -247,3 +356,7 @@ def check_all_tsts(api):
 
 def test_mock():
   check_all_tsts(ethaudio.Api(ethaudio.api.MockRt()))
+
+
+if __name__ == '__main__':
+  test_mock()
