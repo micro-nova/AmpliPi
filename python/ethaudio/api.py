@@ -4,6 +4,11 @@ import json
 from copy import deepcopy
 import deepdiff
 
+import serial
+import time
+from smbus2 import SMBus
+import smbus2 as smb
+
 # Helper functions
 def encode(pydata):
   """ Encode a dictionary as JSON """
@@ -41,11 +46,12 @@ class MockRt:
     """
     return True
 
-  def set_source(self, id, digital):
-    """ modify any of the 4 system sources
+  def update_sources(self, digital):
+    """ modify all of the 4 system sources
 
       Args:
-        id (int): source id [0,4]
+        digital [bool*4]: array of configuration for sources where
+          Analog is False and Digital True
 
       Returns:
         True on success, False on hw failure
@@ -74,8 +80,37 @@ class RpiRt:
       This acts as an EthAudio Runtime, expected to be executed on a raspberrypi
   """
 
+  # Dictionary with all of the regs
+  # NOT WORKING!!!!!! Is this not global within class??
+  REG_ADDRS = {
+    'SRC_AD_REG' : 0x00,
+    'CH123_SRC_REG' : 0x01,
+    'CH456_SRC_REG' : 0x02,
+    'MUTE_REG' : 0x03,
+    'STANDBY_REG' : 0x04,
+    'CH1_ATTEN_REG' : 0x05,
+    'CH2_ATTEN_REG' : 0x06,
+    'CH3_ATTEN_REG' : 0x07,
+    'CH4_ATTEN_REG' : 0x08,
+    'CH5_ATTEN_REG' : 0x09,
+    'CH6_ATTEN_REG' : 0x0A
+  }
+
   def __init__(self):
-    pass
+    # Setup serial connection via UART pins - set I2C addresses for preamps
+    ser = serial.Serial ("/dev/ttyS0")
+    ser.baudrate = 9600
+    addr = 0x41, 0x10, 0x0D, 0x0A
+    ser.write(addr)
+    ser.close()
+
+    # Delay to account for addresses being set
+    # Possibly unnecessary due to human delay
+    time.sleep(3)
+
+    # Setup self._bus as I2C1 from the RPi
+    bus = smb.SMBus(1)
+    self._bus = bus
 
   def set_power(self, audio_on, usb_on):
     """ enable / disable the 9V audio power and 5V usb power
@@ -86,17 +121,30 @@ class RpiRt:
     # TODO: actually configure the power and verify the configuration
     return False
 
-  def set_source(self, id, digital):
-    """ modify any of the 4 system sources
+  def update_sources(self, digital = [False, False, False, False]):
+    """ modify all of the 4 system sources
 
       Args:
-        id (int): source id [0,4]
+        digital [bool*4]: array of configuration for sources where
+          Analog is False and Digital True
 
       Returns:
         True on success, False on hw failure
     """
-    # TODO: actually configure the source and verify it
-    return False
+
+    # Start with a fresh byte - only update on Digital (True)
+    output = 0x00
+
+    # When digital is true, set the appropriate bit to 1
+    for i in range(4):    
+      if digital[i]:
+        output = output | (0x01 << i)
+
+    # Send out the updated source information to the appropriate preamp
+    self._bus.write_byte_data(0x08, 0x00, output)
+
+    # TODO: update this to allow for different preamps on the bus
+    # also, figure out how to use 'SRC_AD_REG' instead of 0x00 (see init)
 
   def set_zone(self, id, source_id, mute, stby, vol, disabled):
     """ modify any zone
@@ -212,7 +260,11 @@ class EthAudioApi:
         idx = i
     if idx is not None:
       try:
-        if self._rt.set_source(idx, bool(digital)):
+        # get the current digital state of all of the sources
+        digital_cfg = [ self.status['sources'][src]['digital'] for src in range(4) ]
+        # update this source
+        digital_cfg[idx] = bool(digital)
+        if self._rt.update_sources(digital_cfg):
           # update the status
           self.status['sources'][idx]['name'] = str(name)
           self.status['sources'][idx]['digital'] = bool(digital)
