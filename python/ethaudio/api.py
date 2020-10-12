@@ -143,7 +143,7 @@ class RpiRt:
   """
 
   # Dictionary with all of the regs
-  # NOT WORKING!!!!!! Is this not global within class??
+  # Potentially working??
   REG_ADDRS = {
     'SRC_AD_REG' : 0x00,
     'CH123_SRC_REG' : 0x01,
@@ -157,6 +157,9 @@ class RpiRt:
     'CH5_ATTEN_REG' : 0x09,
     'CH6_ATTEN_REG' : 0x0A
   }
+
+  # TODO: Expand this, clean it up, make it dynamic, do something?
+  preamp_list = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40]
 
   def __init__(self):
     # Setup serial connection via UART pins - set I2C addresses for preamps
@@ -185,7 +188,19 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    return False
+    assert len(mutes) >= 6
+    num_preamps = int(len(mutes) / 6)
+    assert len(mutes) == num_preamps * 6
+    for preamp in range(num_preamps):
+      mute_msg = 0x00
+      for zone in range(6):
+        assert type(mutes[preamp * 6 + zone]) == bool
+        if mutes[preamp * 6 + zone]:
+          mute_msg = mute_msg | (0x01 << zone)
+      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['MUTE_REG'], mute_msg)
+    
+    # TODO: Add error checking on successful write
+    return True
 
   def update_zone_stbys(self, zone, stbys):
     """ Update the standby to all of the zones
@@ -198,8 +213,19 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    # TODO: actually configure the stbys
-    return False
+    assert len(stbys) >= 6
+    num_preamps = int(len(stbys) / 6)
+    assert len(stbys) == num_preamps * 6
+    for preamp in range(num_preamps):
+      stby_msg = 0x00
+      for zone in range(6):
+        assert type(stbys[preamp * 6 + zone]) == bool
+        if stbys[preamp * 6 + zone]:
+          stby_msg = stby_msg | (0x01 << zone)
+      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['STANDBY_REG'], stby_msg)
+    
+    # TODO: Add error checking on successful write
+    return True
 
   def update_zone_sources(self, zone, sources):
     """ Update the sources to all of the zones
@@ -242,16 +268,20 @@ class RpiRt:
     output = 0x00
 
     # When digital is true, set the appropriate bit to 1
+    assert len(digital) == 4
+    for d in digital:
+      assert type(d) == bool
+
     for i in range(4):    
       if digital[i]:
         output = output | (0x01 << i)
 
     # Send out the updated source information to the appropriate preamp
-    self._bus.write_byte_data(0x08, 0x00, output)
+    self._bus.write_byte_data(0x08, self.REG_ADDRS['SRC_AD_REG'], output)
 
     # TODO: update this to allow for different preamps on the bus
-    # also, figure out how to use 'SRC_AD_REG' instead of 0x00 (see init)
-    return True # TODO: Add error checking on successful write
+    # TODO: Add error checking on successful write
+    return True
 
   def set_zone(self, id, source_id, mute, stby, vol, disabled):
     """ modify any zone
