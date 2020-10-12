@@ -12,18 +12,6 @@ import ethaudio
 # TODO: encode expected change after each one of these commands to form a tuple similar to (cmd, {field1: value_expected, field2:value_expected})
 test_sequence = [
 (
-  "Enable Audio",
-  {
-    "command" : "set_power",
-    "audio_power" : True,
-    "usb_power" : True
-  },
-  None,
-  {
-    "power.audio_power" : True
-  }
-),
-(
   "Add CD Player (in place of Pandora)",
   {
     "command" : "set_source",
@@ -173,18 +161,6 @@ test_sequence = [
 # TODO: test zone following group changes
 # Rewind state back to initialization
 (
-  "Disbale Audio",
-  {
-    "command" : "set_power",
-    "audio_power" : False,
-    "usb_power" : True
-  },
-  None,
-  {
-    "power.audio_power" : False
-  },
-),
-(
   "Change source back to Pandora",
   {
     "command" : "set_source",
@@ -305,6 +281,8 @@ def check_json_tst(name, result, expected_result, expected_changes):
   if 'removed' in expected_changes:
     assert removed == expected_changes['removed']
     del expected_changes2['removed']
+  else:
+    assert len(removed) == 0
   assert changes == expected_changes2
   assert result == expected_result
 
@@ -328,7 +306,6 @@ def check_all_tsts(api):
   print('intial state:')
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
-  check_json_tst('Enable USB', eth_audio_api.set_power(audio_power=False, usb_power=True), None, {'power.usb_power' : True})
   check_json_tst('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify', 'sources[0].digital' : True})
   check_json_tst('Configure source 1 (digital)',eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
   check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
