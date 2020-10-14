@@ -145,11 +145,11 @@ class RpiRt:
   # Dictionary with all of the regs
   # Potentially working??
   REG_ADDRS = {
-    'SRC_AD_REG' : 0x00,
+    'SRC_AD_REG'    : 0x00,
     'CH123_SRC_REG' : 0x01,
     'CH456_SRC_REG' : 0x02,
-    'MUTE_REG' : 0x03,
-    'STANDBY_REG' : 0x04,
+    'MUTE_REG'      : 0x03,
+    'STANDBY_REG'   : 0x04,
     'CH1_ATTEN_REG' : 0x05,
     'CH2_ATTEN_REG' : 0x06,
     'CH3_ATTEN_REG' : 0x07,
@@ -159,7 +159,7 @@ class RpiRt:
   }
 
   # TODO: Expand this, clean it up, make it dynamic, do something?
-  preamp_list = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40]
+  preamp_list = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
 
   def __init__(self):
     # Setup serial connection via UART pins - set I2C addresses for preamps
@@ -192,12 +192,12 @@ class RpiRt:
     num_preamps = int(len(mutes) / 6)
     assert len(mutes) == num_preamps * 6
     for preamp in range(num_preamps):
-      mute_msg = 0x00
+      mute_cfg = 0x00
       for zone in range(6):
         assert type(mutes[preamp * 6 + zone]) == bool
         if mutes[preamp * 6 + zone]:
-          mute_msg = mute_msg | (0x01 << zone)
-      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['MUTE_REG'], mute_msg)
+          mute_cfg = mute_cfg | (0x01 << zone)
+      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['MUTE_REG'], mute_cfg)
     
     # TODO: Add error checking on successful write
     return True
@@ -217,12 +217,12 @@ class RpiRt:
     num_preamps = int(len(stbys) / 6)
     assert len(stbys) == num_preamps * 6
     for preamp in range(num_preamps):
-      stby_msg = 0x00
+      stby_cfg = 0x00
       for zone in range(6):
         assert type(stbys[preamp * 6 + zone]) == bool
         if stbys[preamp * 6 + zone]:
-          stby_msg = stby_msg | (0x01 << zone)
-      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['STANDBY_REG'], stby_msg)
+          stby_cfg = stby_cfg | (0x01 << zone)
+      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['STANDBY_REG'], stby_cfg)
     
     # TODO: Add error checking on successful write
     return True
@@ -237,11 +237,28 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    # TODO: actually configure the sources
-    return False
+    assert len(sources) >= 6
+    num_preamps = int(len(sources) / 6)
+    assert len(sources) == num_preamps * 6
+    preamp = zone // 6
+    
+    source_cfg123 = 0x00
+    source_cfg456 = 0x00
+    for z in range(6):
+      src = sources[preamp * 6 + z]
+      assert type(src) == int or src == None
+      if z < 3:
+        source_cfg123 = source_cfg123 | (src << (z*2))
+      else:
+        source_cfg456 = source_cfg456 | (src << ((z-3)*2))
+    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['CH123_SRC_REG'], source_cfg123)
+    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['CH456_SRC_REG'], source_cfg456)
+
+    # TODO: Add error checking on successful write
+    return True
 
   def update_zone_vol(self, zone, vol):
-    """ Update the sources to all of the zones
+    """ Update the volume to the specific zone
 
       Args:
         zone: zone to adjust vol
@@ -250,8 +267,18 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    # TODO: configure zone's volume on preamp
-    return False
+    preamp = int(zone / 6) # int(x/y) does the same thing as (x // y)
+    assert zone >= 0
+    assert preamp < 15
+    assert vol <= 0 and vol >= -79
+
+    chan = zone - (preamp * 6)
+    hvol = hex(abs(vol))
+    
+    self._bus.write_byte_data(self.preamp_list[preamp], (self.REG_ADDRS['CH1_ATTEN_REG'] + chan), hvol)
+
+    # TODO: Add error checking on successful write
+    return True
 
   def update_sources(self, digital):
     """ modify all of the 4 system sources
@@ -272,12 +299,12 @@ class RpiRt:
     for d in digital:
       assert type(d) == bool
 
-    for i in range(4):    
+    for i in range(4):
       if digital[i]:
         output = output | (0x01 << i)
 
     # Send out the updated source information to the appropriate preamp
-    self._bus.write_byte_data(0x08, self.REG_ADDRS['SRC_AD_REG'], output)
+    self._bus.write_byte_data(self.preamp_list[0], self.REG_ADDRS['SRC_AD_REG'], output)
 
     # TODO: update this to allow for different preamps on the bus
     # TODO: Add error checking on successful write
@@ -297,7 +324,7 @@ class RpiRt:
           Returns:
             True on success, False on hw failure
     """
-    # TODO: actually configure the zone and verfy it
+    # TODO: actually configure the zone and verify it
     return False
 
 class EthAudioApi:
