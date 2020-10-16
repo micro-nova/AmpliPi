@@ -4,10 +4,13 @@ import json
 from copy import deepcopy
 import deepdiff
 
-import serial
-import time
-from smbus2 import SMBus
-import smbus2 as smb
+USE_MOCK_PREAMPS = True
+
+if not USE_MOCK_PREAMPS:
+  import serial
+  import time
+  from smbus2 import SMBus
+  import smbus2 as smb
 
 # Helper functions
 def encode(pydata):
@@ -38,6 +41,83 @@ def updated_val(update, val):
 
 def clamp(x, xmin, xmax):
     return max(xmin, min(x, xmax))
+
+# Preamp register addresses
+REG_ADDRS = {
+  'SRC_AD'    : 0x00,
+  'CH123_SRC' : 0x01,
+  'CH456_SRC' : 0x02,
+  'MUTE'      : 0x03,
+  'STANDBY'   : 0x04,
+  'CH1_ATTEN' : 0x05,
+  'CH2_ATTEN' : 0x06,
+  'CH3_ATTEN' : 0x07,
+  'CH4_ATTEN' : 0x08,
+  'CH5_ATTEN' : 0x09,
+  'CH6_ATTEN' : 0x0A
+}
+PREAMPS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
+
+class MockPreamps:
+  def __init__(self):
+    self.preamps = dict()
+
+  def new_preamp(self, index):
+    self.preamps[index] = [ 0x0 ] * len(REG_ADDRS)
+
+  def write_byte_data(self, preamp_addr, reg, data):
+    assert preamp_addr in PREAMPS
+    assert type(preamp_addr) == int
+    assert type(reg) == int
+    assert type(data) == int
+    if preamp_addr not in self.preamps:
+      self.new_preamp(preamp_addr)
+    print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
+    self.preamps[preamp_addr][reg] = data
+
+  def print_regs(self):
+    for preamp, regs in self.preamps.items():
+      print('preamp {}:'.format(preamp / 8))
+      for reg, val in enumerate(regs):
+        print('  {} - {:02b}'.format(reg, val))
+
+  def print(self):
+    for preamp_addr in self.preamps.keys():
+      preamp = int(preamp_addr / 8)
+      print('preamp {}:'.format(preamp))
+      for src in range(4):
+        # TODO: print source configurations
+        pass
+      for zone in range(6):
+        self.print_zone_state(6 * (preamp - 1) + zone)
+
+  def vol_string(self, vol):
+    MAX_VOL = 0
+    MIN_VOL = -79
+    VOL_RANGE = MAX_VOL - MIN_VOL + 1
+    VOL_STR_LEN = 20
+    VOL_SCALE = VOL_RANGE / VOL_STR_LEN
+    vol_level = int((vol - MIN_VOL)  / VOL_SCALE)
+    assert vol_level >= 0 and vol_level < VOL_STR_LEN
+    vol_string = ['-'] * VOL_STR_LEN
+    vol_string[vol_level] = '|' # place the volume slider bar at its current spot
+    return ''.join(vol_string) # turn that char array into a string
+
+  def print_zone_state(self, zone):
+    assert zone >= 0
+    preamp = (int(zone / 6) + 1) * 8
+    z = zone % 6
+    regs = self.preamps[preamp]
+    src = ((regs[REG_ADDRS['CH456_SRC']] << 8) | regs[REG_ADDRS['CH123_SRC']] >> 3 * z) & 0b111
+    vol = -regs[REG_ADDRS['CH1_ATTEN'] + z]
+    stby = (regs[REG_ADDRS['STANDBY']] & (1 << z)) > 0
+    muted = (regs[REG_ADDRS['MUTE']] & (1 << z)) > 0
+    state = []
+    if muted:
+      state += ['muted']
+    if stby:
+      state += ['in standby']
+    print('  source {} --> zone {} vol [{}], {}'.format(src, zone, self.vol_string(vol), ','.join(state)))
 
 class MockRt:
   """ Mock of an EthAudio Runtime
@@ -142,40 +222,25 @@ class RpiRt:
       This acts as an EthAudio Runtime, expected to be executed on a raspberrypi
   """
 
-  # Dictionary with all of the regs
-  # Potentially working??
-  REG_ADDRS = {
-    'SRC_AD_REG'    : 0x00,
-    'CH123_SRC_REG' : 0x01,
-    'CH456_SRC_REG' : 0x02,
-    'MUTE_REG'      : 0x03,
-    'STANDBY_REG'   : 0x04,
-    'CH1_ATTEN_REG' : 0x05,
-    'CH2_ATTEN_REG' : 0x06,
-    'CH3_ATTEN_REG' : 0x07,
-    'CH4_ATTEN_REG' : 0x08,
-    'CH5_ATTEN_REG' : 0x09,
-    'CH6_ATTEN_REG' : 0x0A
-  }
-
-  # TODO: Expand this, clean it up, make it dynamic, do something?
-  preamp_list = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
-
   def __init__(self):
-    # Setup serial connection via UART pins - set I2C addresses for preamps
-    # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
-    ser = serial.Serial ("/dev/ttyAMA0")
-    ser.baudrate = 9600
-    addr = 0x41, 0x10, 0x0D, 0x0A
-    ser.write(addr)
-    ser.close()
+    # TODO: merge mock and actual preamp writing
+    if not USE_MOCK_PREAMPS:
+      # Setup serial connection via UART pins - set I2C addresses for preamps
+      # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
+      ser = serial.Serial ("/dev/ttyAMA0")
+      ser.baudrate = 9600
+      addr = 0x41, 0x10, 0x0D, 0x0A
+      ser.write(addr)
+      ser.close()
 
-    # Delay to account for addresses being set
-    # Possibly unnecessary due to human delay
-    time.sleep(1)
+      # Delay to account for addresses being set
+      # Possibly unnecessary due to human delay
+      time.sleep(1)
 
-    # Setup self._bus as I2C1 from the RPi
-    bus = smb.SMBus(1)
+      # Setup self._bus as I2C1 from the RPi
+      bus = smb.SMBus(1)
+    else:
+      bus = MockPreamps()
     self._bus = bus
 
   def update_zone_mutes(self, zone, mutes):
@@ -198,8 +263,8 @@ class RpiRt:
       assert type(mutes[preamp * 6 + z]) == bool
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
-      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['MUTE_REG'], mute_cfg)
-    
+      self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE_REG'], mute_cfg)
+
     # TODO: Add error checking on successful write
     return True
 
@@ -223,8 +288,8 @@ class RpiRt:
       assert type(stbys[preamp * 6 + z]) == bool
       if stbys[preamp * 6 + z]:
         stby_cfg = stby_cfg | (0x01 << z)
-    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['STANDBY_REG'], stby_cfg)
-    
+    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['STANDBY_REG'], stby_cfg)
+
     # TODO: Add error checking on successful write
     return True
 
@@ -242,7 +307,7 @@ class RpiRt:
     num_preamps = int(len(sources) / 6)
     assert len(sources) == num_preamps * 6
     preamp = zone // 6
-    
+
     source_cfg123 = 0x00
     source_cfg456 = 0x00
     for z in range(6):
@@ -252,8 +317,8 @@ class RpiRt:
         source_cfg123 = source_cfg123 | (src << (z*2))
       else:
         source_cfg456 = source_cfg456 | (src << ((z-3)*2))
-    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['CH123_SRC_REG'], source_cfg123)
-    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['CH456_SRC_REG'], source_cfg456)
+    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['CH123_SRC'], source_cfg123)
+    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['CH456_SRC'], source_cfg456)
 
     # TODO: Add error checking on successful write
     return True
@@ -275,7 +340,7 @@ class RpiRt:
 
     chan = zone - (preamp * 6)
     hvol = abs(vol)
-    
+
     self._bus.write_byte_data(self.preamp_list[preamp], (self.REG_ADDRS['CH1_ATTEN_REG'] + chan), hvol)
 
     # TODO: Add error checking on successful write
@@ -305,7 +370,7 @@ class RpiRt:
         output = output | (0x01 << i)
 
     # Send out the updated source information to the appropriate preamp
-    self._bus.write_byte_data(self.preamp_list[0], self.REG_ADDRS['SRC_AD_REG'], output)
+    self._bus.write_byte_data(PREAMPS[0], REG_ADDRS['SRC_AD'], output)
 
     # TODO: update this to allow for different preamps on the bus
     # TODO: Add error checking on successful write
@@ -368,21 +433,23 @@ class EthAudioApi:
     try:
       command = cmd['command']
       if command is None:
-        return error('No command specified')
+        output = error('No command specified')
       elif command == 'return_state':
-        return None # state is returned at a higher level on success
+        output = None # state is returned at a higher level on success
       elif command == 'set_source':
-        return self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('digital'))
+        output = self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('digital'))
       elif command == 'set_zone':
-        return self.set_zone(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol'), cmd.get('disabled'))
+        output = self.set_zone(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol'), cmd.get('disabled'))
       elif command == 'set_group':
-        return self.set_group(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('zones'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol_delta'))
+        output = self.set_group(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('zones'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol_delta'))
       elif command == 'create_group':
-        return self.create_group(cmd.get('name'), cmd.get('zones'))
+        output = self.create_group(cmd.get('name'), cmd.get('zones'))
       elif command == 'delete_group':
-        return self.delete_group(cmd.get('id'))
+        output = self.delete_group(cmd.get('id'))
       else:
-        return error('command {} is not supported'.format(command))
+        output = error('command {} is not supported'.format(command))
+
+      return output
     except Exception as e:
       return error(str(e)) # TODO: handle exception more verbosely
 
@@ -421,6 +488,8 @@ class EthAudioApi:
         if self._rt.update_sources(digital_cfg):
           # update the status
           src['digital'] = bool(digital)
+          if USE_MOCK_PREAMPS:
+            self._rt._bus.print()
           return None
         else:
           return error('failed to set source')
@@ -499,9 +568,12 @@ class EthAudioApi:
               z['mute'] = True
           else:
             return error('set zone failed: unable to update zone volume')
+
+        if USE_MOCK_PREAMPS:
+          self._rt._bus.print()
         return None
       except Exception as e:
-        return error('set zone'  + str(e))
+        return error('set zone: '  + str(e))
     else:
         return error('set zone: index {} out of bounds'.format(idx))
 
@@ -532,6 +604,9 @@ class EthAudioApi:
       else:
         vol = None
       self.set_zone(z['id'], None, source_id, mute, stby, vol)
+
+    if USE_MOCK_PREAMPS:
+      self._rt._bus.print()
 
   def new_group_id(self):
     """ get next available group id """
