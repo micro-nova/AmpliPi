@@ -9,8 +9,10 @@ insert_final_newline = true
 
 # matches multiple files with brace expansion notation
 # Set default charset
-[*.{py,md}]
+[*.{py,md,bash,sh}]
 charset = utf-8
+# remove any extraneous whitespace
+trim_trailing_whitespace = true
 
 # 2 space indentation
 [*.py]
