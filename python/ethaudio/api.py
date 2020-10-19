@@ -70,6 +70,7 @@ class MockPreamps:
     assert type(preamp_addr) == int
     assert type(reg) == int
     assert type(data) == int
+    # dynamically update preamps
     if preamp_addr not in self.preamps:
       self.new_preamp(preamp_addr)
     print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
