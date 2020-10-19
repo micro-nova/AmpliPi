@@ -192,12 +192,12 @@ class RpiRt:
     assert len(mutes) >= 6
     num_preamps = int(len(mutes) / 6)
     assert len(mutes) == num_preamps * 6
-    for preamp in range(num_preamps):
-      mute_cfg = 0x00
-      for zone in range(6):
-        assert type(mutes[preamp * 6 + zone]) == bool
-        if mutes[preamp * 6 + zone]:
-          mute_cfg = mute_cfg | (0x01 << zone)
+    preamp = zone // 6
+    mute_cfg = 0x00
+    for z in range(6):
+      assert type(mutes[preamp * 6 + z]) == bool
+      if mutes[preamp * 6 + z]:
+        mute_cfg = mute_cfg | (0x01 << z)
       self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['MUTE_REG'], mute_cfg)
     
     # TODO: Add error checking on successful write
@@ -217,13 +217,13 @@ class RpiRt:
     assert len(stbys) >= 6
     num_preamps = int(len(stbys) / 6)
     assert len(stbys) == num_preamps * 6
-    for preamp in range(num_preamps):
-      stby_cfg = 0x00
-      for zone in range(6):
-        assert type(stbys[preamp * 6 + zone]) == bool
-        if stbys[preamp * 6 + zone]:
-          stby_cfg = stby_cfg | (0x01 << zone)
-      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['STANDBY_REG'], stby_cfg)
+    preamp = zone // 6
+    stby_cfg = 0x00
+    for z in range(6):
+      assert type(stbys[preamp * 6 + z]) == bool
+      if stbys[preamp * 6 + z]:
+        stby_cfg = stby_cfg | (0x01 << z)
+    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['STANDBY_REG'], stby_cfg)
     
     # TODO: Add error checking on successful write
     return True
@@ -331,24 +331,24 @@ class EthAudioApi:
         { "id": 3, "name": "Source 4", "digital": False  }
       ],
       "zones": [ # this is an array of zones, array length depends on # of boxes connected
-        { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 10, "name": "Zone 11", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 11, "name": "Zone 12", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 12, "name": "Zone 13", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 13, "name": "Zone 14", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 14, "name": "Zone 15", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 15, "name": "Zone 16", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 16, "name": "Zone 17", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 }
+        { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 }
       ],
       "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
         { "id": 0, "name": "Group 1", "zones": [0,1,2] },
@@ -491,6 +491,12 @@ class EthAudioApi:
         if update_vol:
           if self._rt.update_zone_vol(idx, vol):
             z['vol'] = vol
+            if vol > -79:
+              z['stby'] = False
+              z['mute'] = False
+            else:
+              z['stby'] = True
+              z['mute'] = True
           else:
             return error('set zone failed: unable to update zone volume')
         return None
