@@ -3,15 +3,6 @@
     "command":"return_state"
 }
 
-// This command can be used to enable / disable the 9V audio power and 5V usb power
-// Along with the command one or more of the parameters can be passed
-// The system state struct will be returned if the command was successfully processed, error response otherwise
-{
-    "command":"set_power",
-    "audio_power": false | true,
-    "usb_power": false | true
-}
-
 // This command can be used to modify any of the 4 system sources
 // Along with the command one or more of the parameters can be passed
 // The system state struct will be returned if the command was successfully processed, error response otherwise
@@ -72,10 +63,6 @@
 
 // This is the system state response that will come back from the ethaudio box
 {
-    "power": {
-	"audio_power":false, // this needs to be on for any zone to work
-	"usb_power":false    // this turns on/off the usb power port
-    },
     "sources": [ // this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
 	{ "id":0, "name":"Source 1", "digital":false },
 	{ "id":1, "name":"Source 2", "digital":false },
