@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 # this file starts an ethaudio server
 
+import argparse
+
 # our ethaudio library
 import ethaudio
 
@@ -18,12 +20,17 @@ def signal_handler(sig, frame):
   # Exit application
   sys.exit(0)
 
+# parse args
+parser = argparse.ArgumentParser(description='Run EthAudio server')
+parser.add_argument('--mock', action='store_true', help='Use mock preamp connection')
+args = parser.parse_args()
+
 # register signal handler
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 # Start HTTP server (behind the scenes it runs in new thread)
-ethaudio.Server(ethaudio.Api(ethaudio.api.RpiRt()))
+ethaudio.Server(ethaudio.Api(ethaudio.api.RpiRt(args.mock)))
 
 while True:
   sleep(0.1)
