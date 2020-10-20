@@ -106,9 +106,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
   def do_GET(self):
     """ handle an http GET request """
-    # console write 
+    # console write
     print('received GET request')
-    
+
     # ================ /api ===============
     if(self.path == "/api"):
 
@@ -118,7 +118,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       self.end_headers()
       # send standard response
       self.wfile.write(self.eth_audio_server.craft_response())
-
     # ======= unimplemented path ===========
     else:
       # send HTTP code 404 "Not Found"
@@ -127,7 +126,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
   def do_POST(self):
     """ handle an http POST request """
-    # console write 
+    # console write
     print('received POST request')
 
     # ================ /api ===============
@@ -147,7 +146,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         # send standard response
         self.wfile.write(self.eth_audio_server.craft_response())
-
       else:
         # send HTTP code 400 "Bad Request"
         self.send_response(400)
