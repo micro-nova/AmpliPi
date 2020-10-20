@@ -4,13 +4,10 @@ import json
 from copy import deepcopy
 import deepdiff
 
-USE_MOCK_PREAMPS = True
-
-if not USE_MOCK_PREAMPS:
-  import serial
-  import time
-  from smbus2 import SMBus
-  import smbus2 as smb
+import serial
+import time
+from smbus2 import SMBus
+import smbus2 as smb
 
 # Helper functions
 def encode(pydata):
@@ -58,9 +55,28 @@ REG_ADDRS = {
 }
 PREAMPS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
 
-class MockPreamps:
-  def __init__(self):
+class Preamps:
+  def __init__(self, mock=False):
     self.preamps = dict()
+    if not mock:
+      # Setup serial connection via UART pins - set I2C addresses for preamps
+      # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
+      ser = serial.Serial ("/dev/ttyAMA0")
+      ser.baudrate = 9600
+      addr = 0x41, 0x10, 0x0D, 0x0A
+      ser.write(addr)
+      ser.close()
+
+      # Delay to account for addresses being set
+      # Possibly unnecessary due to human delay
+      time.sleep(1)
+
+      # Setup self._bus as I2C1 from the RPi
+      self.bus = smb.SMBus(1)
+
+      # TODO: populate preamps based on testing i2c timeoput on addresses after address init
+    else:
+      self.bus = None
 
   def new_preamp(self, index):
     self.preamps[index] = [ 0x0 ] * len(REG_ADDRS)
@@ -75,6 +91,8 @@ class MockPreamps:
       self.new_preamp(preamp_addr)
     print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
     self.preamps[preamp_addr][reg] = data
+    if self.bus is not None:
+      self.bus.write_byte_data(preamp_addr, reg, data)
 
   def print_regs(self):
     for preamp, regs in self.preamps.items():
@@ -223,26 +241,8 @@ class RpiRt:
       This acts as an EthAudio Runtime, expected to be executed on a raspberrypi
   """
 
-  def __init__(self):
-    # TODO: merge mock and actual preamp writing
-    if not USE_MOCK_PREAMPS:
-      # Setup serial connection via UART pins - set I2C addresses for preamps
-      # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
-      ser = serial.Serial ("/dev/ttyAMA0")
-      ser.baudrate = 9600
-      addr = 0x41, 0x10, 0x0D, 0x0A
-      ser.write(addr)
-      ser.close()
-
-      # Delay to account for addresses being set
-      # Possibly unnecessary due to human delay
-      time.sleep(1)
-
-      # Setup self._bus as I2C1 from the RPi
-      bus = smb.SMBus(1)
-    else:
-      bus = MockPreamps()
-    self._bus = bus
+  def __init__(self, mock=False):
+    self._bus = Preamps(mock)
 
   def update_zone_mutes(self, zone, mutes):
     """ Update the mute level to all of the zones
@@ -490,7 +490,7 @@ class EthAudioApi:
         if self._rt.update_sources(digital_cfg):
           # update the status
           src['digital'] = bool(digital)
-          if USE_MOCK_PREAMPS and type(self._rt) == RpiRt:
+          if type(self._rt) == RpiRt:
             self._rt._bus.print()
           return None
         else:
@@ -571,7 +571,7 @@ class EthAudioApi:
           else:
             return error('set zone failed: unable to update zone volume')
 
-        if USE_MOCK_PREAMPS and type(self._rt) == RpiRt:
+        if type(self._rt) == RpiRt:
           self._rt._bus.print()
         return None
       except Exception as e:
@@ -607,7 +607,7 @@ class EthAudioApi:
         vol = None
       self.set_zone(z['id'], None, source_id, mute, stby, vol)
 
-    if USE_MOCK_PREAMPS and type(self._rt) == RpiRt:
+    if type(self._rt) == RpiRt:
       self._rt._bus.print()
 
   def new_group_id(self):

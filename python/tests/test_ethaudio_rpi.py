@@ -7,7 +7,7 @@ else:
 import ethaudio
 
 def test_rpi():
-  check_all_tsts(ethaudio.Api(ethaudio.api.RpiRt()))
+  check_all_tsts(ethaudio.Api(ethaudio.api.RpiRt(mock=True)))
 
 if __name__ == '__main__':
   test_rpi()
