@@ -4,6 +4,11 @@ import json
 from copy import deepcopy
 import deepdiff
 
+import serial
+import time
+from smbus2 import SMBus
+import smbus2 as smb
+
 # Helper functions
 def encode(pydata):
   """ Encode a dictionary as JSON """
@@ -137,8 +142,41 @@ class RpiRt:
       This acts as an EthAudio Runtime, expected to be executed on a raspberrypi
   """
 
+  # Dictionary with all of the regs
+  # Potentially working??
+  REG_ADDRS = {
+    'SRC_AD_REG'    : 0x00,
+    'CH123_SRC_REG' : 0x01,
+    'CH456_SRC_REG' : 0x02,
+    'MUTE_REG'      : 0x03,
+    'STANDBY_REG'   : 0x04,
+    'CH1_ATTEN_REG' : 0x05,
+    'CH2_ATTEN_REG' : 0x06,
+    'CH3_ATTEN_REG' : 0x07,
+    'CH4_ATTEN_REG' : 0x08,
+    'CH5_ATTEN_REG' : 0x09,
+    'CH6_ATTEN_REG' : 0x0A
+  }
+
+  # TODO: Expand this, clean it up, make it dynamic, do something?
+  preamp_list = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
+
   def __init__(self):
-    pass
+    # Setup serial connection via UART pins - set I2C addresses for preamps
+    # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
+    ser = serial.Serial ("/dev/ttyAMA0")
+    ser.baudrate = 9600
+    addr = 0x41, 0x10, 0x0D, 0x0A
+    ser.write(addr)
+    ser.close()
+
+    # Delay to account for addresses being set
+    # Possibly unnecessary due to human delay
+    time.sleep(1)
+
+    # Setup self._bus as I2C1 from the RPi
+    bus = smb.SMBus(1)
+    self._bus = bus
 
   def update_zone_mutes(self, zone, mutes):
     """ Update the mute level to all of the zones
@@ -151,7 +189,19 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    return False
+    assert len(mutes) >= 6
+    num_preamps = int(len(mutes) / 6)
+    assert len(mutes) == num_preamps * 6
+    preamp = zone // 6
+    mute_cfg = 0x00
+    for z in range(6):
+      assert type(mutes[preamp * 6 + z]) == bool
+      if mutes[preamp * 6 + z]:
+        mute_cfg = mute_cfg | (0x01 << z)
+      self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['MUTE_REG'], mute_cfg)
+    
+    # TODO: Add error checking on successful write
+    return True
 
   def update_zone_stbys(self, zone, stbys):
     """ Update the standby to all of the zones
@@ -164,8 +214,19 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    # TODO: actually configure the stbys
-    return False
+    assert len(stbys) >= 6
+    num_preamps = int(len(stbys) / 6)
+    assert len(stbys) == num_preamps * 6
+    preamp = zone // 6
+    stby_cfg = 0x00
+    for z in range(6):
+      assert type(stbys[preamp * 6 + z]) == bool
+      if stbys[preamp * 6 + z]:
+        stby_cfg = stby_cfg | (0x01 << z)
+    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['STANDBY_REG'], stby_cfg)
+    
+    # TODO: Add error checking on successful write
+    return True
 
   def update_zone_sources(self, zone, sources):
     """ Update the sources to all of the zones
@@ -177,11 +238,28 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    # TODO: actually configure the sources
-    return False
+    assert len(sources) >= 6
+    num_preamps = int(len(sources) / 6)
+    assert len(sources) == num_preamps * 6
+    preamp = zone // 6
+    
+    source_cfg123 = 0x00
+    source_cfg456 = 0x00
+    for z in range(6):
+      src = sources[preamp * 6 + z]
+      assert type(src) == int or src == None
+      if z < 3:
+        source_cfg123 = source_cfg123 | (src << (z*2))
+      else:
+        source_cfg456 = source_cfg456 | (src << ((z-3)*2))
+    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['CH123_SRC_REG'], source_cfg123)
+    self._bus.write_byte_data(self.preamp_list[preamp], self.REG_ADDRS['CH456_SRC_REG'], source_cfg456)
+
+    # TODO: Add error checking on successful write
+    return True
 
   def update_zone_vol(self, zone, vol):
-    """ Update the sources to all of the zones
+    """ Update the volume to the specific zone
 
       Args:
         zone: zone to adjust vol
@@ -190,8 +268,18 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    # TODO: configure zone's volume on preamp
-    return False
+    preamp = int(zone / 6) # int(x/y) does the same thing as (x // y)
+    assert zone >= 0
+    assert preamp < 15
+    assert vol <= 0 and vol >= -79
+
+    chan = zone - (preamp * 6)
+    hvol = abs(vol)
+    
+    self._bus.write_byte_data(self.preamp_list[preamp], (self.REG_ADDRS['CH1_ATTEN_REG'] + chan), hvol)
+
+    # TODO: Add error checking on successful write
+    return True
 
   def update_sources(self, digital):
     """ modify all of the 4 system sources
@@ -203,25 +291,26 @@ class RpiRt:
       Returns:
         True on success, False on hw failure
     """
-    # TODO: actually configure the sources
-    return False
 
-  def set_zone(self, id, source_id, mute, stby, vol, disabled):
-    """ modify any zone
+    # Start with a fresh byte - only update on Digital (True)
+    output = 0x00
 
-          Args:
-            id (int): any valid zone [0,p*6-1] (6 zones per preamp)
-            source_id (int): source to connect to [0,3]
-            mute (bool): mute the zone regardless of set volume
-            stby (bool): set the zone to standby, very low power consumption state
-            vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
-            disabled (bool): disable zone, for when the zone is not connected to any speakers and not in use
+    # When digital is true, set the appropriate bit to 1
+    assert len(digital) == 4
+    for d in digital:
+      assert type(d) == bool
 
-          Returns:
-            True on success, False on hw failure
-    """
-    # TODO: actually configure the zone and verfy it
-    return False
+    for i in range(4):
+      if digital[i]:
+        output = output | (0x01 << i)
+
+    # Send out the updated source information to the appropriate preamp
+    self._bus.write_byte_data(self.preamp_list[0], self.REG_ADDRS['SRC_AD_REG'], output)
+
+    # TODO: update this to allow for different preamps on the bus
+    # TODO: Add error checking on successful write
+    return True
+
 
 class EthAudioApi:
   """ EthAudio API
@@ -242,12 +331,24 @@ class EthAudioApi:
         { "id": 3, "name": "Source 4", "digital": False  }
       ],
       "zones": [ # this is an array of zones, array length depends on # of boxes connected
-        { "id": 0, "name": "Zone 1", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 1, "name": "Zone 2", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 2, "name": "Zone 3", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 3, "name": "Zone 4", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 4, "name": "Zone 5", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 },
-        { "id": 5, "name": "Zone 6", "source_id": 0, "mute": False , "stby": False , "disabled": False , "vol": 0 }
+        { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
+        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 }
       ],
       "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
         { "id": 0, "name": "Group 1", "zones": [0,1,2] },
@@ -390,6 +491,12 @@ class EthAudioApi:
         if update_vol:
           if self._rt.update_zone_vol(idx, vol):
             z['vol'] = vol
+            if vol > -79:
+              z['stby'] = False
+              z['mute'] = False
+            else:
+              z['stby'] = True
+              z['mute'] = True
           else:
             return error('set zone failed: unable to update zone volume')
         return None
