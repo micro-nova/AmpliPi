@@ -211,9 +211,9 @@ class MockRt:
       Returns:
         True on success, False on hw failure
     """
-    preamp = int(zone / 6)
-    assert zone > 0
-    assert preamp <= 15
+    preamp = zone // 6
+    assert zone >= 0
+    assert preamp >= 0 and preamp <= 15
     assert vol <= 0 and vol >= -79
     return True
 
@@ -264,7 +264,7 @@ class RpiRt:
       assert type(mutes[preamp * 6 + z]) == bool
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
-      self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE_REG'], mute_cfg)
+      self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE'], mute_cfg)
 
     # TODO: Add error checking on successful write
     return True
@@ -289,7 +289,7 @@ class RpiRt:
       assert type(stbys[preamp * 6 + z]) == bool
       if stbys[preamp * 6 + z]:
         stby_cfg = stby_cfg | (0x01 << z)
-    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['STANDBY_REG'], stby_cfg)
+    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['STANDBY'], stby_cfg)
 
     # TODO: Add error checking on successful write
     return True
@@ -342,7 +342,8 @@ class RpiRt:
     chan = zone - (preamp * 6)
     hvol = abs(vol)
 
-    self._bus.write_byte_data(self.preamp_list[preamp], (self.REG_ADDRS['CH1_ATTEN_REG'] + chan), hvol)
+    chan_reg = REG_ADDRS['CH1_ATTEN'] + chan
+    self._bus.write_byte_data(PREAMPS[preamp], chan_reg, hvol)
 
     # TODO: Add error checking on successful write
     return True
@@ -489,7 +490,7 @@ class EthAudioApi:
         if self._rt.update_sources(digital_cfg):
           # update the status
           src['digital'] = bool(digital)
-          if USE_MOCK_PREAMPS:
+          if USE_MOCK_PREAMPS and type(self._rt) == RpiRt:
             self._rt._bus.print()
           return None
         else:
@@ -570,7 +571,7 @@ class EthAudioApi:
           else:
             return error('set zone failed: unable to update zone volume')
 
-        if USE_MOCK_PREAMPS:
+        if USE_MOCK_PREAMPS and type(self._rt) == RpiRt:
           self._rt._bus.print()
         return None
       except Exception as e:
@@ -606,7 +607,7 @@ class EthAudioApi:
         vol = None
       self.set_zone(z['id'], None, source_id, mute, stby, vol)
 
-    if USE_MOCK_PREAMPS:
+    if USE_MOCK_PREAMPS and type(self._rt) == RpiRt:
       self._rt._bus.print()
 
   def new_group_id(self):
