@@ -1,2 +1,4 @@
 deepdiff
 pytest
+smbus2
+serial
