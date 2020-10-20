@@ -175,6 +175,18 @@ test_sequence = [
   }
 ),
 (
+  "Change zone 2 back",
+  {
+    "command" : "set_zone",
+    "id" : 2,
+    "vol" : -78
+  },
+  None,
+  {
+    'zones[2].vol' : -78
+  }
+),
+(
   "Change zone 2 back to Sleep Zone",
   {
     "command" : "set_zone",
@@ -183,13 +195,11 @@ test_sequence = [
     "source_id" : 3,
     "mute" : True,
     "stby" : False,
-    "vol" : -40,
     "disabled" : False
   },
   None,
   {
     'zones[2].name' : 'Sleep Zone',
-    'zones[2].vol' : -40,
     'zones[2].mute' : True,
     'zones[2].source_id' : 3
   }
@@ -311,26 +321,27 @@ def check_all_tsts(api):
   check_json_tst('Configure source 1 (digital)', eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
   check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
   check_json_tst('Configure source 3 (Analog)', eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC'})
-  # check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1})
-  # check_json_tst('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20})
-  # check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, -40, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3, 'zones[2].vol': -40, 'zones[2].mute' : True})
-  # check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 4, False, True, -50, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4, 'zones[3].stby' : True, 'zones[3].vol' : -50})
-  # check_json_tst('Configure zone 4, Disabled Zone', eth_audio_api.set_zone(4, 'Disabled Zone', 1, False, False, 0, True), None, {'zones[4].name' : 'Disabled Zone', 'zones[4].source_id' : 1, 'zones[4].disabled' : True})
+  check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1, 'zones[0].vol': 0, 'zones[0].stby' : False, 'zones[0].mute' : False})
+  check_json_tst('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20, 'zones[1].stby' : False, 'zones[1].mute' : False})
+  check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, None, None, None, None, None, False), None, {})
+  check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, None, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3, 'zones[2].stby': False})
+  check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 4, True, True, None, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4})
+  check_json_tst('Configure zone 4, Weird Zone', eth_audio_api.set_zone(4, 'Weird Zone', 1, None, None, None, None), None, {'zones[4].name' : 'Weird Zone', 'zones[4].source_id' : 1})
 
-  # # Test string/json based command handler
-  # print('\ntesting json:')
-  # for name, cmd, expected_result, expected_changes  in test_sequence:
-  #   check_json_tst(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes)
+  # Test string/json based command handler
+  print('\ntesting json:')
+  for name, cmd, expected_result, expected_changes  in test_sequence:
+    check_json_tst(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes)
 
-  # print('\ntesting json over http:')
+  print('\ntesting json over http:')
 
-  # # Start HTTP server (behind the scenes it runs in new thread)
-  # srv = ethaudio.Server(eth_audio_api)
+  # Start HTTP server (behind the scenes it runs in new thread)
+  srv = ethaudio.Server(eth_audio_api)
 
-  # # Send HTTP requests and print output
-  # client = ethaudio.Client()
-  # for name, cmd, expected_result, expected_changes in test_sequence:
-  #   check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes)
+  # Send HTTP requests and print output
+  client = ethaudio.Client()
+  for name, cmd, expected_result, expected_changes in test_sequence:
+    check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes)
 
 def test_mock():
   check_all_tsts(ethaudio.Api(ethaudio.api.MockRt()))
