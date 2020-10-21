@@ -53,6 +53,10 @@ REG_ADDRS = {
   'CH5_ATTEN' : 0x09,
   'CH6_ATTEN' : 0x0A
 }
+SRC_TYPES = {
+  0 : 'Digital',
+  1 : 'Analog',
+}
 PREAMPS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
 
 class Preamps:
@@ -104,9 +108,12 @@ class Preamps:
     for preamp_addr in self.preamps.keys():
       preamp = int(preamp_addr / 8)
       print('preamp {}:'.format(preamp))
+      src_types = self.preamps[0x08][REG_ADDRS['SRC_AD']]
+      src_cfg = []
       for src in range(4):
-        # TODO: print source configurations
-        pass
+        src_type = SRC_TYPES.get((src_types >> src) & 0b01)
+        src_cfg += ['{}'.format(src_type)]
+      print('  [{}]'.format(', '.join(src_cfg)))
       for zone in range(6):
         self.print_zone_state(6 * (preamp - 1) + zone)
 
@@ -127,7 +134,9 @@ class Preamps:
     preamp = (int(zone / 6) + 1) * 8
     z = zone % 6
     regs = self.preamps[preamp]
-    src = ((regs[REG_ADDRS['CH456_SRC']] << 8) | regs[REG_ADDRS['CH123_SRC']] >> 3 * z) & 0b111
+    src_types = self.preamps[0x08][REG_ADDRS['SRC_AD']]
+    src = ((regs[REG_ADDRS['CH456_SRC']] << 8) | regs[REG_ADDRS['CH123_SRC']] >> 2 * z) & 0b11
+    src_type = SRC_TYPES.get((src_types >> src) & 0b01)
     vol = -regs[REG_ADDRS['CH1_ATTEN'] + z]
     stby = (regs[REG_ADDRS['STANDBY']] & (1 << z)) > 0
     muted = (regs[REG_ADDRS['MUTE']] & (1 << z)) > 0
@@ -136,7 +145,7 @@ class Preamps:
       state += ['muted']
     if stby:
       state += ['in standby']
-    print('  source {} --> zone {} vol [{}], {}'.format(src, zone, self.vol_string(vol), ','.join(state)))
+    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, self.vol_string(vol), ', '.join(state)))
 
 class MockRt:
   """ Mock of an EthAudio Runtime
