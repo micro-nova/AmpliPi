@@ -138,13 +138,10 @@ class Preamps:
     src = ((regs[REG_ADDRS['CH456_SRC']] << 8) | regs[REG_ADDRS['CH123_SRC']] >> 2 * z) & 0b11
     src_type = SRC_TYPES.get((src_types >> src) & 0b01)
     vol = -regs[REG_ADDRS['CH1_ATTEN'] + z]
-    stby = (regs[REG_ADDRS['STANDBY']] & (1 << z)) > 0
     muted = (regs[REG_ADDRS['MUTE']] & (1 << z)) > 0
     state = []
     if muted:
       state += ['muted']
-    if stby:
-      state += ['in standby']
     print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, self.vol_string(vol), ', '.join(state)))
 
 class MockRt:
@@ -188,25 +185,6 @@ class MockRt:
     for preamp in range(num_preamps):
       for zone in range(6):
         assert type(mutes[preamp * 6 + zone]) == bool
-    return True
-
-  def update_zone_stbys(self, zone, stbys):
-    """ Update the standby to all of the zones
-
-      Args:
-        zone int: zone to standby/unstandby
-        stbys [bool*zones]: array of configuration for zones where
-          On is False and Standby True
-
-      Returns:
-        True on success, False on hw failure
-    """
-    assert len(stbys) >= 6
-    num_preamps = int(len(stbys) / 6)
-    assert len(stbys) == num_preamps * 6
-    for preamp in range(num_preamps):
-      for zone in range(6):
-        assert type(stbys[preamp * 6 + zone]) == bool
     return True
 
   def update_zone_sources(self, zone, sources):
@@ -274,31 +252,6 @@ class RpiRt:
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
       self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE'], mute_cfg)
-
-    # TODO: Add error checking on successful write
-    return True
-
-  def update_zone_stbys(self, zone, stbys):
-    """ Update the standby to all of the zones
-
-      Args:
-        zone int: zone to standby/unstandby
-        stbys [bool*zones]: array of configuration for zones where
-          On is False and Standby True
-
-      Returns:
-        True on success, False on hw failure
-    """
-    assert len(stbys) >= 6
-    num_preamps = int(len(stbys) / 6)
-    assert len(stbys) == num_preamps * 6
-    preamp = zone // 6
-    stby_cfg = 0x00
-    for z in range(6):
-      assert type(stbys[preamp * 6 + z]) == bool
-      if stbys[preamp * 6 + z]:
-        stby_cfg = stby_cfg | (0x01 << z)
-    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['STANDBY'], stby_cfg)
 
     # TODO: Add error checking on successful write
     return True
@@ -407,24 +360,24 @@ class EthAudioApi:
         { "id": 3, "name": "Source 4", "digital": False  }
       ],
       "zones": [ # this is an array of zones, array length depends on # of boxes connected
-        { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 },
-        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, 'stby': True, "disabled": False, "vol": -79 }
+        { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 }
       ],
       "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
         { "id": 0, "name": "Group 1", "zones": [0,1,2] },
@@ -450,9 +403,9 @@ class EthAudioApi:
       elif command == 'set_source':
         output = self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('digital'))
       elif command == 'set_zone':
-        output = self.set_zone(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol'), cmd.get('disabled'))
+        output = self.set_zone(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('mute'), cmd.get('vol'), cmd.get('disabled'))
       elif command == 'set_group':
-        output = self.set_group(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('zones'), cmd.get('mute'), cmd.get('stby'), cmd.get('vol_delta'))
+        output = self.set_group(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('zones'), cmd.get('mute'), cmd.get('vol_delta'))
       elif command == 'create_group':
         output = self.create_group(cmd.get('name'), cmd.get('zones'))
       elif command == 'delete_group':
@@ -509,7 +462,7 @@ class EthAudioApi:
     else:
       return error('set source: index {} out of bounds'.format(idx))
 
-  def set_zone(self, id, name=None, source_id=None, mute=None, stby=None, vol=None, disabled=None):
+  def set_zone(self, id, name=None, source_id=None, mute=None, vol=None, disabled=None):
     """ modify any zone
 
           Args:
@@ -517,7 +470,6 @@ class EthAudioApi:
             name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
             source_id (int): source to connect to [0,4]
             mute (bool): mute the zone regardless of set volume
-            stby (bool): set the zone to standby, very low power consumption state
             vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
             disabled (bool): disable zone, for when the zone is not connected to any speakers and not in use
           Returns:
@@ -534,7 +486,6 @@ class EthAudioApi:
         name, _ = updated_val(name, z['name'])
         source_id, update_source_id = updated_val(source_id, z['source_id'])
         mute, update_mutes = updated_val(mute, z['mute'])
-        stby, update_stbys = updated_val(stby, z['stby'])
         vol, update_vol = updated_val(vol, z['vol'])
         disabled, _ = updated_val(disabled, z['disabled'])
       except Exception as e:
@@ -561,21 +512,12 @@ class EthAudioApi:
             z['mute'] = mute
           else:
             return error('set zone failed: unable to update zone mute')
-        if update_stbys:
-          stbys = [ zone['stby'] for zone in zones ]
-          stbys[idx] = stby
-          if self._rt.update_zone_stbys(idx, stbys):
-            z['stby'] = stby
-          else:
-            return error('set zone failed: unable to update zone stby')
         if update_vol:
           if self._rt.update_zone_vol(idx, vol):
             z['vol'] = vol
             if vol > -79:
-              z['stby'] = False
               z['mute'] = False
             else:
-              z['stby'] = True
               z['mute'] = True
           else:
             return error('set zone failed: unable to update zone volume')
@@ -594,7 +536,7 @@ class EthAudioApi:
         return i,g
     return -1, None
 
-  def set_group(self, id, name=None, source_id=None, zones=None, mute=None, stby=None, vol_delta=None):
+  def set_group(self, id, name=None, source_id=None, zones=None, mute=None, vol_delta=None):
     """ Configure an existing group
         parameters will be used to configure each sone in the group's zones
         all parameters besides the group id, @id, are optional
@@ -614,7 +556,7 @@ class EthAudioApi:
         vol = clamp(z['vol'] + vol_delta, -79, 0)
       else:
         vol = None
-      self.set_zone(z['id'], None, source_id, mute, stby, vol)
+      self.set_zone(z['id'], None, source_id, mute, vol)
 
     if type(self._rt) == RpiRt:
       self._rt._bus.print()
