@@ -7,7 +7,6 @@ import deepdiff
 import serial
 import time
 from smbus2 import SMBus
-import smbus2 as smb
 
 # Helper functions
 def encode(pydata):
@@ -76,7 +75,17 @@ class Preamps:
       time.sleep(1)
 
       # Setup self._bus as I2C1 from the RPi
-      self.bus = smb.SMBus(1)
+      self.bus = SMBus(1)
+
+      # Discover connected preamp boards
+      for p in PREAMPS:
+        if self.probe_preamp(p):
+          print('Preamp found at address {}'.format(p))
+          self.new_preamp(p)
+        else:
+          print('Preamp NOT found at address {}'.format(p))
+          break
+
 
       # TODO: populate preamps based on testing i2c timeoput on addresses after address init
     else:
@@ -96,7 +105,21 @@ class Preamps:
     print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
     self.preamps[preamp_addr][reg] = data
     if self.bus is not None:
-      self.bus.write_byte_data(preamp_addr, reg, data)
+      time.sleep(0.01)
+      try:
+        self.bus.write_byte_data(preamp_addr, reg, data)
+      except Exception:
+        time.sleep(0.01)
+        self.bus = SMBus(1)
+        self.bus.write_byte_data(preamp_addr, reg, data)
+  
+  def probe_preamp(self, index):
+    # Scan for preamps, and set source registers to be completely digital
+    try:
+      self.write_byte_data(index, REG_ADDRS['SRC_AD'], 0x0F)
+      return True
+    except Exception as e:
+      return False
 
   def print_regs(self):
     for preamp, regs in self.preamps.items():
@@ -251,7 +274,7 @@ class RpiRt:
       assert type(mutes[preamp * 6 + z]) == bool
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
-      self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE'], mute_cfg)
+    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE'], mute_cfg)
 
     # TODO: Add error checking on successful write
     return True
@@ -498,7 +521,7 @@ class EthAudioApi:
         z['name'] = name
         z['disabled'] = disabled
         # TODO: figure out an order of operations here, like does mute need to be done before changing sources?
-        if True or update_source_id:
+        if update_source_id:
           zone_sources = [ zone['source_id'] for zone in zones ]
           zone_sources[idx] = sid
           if self._rt.update_zone_sources(idx, zone_sources):
