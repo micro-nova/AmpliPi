@@ -92,7 +92,19 @@ class Preamps:
       self.bus = None
 
   def new_preamp(self, index):
-    self.preamps[index] = [ 0x0 ] * len(REG_ADDRS)
+    self.preamps[index] = [
+                            0x0F,
+                            0x00,
+                            0x00,
+                            0x3F,
+                            0x00,
+                            0x4F,
+                            0x4F,
+                            0x4F,
+                            0x4F,
+                            0x4F,
+                            0x4F,
+                          ]
 
   def write_byte_data(self, preamp_addr, reg, data):
     assert preamp_addr in PREAMPS
@@ -104,6 +116,7 @@ class Preamps:
       self.new_preamp(preamp_addr)
     print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
     self.preamps[preamp_addr][reg] = data
+    # TODO: need to handle volume modifying mute state in mock
     if self.bus is not None:
       time.sleep(0.01)
       try:
@@ -377,10 +390,10 @@ class EthAudioApi:
     # TODO: this status will need to be loaded from a file
     self.status = { # This is the system state response that will come back from the ethaudio box
       "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
-        { "id": 0, "name": "Source 1", "digital": False  },
-        { "id": 1, "name": "Source 2", "digital": False  },
-        { "id": 2, "name": "Source 3", "digital": False  },
-        { "id": 3, "name": "Source 4", "digital": False  }
+        { "id": 0, "name": "Source 1", "digital": True  },
+        { "id": 1, "name": "Source 2", "digital": True  },
+        { "id": 2, "name": "Source 3", "digital": True  },
+        { "id": 3, "name": "Source 4", "digital": True  }
       ],
       "zones": [ # this is an array of zones, array length depends on # of boxes connected
         { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
