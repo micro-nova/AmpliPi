@@ -264,6 +264,7 @@ class RpiRt:
 
   def __init__(self, mock=False):
     self._bus = Preamps(mock)
+    self._all_muted = True # preamps start up in muted/standby state
 
   def update_zone_mutes(self, zone, mutes):
     """ Update the mute level to all of the zones
@@ -287,7 +288,17 @@ class RpiRt:
         mute_cfg = mute_cfg | (0x01 << z)
     self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE'], mute_cfg)
 
-    # TODO: Add error checking on successful write
+    # TODO: If all channels are muted, standby all of the boxes
+    # Audio power needs to be on each box when subsequent boxes are playing audio
+    all_muted = False not in mutes
+    if self._all_muted != all_muted:
+      if all_muted:
+        # TODO: standby all boxes
+        pass
+      else:
+        # TODO: unstandby all boxes
+        pass
+      self._all_muted = all_muted
     return True
 
   def update_zone_sources(self, zone, sources):
