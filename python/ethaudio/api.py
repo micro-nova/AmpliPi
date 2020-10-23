@@ -83,11 +83,9 @@ class Preamps:
           print('Preamp found at address {}'.format(p))
           self.new_preamp(p)
         else:
-          print('Preamp NOT found at address {}'.format(p))
+          if p == PREAMPS[0]:
+            print('Error: no preamps found')
           break
-
-
-      # TODO: populate preamps based on testing i2c timeoput on addresses after address init
     else:
       self.bus = None
 
@@ -129,9 +127,9 @@ class Preamps:
   def probe_preamp(self, index):
     # Scan for preamps, and set source registers to be completely digital
     try:
-      self.write_byte_data(index, REG_ADDRS['SRC_AD'], 0x0F)
+      self.bus.write_byte_data(index, REG_ADDRS['SRC_AD'], 0x0F)
       return True
-    except Exception as e:
+    except Exception:
       return False
 
   def print_regs(self):
