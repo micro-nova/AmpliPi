@@ -22,5 +22,6 @@ ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/ethaudio"
 ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/tests"
 
 # copy stuff to board
+scp $SCRIPT_DIR/../python/*.py        $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}
 scp $SCRIPT_DIR/../python/ethaudio/*.py        $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/ethaudio
 scp $SCRIPT_DIR/../python/tests/*.py        $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/tests
