@@ -123,7 +123,7 @@ class Preamps:
         time.sleep(0.01)
         self.bus = SMBus(1)
         self.bus.write_byte_data(preamp_addr, reg, data)
-  
+
   def probe_preamp(self, index):
     # Scan for preamps, and set source registers to be completely digital
     try:
