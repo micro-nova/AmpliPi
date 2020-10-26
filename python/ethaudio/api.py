@@ -4,9 +4,12 @@ import json
 from copy import deepcopy
 import deepdiff
 
-import serial
-import time
-from smbus2 import SMBus
+DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
+
+if not DISABLE_HW:
+  import serial
+  import time
+  from smbus2 import SMBus
 
 # Helper functions
 def encode(pydata):
@@ -61,7 +64,9 @@ PREAMPS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x6
 class Preamps:
   def __init__(self, mock=False):
     self.preamps = dict()
-    if not mock:
+    if DISABLE_HW or mock:
+      self.bus = None
+    else:
       # Setup serial connection via UART pins - set I2C addresses for preamps
       # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
       ser = serial.Serial ("/dev/ttyAMA0")
@@ -86,8 +91,6 @@ class Preamps:
           if p == PREAMPS[0]:
             print('Error: no preamps found')
           break
-    else:
-      self.bus = None
 
   def new_preamp(self, index):
     self.preamps[index] = [
