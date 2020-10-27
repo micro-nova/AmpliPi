@@ -31,3 +31,19 @@ pytest tests/test_ethaudio_rpi.py
 
 ## TODO add howto configure USB audio for shairport
 ## TODO follow strategy for handling 7.1 channel audio -> 4 stereo output
+
+## Adding Pandora/Streaming support
+
+### Complicated solutions
+So I have been going down the rabbit hole of adding Pandora support to the AmpliPi. Here are some of the significant things that I have found:
+* [Mopidy](www.mopidy.com) [Git](https://github.com/mopidy/mopidy) - A python based "everything" audio server that has support for many different audio plugins and many different controls
+* [Snapcast](https://mjaggard.github.io/snapcast/) [Git](https://github.com/badaix/snapcast) - A multiroom, mutliaudio source streaming server
+    + At the very least we should use their interfaces as a reference design
+    + Can we present the same interface and use their existing apps?
+* [Mopidy Muse](https://mopidy.com/ext/muse/) [Git](https://github.com/cristianpb/muse) - A really nice web interface that combines the snapcast and mopidy
+    + Can we use this to control inputs?
+    + Looks like you can test it here: https://cristianpb.github.io/muse/ (assuming snapcast and mopidy are running locally)
+
+### Simpler Pandora Support
+* Use [Pianobar](https://github.com/PromyLOPh/pianobar) and use its file interface like [Patiobar](https://github.com/kylejohnson/Patiobar) does here: https://github.com/kylejohnson/Patiobar/blob/master/eventcmd.sh
+* Use the bare [Pydora](https://github.com/mcrute/pydora) python implementation that uses a vlc backend for audio output, running in a background process and send commands to it with the api
