@@ -47,3 +47,16 @@ So I have been going down the rabbit hole of adding Pandora support to the Ampli
 ### Simpler Pandora Support
 * Use [Pianobar](https://github.com/PromyLOPh/pianobar) and use its file interface like [Patiobar](https://github.com/kylejohnson/Patiobar) does here: https://github.com/kylejohnson/Patiobar/blob/master/eventcmd.sh
 * Use the bare [Pydora](https://github.com/mcrute/pydora) python implementation that uses a vlc backend for audio output, running in a background process and send commands to it with the api
+
+
+#### Using Pianobar
+##### Config
+Need to add fifo file using mkfifo to ~/.config/pianobar/ctrl
+##### Control
+See https://github.com/jreese/pianobar-python/blob/master/pianobar/control.py for an example of how to control pianobar through the fifo
+##### Event handling
+See https://github.com/kylejohnson/Patiobar/blob/master/eventcmd.sh and https://github.com/PromyLOPh/pianobar/blob/master/contrib/eventcmd-examples/scrobble.py for some example event handling. We need this to handle new songs, radio station list, and additional state
+##### Start and Stopping Pandora
+TODO: add start and stop control of Pandora, how does patiobar do this?
+##### Using multiple Pianobars
+TODO: handle configuration and control of multiple pianobars once everything else works. This will need to be done be setting different configuration paths since using ~/.config/pianobar will cause collisions

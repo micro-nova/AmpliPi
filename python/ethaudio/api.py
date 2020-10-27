@@ -431,8 +431,6 @@ class RpiRt:
 class EthAudioApi:
   """ EthAudio API
 
-    TODO: make this either a base class, put it in another file, and make both a mock class and a real implementation
-    For now this is just a mock implementation
    """
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the ethaudio box
