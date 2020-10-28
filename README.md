@@ -60,3 +60,4 @@ See https://github.com/kylejohnson/Patiobar/blob/master/eventcmd.sh and https://
 TODO: add start and stop control of Pandora, how does patiobar do this?
 ##### Using multiple Pianobars
 TODO: handle configuration and control of multiple pianobars once everything else works. This will need to be done be setting different configuration paths since using ~/.config/pianobar will cause collisions
+Maybe for each source there could be a configuration destination, ~/.config/amplipi/srcs/0/

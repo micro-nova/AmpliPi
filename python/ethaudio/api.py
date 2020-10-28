@@ -66,6 +66,9 @@ def max_len(items, len_determiner=len):
   largest = max(items, key=len_determiner)
   return len_determiner(largest)
 
+def abbreviate_src(src_type):
+  return src_type[0].upper() if src_type else '_'
+
 def save_on_success(func):
   """ A decorator that calls a class object's save method when successful
         (in the case of our API None=Success)
@@ -434,11 +437,11 @@ class EthAudioApi:
    """
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the ethaudio box
-    "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
-      { "id": 0, "name": "Source 1", "digital": True  },
-      { "id": 1, "name": "Source 2", "digital": True  },
-      { "id": 2, "name": "Source 3", "digital": True  },
-      { "id": 3, "name": "Source 4", "digital": True  }
+    "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
+      { "id": 0, "name": "Source 1", "type": "local" },
+      { "id": 1, "name": "Source 2", "type": "local" },
+      { "id": 2, "name": "Source 3", "type": "local" },
+      { "id": 3, "name": "Source 4", "type": "local" }
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
@@ -500,7 +503,7 @@ class EthAudioApi:
       self.save()
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
-      self.set_source(src['id'], digital=src['digital'], force_update=True)
+      self.set_source(src['id'], type_=src['type'], force_update=True)
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for z in self.status['zones']:
@@ -523,7 +526,7 @@ class EthAudioApi:
   def visualize_api(self, prev_status=None):
     viz = ''
     # visualize source configuration
-    src_cfg = [{True: 'Digital', False: 'Analog'}.get(s['digital']) for s in self.status['sources']]
+    src_cfg = [s['type'] for s in self.status['sources']]
     viz += '  [{}]\n'.format(', '.join(src_cfg))
     # visualize zone configuration
     enabled_zones = [z for z in self.status['zones'] if not z['disabled']]
@@ -531,7 +534,7 @@ class EthAudioApi:
     zone_len = max_len(enabled_zones, lambda z: len(z['name']))
     for z in enabled_zones:
       src = z['source_id']
-      src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
+      src_type = abbreviate_src(src_cfg[src])
       muted = 'muted' if z['mute'] else ''
       zone_fmt = '  {}({}) --> {:' + str(zone_len) + '} vol [{}] {}\n'
       viz += zone_fmt.format(src, src_type, z['name'], vol_string(z['vol']), muted)
@@ -543,7 +546,7 @@ class EthAudioApi:
     for g in enabled_groups:
       if g['source_id']:
         src = g['source_id']
-        src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
+        src_type = abbreviate_src(src_cfg[src])
       else:
         src = ' '
         src_type = ' '
@@ -568,7 +571,7 @@ class EthAudioApi:
       elif command == 'return_state':
         output = None # state is returned at a higher level on success
       elif command == 'set_source':
-        output = self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('digital'))
+        output = self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('type'))
       elif command == 'set_zone':
         output = self.set_zone(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('mute'), cmd.get('vol'), cmd.get('disabled'))
       elif command == 'set_group':
@@ -589,16 +592,25 @@ class EthAudioApi:
     except Exception as e:
       return error(str(e)) # TODO: handle exception more verbosely
 
+  @staticmethod
+  def _is_digital(src_type):
+    """
+    Determine whether a source type, @src_type, is analog or digital
+      'local' is the analog input, anything else is some sort of digital streaming source.
+      The runtime only has the concept of digital or analog
+    """
+    return src_type != 'local'
+
   def get_state(self):
     """ get the system state (dict) """
     return self.status
 
   @save_on_success
-  def set_source(self, id, name=None, digital=None, force_update=False):
+  def set_source(self, id, name=None, type_=None, force_update=False):
     """ modify any of the 4 system sources
 
       Args:
-        id (int): source id [0,4]
+        id (int): source id [0,3]
         name (str): user friendly source name, ie. "cd player" or "stream 1"
 
       Returns:
@@ -612,27 +624,38 @@ class EthAudioApi:
       try:
         src = self.status['sources'][idx]
         name, _ = updated_val(name, src['name'])
-        digital, digital_updated = updated_val(digital, src['digital'])
+        type_, type_updated = updated_val(type_, src['type'])
       except Exception as e:
         return error('failed to set source, error getting current state: {}'.format(e))
       try:
-        # get the current digital state of all of the sources
-        digital_cfg = [ self.status['sources'][s]['digital'] for s in range(4) ]
-        # update this source
-        digital_cfg[idx] = bool(digital)
         # update the name
         src['name'] = str(name)
-        if digital_updated or force_update:
-          if self._rt.update_sources(digital_cfg):
-            # update the status
-            src['digital'] = bool(digital)
-            if type(self._rt) == RpiRt and DEBUG_PREAMPS:
-              self._rt._bus.print()
-            return None
-          else:
-            return error('failed to set source')
-        else:
-          return None
+        if type_updated:
+          # shutdown old stream
+          old_type = src['type']
+          if old_type != 'local':
+            # TODO: get stream object
+            # TODO: shhutdown stream
+            pass
+          # start new stream
+          if type_ != 'local':
+            # TODO: get stream object
+            # TODO: shhutdown stream
+            pass
+          rt_needs_update = self._is_digital(type_) != self._is_digital(src['type'])
+          if rt_needs_update or force_update:
+            # get the current underlying type of each of the sources, for configuration of the runtime
+            src_cfg = [ self._is_digital(self.status['sources'][s]['type']) for s in range(4) ]
+            # update this source
+            src_cfg[idx] = self._is_digital(type_)
+            if self._rt.update_sources(src_cfg):
+              # update the status
+              src['type'] = type_
+              if type(self._rt) == RpiRt and DEBUG_PREAMPS:
+                self._rt._bus.print()
+              return None
+            else:
+              return error('failed to set source')
       except Exception as e:
         return error('failed to set source: ' + str(e))
     else:
