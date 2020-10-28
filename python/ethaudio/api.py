@@ -17,6 +17,8 @@ if not DISABLE_HW:
   import serial
   from smbus2 import SMBus
 
+import subprocess
+
 # Helper functions
 def encode(pydata):
   """ Encode a dictionary as JSON """
@@ -504,6 +506,9 @@ class EthAudioApi:
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
       self.set_source(src['id'], type_=src['type'], force_update=True)
+    # TODO: configure all streams into a known state
+    self.pandora = None # TODO: support multiple pandora instances
+    self.shairport = [None] * 4
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for z in self.status['zones']:
@@ -636,11 +641,22 @@ class EthAudioApi:
           if old_type != 'local':
             # TODO: get stream object
             # TODO: shhutdown stream
-            pass
+            if old_type == 'pandora':
+              # TODO: try this?
+              print('killing pianobar stream')
+              if self.pandora and self.pandora.poll() is None:
+                self.pandora.kill()
+              self.pandora = None
           # start new stream
           if type_ != 'local':
             # TODO: get stream object
             # TODO: shhutdown stream
+            # TODO: try this?
+            if type_ == 'pandora':
+              print('killing pianobar stream')
+              if self.pandora and self.pandora.poll() is None:
+                self.pandora.kill()
+              self.pandora = None
             pass
           rt_needs_update = self._is_digital(type_) != self._is_digital(src['type'])
           if rt_needs_update or force_update:
@@ -656,6 +672,8 @@ class EthAudioApi:
               return None
             else:
               return error('failed to set source')
+          else:
+            src['type'] = type_
       except Exception as e:
         return error('failed to set source: ' + str(e))
     else:
