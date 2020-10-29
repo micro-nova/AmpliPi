@@ -293,11 +293,15 @@ class RpiRt:
     all_muted = False not in mutes
     if self._all_muted != all_muted:
       if all_muted:
-        # TODO: standby all boxes
-        pass
+        for p in self._bus.preamps.keys():
+          # Standby all preamps
+          self._bus.write_byte_data(p, REG_ADDRS['STANDBY'], 0x00)
+        time.sleep(0.1)
       else:
-        # TODO: unstandby all boxes
-        pass
+        for p in self._bus.preamps.keys():
+          # Unstandby all preamps
+          self._bus.write_byte_data(p, REG_ADDRS['STANDBY'], 0x3F)
+        time.sleep(0.3)
       self._all_muted = all_muted
     return True
 
@@ -560,10 +564,6 @@ class EthAudioApi:
         if update_vol:
           if self._rt.update_zone_vol(idx, vol):
             z['vol'] = vol
-            if vol > -79:
-              z['mute'] = False
-            else:
-              z['mute'] = True
           else:
             return error('set zone failed: unable to update zone volume')
 
