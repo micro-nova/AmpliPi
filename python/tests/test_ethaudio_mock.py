@@ -33,7 +33,6 @@ test_sequence = [
     "name" : "whole house",
     "source_id" : 2,
     "mute" : False,
-    "stby" : False,
     "vol" : -9,
     "disabled" : False
   },
@@ -53,7 +52,6 @@ test_sequence = [
     "name" : "whole house",
     "source_id" : 2,
     "mute" : False,
-    "stby" : False,
     "vol" : -9,
     "disabled" : False
   },
@@ -194,7 +192,6 @@ test_sequence = [
     "name" : "Sleep Zone",
     "source_id" : 3,
     "mute" : True,
-    "stby" : False,
     "disabled" : False
   },
   None,
@@ -317,16 +314,16 @@ def check_all_tsts(api):
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
   # Tests
-  check_json_tst('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify', 'sources[0].digital' : True})
-  check_json_tst('Configure source 1 (digital)', eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora', 'sources[1].digital' : True})
-  check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV'})
-  check_json_tst('Configure source 3 (Analog)', eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC'})
-  check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1, 'zones[0].vol': 0, 'zones[0].stby' : False, 'zones[0].mute' : False})
-  check_json_tst('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20, 'zones[1].stby' : False, 'zones[1].mute' : False})
-  check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, None, None, None, None, None, False), None, {})
-  check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, False, None, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3, 'zones[2].stby': False})
-  check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 4, True, True, None, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4})
-  check_json_tst('Configure zone 4, Weird Zone', eth_audio_api.set_zone(4, 'Weird Zone', 1, None, None, None, None), None, {'zones[4].name' : 'Weird Zone', 'zones[4].source_id' : 1})
+  check_json_tst('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify'})
+  check_json_tst('Configure source 1 (digital)', eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora'})
+  check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV', 'sources[2].digital' : False})
+  check_json_tst('Configure source 3 (Analog)', eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC', 'sources[3].digital' : False})
+  check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1, 'zones[0].vol': 0, 'zones[0].mute' : False})
+  check_json_tst('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20, 'zones[1].mute' : False})
+  check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, None, None, None, None, False), None, {})
+  check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, None, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3})
+  check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 4, True, None, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4})
+  check_json_tst('Configure zone 4, Weird Zone', eth_audio_api.set_zone(4, 'Weird Zone', 1, None, None, None), None, {'zones[4].name' : 'Weird Zone', 'zones[4].source_id' : 1})
 
   # Test string/json based command handler
   print('\ntesting json:')
