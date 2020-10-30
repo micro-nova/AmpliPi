@@ -288,7 +288,6 @@ class RpiRt:
         mute_cfg = mute_cfg | (0x01 << z)
     self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE'], mute_cfg)
 
-    # TODO: If all channels are muted, standby all of the boxes
     # Audio power needs to be on each box when subsequent boxes are playing audio
     all_muted = False not in mutes
     if self._all_muted != all_muted:
