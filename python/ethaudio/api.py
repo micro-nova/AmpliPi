@@ -591,6 +591,11 @@ class EthAudioApi:
     _, g = self.get_group(id)
     if g is None:
       return error('set group failed, group {} not found'.format(id))
+    if type(zones) is str:
+      try:
+        zones = eval(zones)
+      except Exception as e:
+        return error('failed to configure group, error parsing zones: {}'.format(e))
     try:
       name, _ = updated_val(name, g['name'])
       zones, _ = updated_val(zones, g['zones'])
@@ -627,6 +632,12 @@ class EthAudioApi:
     names = [ g['name'] for g in self.status['groups'] ]
     if name in names:
       return error('create group failed: {} already exists'.format(name))
+
+    if type(zones) is str:
+      try:
+        zones = eval(zones)
+      except Exception as e:
+        return error('failed to configure group, error parsing zones: {}'.format(e))
 
     # get the new groug's id
     id = self.new_group_id()
