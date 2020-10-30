@@ -143,6 +143,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       content = self.rfile.read(content_length)
 
       # attempt to parse
+      print('parsing: {}'.format(content))
       parse_error = self.eth_audio_server.parse_command(content)
       # reply with appropriate HTTP code
       if(parse_error == None):
