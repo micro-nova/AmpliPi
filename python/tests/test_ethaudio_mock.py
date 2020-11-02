@@ -73,6 +73,7 @@ test_sequence = [
       'groups[3].id'    : 3,
       'groups[3].name'  : 'super_group',
       'groups[3].zones' : [0, 1, 2, 3, 4, 5],
+      'groups[3].vol_delta': 0,
     }
   }
 ),
@@ -153,6 +154,7 @@ test_sequence = [
       'groups[3].id'    : 3,
       'groups[3].name'  : 'super_group',
       'groups[3].zones' : [0, 1, 2, 3, 4, 5],
+      'groups[3].vol_delta': 0,
     }
   }
 ),

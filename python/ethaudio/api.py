@@ -550,7 +550,7 @@ class EthAudioApi:
         return error('failed to set zone, error getting current state: {}'.format(e))
       try:
         sid = parse_int(source_id, [0, 1, 2, 3, 4])
-        vol = parse_int(vol, range(-79, 1))
+        vol = parse_int(vol, range(-79, 79)) # hold additional state for group delta volume adjustments, output volume will be saturated to 0dB
         zones = self.status['zones']
         # update non hw state
         z['name'] = name
@@ -571,7 +571,8 @@ class EthAudioApi:
           else:
             return error('set zone failed: unable to update zone mute')
         if update_vol:
-          if self._rt.update_zone_vol(idx, vol):
+          real_vol = clamp(vol, -79, 0)
+          if self._rt.update_zone_vol(idx, real_vol):
             z['vol'] = vol
           else:
             return error('set zone failed: unable to update zone volume')
@@ -594,6 +595,16 @@ class EthAudioApi:
     """ Configure an existing group
         parameters will be used to configure each sone in the group's zones
         all parameters besides the group id, @id, are optional
+
+        Args:
+          id: group id (a guid)
+          name: group name
+          source_id: group source
+          zones: zones that belong to the group
+          mute: group mute setting (muted=True)
+          vol_delta: volume adjustment to apply to each zone [-79,79]
+        Returns:
+            'None' on success, otherwise error (dict)
     """
     _, g = self.get_group(id)
     if g is None:
@@ -606,16 +617,24 @@ class EthAudioApi:
     try:
       name, _ = updated_val(name, g['name'])
       zones, _ = updated_val(zones, g['zones'])
+      vol_delta, vol_updated = updated_val(vol_delta, g['vol_delta'])
+      if vol_updated:
+        vol_change = vol_delta - g['vol_delta']
+      else:
+        vol_change = 0
     except Exception as e:
       return error('failed to configure group, error getting current state: {}'.format(e))
     g['name'] = name
     g['zones'] = zones
+
     for z in [ self.status['zones'][zone] for zone in zones ]:
-      if vol_delta is not None:
-        vol = vol_delta # TODO: implement actual volume delta, note that when we do, we may need to internally keep track of this overshoot so global volume changes look linear
+      if vol_change != 0:
+        # TODO: make this use volume delta adjustment, for now its a fixed group volume
+        vol = vol_delta # vol = z['vol'] + vol_change
       else:
         vol = None
       self.set_zone(z['id'], None, source_id, mute, vol)
+    g['vol_delta'] = vol_delta
 
     if type(self._rt) == RpiRt and DEBUG_PREAMPS:
       self._rt._bus.print()
@@ -650,7 +669,7 @@ class EthAudioApi:
     id = self.new_group_id()
 
     # add the new group
-    group = { 'id': id, 'name' : name, 'zones' : zones }
+    group = { 'id': id, 'name' : name, 'zones' : zones, 'vol_delta' : 0 }
     self.status['groups'].append(group)
     print('created group!')
     pprint.pprint(self.status['groups'])
