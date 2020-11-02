@@ -4,6 +4,8 @@ import json
 from copy import deepcopy
 import deepdiff
 
+import pprint
+
 DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 
 if not DISABLE_HW:
@@ -464,6 +466,9 @@ class EthAudioApi:
       else:
         output = error('command {} is not supported'.format(command))
 
+      if output:
+        print(output)
+
       return output
     except Exception as e:
       return error(str(e)) # TODO: handle exception more verbosely
@@ -645,6 +650,8 @@ class EthAudioApi:
     # add the new group
     group = { 'id': id, 'name' : name, 'zones' : zones }
     self.status['groups'].append(group)
+    print('created group!')
+    pprint.pprint(self.status['groups'])
 
   def delete_group(self, id):
     """delete an existing group"""
