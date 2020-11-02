@@ -8,6 +8,7 @@ import pprint
 
 DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
+DEBUG_API = True # print out a graphical state of the api after each call
 
 if not DISABLE_HW:
   import serial
@@ -43,6 +44,17 @@ def updated_val(update, val):
 
 def clamp(x, xmin, xmax):
     return max(xmin, min(x, xmax))
+
+def vol_string(vol, min_vol=-79, max_vol=0):
+  """ Make a visual representation of a volume """
+  VOL_RANGE = max_vol - min_vol + 1
+  VOL_STR_LEN = 20
+  VOL_SCALE = VOL_RANGE / VOL_STR_LEN
+  vol_level = int((vol - min_vol)  / VOL_SCALE)
+  assert vol_level >= 0 and vol_level < VOL_STR_LEN
+  vol_string = ['-'] * VOL_STR_LEN
+  vol_string[vol_level] = '|' # place the volume slider bar at its current spot
+  return ''.join(vol_string) # turn that char array into a string
 
 # Preamp register addresses
 REG_ADDRS = {
@@ -158,18 +170,6 @@ class Preamps:
       for zone in range(6):
         self.print_zone_state(6 * (preamp - 1) + zone)
 
-  def vol_string(self, vol):
-    MAX_VOL = 0
-    MIN_VOL = -79
-    VOL_RANGE = MAX_VOL - MIN_VOL + 1
-    VOL_STR_LEN = 20
-    VOL_SCALE = VOL_RANGE / VOL_STR_LEN
-    vol_level = int((vol - MIN_VOL)  / VOL_SCALE)
-    assert vol_level >= 0 and vol_level < VOL_STR_LEN
-    vol_string = ['-'] * VOL_STR_LEN
-    vol_string[vol_level] = '|' # place the volume slider bar at its current spot
-    return ''.join(vol_string) # turn that char array into a string
-
   def print_zone_state(self, zone):
     assert zone >= 0
     preamp = (int(zone / 6) + 1) * 8
@@ -183,7 +183,7 @@ class Preamps:
     state = []
     if muted:
       state += ['muted']
-    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, self.vol_string(vol), ', '.join(state)))
+    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, vol_string(vol), ', '.join(state)))
 
 class MockRt:
   """ Mock of an EthAudio Runtime
@@ -435,11 +435,34 @@ class EthAudioApi:
         { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 }
       ],
       "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
+        # TODO: need to add mute, vol_delta, and source_id to groups
         { "id": 0, "name": "Group 1", "zones": [0,1,2] },
         { "id": 1, "name": "Group 2", "zones": [2,3,4] },
         { "id": 2, "name": "Group 3", "zones": [5] }
       ]
     }
+  def visualize_api(self, prev_status=None):
+    viz = ''
+    # visualize source configuration
+    src_cfg = [{True: 'Digital', False: 'Analog'}.get(s['digital']) for s in self.status['sources']]
+    viz += '  [{}]\n'.format(', '.join(src_cfg))
+    # visualize zone configuration
+    enabled_zones = [z for z in self.status['zones'] if not z['disabled']]
+    viz += 'zones:\n'
+    for z in enabled_zones:
+      src = z['source_id']
+      src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
+      muted = 'muted' if z['mute'] else ''
+      viz += '  {}({}) --> zone {} vol [{}] {}\n'.format(src, src_type, z['id'], vol_string(z['vol']), muted)
+    # TODO: print group configuration
+    viz += 'groups:\n'
+    for g in self.status['groups']:
+      src = 0 # g['source_id']
+      src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
+      muted = '' # muted = 'muted' if g['mute'] else ''
+      vol = vol_string(0) # vol_string(g['vol'], -79, 79)
+      viz += '  {}({}) --> group {} vol [{}] {}\n'.format(src, src_type, g['id'], vol, muted)
+    return viz
 
   def parse_cmd(self, cmd):
     """ process an individual command
@@ -470,6 +493,8 @@ class EthAudioApi:
 
       if output:
         print(output)
+      elif DEBUG_API:
+        print(self.visualize_api())
 
       return output
     except Exception as e:
@@ -510,7 +535,7 @@ class EthAudioApi:
         if self._rt.update_sources(digital_cfg):
           # update the status
           src['digital'] = bool(digital)
-          if type(self._rt) == RpiRt:
+          if type(self._rt) == RpiRt and DEBUG_PREAMPS:
             self._rt._bus.print()
           return None
         else:
