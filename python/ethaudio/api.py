@@ -612,7 +612,7 @@ class EthAudioApi:
     g['zones'] = zones
     for z in [ self.status['zones'][zone] for zone in zones ]:
       if vol_delta is not None:
-        vol = clamp(z['vol'] + vol_delta, -79, 0)
+        vol = vol_delta # TODO: implement actual volume delta, note that when we do, we may need to internally keep track of this overshoot so global volume changes look linear
       else:
         vol = None
       self.set_zone(z['id'], None, source_id, mute, vol)
