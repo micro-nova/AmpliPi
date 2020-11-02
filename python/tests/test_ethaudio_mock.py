@@ -282,6 +282,7 @@ def check_json_tst(name, result, expected_result, expected_changes):
   changes, added, removed = get_state_changes()
   # handle additions and removals in expected changes as optional, making sure to remove them from the actual changes comparison
   expected_changes2 = dict(expected_changes)
+  # TODO: handle changes that should be ignored
   if 'added' in expected_changes:
     assert added == expected_changes['added']
     del expected_changes2['added']
@@ -320,7 +321,7 @@ def check_all_tsts(api):
   check_json_tst('Configure source 1 (digital)', eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora'})
   check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV', 'sources[2].digital' : False})
   check_json_tst('Configure source 3 (Analog)', eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC', 'sources[3].digital' : False})
-  check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1, 'zones[0].vol': 0, 'zones[0].mute' : False})
+  check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1, 'zones[0].vol': 0, 'zones[0].mute' : False, 'groups[0].mute' : False, 'groups[0].vol_delta' : -40})
   check_json_tst('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20, 'zones[1].mute' : False})
   check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, None, None, None, None, False), None, {})
   check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, None, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3})

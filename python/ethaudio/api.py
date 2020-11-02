@@ -432,15 +432,16 @@ class EthAudioApi:
         { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
         { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
         { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 }
+        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
       ],
       "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-        # TODO: need to add mute, vol_delta, and source_id to groups
-        { "id": 0, "name": "Group 1", "zones": [0,1,2] },
-        { "id": 1, "name": "Group 2", "zones": [2,3,4] },
-        { "id": 2, "name": "Group 3", "zones": [5] }
+        # TODO: need to add mute, and source_id to groups
+        { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
+        { "id": 1, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
+        { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
       ]
     }
+
   def visualize_api(self, prev_status=None):
     viz = ''
     # visualize source configuration
@@ -602,6 +603,9 @@ class EthAudioApi:
           else:
             return error('set zone failed: unable to update zone volume')
 
+        # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
+        self.update_groups()
+
         if type(self._rt) == RpiRt and DEBUG_PREAMPS:
           self._rt._bus.print()
         return None
@@ -615,6 +619,21 @@ class EthAudioApi:
       if g['id'] == id:
         return i,g
     return -1, None
+
+  def update_groups(self):
+    """ Update the group's aggregate fields to maintain consistency and simplify app interface """
+    for g in self.status['groups']:
+      zones = [ self.status['zones'][z] for z in g['zones'] ]
+      mutes = [ z['mute'] for z in zones ]
+      sources  = set([ z['source_id'] for z in zones ])
+      vols = [ z['vol'] for z in zones ]
+      vols.sort()
+      g['mute'] = False not in mutes # group is only considered muted if all zones are muted
+      if len(sources) == 1:
+        g['source_id'] = sources.pop() # TODO: how should we handle different sources in the group?
+      else: # multiple sources
+        g['source_id'] = None
+      g['vol_delta'] = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
   def set_group(self, id, name=None, source_id=None, zones=None, mute=None, vol_delta=None):
     """ Configure an existing group
@@ -649,6 +668,7 @@ class EthAudioApi:
         vol_change = 0
     except Exception as e:
       return error('failed to configure group, error getting current state: {}'.format(e))
+
     g['name'] = name
     g['zones'] = zones
 
@@ -660,6 +680,9 @@ class EthAudioApi:
         vol = None
       self.set_zone(z['id'], None, source_id, mute, vol)
     g['vol_delta'] = vol_delta
+
+    # update the group stats
+    self.update_groups()
 
     if type(self._rt) == RpiRt and DEBUG_PREAMPS:
       self._rt._bus.print()
@@ -696,8 +719,9 @@ class EthAudioApi:
     # add the new group
     group = { 'id': id, 'name' : name, 'zones' : zones, 'vol_delta' : 0 }
     self.status['groups'].append(group)
-    print('created group!')
-    pprint.pprint(self.status['groups'])
+
+    # update the group stats and populate uninitialized fields of the group
+    self.update_groups()
 
   def delete_group(self, id):
     """delete an existing group"""
