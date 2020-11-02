@@ -7,6 +7,7 @@ import deepdiff
 import pprint
 
 DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
+DEBUG_PREAMPS = False # print out preamp state after register write
 
 if not DISABLE_HW:
   import serial
@@ -117,7 +118,8 @@ class Preamps:
     # dynamically update preamps
     if preamp_addr not in self.preamps:
       self.new_preamp(preamp_addr)
-    print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
+    if DEBUG_PREAMPS:
+      print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
     self.preamps[preamp_addr][reg] = data
     # TODO: need to handle volume modifying mute state in mock
     if self.bus is not None:
@@ -574,7 +576,7 @@ class EthAudioApi:
           else:
             return error('set zone failed: unable to update zone volume')
 
-        if type(self._rt) == RpiRt:
+        if type(self._rt) == RpiRt and DEBUG_PREAMPS:
           self._rt._bus.print()
         return None
       except Exception as e:
@@ -615,7 +617,7 @@ class EthAudioApi:
         vol = None
       self.set_zone(z['id'], None, source_id, mute, vol)
 
-    if type(self._rt) == RpiRt:
+    if type(self._rt) == RpiRt and DEBUG_PREAMPS:
       self._rt._bus.print()
 
   def new_group_id(self):
