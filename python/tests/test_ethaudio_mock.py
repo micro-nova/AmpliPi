@@ -74,7 +74,7 @@ test_sequence = [
       'groups[3].name'  : 'super_group',
       'groups[3].zones' : [0, 1, 2, 3, 4, 5],
       'groups[3].mute': False,
-      'groups[3].source_id': -1,
+      'groups[3].source_id': None,
       'groups[3].vol_delta': -40,
     }
   }
@@ -162,7 +162,7 @@ test_sequence = [
       'groups[3].zones' : [0, 1, 2, 3, 4, 5],
       'groups[3].vol_delta': -40,
       'groups[3].mute': False,
-      'groups[3].source_id': -1,
+      'groups[3].source_id': None,
     }
   }
 ),
@@ -280,11 +280,15 @@ def get_state_changes(ignore_group_changes=False):
   # intersection distance is its pair, unsure what it does...
   diff = deepdiff.DeepDiff(last_status, eth_audio_api.status, ignore_order=True, cutoff_distance_for_pairs=0.9, cutoff_intersection_for_pairs=0.9)
   changes = ({}, {}, {})
-  if 'values_changed' in diff:
-    for field, change in diff['values_changed'].items():
-      ignore_change = ignore_group_changes and 'groups' in field
-      if not ignore_change:
-        changes[0][pretty_field(field)] = change['new_value']
+  # merge type_changes and values_changed (weird that these names are different tenses)
+  values_changed = {}
+  for k in ['values_changed', 'type_changes']:
+    if k in diff:
+      values_changed.update(diff[k])
+  for field, change in values_changed.items():
+    ignore_change = ignore_group_changes and 'groups' in field
+    if not ignore_change:
+      changes[0][pretty_field(field)] = change['new_value']
   # get added fields
   add_field_entries(diff, changes[1], 'dictionary_item_added', eth_audio_api.status)
   add_field_entries(diff, changes[1], 'iterable_item_added', eth_audio_api.status)
