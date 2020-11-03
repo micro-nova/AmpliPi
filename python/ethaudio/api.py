@@ -45,6 +45,11 @@ def updated_val(update, val):
 def clamp(x, xmin, xmax):
     return max(xmin, min(x, xmax))
 
+def compact_str(l):
+  """ stringify a compact list"""
+  assert type(l) == list
+  return str(l).replace(' ', '')
+
 def vol_string(vol, min_vol=-79, max_vol=0):
   """ Make a visual representation of a volume """
   VOL_RANGE = max_vol - min_vol + 1
@@ -435,7 +440,6 @@ class EthAudioApi:
         { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
       ],
       "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-        # TODO: need to add mute, and source_id to groups
         { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
         { "id": 1, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
         { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
@@ -454,15 +458,22 @@ class EthAudioApi:
       src = z['source_id']
       src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
       muted = 'muted' if z['mute'] else ''
-      viz += '  {}({}) --> zone {} vol [{}] {}\n'.format(src, src_type, z['id'], vol_string(z['vol']), muted)
-    # TODO: print group configuration
+      viz += '  {}({}) --> zone {:2} vol [{}] {}\n'.format(src, src_type, z['id'], vol_string(z['vol']), muted)
+    # print group configuration
     viz += 'groups:\n'
+    biggest_group = max(self.status['groups'], key=lambda g: len(compact_str(g['zones'])))
+    zone_sz = len(compact_str(biggest_group['zones']))
     for g in self.status['groups']:
-      src = 0 # g['source_id']
-      src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
-      muted = '' # muted = 'muted' if g['mute'] else ''
-      vol = vol_string(0) # vol_string(g['vol'], -79, 79)
-      viz += '  {}({}) --> group {} vol [{}] {}\n'.format(src, src_type, g['id'], vol, muted)
+      if g['source_id']:
+        src = g['source_id']
+        src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
+      else:
+        src = ' '
+        src_type = ' '
+      muted = 'muted' if g['mute'] else ''
+      vol = vol_string(g['vol_delta'])
+      group_fmt = '  {}({}) --> group {} {:' + str(zone_sz) + '} vol [{}] {}\n'
+      viz += group_fmt.format(src, src_type, g['id'], compact_str(g['zones']), vol, muted)
     return viz
 
   def parse_cmd(self, cmd):
