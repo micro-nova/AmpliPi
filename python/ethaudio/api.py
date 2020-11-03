@@ -632,7 +632,7 @@ class EthAudioApi:
       if len(sources) == 1:
         g['source_id'] = sources.pop() # TODO: how should we handle different sources in the group?
       else: # multiple sources
-        g['source_id'] = -1
+        g['source_id'] = None
       g['vol_delta'] = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
   def set_group(self, id, name=None, source_id=None, zones=None, mute=None, vol_delta=None):
