@@ -6,7 +6,7 @@ import deepdiff
 
 import pprint
 
-DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
+DISABLE_HW = False # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 DEBUG_API = True # print out a graphical state of the api after each call
 
