@@ -5,8 +5,9 @@ from copy import deepcopy
 import deepdiff
 
 import pprint
+import os # files
 
-DISABLE_HW = False # disable hardware based packages (smbus2 is not installable on Windows)
+DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 DEBUG_API = True # print out a graphical state of the api after each call
 
@@ -423,11 +424,11 @@ class EthAudioApi:
     For now this is just a mock implementation
    """
 
-  def __init__(self, rt = MockRt()):
+  def __init__(self, rt = MockRt(), config_file = 'saved_state.json'):
     self._rt = rt
     """ intitialize the mock system to to base configuration """
     # TODO: this status will need to be loaded from a file
-    self.status = { # This is the system state response that will come back from the ethaudio box
+    DEFAULT_STATUS = { # This is the system state response that will come back from the ethaudio box
       "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
         { "id": 0, "name": "Source 1", "digital": True  },
         { "id": 1, "name": "Source 2", "digital": True  },
@@ -460,6 +461,28 @@ class EthAudioApi:
         { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
       ]
     }
+    # test open the config file, this will throw an exception if there are issues writing to the file
+    with open(config_file, 'a'):
+      pass
+    self.config_file = config_file
+    # try to load the config file
+    try:
+      if os.path.exists(self.config_file):
+        with open(self.config_file, 'r') as cfg:
+          self.status = json.load(cfg)
+      else:
+        self.status = DEFAULT_STATUS
+        self.save()
+    except Exception as e:
+      print('error loading config: {}'.format(e))
+      print('using default config')
+      self.status = DEFAULT_STATUS
+      self.save()
+    # TODO: mute all zones on startup
+
+  def save(self):
+    with open(self.config_file, 'w') as cfg:
+      json.dump(self.status, cfg, indent=2)
 
   def visualize_api(self, prev_status=None):
     viz = ''
@@ -567,6 +590,7 @@ class EthAudioApi:
           src['digital'] = bool(digital)
           if type(self._rt) == RpiRt and DEBUG_PREAMPS:
             self._rt._bus.print()
+          self.save()
           return None
         else:
           return error('failed to set source')
@@ -634,6 +658,7 @@ class EthAudioApi:
 
         # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
         self.update_groups()
+        self.save()
 
         if type(self._rt) == RpiRt and DEBUG_PREAMPS:
           self._rt._bus.print()
@@ -712,6 +737,7 @@ class EthAudioApi:
 
     # update the group stats
     self.update_groups()
+    self.save()
 
     if type(self._rt) == RpiRt and DEBUG_PREAMPS:
       self._rt._bus.print()
@@ -751,11 +777,13 @@ class EthAudioApi:
 
     # update the group stats and populate uninitialized fields of the group
     self.update_groups()
+    self.save()
 
   def delete_group(self, id):
     """delete an existing group"""
     try:
       i, _ = self.get_group(id)
       del self.status['groups'][i]
+      self.save()
     except KeyError:
       return error('delete group failed: {} does not exist'.format(id))
