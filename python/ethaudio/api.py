@@ -51,6 +51,20 @@ def compact_str(l):
   assert type(l) == list
   return str(l).replace(' ', '')
 
+def max_len(items, len_determiner=len):
+  """ determine the item with the max len, based on the @len_determiner's definition of length
+  Args:
+    items: iterable items
+    len_determiner: function that returns an integer, TODO: how to specify function return/type?
+
+  Returns:
+    len: integer
+
+  This is useful for lining up lists printed in a table-like format
+  """
+  largest = max(items, key=len_determiner)
+  return len_determiner(largest)
+
 def vol_string(vol, min_vol=-79, max_vol=0):
   """ Make a visual representation of a volume """
   VOL_RANGE = max_vol - min_vol + 1
@@ -455,16 +469,19 @@ class EthAudioApi:
     # visualize zone configuration
     enabled_zones = [z for z in self.status['zones'] if not z['disabled']]
     viz += 'zones:\n'
+    zone_len = max_len(enabled_zones, lambda z: len(z['name']))
     for z in enabled_zones:
       src = z['source_id']
       src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
       muted = 'muted' if z['mute'] else ''
-      viz += '  {}({}) --> zone {:2} vol [{}] {}\n'.format(src, src_type, z['id'], vol_string(z['vol']), muted)
+      zone_fmt = '  {}({}) --> {:' + str(zone_len) + '} vol [{}] {}\n'
+      viz += zone_fmt.format(src, src_type, z['name'], vol_string(z['vol']), muted)
     # print group configuration
     viz += 'groups:\n'
-    biggest_group = max(self.status['groups'], key=lambda g: len(compact_str(g['zones'])))
-    zone_sz = len(compact_str(biggest_group['zones']))
-    for g in self.status['groups']:
+    enabled_groups = self.status['groups']
+    gzone_len = max_len(enabled_groups, lambda g: len(compact_str(g['zones'])))
+    gname_len = max_len(enabled_groups, lambda g: len(g['name']))
+    for g in enabled_groups:
       if g['source_id']:
         src = g['source_id']
         src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
@@ -473,8 +490,8 @@ class EthAudioApi:
         src_type = ' '
       muted = 'muted' if g['mute'] else ''
       vol = vol_string(g['vol_delta'])
-      group_fmt = '  {}({}) --> group {} {:' + str(zone_sz) + '} vol [{}] {}\n'
-      viz += group_fmt.format(src, src_type, g['id'], compact_str(g['zones']), vol, muted)
+      group_fmt = '  {}({}) --> {:' + str(gname_len) + '} {:' + str(gzone_len) + '} vol [{}] {}\n'
+      viz += group_fmt.format(src, src_type, g['name'], compact_str(g['zones']), vol, muted)
     return viz
 
   def parse_cmd(self, cmd):
