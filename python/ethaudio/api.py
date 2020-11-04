@@ -10,9 +10,10 @@ DISABLE_HW = True # disable hardware based packages (smbus2 is not installable o
 DEBUG_PREAMPS = False # print out preamp state after register write
 DEBUG_API = True # print out a graphical state of the api after each call
 
+import time
+
 if not DISABLE_HW:
   import serial
-  import time
   from smbus2 import SMBus
 
 # Helper functions
