@@ -366,8 +366,13 @@ def check_all_tsts(api):
     check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
 
 def test_mock():
-  check_all_tsts(ethaudio.Api(ethaudio.api.MockRt()))
-
+  config_file = 'test_config.json'
+  with open(config_file, 'w'): # overwrite the file with nothing, so test has to start from scratch
+    pass
+  config_file = 'test_config.json.bak'
+  with open(config_file, 'w'): # overwrite the file with nothing, so test has to start from scratch
+    pass
+  check_all_tsts(ethaudio.Api(ethaudio.api.MockRt(), config_file=config_file))
 
 if __name__ == '__main__':
   test_mock()
