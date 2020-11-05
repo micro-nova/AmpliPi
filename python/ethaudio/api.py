@@ -66,6 +66,17 @@ def max_len(items, len_determiner=len):
   largest = max(items, key=len_determiner)
   return len_determiner(largest)
 
+def save_on_success(func):
+  """ A decorator that calls a class object's save method when successful
+        (in the case of our API None=Success)
+  """
+  def inner(self, *args, **kwargs):
+    result = func(self, *args, **kwargs)
+    if result is None:
+      self.save()
+    return result
+  return inner
+
 def vol_string(vol, min_vol=-79, max_vol=0):
   """ Make a visual representation of a volume """
   VOL_RANGE = max_vol - min_vol + 1
@@ -462,27 +473,52 @@ class EthAudioApi:
       ]
     }
     # test open the config file, this will throw an exception if there are issues writing to the file
-    with open(config_file, 'a'):
+    with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
     self.config_file = config_file
-    # try to load the config file
-    try:
-      if os.path.exists(self.config_file):
-        with open(self.config_file, 'r') as cfg:
-          self.status = json.load(cfg)
-      else:
-        self.status = DEFAULT_STATUS
-        self.save()
-    except Exception as e:
-      print('error loading config: {}'.format(e))
+    self.backup_config_file = config_file + '.bak'
+    self.config_file_valid = True # initially we assume the config file is valid
+    # try to load the config file or its backup
+    config_paths = [self.config_file, self.backup_config_file]
+    errors = []
+    loaded_config = False
+    for cfg_path in config_paths:
+      try:
+        if os.path.exists(cfg_path):
+          with open(cfg_path, 'r') as cfg:
+            self.status = json.load(cfg)
+          loaded_config = True
+          break
+        else:
+          errors.append('config file "{}" does not exist'.format(cfg_path))
+      except Exception as e:
+        self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
+        errors.append('error loading config file: {}'.format(e))
+
+    if not loaded_config:
+      print(errors[0])
       print('using default config')
       self.status = DEFAULT_STATUS
       self.save()
-    # TODO: mute all zones on startup
+    # configure all sources so that they are in a known state
+    for src in self.status['sources']:
+      self.set_source(src['id'], src['digital'], force_update=True)
+    # configure all of the zones so that they are in a known state
+    #   we mute all zones on startup to keep audio from playing immediately at startup
+    for z in self.status['zones']:
+      if not z['mute']:
+        self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
 
   def save(self):
-    with open(self.config_file, 'w') as cfg:
-      json.dump(self.status, cfg, indent=2)
+    try:
+      # save a backup copy of the config file (assuming its valid)
+      if os.path.exists(self.config_file) and self.config_file_valid:
+        os.rename(self.config_file, self.backup_config_file)
+      with open(self.config_file, 'w') as cfg:
+        json.dump(self.status, cfg, indent=2)
+      self.config_file_valid = True
+    except Exception as e:
+      print('Error saving config: {}'.format(e))
 
   def visualize_api(self, prev_status=None):
     viz = ''
@@ -557,7 +593,8 @@ class EthAudioApi:
     """ get the system state (dict) """
     return self.status
 
-  def set_source(self, id, name = None, digital = None):
+  @save_on_success
+  def set_source(self, id, name=None, digital=None, force_update=False):
     """ modify any of the 4 system sources
 
       Args:
@@ -575,7 +612,7 @@ class EthAudioApi:
       try:
         src = self.status['sources'][idx]
         name, _ = updated_val(name, src['name'])
-        digital, _ = updated_val(digital, src['digital'])
+        digital, digital_updated = updated_val(digital, src['digital'])
       except Exception as e:
         return error('failed to set source, error getting current state: {}'.format(e))
       try:
@@ -585,21 +622,24 @@ class EthAudioApi:
         digital_cfg[idx] = bool(digital)
         # update the name
         src['name'] = str(name)
-        if self._rt.update_sources(digital_cfg):
-          # update the status
-          src['digital'] = bool(digital)
-          if type(self._rt) == RpiRt and DEBUG_PREAMPS:
-            self._rt._bus.print()
-          self.save()
-          return None
+        if digital_updated or force_update:
+          if self._rt.update_sources(digital_cfg):
+            # update the status
+            src['digital'] = bool(digital)
+            if type(self._rt) == RpiRt and DEBUG_PREAMPS:
+              self._rt._bus.print()
+            return None
+          else:
+            return error('failed to set source')
         else:
-          return error('failed to set source')
+          return None
       except Exception as e:
-        return error('set source ' + str(e))
+        return error('failed to set source: ' + str(e))
     else:
-      return error('set source: index {} out of bounds'.format(idx))
+      return error('failed to set source: index {} out of bounds'.format(idx))
 
-  def set_zone(self, id, name=None, source_id=None, mute=None, vol=None, disabled=None):
+  @save_on_success
+  def set_zone(self, id, name=None, source_id=None, mute=None, vol=None, disabled=None, force_update=False):
     """ modify any zone
 
           Args:
@@ -635,21 +675,21 @@ class EthAudioApi:
         z['name'] = name
         z['disabled'] = disabled
         # TODO: figure out an order of operations here, like does mute need to be done before changing sources?
-        if update_source_id:
+        if update_source_id or force_update:
           zone_sources = [ zone['source_id'] for zone in zones ]
           zone_sources[idx] = sid
           if self._rt.update_zone_sources(idx, zone_sources):
             z['source_id'] = sid
           else:
             return error('set zone failed: unable to update zone source')
-        if update_mutes:
+        if update_mutes or force_update:
           mutes = [ zone['mute'] for zone in zones ]
           mutes[idx] = mute
           if self._rt.update_zone_mutes(idx, mutes):
             z['mute'] = mute
           else:
             return error('set zone failed: unable to update zone mute')
-        if update_vol:
+        if update_vol or force_update:
           real_vol = clamp(vol, -79, 0)
           if self._rt.update_zone_vol(idx, real_vol):
             z['vol'] = vol
@@ -658,7 +698,6 @@ class EthAudioApi:
 
         # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
         self.update_groups()
-        self.save()
 
         if type(self._rt) == RpiRt and DEBUG_PREAMPS:
           self._rt._bus.print()
@@ -689,6 +728,7 @@ class EthAudioApi:
         g['source_id'] = None
       g['vol_delta'] = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
+  @save_on_success
   def set_group(self, id, name=None, source_id=None, zones=None, mute=None, vol_delta=None):
     """ Configure an existing group
         parameters will be used to configure each sone in the group's zones
@@ -737,7 +777,6 @@ class EthAudioApi:
 
     # update the group stats
     self.update_groups()
-    self.save()
 
     if type(self._rt) == RpiRt and DEBUG_PREAMPS:
       self._rt._bus.print()
@@ -753,6 +792,7 @@ class EthAudioApi:
         break
     return new_gid
 
+  @save_on_success
   def create_group(self, name, zones):
     """create a new group with a list of zones
     Refer to the returned system state to obtain the id for the newly created group
@@ -777,13 +817,12 @@ class EthAudioApi:
 
     # update the group stats and populate uninitialized fields of the group
     self.update_groups()
-    self.save()
 
+  @save_on_success
   def delete_group(self, id):
     """delete an existing group"""
     try:
       i, _ = self.get_group(id)
       del self.status['groups'][i]
-      self.save()
     except KeyError:
       return error('delete group failed: {} does not exist'.format(id))
