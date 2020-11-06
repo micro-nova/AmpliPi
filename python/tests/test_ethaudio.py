@@ -11,6 +11,7 @@ import ethaudio
 # modify json config files
 import json
 import os
+import tempfile
 
 # several starting configurations to load for testing including a corrupted configuration
 DEFAULT_STATUS = deepcopy(ethaudio.Api.DEFAULT_CONFIG)
@@ -382,6 +383,9 @@ def check_all_tsts(api):
     is_group_cmd = '_group' in cmd['command']
     check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
 
+  # stop the server
+  srv.stop()
+
 def delete_file(file_path):
   try:
     os.remove(file_path)
@@ -423,10 +427,30 @@ def api_w_mock_rt(config=None, backup_config=None):
   # start the api (we have a specfic config path we use for all tests)
   return ethaudio.Api(ethaudio.api.MockRt(), config_file=CONFIG_FILE)
 
+def api_w_rpi_rt(config=None, backup_config=None):
+  # copy in specfic config files (paths) to know config locations
+  #   this sets the initial configuration
+  #   (a None config file means that config file will be deleted before launch)
+  setup_test_configs(config, backup_config)
+  # start the api (we have a specfic config path we use for all tests)
+  return ethaudio.Api(ethaudio.api.RpiRt(mock=True), config_file=CONFIG_FILE)
+
+def use_tmpdir():
+  # lets run these tests in a temporary directory so they dont mess with other tests config files
+  test_dir = tempfile.mkdtemp()
+  os.chdir(test_dir)
+  assert test_dir == os.getcwd()
+
 def test_mock():
+  use_tmpdir() # run from temp dir so we don't mess with current directory
   check_all_tsts(api_w_mock_rt())
 
+def test_rpi():
+  use_tmpdir() # run from temp dir so we don't mess with current directory
+  check_all_tsts(api_w_rpi_rt())
+
 def test_config_loading():
+  use_tmpdir() # run from temp dir so we don't mess with current directory
   # test loading an empty config (should load default config)
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
   assert DEFAULT_STATUS == api.get_state()
@@ -448,4 +472,7 @@ def test_config_loading():
 
 
 if __name__ == '__main__':
+  # run tests without pytest
+  test_config_loading()
   test_mock()
+  test_rpi()
