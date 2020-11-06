@@ -498,7 +498,7 @@ class EthAudioApi:
     if not loaded_config:
       print(errors[0])
       print('using default config')
-      self.status = self.DEFAULT_CONFIG
+      self.status = deepcopy(self.DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
