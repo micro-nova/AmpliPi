@@ -8,8 +8,25 @@ import deepdiff
 # use the internal ethaudio library
 import ethaudio
 
-# TODO: port this to a standard python test framework such as unittest
-# TODO: encode expected change after each one of these commands to form a tuple similar to (cmd, {field1: value_expected, field2:value_expected})
+# modify json config files
+import json
+import os
+
+# several starting configurations to load for testing including a corrupted configuration
+DEFAULT_STATUS = deepcopy(ethaudio.Api.DEFAULT_CONFIG)
+# make a good config string, that has less groups than the default (so we can tell the difference)
+GOOD_STATUS = deepcopy(DEFAULT_STATUS)
+del GOOD_STATUS['groups'][2]
+del GOOD_STATUS['groups'][1]
+GOOD_CONFIG = json.dumps(GOOD_STATUS) # make it a json string we can write to a config file
+# corrupt the json string by only taking the first half
+# ( simulating what would happen if the program was terminated while writing the config file)
+CORRUPTED_CONFIG = GOOD_CONFIG[0:len(GOOD_CONFIG)//2]
+# an non-existant config file
+NO_CONFIG = None
+
+# TODO: use test fixtures to componentize tests
+# each test is in the form: (test_name, json_request, expected_result, expected_field_changes={field1: value_expected, field2:value_expected})
 test_sequence = [
 (
   "Add CD Player (in place of Pandora)",
@@ -365,14 +382,70 @@ def check_all_tsts(api):
     is_group_cmd = '_group' in cmd['command']
     check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
 
+def delete_file(file_path):
+  try:
+    os.remove(file_path)
+  except OSError:
+    pass
+  assert False == os.path.exists(file_path)
+
+def write_file(file_path, content):
+  with open(file_path, 'w') as cfg:
+    cfg.write(content)
+  assert os.path.exists(file_path)
+
+# config file paths for testing
+CONFIG_FILE = 'test_config.json'
+CONFIG_FILE_BACKUP = CONFIG_FILE + '.bak'
+def setup_test_configs(config=None, backup_config=None):
+  """ Setup the api's configuration file and its backup,
+        config/backup_config=None removes the config file
+      Args:
+        config: json string to write to config file or None
+        backup_config: json string to write to backup config file or None
+      Returns: None
+  """
+  # remove old config files
+  delete_file(CONFIG_FILE)
+  delete_file(CONFIG_FILE_BACKUP)
+  # copy the config file and back to use (we don't want to modify them so they can be reused)
+  # if a config is None the file is just deleted, simulating the first time the api is started
+  if config:
+    write_file(CONFIG_FILE, config)
+  if backup_config:
+    write_file(CONFIG_FILE_BACKUP, backup_config)
+
+def api_w_mock_rt(config=None, backup_config=None):
+  # copy in specfic config files (paths) to know config locations
+  #   this sets the initial configuration
+  #   (a None config file means that config file will be deleted before launch)
+  setup_test_configs(config, backup_config)
+  # start the api (we have a specfic config path we use for all tests)
+  return ethaudio.Api(ethaudio.api.MockRt(), config_file=CONFIG_FILE)
+
 def test_mock():
-  config_file = 'test_config.json'
-  with open(config_file, 'w'): # overwrite the file with nothing, so test has to start from scratch
-    pass
-  config_file = 'test_config.json.bak'
-  with open(config_file, 'w'): # overwrite the file with nothing, so test has to start from scratch
-    pass
-  check_all_tsts(ethaudio.Api(ethaudio.api.MockRt(), config_file=config_file))
+  check_all_tsts(api_w_mock_rt())
+
+def test_config_loading():
+  # test loading an empty config (should load default config)
+  api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
+  assert DEFAULT_STATUS == api.get_state()
+  # test loading a known good config file by making a copy of it and loading the api with the copy
+  api = api_w_mock_rt(GOOD_CONFIG)
+  assert GOOD_STATUS == api.get_state()
+  # test loading a corrupted config file with a good backup
+  api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=GOOD_CONFIG)
+  assert GOOD_STATUS == api.get_state()
+  # test loading a missing config file with a good backup
+  api = api_w_mock_rt(NO_CONFIG, backup_config=GOOD_CONFIG)
+  assert GOOD_STATUS == api.get_state()
+  # test loading a corrupted config file and a corrupted backup
+  api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=CORRUPTED_CONFIG)
+  assert DEFAULT_STATUS == api.get_state()
+  # test loading a missing config file and a missing backup
+  api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
+  assert DEFAULT_STATUS == api.get_state()
+
 
 if __name__ == '__main__':
   test_mock()

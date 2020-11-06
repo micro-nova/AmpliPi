@@ -435,43 +435,43 @@ class EthAudioApi:
     For now this is just a mock implementation
    """
 
+  DEFAULT_CONFIG = { # This is the system state response that will come back from the ethaudio box
+    "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
+      { "id": 0, "name": "Source 1", "digital": True  },
+      { "id": 1, "name": "Source 2", "digital": True  },
+      { "id": 2, "name": "Source 3", "digital": True  },
+      { "id": 3, "name": "Source 4", "digital": True  }
+    ],
+    "zones": [ # this is an array of zones, array length depends on # of boxes connected
+      { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+    ],
+    "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
+      { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
+      { "id": 1, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
+      { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
+    ]
+  }
+
   def __init__(self, rt = MockRt(), config_file = 'saved_state.json'):
     self._rt = rt
     """ intitialize the mock system to to base configuration """
-    # TODO: this status will need to be loaded from a file
-    DEFAULT_STATUS = { # This is the system state response that will come back from the ethaudio box
-      "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
-        { "id": 0, "name": "Source 1", "digital": True  },
-        { "id": 1, "name": "Source 2", "digital": True  },
-        { "id": 2, "name": "Source 3", "digital": True  },
-        { "id": 3, "name": "Source 4", "digital": True  }
-      ],
-      "zones": [ # this is an array of zones, array length depends on # of boxes connected
-        { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      ],
-      "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-        { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
-        { "id": 1, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
-        { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
-      ]
-    }
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
@@ -498,7 +498,7 @@ class EthAudioApi:
     if not loaded_config:
       print(errors[0])
       print('using default config')
-      self.status = DEFAULT_STATUS
+      self.status = self.DEFAULT_CONFIG
       self.save()
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
