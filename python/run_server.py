@@ -23,6 +23,7 @@ def signal_handler(sig, frame):
 # parse args
 parser = argparse.ArgumentParser(description='Run EthAudio server')
 parser.add_argument('--mock', action='store_true', help='Use mock preamp connection')
+parser.add_argument('--config', default='saved_state.json', help='config file to load')
 args = parser.parse_args()
 
 # register signal handler
@@ -30,7 +31,7 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 # Start HTTP server (behind the scenes it runs in new thread)
-ethaudio.Server(ethaudio.Api(ethaudio.api.RpiRt(args.mock)))
+ethaudio.Server(ethaudio.Api(ethaudio.api.RpiRt(args.mock), args.config))
 
 while True:
   sleep(0.1)
