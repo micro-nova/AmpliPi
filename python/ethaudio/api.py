@@ -502,7 +502,7 @@ class EthAudioApi:
       self.save()
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
-      self.set_source(src['id'], src['digital'], force_update=True)
+      self.set_source(src['id'], digital=src['digital'], force_update=True)
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for z in self.status['zones']:
