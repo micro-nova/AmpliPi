@@ -93,6 +93,11 @@ class EthAudioServer():
     json = encode(self.eth_audio_instance.get_state())
     return json.encode('utf-8')
 
+  def stop(self):
+    """ Stop the server """
+    self.httpd.server_close()
+    self.httpd.shutdown()
+
 
 class HTTPRequestHandler(BaseHTTPRequestHandler):
   """ Used by HTTPServer in EthAudio to react to HTTP requests """
