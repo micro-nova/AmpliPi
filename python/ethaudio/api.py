@@ -508,6 +508,8 @@ class EthAudioApi:
     for z in self.status['zones']:
       if not z['mute']:
         self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
+    # configure all of the groups (some fields may need to be updated)
+    self.update_groups()
 
   def save(self):
     try:
