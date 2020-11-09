@@ -73,6 +73,9 @@ test_sequence = [
       'groups[3].id'    : 3,
       'groups[3].name'  : 'super_group',
       'groups[3].zones' : [0, 1, 2, 3, 4, 5],
+      'groups[3].mute': False,
+      'groups[3].source_id': None,
+      'groups[3].vol_delta': -40,
     }
   }
 ),
@@ -89,6 +92,10 @@ test_sequence = [
     'zones[2].source_id' : 1,
     'zones[3].source_id' : 1,
     'zones[5].source_id' : 1,
+    'groups[0].source_id': 1,
+    'groups[1].source_id': 1,
+    'groups[2].source_id': 1,
+    'groups[3].source_id': 1,
   }
 ),
 (
@@ -153,6 +160,9 @@ test_sequence = [
       'groups[3].id'    : 3,
       'groups[3].name'  : 'super_group',
       'groups[3].zones' : [0, 1, 2, 3, 4, 5],
+      'groups[3].vol_delta': -40,
+      'groups[3].mute': False,
+      'groups[3].source_id': None,
     }
   }
 ),
@@ -252,8 +262,13 @@ def add_field_entries(diff, changes, name, status_ref):
       else:
         changes[pretty] = result
 
-def get_state_changes():
+def get_state_changes(ignore_group_changes=False):
   """ get difference between status when this was last called
+    Args:
+      ignore_group_changes: flag to ignore group changes since they can be
+        generated aggregate properties, This is needed when changing a zone's volume,
+        since a group's volume is calculated from its zones. Not all tests should need
+        to care about these aggregate properties.
 
     Returns:
       changees: dict of modified fields
@@ -261,10 +276,18 @@ def get_state_changes():
       removed: list of removed fields
   """
   global last_status, eth_audio_api
-  diff = deepdiff.DeepDiff(last_status, eth_audio_api.status, ignore_order=True)
+  # cutoff_distance_for_pairs needs to be set so that changes don't get grouped together, this became a problem with groups when more fields were added
+  # intersection distance is its pair, unsure what it does...
+  diff = deepdiff.DeepDiff(last_status, eth_audio_api.status, ignore_order=True, cutoff_distance_for_pairs=0.9, cutoff_intersection_for_pairs=0.9)
   changes = ({}, {}, {})
-  if 'values_changed' in diff:
-    for field, change in diff['values_changed'].items():
+  # merge type_changes and values_changed (weird that these names are different tenses)
+  values_changed = {}
+  for k in ['values_changed', 'type_changes']:
+    if k in diff:
+      values_changed.update(diff[k])
+  for field, change in values_changed.items():
+    ignore_change = ignore_group_changes and 'groups' in field
+    if not ignore_change:
       changes[0][pretty_field(field)] = change['new_value']
   # get added fields
   add_field_entries(diff, changes[1], 'dictionary_item_added', eth_audio_api.status)
@@ -275,9 +298,9 @@ def get_state_changes():
   last_status = deepcopy(eth_audio_api.status)
   return changes
 
-def check_json_tst(name, result, expected_result, expected_changes):
-  # check state changes
-  changes, added, removed = get_state_changes()
+def check_json_tst(name, result, expected_result, expected_changes, ignore_group_changes=True):
+  # check state changes, we conditionally ignore group changes now that they have some aggregate properties that get modified by individual zones
+  changes, added, removed = get_state_changes(ignore_group_changes)
   # handle additions and removals in expected changes as optional, making sure to remove them from the actual changes comparison
   expected_changes2 = dict(expected_changes)
   if 'added' in expected_changes:
@@ -293,12 +316,12 @@ def check_json_tst(name, result, expected_result, expected_changes):
   assert changes == expected_changes2
   assert result == expected_result
 
-def check_http_tst(name, result, expected_result, expected_changes):
+def check_http_tst(name, result, expected_result, expected_changes, ignore_group_changes=True):
   assert result != None
   if 'error' in result:
-    check_json_tst(name, result, expected_result, expected_changes)
+    check_json_tst(name, result, expected_result, expected_changes, ignore_group_changes)
   else:
-    check_json_tst(name, None, expected_result, expected_changes)
+    check_json_tst(name, None, expected_result, expected_changes, ignore_group_changes)
 
 # TODO: now that we are actually using pytest, we will need to break up these tests into modular pieces, we will need a test fixture that we can use to start from a known configuration
 def check_all_tsts(api):
@@ -322,13 +345,14 @@ def check_all_tsts(api):
   check_json_tst('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20, 'zones[1].mute' : False})
   check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, None, None, None, None, False), None, {})
   check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, None, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3})
-  check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 4, True, None, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 4})
+  check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 3, True, None, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 3})
   check_json_tst('Configure zone 4, Weird Zone', eth_audio_api.set_zone(4, 'Weird Zone', 1, None, None, None), None, {'zones[4].name' : 'Weird Zone', 'zones[4].source_id' : 1})
 
   # Test string/json based command handler
   print('\ntesting json:')
   for name, cmd, expected_result, expected_changes  in test_sequence:
-    check_json_tst(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes)
+    is_group_cmd = '_group' in cmd['command']
+    check_json_tst(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
 
   print('\ntesting json over http:')
 
@@ -338,7 +362,8 @@ def check_all_tsts(api):
   # Send HTTP requests and print output
   client = ethaudio.Client()
   for name, cmd, expected_result, expected_changes in test_sequence:
-    check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes)
+    is_group_cmd = '_group' in cmd['command']
+    check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
 
 def test_mock():
   check_all_tsts(ethaudio.Api(ethaudio.api.MockRt()))

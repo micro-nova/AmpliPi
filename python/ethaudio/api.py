@@ -4,9 +4,17 @@ import json
 from copy import deepcopy
 import deepdiff
 
-import serial
+import pprint
+
+DISABLE_HW = False # disable hardware based packages (smbus2 is not installable on Windows)
+DEBUG_PREAMPS = False # print out preamp state after register write
+DEBUG_API = True # print out a graphical state of the api after each call
+
 import time
-from smbus2 import SMBus
+
+if not DISABLE_HW:
+  import serial
+  from smbus2 import SMBus
 
 # Helper functions
 def encode(pydata):
@@ -38,6 +46,36 @@ def updated_val(update, val):
 def clamp(x, xmin, xmax):
     return max(xmin, min(x, xmax))
 
+def compact_str(l):
+  """ stringify a compact list"""
+  assert type(l) == list
+  return str(l).replace(' ', '')
+
+def max_len(items, len_determiner=len):
+  """ determine the item with the max len, based on the @len_determiner's definition of length
+  Args:
+    items: iterable items
+    len_determiner: function that returns an integer, TODO: how to specify function return/type?
+
+  Returns:
+    len: integer
+
+  This is useful for lining up lists printed in a table-like format
+  """
+  largest = max(items, key=len_determiner)
+  return len_determiner(largest)
+
+def vol_string(vol, min_vol=-79, max_vol=0):
+  """ Make a visual representation of a volume """
+  VOL_RANGE = max_vol - min_vol + 1
+  VOL_STR_LEN = 20
+  VOL_SCALE = VOL_RANGE / VOL_STR_LEN
+  vol_level = int((vol - min_vol)  / VOL_SCALE)
+  assert vol_level >= 0 and vol_level < VOL_STR_LEN
+  vol_string = ['-'] * VOL_STR_LEN
+  vol_string[vol_level] = '|' # place the volume slider bar at its current spot
+  return ''.join(vol_string) # turn that char array into a string
+
 # Preamp register addresses
 REG_ADDRS = {
   'SRC_AD'    : 0x00,
@@ -61,7 +99,9 @@ PREAMPS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x6
 class Preamps:
   def __init__(self, mock=False):
     self.preamps = dict()
-    if not mock:
+    if DISABLE_HW or mock:
+      self.bus = None
+    else:
       # Setup serial connection via UART pins - set I2C addresses for preamps
       # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
       ser = serial.Serial ("/dev/ttyAMA0")
@@ -86,8 +126,6 @@ class Preamps:
           if p == PREAMPS[0]:
             print('Error: no preamps found')
           break
-    else:
-      self.bus = None
 
   def new_preamp(self, index):
     self.preamps[index] = [
@@ -112,7 +150,8 @@ class Preamps:
     # dynamically update preamps
     if preamp_addr not in self.preamps:
       self.new_preamp(preamp_addr)
-    print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
+    if DEBUG_PREAMPS:
+      print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
     self.preamps[preamp_addr][reg] = data
     # TODO: need to handle volume modifying mute state in mock
     if self.bus is not None:
@@ -123,7 +162,7 @@ class Preamps:
         time.sleep(0.01)
         self.bus = SMBus(1)
         self.bus.write_byte_data(preamp_addr, reg, data)
-  
+
   def probe_preamp(self, index):
     # Scan for preamps, and set source registers to be completely digital
     try:
@@ -151,18 +190,6 @@ class Preamps:
       for zone in range(6):
         self.print_zone_state(6 * (preamp - 1) + zone)
 
-  def vol_string(self, vol):
-    MAX_VOL = 0
-    MIN_VOL = -79
-    VOL_RANGE = MAX_VOL - MIN_VOL + 1
-    VOL_STR_LEN = 20
-    VOL_SCALE = VOL_RANGE / VOL_STR_LEN
-    vol_level = int((vol - MIN_VOL)  / VOL_SCALE)
-    assert vol_level >= 0 and vol_level < VOL_STR_LEN
-    vol_string = ['-'] * VOL_STR_LEN
-    vol_string[vol_level] = '|' # place the volume slider bar at its current spot
-    return ''.join(vol_string) # turn that char array into a string
-
   def print_zone_state(self, zone):
     assert zone >= 0
     preamp = (int(zone / 6) + 1) * 8
@@ -176,7 +203,7 @@ class Preamps:
     state = []
     if muted:
       state += ['muted']
-    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, self.vol_string(vol), ', '.join(state)))
+    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, vol_string(vol), ', '.join(state)))
 
 class MockRt:
   """ Mock of an EthAudio Runtime
@@ -425,14 +452,47 @@ class EthAudioApi:
         { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
         { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
         { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 }
+        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
       ],
       "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-        { "id": 0, "name": "Group 1", "zones": [0,1,2] },
-        { "id": 1, "name": "Group 2", "zones": [2,3,4] },
-        { "id": 2, "name": "Group 3", "zones": [5] }
+        { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
+        { "id": 1, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
+        { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
       ]
     }
+
+  def visualize_api(self, prev_status=None):
+    viz = ''
+    # visualize source configuration
+    src_cfg = [{True: 'Digital', False: 'Analog'}.get(s['digital']) for s in self.status['sources']]
+    viz += '  [{}]\n'.format(', '.join(src_cfg))
+    # visualize zone configuration
+    enabled_zones = [z for z in self.status['zones'] if not z['disabled']]
+    viz += 'zones:\n'
+    zone_len = max_len(enabled_zones, lambda z: len(z['name']))
+    for z in enabled_zones:
+      src = z['source_id']
+      src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
+      muted = 'muted' if z['mute'] else ''
+      zone_fmt = '  {}({}) --> {:' + str(zone_len) + '} vol [{}] {}\n'
+      viz += zone_fmt.format(src, src_type, z['name'], vol_string(z['vol']), muted)
+    # print group configuration
+    viz += 'groups:\n'
+    enabled_groups = self.status['groups']
+    gzone_len = max_len(enabled_groups, lambda g: len(compact_str(g['zones'])))
+    gname_len = max_len(enabled_groups, lambda g: len(g['name']))
+    for g in enabled_groups:
+      if g['source_id']:
+        src = g['source_id']
+        src_type = {True: 'D', False: 'A'}.get(self.status['sources'][src]['digital'])
+      else:
+        src = ' '
+        src_type = ' '
+      muted = 'muted' if g['mute'] else ''
+      vol = vol_string(g['vol_delta'])
+      group_fmt = '  {}({}) --> {:' + str(gname_len) + '} {:' + str(gzone_len) + '} vol [{}] {}\n'
+      viz += group_fmt.format(src, src_type, g['name'], compact_str(g['zones']), vol, muted)
+    return viz
 
   def parse_cmd(self, cmd):
     """ process an individual command
@@ -460,6 +520,11 @@ class EthAudioApi:
         output = self.delete_group(cmd.get('id'))
       else:
         output = error('command {} is not supported'.format(command))
+
+      if output:
+        print(output)
+      elif DEBUG_API:
+        print(self.visualize_api())
 
       return output
     except Exception as e:
@@ -500,7 +565,7 @@ class EthAudioApi:
         if self._rt.update_sources(digital_cfg):
           # update the status
           src['digital'] = bool(digital)
-          if type(self._rt) == RpiRt:
+          if type(self._rt) == RpiRt and DEBUG_PREAMPS:
             self._rt._bus.print()
           return None
         else:
@@ -540,7 +605,7 @@ class EthAudioApi:
         return error('failed to set zone, error getting current state: {}'.format(e))
       try:
         sid = parse_int(source_id, [0, 1, 2, 3, 4])
-        vol = parse_int(vol, range(-79, 1))
+        vol = parse_int(vol, range(-79, 79)) # hold additional state for group delta volume adjustments, output volume will be saturated to 0dB
         zones = self.status['zones']
         # update non hw state
         z['name'] = name
@@ -561,12 +626,16 @@ class EthAudioApi:
           else:
             return error('set zone failed: unable to update zone mute')
         if update_vol:
-          if self._rt.update_zone_vol(idx, vol):
+          real_vol = clamp(vol, -79, 0)
+          if self._rt.update_zone_vol(idx, real_vol):
             z['vol'] = vol
           else:
             return error('set zone failed: unable to update zone volume')
 
-        if type(self._rt) == RpiRt:
+        # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
+        self.update_groups()
+
+        if type(self._rt) == RpiRt and DEBUG_PREAMPS:
           self._rt._bus.print()
         return None
       except Exception as e:
@@ -580,29 +649,71 @@ class EthAudioApi:
         return i,g
     return -1, None
 
+  def update_groups(self):
+    """ Update the group's aggregate fields to maintain consistency and simplify app interface """
+    for g in self.status['groups']:
+      zones = [ self.status['zones'][z] for z in g['zones'] ]
+      mutes = [ z['mute'] for z in zones ]
+      sources  = set([ z['source_id'] for z in zones ])
+      vols = [ z['vol'] for z in zones ]
+      vols.sort()
+      g['mute'] = False not in mutes # group is only considered muted if all zones are muted
+      if len(sources) == 1:
+        g['source_id'] = sources.pop() # TODO: how should we handle different sources in the group?
+      else: # multiple sources
+        g['source_id'] = None
+      g['vol_delta'] = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
+
   def set_group(self, id, name=None, source_id=None, zones=None, mute=None, vol_delta=None):
     """ Configure an existing group
         parameters will be used to configure each sone in the group's zones
         all parameters besides the group id, @id, are optional
+
+        Args:
+          id: group id (a guid)
+          name: group name
+          source_id: group source
+          zones: zones that belong to the group
+          mute: group mute setting (muted=True)
+          vol_delta: volume adjustment to apply to each zone [-79,79]
+        Returns:
+            'None' on success, otherwise error (dict)
     """
     _, g = self.get_group(id)
     if g is None:
       return error('set group failed, group {} not found'.format(id))
+    if type(zones) is str:
+      try:
+        zones = eval(zones)
+      except Exception as e:
+        return error('failed to configure group, error parsing zones: {}'.format(e))
     try:
       name, _ = updated_val(name, g['name'])
       zones, _ = updated_val(zones, g['zones'])
+      vol_delta, vol_updated = updated_val(vol_delta, g['vol_delta'])
+      if vol_updated:
+        vol_change = vol_delta - g['vol_delta']
+      else:
+        vol_change = 0
     except Exception as e:
       return error('failed to configure group, error getting current state: {}'.format(e))
+
     g['name'] = name
     g['zones'] = zones
+
     for z in [ self.status['zones'][zone] for zone in zones ]:
-      if vol_delta is not None:
-        vol = clamp(z['vol'] + vol_delta, -79, 0)
+      if vol_change != 0:
+        # TODO: make this use volume delta adjustment, for now its a fixed group volume
+        vol = vol_delta # vol = z['vol'] + vol_change
       else:
         vol = None
       self.set_zone(z['id'], None, source_id, mute, vol)
+    g['vol_delta'] = vol_delta
 
-    if type(self._rt) == RpiRt:
+    # update the group stats
+    self.update_groups()
+
+    if type(self._rt) == RpiRt and DEBUG_PREAMPS:
       self._rt._bus.print()
 
   def new_group_id(self):
@@ -625,12 +736,21 @@ class EthAudioApi:
     if name in names:
       return error('create group failed: {} already exists'.format(name))
 
+    if type(zones) is str:
+      try:
+        zones = eval(zones)
+      except Exception as e:
+        return error('failed to configure group, error parsing zones: {}'.format(e))
+
     # get the new groug's id
     id = self.new_group_id()
 
     # add the new group
-    group = { 'id': id, 'name' : name, 'zones' : zones }
+    group = { 'id': id, 'name' : name, 'zones' : zones, 'vol_delta' : 0 }
     self.status['groups'].append(group)
+
+    # update the group stats and populate uninitialized fields of the group
+    self.update_groups()
 
   def delete_group(self, id):
     """delete an existing group"""
