@@ -6,6 +6,9 @@ import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
+# pretty printing
+import pprint
+
 # get my ip
 import socket
 
@@ -69,6 +72,9 @@ class EthAudioServer():
         'None' on success, otherwise a json encoded error
     """
     cmd = decode(command_json_text)
+    print("received command: ")
+    pp = pprint.PrettyPrinter(indent=2)
+    pp.pprint(cmd)
     return self.eth_audio_instance.parse_cmd(cmd)
 
   def craft_error(self, error):
@@ -137,6 +143,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       content = self.rfile.read(content_length)
 
       # attempt to parse
+      print('parsing: {}'.format(content))
       parse_error = self.eth_audio_server.parse_command(content)
       # reply with appropriate HTTP code
       if(parse_error == None):
