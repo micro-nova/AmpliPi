@@ -451,16 +451,45 @@ class Stream(object):
   def status(self):
     return 'Status not available'
 
+def write_config_file(filename, config):
+  """ Write a simple config file (@filename) with key=value pairs given by @config """
+  with open(filename, 'wt') as cfg_file:
+    for key, value in config.items():
+      cfg_file.write('{}={}\n'.format(key, value))
+
 class Pandora:
-  def __init__(self, user, password, station=None):
+  """ A Pandora Stream """
+
+  class Control:
+    """ Controlling a running pianobar instance via its fifo control """
+    def __init__(self, pianobar_dir='~/.config/pianobar'):
+      # open the CTL fifo ('ctl' name specified in pianobar 'config' file)
+      self.fifo = open(os.path.join(pianobar_dir, 'ctl'), 'w')
+    def __del__(self):
+      if self.fifo:
+        self.fifo.close()
+    def play(self):
+      self.fifo.write('p\n')
+      self.fifo.flush()
+    def pause(self):
+      self.fifo.write('p\n')
+      self.fifo.flush()
+    def stop(self):
+      self.fifo.write('q\n')
+      self.fifo.flush()
+    def next(self):
+      self.fifo.write('n\n')
+      self.fifo.flush()
+
+  def __init__(self, user, password, station):
     self.user = user
     self.password = password
     self.station = station
-    if station is None:
-      raise ValueError("station must be specified") # TODO: handle getting station list (it looks like you have to play a song before the station list gets updated through eventcmd)
+    #if station is None:
+    #  raise ValueError("station must be specified") # TODO: handle getting station list (it looks like you have to play a song before the station list gets updated through eventcmd)
     self.proc = None  # underlying pianobar process
-    self.fifo = None # control fifo to pianobar
-    self.state = 'Disconnected'
+    self.ctrl = None # control fifo to pianobar
+    self.state = 'disconnected'
 
   def connect(self, src):
     """ Connect pandora output to a given audio source
@@ -468,25 +497,48 @@ class Pandora:
     """
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
-    pianobar_home = '~/config/srcs/{}'.format(src)
-    pianobar_config_file = '{}/pianobar'.format(pianobar_home)
-    pianobar_src_config_file = '{}/.libao'.format(pianobar_home)
-    # TODO: make dir(s)
-    # TODO: write config files
-    # TODO: create control fifo if needed
-    # TODO: start pandora process in special home
+    pb_home = '/home/pi/config/srcs/{}'.format(src) # the simulated HOME for an instance of pianobar
+    pb_config_folder = '{}/.config/pianobar'.format(pb_home)
+    pb_control_fifo = '{}/ctl'.format(pb_config_folder)
+    pb_status_fifo = '{}/stat'.format(pb_config_folder)
+    pb_config_file = '{}/config'.format(pb_config_folder)
+    pb_src_config_file = '{}/.libao'.format(pb_home)
+    # make all of the necessary dir(s)
+    os.system('mkdir -p {}'.format(pb_config_folder))
+    # write pianobar and libao config files
+    write_config_file(pb_config_file, {
+      'user': self.user,
+      'password': self.password,
+      'autostart_station': self.station,
+      'fifo': pb_control_fifo,
+      # TODO: add event_command=script with a script that writes to a status fifo
+    })
+    write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': 'ch' + str(src)})
+    # create fifos if needed
+    if not os.path.exists(pb_control_fifo):
+      os.system('mkfifo {}'.format(pb_control_fifo))
+    if not os.path.exists(pb_status_fifo):
+      os.system('mkfifo {}'.format(pb_status_fifo))
+    # start pandora process in special home
+    print('Pianobar config at {}'.format(pb_config_folder))
+    self.ctrl = Pandora.Control(pb_home)
+    self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : pb_home})
     print('Pandora connected to {}'.format(src))
     self.state = 'connected'
 
+  def _is_pb_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
   def disconnect(self):
-    # TODO: implement pandora disconnect
-    if self.proc and self.proc.poll() is None:
+    if self._is_pb_running():
+      self.ctrl.stop()
       self.proc.kill()
       print('Pandora disconnected')
       self.state = 'disconnected'
-    self.proc = None  # underlying pianobar process
-    self.fifo = None # control fifo to pianobar
-    pass
+    self.proc = None
+    self.ctrl = None
 
   def set_station(self, station):
     # TODO: send set station command over fifo
