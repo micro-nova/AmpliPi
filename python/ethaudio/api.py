@@ -5,8 +5,9 @@ from copy import deepcopy
 import deepdiff
 
 import pprint
+import os # files
 
-DISABLE_HW = False # disable hardware based packages (smbus2 is not installable on Windows)
+DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 DEBUG_API = True # print out a graphical state of the api after each call
 
@@ -64,6 +65,17 @@ def max_len(items, len_determiner=len):
   """
   largest = max(items, key=len_determiner)
   return len_determiner(largest)
+
+def save_on_success(func):
+  """ A decorator that calls a class object's save method when successful
+        (in the case of our API None=Success)
+  """
+  def inner(self, *args, **kwargs):
+    result = func(self, *args, **kwargs)
+    if result is None:
+      self.save()
+    return result
+  return inner
 
 def vol_string(vol, min_vol=-79, max_vol=0):
   """ Make a visual representation of a volume """
@@ -423,43 +435,94 @@ class EthAudioApi:
     For now this is just a mock implementation
    """
 
-  def __init__(self, rt = MockRt()):
+  DEFAULT_CONFIG = { # This is the system state response that will come back from the ethaudio box
+    "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
+      { "id": 0, "name": "Source 1", "digital": True  },
+      { "id": 1, "name": "Source 2", "digital": True  },
+      { "id": 2, "name": "Source 3", "digital": True  },
+      { "id": 3, "name": "Source 4", "digital": True  }
+    ],
+    "zones": [ # this is an array of zones, array length depends on # of boxes connected
+      { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+    ],
+    "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
+      { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
+      { "id": 1, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
+      { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
+    ]
+  }
+
+  def __init__(self, rt = MockRt(), config_file = 'saved_state.json'):
     self._rt = rt
     """ intitialize the mock system to to base configuration """
-    # TODO: this status will need to be loaded from a file
-    self.status = { # This is the system state response that will come back from the ethaudio box
-      "sources": [ # this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
-        { "id": 0, "name": "Source 1", "digital": True  },
-        { "id": 1, "name": "Source 2", "digital": True  },
-        { "id": 2, "name": "Source 3", "digital": True  },
-        { "id": 3, "name": "Source 4", "digital": True  }
-      ],
-      "zones": [ # this is an array of zones, array length depends on # of boxes connected
-        { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-        { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      ],
-      "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-        { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
-        { "id": 1, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
-        { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
-      ]
-    }
+    # test open the config file, this will throw an exception if there are issues writing to the file
+    with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
+      pass
+    self.config_file = config_file
+    self.backup_config_file = config_file + '.bak'
+    self.config_file_valid = True # initially we assume the config file is valid
+    # try to load the config file or its backup
+    config_paths = [self.config_file, self.backup_config_file]
+    errors = []
+    loaded_config = False
+    for cfg_path in config_paths:
+      try:
+        if os.path.exists(cfg_path):
+          with open(cfg_path, 'r') as cfg:
+            self.status = json.load(cfg)
+          loaded_config = True
+          break
+        else:
+          errors.append('config file "{}" does not exist'.format(cfg_path))
+      except Exception as e:
+        self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
+        errors.append('error loading config file: {}'.format(e))
+
+    if not loaded_config:
+      print(errors[0])
+      print('using default config')
+      self.status = deepcopy(self.DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
+      self.save()
+    # configure all sources so that they are in a known state
+    for src in self.status['sources']:
+      self.set_source(src['id'], digital=src['digital'], force_update=True)
+    # configure all of the zones so that they are in a known state
+    #   we mute all zones on startup to keep audio from playing immediately at startup
+    for z in self.status['zones']:
+      if not z['mute']:
+        self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
+    # configure all of the groups (some fields may need to be updated)
+    self.update_groups()
+
+  def save(self):
+    try:
+      # save a backup copy of the config file (assuming its valid)
+      if os.path.exists(self.config_file) and self.config_file_valid:
+        if os.path.exists(self.backup_config_file):
+          os.remove(self.backup_config_file)
+        os.rename(self.config_file, self.backup_config_file)
+      with open(self.config_file, 'w') as cfg:
+        json.dump(self.status, cfg, indent=2)
+      self.config_file_valid = True
+    except Exception as e:
+      print('Error saving config: {}'.format(e))
 
   def visualize_api(self, prev_status=None):
     viz = ''
@@ -534,7 +597,8 @@ class EthAudioApi:
     """ get the system state (dict) """
     return self.status
 
-  def set_source(self, id, name = None, digital = None):
+  @save_on_success
+  def set_source(self, id, name=None, digital=None, force_update=False):
     """ modify any of the 4 system sources
 
       Args:
@@ -552,7 +616,7 @@ class EthAudioApi:
       try:
         src = self.status['sources'][idx]
         name, _ = updated_val(name, src['name'])
-        digital, _ = updated_val(digital, src['digital'])
+        digital, digital_updated = updated_val(digital, src['digital'])
       except Exception as e:
         return error('failed to set source, error getting current state: {}'.format(e))
       try:
@@ -562,20 +626,24 @@ class EthAudioApi:
         digital_cfg[idx] = bool(digital)
         # update the name
         src['name'] = str(name)
-        if self._rt.update_sources(digital_cfg):
-          # update the status
-          src['digital'] = bool(digital)
-          if type(self._rt) == RpiRt and DEBUG_PREAMPS:
-            self._rt._bus.print()
-          return None
+        if digital_updated or force_update:
+          if self._rt.update_sources(digital_cfg):
+            # update the status
+            src['digital'] = bool(digital)
+            if type(self._rt) == RpiRt and DEBUG_PREAMPS:
+              self._rt._bus.print()
+            return None
+          else:
+            return error('failed to set source')
         else:
-          return error('failed to set source')
+          return None
       except Exception as e:
-        return error('set source ' + str(e))
+        return error('failed to set source: ' + str(e))
     else:
-      return error('set source: index {} out of bounds'.format(idx))
+      return error('failed to set source: index {} out of bounds'.format(idx))
 
-  def set_zone(self, id, name=None, source_id=None, mute=None, vol=None, disabled=None):
+  @save_on_success
+  def set_zone(self, id, name=None, source_id=None, mute=None, vol=None, disabled=None, force_update=False):
     """ modify any zone
 
           Args:
@@ -611,21 +679,21 @@ class EthAudioApi:
         z['name'] = name
         z['disabled'] = disabled
         # TODO: figure out an order of operations here, like does mute need to be done before changing sources?
-        if update_source_id:
+        if update_source_id or force_update:
           zone_sources = [ zone['source_id'] for zone in zones ]
           zone_sources[idx] = sid
           if self._rt.update_zone_sources(idx, zone_sources):
             z['source_id'] = sid
           else:
             return error('set zone failed: unable to update zone source')
-        if update_mutes:
+        if update_mutes or force_update:
           mutes = [ zone['mute'] for zone in zones ]
           mutes[idx] = mute
           if self._rt.update_zone_mutes(idx, mutes):
             z['mute'] = mute
           else:
             return error('set zone failed: unable to update zone mute')
-        if update_vol:
+        if update_vol or force_update:
           real_vol = clamp(vol, -79, 0)
           if self._rt.update_zone_vol(idx, real_vol):
             z['vol'] = vol
@@ -664,6 +732,7 @@ class EthAudioApi:
         g['source_id'] = None
       g['vol_delta'] = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
+  @save_on_success
   def set_group(self, id, name=None, source_id=None, zones=None, mute=None, vol_delta=None):
     """ Configure an existing group
         parameters will be used to configure each sone in the group's zones
@@ -727,6 +796,7 @@ class EthAudioApi:
         break
     return new_gid
 
+  @save_on_success
   def create_group(self, name, zones):
     """create a new group with a list of zones
     Refer to the returned system state to obtain the id for the newly created group
@@ -752,6 +822,7 @@ class EthAudioApi:
     # update the group stats and populate uninitialized fields of the group
     self.update_groups()
 
+  @save_on_success
   def delete_group(self, id):
     """delete an existing group"""
     try:
