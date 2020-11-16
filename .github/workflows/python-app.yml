@@ -33,4 +33,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test mock using pytest # rpi cannot be tested directly due to hardware...
       run: |
-        pytest python/tests/test_ethaudio_mock.py -v
+        pytest python/tests/test_ethaudio.py -v

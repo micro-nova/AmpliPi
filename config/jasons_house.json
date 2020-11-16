@@ -1,0 +1,236 @@
+{
+  "sources": [
+    {
+      "id": 0,
+      "name": "Test AP",
+      "digital": true
+    },
+    {
+      "id": 1,
+      "name": "Jason AP",
+      "digital": true
+    },
+    {
+      "id": 2,
+      "name": "John AP",
+      "digital": true
+    },
+    {
+      "id": 3,
+      "name": "Pandora",
+      "digital": true
+    }
+  ],
+  "zones": [
+    {
+      "id": 0,
+      "name": "Local",
+      "source_id": 1,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 1,
+      "name": "Office",
+      "source_id": 2,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 2,
+      "name": "Laundry Room",
+      "source_id": 2,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 3,
+      "name": "Dining Room",
+      "source_id": 3,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 4,
+      "name": "Living Room",
+      "source_id": 3,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 5,
+      "name": "Guest Bedroom",
+      "source_id": 0,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 6,
+      "name": "Master Bedroom",
+      "source_id": 0,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 7,
+      "name": "Downstairs Living",
+      "source_id": 1,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 8,
+      "name": "Downstairs Dining",
+      "source_id": 0,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 9,
+      "name": "Downstairs Bedroom",
+      "source_id": 0,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 10,
+      "name": "Downstairs Laundry",
+      "source_id": 0,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 11,
+      "name": "Downstairs Bathroom",
+      "source_id": 0,
+      "mute": true,
+      "disabled": false,
+      "vol": -24
+    },
+    {
+      "id": 12,
+      "name": "Screened in Room",
+      "source_id": 0,
+      "mute": true,
+      "disabled": true,
+      "vol": -40
+    },
+    {
+      "id": 13,
+      "name": "Deck 1",
+      "source_id": 0,
+      "mute": true,
+      "disabled": true,
+      "vol": -40
+    },
+    {
+      "id": 14,
+      "name": "Deck 2",
+      "source_id": 0,
+      "mute": true,
+      "disabled": true,
+      "vol": -40
+    },
+    {
+      "id": 15,
+      "name": "Patio 1",
+      "source_id": 0,
+      "mute": true,
+      "disabled": true,
+      "vol": -40
+    },
+    {
+      "id": 16,
+      "name": "Patio 2",
+      "source_id": 0,
+      "mute": true,
+      "disabled": true,
+      "vol": -40
+    },
+    {
+      "id": 17,
+      "name": "Zone 18",
+      "source_id": 0,
+      "mute": true,
+      "disabled": true,
+      "vol": -79
+    }
+  ],
+  "groups": [
+    {
+      "id": 0,
+      "name": "Whole House",
+      "zones": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "mute": true,
+      "source_id": null,
+      "vol_delta": -24
+    },
+    {
+      "id": 1,
+      "name": "Upstairs",
+      "zones": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "mute": true,
+      "source_id": null,
+      "vol_delta": -24
+    },
+    {
+      "id": 2,
+      "name": "Downstairs Apartment",
+      "zones": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "mute": true,
+      "source_id": null,
+      "vol_delta": -24
+    },
+    {
+      "id": 3,
+      "name": "Outside",
+      "zones": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "mute": true,
+      "source_id": 0,
+      "vol_delta": -40
+    }
+  ]
+}
