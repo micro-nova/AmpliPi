@@ -515,6 +515,8 @@ class EthAudioApi:
     try:
       # save a backup copy of the config file (assuming its valid)
       if os.path.exists(self.config_file) and self.config_file_valid:
+        if os.path.exists(self.backup_config_file):
+          os.remove(self.backup_config_file)
         os.rename(self.config_file, self.backup_config_file)
       with open(self.config_file, 'w') as cfg:
         json.dump(self.status, cfg, indent=2)
