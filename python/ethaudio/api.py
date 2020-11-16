@@ -432,6 +432,81 @@ class RpiRt:
     # TODO: Add error checking on successful write
     return True
 
+def build_stream(args):
+  if args['type'] == 'pandora':
+    return Pandora(args['user'], args['password'], station=args.get('station'))
+  elif args['type'] == 'shairport':
+    # TODO: implement shairport
+    raise NotImplementedError('shairport')
+  else:
+    raise NotImplementedError(args['type'])
+
+class Stream(object):
+  def connect(self, src):
+    """ Conmnect the stream's output to src """
+    pass
+  def disconnect(self):
+    """ Disconnect the stream's output from any connected source """
+    pass
+  def status(self):
+    return 'Status not available'
+
+class Pandora:
+  def __init__(self, user, password, station=None):
+    self.user = user
+    self.password = password
+    self.station = station
+    if station is None:
+      raise ValueError("station must be specified") # TODO: handle getting station list (it looks like you have to play a song before the station list gets updated through eventcmd)
+    self.proc = None  # underlying pianobar process
+    self.fifo = None # control fifo to pianobar
+    self.state = 'Disconnected'
+
+  def connect(self, src):
+    """ Connect pandora output to a given audio source
+    This will start up pianobar with a configuration specific to @src
+    """
+    # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
+    # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
+    pianobar_home = '~/config/srcs/{}'.format(src)
+    pianobar_config_file = '{}/pianobar'.format(pianobar_home)
+    pianobar_src_config_file = '{}/.libao'.format(pianobar_home)
+    # TODO: make dir(s)
+    # TODO: write config files
+    # TODO: create control fifo if needed
+    # TODO: start pandora process in special home
+    print('Pandora connected to {}'.format(src))
+    self.state = 'connected'
+
+  def disconnect(self):
+    # TODO: implement pandora disconnect
+    if self.proc and self.proc.poll() is None:
+      self.proc.kill()
+      print('Pandora disconnected')
+      self.state = 'disconnected'
+    self.proc = None  # underlying pianobar process
+    self.fifo = None # control fifo to pianobar
+    pass
+
+  def set_station(self, station):
+    # TODO: send set station command over fifo
+    # TODO: how can we get the station list without playing music?
+    pass
+
+  def info(self):
+    # TODO: report the status of pianobar with station name, playing/paused, song info
+    # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
+    return 'No info available'
+
+  def status(self):
+    return self.state
+
+# make a dict of all the api methods
+API_CMDS = {}
+def api_cmd(func):
+  """ API command decorator, any function that gets decorated with this gets added to the api """
+  API_CMDS[func.__name__] = func
+  return func
 
 class EthAudioApi:
   """ EthAudio API
@@ -440,10 +515,13 @@ class EthAudioApi:
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the ethaudio box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      { "id": 0, "name": "Source 1", "type": "local" },
-      { "id": 1, "name": "Source 2", "type": "local" },
-      { "id": 2, "name": "Source 3", "type": "local" },
-      { "id": 3, "name": "Source 4", "type": "local" }
+      { "id": 0, "name": "Source 1", "input": "local" },
+      { "id": 1, "name": "Source 2", "input": "local" },
+      { "id": 2, "name": "Source 3", "input": "local" },
+      { "id": 3, "name": "Source 4", "input": "local" }
+    ],
+    "streams": [
+      # TODO: should there be a default stream set? maybe a shairport instance?
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
@@ -503,17 +581,17 @@ class EthAudioApi:
       print('using default config')
       self.status = deepcopy(self.DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
+    # configure all streams into a known state
+    self.streams = {}
+    for stream in self.status['streams']:
+      self.streams[stream['id']] = build_stream(stream)
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
-      self.set_source(src['id'], type_=src['type'], force_update=True)
-    # TODO: configure all streams into a known state
-    self.pandora = None # TODO: support multiple pandora instances
-    self.shairport = [None] * 4
+      self.set_source(src['id'], input=src['input'], force_update=True)
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for z in self.status['zones']:
-      if not z['mute']:
-        self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
+      self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
     # configure all of the groups (some fields may need to be updated)
     self.update_groups()
 
@@ -531,7 +609,7 @@ class EthAudioApi:
   def visualize_api(self, prev_status=None):
     viz = ''
     # visualize source configuration
-    src_cfg = [s['type'] for s in self.status['sources']]
+    src_cfg = [s['input'] for s in self.status['sources']]
     viz += '  [{}]\n'.format(', '.join(src_cfg))
     # visualize zone configuration
     enabled_zones = [z for z in self.status['zones'] if not z['disabled']]
@@ -571,6 +649,9 @@ class EthAudioApi:
     """
     try:
       command = cmd['command']
+      # TODO: simplify command handling with dict->kwargs
+      # TODO: remove command from cmd (ie. command = cmd.pop('command); args = cmd)
+      # TODO: call an api function from API_CMDS using cmd dict as kwargs ie. API_CMDS[command](**cmd)
       if command is None:
         output = error('No command specified')
       elif command == 'return_state':
@@ -585,6 +666,12 @@ class EthAudioApi:
         output = self.create_group(cmd.get('name'), cmd.get('zones'))
       elif command == 'delete_group':
         output = self.delete_group(cmd.get('id'))
+      elif command == 'create_stream':
+        output = error('create_stream is not implemented yet')
+      elif command == 'delete_stream':
+        output = error('delete_stream is not implemented yet')
+      elif command == 'set_stream':
+        output = error('set_stream is not implemented yet')
       else:
         output = error('command {} is not supported'.format(command))
 
@@ -608,15 +695,35 @@ class EthAudioApi:
 
   def get_state(self):
     """ get the system state (dict) """
+    # update the state with the latest stream info and status
+    for s in self.status['streams']:
+      stream = self.streams[s['id']]
+      s['info'] = stream.info()
+      s['status'] = stream.status()
     return self.status
 
+  def get_stream(self, input):
+    """ get the stream from an input configuration
+    Args:
+      input: input configuration either ['local', 'stream=ID']
+    Returns
+      a stream, or None if input does not specify a valid stream
+    """
+    if 'stream=' in input:
+      stream_id = int(input.split('=')[1])
+      return self.streams[stream_id]
+    else:
+      return None
+
   @save_on_success
-  def set_source(self, id, name=None, type_=None, force_update=False):
+  def set_source(self, id, name=None, input=None, force_update=False):
     """ modify any of the 4 system sources
 
       Args:
         id (int): source id [0,3]
         name (str): user friendly source name, ie. "cd player" or "stream 1"
+        input: method of audio input ('local', 'stream=ID')
+        force_update: bool, update source even if no changes have been made (for hw startup)
 
       Returns:
         'None' on success, otherwise error (dict)
@@ -629,51 +736,37 @@ class EthAudioApi:
       try:
         src = self.status['sources'][idx]
         name, _ = updated_val(name, src['name'])
-        type_, type_updated = updated_val(type_, src['type'])
+        input, input_updated = updated_val(input, src['input'])
       except Exception as e:
         return error('failed to set source, error getting current state: {}'.format(e))
       try:
         # update the name
         src['name'] = str(name)
-        if type_updated:
+        if input_updated or force_update:
           # shutdown old stream
-          old_type = src['type']
-          if old_type != 'local':
-            # TODO: get stream object
-            # TODO: shhutdown stream
-            if old_type == 'pandora':
-              # TODO: try this?
-              print('killing pianobar stream')
-              if self.pandora and self.pandora.poll() is None:
-                self.pandora.kill()
-              self.pandora = None
+          old_stream = self.get_stream(src['input'])
+          if old_stream:
+            old_stream.disconnect()
           # start new stream
-          if type_ != 'local':
-            # TODO: get stream object
-            # TODO: shhutdown stream
-            # TODO: try this?
-            if type_ == 'pandora':
-              print('killing pianobar stream')
-              if self.pandora and self.pandora.poll() is None:
-                self.pandora.kill()
-              self.pandora = None
-            pass
-          rt_needs_update = self._is_digital(type_) != self._is_digital(src['type'])
+          stream = self.get_stream(input)
+          if stream:
+            stream.connect(idx)
+          rt_needs_update = self._is_digital(input) != self._is_digital(src['input'])
           if rt_needs_update or force_update:
             # get the current underlying type of each of the sources, for configuration of the runtime
-            src_cfg = [ self._is_digital(self.status['sources'][s]['type']) for s in range(4) ]
+            src_cfg = [ self._is_digital(self.status['sources'][s]['input']) for s in range(4) ]
             # update this source
-            src_cfg[idx] = self._is_digital(type_)
+            src_cfg[idx] = self._is_digital(input)
             if self._rt.update_sources(src_cfg):
               # update the status
-              src['type'] = type_
+              src['input'] = input
               if type(self._rt) == RpiRt and DEBUG_PREAMPS:
                 self._rt._bus.print()
               return None
             else:
               return error('failed to set source')
           else:
-            src['type'] = type_
+            src['input'] = input
       except Exception as e:
         return error('failed to set source: ' + str(e))
     else:

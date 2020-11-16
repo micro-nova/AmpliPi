@@ -10,7 +10,24 @@
     "command":"set_source",
     "id":0 | 1 | 2 | 3,
     "name":"new name", // sets the friendly name for the source, ie "cd player" or "stream 1"
-    "digital": false | true // sets the connection for the source, either analog (RCA) or digital (sharpoint)
+    "type": "local" | "stream", // sets the connection for the source, either local (RCA/otther input) or stream (sharport/pandora/..)
+    "stream_id" : guid // optional
+}
+
+// TODO: add a command to create a new stream (Pandora, Shairport, others)
+// For Pandora the sequence would be something like:
+// 1. Enter usernname and password
+// 2. verify correctness (goto 1 on failure)
+// 3. select station
+
+// This command can be used to change a stream's state
+{
+    "command" : "set_stream",
+    "id" : guid, // 64-bit unique integer, generated during stream creation
+    "name" : "new name",
+# pandora
+    "station_id" : index, // index in the station list
+    "play/pause" : "play" | "pause"
 }
 
 // This command can be used to modify any zone
@@ -36,7 +53,7 @@
     "id": "any vaild group",
     "name":"new name", // sets the friendly name for the group, ie "upstairs" or "back yard"
     "source_id": 0 | 1 | 2 | 3, // change all zones in group to different source
-    "zones": [0,1,2...], // specify new array of zones that make up the group
+    "zones": [0,1,2...], // specify new array of zones that make up the group, a zone can belong to multiple groups
     "mute": false | true, // mutes all zones in group
     "vol_delta": 0 to 79 // CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
 }
@@ -62,10 +79,14 @@
 // This is the system state response that will come back from the ethaudio box
 {
     "sources": [ // this is an array of source objects, each has an id, name, and bool specifying wheater source comes from RCA or digital input
-	{ "id":0, "name":"Source 1", "digital":false },
-	{ "id":1, "name":"Source 2", "digital":false },
-	{ "id":2, "name":"Source 3", "digital":false },
-	{ "id":3, "name":"Source 4", "digital":false }
+	{ "id":0, "name":"Source 1", "input":"internal" },
+	{ "id":1, "name":"Source 2", "input":"internal" },
+	{ "id":2, "name":"Source 3", "input":"internal" },
+	{ "id":3, "name":"Source 4", "input":"stream=812" }
+    ],
+    "streams": [
+        { "id":812,  "name":"Jason's Pamdora", "type":"pandora", "station":"Matt and Kim Radio", "info":"Cameras by Matt and Kim", "state":"Playing"},
+        { "id":3432, "name":"Airplay",         "type":"shairport" }
     ],
     "zones": [ // this is an array of zones, array length depends on # of boxes connected
 	{ "id":0, "name":"Zone 1", "source_id":0, "mute":false, "disabled":false, "vol":0 },
@@ -81,3 +102,5 @@
 	{ "id":2, "name":"Group 3", "source_id":0, "mute": false, "vol_delta":0, "zones": [5] }
     ]
 }
+
+// TODO: we need to add an additional command response pair to get the station list of pandora

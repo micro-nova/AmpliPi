@@ -61,3 +61,5 @@ TODO: add start and stop control of Pandora, how does patiobar do this?
 ##### Using multiple Pianobars
 TODO: handle configuration and control of multiple pianobars once everything else works. This will need to be done be setting different configuration paths since using ~/.config/pianobar will cause collisions
 Maybe for each source there could be a configuration destination, ~/.config/amplipi/srcs/0/
+##### Output configuration
+Output configuration is done using the libao configuration file. It looks like we will need the following keypairs `default_driver=alsa` and `dev=CH` where ch is the channel we want to output on. The libao configuration file is searched for first here: ~/.libao and then /etc/libao.conf.
