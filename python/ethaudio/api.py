@@ -93,6 +93,9 @@ def vol_string(vol, min_vol=-79, max_vol=0):
   vol_string[vol_level] = '|' # place the volume slider bar at its current spot
   return ''.join(vol_string) # turn that char array into a string
 
+def output_device(src):
+  return 'ch' + str(src)
+
 # Preamp register addresses
 REG_ADDRS = {
   'SRC_AD'    : 0x00,
@@ -434,10 +437,9 @@ class RpiRt:
 
 def build_stream(args):
   if args['type'] == 'pandora':
-    return Pandora(args['user'], args['password'], station=args.get('station'))
+    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'))
   elif args['type'] == 'shairport':
-    # TODO: implement shairport
-    raise NotImplementedError('shairport')
+    return Shairport(args['name'])
   else:
     raise NotImplementedError(args['type'])
 
@@ -456,6 +458,70 @@ def write_config_file(filename, config):
   with open(filename, 'wt') as cfg_file:
     for key, value in config.items():
       cfg_file.write('{}={}\n'.format(key, value))
+
+def write_sp_config_file(filename, config):
+  """ Write a shairport config file (@filename) with a hierarchy of grouped key=value pairs given by @config """
+  with open(filename, 'wt') as cfg_file:
+    for group, gconfig in config.items():
+      cfg_file.write('{} =\n{{\n'.format(group))
+      for key, value in gconfig.items():
+        if type(value) is str:
+          cfg_file.write('  {} = "{}"\n'.format(key, value))
+        else:
+          cfg_file.write('  {} = {}\n'.format(key, value))
+      cfg_file.write('};\n')
+
+class Shairport:
+  def __init__(self, name):
+    self.name = name
+    self.proc = None
+    self.state = 'disconnected'
+
+  def connect(self, src):
+    config = {
+      'general': {
+        'name': self.name,
+        'port': 5100 + 100 * src, # Listen for service requests on this port
+        'udp_port_base': 6101 + 100 * src, # start allocating UDP ports from this port number when needed
+        'drift': 2000, # allow this number of frames of drift away from exact synchronisation before attempting to correct it
+        'resync_threshold': 0, # a synchronisation error greater than this will cause resynchronisation; 0 disables it
+        'log_verbosity': 0, # "0" means no debug verbosity, "3" is most verbose.
+      },
+      'alsa': {
+        'output_device': output_device(src), # alsa output device
+        'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
+      },
+    }
+    config_folder = '/home/pi/config/srcs/{}'.format(src)
+    # make all of the necessary dir(s)
+    os.system('mkdir -p {}'.format(config_folder))
+    config_file = '{}/shairport.conf'.format(config_folder)
+    write_sp_config_file(config_file, config)
+    shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
+    # TODO: figure out how to get status from shairport
+    self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print('{} connected to {}'.format(self.name, src))
+    self.state = 'connected'
+
+  def _is_sp_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_sp_running():
+      self.proc.kill()
+      print('{} disconnected'.format(self.name))
+    self.state = 'disconnected'
+    self.proc = None
+
+  def info(self):
+    # TODO: report the status of pianobar with station name, playing/paused, song info
+    # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
+    return 'No info available'
+
+  def status(self):
+    return self.state
 
 class Pandora:
   """ A Pandora Stream """
@@ -481,7 +547,8 @@ class Pandora:
       self.fifo.write('n\n')
       self.fifo.flush()
 
-  def __init__(self, user, password, station):
+  def __init__(self, name, user, password, station):
+    self.name = name
     self.user = user
     self.password = password
     self.station = station
@@ -513,7 +580,7 @@ class Pandora:
       'fifo': pb_control_fifo,
       # TODO: add event_command=script with a script that writes to a status fifo
     })
-    write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': 'ch' + str(src)})
+    write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': output_device(src)})
     # create fifos if needed
     if not os.path.exists(pb_control_fifo):
       os.system('mkfifo {}'.format(pb_control_fifo))
@@ -523,7 +590,7 @@ class Pandora:
     print('Pianobar config at {}'.format(pb_config_folder))
     self.ctrl = Pandora.Control(pb_home)
     self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : pb_home})
-    print('Pandora connected to {}'.format(src))
+    print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
 
   def _is_pb_running(self):
@@ -535,8 +602,8 @@ class Pandora:
     if self._is_pb_running():
       self.ctrl.stop()
       self.proc.kill()
-      print('Pandora disconnected')
-      self.state = 'disconnected'
+      print('{} disconnected'.format(self.name))
+    self.state = 'disconnected'
     self.proc = None
     self.ctrl = None
 
