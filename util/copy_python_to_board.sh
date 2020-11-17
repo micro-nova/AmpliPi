@@ -26,6 +26,7 @@ ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/../config"
 scp $SCRIPT_DIR/../python/ethaudio/*.py             $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/ethaudio
 scp $SCRIPT_DIR/../python/tests/*.py                $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/tests
 # copy config files that need to be moved with sudo, then call a script to move/configure them
+scp $SCRIPT_DIR/../config/*.json                    $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config
 scp $SCRIPT_DIR/../config/asound.conf               $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config
 scp $SCRIPT_DIR/../config/update_config.bash        $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config
 ssh $RPI_IP_ADDRESS "cd ${RPI_PYTHON_FOLDER}/../config && ./update_config.bash"
