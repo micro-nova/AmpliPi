@@ -8,7 +8,7 @@ import pprint
 import os # files
 
 DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
-DEBUG_PREAMPS = False # print out preamp state after register write
+DEBUG_PREAMPS = True # print out preamp state after register write
 DEBUG_API = True # print out a graphical state of the api after each call
 
 import time
@@ -167,9 +167,13 @@ class Preamps:
     assert type(preamp_addr) == int
     assert type(reg) == int
     assert type(data) == int
-    # dynamically update preamps
+    # dynamically update preamps (to support mock)
     if preamp_addr not in self.preamps:
-      self.new_preamp(preamp_addr)
+      if self.bus is None:
+        self.new_preamp(preamp_addr)
+      else:
+        return None # Preamp is not connected, do nothing
+
     if DEBUG_PREAMPS:
       print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
     self.preamps[preamp_addr][reg] = data
@@ -303,6 +307,9 @@ class MockRt:
     assert vol <= 0 and vol >= -79
     return True
 
+  def exists(self, zone):
+      return True
+
 class RpiRt:
   """ Actual EthAudio Runtime
 
@@ -435,11 +442,18 @@ class RpiRt:
     # TODO: Add error checking on successful write
     return True
 
-def build_stream(args):
+  def exists(self, zone):
+    if self._bus:
+      preamp = zone // 6
+      return preamp in self._bus.preamps
+    else:
+      return True
+
+def build_stream(args, mock=False):
   if args['type'] == 'pandora':
-    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'))
+    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
   elif args['type'] == 'shairport':
-    return Shairport(args['name'])
+    return Shairport(args['name'], mock=mock)
   else:
     raise NotImplementedError(args['type'])
 
@@ -472,12 +486,22 @@ def write_sp_config_file(filename, config):
       cfg_file.write('};\n')
 
 class Shairport:
-  def __init__(self, name):
+  def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
+    self.mock = mock
     self.state = 'disconnected'
+    # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
+    # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
+
+  def __del__(self):
+    self.disconnect()
 
   def connect(self, src):
+    if self.mock:
+      print('{} connected to {}'.format(self.name, src))
+      self.state = 'connected'
+      return
     config = {
       'general': {
         'name': self.name,
@@ -547,9 +571,10 @@ class Pandora:
       self.fifo.write('n\n')
       self.fifo.flush()
 
-  def __init__(self, name, user, password, station):
+  def __init__(self, name, user, password, station, mock=False):
     self.name = name
     self.user = user
+    self.mock = mock
     self.password = password
     self.station = station
     #if station is None:
@@ -558,10 +583,17 @@ class Pandora:
     self.ctrl = None # control fifo to pianobar
     self.state = 'disconnected'
 
+  def __del__(self):
+    self.disconnect()
+
   def connect(self, src):
     """ Connect pandora output to a given audio source
     This will start up pianobar with a configuration specific to @src
     """
+    if self.mock:
+      print('{} connected to {}'.format(self.name, src))
+      self.state = 'connected'
+      return
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
     pb_home = '/home/pi/config/srcs/{}'.format(src) # the simulated HOME for an instance of pianobar
@@ -588,10 +620,13 @@ class Pandora:
       os.system('mkfifo {}'.format(pb_status_fifo))
     # start pandora process in special home
     print('Pianobar config at {}'.format(pb_config_folder))
-    self.ctrl = Pandora.Control(pb_home)
-    self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : pb_home})
-    print('{} connected to {}'.format(self.name, src))
-    self.state = 'connected'
+    try:
+      self.ctrl = Pandora.Control(pb_home)
+      self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : pb_home})
+      print('{} connected to {}'.format(self.name, src))
+      self.state = 'connected'
+    except Exception as e:
+      print('error starting pianobar: {}'.format(e))
 
   def _is_pb_running(self):
     if self.proc:
@@ -671,6 +706,7 @@ class EthAudioApi:
 
   def __init__(self, rt = MockRt(), config_file = 'saved_state.json'):
     self._rt = rt
+    self.mock = type(rt) is MockRt
     """ intitialize the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -703,13 +739,14 @@ class EthAudioApi:
     # configure all streams into a known state
     self.streams = {}
     for stream in self.status['streams']:
-      self.streams[stream['id']] = build_stream(stream)
+      self.streams[stream['id']] = build_stream(stream, self.mock)
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
       self.set_source(src['id'], input=src['input'], force_update=True)
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for z in self.status['zones']:
+      # TODO: disbale zones that are not found
       self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
     # configure all of the groups (some fields may need to be updated)
     self.update_groups()
@@ -886,8 +923,6 @@ class EthAudioApi:
             if self._rt.update_sources(src_cfg):
               # update the status
               src['input'] = input
-              if type(self._rt) == RpiRt and DEBUG_PREAMPS:
-                self._rt._bus.print()
               return None
             else:
               return error('failed to set source')
@@ -959,8 +994,6 @@ class EthAudioApi:
         # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
         self.update_groups()
 
-        if type(self._rt) == RpiRt and DEBUG_PREAMPS:
-          self._rt._bus.print()
         return None
       except Exception as e:
         return error('set zone: '  + str(e))
@@ -1037,9 +1070,6 @@ class EthAudioApi:
 
     # update the group stats
     self.update_groups()
-
-    if type(self._rt) == RpiRt and DEBUG_PREAMPS:
-      self._rt._bus.print()
 
   def new_group_id(self):
     """ get next available group id """

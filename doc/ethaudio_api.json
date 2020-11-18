@@ -10,8 +10,7 @@
     "command":"set_source",
     "id":0 | 1 | 2 | 3,
     "name":"new name", // sets the friendly name for the source, ie "cd player" or "stream 1"
-    "type": "local" | "stream", // sets the connection for the source, either local (RCA/otther input) or stream (sharport/pandora/..)
-    "stream_id" : guid // optional
+    "intpu": "local" | "stream=sid", // sets the connection for the source, either local (RCA/otther input) or stream (sharport/pandora/..)
 }
 
 // TODO: add a command to create a new stream (Pandora, Shairport, others)

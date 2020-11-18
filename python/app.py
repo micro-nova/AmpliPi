@@ -2,15 +2,16 @@
 
 from flask import Flask, request
 import ethaudio
+import json
 from collections import OrderedDict
 
 app = Flask(__name__)
-
-api = ethaudio.Api(ethaudio.api.RpiRt(), config_file='config/jasons_house.json')
+api = None
 
 def options_html(options):
   html_options = ['<option value="{}">{}</option>'.format(v, k) for k, v in options.items()]
-  return '\n'.join(html_options)
+  html = '\n'.join(html_options)
+  return html
 
 def src_html(src):
   source = api.status['sources'][src]
@@ -27,7 +28,6 @@ def src_html(src):
   for name, input_ in inputs.items():
     if input_ != source['input']:
       options[name] = input_
-
   return source_header + options_html(options) + source_footer
 
 def group_html(group):
@@ -36,7 +36,7 @@ def group_html(group):
   html_header = '<tr><td>{}</td>'.format(group['name'])
   html = '<td><input id="g{}_vol" type="range" value="{}" onchange="onGroupVolChange(this);" min="-79" max="0"></td>'.format(group['id'], group['vol_delta'])
   html += '<td><span id="g{}_atten">{}</span> dB</td>'.format(group['id'], group['vol_delta'])
-  html += '<td><input type="checkbox" id="g{}_mute" onchange="onGroupMuteChange(this);" checked="{}"></td>'.format(group['id'], str(group['mute']).lower()) # TODO: add mute/unmute function
+  html += '<td><input type="checkbox" id="g{}_mute" onchange="onGroupMuteChange(this);" {} ></td>'.format(group['id'], {False:'', True: 'checked'}[group['mute']])
   html_footer = '</tr>'
   return html_header + html + html_footer
 
@@ -44,8 +44,13 @@ def unused_groups_html(src):
   groups = api.status['groups']
   header = '<tr><td></td></tr>'
   html = '<tr><td>Add group</td><td><select id="s{}_add" onchange="onAddGroupToSrc(this);">'.format(src)
-  unused = {g['name'] : g['id'] for g in groups if g['source_id'] != src}
-  html += options_html(unused)
+  # make a dict that starts eith an empty item, this makes it so any new selection is a change
+  unused = { g['name'] : g['id'] for g in groups if g['source_id'] != src }
+  items = OrderedDict()
+  items['  '] = None
+  for k, v in unused.items():
+    items[k] = v
+  html += options_html(items)
   html += '</select></td></tr>'
   footer = ''
   return header + html + footer
@@ -68,7 +73,8 @@ SCRIPTS = """
     req = {
       "command": "set_group",
       "id" : Number(gid),
-      "vol_delta" : Number(obj.value)
+      "vol_delta" : Number(obj.value),
+      "mute" : false
     };
     sendRequest(req)
   }
@@ -91,9 +97,10 @@ SCRIPTS = """
     req = {
       "command": "set_group",
       "id" : Number(gid),
-      "source_id" : Number(src)
+      "source_id" : Number(src),
+      "mute" : false
     };
-    sendRequest(req);
+    sendRequestAndReload(req);
   }
   function onSrcInputChange(obj) {
     var input = obj.value
@@ -118,6 +125,19 @@ SCRIPTS = """
     let result = await response.json();
     onResponse(result);
   }
+  async function sendRequestAndReload(obj) {
+    onRequest(obj)
+    let response = await fetch('/cmd', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+      },
+      body: JSON.stringify(obj)
+    });
+    let result = await response.json();
+    onResponse(result);
+    window.location.reload(true);
+  }
   function showIntent(intent) {
     document.getElementById("intent").innerHTML = intent;
   }
@@ -139,10 +159,10 @@ def parse_cmd():
     out = api.set_source(req.pop('id'), **req)
   else:
     out = {'error': 'Unknown command'}
-  print('result:')
+  print(api.visualize_api())
   if out is None:
-    return {}
-  return out
+    out = {}
+  return json.dumps(out)
 
 @app.route('/')
 @app.route('/source/<int:src>')
@@ -171,4 +191,7 @@ def index(src=0):
   return html_header + html + html_footer
 
 if __name__ == '__main__':
-  app.run(debug=True)
+  api = ethaudio.Api(ethaudio.api.RpiRt(), config_file='config/jasons_house.json')
+  app.run(debug=True, host= '0.0.0.0')
+else:
+  api = ethaudio.Api(ethaudio.api.RpiRt(), config_file='../config/jasons_house.json')
