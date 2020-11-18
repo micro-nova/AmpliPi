@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from flask import Flask
+from flask import Flask, request
 import ethaudio
 from collections import OrderedDict
 
@@ -64,31 +64,85 @@ SCRIPTS = """
     var group_atten = group + "_atten";
     var gid = group.substring(1,2);
     document.getElementById(group_atten).innerHTML = obj.value;
-    onRequest(group + ' vol= ' + obj.value);
+    showIntent(group + ' vol= ' + obj.value);
+    req = {
+      "command": "set_group",
+      "id" : Number(gid),
+      "vol_delta" : Number(obj.value)
+    };
+    sendRequest(req)
   }
   function onGroupMuteChange(obj) {
     var group = obj.id.substring(0,2);
     var mute = obj.checked;
     var gid = group.substring(1,2);
-    onRequest(group + ' mute= ' + obj.checked);
+    showIntent(group + ' mute= ' + obj.checked);
+    req = {
+      "command": "set_group",
+      "id" : Number(gid),
+      "mute" : Boolean(obj.checked)
+    };
+    sendRequest(req);
   }
   function onAddGroupToSrc(obj) {
     var src = obj.id.substring(1,2);
     var gid = obj.value
-    onRequest('Adding g' + gid  + ' to src ' + src);
+    showIntent('Adding g' + gid  + ' to src ' + src);
+    req = {
+      "command": "set_group",
+      "id" : Number(gid),
+      "source_id" : Number(src)
+    };
+    sendRequest(req);
   }
   function onSrcInputChange(obj) {
     var input = obj.value
     var src = obj.id.substring(1,2);
-    onRequest('Changing source ' + src  + ' to use ' + input);
+    showIntent('Changing source ' + src  + ' to use ' + input);
+    req = {
+      "command": "set_source",
+      "id" : Number(src),
+      "input" : input
+    };
+    sendRequest(req);
   }
-  function onRequest(resp) {
-    document.getElementById("request").innerHTML = resp;
+  async function sendRequest(obj) {
+    onRequest(obj)
+    let response = await fetch('/cmd', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+      },
+      body: JSON.stringify(obj)
+    });
+    let result = await response.json();
+    onResponse(result);
+  }
+  function showIntent(intent) {
+    document.getElementById("intent").innerHTML = intent;
+  }
+  function onRequest(req) {
+    document.getElementById("request").innerHTML = JSON.stringify(req);
   }
   function onResponse(resp) {
-    document.getElementById("response").innerHTML = resp;
+    document.getElementById("response").innerHTML = JSON.stringify(resp);
   }
 """
+
+@app.route('/cmd', methods=['POST'])
+def parse_cmd():
+  req = request.get_json()
+  cmd = req.pop('command')
+  if cmd == 'set_group':
+    out = api.set_group(req.pop('id'), **req)
+  elif cmd == 'set_source':
+    out = api.set_source(req.pop('id'), **req)
+  else:
+    out = {'error': 'Unknown command'}
+  print('result:')
+  if out is None:
+    return {}
+  return out
 
 @app.route('/')
 @app.route('/source/<int:src>')
@@ -106,6 +160,8 @@ def index(src=0):
   html_footer += '<td><button onclick="document.location={}">&gt</button></td>'.format("'/source/{}'".format(nxt))
   html_footer += '</table>'
   html_footer += '<div>-----Debugging-----</div>'
+  html_footer += '<div>Intent:</div>'
+  html_footer += '<div id="intent">intent goes here</div>'
   html_footer += '<div>Request:</div>'
   html_footer += '<div id="request">request goes here</div>'
   html_footer += '<div>Response:</div>'
