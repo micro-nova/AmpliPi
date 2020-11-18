@@ -812,11 +812,18 @@ class EthAudioApi:
     """
     return src_type != 'local'
 
+  def get_inputs(self):
+    inputs = { '' : None, 'Local': 'local'}
+    for s in self.get_state()['streams']:
+      inputs[s['name']] = 'stream={}'.format(s['id'])
+    return inputs
+
   def get_state(self):
     """ get the system state (dict) """
     # update the state with the latest stream info and status
     for s in self.status['streams']:
       stream = self.streams[s['id']]
+      s['name'] = stream.name
       s['info'] = stream.info()
       s['status'] = stream.status()
     return self.status

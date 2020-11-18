@@ -1,89 +1,33 @@
 #!/usr/bin/python3
 
 from flask import Flask
+import ethaudio
+from collections import OrderedDict
 
 app = Flask(__name__)
 
-groups = [
-    {
-      "id": 0,
-      "name": "Whole House",
-      "zones": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11
-      ],
-      "mute": True,
-      "source_id": None,
-      "vol_delta": -24
-    },
-    {
-      "id": 1,
-      "name": "Upstairs",
-      "zones": [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "mute": True,
-      "source_id": 1,
-      "vol_delta": -24
-    },
-    {
-      "id": 2,
-      "name": "Downstairs Apartment",
-      "zones": [
-        7,
-        8,
-        9,
-        10,
-        11
-      ],
-      "mute": True,
-      "source_id": None,
-      "vol_delta": -24
-    },
-    {
-      "id": 3,
-      "name": "Outside",
-      "zones": [
-        12,
-        13,
-        14,
-        15,
-        16
-      ],
-      "mute": True,
-      "source_id": 1,
-      "vol_delta": -40
-    }
-  ]
+api = ethaudio.Api(ethaudio.api.RpiRt(), config_file='config/jasons_house.json')
 
 def options_html(options):
   html_options = ['<option value="{}">{}</option>'.format(v, k) for k, v in options.items()]
   return '\n'.join(html_options)
 
 def src_html(src):
-  source_header = '<tr><td>{}</td><td><select id="s1_input" onchange="onSrcInputChange(this);">'.format(src)
+  source = api.status['sources'][src]
+  source_header = '<tr><td>{}</td><td><select id="s{}_input" onchange="onSrcInputChange(this);">'.format(source['name'], src)
   source_footer = '</select></td></tr>'
-  options = {
-    "" : "None",
-    "Jason's iScone" : "stream=44590",
-    "Regina Spektor Radio" : "stream=90890",
-    "Local" : "local"
-  }
+
+  options = OrderedDict()
+  inputs = api.get_inputs()
+  print(inputs)
+  # add the connected input first, then the others
+  for name, input_ in inputs.items():
+    if input_ == source['input']:
+      options[name] = input_
+  for name, input_ in inputs.items():
+    if input_ != source['input']:
+      options[name] = input_
+
   return source_header + options_html(options) + source_footer
 
 def group_html(group):
@@ -97,6 +41,7 @@ def group_html(group):
   return html_header + html + html_footer
 
 def unused_groups_html(src):
+  groups = api.status['groups']
   header = '<tr><td></td></tr>'
   html = '<tr><td>Add group</td><td><select id="s{}_add" onchange="onAddGroupToSrc(this);">'.format(src)
   unused = {g['name'] : g['id'] for g in groups if g['source_id'] != src}
@@ -107,6 +52,7 @@ def unused_groups_html(src):
 
 def groups_html(src):
   # show all of the groups that are connected to @src
+  groups = api.status['groups']
   html_header = ''
   html_groups = ''.join([group_html(group) for group in groups if group['source_id'] == src])
   html_footer = ''
@@ -159,6 +105,7 @@ def index(src=0):
   html_footer = '</table></td>'
   html_footer += '<td><button onclick="document.location={}">&gt</button></td>'.format("'/source/{}'".format(nxt))
   html_footer += '</table>'
+  html_footer += '<div>-----Debugging-----</div>'
   html_footer += '<div>Request:</div>'
   html_footer += '<div id="request">request goes here</div>'
   html_footer += '<div>Response:</div>'
