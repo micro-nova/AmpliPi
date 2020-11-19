@@ -28,6 +28,10 @@ cd python
 pip install -e # local install of ethaudio so we can test against it
 pytest tests/test_ethaudio_rpi.py
 ```
+### Flashing Preamp Code
+1. Go to the firmware directory on the Pi with "cd ~/fw". It should be created in the home directory with "./util/copy_python_to_board.sh" that was run previously
+2. Once you are ready to flash the ST chip on the preamp board, run the flashing script from the Pi terminal with "./preamp_flash.sh"
+3. If you want to change the software on the preamp, change the content of 'preamp_bd.bin' or change 'preamp_flash.sh' to flash a binary file of your choosing
 
 ## TODO add howto configure USB audio for shairport
 ## TODO follow strategy for handling 7.1 channel audio -> 4 stereo output
