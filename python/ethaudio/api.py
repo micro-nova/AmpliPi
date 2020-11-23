@@ -912,6 +912,7 @@ class EthAudioApi:
             old_stream.disconnect()
           # start new stream
           stream = self.get_stream(input)
+          # TODO: check if stream is already connected, and disconnect it from its old stream (make sure to update that sources input to local as well)
           if stream:
             stream.connect(idx)
           rt_needs_update = self._is_digital(input) != self._is_digital(src['input'])
