@@ -1,0 +1,149 @@
+<html>
+  <body>
+    <table>
+      <td><button onclick="document.location='/source/{{ (src - 1) % 4 }}'">&lt</button></td>
+      <td>
+        <table id="source_groups">
+          <!-- Source Input -->
+          <tr>
+            <td>{{ name }}</td>
+            <td>
+              <select id="s{{ src }}_input" onchange="onSrcInputChange(this);">
+                <option value=" "> </option>
+              </select>
+            </td>
+          </tr>
+          <!-- Groups get added here TODO: make this a separate table -->
+          <!-- Add additional groups -->
+          <tr><td></td></tr>
+          <tr><td>Add group</td>
+            <td>
+              <select id="s{{ src }}_add" onchange="onAddGroupToSrc(this);">
+                <option value=" "> </option>
+              </select>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td><button onclick="document.location='/source/{{ (src + 1) % 4 }}'">&gt</button></td>
+    </table>
+
+<!-- Debugging, TODO: remove in production -->
+<div>-----Debugging-----</div>
+<div>Intent:</div>
+<div id="intent">intent goes here</div>
+<div>Request:</div>
+<div id="request">request goes here</div>
+<div>Response:</div>
+<div id="response">response goes here</div>
+
+<script>
+  // TODO: make an updateSourceView(json) function that updates the page
+  // TODO: hook into onload and make a get request then call updateSourceView(result) on success
+  function onGroupVolChange(obj) {
+    var group = obj.id.substring(0,2);
+    var group_atten = group + "_atten";
+    var gid = group.substring(1,2);
+    document.getElementById(group_atten).innerHTML = obj.value;
+    showIntent(group + ' vol= ' + obj.value);
+    req = {
+      "command": "set_group",
+      "id" : Number(gid),
+      "vol_delta" : Number(obj.value),
+      "mute" : false
+    };
+    sendRequest(req)
+  }
+  function onGroupMuteChange(obj) {
+    var group = obj.id.substring(0,2);
+    var mute = obj.checked;
+    var gid = group.substring(1,2);
+    showIntent(group + ' mute= ' + obj.checked);
+    req = {
+      "command": "set_group",
+      "id" : Number(gid),
+      "mute" : Boolean(obj.checked)
+    };
+    sendRequest(req);
+  }
+  //html_header = '<tr><td>{}</td>'.format(group['name'])
+  //html = '<td><input id="g{}_vol" type="range" value="{}" onchange="onGroupVolChange(this);" min="-79" max="0"></td>'.format(group['id'], group['vol_delta'])
+  //html += '<td><span id="g{}_atten">{}</span> dB</td>'.format(group['id'], group['vol_delta'])
+  //html += '<td><input type="checkbox" id="g{}_mute" onchange="onGroupMuteChange(this);" {} ></td>'.format(group['id'], {False:'', True: 'checked'}[group['mute']])
+  //html_footer = '</tr>'
+  function onAddGroupToSrc(obj) {
+    var src = obj.id.substring(1,2);
+    var gid = obj.value
+    showIntent('Adding g' + gid  + ' to src ' + src);
+    req = {
+      "command": "set_group",
+      "id" : Number(gid),
+      "source_id" : Number(src),
+      "mute" : false
+    };
+    sendRequest(req);
+    // TODO: add a fake group
+		var tbl = document.getElementById('source_groups');
+		var lastRow = tbl.rows.length - 2;
+		var row = tbl.insertRow(lastRow);
+		var iteration = lastRow;
+
+    var name = row.insertCell(0);
+    name.value = gid;
+
+    var cell = row.insertCell(1);
+		var volSlider = document.createElement('input');
+		volSlider.type = 'range';
+		volSlider.min = -79;
+		volSlider.max = 0;
+		volSlider.value = -79;
+		cell.appendChild(volSlider);
+  }
+  function onSrcInputChange(obj) {
+    var input = obj.value
+    var src = obj.id.substring(1,2);
+    showIntent('Changing source ' + src  + ' to use ' + input);
+    req = {
+      "command": "set_source",
+      "id" : Number(src),
+      "input" : input
+    };
+    sendRequest(req);
+  }
+  async function sendRequest(obj) {
+    onRequest(obj)
+    let response = await fetch('/api', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+      },
+      body: JSON.stringify(obj)
+    });
+    let result = await response.json();
+    onResponse(result);
+  }
+  async function sendRequestAndReload(obj) {
+    onRequest(obj)
+    let response = await fetch('/api', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+      },
+      body: JSON.stringify(obj)
+    });
+    let result = await response.json();
+    onResponse(result);
+    window.location.reload(true);
+  }
+  function showIntent(intent) {
+    document.getElementById("intent").innerHTML = intent;
+  }
+  function onRequest(req) {
+    document.getElementById("request").innerHTML = JSON.stringify(req);
+  }
+  function onResponse(resp) {
+    document.getElementById("response").innerHTML = JSON.stringify(resp);
+  }
+</script>
+</body>
+</html>
