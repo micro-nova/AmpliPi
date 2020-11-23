@@ -63,6 +63,10 @@ def groups_html(src):
   html_footer = ''
   return html_header + html_groups + html_footer
 
+@app.route('/api', methods=['GET'])
+def get():
+  return json.dumps(app.api.get_state())
+
 @app.route('/api', methods=['POST'])
 def parse_cmd():
   req = request.get_json()

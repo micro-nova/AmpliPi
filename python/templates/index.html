@@ -1,5 +1,5 @@
 <html>
-  <body>
+  <body onload="onLoad()">
     <table>
       <td><button onclick="document.location='/source/{{ (src - 1) % 4 }}'">&lt</button></td>
       <td>
@@ -28,18 +28,25 @@
       <td><button onclick="document.location='/source/{{ (src + 1) % 4 }}'">&gt</button></td>
     </table>
 
-<!-- Debugging, TODO: remove in production -->
-<div>-----Debugging-----</div>
-<div>Intent:</div>
-<div id="intent">intent goes here</div>
-<div>Request:</div>
-<div id="request">request goes here</div>
-<div>Response:</div>
-<div id="response">response goes here</div>
+    <!-- Debugging, TODO: remove in production -->
+    <div>-----Debugging-----</div>
+    <div>Intent:</div>
+    <div id="intent">intent goes here</div>
+    <div>Request:</div>
+    <div id="request">request goes here</div>
+    <div>Response:</div>
+    <div id="response">response goes here</div>
 
 <script>
   // TODO: make an updateSourceView(json) function that updates the page
   // TODO: hook into onload and make a get request then call updateSourceView(result) on success
+  async function onLoad() {
+    let state = await get();
+    updateSourceView(state);
+  }
+  function updateSourceView(state) {
+
+  }
   function onGroupVolChange(obj) {
     var group = obj.id.substring(0,2);
     var group_atten = group + "_atten";
@@ -109,6 +116,12 @@
       "input" : input
     };
     sendRequest(req);
+  }
+  async function get() {
+    let response = await fetch('/api');
+    let result = await response.json();
+    onResponse(result);
+    return result;
   }
   async function sendRequest(obj) {
     onRequest(obj)
