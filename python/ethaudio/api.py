@@ -601,6 +601,8 @@ class Pandora:
     pb_control_fifo = '{}/ctl'.format(pb_config_folder)
     pb_status_fifo = '{}/stat'.format(pb_config_folder)
     pb_config_file = '{}/config'.format(pb_config_folder)
+    pb_output_file = '{}/config'.format(pb_config_folder)
+    pb_error_file = '{}/config'.format(pb_config_folder)
     pb_src_config_file = '{}/.libao'.format(pb_home)
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(pb_config_folder))
@@ -622,7 +624,7 @@ class Pandora:
     print('Pianobar config at {}'.format(pb_config_folder))
     try:
       self.ctrl = Pandora.Control(pb_home)
-      self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : pb_home})
+      self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
       print('{} connected to {}'.format(self.name, src))
       self.state = 'connected'
     except Exception as e:
