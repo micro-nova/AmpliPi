@@ -42,21 +42,53 @@
   // TODO: hook into onload and make a get request then call updateSourceView(result) on success
   async function onLoad() {
     let state = await get();
-    updateSourceView(state);
   }
   function updateSourceView(state) {
+    // TODO: update source name
 
+    // Add all of the groups
+    // TODO: only update connected groups
+		var tbl = document.getElementById('source_groups');
+		var last_row = tbl.rows.length - 2;
+		var row = tbl.insertRow(last_row);
+
+    for (const g of state.groups) {
+      var name = row.insertCell(0);
+      name.innerHTML = g.name;
+      var c1 = row.insertCell(1);
+      var vol_slider = document.createElement('input');
+      vol_slider.type = 'range';
+      vol_slider.id = 'g' + g.id + '_vol';
+      vol_slider.min = -79;
+      vol_slider.max = 0;
+      vol_slider.value = g.vol_delta;
+      vol_slider.onchange = function(){onGroupVolChange(g.id)};
+      c1.appendChild(vol_slider);
+      var c2 = row.insertCell(2);
+      var vol_label = document.createElement('span');
+      vol_label.id = 'g' + g.id + '_atten';
+      vol_label.innerHTML = g.vol_delta;
+      c2.appendChild(vol_label);
+      db_label = document.createElement('text')
+      db_label.value = ' dB'
+      c2.appendChild(db_label)
+
+      last_row++;
+      row = tbl.insertRow(last_row);
+    }
+    // TODO: update groups to add selection
   }
-  function onGroupVolChange(obj) {
-    var group = obj.id.substring(0,2);
-    var group_atten = group + "_atten";
-    var gid = group.substring(1,2);
-    document.getElementById(group_atten).innerHTML = obj.value;
-    showIntent(group + ' vol= ' + obj.value);
+  function onGroupVolChange(gid) {
+    var atten_id = 'g' + gid + "_atten";
+    var vol_id = 'g' + gid + "_vol";
+    var vol_slider = document.getElementById(vol_id);
+    var vol = vol_slider.value;
+    document.getElementById(atten_id).innerHTML = vol;
+    showIntent(gid + ' vol= ' + vol);
     req = {
       "command": "set_group",
       "id" : Number(gid),
-      "vol_delta" : Number(obj.value),
+      "vol_delta" : Number(vol),
       "mute" : false
     };
     sendRequest(req)
@@ -89,22 +121,6 @@
       "mute" : false
     };
     sendRequest(req);
-    // TODO: add a fake group
-		var tbl = document.getElementById('source_groups');
-		var lastRow = tbl.rows.length - 2;
-		var row = tbl.insertRow(lastRow);
-		var iteration = lastRow;
-
-    var name = row.insertCell(0);
-    name.value = gid;
-
-    var cell = row.insertCell(1);
-		var volSlider = document.createElement('input');
-		volSlider.type = 'range';
-		volSlider.min = -79;
-		volSlider.max = 0;
-		volSlider.value = -79;
-		cell.appendChild(volSlider);
   }
   function onSrcInputChange(obj) {
     var input = obj.value
@@ -155,6 +171,7 @@
     document.getElementById("request").innerHTML = JSON.stringify(req);
   }
   function onResponse(resp) {
+    updateSourceView(resp);
     document.getElementById("response").innerHTML = JSON.stringify(resp);
   }
 </script>
