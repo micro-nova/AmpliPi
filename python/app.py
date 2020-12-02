@@ -88,6 +88,10 @@ def index(src=0):
   name = app.api.status['sources'][src]['name']
   return render_template('index.html', src=src, name=name)
 
+@app.route('/test')
+def amplipi():
+  return render_template('index2.html')
+
 def create_app(mock=False, config_file='../config/jasons_house.json'):
   if mock:
     app.api = ethaudio.Api(ethaudio.api.MockRt(), config_file)

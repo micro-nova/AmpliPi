@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <!-- This is black magic that makes the screen look good on mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AmpliPi - Home Audio</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'>
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div class="title"><span>Ampli</span><span class="text-danger">Pi</span></div>
+<div class="container-xl">
+  <div class="card-rows">
+    <div class="source">
+      <div class="card-header  text-center">
+        <ol class="nav nav-tabs nav-fill card-header-tabs">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Jason <i class="fa fa-play text-success" ></i></a>
+
+          </li>
+          <li class="nav-item">
+            <a class="nav-link other" href="#">Marc</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link other" href="#">Src 3</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link other" href="#">Src 4 <i class="fa fa-play text-success" ></i></a>
+          </li>
+        </ol>
+      </div>
+      <div class="card-body source-body">
+        <select id="s0_input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
+          <option selected>Matt and Kim Radio</option>
+        </select>
+      </div>
+      <div class="player-wrapper">
+        <div class="pandora-player">
+          <ul>
+            <li class="cover"><img src="http://i1285.photobucket.com/albums/a583/TheGreatOzz1/Hosted-Images/Noisy-Freeks-Image_zps4kilrxml.png"/></li>
+            <li class="info">
+              <h6 id="artist">The Tasty Treats </h6>
+              <h6 id="album">Premiere</h6>
+              <h6 id="song">I Need You Back</h6>
+              <div class="button-items">
+                <div id="slider"><div id="elapsed"></div></div>
+                <p id="timer">0:00</p>
+                <div class="controls">
+                  <span class="expend"><svg class="step-backward" viewBox="0 0 25 25" xml:space="preserve">
+                    <g><polygon points="4.9,4.3 9,4.3 9,11.6 21.4,4.3 21.4,20.7 9,13.4 9,20.7 4.9,20.7"/></g>
+                    </svg></span>
+
+                  <svg id="play" viewBox="0 0 25 25" xml:space="preserve">
+                    <defs><rect x="-49.5" y="-132.9" width="446.4" height="366.4"/></defs>
+                    <g><circle fill="none" cx="12.5" cy="12.5" r="10.8"/>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M8.7,6.9V18c0,0,0.2,1.4,1.8,0l8.1-4.8c0,0,1.2-1.1-1-2L9.8,6.5 C9.8,6.5,9.1,6,8.7,6.9z"/>
+                    </g>
+                  </svg>
+
+<!--
+                  <svg id="pause" viewBox="0 0 25 25" xml:space="preserve" class="hidden">
+                    <g>
+                      <rect x="6" y="4.6" width="3.8" height="15.7"/>
+                      <rect x="14" y="4.6" width="3.9" height="15.7"/>
+                    </g>
+                  </svg>
+-->
+                  <span class="expend"><svg class="step-foreward" viewBox="0 0 25 25" xml:space="preserve">
+                    <g><polygon points="20.7,4.3 16.6,4.3 16.6,11.6 4.3,4.3 4.3,20.7 16.7,13.4 16.6,20.7 20.7,20.7"/></g>
+                    </svg></span>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="volume_controls">
+      <div class="card group">
+        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#volume_controls" href="#g0-zones" aria-expanded="false">
+          <h6 class="card-header"><i class="fas fa-chevron-down"></i> Whole House</h6>
+        </a>
+        <div class="card-body">
+          <div id="g0-vol" class="volume">
+            <input type="range" min="0" max="100" value="50" class="volume-range">
+            <div class="icon">
+              <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+            </div>
+            <div class="bar-hoverbox">
+              <div class="bar">
+                <div class="bar-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="g0-zones" class='card-description zones collapse' data-parent="#volume_controls">
+          <div class="card-rows">
+            <div class="card zone">
+              <h6 class="card-header">Office</h6>
+              <div class="card-body">
+                <div id="g0-z1-vol" class="volume">
+                  <input type="range" min="0" max="100" value="50" class="volume-range">
+                  <div class="icon">
+                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+                  </div>
+                  <div class="bar-hoverbox">
+                    <div class="bar">
+                      <div class="bar-fill"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card zone">
+              <h6 class="card-header">Living Room</h6>
+              <div class="card-body">
+                <div id="g0-z2-vol" class="volume">
+                  <input type="range" min="0" max="100" value="50" class="volume-range">
+                  <div class="icon">
+                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+                  </div>
+                  <div class="bar-hoverbox">
+                    <div class="bar">
+                      <div class="bar-fill"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card group">
+        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#volume_controls" href="#g1-zones" aria-expanded="false">
+          <h6 class="card-header"><i class="fas fa-chevron-down"></i> Upstairs</h6>
+        </a>
+        <div class="card-body">
+          <div id="g1-vol" class="volume">
+            <input type="range" min="0" max="100" value="50" class="volume-range">
+            <div class="icon">
+              <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+            </div>
+            <div class="bar-hoverbox">
+              <div class="bar">
+                <div class="bar-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="g1-zones" class='card-description zones collapse' data-parent="#volume_controls">
+          <div class="card-rows">
+            <div class="card zone">
+              <h6 class="card-header">Office</h6>
+              <div class="card-body">
+                <div id="g1-z1-vol" class="volume">
+                  <input type="range" min="0" max="100" value="50" class="volume-range">
+                  <div class="icon">
+                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+                  </div>
+                  <div class="bar-hoverbox">
+                    <div class="bar">
+                      <div class="bar-fill"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card zone">
+              <h6 class="card-header">Living Room</h6>
+              <div class="card-body">
+                <div id="g1-z2-vol" class="volume">
+                  <input type="range" min="0" max="100" value="50" class="volume-range">
+                  <div class="icon">
+                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+                  </div>
+                  <div class="bar-hoverbox">
+                    <div class="bar">
+                      <div class="bar-fill"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card group">
+        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#volume_controls" href="#g2-zones" aria-expanded="false">
+          <h6 class="card-header text-light"><i class="fas fa-chevron-down"></i> Downstairs</h6>
+        </a>
+        <div class="card-body">
+          <div id="g2-vol" class="volume">
+            <input type="range" min="0" max="100" value="50" class="volume-range">
+            <div class="icon">
+              <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+            </div>
+            <div class="bar-hoverbox">
+              <div class="bar">
+                <div class="bar-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="g2-zones" class='card-description zones collapse' data-parent="#volume_controls">
+          <div class="card-rows">
+            <div class="card zone">
+              <h6 class="card-header">Lab</h6>
+              <div class="card-body">
+                <div id="g2-z0-vol" class="volume">
+                  <input type="range" min="0" max="100" value="50" class="volume-range">
+                  <div class="icon">
+                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+                  </div>
+                  <div class="bar-hoverbox">
+                    <div class="bar">
+                      <div class="bar-fill"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card group">
+        <h6 class="card-header">Outside</h6>
+        <div class="card-body">
+          <div id="g3-vol" class="volume">
+            <input type="range" min="0" max="100" value="50" class="volume-range">
+            <div class="icon">
+              <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+            </div>
+            <div class="bar-hoverbox">
+              <div class="bar">
+                <div class="bar-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card add-group">
+      <h6 class="card-header">Add Group<h6/>
+      <div class="card-body">
+          <select id="s0_input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
+            <option selected>Select Group</option>
+          </select>
+        </div>
+    </div>
+  </div>
+  <div id="micronova" class="text-center">
+    <img src="https://images.squarespace-cdn.com/content/545510f7e4b034f1f6ee64b3/1414874650954-MHPVHAZ4S27MV23I6KDC/micronova_logo_2.png" alt="Micronova" />
+  </div>
+</div>
+<!-- partial -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+  <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
