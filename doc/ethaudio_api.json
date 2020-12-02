@@ -26,7 +26,7 @@
     "name" : "new name",
 # pandora
     "station_id" : id, // id from pandora url
-    "play/pause" : "play" | "pause"
+    "cmd" : "play" | "pause" | "next"
 }
 
 // This command can be used to modify any zone

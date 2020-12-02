@@ -552,9 +552,10 @@ class Pandora:
 
   class Control:
     """ Controlling a running pianobar instance via its fifo control """
-    def __init__(self, pianobar_dir='~/.config/pianobar'):
+    def __init__(self, pb_fifo='~/.config/pianobar/ctl'):
       # open the CTL fifo ('ctl' name specified in pianobar 'config' file)
-      self.fifo = open(os.path.join(pianobar_dir, 'ctl'), 'w')
+      self.fifo = open(pb_fifo, 'w')
+      print('Controlling pianobar with FIFO = {}'.format(pb_fifo))
     def __del__(self):
       if self.fifo:
         self.fifo.close()
@@ -623,8 +624,8 @@ class Pandora:
     # start pandora process in special home
     print('Pianobar config at {}'.format(pb_config_folder))
     try:
-      self.ctrl = Pandora.Control(pb_home)
       self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
+      self.ctrl = Pandora.Control(pb_control_fifo)
       print('{} connected to {}'.format(self.name, src))
       self.state = 'connected'
     except Exception as e:
@@ -676,9 +677,9 @@ class EthAudioApi:
       { "id": 2, "name": "Source 3", "input": "local" },
       { "id": 3, "name": "Source 4", "input": "local" }
     ],
-    "streams": [
+    "streams": {
       # TODO: should there be a default stream set? maybe a shairport instance?
-    ],
+    },
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
       { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
@@ -829,7 +830,7 @@ class EthAudioApi:
       elif command == 'delete_stream':
         output = error('delete_stream is not implemented yet')
       elif command == 'set_stream':
-        output = error('set_stream is not implemented yet')
+        output = self.set_stream(cmd.get('id'), cmd.get('name'), cmd.get('station_id'), cmd.get('cmd'))
       else:
         output = error('command {} is not supported'.format(command))
 
@@ -1119,3 +1120,25 @@ class EthAudioApi:
       del self.status['groups'][i]
     except KeyError:
       return error('delete group failed: {} does not exist'.format(id))
+
+  @save_on_success
+  def set_stream(self, id, name=None, station_id=None, cmd=None):
+    """ Set play/pause on a specific pandora source """
+
+    if id not in self.streams:
+      return error('Stream id {} does not exist!'.format(id))
+
+    # try:
+    #   strm = self.status['streams'][id]
+    #   name, _ = updated_val(name, strm['name'])
+    # except:
+    #   return error('ERROR!')
+    
+    if cmd == 'play':
+      self.streams[id].ctrl.play()
+    elif cmd == 'pause':
+      self.streams[id].ctrl.pause()
+    elif cmd == 'next':
+      self.streams[id].ctrl.next()
+    else:
+      print('Command "{}" not recognized.'.format(cmd))
