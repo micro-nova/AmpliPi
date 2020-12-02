@@ -571,6 +571,21 @@ class Pandora:
     def next(self):
       self.fifo.write('n\n')
       self.fifo.flush()
+    def love(self):
+      self.fifo.write('+\n')
+      self.fifo.flush()
+    def ban(self):
+      self.fifo.write('-\n')
+      self.fifo.flush()
+    def shelve(self):
+      self.fifo.write('t\n')
+      self.fifo.flush()
+    def explain(self):
+      self.fifo.write('e\n')
+      self.fifo.flush()
+    def history(self):
+      self.fifo.write('h\n')
+      self.fifo.flush()
 
   def __init__(self, name, user, password, station, mock=False):
     self.name = name
@@ -1138,7 +1153,19 @@ class EthAudioApi:
       self.streams[id].ctrl.play()
     elif cmd == 'pause':
       self.streams[id].ctrl.pause()
+    elif cmd == 'stop':
+      self.streams[id].ctrl.stop()    
     elif cmd == 'next':
       self.streams[id].ctrl.next()
+    elif cmd == 'love':
+      self.streams[id].ctrl.love()
+    elif cmd == 'ban':
+      self.streams[id].ctrl.ban()
+    elif cmd == 'shelve':
+      self.streams[id].ctrl.shelve()
+    elif cmd == 'explain':
+      self.streams[id].ctrl.explain()
+    elif cmd == 'history':
+      self.streams[id].ctrl.history()
     else:
       print('Command "{}" not recognized.'.format(cmd))
