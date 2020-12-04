@@ -19,9 +19,8 @@ body {
 }
 .source .card-header .nav .nav-item .active {
   background: #4a4a4a;
-  color: inherit;
 }
-.source .card-header .nav .nav-item .other {
+.source .card-header .nav .nav-item a {
   color: inherit;
 }
 .source .nav-item:hover, .source .nav-link:hover, .source .nav-link.active {

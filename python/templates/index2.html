@@ -13,33 +13,35 @@
 <body>
 <!-- partial:index.partial.html -->
 <div class="title"><span>Ampli</span><span class="text-danger">Pi</span></div>
-<div class="container-xl">
+<div class="container">
   <div class="card-rows">
-    <div class="source">
+    <div class="card source">
       <div class="card-header  text-center">
+        <!-- TODO: generate the sources server-side -->
         <ol class="nav nav-tabs nav-fill card-header-tabs">
           <li class="nav-item">
-            <a class="nav-link active" href="#">Jason <i class="fa fa-play text-success" ></i></a>
-
+            <a class="nav-link active" data-toggle="tab" href="#src0-groups">Jason <i class="fa fa-play text-success" ></i></a>
           </li>
           <li class="nav-item">
-            <a class="nav-link other" href="#">Marc</a>
+            <a class="nav-link" data-toggle="tab" href="#src1-groups">Marc</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link other" href="#">Src 3</a>
+            <a class="nav-link" data-toggle="tab" href="#src2-groups">Src 3</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link other" href="#">Src 4 <i class="fa fa-play text-success" ></i></a>
+            <a class="nav-link" data-toggle="tab" href="#src3-groups">Src 4 <i class="fa fa-play text-success" ></i></a>
           </li>
         </ol>
       </div>
       <div class="card-body source-body">
+        <!-- TODO: add 4 different selectors here, use display:none to toggle between which one to show -->
         <select id="s0_input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
           <option selected>Matt and Kim Radio</option>
         </select>
       </div>
       <div class="player-wrapper">
         <div class="pandora-player">
+          <!-- TODO: this player's layout needs to be redone, the margins are too funky right now -->
           <ul>
             <li class="cover"><img src="http://i1285.photobucket.com/albums/a583/TheGreatOzz1/Hosted-Images/Noisy-Freeks-Image_zps4kilrxml.png"/></li>
             <li class="info">
@@ -50,6 +52,7 @@
                 <div id="slider"><div id="elapsed"></div></div>
                 <p id="timer">0:00</p>
                 <div class="controls">
+                  <!-- TODO: toggle visibility: hidden to hide these buttons but maintain alignment -->
                   <span class="expend"><svg class="step-backward" viewBox="0 0 25 25" xml:space="preserve">
                     <g><polygon points="4.9,4.3 9,4.3 9,11.6 21.4,4.3 21.4,20.7 9,13.4 9,20.7 4.9,20.7"/></g>
                     </svg></span>
@@ -79,9 +82,11 @@
         </div>
       </div>
     </div>
-    <div id="volume_controls">
-      <div class="card group">
-        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#volume_controls" href="#g0-zones" aria-expanded="false">
+    <div class="tab-content">
+      <div id="src0-groups" class="tab-pane active">
+        <!-- TODO: make a generator for groups in python then port it to javascript-->
+        <div class="card group">
+        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#src0-groups" href="#g0-zones" aria-expanded="false">
           <h6 class="card-header"><i class="fas fa-chevron-down"></i> Whole House</h6>
         </a>
         <div class="card-body">
@@ -97,7 +102,7 @@
             </div>
           </div>
         </div>
-        <div id="g0-zones" class='card-description zones collapse' data-parent="#volume_controls">
+        <div id="g0-zones" class='card-description zones collapse' data-parent="#src0-groups">
           <div class="card-rows">
             <div class="card zone">
               <h6 class="card-header">Office</h6>
@@ -135,7 +140,7 @@
         </div>
       </div>
       <div class="card group">
-        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#volume_controls" href="#g1-zones" aria-expanded="false">
+        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#src0-groups" href="#g1-zones" aria-expanded="false">
           <h6 class="card-header"><i class="fas fa-chevron-down"></i> Upstairs</h6>
         </a>
         <div class="card-body">
@@ -151,7 +156,7 @@
             </div>
           </div>
         </div>
-        <div id="g1-zones" class='card-description zones collapse' data-parent="#volume_controls">
+        <div id="g1-zones" class='card-description zones collapse' data-parent="#src0-groups">
           <div class="card-rows">
             <div class="card zone">
               <h6 class="card-header">Office</h6>
@@ -189,7 +194,7 @@
         </div>
       </div>
       <div class="card group">
-        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#volume_controls" href="#g2-zones" aria-expanded="false">
+        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#src0-groups" href="#g2-zones" aria-expanded="false">
           <h6 class="card-header text-light"><i class="fas fa-chevron-down"></i> Downstairs</h6>
         </a>
         <div class="card-body">
@@ -205,7 +210,7 @@
             </div>
           </div>
         </div>
-        <div id="g2-zones" class='card-description zones collapse' data-parent="#volume_controls">
+        <div id="g2-zones" class='card-description zones collapse' data-parent="#src0-groups">
           <div class="card-rows">
             <div class="card zone">
               <h6 class="card-header">Lab</h6>
@@ -242,14 +247,44 @@
           </div>
         </div>
       </div>
+      <div class="card add-group">
+        <h6 class="card-header">Add Group</h6>
+        <div class="card-body">
+            <select id="s0_input" class="custom-select source-input-sel" onchange="onSrcAddGroup(this);">
+              <option selected>Select Group</option>
+            </select>
+          </div>
+      </div>
     </div>
-    <div class="card add-group">
-      <h6 class="card-header">Add Group<h6/>
-      <div class="card-body">
-          <select id="s0_input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
-            <option selected>Select Group</option>
-          </select>
-        </div>
+    <div id="src1-groups" class="tab-pane fade">
+      <div class="card add-group">
+        <h6 class="card-header">Add Group</h6>
+        <div class="card-body">
+            <select id="s1_input" class="custom-select source-input-sel" onchange="onSrcAddGroup(this);">
+              <option selected>Select Group</option>
+            </select>
+          </div>
+      </div>
+    </div>
+    <div id="src2-groups" class="tab-pane fade">
+      <div class="card add-group">
+        <h6 class="card-header">Add Group</h6>
+        <div class="card-body">
+            <select id="s2_input" class="custom-select source-input-sel" onchange="onSrcAddGroup(this);">
+              <option selected>Select Group</option>
+            </select>
+          </div>
+      </div>
+    </div>
+    <div id="src3-groups" class="tab-pane fade">
+      <div class="card add-group">
+        <h6 class="card-header">Add Group</h6>
+        <div class="card-body">
+            <select id="s3_input" class="custom-select source-input-sel" onchange="onSrcAddGroup(this);">
+              <option selected>Select Group</option>
+            </select>
+          </div>
+      </div>
     </div>
   </div>
   <div id="micronova" class="text-center">
