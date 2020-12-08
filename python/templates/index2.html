@@ -16,27 +16,37 @@
 <div class="container">
   <div class="card-rows">
     <div class="card source">
-      <div class="card-header  text-center">
-        <!-- TODO: generate the sources server-side -->
+      <div class="card-header text-center">
+        <!-- TODO: how to left align the play-ing icon? -->
+        <!-- TODO: hide/show the play icon from status-->
         <ol class="nav nav-tabs nav-fill card-header-tabs">
           <li class="nav-item">
-            <a class="nav-link active" data-toggle="tab" href="#src0-groups">Jason <i class="fa fa-play text-success" ></i></a>
+            <a id="s0" class="nav-link active" data-toggle="tab" role="tab" href="#src0-groups">{{ groups[0]['name'] }} <i class="fa fa-play text-success" ></i></a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#src1-groups">Marc</a>
+            <a id="s1" class="nav-link" data-toggle="tab" role="tab" href="#src1-groups">{{ groups[1]['name'] }} <i class="fa fa-play text-success" ></i></a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#src2-groups">Src 3</a>
+            <a id="s2" class="nav-link" data-toggle="tab" role="tab" href="#src2-groups">{{ groups[2]['name'] }} <i class="fa fa-play text-success" ></i></a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#src3-groups">Src 4 <i class="fa fa-play text-success" ></i></a>
+            <a id="s3" class="nav-link" data-toggle="tab" role="tab" href="#src3-groups">{{ groups[3]['name'] }} <i class="fa fa-play text-success" ></i></a>
           </li>
         </ol>
       </div>
       <div class="card-body source-body">
-        <!-- TODO: add 4 different selectors here, use display:none to toggle between which one to show -->
-        <select id="s0_input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
-          <option selected>Matt and Kim Radio</option>
+        <!-- TODO: populate source inputs with real options -->
+        <select id="s0-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
+          <option selected>Matt and Kim Radio0</option>
+        </select>
+        <select id="s1-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
+          <option selected>Matt and Kim Radio1</option>
+        </select>
+        <select id="s2-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
+          <option selected>Matt and Kim Radio2</option>
+        </select>
+        <select id="s3-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
+          <option selected>Matt and Kim Radio3</option>
         </select>
       </div>
       <div class="player-wrapper">
@@ -294,6 +304,7 @@
 <!-- partial -->
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+  <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'></script>
   <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

@@ -30,9 +30,20 @@ body {
   background: #4a4a4a;
 }
 
+.fa-play {
+  display: none;
+}
+
 .source-input-sel {
   margin: auto 3%;
   width: 94%;
+}
+
+#s0-input {
+  display: block;
+}
+#s1-input, #s2-input, #s3-input {
+  display: none;
 }
 
 .group {

@@ -90,7 +90,7 @@ def index(src=0):
 
 @app.route('/test')
 def amplipi():
-  return render_template('index2.html')
+  return render_template('index2.html', groups=app.api.status['groups'])
 
 def create_app(mock=False, config_file='../config/jasons_house.json'):
   if mock:

@@ -1,4 +1,12 @@
-import bootstrap from 'https://cdn.skypack.dev/bootstrap@4.5.3';
+$(document).ready(function(){
+  $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+    let new_src_sel = '#' + e.target.id + '-input';
+    let old_src_sel = '#' + e.relatedTarget.id + '-input';
+    $(new_src_sel)[0].style.display = "block"; // newly activated tab
+    $(old_src_sel)[0].style.display = "none"; // previously active tab
+  });
+});
+
 for (var i=0; i < 10; i++) {
 	$("#volume"+i).slider({
     min: 0,
@@ -53,7 +61,6 @@ function initControl(ctrl) {
     setValue(
       Math.max(
         Math.min(
-          // Отнимаем левый паддинг
           (offsetX - 15) / width * 100.0,
           100.0
         ),
