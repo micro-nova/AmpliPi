@@ -560,10 +560,10 @@ class Pandora:
       if self.fifo:
         self.fifo.close()
     def play(self):
-      self.fifo.write('p\n')
+      self.fifo.write('P\n') # Exclusive 'play' instead of 'p'
       self.fifo.flush()
     def pause(self):
-      self.fifo.write('p\n')
+      self.fifo.write('S\n') # Exclusive 'pause'
       self.fifo.flush()
     def stop(self):
       self.fifo.write('q\n')
@@ -622,6 +622,7 @@ class Pandora:
     pb_src_config_file = '{}/.libao'.format(pb_home)
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(pb_config_folder))
+    # TODO: File copying for event_cmd.sh like above ^
     # write pianobar and libao config files
     write_config_file(pb_config_file, {
       'user': self.user,
@@ -1169,3 +1170,27 @@ class EthAudioApi:
       self.streams[id].ctrl.history()
     else:
       print('Command "{}" not recognized.'.format(cmd))
+
+  @save_on_success
+  def get_stations(self, id, stream_index=None):
+    if id not in self.streams:
+      return error('Stream id {} does not exist!'.format(id))
+
+    if stream_index is not None:
+      root = '/home/pi/config/srcs/{}/'.format(stream_index)
+    else:
+      root = '/home/pi/'
+    stat_dir = root + '.config/pianobar/stationList'
+
+    try:
+      with open(stat_dir, 'r') as file:
+        d= {}
+        for line in file.readlines():
+          line = line.strip()
+          if line:
+            data = line.split(':')
+            d[data[0]] = data[1]
+        print(d)
+    except Exception as e:
+      print(error('Failed to get station list - it may not exist: {}'.format(e)))
+    # TODO: Change these prints to returns in final state

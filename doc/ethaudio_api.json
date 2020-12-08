@@ -57,6 +57,14 @@
     "vol_delta": 0 to 79 // CHANGES the volume of each zone in the group by this much. For each zone, will saturate if out of range
 }
 
+// This command can be used to get a list of all Pandora stations
+// Works exclusively with the stream ID that is passed in
+{
+    "command":"get_stations",
+    "id": guid, // The actual ID like 90890 (see set_stream)
+    "stream_index": "stream_index" // 0 - 3, used to find the directory on the Pi
+}
+
 // This command can be used to create a NEW group
 // Along with the command ALL parameters must also be passed
 // The system state struct will be returned if the command was successfully processed, error response otherwise
