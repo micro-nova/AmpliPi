@@ -55,6 +55,10 @@ def unused_groups_html(src):
   footer = ''
   return header + html + footer
 
+def unused_groups_options_html(src):
+  groups = app.api.status['groups']
+  return options_html({ g['name'] : g['id'] for g in groups if g['source_id'] != 3 })
+
 def groups_html(src):
   # show all of the groups that are connected to @src
   groups = app.api.status['groups']
@@ -88,9 +92,36 @@ def index(src=0):
   name = app.api.status['sources'][src]['name']
   return render_template('index.html', src=src, name=name)
 
+def unused_groups(src):
+  groups = app.api.status['groups']
+  return { g['id'] : g['name'] for g in groups if g['source_id'] != src}
+
+def unused_zones(src):
+  zones = app.api.status['zones']
+  return { z['id'] : z['name'] for z in zones if z['source_id'] != src }
+
+def ungrouped_zones(src):
+  zones = app.api.status['zones']
+  groups = app.api.status['groups']
+  # get all of the zones that belong to this sources groups
+  grouped_zones = set()
+  for g in groups:
+    if g['source_id'] == src:
+      grouped_zones = grouped_zones.union(g['zones'])
+  # get all of the zones connected to this soource
+  source_zones = set([ z['id'] for z in zones if z['source_id'] == src ])
+  # return all of the zones connected to this source that aren't in a group
+  ungrouped_zones_ = source_zones.difference(grouped_zones)
+  return [ zones[z] for z in ungrouped_zones_ ]
+
 @app.route('/test')
 def amplipi():
-  return render_template('index2.html', groups=app.api.status['groups'])
+  s = app.api.status
+  return render_template('index2.html', sources=s['sources'],
+    zones=s['zones'], groups=s['groups'], inputs=app.api.get_inputs(),
+    unused_groups=[unused_groups(src) for src in range(4)],
+    unused_zones=[unused_zones(src) for src in range(4)],
+    ungrouped_zones=[ungrouped_zones(src) for src in range(4)])
 
 def create_app(mock=False, config_file='../config/jasons_house.json'):
   if mock:

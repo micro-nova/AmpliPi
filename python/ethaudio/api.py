@@ -850,9 +850,9 @@ class EthAudioApi:
     return src_type != 'local'
 
   def get_inputs(self):
-    inputs = { '' : None, 'Local': 'local'}
+    inputs = { None: '', 'local' : 'Local'}
     for s in self.get_state()['streams']:
-      inputs[s['name']] = 'stream={}'.format(s['id'])
+      inputs['stream={}'.format(s['id'])] = s['name']
     return inputs
 
   def get_state(self):

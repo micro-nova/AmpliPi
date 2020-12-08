@@ -20,34 +20,29 @@
         <!-- TODO: how to left align the play-ing icon? -->
         <!-- TODO: hide/show the play icon from status-->
         <ol class="nav nav-tabs nav-fill card-header-tabs">
+          {% for src in sources %}
           <li class="nav-item">
-            <a id="s0" class="nav-link active" data-toggle="tab" role="tab" href="#src0-groups">{{ groups[0]['name'] }} <i class="fa fa-play text-success" ></i></a>
+            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == 0 %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['name'] }} <i class="fa fa-play text-success" ></i></a>
           </li>
-          <li class="nav-item">
-            <a id="s1" class="nav-link" data-toggle="tab" role="tab" href="#src1-groups">{{ groups[1]['name'] }} <i class="fa fa-play text-success" ></i></a>
-          </li>
-          <li class="nav-item">
-            <a id="s2" class="nav-link" data-toggle="tab" role="tab" href="#src2-groups">{{ groups[2]['name'] }} <i class="fa fa-play text-success" ></i></a>
-          </li>
-          <li class="nav-item">
-            <a id="s3" class="nav-link" data-toggle="tab" role="tab" href="#src3-groups">{{ groups[3]['name'] }} <i class="fa fa-play text-success" ></i></a>
-          </li>
+          {% endfor %}
         </ol>
       </div>
       <div class="card-body source-body">
         <!-- TODO: populate source inputs with real options -->
-        <select id="s0-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
-          <option selected>Matt and Kim Radio0</option>
+        {% for src in sources %}
+        <select id="s{{ src['id'] }}-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
+          {% for input, name in inputs.items() %}
+          {% if src['input'] == input %}
+          <option selected value="{{ input }}">{{ name }}</option>
+          {% endif %}
+          {% endfor %}
+          {% for input, name in inputs.items() %}
+          {% if src['input'] != input %}
+          <option value="{{ input }}">{{ name }}</option>
+          {% endif %}
+          {% endfor %}
         </select>
-        <select id="s1-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
-          <option selected>Matt and Kim Radio1</option>
-        </select>
-        <select id="s2-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
-          <option selected>Matt and Kim Radio2</option>
-        </select>
-        <select id="s3-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
-          <option selected>Matt and Kim Radio3</option>
-        </select>
+        {% endfor %}
       </div>
       <div class="player-wrapper">
         <div class="pandora-player">
@@ -93,208 +88,84 @@
       </div>
     </div>
     <div class="tab-content">
-      <div id="src0-groups" class="tab-pane active">
-        <!-- TODO: make a generator for groups in python then port it to javascript-->
+      {% for src in range(4) %}
+      <div id="s{{ src }}-groups" class="tab-pane {% if src == 0 %} active {% endif %}">
+        {% for group in groups if group['source_id'] == src %}
         <div class="card group">
-        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#src0-groups" href="#g0-zones" aria-expanded="false">
-          <h6 class="card-header"><i class="fas fa-chevron-down"></i> Whole House</h6>
-        </a>
-        <div class="card-body">
-          <div id="g0-vol" class="volume">
-            <input type="range" min="0" max="100" value="50" class="volume-range">
-            <div class="icon">
-              <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-            </div>
-            <div class="bar-hoverbox">
-              <div class="bar">
-                <div class="bar-fill"></div>
+          <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#s{{ src }}-groups" href="#g{{ group['id'] }}-zones" aria-expanded="false">
+            <h6 class="card-header"><i class="fas fa-chevron-down"></i> {{ group['name'] }}</h6>
+          </a>
+          <div class="card-body">
+            <div id="g{{ group['id'] }}-vol" class="volume">
+              <input type="range" min="-79" max="0" value="{{ group['vol_delta'] }}" class="volume-range">
+              <div class="icon">
+                <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
               </div>
-            </div>
-          </div>
-        </div>
-        <div id="g0-zones" class='card-description zones collapse' data-parent="#src0-groups">
-          <div class="card-rows">
-            <div class="card zone">
-              <h6 class="card-header">Office</h6>
-              <div class="card-body">
-                <div id="g0-z1-vol" class="volume">
-                  <input type="range" min="0" max="100" value="50" class="volume-range">
-                  <div class="icon">
-                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-                  </div>
-                  <div class="bar-hoverbox">
-                    <div class="bar">
-                      <div class="bar-fill"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="card zone">
-              <h6 class="card-header">Living Room</h6>
-              <div class="card-body">
-                <div id="g0-z2-vol" class="volume">
-                  <input type="range" min="0" max="100" value="50" class="volume-range">
-                  <div class="icon">
-                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-                  </div>
-                  <div class="bar-hoverbox">
-                    <div class="bar">
-                      <div class="bar-fill"></div>
-                    </div>
-                  </div>
+              <div class="bar-hoverbox">
+                <div class="bar">
+                  <div class="bar-fill"></div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="card group">
-        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#src0-groups" href="#g1-zones" aria-expanded="false">
-          <h6 class="card-header"><i class="fas fa-chevron-down"></i> Upstairs</h6>
-        </a>
-        <div class="card-body">
-          <div id="g1-vol" class="volume">
-            <input type="range" min="0" max="100" value="50" class="volume-range">
-            <div class="icon">
-              <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-            </div>
-            <div class="bar-hoverbox">
-              <div class="bar">
-                <div class="bar-fill"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="g1-zones" class='card-description zones collapse' data-parent="#src0-groups">
-          <div class="card-rows">
-            <div class="card zone">
-              <h6 class="card-header">Office</h6>
-              <div class="card-body">
-                <div id="g1-z1-vol" class="volume">
-                  <input type="range" min="0" max="100" value="50" class="volume-range">
-                  <div class="icon">
-                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-                  </div>
-                  <div class="bar-hoverbox">
-                    <div class="bar">
-                      <div class="bar-fill"></div>
+          <div id="g{{ group['id'] }}-zones" class='card-description zones collapse' data-parent="#s{{ src }}-groups">
+            <div class="card-rows">
+              {% for zone in zones if zone['id'] in group['zones'] %}
+              <div class="card zone">
+                <h6 class="card-header">{{ zone['name'] }}</h6>
+                <div class="card-body">
+                  <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume">
+                    <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
+                    <div class="icon">
+                      <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+                    </div>
+                    <div class="bar-hoverbox">
+                      <div class="bar">
+                        <div class="bar-fill"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+              {% endfor %}
             </div>
-            <div class="card zone">
-              <h6 class="card-header">Living Room</h6>
-              <div class="card-body">
-                <div id="g1-z2-vol" class="volume">
-                  <input type="range" min="0" max="100" value="50" class="volume-range">
-                  <div class="icon">
-                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-                  </div>
-                  <div class="bar-hoverbox">
-                    <div class="bar">
-                      <div class="bar-fill"></div>
-                    </div>
-                  </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% for zone in ungrouped_zones[src] %}
+        <div class="card ungrouped-zone">
+          <h6 class="card-header">{{ zone['name'] }}</h6>
+          <div class="card-body">
+            <div id="z{{ zone['id'] }}-vol" class="volume">
+              <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
+              <div class="icon">
+                <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
+              </div>
+              <div class="bar-hoverbox">
+                <div class="bar">
+                  <div class="bar-fill"></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="card group">
-        <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#src0-groups" href="#g2-zones" aria-expanded="false">
-          <h6 class="card-header text-light"><i class="fas fa-chevron-down"></i> Downstairs</h6>
-        </a>
-        <div class="card-body">
-          <div id="g2-vol" class="volume">
-            <input type="range" min="0" max="100" value="50" class="volume-range">
-            <div class="icon">
-              <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-            </div>
-            <div class="bar-hoverbox">
-              <div class="bar">
-                <div class="bar-fill"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="g2-zones" class='card-description zones collapse' data-parent="#src0-groups">
-          <div class="card-rows">
-            <div class="card zone">
-              <h6 class="card-header">Lab</h6>
-              <div class="card-body">
-                <div id="g2-z0-vol" class="volume">
-                  <input type="range" min="0" max="100" value="50" class="volume-range">
-                  <div class="icon">
-                    <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-                  </div>
-                  <div class="bar-hoverbox">
-                    <div class="bar">
-                      <div class="bar-fill"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card group">
-        <h6 class="card-header">Outside</h6>
-        <div class="card-body">
-          <div id="g3-vol" class="volume">
-            <input type="range" min="0" max="100" value="50" class="volume-range">
-            <div class="icon">
-              <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
-            </div>
-            <div class="bar-hoverbox">
-              <div class="bar">
-                <div class="bar-fill"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card add-group">
-        <h6 class="card-header">Add Group</h6>
-        <div class="card-body">
-            <select id="s0_input" class="custom-select source-input-sel" onchange="onSrcAddGroup(this);">
-              <option selected>Select Group</option>
+        {% endfor %}
+        <div class="card add-group">
+          <h6 class="card-header">Add</h6>
+          <div class="card-body">
+            <select id="s{{ src }}-add-input" class="custom-select source-input-sel" onchange="onSrcAdd(this);">
+              <option selected>Select Group or Zone</option>
+              {% for g, name in unused_groups[src].items() %}
+              <option value="g{{ g }}">G - {{ name }}</option>
+              {% endfor %}
+              {% for z, name in unused_zones[src].items() %}
+              <option value="z{{ z }}">Z - {{ name }}</option>
+              {% endfor %}
             </select>
           </div>
+        </div>
       </div>
-    </div>
-    <div id="src1-groups" class="tab-pane fade">
-      <div class="card add-group">
-        <h6 class="card-header">Add Group</h6>
-        <div class="card-body">
-            <select id="s1_input" class="custom-select source-input-sel" onchange="onSrcAddGroup(this);">
-              <option selected>Select Group</option>
-            </select>
-          </div>
-      </div>
-    </div>
-    <div id="src2-groups" class="tab-pane fade">
-      <div class="card add-group">
-        <h6 class="card-header">Add Group</h6>
-        <div class="card-body">
-            <select id="s2_input" class="custom-select source-input-sel" onchange="onSrcAddGroup(this);">
-              <option selected>Select Group</option>
-            </select>
-          </div>
-      </div>
-    </div>
-    <div id="src3-groups" class="tab-pane fade">
-      <div class="card add-group">
-        <h6 class="card-header">Add Group</h6>
-        <div class="card-body">
-            <select id="s3_input" class="custom-select source-input-sel" onchange="onSrcAddGroup(this);">
-              <option selected>Select Group</option>
-            </select>
-          </div>
-      </div>
+      {% endfor %}
     </div>
   </div>
   <div id="micronova" class="text-center">

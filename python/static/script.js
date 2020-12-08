@@ -7,17 +7,6 @@ $(document).ready(function(){
   });
 });
 
-for (var i=0; i < 10; i++) {
-	$("#volume"+i).slider({
-    min: 0,
-    max: 100,
-    value: i*10,
-    range: "min",
-    slide: function(event, ui) {
-      setVolume(ui.value / 100);
-    }
-	});
-}
 var myMedia = document.createElement('audio');
 $('#player').append(myMedia);
 myMedia.id = "myMedia";
@@ -32,19 +21,30 @@ let vols = {};
 document.addEventListener("DOMContentLoaded", () => {
   const controls = document.querySelectorAll(".volume");
   for (const ctrl of controls){
-    initControl(ctrl);
+    initVolControl(ctrl);
   }
 })
 
-function initControl(ctrl) {
+function clamp(min, max, val) {
+  return Math.max(Math.min(val, max), min);
+}
+
+function initVolControl(ctrl) {
   const range = ctrl.querySelector("input[type=range]");
   const barHoverBox = ctrl.querySelector(".bar-hoverbox");
   const fill = ctrl.querySelector(".bar .bar-fill");
 
   const setValue = (value) => {
-    fill.style.width = value + "%";
-    range.setAttribute("value", value)
+    const val = clamp(range.min, range.max, value);
+    const pct = (value - range.min) / (range.max - range.min) * 100.0;
+    fill.style.width = pct + "%";
+    range.setAttribute("value", val)
     range.dispatchEvent(new Event("change"))
+  }
+
+  const setPct = (pct) => {
+    const delta = range.max - range.min;
+    setValue((pct / 100.0 * delta) + Number(range.min))
   }
 
   setValue(range.value);
@@ -53,20 +53,12 @@ function initControl(ctrl) {
     let offsetX = e.offsetX
 
     if (e.type === "touchmove") {
-      offsetX = e.touches[0].pageX - e.touches[0].target.offsetLeft
+      offsetX = e.touches[0].pageX - e.touches[0].target.offsetLeft;
     }
 
     const width = e.target.offsetWidth - 30;
 
-    setValue(
-      Math.max(
-        Math.min(
-          (offsetX - 15) / width * 100.0,
-          100.0
-        ),
-        0
-      )
-    );
+    setPct((offsetX - 15) / width * 100.0)
   }
   vols[ctrl.id] = {}
   vols[ctrl.id].barStillDown = false;
@@ -96,15 +88,9 @@ function initControl(ctrl) {
   });
 
   barHoverBox.addEventListener("wheel", (e) => {
-    const newValue = +range.value + e.deltaY * 0.5;
-
-    setValue(Math.max(
-      Math.min(
-        newValue,
-        100.0
-      ),
-      0
-    ))
+    const j = (range.max - range.min) / 200.0;
+    const val = +range.value + e.deltaY * j;
+    setValue(val);
   });
 
   document.addEventListener("mouseup", (e) => {

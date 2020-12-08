@@ -53,7 +53,7 @@ body {
   color: #FFF;
 }
 
-.zone {
+.zone, .ungrouped-zone {
   background: #4a4a4a;
 }
 
@@ -61,7 +61,7 @@ body {
   background: #3a3a3a;
 }
 
-.source, .group, .add-group {
+.source, .group, .add-group, .ungrouped-zone {
   margin-bottom: 12px;
   -webkit-box-shadow: 6px 7px 19px 6px #000000;
   box-shadow: 6px 7px 19px 6px #000000;
