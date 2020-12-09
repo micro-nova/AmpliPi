@@ -1,3 +1,34 @@
+function onSrcInputChange(obj) {
+  const input = obj.value;
+  const src = obj.dataset.src;
+  let req = {
+    "command": "set_source",
+    "id" : Number(src),
+    "input" : input
+  };
+  sendRequest(req);
+}
+
+function onSrcAdd(obj) {
+  const src = obj.id.substring(1,2);
+  const to_add = obj.value;
+  if (to_add) {
+    const type = to_add.substring(0,1);
+    const id = Number(to_add.substring(1));
+    let req = {
+      "id" : id,
+      "source_id" : src,
+      "command" : ""
+    };
+    if (type == 'z'){
+      req['command'] = 'set_zone';
+    } else if (type == 'g') {
+      req['command'] = 'set_group';
+    }
+    sendRequestAndReload(req, src);
+  }
+}
+
 $(document).ready(function(){
   $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
     let new_src_sel = '#' + e.target.id + '-input';
@@ -68,7 +99,7 @@ async function sendRequest(obj) {
   onResponse(result);
 }
 // TODO: we shouldn't need to reload the page, this is a crutch
-async function sendRequestAndReload(obj) {
+async function sendRequestAndReload(obj, src) {
   onRequest(obj)
   let response = await fetch('/api', {
     method: 'POST',
@@ -79,7 +110,7 @@ async function sendRequestAndReload(obj) {
   });
   let result = await response.json();
   onResponse(result);
-  window.location.reload(true);
+  window.location.assign('test/' + src);
 }
 
 // group and zone volume control

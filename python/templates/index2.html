@@ -22,7 +22,7 @@
         <ol class="nav nav-tabs nav-fill card-header-tabs">
           {% for src in sources %}
           <li class="nav-item">
-            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == 0 %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['name'] }} <i class="fa fa-play text-success" ></i></a>
+            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['name'] }} <i class="fa fa-play text-success" ></i></a>
           </li>
           {% endfor %}
         </ol>
@@ -30,7 +30,7 @@
       <div class="card-body source-body">
         <!-- TODO: populate source inputs with real options -->
         {% for src in sources %}
-        <select id="s{{ src['id'] }}-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);">
+      <select id="s{{ src['id'] }}-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);" data-src="{{ src['id'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
           {% for input, name in inputs.items() %}
           {% if src['input'] == input %}
           <option selected value="{{ input }}">{{ name }}</option>
@@ -89,7 +89,7 @@
     </div>
     <div class="tab-content">
       {% for src in range(4) %}
-      <div id="s{{ src }}-groups" class="tab-pane {% if src == 0 %} active {% endif %}">
+      <div id="s{{ src }}-groups" class="tab-pane {% if src == cur_src %} active {% endif %}">
         {% for group in groups if group['source_id'] == src %}
         <div class="card group">
           <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#s{{ src }}-groups" href="#g{{ group['id'] }}-zones" aria-expanded="false">
@@ -176,6 +176,6 @@
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
   <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'></script>
-  <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

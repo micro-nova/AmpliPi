@@ -74,6 +74,7 @@ def get():
 @app.route('/api', methods=['POST'])
 def parse_cmd():
   req = request.get_json()
+  print(req)
   cmd = req.pop('command')
   if cmd == 'set_group':
     out = app.api.set_group(req.pop('id'), **req)
@@ -117,9 +118,10 @@ def ungrouped_zones(src):
   return [ zones[z] for z in ungrouped_zones_ ]
 
 @app.route('/test')
-def amplipi():
+@app.route('/test/<int:src>')
+def amplipi(src=0):
   s = app.api.status
-  return render_template('index2.html', sources=s['sources'],
+  return render_template('index2.html', cur_src=src, sources=s['sources'],
     zones=s['zones'], groups=s['groups'], inputs=app.api.get_inputs(),
     unused_groups=[unused_groups(src) for src in range(4)],
     unused_zones=[unused_zones(src) for src in range(4)],
