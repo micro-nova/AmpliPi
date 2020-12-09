@@ -7,13 +7,99 @@ $(document).ready(function(){
   });
 });
 
+//  TODO: is any of this needed? it is from the media player pen we started from
 var myMedia = document.createElement('audio');
 $('#player').append(myMedia);
 myMedia.id = "myMedia";
-
 function setVolume(myVolume) {
   var myMedia = document.getElementById('myMedia');
   myMedia.volume = 0;
+}
+
+function updateVol(ctrl, vol) {
+  let range = ctrl.querySelector("input[type=range]");
+  const fill = ctrl.querySelector(".bar .bar-fill");
+  const pct = (vol - range.min) / (range.max - range.min) * 100.0;
+  fill.style.width = pct + "%";
+  range.setAttribute("value", vol);
+  range.dispatchEvent(new Event("change"));
+}
+
+function updateSourceView(status) {
+  // update volumes
+  const controls = document.querySelectorAll(".volume");
+  for (const ctrl of controls) {
+    if (ctrl.dataset.hasOwnProperty('zone')){
+      let z = ctrl.dataset.zone;
+      updateVol(ctrl, status.zones[z].vol);
+    } else if (ctrl.dataset.hasOwnProperty('group')) {
+      let g = ctrl.dataset.group;
+      updateVol(ctrl, status.groups[g].vol_delta);
+    } else {
+      console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
+    }
+  }
+}
+
+// basic request handling
+function onRequest(req) {
+  //document.getElementById("request").innerHTML = JSON.stringify(req);
+}
+function onResponse(resp) {
+  updateSourceView(resp);
+  //document.getElementById("response").innerHTML = JSON.stringify(resp);
+}
+async function get() {
+  let response = await fetch('/api');
+  let result = await response.json();
+  onResponse(result);
+  return result;
+}
+async function sendRequest(obj) {
+  onRequest(obj)
+  let response = await fetch('/api', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8'
+    },
+    body: JSON.stringify(obj)
+  });
+  let result = await response.json();
+  onResponse(result);
+}
+// TODO: we shouldn't need to reload the page, this is a crutch
+async function sendRequestAndReload(obj) {
+  onRequest(obj)
+  let response = await fetch('/api', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8'
+    },
+    body: JSON.stringify(obj)
+  });
+  let result = await response.json();
+  onResponse(result);
+  window.location.reload(true);
+}
+
+// group and zone volume control
+function onGroupVolChange(g, vol) {
+  let req = {
+    "command": "set_group",
+    "id" : Number(g),
+    "vol_delta" : Number(vol),
+    "mute" : false
+  };
+  sendRequest(req)
+}
+function onZoneVolChange(z, vol) {
+  let req = {
+    "command": "set_zone",
+    "id" : Number(z),
+    "vol" : Number(vol),
+    "mute" : false
+  };
+  sendRequest(req)
 }
 
 // new volume
@@ -34,12 +120,24 @@ function initVolControl(ctrl) {
   const barHoverBox = ctrl.querySelector(".bar-hoverbox");
   const fill = ctrl.querySelector(".bar .bar-fill");
 
-  const setValue = (value) => {
-    const val = clamp(range.min, range.max, value);
+  const initValue = (value) => {
     const pct = (value - range.min) / (range.max - range.min) * 100.0;
     fill.style.width = pct + "%";
-    range.setAttribute("value", val)
-    range.dispatchEvent(new Event("change"))
+    range.setAttribute("value", value);
+    range.dispatchEvent(new Event("change"));
+  }
+
+  const setValue = (value) => {
+    const val = clamp(range.min, range.max, value);
+    initValue(val);
+    const vol = Math.round(val);
+    if (ctrl.dataset.hasOwnProperty('zone')){
+      onZoneVolChange(ctrl.dataset.zone, vol);
+    } else if (ctrl.dataset.hasOwnProperty('group')) {
+      onGroupVolChange(ctrl.dataset.group, vol);
+    } else {
+      console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
+    }
   }
 
   const setPct = (pct) => {
@@ -47,7 +145,7 @@ function initVolControl(ctrl) {
     setValue((pct / 100.0 * delta) + Number(range.min))
   }
 
-  setValue(range.value);
+  initValue(range.value);
 
   const calculateFill = (e) => {
     let offsetX = e.offsetX

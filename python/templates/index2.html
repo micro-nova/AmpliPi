@@ -96,7 +96,7 @@
             <h6 class="card-header"><i class="fas fa-chevron-down"></i> {{ group['name'] }}</h6>
           </a>
           <div class="card-body">
-            <div id="g{{ group['id'] }}-vol" class="volume">
+            <div id="g{{ group['id'] }}-vol" class="volume"  data-group="{{ group['id'] }}">
               <input type="range" min="-79" max="0" value="{{ group['vol_delta'] }}" class="volume-range">
               <div class="icon">
                 <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
@@ -114,7 +114,7 @@
               <div class="card zone">
                 <h6 class="card-header">{{ zone['name'] }}</h6>
                 <div class="card-body">
-                  <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume">
+                  <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume" data-zone="{{ zone['id'] }}">
                     <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
                     <div class="icon">
                       <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
@@ -136,7 +136,7 @@
         <div class="card ungrouped-zone">
           <h6 class="card-header">{{ zone['name'] }}</h6>
           <div class="card-body">
-            <div id="z{{ zone['id'] }}-vol" class="volume">
+            <div id="z{{ zone['id'] }}-vol" class="volume" data-zone="{{ zone['id'] }}">
               <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
               <div class="icon">
                 <i class="fa fa-volume-up icon-size" aria-hidden="true"></i>
