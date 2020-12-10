@@ -1,4 +1,6 @@
 @import url(https://fonts.googleapis.com/css?family=Raleway:500);
+
+/* TODO: copy comments from scss */
 body {
   background: #2a2a2a;
   font-family: Raleway;
@@ -143,7 +145,7 @@ body {
 .pandora-player ul li {
   display: inline-block;
 }
-.pandora-player #artist {
+.pandora-player .artist {
   font-family: 'Open Sans', sans-serif;
   font-size: 13pt;
   font-weight: 600;
@@ -151,13 +153,13 @@ body {
   color: white;
   cursor: default;
 }
-.pandora-player #album {
+.pandora-player .album {
   font-family: 'Open Sans', sans-serif;
   font-size: 8pt;
   font-weight: 400;
   cursor: default;
 }
-.pandora-player #song {
+.pandora-player .song {
   font-family: 'Open Sans', sans-serif;
   font-size: 13pt;
   font-weight: 300;
@@ -190,21 +192,21 @@ body {
   margin-left: 10px;
   width: 100%;
 }
-.pandora-player #slider {
+.pandora-player .slider {
   width: auto;
   height: 4px;
   margin-right: auto;
   background: #151518;
   border-radius: 2px;
 }
-.pandora-player #slider div {
+.pandora-player .slider div {
   width: 4px;
   height: 4px;
   margin-top: 1px;
   background: #EF6DBC;
   border-radius: 2px;
 }
-.pandora-player #timer {
+.pandora-player .timer {
   color: #494B4E;
   line-height: 15px;
   font-size: 9pt;
@@ -219,41 +221,40 @@ body {
   margin-left: auto;
   margin-right: auto;
 }
-.pandora-player #play {
+.pandora-player .play {
   padding: 0 3px;
   width: 40px;
   height: 40px;
-  x: 0px;
-  y: 0px;
   enable-background: new 0 0 25 25;
   margin: 0 10px 15px 10px;
 }
-.pandora-player #play g {
+.pandora-player .play g {
   stroke: #FEFEFE;
   stroke-width: 1;
   stroke-miterlimit: 10;
 }
-.pandora-player #play g path {
+.pandora-player .play g path {
   fill: #FEFEFE;
 }
-.pandora-player #play:hover {
+.pandora-player .play:hover {
   cursor: pointer;
 }
-.pandora-player #play:hover g {
+.pandora-player .play:hover g {
   stroke: #8F4DA9;
   cursor: pointer;
 }
-.pandora-player #play:hover g path {
+.pandora-player .play:hover g path {
   fill: #9b59b6;
   cursor: pointer;
 }
 .pandora-player .step-backward, .pandora-player .step-foreward {
   width: 24px;
   height: 24px;
-  x: 0px;
-  y: 0px;
   enable-background: new 0 0 25 25;
   margin-bottom: 15px;
+}
+.pandora-player .step-backward {
+  visibility: hidden;
 }
 .pandora-player .step-backward g polygon, .pandora-player .step-foreward g polygon {
   fill: #FEFEFE;
@@ -262,19 +263,19 @@ body {
   fill: #EF6DBC;
   cursor: pointer;
 }
-.pandora-player #pause {
-  x: 0px;
-  y: 0px;
-  enable-background: new 0 0 25 25;
+.pandora-player .pause {
+  padding: 0 3px;
   width: 40px;
   height: 40px;
-  margin-left: -40px;
+  enable-background: new 0 0 25 25;
+  margin: 0px 10px 15px -53px;
   cursor: pointer;
+  visibility: hidden;
 }
-.pandora-player #pause rect {
+.pandora-player .pause rect {
   fill: white;
 }
-.pandora-player #pause:hover rect {
+.pandora-player .pause:hover rect {
   fill: #8F4DA9;
 }
 .pandora-player .expend {

@@ -30,22 +30,19 @@ function onSrcAdd(obj) {
 }
 
 $(document).ready(function(){
+  // Some things are not part of the automatic tab-content switching
+  // hide things related to the old src and show things related to the new one
   $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
-    let new_src_sel = '#' + e.target.id + '-input';
-    let old_src_sel = '#' + e.relatedTarget.id + '-input';
-    $(new_src_sel)[0].style.display = "block"; // newly activated tab
-    $(old_src_sel)[0].style.display = "none"; // previously active tab
+    // switch the source input selector to the one connected to the current source
+    const old_src = e.relatedTarget.id;
+    const new_src = e.target.id;
+    $('#' + new_src + '-input')[0].style.display = "block";
+    $('#' + old_src + '-input')[0].style.display = "none";
+    // switch the player to the one connected to the current source
+    $('#' + new_src + '-player')[0].style.display = "block";
+    $('#' + old_src + '-player')[0].style.display = "none";
   });
 });
-
-//  TODO: is any of this needed? it is from the media player pen we started from
-var myMedia = document.createElement('audio');
-$('#player').append(myMedia);
-myMedia.id = "myMedia";
-function setVolume(myVolume) {
-  var myMedia = document.getElementById('myMedia');
-  myMedia.volume = 0;
-}
 
 function updateVol(ctrl, vol) {
   let range = ctrl.querySelector("input[type=range]");
@@ -56,7 +53,55 @@ function updateVol(ctrl, vol) {
   range.dispatchEvent(new Event("change"));
 }
 
+function sendStreamCommand(ctrl, command) {
+  let player = ctrl.closest(".pandora-player");
+  let src_input = player.dataset.srcInput;
+  if (src_input.startsWith("stream=")) {
+    let stream_id = src_input.replace("stream=");
+    let req = {
+      "id" : stream_id,
+      "command" : command
+    };
+    sendRequest(req);
+  }
+}
+
+function onPlay(ctrl) {
+  sendStreamCommand(ctrl, 'play');
+}
+
+function onPause(ctrl) {
+  sendStreamCommand(ctrl, 'pause');
+}
+
+function onNext(ctrl) {
+  sendStreamCommand(ctrl, 'next');
+}
+
 function updateSourceView(status) {
+  // update player state
+  for (const src of status['sources']) {
+    const stream = src.input.startsWith("stream=") ? status.streams[src.input.replace("stream=")] : null;
+    const playing = !!stream && stream.status == "playing";
+    // play/pause switching
+    if (stream) {
+      $('#s' + src.id + '-player .play')[0].style.visibility = playing ? "hidden" : "visible";
+      $('#s' + src.id + '-player .pause')[0].style.visibility = playing ? "visible" : "hidden";
+    } else {
+      $('#s' + src.id + '-player .play')[0].style.visibility = "hidden";
+      $('#s' + src.id + '-player .pause')[0].style.visibility = "hidden";
+    }
+    if (stream) {
+      // TODO: update song info
+      if (stream.type == 'pandora') {
+        // TODO: update station list
+      }
+    }
+    // update each source's input
+    $("#s" + src.id + "-player")[0].dataset.srcInput = src.input;
+    $("#s" + src.id + '-input option[value="' + src.input + '"]').attr('selected', 'selected')
+  }
+
   // update volumes
   const controls = document.querySelectorAll(".volume");
   for (const ctrl of controls) {
@@ -70,15 +115,16 @@ function updateSourceView(status) {
       console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
     }
   }
+
+  // TODO: add/remove groups and zones?
+  // TODO: for now can we detect a group/zone change and force an update?
 }
 
 // basic request handling
 function onRequest(req) {
-  //document.getElementById("request").innerHTML = JSON.stringify(req);
 }
 function onResponse(resp) {
   updateSourceView(resp);
-  //document.getElementById("response").innerHTML = JSON.stringify(resp);
 }
 async function get() {
   let response = await fetch('/api');
@@ -133,7 +179,7 @@ function onZoneVolChange(z, vol) {
   sendRequest(req)
 }
 
-// new volume
+// pretty volume controls, based on: codepen found here:
 let vols = {};
 document.addEventListener("DOMContentLoaded", () => {
   const controls = document.querySelectorAll(".volume");

@@ -84,7 +84,7 @@
 	{ "id":3, "name":"Source 4", "input":"stream=812" }
     ],
     "streams": [
-        { "id":812,  "name":"Jason's Pamdora", "type":"pandora", "station":"Matt and Kim Radio", "info":"Cameras by Matt and Kim", "status":"Playing"},
+        { "id":812,  "name":"Jason's Pamdora", "type":"pandora", "station":"Matt and Kim Radio", "info": {}, "status":"playing"},
         { "id":3432, "name":"Airplay",         "type":"shairport" }
     ],
     "zones": [ // this is an array of zones, array length depends on # of boxes connected
