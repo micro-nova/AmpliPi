@@ -580,11 +580,10 @@ class Pandora:
     def shelve(self):
       self.fifo.write('t\n')
       self.fifo.flush()
-    def explain(self):
-      self.fifo.write('e\n')
+    def station(self, index):
+      self.fifo.write('s')
       self.fifo.flush()
-    def history(self):
-      self.fifo.write('h\n')
+      self.fifo.write('{}\n'.format(index))
       self.fifo.flush()
 
   def __init__(self, name, user, password, station, mock=False):
@@ -629,7 +628,7 @@ class Pandora:
       'password': self.password,
       'autostart_station': self.station,
       'fifo': pb_control_fifo,
-      # TODO: add event_command=script with a script that writes to a status fifo
+      'event_command': pb_config_folder + '/eventcmd.sh'
     })
     write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': output_device(src)})
     # create fifos if needed
@@ -1139,7 +1138,7 @@ class EthAudioApi:
 
   @save_on_success
   def set_stream(self, id, name=None, station_id=None, cmd=None):
-    """ Set play/pause on a specific pandora source """
+    """ Send commands to a specific pandora source """
 
     if id not in self.streams:
       return error('Stream id {} does not exist!'.format(id))
@@ -1164,10 +1163,11 @@ class EthAudioApi:
       self.streams[id].ctrl.ban()
     elif cmd == 'shelve':
       self.streams[id].ctrl.shelve()
-    elif cmd == 'explain':
-      self.streams[id].ctrl.explain()
-    elif cmd == 'history':
-      self.streams[id].ctrl.history()
+    elif cmd == 'station':
+      if station_id is not None:
+        self.streams[id].ctrl.station(station_id)
+      else:
+        return error('Station_ID required. Please try again.')
     else:
       print('Command "{}" not recognized.'.format(cmd))
 
@@ -1190,7 +1190,7 @@ class EthAudioApi:
           if line:
             data = line.split(':')
             d[data[0]] = data[1]
-        print(d)
+        return(d)
     except Exception as e:
       print(error('Failed to get station list - it may not exist: {}'.format(e)))
     # TODO: Change these prints to returns in final state
