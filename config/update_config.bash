@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # configure shairpprt-sync on pi for multi instance support
 sp_installed=$(sudo apt list --installed 2> /dev/null | grep xauth -c)
 if [ 0 -eq "${sp_installed}" ]; then
