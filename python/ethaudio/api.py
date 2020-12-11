@@ -608,7 +608,7 @@ class Pandora:
     """
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
-      self.state = 'connected'
+      self.state = 'playing'
       return
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
@@ -931,8 +931,8 @@ class EthAudioApi:
             old_stream.disconnect()
           # start new stream
           stream = self.get_stream(input)
-          # TODO: check if stream is already connected, and disconnect it from its old stream (make sure to update that sources input to local as well)
           if stream:
+            stream.disconnect()
             stream.connect(idx)
           rt_needs_update = self._is_digital(input) != self._is_digital(src['input'])
           if rt_needs_update or force_update:
@@ -1140,8 +1140,7 @@ class EthAudioApi:
   @save_on_success
   def set_stream(self, id, name=None, station_id=None, cmd=None):
     """ Set play/pause on a specific pandora source """
-
-    if id not in self.streams:
+    if int(id) not in self.streams:
       return error('Stream id {} does not exist!'.format(id))
 
     # try:
@@ -1149,27 +1148,38 @@ class EthAudioApi:
     #   name, _ = updated_val(name, strm['name'])
     # except:
     #   return error('ERROR!')
-    
-    if cmd == 'play':
-      self.streams[id].ctrl.play()
-    elif cmd == 'pause':
-      self.streams[id].ctrl.pause()
-    elif cmd == 'stop':
-      self.streams[id].ctrl.stop()    
-    elif cmd == 'next':
-      self.streams[id].ctrl.next()
-    elif cmd == 'love':
-      self.streams[id].ctrl.love()
-    elif cmd == 'ban':
-      self.streams[id].ctrl.ban()
-    elif cmd == 'shelve':
-      self.streams[id].ctrl.shelve()
-    elif cmd == 'explain':
-      self.streams[id].ctrl.explain()
-    elif cmd == 'history':
-      self.streams[id].ctrl.history()
-    else:
-      print('Command "{}" not recognized.'.format(cmd))
+
+    # TODO: this needs to be handled inside the stream itself
+    try:
+      if cmd == 'play':
+        print('playing')
+        self.streams[id].state = 'playing'
+        self.streams[id].ctrl.play()
+      elif cmd == 'pause':
+        print('paused')
+        self.streams[id].state = 'paused'
+        self.streams[id].ctrl.pause()
+      elif cmd == 'stop':
+        self.streams[id].state = "stopped"
+        self.streams[id].ctrl.stop()
+      elif cmd == 'next':
+        print('next')
+        self.streams[id].ctrl.next()
+      elif cmd == 'love':
+        self.streams[id].ctrl.love()
+      elif cmd == 'ban':
+        self.streams[id].ctrl.ban()
+      elif cmd == 'shelve':
+        self.streams[id].ctrl.shelve()
+      elif cmd == 'explain':
+        self.streams[id].ctrl.explain()
+      elif cmd == 'history':
+        self.streams[id].ctrl.history()
+      else:
+        print('Command "{}" not recognized.'.format(cmd))
+    except Exception as e:
+      print('error setting stream: {}'.format(e))
+      pass # TODO: actually report error
 
   @save_on_success
   def get_stations(self, id, stream_index=None):

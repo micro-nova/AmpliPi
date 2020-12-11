@@ -87,10 +87,11 @@ function sendStreamCommand(ctrl, command) {
   let player = ctrl.closest(".pandora-player");
   let src_input = player.dataset.srcInput;
   if (src_input.startsWith("stream=")) {
-    let stream_id = src_input.replace("stream=");
+    let stream_id = Number(src_input.replace("stream=", ""));
     let req = {
+      "command" : "set_stream",
       "id" : stream_id,
-      "command" : command
+      "cmd" : command
     };
     sendRequest(req);
   }
@@ -111,21 +112,31 @@ function onNext(ctrl) {
 function updateSourceView(status) {
   // update player state
   for (const src of status['sources']) {
-    const stream = src.input.startsWith("stream=") ? status.streams[src.input.replace("stream=")] : null;
-    const playing = !!stream && stream.status == "playing";
+    const stream_id = src.input.startsWith("stream=") ? src.input.replace("stream=", "") : undefined;
     // play/pause switching
-    if (stream) {
+    if (stream_id) {
+      // find the right stream
+      let stream = undefined;
+      for (const s of status.streams) {
+        if (s.id == stream_id) {
+          stream = s;
+          break;
+        }
+      }
+
+      if (stream) {
+        // TODO: update song info
+        if (stream.type == 'pandora') {
+          // TODO: update station list
+        }
+      }
+
+      const playing = stream.status == "playing";
       $('#s' + src.id + '-player .play')[0].style.visibility = playing ? "hidden" : "visible";
       $('#s' + src.id + '-player .pause')[0].style.visibility = playing ? "visible" : "hidden";
     } else {
       $('#s' + src.id + '-player .play')[0].style.visibility = "hidden";
       $('#s' + src.id + '-player .pause')[0].style.visibility = "hidden";
-    }
-    if (stream) {
-      // TODO: update song info
-      if (stream.type == 'pandora') {
-        // TODO: update station list
-      }
     }
     // update each source's input
     $("#s" + src.id + "-player")[0].dataset.srcInput = src.input;

@@ -23,6 +23,8 @@ def parse_cmd():
     out = app.api.set_source(req.pop('id'), **req)
   elif cmd == 'set_zone':
     out = app.api.set_zone(req.pop('id'), **req)
+  elif cmd == 'set_stream':
+    out = app.api.set_stream(req.pop('id'), **req)
   else:
     out = {'error': 'Unknown command'}
   print(app.api.visualize_api())
