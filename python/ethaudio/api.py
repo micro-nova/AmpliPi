@@ -950,7 +950,7 @@ class EthAudioApi:
     """
     idx = None
     for i, s in enumerate(self.status['zones']):
-      if s['id'] == id:
+      if s['id'] == int(id):
         idx = i
     if idx is not None:
       try:
@@ -1003,7 +1003,7 @@ class EthAudioApi:
 
   def get_group(self, id):
     for i, g in enumerate(self.status['groups']):
-      if g['id'] == id:
+      if g['id'] == int(id):
         return i,g
     return -1, None
 

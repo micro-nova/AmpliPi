@@ -10,23 +10,47 @@ function onSrcInputChange(obj) {
 }
 
 function onSrcAdd(obj) {
-  const src = obj.id.substring(1,2);
+  const src = Number(obj.id.substring(1,2));
   const to_add = obj.value;
   if (to_add) {
     const type = to_add.substring(0,1);
     const id = Number(to_add.substring(1));
-    let req = {
-      "id" : id,
-      "source_id" : src,
-      "command" : ""
-    };
+    let req = {};
     if (type == 'z'){
-      req['command'] = 'set_zone';
+      req.command = 'set_zone';
     } else if (type == 'g') {
-      req['command'] = 'set_group';
+      req.command = 'set_group';
     }
+    req.id = id;
+    req.source_id = src;
     sendRequestAndReload(req, src);
   }
+}
+
+function onMuteToggle(icon) {
+  let ctrl = icon.closest('.volume');
+  let mute = !ctrl.classList.contains('muted');
+  ctrl.classList.toggle('muted', mute); // immediately toggle the mute to give the user feedback
+  let req = {};
+  if (ctrl.dataset.hasOwnProperty('zone')) {
+    req.command = 'set_zone';
+    req.id = Number(ctrl.dataset.zone);
+  } else if (ctrl.dataset.hasOwnProperty('group')) {
+    req.command = 'set_group';
+    req.id = Number(ctrl.dataset.group);
+  }
+  req.mute = mute;
+  sendRequest(req);
+}
+
+function debounce(ms, fun){
+  var timer;
+  return function(obj){
+      clearTimeout(timer);
+      timer = setTimeout(function(){
+          fun(obj);
+      }, ms);
+  };
 }
 
 $(document).ready(function(){
@@ -44,10 +68,16 @@ $(document).ready(function(){
   });
 });
 
-function updateVol(ctrl, vol) {
+function updateVol(ctrl, muted, vol) {
   let range = ctrl.querySelector("input[type=range]");
-  const fill = ctrl.querySelector(".bar .bar-fill");
+  let fill = ctrl.querySelector(".bar .bar-fill");
+  let mute_icon = ctrl.querySelector(".icon i");
   const pct = (vol - range.min) / (range.max - range.min) * 100.0;
+  // update mute state and switch between muted and volume icon
+  ctrl.classList.toggle('muted', muted);
+  mute_icon.classList.toggle('fa-volume-up', !muted);
+  mute_icon.classList.toggle('fa-volume-mute', muted);
+  // update volume bar and value
   fill.style.width = pct + "%";
   range.setAttribute("value", vol);
   range.dispatchEvent(new Event("change"));
@@ -107,10 +137,10 @@ function updateSourceView(status) {
   for (const ctrl of controls) {
     if (ctrl.dataset.hasOwnProperty('zone')){
       let z = ctrl.dataset.zone;
-      updateVol(ctrl, status.zones[z].vol);
+      updateVol(ctrl, status.zones[z].mute, status.zones[z].vol);
     } else if (ctrl.dataset.hasOwnProperty('group')) {
       let g = ctrl.dataset.group;
-      updateVol(ctrl, status.groups[g].vol_delta);
+      updateVol(ctrl, status.groups[g].mute, status.groups[g].vol_delta);
     } else {
       console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
     }

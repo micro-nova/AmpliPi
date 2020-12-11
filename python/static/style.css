@@ -32,6 +32,7 @@ body {
   background: #4a4a4a;
 }
 
+/* TODO: add source on/outputting audio feature, for now the play indicator is hidden */
 .fa-play {
   display: none;
 }
@@ -39,13 +40,6 @@ body {
 .source-input-sel {
   margin: auto 3%;
   width: 94%;
-}
-
-#s0-input {
-  display: block;
-}
-#s1-input, #s2-input, #s3-input {
-  display: none;
 }
 
 .group {
@@ -82,18 +76,26 @@ body {
 .volume input[type=range] {
   display: none;
 }
+
 .volume .icon {
+  padding: .6rem;
+}
+.volume .icon:hover {
+  cursor: pointer;
+}
+.volume .icon .fa-volume-up{
   color: #ccc;
 }
-.volume .icon .muted {
-  color: #666;
+.volume .icon .fa-volume-mute {
+  color: #F55;
+  padding: 0 0.15rem; /* add a little padding to match volume-up width */
 }
 .volume .icon-size {
   font-size: 1.2rem;
 }
 .volume .bar-hoverbox {
   padding: 10px 15px;
-  width: 92%;
+  width: 95%;
 }
 .volume .bar {
   background: #999;
@@ -102,14 +104,14 @@ body {
   overflow: hidden;
   pointer-events: none;
 }
-.volume .bar .bar-fill {
+.volume .bar-fill {
   background: #0096ff;
   width: 0%;
   height: 100%;
   background-clip: border-box;
   pointer-events: none;
 }
-.volume .bar .bar-fill .muted {
+.volume.muted .bar-fill {
   background: #666;
 }
 
