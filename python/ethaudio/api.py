@@ -542,7 +542,7 @@ class Shairport:
   def info(self):
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-    return 'No info available'
+    return {'details': 'No info available'}
 
   def status(self):
     return self.state
@@ -597,6 +597,7 @@ class Pandora:
     self.proc = None  # underlying pianobar process
     self.ctrl = None # control fifo to pianobar
     self.state = 'disconnected'
+    self.source = None # source_id pianobar is connecting to
 
   def __del__(self):
     self.disconnect()
@@ -607,6 +608,7 @@ class Pandora:
     """
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
+      self.source = src
       self.state = 'connected'
       return
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
@@ -642,6 +644,7 @@ class Pandora:
       self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
       self.ctrl = Pandora.Control(pb_control_fifo)
       print('{} connected to {}'.format(self.name, src))
+      self.source = src
       self.state = 'connected'
     except Exception as e:
       print('error starting pianobar: {}'.format(e))
@@ -666,9 +669,25 @@ class Pandora:
     pass
 
   def info(self):
+    loc = '/home/pi/config/srcs/{}/.config/pianobar/currentSong'.format(self.source)
+    try:
+      with open(loc, 'r') as file:
+        d = {}
+        for line in file.readlines():
+          line = line.strip()
+          if line:
+            data = line.split(',,,')
+            d['artist'] = data[0]
+            d['track'] = data[1]
+            d['album'] = data[2]
+            d['img_url'] = data[3]
+            d['station'] = data[5]
+        return(d)
+    except Exception as e:
+      print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-    return 'No info available'
+    return {'details': 'No info available'}
 
   def status(self):
     return self.state
