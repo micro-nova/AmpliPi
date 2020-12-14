@@ -53,6 +53,10 @@ function debounce(ms, fun){
   };
 }
 
+function refresh() {
+  get();
+}
+
 $(document).ready(function(){
   // Some things are not part of the automatic tab-content switching
   // hide things related to the old src and show things related to the new one
@@ -66,6 +70,7 @@ $(document).ready(function(){
     $('#' + new_src + '-player')[0].style.display = "block";
     $('#' + old_src + '-player')[0].style.display = "none";
   });
+  setInterval(refresh, 2000);
 });
 
 function updateVol(ctrl, muted, vol) {
@@ -197,7 +202,8 @@ async function sendRequestAndReload(obj, src) {
   });
   let result = await response.json();
   onResponse(result);
-  window.location.assign('test/' + src);
+  // reload the page, making sure to stay on the same source tab
+  window.location.assign('/' + src);
 }
 
 // group and zone volume control

@@ -20,6 +20,8 @@ RPI_PYTHON_FOLDER=/home/pi/python
 # create directories if they don't exists
 ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/ethaudio"
 ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/tests"
+ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/templates"
+ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/static"
 ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/../config"
 
 sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' $SCRIPT_DIR/../python/ethaudio/api.py
@@ -29,6 +31,8 @@ scp $SCRIPT_DIR/../python/*.sh                      $RPI_IP_ADDRESS:${RPI_PYTHON
 scp $SCRIPT_DIR/../python/*.py                      $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/
 scp $SCRIPT_DIR/../python/ethaudio/*.py             $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/ethaudio/
 scp $SCRIPT_DIR/../python/tests/*.py                $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/tests/
+scp $SCRIPT_DIR/../python/templates/*               $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/templates/
+scp $SCRIPT_DIR/../python/static/*                  $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/static/
 # copy config files that need to be moved with sudo, then call a script to move/configure them
 scp $SCRIPT_DIR/../config/*.json                    $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 scp $SCRIPT_DIR/../config/asound.conf               $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
