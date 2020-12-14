@@ -50,7 +50,7 @@
         <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
           <!-- TODO: this player's layout needs to be redone, the margins are too funky right now -->
           <ul>
-            <li class="cover"><img src="http://i1285.photobucket.com/albums/a583/TheGreatOzz1/Hosted-Images/Noisy-Freeks-Image_zps4kilrxml.png"/></li>
+            <li class="cover"><img src="{{ url_for('static', filename='rca_inputs.svg') }}"/></li>
             <li class="info">
               <h6 class="artist">The Tasty Treats </h6>
               <h6 class="album">Premiere</h6>
@@ -171,7 +171,7 @@
     </div>
   </div>
   <div id="micronova" class="text-center">
-    <img src="https://images.squarespace-cdn.com/content/545510f7e4b034f1f6ee64b3/1414874650954-MHPVHAZ4S27MV23I6KDC/micronova_logo_2.png" alt="Micronova" />
+    <img src="{{ url_for('static', filename='micronova-white-on-black.png') }}" alt="Micronova" />
   </div>
 </div>
 <!-- partial -->

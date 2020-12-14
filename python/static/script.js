@@ -1,3 +1,9 @@
+
+const icons = {
+  'shairport' : 'https://icons.iconarchive.com/icons/xenatt/minimalism/256/App-AirPort-Utility-icon.png',
+  'local'     : '/static/rca_inputs.svg'
+}
+
 function onSrcInputChange(obj) {
   const input = obj.value;
   const src = obj.dataset.src;
@@ -118,6 +124,10 @@ function updateSourceView(status) {
   // update player state
   for (const src of status['sources']) {
     const stream_id = src.input.startsWith("stream=") ? src.input.replace("stream=", "") : undefined;
+    let cover = $('#s' + src.id + '-player .cover img')[0];
+    let artist = $('#s' + src.id + '-player .info .artist')[0];
+    let album = $('#s' + src.id + '-player .info .album')[0];
+    let song = $('#s' + src.id + '-player .info .song')[0];
     // play/pause switching
     if (stream_id) {
       // find the right stream
@@ -128,20 +138,37 @@ function updateSourceView(status) {
           break;
         }
       }
-
       if (stream) {
-        // TODO: update song info
+        // update the player's song info
         if (stream.type == 'pandora') {
-          // TODO: update station list
+          try {
+            // update albumn art
+            cover.src = stream.info.img_url;
+            artist.innerHTML = stream.info.artist;
+            album.innerHTML = stream.info.album;
+            song.innerHTML = stream.info.track;
+          } catch (err) {}
+        } else if (stream.type == 'shairport') {
+          cover.src = icons['shairport'];
+          // TODO: populate shairport album info
+          artist.innerHTML = '';
+          album.innerHTML = '';
+          song.innerHTML = '';
         }
       }
-
       const playing = stream.status == "playing";
       $('#s' + src.id + '-player .play')[0].style.visibility = playing ? "hidden" : "visible";
       $('#s' + src.id + '-player .pause')[0].style.visibility = playing ? "visible" : "hidden";
     } else {
       $('#s' + src.id + '-player .play')[0].style.visibility = "hidden";
       $('#s' + src.id + '-player .pause')[0].style.visibility = "hidden";
+      $('#s' + src.id + '-player .step-foreward')[0].style.visibility = "hidden";
+      $('#s' + src.id + '-player .slider')[0].style.visibility = "hidden";
+      $('#s' + src.id + '-player .timer')[0].style.visibility = "hidden";
+      cover.src = icons['local'];
+      artist.innerHTML = src.name;
+      album.innerHTML = '';
+      song.innerHTML = '';
     }
     // update each source's input
     $("#s" + src.id + "-player")[0].dataset.srcInput = src.input;

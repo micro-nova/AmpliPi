@@ -645,7 +645,7 @@ class Pandora:
       self.ctrl = Pandora.Control(pb_control_fifo)
       print('{} connected to {}'.format(self.name, src))
       self.source = src
-      self.state = 'connected'
+      self.state = 'playing'
     except Exception as e:
       print('error starting pianobar: {}'.format(e))
 
@@ -684,7 +684,8 @@ class Pandora:
             d['station'] = data[5]
         return(d)
     except Exception as e:
-      print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
+      pass
+      #print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
     return {'details': 'No info available'}
@@ -1221,5 +1222,6 @@ class EthAudioApi:
             d[data[0]] = data[1]
         return(d)
     except Exception as e:
-      print(error('Failed to get station list - it may not exist: {}'.format(e)))
+      pass
+      #print(error('Failed to get station list - it may not exist: {}'.format(e)))
     # TODO: Change these prints to returns in final state
