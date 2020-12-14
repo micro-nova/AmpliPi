@@ -542,7 +542,7 @@ class Shairport:
   def info(self):
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-    return 'No info available'
+    return {'details': 'No info available'}
 
   def status(self):
     return self.state
@@ -580,11 +580,10 @@ class Pandora:
     def shelve(self):
       self.fifo.write('t\n')
       self.fifo.flush()
-    def explain(self):
-      self.fifo.write('e\n')
+    def station(self, index):
+      self.fifo.write('s')
       self.fifo.flush()
-    def history(self):
-      self.fifo.write('h\n')
+      self.fifo.write('{}\n'.format(index))
       self.fifo.flush()
 
   def __init__(self, name, user, password, station, mock=False):
@@ -598,6 +597,7 @@ class Pandora:
     self.proc = None  # underlying pianobar process
     self.ctrl = None # control fifo to pianobar
     self.state = 'disconnected'
+    self.source = None # source_id pianobar is connecting to
 
   def __del__(self):
     self.disconnect()
@@ -608,7 +608,8 @@ class Pandora:
     """
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
-      self.state = 'playing'
+      self.state = 'playing' # TODO: only play station based streams
+      self.source = src
       return
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
@@ -629,7 +630,7 @@ class Pandora:
       'password': self.password,
       'autostart_station': self.station,
       'fifo': pb_control_fifo,
-      # TODO: add event_command=script with a script that writes to a status fifo
+      'event_command': pb_config_folder + '/eventcmd.sh'
     })
     write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': output_device(src)})
     # create fifos if needed
@@ -643,6 +644,7 @@ class Pandora:
       self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
       self.ctrl = Pandora.Control(pb_control_fifo)
       print('{} connected to {}'.format(self.name, src))
+      self.source = src
       self.state = 'connected'
     except Exception as e:
       print('error starting pianobar: {}'.format(e))
@@ -667,9 +669,25 @@ class Pandora:
     pass
 
   def info(self):
+    loc = '/home/pi/config/srcs/{}/.config/pianobar/currentSong'.format(self.source)
+    try:
+      with open(loc, 'r') as file:
+        d = {}
+        for line in file.readlines():
+          line = line.strip()
+          if line:
+            data = line.split(',,,')
+            d['artist'] = data[0]
+            d['track'] = data[1]
+            d['album'] = data[2]
+            d['img_url'] = data[3]
+            d['station'] = data[5]
+        return(d)
+    except Exception as e:
+      print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-    return 'No info available'
+    return {'details': 'No info available'}
 
   def status(self):
     return self.state
@@ -1171,10 +1189,11 @@ class EthAudioApi:
         self.streams[id].ctrl.ban()
       elif cmd == 'shelve':
         self.streams[id].ctrl.shelve()
-      elif cmd == 'explain':
-        self.streams[id].ctrl.explain()
-      elif cmd == 'history':
-        self.streams[id].ctrl.history()
+      elif cmd == 'station':
+        if station_id is not None:
+          self.streams[id].ctrl.station(station_id)
+        else:
+          return error('Station_ID required. Please try again.')
       else:
         print('Command "{}" not recognized.'.format(cmd))
     except Exception as e:
@@ -1200,7 +1219,7 @@ class EthAudioApi:
           if line:
             data = line.split(':')
             d[data[0]] = data[1]
-        print(d)
+        return(d)
     except Exception as e:
       print(error('Failed to get station list - it may not exist: {}'.format(e)))
     # TODO: Change these prints to returns in final state
