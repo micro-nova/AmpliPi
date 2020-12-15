@@ -35,6 +35,7 @@ scp $SCRIPT_DIR/../python/templates/*               $RPI_IP_ADDRESS:${RPI_PYTHON
 scp $SCRIPT_DIR/../python/static/*                  $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/static/
 # copy config files that need to be moved with sudo, then call a script to move/configure them
 scp $SCRIPT_DIR/../config/*.json                    $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
+scp $SCRIPT_DIR/../config/eventcmd.sh               $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 scp $SCRIPT_DIR/../config/asound.conf               $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 scp $SCRIPT_DIR/../config/update_config.bash        $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 ssh $RPI_IP_ADDRESS "cd ${RPI_PYTHON_FOLDER}/../config && ./update_config.bash"

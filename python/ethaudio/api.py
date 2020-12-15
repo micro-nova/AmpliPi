@@ -613,6 +613,8 @@ class Pandora:
       return
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
+
+    eventcmd_template = '/home/pi/config/eventcmd.sh'
     pb_home = '/home/pi/config/srcs/{}'.format(src) # the simulated HOME for an instance of pianobar
     pb_config_folder = '{}/.config/pianobar'.format(pb_home)
     pb_control_fifo = '{}/ctl'.format(pb_config_folder)
@@ -620,6 +622,7 @@ class Pandora:
     pb_config_file = '{}/config'.format(pb_config_folder)
     pb_output_file = '{}/output'.format(pb_config_folder)
     pb_error_file = '{}/error'.format(pb_config_folder)
+    pb_eventcmd_file = '{}/eventcmd.sh'.format(pb_config_folder)
     pb_src_config_file = '{}/.libao'.format(pb_home)
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(pb_config_folder))
@@ -630,9 +633,16 @@ class Pandora:
       'password': self.password,
       'autostart_station': self.station,
       'fifo': pb_control_fifo,
-      'event_command': pb_config_folder + '/eventcmd.sh'
+      'event_command': pb_eventcmd_file
     })
     write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': output_device(src)})
+    try:
+      with open(eventcmd_template) as ect:
+        template = ect.read().replace('source_id', str(src))
+      with open(pb_eventcmd_file, 'w') as ec:
+        ec.write(template)
+    except Exception as e:
+      print('error creating eventcmd: {}'.format(e))
     # create fifos if needed
     if not os.path.exists(pb_control_fifo):
       os.system('mkfifo {}'.format(pb_control_fifo))
