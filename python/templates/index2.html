@@ -113,7 +113,7 @@
           </div>
           <div id="g{{ group['id'] }}-zones" class='card-description zones collapse' data-parent="#s{{ src }}-groups">
             <div class="card-rows">
-              {% for zone in zones if zone['id'] in group['zones'] %}
+              {% for zone in zones if zone['id'] in group['zones'] and not zone['disabled']%}
               <div class="card zone">
                 <h6 class="card-header">{{ zone['name'] }}</h6>
                 <div class="card-body">

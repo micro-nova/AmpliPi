@@ -55,7 +55,7 @@ def ungrouped_zones(src):
   source_zones = set([ z['id'] for z in zones if z['source_id'] == src ])
   # return all of the zones connected to this source that aren't in a group
   ungrouped_zones_ = source_zones.difference(grouped_zones)
-  return [ zones[z] for z in ungrouped_zones_ ]
+  return [ zones[z] for z in ungrouped_zones_ if not zones[z]['disabled']]
 
 @app.route('/')
 @app.route('/<int:src>')
