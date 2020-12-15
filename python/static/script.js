@@ -156,11 +156,13 @@ function updateSourceView(status) {
           album.innerHTML = '';
           song.innerHTML = '';
         }
+        const playing = stream.status == "playing";
+        $('#s' + src.id + ' i')[0].style.visibility = playing ? "visible" : "hidden";
+        $('#s' + src.id + '-player .play')[0].style.visibility = playing ? "hidden" : "visible";
+        $('#s' + src.id + '-player .pause')[0].style.visibility = playing ? "visible" : "hidden";
       }
-      const playing = stream.status == "playing";
-      $('#s' + src.id + '-player .play')[0].style.visibility = playing ? "hidden" : "visible";
-      $('#s' + src.id + '-player .pause')[0].style.visibility = playing ? "visible" : "hidden";
     } else {
+      $('#s' + src.id + ' i')[0].style.visibility = "hidden"; // TODO: add audio playing detection to rca inputs
       $('#s' + src.id + '-player .play')[0].style.visibility = "hidden";
       $('#s' + src.id + '-player .pause')[0].style.visibility = "hidden";
       $('#s' + src.id + '-player .step-foreward')[0].style.visibility = "hidden";
@@ -173,7 +175,7 @@ function updateSourceView(status) {
     }
     // update each source's input
     $("#s" + src.id + "-player")[0].dataset.srcInput = src.input;
-    $("#s" + src.id + '-input option[value="' + src.input + '"]').attr('selected', 'selected')
+    $("#s" + src.id + '-input select').val(src.input);
   }
 
   // update volumes
