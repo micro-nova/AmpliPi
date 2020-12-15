@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify, make_response
 import ethaudio
 import json
 from collections import OrderedDict
@@ -10,7 +10,7 @@ app.api = None
 
 @app.route('/api', methods=['GET'])
 def get():
-  return json.dumps(app.api.get_state())
+  return make_response(jsonify(app.api.get_state()))
 
 @app.route('/api', methods=['POST'])
 def parse_cmd():
@@ -30,7 +30,7 @@ def parse_cmd():
   print(app.api.visualize_api())
   if out is None: # None is returned on success
     out = app.api.get_state()
-  return json.dumps(out)
+  return make_response(jsonify((out)))
 
 def unused_groups(src):
   """ Get groups that are not connected to src """
