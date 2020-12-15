@@ -1,7 +1,8 @@
 
 const icons = {
-  'shairport' : 'https://icons.iconarchive.com/icons/xenatt/minimalism/256/App-AirPort-Utility-icon.png',
-  'local'     : '/static/rca_inputs.svg'
+  'shairport' : '/static/shairport.png',
+  'local'     : '/static/rca_inputs.svg',
+  'pandora'   : '/static/pandora.png'
 }
 
 function onSrcInputChange(obj) {
@@ -143,10 +144,10 @@ function updateSourceView(status) {
         if (stream.type == 'pandora') {
           try {
             // update albumn art
-            cover.src = stream.info.img_url;
-            artist.innerHTML = stream.info.artist;
-            album.innerHTML = stream.info.album;
-            song.innerHTML = stream.info.track;
+            cover.src = stream.info.img_url ? stream.info.img_url : icons['pandora'];
+            artist.innerHTML = stream.info.artist ? stream.info.artist : "";
+            album.innerHTML = stream.info.album ? stream.info.album : "";
+            song.innerHTML = stream.info.track ? stream.info.track : "";
           } catch (err) {}
         } else if (stream.type == 'shairport') {
           cover.src = icons['shairport'];
