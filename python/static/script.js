@@ -238,22 +238,26 @@ async function sendRequestAndReload(obj, src) {
 
 // group and zone volume control
 function onGroupVolChange(g, vol) {
-  let req = {
-    "command": "set_group",
-    "id" : Number(g),
-    "vol_delta" : Number(vol),
-    "mute" : false
-  };
-  sendRequest(req)
+  if (vol) {
+    let req = {
+      "command": "set_group",
+      "id" : Number(g),
+      "vol_delta" : Number(vol),
+      "mute" : false
+    };
+    sendRequest(req);
+  }
 }
 function onZoneVolChange(z, vol) {
-  let req = {
-    "command": "set_zone",
-    "id" : Number(z),
-    "vol" : Number(vol),
-    "mute" : false
-  };
-  sendRequest(req)
+  if (vol) {
+    let req = {
+      "command": "set_zone",
+      "id" : Number(z),
+      "vol" : Number(vol),
+      "mute" : false
+    };
+    sendRequest(req);
+  }
 }
 
 // pretty volume controls, based on: codepen found here:
@@ -269,10 +273,15 @@ function clamp(min, max, val) {
   return Math.max(Math.min(val, max), min);
 }
 
+const VOL_REQ_THROTTLE_MS = 50; // Limit the volume requests that can be made to prevent overwhelming the interface
+
 function initVolControl(ctrl) {
   const range = ctrl.querySelector("input[type=range]");
   const barHoverBox = ctrl.querySelector(".bar-hoverbox");
   const fill = ctrl.querySelector(".bar .bar-fill");
+  const zone = ctrl.dataset.hasOwnProperty('zone') ? ctrl.dataset.zone : null;
+  const group = ctrl.dataset.hasOwnProperty('group') ? ctrl.dataset.group : null;
+  let req_throttled = false;
 
   const initValue = (value) => {
     const pct = (value - range.min) / (range.max - range.min) * 100.0;
@@ -285,12 +294,19 @@ function initVolControl(ctrl) {
     const val = clamp(range.min, range.max, value);
     initValue(val);
     const vol = Math.round(val);
-    if (ctrl.dataset.hasOwnProperty('zone')){
-      onZoneVolChange(ctrl.dataset.zone, vol);
-    } else if (ctrl.dataset.hasOwnProperty('group')) {
-      onGroupVolChange(ctrl.dataset.group, vol);
-    } else {
-      console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
+    if (!req_throttled){
+      if (zone){
+        onZoneVolChange(zone, vol);
+      } else if (group) {
+        onGroupVolChange(group, vol);
+      } else {
+        console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
+      }
+      req_throttled = true;
+      setTimeout(() => {
+        req_throttled = false
+      }, VOL_REQ_THROTTLE_MS);
+
     }
   }
 

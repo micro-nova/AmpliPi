@@ -141,7 +141,7 @@
           <div class="card-body">
             <div id="z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}">
               <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
-              <div class="icon" onclick="debounce(100, onMuteToggle)(this);">
+              <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                 <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
               </div>
               <div class="bar-hoverbox">

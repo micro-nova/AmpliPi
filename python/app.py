@@ -5,6 +5,8 @@ import ethaudio
 import json
 from collections import OrderedDict
 
+DEBUG_API = False
+
 app = Flask(__name__)
 app.api = None
 
@@ -27,9 +29,12 @@ def parse_cmd():
     out = app.api.set_stream(req.pop('id'), **req)
   else:
     out = {'error': 'Unknown command'}
-  print(app.api.visualize_api())
+  if DEBUG_API:
+    print(app.api.visualize_api())
   if out is None: # None is returned on success
     out = app.api.get_state()
+  else:
+    print(out) # show the error message
   return make_response(jsonify((out)))
 
 def unused_groups(src):

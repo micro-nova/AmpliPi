@@ -34,7 +34,7 @@ body {
 
 /* TODO: add source on/outputting audio feature, for now the play indicator is hidden */
 .fa-play {
-  display: none;
+  visibility: hidden;
 }
 
 .source-input-sel {

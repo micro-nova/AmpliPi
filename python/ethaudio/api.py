@@ -7,9 +7,9 @@ import deepdiff
 import pprint
 import os # files
 
-DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
-DEBUG_PREAMPS = True # print out preamp state after register write
-DEBUG_API = True # print out a graphical state of the api after each call
+DISABLE_HW = False # disable hardware based packages (smbus2 is not installable on Windows)
+DEBUG_PREAMPS = False # print out preamp state after register write
+DEBUG_API = False # print out a graphical state of the api after each call
 
 import time
 
@@ -652,6 +652,7 @@ class Pandora:
     print('Pianobar config at {}'.format(pb_config_folder))
     try:
       self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
+      time.sleep(0.1) # Delay a bit before creating a control pipe to pianobar
       self.ctrl = Pandora.Control(pb_control_fifo)
       print('{} connected to {}'.format(self.name, src))
       self.source = src
