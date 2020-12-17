@@ -37,11 +37,6 @@ body {
   visibility: hidden;
 }
 
-.source-input-sel {
-  margin: auto 3%;
-  width: 94%;
-}
-
 .group {
   background: #2a2a2a;
 }
@@ -165,7 +160,6 @@ body {
 .pandora-player .cover {
   float: left;
   padding-right: 10px;
-  padding-left: 5%;
 }
 .pandora-player .cover img {
   height: 100px;
@@ -177,11 +171,14 @@ body {
 .pandora-player .controls {
   display: inline-block;
 }
-.pandora-player .play-pause, .pandora-player .step-forward {
+.pandora-player .play-pause {
+  font-size: 20pt;
+}
+.pandora-player .step-forward, .pandora-player .like, .pandora-player .dislike {
   font-size: 20pt;
   margin-left: 15pt;
 }
-.pandora-player .play-pause:hover, .pandora-player .step-forward:hover {
+.pandora-player .play-pause:hover, .pandora-player .step-forward:hover, .pandora-player .like:hover, .pandora-player .dislike:hover {
   cursor: pointer;
   color: #dc3545;
 }
