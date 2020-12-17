@@ -129,7 +129,9 @@ function updateSourceView(status) {
     let artist = $('#s' + src.id + '-player .info .artist')[0];
     let album = $('#s' + src.id + '-player .info .album')[0];
     let song = $('#s' + src.id + '-player .info .song')[0];
-    // play/pause switching
+    let next = $('#s' + src.id + '-player .step-forward')[0];
+    let play_pause = $('#s' + src.id + '-player .play-pause')[0];
+    let playing_indicator = $('#s' + src.id + ' i')[0];
     if (stream_id) {
       // find the right stream
       let stream = undefined;
@@ -139,39 +141,38 @@ function updateSourceView(status) {
           break;
         }
       }
+      // defaults
+      artist.innerHTML = 'No artist';
+      album.innerHTML = 'No album';
+      song.innerHTML = 'No song';
       if (stream) {
         // update the player's song info
         if (stream.type == 'pandora') {
+          next.style.visibility = "block";
           try {
-            // update albumn art
+            // update album art
             cover.src = stream.info.img_url ? stream.info.img_url : icons['pandora'];
-            artist.innerHTML = stream.info.artist ? stream.info.artist : "";
-            album.innerHTML = stream.info.album ? stream.info.album : "";
-            song.innerHTML = stream.info.track ? stream.info.track : "";
+            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
+            album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
+            song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
           } catch (err) {}
         } else if (stream.type == 'shairport') {
-          cover.src = icons['shairport'];
+          next.style.visibility = "hidden";
           // TODO: populate shairport album info
-          artist.innerHTML = '';
-          album.innerHTML = '';
-          song.innerHTML = '';
+          cover.src = icons['shairport'];
         }
         const playing = stream.status == "playing";
-        $('#s' + src.id + ' i')[0].style.visibility = playing ? "visible" : "hidden";
-        $('#s' + src.id + '-player .play')[0].style.visibility = playing ? "hidden" : "visible";
-        $('#s' + src.id + '-player .pause')[0].style.visibility = playing ? "visible" : "hidden";
+        playing_indicator.style.visibility = playing ? "visible" : "hidden";
+        play_pause.style.visibility = "block";
+        play_pause.classList.toggle('fa-play', !playing);
+        play_pause.classList.toggle('fa-pause', playing);
       }
     } else {
-      $('#s' + src.id + ' i')[0].style.visibility = "hidden"; // TODO: add audio playing detection to rca inputs
-      $('#s' + src.id + '-player .play')[0].style.visibility = "hidden";
-      $('#s' + src.id + '-player .pause')[0].style.visibility = "hidden";
-      $('#s' + src.id + '-player .step-foreward')[0].style.visibility = "hidden";
-      $('#s' + src.id + '-player .slider')[0].style.visibility = "hidden";
-      $('#s' + src.id + '-player .timer')[0].style.visibility = "hidden";
+      playing_indicator.style.visibility = "hidden"; // TODO: add audio playing detection to rca inputs
+      play_pause.style.visibility = "hidden";
+      next.style.visibility = "hidden";
       cover.src = icons['local'];
       artist.innerHTML = src.name;
-      album.innerHTML = '';
-      song.innerHTML = '';
     }
     // update each source's input
     $("#s" + src.id + "-player")[0].dataset.srcInput = src.input;
