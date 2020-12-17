@@ -14,8 +14,11 @@ if [[ -z "${RPI_IP_ADDRESS}" ]]; then
   exit 1
 fi
 
-# Python folder on EthAudio controller
+# Python folder on AmpliPi controller
 RPI_PYTHON_FOLDER=/home/pi/python
+
+# Home folder on AmpliPi controller
+RPI_HOME_FOLDER=/home/pi
 
 # create directories if they don't exists
 ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_PYTHON_FOLDER}/ethaudio"
@@ -38,6 +41,10 @@ scp $SCRIPT_DIR/../config/*.json                    $RPI_IP_ADDRESS:${RPI_PYTHON
 scp $SCRIPT_DIR/../config/eventcmd.sh               $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 scp $SCRIPT_DIR/../config/asound.conf               $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 scp $SCRIPT_DIR/../config/update_config.bash        $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
+# copy firmware
+scp $SCRIPT_DIR/../fw/*.sh        $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw
+scp $SCRIPT_DIR/../fw/*.bin        $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw
+# update configs on the pi
 ssh $RPI_IP_ADDRESS "cd ${RPI_PYTHON_FOLDER}/../config && ./update_config.bash"
 
 sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' $SCRIPT_DIR/../python/ethaudio/api.py

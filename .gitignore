@@ -1,5 +1,6 @@
 # AmpliPi generated files
 saved_state.json*
+*.json.bak
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
