@@ -514,6 +514,12 @@ class Shairport:
         'resync_threshold': 0, # a synchronisation error greater than this will cause resynchronisation; 0 disables it
         'log_verbosity': 0, # "0" means no debug verbosity, "3" is most verbose.
       },
+      'metadata':{
+        'enabled': 'yes',
+        'include_cover_art': 'yes',
+        'pipe_name': '/home/pi/config/srcs/{}/shairport-sync-metadata'.format(src),
+        'pipe_timeout': 5000,
+      },
       'alsa': {
         'output_device': output_device(src), # alsa output device
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
