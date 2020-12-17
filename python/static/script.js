@@ -142,6 +142,15 @@ function updateSourceView(status) {
     let like = $('#s' + src.id + '-player .like')[0];
     let dislike = $('#s' + src.id + '-player .dislike')[0];
     let playing_indicator = $('#s' + src.id + ' i')[0];
+    // defaults
+    artist.innerHTML = 'No artist';
+    album.innerHTML = 'No album';
+    song.innerHTML = 'No song';
+    playing_indicator.style.visibility = "hidden"; // TODO: add audio playing detection to rca inputs
+    like.style.visibility = "hidden";
+    dislike.style.visibility = "hidden";
+    play_pause.style.visibility = "hidden";
+    next.style.visibility = "hidden";
     if (stream_id) {
       // find the right stream
       let stream = undefined;
@@ -151,21 +160,17 @@ function updateSourceView(status) {
           break;
         }
       }
-      // defaults
-      artist.innerHTML = 'No artist';
-      album.innerHTML = 'No album';
-      song.innerHTML = 'No song';
-      playing_indicator.style.visibility = "hidden"; // TODO: add audio playing detection to rca inputs
-      like.style.visibility = "hidden";
-      dislike.style.visibility = "hidden";
-      play_pause.style.visibility = "hidden";
-      next.style.visibility = "hidden";
       if (stream) {
         // update the player's song info
         if (stream.type == 'pandora') {
+          const playing = stream.status == "playing";
           next.style.visibility = "visible";
           like.style.visibility = "visible";
           dislike.style.visibility = "visible";
+          playing_indicator.style.visibility = playing ? "visible" : "hidden";
+          play_pause.style.visibility = "visible";
+          play_pause.classList.toggle('fa-play', !playing);
+          play_pause.classList.toggle('fa-pause', playing);
           try {
             // update album art
             cover.src = stream.info.img_url ? stream.info.img_url : icons['pandora'];
@@ -174,15 +179,9 @@ function updateSourceView(status) {
             song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
           } catch (err) {}
         } else if (stream.type == 'shairport') {
-          next.style.visibility = "hidden";
           // TODO: populate shairport album info
           cover.src = icons['shairport'];
         }
-        const playing = stream.status == "playing";
-        playing_indicator.style.visibility = playing ? "visible" : "hidden";
-        play_pause.style.visibility = "visible";
-        play_pause.classList.toggle('fa-play', !playing);
-        play_pause.classList.toggle('fa-pause', playing);
       }
     } else {
       cover.src = icons['local'];
