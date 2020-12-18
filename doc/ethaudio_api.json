@@ -10,7 +10,7 @@
     "command":"set_source",
     "id":0 | 1 | 2 | 3,
     "name":"new name", // sets the friendly name for the source, ie "cd player" or "stream 1"
-    "intpu": "local" | "stream=sid", // sets the connection for the source, either local (RCA/otther input) or stream (sharport/pandora/..)
+    "input": "local" | "stream=sid" | "", // sets the connection for the source, either local (RCA/otther input) or stream (sharport/pandora/..) or disconnected
 }
 
 // TODO: add a command to create a new stream (Pandora, Shairport, others)
@@ -92,7 +92,7 @@
 	{ "id":3, "name":"Source 4", "input":"stream=812" }
     ],
     "streams": [
-        { "id":812,  "name":"Jason's Pamdora", "type":"pandora", "station":"Matt and Kim Radio", "info": {}, "status":"playing"},
+        { "id":812,  "name":"Jason's Pandora", "type":"pandora", "station":"Matt and Kim Radio", "info": {}, "status":"playing"},
         { "id":3432, "name":"Airplay",         "type":"shairport" }
     ],
     "zones": [ // this is an array of zones, array length depends on # of boxes connected

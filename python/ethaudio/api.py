@@ -457,6 +457,7 @@ def build_stream(args, mock=False):
   else:
     raise NotImplementedError(args['type'])
 
+# TODO: how to implement base stream class in Python?, there is a lot of duplication between shairport and pandora streams...
 class Stream(object):
   def connect(self, src):
     """ Conmnect the stream's output to src """
@@ -490,6 +491,7 @@ class Shairport:
     self.name = name
     self.proc = None
     self.mock = mock
+    self.src = None
     self.state = 'disconnected'
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
@@ -501,6 +503,7 @@ class Shairport:
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
       self.state = 'connected'
+      self.src = src
       return
     config = {
       'general': {
@@ -526,6 +529,7 @@ class Shairport:
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
+    self.src = src
 
   def _is_sp_running(self):
     if self.proc:
@@ -538,6 +542,7 @@ class Shairport:
       print('{} disconnected'.format(self.name))
     self.state = 'disconnected'
     self.proc = None
+    self.src = None
 
   def info(self):
     # TODO: report the status of pianobar with station name, playing/paused, song info
@@ -546,6 +551,11 @@ class Shairport:
 
   def status(self):
     return self.state
+
+  def __str__(self):
+    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return 'airplay: {}{}{}'.format(self.name, connection, mock)
 
 class Pandora:
   """ A Pandora Stream """
@@ -597,10 +607,15 @@ class Pandora:
     self.proc = None  # underlying pianobar process
     self.ctrl = None # control fifo to pianobar
     self.state = 'disconnected'
-    self.source = None # source_id pianobar is connecting to
+    self.src = None # source_id pianobar is connecting to
 
   def __del__(self):
     self.disconnect()
+
+  def __str__(self):
+    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return 'pandora: {}{}{}'.format(self.name, connection, mock )
 
   def connect(self, src):
     """ Connect pandora output to a given audio source
@@ -609,7 +624,7 @@ class Pandora:
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
       self.state = 'playing' # TODO: only play station based streams
-      self.source = src
+      self.src = src
       return
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
@@ -654,9 +669,9 @@ class Pandora:
       self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
       time.sleep(0.1) # Delay a bit before creating a control pipe to pianobar
       self.ctrl = Pandora.Control(pb_control_fifo)
-      print('{} connected to {}'.format(self.name, src))
-      self.source = src
+      self.src = src
       self.state = 'playing'
+      print('{} connected to {}'.format(self.name, src))
     except Exception as e:
       print('error starting pianobar: {}'.format(e))
 
@@ -673,6 +688,7 @@ class Pandora:
     self.state = 'disconnected'
     self.proc = None
     self.ctrl = None
+    self.src = None
 
   def set_station(self, station):
     # TODO: send set station command over fifo
@@ -680,7 +696,7 @@ class Pandora:
     pass
 
   def info(self):
-    loc = '/home/pi/config/srcs/{}/.config/pianobar/currentSong'.format(self.source)
+    loc = '/home/pi/config/srcs/{}/.config/pianobar/currentSong'.format(self.src)
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -964,6 +980,13 @@ class EthAudioApi:
           # start new stream
           stream = self.get_stream(input)
           if stream:
+            # update the streams last connected source to have no input, since we have stolen its input
+            if stream.src is not None and stream.src != idx:
+              other_src = self.status['sources'][stream.src]
+              print('stealing {} from source {}'.format(stream.name, other_src['name']))
+              other_src['input'] = ''
+            else:
+              print('stream.src={} idx={}'.format(stream.src, idx))
             stream.disconnect()
             stream.connect(idx)
           rt_needs_update = self._is_digital(input) != self._is_digital(src['input'])

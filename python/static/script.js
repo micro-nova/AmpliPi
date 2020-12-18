@@ -2,7 +2,8 @@
 const icons = {
   'shairport' : '/static/shairport.png',
   'local'     : '/static/rca_inputs.svg',
-  'pandora'   : '/static/pandora.png'
+  'pandora'   : '/static/pandora.png',
+  'none'      : '/static/disconnected.png'
 }
 
 function onSrcInputChange(obj) {
@@ -183,9 +184,11 @@ function updateSourceView(status) {
           cover.src = icons['shairport'];
         }
       }
-    } else {
+    } else if (src.input == 'local') {
       cover.src = icons['local'];
       artist.innerHTML = src.name;
+    } else {
+      cover.src = icons['none'];
     }
     // update each source's input
     $("#s" + src.id + "-player")[0].dataset.srcInput = src.input;
