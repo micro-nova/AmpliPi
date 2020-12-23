@@ -529,10 +529,14 @@ class Shairport:
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(config_folder))
     config_file = '{}/shairport.conf'.format(config_folder)
+    output_file = '{}/output'.format(config_folder)
+    metadata_fifo = '{}/shairport-sync-metadata'.format(config_folder)
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #self.proc = subprocess.Popen(args='shairport-sync-metadata-reader', stdin=open(metadata_fifo, 'r'), stdout=open(output_file, 'w'), stderr=subprocess.PIPE)
+    #self.proc = subprocess.Popen(args=shairport_args, stdin=open(metadata_fifo, 'r'), stdout=open(output_file, 'w'), stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
     self.src = src
