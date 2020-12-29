@@ -529,14 +529,10 @@ class Shairport:
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(config_folder))
     config_file = '{}/shairport.conf'.format(config_folder)
-    output_file = '{}/output'.format(config_folder)
-    metadata_fifo = '{}/shairport-sync-metadata'.format(config_folder)
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #self.proc = subprocess.Popen(args='shairport-sync-metadata-reader', stdin=open(metadata_fifo, 'r'), stdout=open(output_file, 'w'), stderr=subprocess.PIPE)
-    #self.proc = subprocess.Popen(args=shairport_args, stdin=open(metadata_fifo, 'r'), stdout=open(output_file, 'w'), stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
     self.src = src
@@ -555,8 +551,22 @@ class Shairport:
     self.src = None
 
   def info(self):
-    # TODO: report the status of pianobar with station name, playing/paused, song info
-    # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
+    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
+    try:
+      with open(loc, 'r') as file:
+        d = {}
+        for line in file.readlines():
+          if line:
+            data = line.split(',,,')
+            for i in range(len(data)):
+              data[i] = data[i].strip('".')
+            d['artist'] = data[0]
+            d['track'] = data[1]
+            d['album'] = data[2]
+        return(d)
+    except Exception as e:
+      pass
+      # TODO: Put an actual exception here?
     return {'details': 'No info available'}
 
   def status(self):

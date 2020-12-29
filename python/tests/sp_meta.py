@@ -1,34 +1,6 @@
 #!/usr/bin/python3
 import sys
 import time
-# data2 = """"ssnc" "mdst": "3874307750".
-# Album Name: "Now That's What I Call Music Vol 72".
-# Artist: "Allen Lily".
-# Comment: "sUPERSHARE.CO.UK".
-# Composer: "".
-# Genre: "VA".
-# File kind: "MPEG audio file".
-# Title: "The Fear".
-# Persistent ID: "9ed463b45947fa92".
-# Sort as: "Fear".
-# "ssnc" "mden": "3874307750".
-# """
-
-# def info(data):
-#     lines = data.split('.\n')
-#     d = {}
-#     for line in lines:
-#         line = line.strip()
-#         if line:
-#             data = line.split(': ')
-#             d[data[0]] = data[1]
-#     u = {}
-#     u['artist'] = d['Artist']
-#     u['track'] = d['Title']
-#     u['album'] = d['Album Name']
-#     print(u)
-
-# info(data2)
 
 args = sys.argv[1:]
 print('Input Arguments: {}'.format(args[0]))
@@ -49,33 +21,46 @@ except:
     sys.exit('Failure.')
 print('Targeting {}'.format(loc))
 
+def read_field():
+    line = sys.stdin.readline()
+    line = line.strip(' \n')
+    if line[-6:] == 'bytes.':
+        line = '"Picture: ' + line + '".'
+    if line:
+        while line[-2:] != '".':
+            line2 = sys.stdin.readline()
+            line2 = line2.strip(' \n')
+            line = line + '\n' + line2
+        data = line.split(': ')
+        return data[0], data[1]
+    else:
+        return None, None
+
 def info():
-    data = ['','']
     u = {}
     v = {}
-    while data[0] != '"ssnc" "mden"':
-        line = sys.stdin.readline()
-        line = line.strip()
-        if line:
-            data = line.split(': ')
-            u[data[0]] = data[1]
-    v['artist'] = u['Artist']
-    v['track'] = u['Title']
-    v['album'] = u['Album Name']
+    field = ''
+    while field != '"ssnc" "mden"':
+        field, data = read_field()
+        print(field, ':', data)
+        if field:    
+            u[field] = data
+    # v['artist'] = u['Artist']
+    # v['track'] = u['Title']
+    # v['album'] = u['Album Name']
+    v = u['Artist'] + ',,,' + u['Title'] + ',,,' + u['Album Name']
     return v
 
 d = {}
-data = ['','']
+f = open(loc, 'w')
+f.write("")
+f.close()
 while True:
-    line = sys.stdin.readline()
-    line = line.strip()
-    if line:
-        data = line.split(': ')
-        # print(data)
-        if data[0] == '"ssnc" "mdst"':
-            q = info()
-            print(q)
-            f = open(loc, 'w')
-            f.write(str(q))
-            f.close()
-
+    field, data = read_field()
+    print(field, ':', data)
+    if field == '"ssnc" "mdst"':
+        q = info()
+        print(q)
+        f = open(loc, 'w')
+        f.write(str(q))
+        f.close()
