@@ -15,8 +15,8 @@ info:
     name: Micronova
     url: micro-nova.com
   x-logo:
-    url: 'https://micro-nova.github.io/python/static/favicon.png'
-    altText: AmpliPi Logo
+    url: 'https://micro-nova.github.io/ethaudio-rpi-controller/micronova-square.png'
+    altText: MicroNova Logo
   license:
     name: GPL
     url: http://amplipi.local:5000/license
