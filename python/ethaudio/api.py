@@ -552,6 +552,7 @@ class Shairport:
 
   def info(self):
     loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
+    sloc = '/home/pi/config/srcs/{}/sourceInfo'.format(self.src)
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -563,11 +564,25 @@ class Shairport:
             d['artist'] = data[0]
             d['track'] = data[1]
             d['album'] = data[2]
-        return(d)
     except Exception as e:
       pass
       # TODO: Put an actual exception here?
-    return {'details': 'No info available'}
+    
+    try:
+      with open(sloc, 'r') as file:
+        f = {}
+        for line in file.readlines():
+          if line:
+            info = line.split(',,,')
+            for i in range(len(info)):
+              info[i] = info[i].strip('".')
+            f['source_info'] = info[0]
+            f['active_remote_token'] = info[1]
+            f['DACP-ID'] = info[2]
+            f['client_IP'] = info[3]
+
+    return(d, f)
+    # return {'details': 'No info available'}
 
   def status(self):
     return self.state

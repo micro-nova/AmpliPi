@@ -5,21 +5,14 @@ import time
 args = sys.argv[1:]
 print('Input Arguments: {}'.format(args[0]))
 try:
-    if args[0] == '0':
-        loc = '/home/pi/config/srcs/0/currentSong'
-    elif args[0] == '1':
-        loc = '/home/pi/config/srcs/1/currentSong'
-    elif args[0] == '2':
-        loc = '/home/pi/config/srcs/2/currentSong'
-    elif args[0] == '3':
-        loc = '/home/pi/config/srcs/3/currentSong'
-    else:
-        print('Error: Invalid source choice. Sources range from 0 to 3. Please try again.')
-        sys.exit('Failure.')
+    src = int(args[0])
+    loc = '/home/pi/config/srcs/{}/'.format(src)
 except:
     print('Error: Invalid source choice. Sources range from 0 to 3. Please try again.')
     sys.exit('Failure.')
 print('Targeting {}'.format(loc))
+cs_loc = loc + 'currentSong'
+si_loc = loc + 'sourceInfo'
 
 def read_field():
     line = sys.stdin.readline()
@@ -45,14 +38,26 @@ def info():
         print(field, ':', data)
         if field:    
             u[field] = data
-    # v['artist'] = u['Artist']
-    # v['track'] = u['Title']
-    # v['album'] = u['Album Name']
     v = u['Artist'] + ',,,' + u['Title'] + ',,,' + u['Album Name']
     return v
 
-d = {}
-f = open(loc, 'w')
+def s_info(inp):
+    u = {}
+    v = {}
+    field = ''
+    u['"ssnc" "snua"'] = inp
+    while field != '"ssnc" "pbeg"':
+        field, data = read_field()
+        print(field, ':', data)
+        if field:    
+            u[field] = data
+    v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
+    return v
+
+f = open(cs_loc, 'w')
+f.write("")
+f.close()
+f = open(si_loc, 'w')
 f.write("")
 f.close()
 while True:
@@ -61,6 +66,12 @@ while True:
     if field == '"ssnc" "mdst"':
         q = info()
         print(q)
-        f = open(loc, 'w')
+        f = open(cs_loc, 'w')
+        f.write(str(q))
+        f.close()
+    elif field == '"ssnc" "snua"':
+        q = s_info(data)
+        print(q)
+        f = open(si_loc, 'w')
         f.write(str(q))
         f.close()
