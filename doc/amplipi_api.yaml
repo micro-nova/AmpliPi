@@ -1,12 +1,22 @@
 openapi: 3.0.0
 info:
   title: AmpliPi
-  description: This is the AmpliPi home audio system control server.
+  description: |
+    This is the AmpliPi home audio system's control server.
+    # Control
+    This API can be used to control all of the sources and zones connected to the AmpliPi controller.
+    Groups of zones can be controlled together using the group methods.
+    Digital streams that are connected to sources can be configured with the stream methods.
+    # OpenAPI
+    This API is documented using the OpenAPI specification
   version: '1.0'
   contact:
     email: info@micro-nova.com
     name: Micronova
     url: micro-nova.com
+  x-logo:
+    url: 'https://micro-nova.github.io/python/static/favicon.png'
+    altText: AmpliPi Logo
   license:
     name: GPL
     url: http://amplipi.local:5000/license
@@ -297,7 +307,7 @@ paths:
                   maximum: 3
                 mute:
                   type: boolean
-                  description: Mute or unmute all of the zones in group 
+                  description: Mute or unmute all of the zones in group
                 vol-delta:
                   type: integer
                   minimum: -79
@@ -339,7 +349,7 @@ components:
     Source:
       title: Source
       type: object
-      description: Audio source that can output on any zone. Can be connected to an RCA input or a digital stream. 
+      description: Audio source that can output on any zone. Can be connected to an RCA input or a digital stream.
       properties:
         id:
           type: integer
