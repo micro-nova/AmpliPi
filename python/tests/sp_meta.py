@@ -75,3 +75,5 @@ while True:
         f = open(si_loc, 'w')
         f.write(str(q))
         f.close()
+    elif field == '"ssnc" "pend"':
+        print('PAUSED') # not sure where this should go yet
