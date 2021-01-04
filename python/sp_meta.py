@@ -26,6 +26,10 @@ def read_field():
             line2 = line2.strip(' \n')
             line = line + '\n' + line2
         data = line.split(': ')
+        if len(data) > 2:
+            for i in range(2, len(data), 1):
+                data[1] += ': '
+                data[1] += data[i]
         return data[0], data[1]
     else:
         return None, None
@@ -85,3 +89,5 @@ while True:
         f = open(cs_loc, 'w')
         f.write(data)
         f.close()
+    elif field == '"End of file"':
+        break
