@@ -282,30 +282,6 @@ paths:
                 value:
                   name: J2
         description: Patch source configuration to update.
-  /zone:
-    post:
-      summary: Create New Zone
-      tags:
-        - zone
-      operationId: post-zone
-      responses:
-        '200':
-          description: Zone Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Zone'
-        '400':
-          description: Missing Required Information
-        '409':
-          description: Zone ID already taken
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Zone'
-        description: Post the necessary fields for the API to create a new zone.
-      description: Create a new zone.
   /zones/{zoneId}:
     get:
       summary: Get Zone Info by Zone ID
@@ -410,7 +386,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Group'
+              name:
+                type: string
+                description: Group name, ie. Upstairs
+              zones:
+                type: array
+                items:
+                  type: integer
+                  description: zone id
+                description: Set of zones that belong to group, a zone can belong to multiple groups
         description: Post the necessary fields for the API to create a new group.
       description: Create a new group.
   /groups/{groupId}:
@@ -641,6 +625,7 @@ components:
           description: Set to true if zone is not connected to a speaker
       required:
         - id
+        - name
         - source_id
         - mute
         - vol
