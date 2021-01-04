@@ -24,6 +24,8 @@ servers:
   - url: 'http://amplipi.local:5000/api'
     description: AmpliPi Controller
 tags:
+- name: status
+  description: The status and configuration of the entire system, including source, zones, groups, and streams.
 - name: source
   description: Audio source. Can accept sudio input from a local (RCA) connection or any stream. Sources can be connected to one or multiple zones, or connected to nothing at all.
 - name: zone
@@ -37,17 +39,175 @@ paths:
     get:
       summary: "Get Status and Configuration Information"
       tags:
-        - source
-        - group
-        - zone
-        - stream
+        - status
       responses:
         '200':
-          description: Source Found
+          description: Report status
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
+              examples:
+                Get Status of Jason's AmpliPi:
+                  value:
+                    groups:
+                    - id: 0
+                      mute: false
+                      name: Whole House
+                      source_id:
+                      vol_delta: -44
+                      zones:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                      - 5
+                      - 6
+                      - 7
+                      - 8
+                      - 9
+                      - 10
+                      - 11
+                    - id: 1
+                      mute: true
+                      name: KitchLivDining
+                      source_id: 0
+                      vol_delta: -49
+                      zones:
+                      - 3
+                      - 9
+                      - 10
+                      - 11
+                    sources:
+                    - id: 0
+                      input: stream=90890
+                      name: J1
+                    - id: 1
+                      input: stream=44590
+                      name: J2
+                    - id: 2
+                      input: local
+                      name: Marc
+                    - id: 3
+                      input: local
+                      name: Source 4
+                    streams:
+                    - id: 90890
+                      info:
+                        album: Far (Deluxe Version)
+                        artist: Regina Spektor
+                        img_url: http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg
+                        station: Regina Spektor Radio
+                        track: Eet
+                      name: Regina Spektor Radio
+                      password: ''
+                      station: '4473713754798410236'
+                      status: playing
+                      type: pandora
+                      user: 'example1@micro-nova.com'
+                    - id: 90891
+                      info:
+                        details: No info available
+                      name: Matt and Kim Radio
+                      password: ''
+                      station: '4610303469018478727'
+                      status: disconnected
+                      type: pandora
+                      user: 'example2@micro-nova.com'
+                    - id: 90892
+                      info:
+                        details: No info available
+                      name: Pink Radio
+                      password: ''
+                      station: '4326539910057675260'
+                      status: disconnected
+                      type: pandora
+                      user: 'example3@micro-nova.com'
+                    - id: 44590
+                      info:
+                        details: No info available
+                      name: Jason's iPhone
+                      status: connected
+                      type: shairport
+                    - id: 4894
+                      info:
+                        details: No info available
+                      name: Rnay
+                      status: disconnected
+                      type: shairport
+                    zones:
+                    - disabled: false
+                      id: 0
+                      mute: false
+                      name: Local
+                      source_id: 1
+                      vol: -35
+                    - disabled: false
+                      id: 1
+                      mute: false
+                      name: Office
+                      source_id: 0
+                      vol: -41
+                    - disabled: false
+                      id: 2
+                      mute: true
+                      name: Laundry Room
+                      source_id: 0
+                      vol: -48
+                    - disabled: false
+                      id: 3
+                      mute: true
+                      name: Dining Room
+                      source_id: 0
+                      vol: -44
+                    - disabled: true
+                      id: 4
+                      mute: true
+                      name: BROKEN
+                      source_id: 0
+                      vol: -50
+                    - disabled: false
+                      id: 5
+                      mute: true
+                      name: Guest Bedroom
+                      source_id: 0
+                      vol: -48
+                    - disabled: false
+                      id: 6
+                      mute: true
+                      name: Main Bedroom
+                      source_id: 0
+                      vol: -40
+                    - disabled: false
+                      id: 7
+                      mute: true
+                      name: Main Bathroom
+                      source_id: 0
+                      vol: -44
+                    - disabled: false
+                      id: 8
+                      mute: true
+                      name: Master Bathroom
+                      source_id: 0
+                      vol: -41
+                    - disabled: false
+                      id: 9
+                      mute: true
+                      name: Kitchen High
+                      source_id: 0
+                      vol: -53
+                    - disabled: false
+                      id: 10
+                      mute: true
+                      name: kitchen Low
+                      source_id: 0
+                      vol: -52
+                    - disabled: false
+                      id: 11
+                      mute: true
+                      name: Living Room
+                      source_id: 0
+                      vol: -46
       operationId: get-status
       description: Retrieve the system configuration and status.
   /sources/{sourceId}:
