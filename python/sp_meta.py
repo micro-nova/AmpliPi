@@ -13,6 +13,7 @@ except:
 print('Targeting {}'.format(loc))
 cs_loc = loc + 'currentSong'
 si_loc = loc + 'sourceInfo'
+p_status = ''
 
 def read_field():
     line = sys.stdin.readline()
@@ -63,8 +64,9 @@ f.close()
 while True:
     field, data = read_field()
     print(field, ':', data)
+    p_status = ',,,PAUSED=False'
     if field == '"ssnc" "mdst"':
-        q = info()
+        q = info() + p_status
         print(q)
         f = open(cs_loc, 'w')
         f.write(str(q))
@@ -76,4 +78,10 @@ while True:
         f.write(str(q))
         f.close()
     elif field == '"ssnc" "pend"':
-        print('PAUSED') # not sure where this should go yet
+        f = open(cs_loc, 'r')
+        data = f.read()
+        data = data.replace('=False', '=True')
+        f.close()
+        f = open(cs_loc, 'w')
+        f.write(data)
+        f.close()

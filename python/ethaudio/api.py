@@ -553,9 +553,10 @@ class Shairport:
   def info(self):
     loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
     sloc = '/home/pi/config/srcs/{}/sourceInfo'.format(self.src)
+    d = {}
+    f = {}
     try:
       with open(loc, 'r') as file:
-        d = {}
         for line in file.readlines():
           if line:
             data = line.split(',,,')
@@ -570,7 +571,6 @@ class Shairport:
     
     try:
       with open(sloc, 'r') as file:
-        f = {}
         for line in file.readlines():
           if line:
             info = line.split(',,,')
@@ -580,8 +580,10 @@ class Shairport:
             f['active_remote_token'] = info[1]
             f['DACP-ID'] = info[2]
             f['client_IP'] = info[3]
+    except Exception as e:
+      pass
 
-    return(d, f)
+    return d, f
     # return {'details': 'No info available'}
 
   def status(self):
