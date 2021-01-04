@@ -25,12 +25,31 @@ servers:
     description: AmpliPi Controller
 tags:
 - name: source
-  description: Audio source
+  description: Audio source. Can accept sudio input from a local (RCA) connection or any stream. Sources can be connected to one or multiple zones, or connected to nothing at all.
 - name: zone
-  description: Stereo output to a set of speakers, typically a room
+  description: Stereo output to a set of speakers, typically a room. Individually controllable with its own volume control. Can be connected to one of the 4 audio sources.
 - name: group
-  description: Group of zones
+  description: Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.
+- name: stream
+  description: Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify.
 paths:
+  /:
+    get:
+      summary: "Get Status and Configuration Information"
+      tags:
+        - source
+        - group
+        - zone
+        - stream
+      responses:
+        '200':
+          description: Source Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+      operationId: get-status
+      description: Retrieve the system configuration and status.
   /sources/{sourceId}:
     get:
       summary: "Get Source Info by Source ID"
@@ -343,6 +362,40 @@ paths:
                 $ref: '#/components/schemas/Status'
         '404':
           description: Group Not Found
+  /streams/{streamId}:
+    get:
+      summary: Get Stream Info by Stream ID
+      tags:
+        - stream
+      parameters:
+        - name: streamId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: Stream Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+              examples:
+                Get Matt and Kim Radio Stream:
+                  value:
+                    id: 90991
+                    name: Matt and Kim Radio
+                    status: playing
+                    info:
+                      artist: Matt and Kim
+                      song: Daylight
+                      album: Sidewalks
+
+        '404':
+          description: Stream Not Found
+      operationId: get-stream
+      description: Retrieve the stream status and configuration information for the stream with the matching ID.
 
 components:
   schemas:
@@ -488,7 +541,7 @@ components:
     Status:
       title: Status
       type: object
-      description: Complete Controller Status
+      description: Full Controller Configuration and Status
       properties:
         sources:
           type: array
