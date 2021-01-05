@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>ReDoc</title>
+    <title>AmpliPi - REST API</title>
     <!-- needed for adaptive design -->
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,7 +18,24 @@
     </style>
   </head>
   <body>
+    <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+    <rapi-doc spec-url="doc/amplipi_api.yaml" render-style="read" show-header="false" allow-try="false" theme="dark" no-auto-auth="">
+      <!-- content at the top -->
+
+      <div style="display:flex; color: #fff; padding: 12px 32px; margin: 0; background-color: #f7981d;">
+        <div>
+          <div style="font-weight:700; font-size:32px">AmpliPi</div>
+        </div>
+      </div>
+
+      <!-- content at the bottom -->
+      <p slot="footer" style="margin:0; padding:16px 36px; background-color:orangered; color:#fff; text-align:center;">
+        © Micronova 2021
+      </p>
+    </rapi-doc>
+    <!--
     <redoc spec-url='doc/amplipi_api.yaml' no-auto-auth></redoc>
     <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
+    !-->
   </body>
 </html>
