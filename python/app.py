@@ -40,18 +40,19 @@ def ungrouped_zones(src):
 # Both apis
 
 @app.route('/api', methods=['GET'])
+@app.route('/api/', methods=['GET'])
 def get():
   return make_response(jsonify(app.api.get_state()))
 
 # new api
 
 def code_response(resp):
-  if 'error' in resp:
-    # TODO: refine error codes based on error message
-    return jsonify(resp), 404
-  elif resp is None:
+  if resp is None:
     # general commands return None to indicate success
     return get(), 200
+  elif 'error' in resp:
+    # TODO: refine error codes based on error message
+    return jsonify(resp), 404
   else:
     return jsonify(resp), 200
 
@@ -66,7 +67,7 @@ def get_source(src):
 
 @app.route('/api/sources/<int:src>', methods=['PATCH'])
 def set_source(src):
-  return code_response(app.api.set_source(**request.get_json()))
+  return code_response(app.api.set_source(id=src, **request.get_json()))
 
 @app.route('/api/zones/<int:zone>', methods=['GET'])
 def get_zone(zone):
@@ -78,7 +79,7 @@ def get_zone(zone):
 
 @app.route('/api/zones/<int:zone>', methods=['PATCH'])
 def set_zone(zone):
-  return code_response(app.api.set_zone(**request.get_json()))
+  return code_response(app.api.set_zone(id=zone, **request.get_json()))
 
 @app.route('/api/group', methods=['POST'])
 def create_group():
@@ -94,11 +95,11 @@ def get_group(group):
 
 @app.route('/api/groups/<int:group>', methods=['PATCH'])
 def set_group(group):
-  return code_response(app.api.set_group(**request.get_json()))
+  return code_response(app.api.set_group(id=group, **request.get_json()))
 
-@app.route('/api/sources/<int:group>', methods=['DELETE'])
+@app.route('/api/groups/<int:group>', methods=['DELETE'])
 def delete_group(group):
-  return code_response(app.api.delete_group(**request.get_json()))
+  return code_response(app.api.delete_group(id=group))
 
 @app.route('/api/doc')
 def doc():

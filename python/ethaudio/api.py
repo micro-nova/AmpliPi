@@ -1079,7 +1079,7 @@ class EthAudioApi:
     for i, g in enumerate(self.status['groups']):
       if g['id'] == int(id):
         return i,g
-    return -1, None
+    return None, None
 
   def update_groups(self):
     """ Update the group's aggregate fields to maintain consistency and simplify app interface """
@@ -1190,7 +1190,8 @@ class EthAudioApi:
     """delete an existing group"""
     try:
       i, _ = self.get_group(id)
-      del self.status['groups'][i]
+      if i is not None:
+        del self.status['groups'][i]
     except KeyError:
       return error('delete group failed: {} does not exist'.format(id))
 
