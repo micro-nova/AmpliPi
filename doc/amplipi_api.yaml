@@ -14,9 +14,6 @@ info:
     email: info@micro-nova.com
     name: Micronova
     url: micro-nova.com
-  x-logo:
-    url: 'https://micro-nova.github.io/ethaudio-rpi-controller/amplipi_icon_white.png'
-    altText: AmpliPi Logo
   license:
     name: GPL
     url: http://amplipi.local:5000/license
