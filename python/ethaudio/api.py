@@ -1183,6 +1183,8 @@ class EthAudioApi:
     # update the group stats and populate uninitialized fields of the group
     self.update_groups()
 
+    return group
+
   @save_on_success
   def delete_group(self, id):
     """delete an existing group"""

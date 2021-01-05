@@ -49,6 +49,9 @@ def code_response(resp):
   if 'error' in resp:
     # TODO: refine error codes based on error message
     return jsonify(resp), 404
+  elif resp is None:
+    # general commands return None to indicate success
+    return get(), 200
   else:
     return jsonify(resp), 200
 

@@ -22,6 +22,8 @@ servers:
     description: Local AmpliPi Controller
   - url: 'http://raspberrypi.local:5000/api'
     description: Demo AmpliPi Controller
+  - url: 'http://linkxps.local:5000/api'
+    description: Dev AmpliPi Controller
 tags:
 - name: status
   description: The status and configuration of the entire system, including source, zones, groups, and streams.
