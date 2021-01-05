@@ -59,7 +59,7 @@ def code_response(resp):
 def get_source(src):
   # TODO: add get_X capabilities to underlying API?
   sources = app.api.get_state()['sources']
-  if src > 0 and src < len(sources):
+  if src >= 0 and src < len(sources):
     return sources[src]
   else:
     return None, 404
@@ -71,7 +71,7 @@ def set_source(src):
 @app.route('/api/zones/<int:zone>', methods=['GET'])
 def get_zone(zone):
   zones = app.api.get_state()['zones']
-  if zone > 0 and zone < len(zones):
+  if zone >= 0 and zone < len(zones):
     return zones[zone]
   else:
     return None, 404
@@ -87,7 +87,7 @@ def create_group():
 @app.route('/api/groups/<int:group>', methods=['GET'])
 def get_group(group):
   groups = app.api.get_state()['groups']
-  if group > 0 and group < len(groups):
+  if group >= 0 and group < len(groups):
     return groups[group]
   else:
     return None, 404
@@ -99,6 +99,10 @@ def set_group(group):
 @app.route('/api/sources/<int:group>', methods=['DELETE'])
 def delete_group(group):
   return code_response(app.api.delete_group(**request.get_json()))
+
+@app.route('/api/doc')
+def doc():
+  return render_template('rest-api-doc.html')
 
 # old api
 
