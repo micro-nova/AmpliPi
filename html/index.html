@@ -1,0 +1,292 @@
+<html>
+  <body>
+  <table>
+  <tr>
+  <td>SOURCE 1</td>
+  <td><select id="src1_ad" onchange="onAdChange(this);">
+  <option value="1">Digital</option>
+  <option value="0">Analog</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>SOURCE 2</td>
+  <td><select id="src2_ad" onchange="onAdChange(this);">
+  <option value="1">Digital</option>
+  <option value="0">Analog</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>SOURCE 3</td>
+  <td><select id="src3_ad" onchange="onAdChange(this);">
+  <option value="1">Digital</option>
+  <option value="0">Analog</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>SOURCE 4</td>
+  <td><select id="src4_ad" onchange="onAdChange(this);">
+  <option value="1">Digital</option>
+  <option value="0">Analog</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>BOX 1</td>
+  <td>VOLUME</td>
+  </tr>
+  <tr>
+  <td>CH1</td>
+  <td><input id="ch01_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch01_atten">-79</span> dB</td>
+  <td><select id="ch01_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH2</td>
+  <td><input id="ch02_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch02_atten">-79</span> dB</td>
+  <td><select id="ch02_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH3</td>
+  <td><input id="ch03_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch03_atten">-79</span> dB</td>
+  <td><select id="ch03_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH4</td>
+  <td><input id="ch04_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch04_atten">-79</span> dB</td>
+  <td><select id="ch04_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH5</td>
+  <td><input id="ch05_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch05_atten">-79</span> dB</td>
+  <td><select id="ch05_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH6</td>
+  <td><input id="ch06_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch06_atten">-79</span> dB</td>
+  <td><select id="ch06_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>BOX 2</td>
+  <td>VOLUME</td>
+  </tr>
+  <tr>
+  <td>CH1</td>
+  <td><input id="ch07_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch07_atten">-79</span> dB</td>
+  <td><select id="ch07_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+   <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH2</td>
+  <td><input id="ch08_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch08_atten">-79</span> dB</td>
+  <td><select id="ch08_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH3</td>
+  <td><input id="ch09_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch09_atten">-79</span> dB</td>
+  <td><select id="ch09_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH4</td>
+  <td><input id="ch10_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch10_atten">-79</span> dB</td>
+  <td><select id="ch10_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH5</td>
+  <td><input id="ch11_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch11_atten">-79</span> dB</td>
+  <td><select id="ch11_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH6</td>
+  <td><input id="ch12_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch12_atten">-79</span> dB</td>
+  <td><select id="ch12_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <td>BOX 3</td>
+  <td>VOLUME</td>
+  </tr>
+  <tr>
+  <td>CH1</td>
+  <td><input id="ch13_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch13_atten">-79</span> dB</td>
+  <td><select id="ch13_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+   <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH2</td>
+  <td><input id="ch14_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch14_atten">-79</span> dB</td>
+  <td><select id="ch14_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH3</td>
+  <td><input id="ch15_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch15_atten">-79</span> dB</td>
+  <td><select id="ch15_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH4</td>
+  <td><input id="ch16_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch16_atten">-79</span> dB</td>
+  <td><select id="ch16_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH5</td>
+  <td><input id="ch17_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch17_atten">-79</span> dB</td>
+  <td><select id="ch17_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  <tr>
+  <td>CH6</td>
+  <td><input id="ch18_vol" type="range" value="-79" onchange="onVolChange(this);" min="-79" max="0"></td>
+  <td><span id="ch18_atten">-79</span> dB</td>
+  <td><select id="ch18_src" onchange="onSrcChange(this);">
+  <option value="0">Source 1</option>
+  <option value="1">Source 2</option>
+  <option value="2">Source 3</option>
+  <option value="3">Source 4</option>
+  </select></td>
+  </tr>
+  </table>
+  <div id="response">response goes here</div>
+  <script>
+      var url_ = "http://10.0.0.9/ctrl";
+      function sendCommand(xmlDocument) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (xhttp.readyState == 4 && xhttp.status == 200) {
+            if (xhttp.status == 200) {
+              onHttpResponse(xhttp);
+            } else {
+              onHttpFail(xhttp);
+            }
+          }
+        };
+        xhttp.open("POST", url_, true);
+        xhttp.setRequestHeader("Content-type", "text/xml");
+        xhttp.send(xmlDocument);
+      }
+      
+      function onHttpResponse(xhttp) {
+        document.getElementById("response").innerHTML = xhttp.responseText;
+      }
+      
+      function onHttpFail(xhttp) {
+        console.log("An error occurred while transferring the request.");
+      }
+      
+      function onVolChange(obj) {
+        var ch = obj.id.substring(0,5);
+        var ch_atten = ch + "atten";
+        var zone = ch.substring(2,4) - 1;
+        document.getElementById(ch_atten).innerHTML = obj.value;
+        var xmlDocument = "<set><zone id='" + zone + "'><volume>" + obj.value + "</volume></zone></set>";
+        sendCommand(xmlDocument);
+      }
+      function onSrcChange(obj) {
+        var ch = obj.id.substring(0,5);
+        var ch_src = ch + "src";
+        var zone = ch.substring(2,4) - 1;
+        var xmlDocument = "<set><zone id='" + zone + "'><source>" + obj.value + "</source></zone></set>";
+        sendCommand(xmlDocument);
+      }
+      function onAdChange(obj) {
+        var src = obj.id.substring(3,4) - 1;
+        var xmlDocument = "<set><source id='" + src + "'><ad>" + obj.value + "</ad></source></set>";
+        sendCommand(xmlDocument);
+      }
+  </script>
+  </body>
+  </html>
+  

@@ -1,0 +1,184 @@
+@import url(https://fonts.googleapis.com/css?family=Raleway:500);
+
+/* TODO: copy comments from scss */
+body {
+  background: #2a2a2a;
+  font-family: Raleway;
+  color: #FFF;
+}
+
+.title {
+  text-align: center;
+  font-size: 44px;
+  font-weight: bold;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.source {
+  background: #2a2a2a;
+  margin-bottom: 10px;
+}
+.source .card-header .nav .nav-item .active {
+  background: #4a4a4a;
+}
+.source .card-header .nav .nav-item a {
+  color: inherit;
+}
+.source .nav-item:hover, .source .nav-link:hover, .source .nav-link.active {
+  border-color: #4a4a4a;
+}
+.source .source-body {
+  background: #4a4a4a;
+}
+
+/* TODO: add source on/outputting audio feature, for now the play indicator is hidden */
+.fa-play {
+  visibility: hidden;
+}
+
+.group {
+  background: #2a2a2a;
+}
+.group a {
+  color: #FFF;
+}
+
+.zone, .ungrouped-zone {
+  background: #4a4a4a;
+}
+
+.add-group {
+  background: #3a3a3a;
+}
+
+.source, .group, .add-group, .ungrouped-zone {
+  margin-bottom: 12px;
+  -webkit-box-shadow: 6px 7px 19px 6px #000000;
+  box-shadow: 6px 7px 19px 6px #000000;
+}
+
+#micronova img {
+  margin-top: 30px;
+  width: 25%;
+}
+
+.volume {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.volume input[type=range] {
+  display: none;
+}
+
+.volume .icon {
+  padding: .6rem;
+}
+.volume .icon:hover {
+  cursor: pointer;
+}
+.volume .icon .fa-volume-up{
+  color: #ccc;
+}
+.volume .icon .fa-volume-mute {
+  color: #dc3545;
+  padding: 0 0.15rem; /* add a little padding to match volume-up width */
+}
+.volume .icon-size {
+  font-size: 1.2rem;
+}
+.volume .bar-hoverbox {
+  padding: 10px 15px;
+  width: 95%;
+}
+.volume .bar {
+  background: #999;
+  height: 7px;
+  border-radius: 15px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.volume .bar-fill {
+  background: #0096ff;
+  width: 0%;
+  height: 100%;
+  background-clip: border-box;
+  pointer-events: none;
+}
+.volume.muted .bar-fill {
+  background: #666;
+}
+
+.fa-chevron-up {
+  transition: all 0.3s ease;
+}
+
+.group-toggle.collapsed .fa-chevron-up {
+  transform: rotate(180deg);
+}
+
+.group-toggle[aria-expanded="true"] .fa-chevron-down {
+  transform: rotate(180deg);
+}
+
+.player-wrapper {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 18.75px;
+}
+
+.pandora-player {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.pandora-player .artist {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 12pt;
+  text-transform: uppercase;
+  color: white;
+  cursor: default;
+}
+.pandora-player .album {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 8pt;
+  font-weight: 400;
+  cursor: default;
+}
+.pandora-player .song {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 13pt;
+  font-weight: 300;
+  color: white;
+  cursor: default;
+}
+.pandora-player .cover {
+  float: left;
+  padding-right: 10px;
+}
+.pandora-player .cover img {
+  height: 100px;
+  width: 100px;
+}
+.pandora-player .info-controls {
+  float: left;
+}
+.pandora-player .controls {
+  display: inline-block;
+}
+.pandora-player .play-pause {
+  font-size: 20pt;
+}
+.pandora-player .step-forward, .pandora-player .like, .pandora-player .dislike {
+  font-size: 20pt;
+  margin-left: 15pt;
+}
+.pandora-player .play-pause:hover, .pandora-player .step-forward:hover, .pandora-player .like:hover, .pandora-player .dislike:hover {
+  cursor: pointer;
+  color: #dc3545;
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <!-- This is black magic that makes the screen look good on mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AmpliPi - Home Audio</title>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}">
+  <!-- TODO: add css and js with offline failover like this: <link rel="stylesheet" href="cdn.css" onerror="this.onerror=null;this.href='local.css';" />-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'>
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div class="title"><span>Ampli</span><span class="text-danger">Pi</span></div>
+<div class="container">
+  <div class="card-rows">
+    <div class="card source">
+      <div class="card-header text-center">
+        <!-- TODO: how to left align the play-ing icon? -->
+        <!-- TODO: hide/show the play icon from status-->
+        <ol class="nav nav-tabs nav-fill card-header-tabs">
+          {% for src in sources %}
+          <li class="nav-item">
+            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['name'] }} <i class="fa fa-play text-success" ></i></a>
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
+      <div class="card-body source-body">
+        <!-- TODO: populate source inputs with real options -->
+        {% for src in sources %}
+        <select id="s{{ src['id'] }}-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);" data-src="{{ src['id'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
+          {% for input, name in inputs.items() %}
+          {% if src['input'] == input %}
+          <option selected="selected" value="{{ input }}">{{ name }}</option>
+          {% endif %}
+          {% endfor %}
+          {% for input, name in inputs.items() %}
+          {% if src['input'] != input %}
+          <option value="{{ input }}">{{ name }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+        {% endfor %}
+        <div class="player-wrapper">
+          {% for src in sources %}
+          <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
+            <!-- TODO: this player's layout needs to be redone, the margins are too funky right now -->
+            <div class="cover"><img src="{{ url_for('static', filename='rca_inputs.svg') }}"/></div>
+            <div class="info-controls">
+              <div class="info">
+                <h6 class="artist">The Tasty Treats </h6>
+                <h6 class="album">Premiere</h6>
+                <h6 class="song">I Need You Back</h6>
+              </div>
+              <div class="controls">
+                <i class="play-pause fas fa-play" onclick="onPlayPause(this)"></i>
+                <i class="step-forward fas fa-forward" onclick="onNext(this)"></i>
+                <i class="like fas fa-heart" onclick="onLike(this)"></i>
+                <i class="dislike fas fa-thumbs-down" onclick="onDislike(this)"></i>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="tab-content">
+      {% for src in range(4) %}
+      <div id="s{{ src }}-groups" class="tab-pane {% if src == cur_src %} active {% endif %}">
+        {% for group in groups if group['source_id'] == src %}
+        <div class="card group">
+          <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#s{{ src }}-groups" href="#g{{ group['id'] }}-zones" aria-expanded="false">
+            <h6 class="card-header"><i class="fas fa-chevron-down"></i> {{ group['name'] }}</h6>
+          </a>
+          <div class="card-body">
+            <div id="g{{ group['id'] }}-vol" class="volume {% if group['mute'] %} muted {% endif %}"  data-group="{{ group['id'] }}">
+              <input type="range" min="-79" max="0" value="{{ group['vol_delta'] }}" class="volume-range">
+              <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
+                <i class="fa {% if group['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
+              </div>
+              <div class="bar-hoverbox">
+                <div class="bar">
+                  <div class="bar-fill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="g{{ group['id'] }}-zones" class='card-description zones collapse' data-parent="#s{{ src }}-groups">
+            <div class="card-rows">
+              {% for zone in zones if zone['id'] in group['zones'] and not zone['disabled']%}
+              <div class="card zone">
+                <h6 class="card-header">{{ zone['name'] }}</h6>
+                <div class="card-body">
+                  <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}">
+                    <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
+                    <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
+                      <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
+                    </div>
+                    <div class="bar-hoverbox">
+                      <div class="bar">
+                        <div class="bar-fill"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% for zone in ungrouped_zones[src] %}
+        <div class="card ungrouped-zone">
+          <h6 class="card-header">{{ zone['name'] }}</h6>
+          <div class="card-body">
+            <div id="z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}">
+              <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
+              <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
+                <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
+              </div>
+              <div class="bar-hoverbox">
+                <div class="bar">
+                  <div class="bar-fill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="card add-group">
+          <h6 class="card-header">Add</h6>
+          <div class="card-body">
+            <select id="s{{ src }}-add-input" class="custom-select source-input-sel" onchange="onSrcAdd(this);">
+              <option selected>Select Group or Zone</option>
+              {% for g, name in unused_groups[src].items() %}
+              <option value="g{{ g }}">G - {{ name }}</option>
+              {% endfor %}
+              {% for z, name in unused_zones[src].items() %}
+              <option value="z{{ z }}">Z - {{ name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div id="micronova" class="text-center">
+    <img src="{{ url_for('static', filename='micronova-white-on-black.png') }}" alt="Micronova" />
+  </div>
+</div>
+<!-- partial -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+  <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'></script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -35,11 +35,11 @@ test_sequence = [
     "command" : "set_source",
     "id" : 1,
     "name" : "cd player",
-    "digital": False
+    "type": "local"
   },
   None,
   {
-    "sources[1].digital" : False,
+    "sources[1].type" : "local",
     "sources[1].name" : "cd player"
   }
 ),
@@ -192,11 +192,11 @@ test_sequence = [
     "command" : "set_source",
     "id" : 1,
     "name" : "Pandora",
-    "digital": True
+    "type": "pandora"
   },
   None,
   {
-    "sources[1].digital" : True,
+    "sources[1].type" : "pandora",
     "sources[1].name" : "Pandora"
   }
 ),
@@ -355,10 +355,10 @@ def check_all_tsts(api):
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
   # Tests
-  check_json_tst('Configure source 0 (digital)', eth_audio_api.set_source(0, 'Spotify', True), None, {'sources[0].name' : 'Spotify'})
-  check_json_tst('Configure source 1 (digital)', eth_audio_api.set_source(1, 'Pandora', True), None, {'sources[1].name' : 'Pandora'})
-  check_json_tst('Configure source 2 (Analog)', eth_audio_api.set_source(2, 'TV', False), None, {'sources[2].name' : 'TV', 'sources[2].digital' : False})
-  check_json_tst('Configure source 3 (Analog)', eth_audio_api.set_source(3, 'PC', False), None, {'sources[3].name' : 'PC', 'sources[3].digital' : False})
+  check_json_tst('Configure source 0 (shairport)', eth_audio_api.set_source(0, 'Shairport', 'shairport'), None, {'sources[0].name' : 'Shairport', 'sources[0].type' : 'shairport'})
+  check_json_tst('Configure source 1 (pandora)', eth_audio_api.set_source(1, 'Pandora', 'pandora'), None, {'sources[1].name' : 'Pandora', 'sources[1].type' : 'pandora'})
+  check_json_tst('Configure source 2 (local)', eth_audio_api.set_source(2, 'TV', 'local'), None, {'sources[2].name' : 'TV'})
+  check_json_tst('Configure source 3 (local)', eth_audio_api.set_source(3, 'PC', 'local'), None, {'sources[3].name' : 'PC'})
   check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1, 'zones[0].vol': 0, 'zones[0].mute' : False})
   check_json_tst('Configure zone 1, Drone Zone', eth_audio_api.set_zone(1, 'Drone Zone', 2, False, -20, False), None, {'zones[1].name' : 'Drone Zone', 'zones[1].source_id' : 2, 'zones[1].vol': -20, 'zones[1].mute' : False})
   check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, None, None, None, None, False), None, {})
