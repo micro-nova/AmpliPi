@@ -19,7 +19,9 @@ info:
     url: http://amplipi.local:5000/license
 servers:
   - url: 'http://amplipi.local:5000/api'
-    description: AmpliPi Controller
+    description: Local AmpliPi Controller
+  - url: 'http://raspberrypi.local:5000/api'
+    description: Demo AmpliPi Controller
 tags:
 - name: status
   description: The status and configuration of the entire system, including source, zones, groups, and streams.
