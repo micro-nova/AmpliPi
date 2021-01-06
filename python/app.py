@@ -38,7 +38,7 @@ def ungrouped_zones(src):
   return [ zones[z] for z in ungrouped_zones_ if not zones[z]['disabled']]
 
 # API
-# TODO: add debug printing, ie.
+# TODO: add debug printing to each request, ie.
 #   if DEBUG_API:
 #     print(app.api.visualize_api())
 
