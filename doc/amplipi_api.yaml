@@ -13,7 +13,7 @@ info:
   contact:
     email: info@micro-nova.com
     name: Micronova
-    url: micro-nova.com
+    url: http://micro-nova.com
   license:
     name: GPL
     url: http://amplipi.local:5000/license
@@ -359,12 +359,18 @@ paths:
                   maximum: 0
                   description: Volume level in dB
             examples:
-              Update Input to RCA input:
+              Mute:
                 value:
-                  input: local
-              Update name:
+                  mute: true
+              Increase Volume:
                 value:
-                  name: J2
+                  vol: -45
+              Change Name:
+                value:
+                  name: Bedroom
+              Change audio source:
+                value:
+                  source-id: 3
         description: Patch zone configuration to update.
   /group:
     post:
@@ -387,15 +393,17 @@ paths:
         content:
           application/json:
             schema:
-              name:
-                type: string
-                description: Group name, ie. Upstairs
-              zones:
-                type: array
-                items:
-                  type: integer
-                  description: zone id
-                description: Set of zones that belong to group, a zone can belong to multiple groups
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Group name, ie. Upstairs
+                zones:
+                  type: array
+                  items:
+                    type: integer
+                    description: zone id
+                  description: Set of zones that belong to group, a zone can belong to multiple groups
         description: Post the necessary fields for the API to create a new group.
       description: Create a new group.
   /groups/{groupId}:
@@ -478,12 +486,24 @@ paths:
                   maximum: 79
                   description: Amount to adjust volume per member zone
             examples:
-              Update Input to RCA input:
+              Mute:
                 value:
-                  input: local
-              Update name:
+                  mute: true
+              Increase Volume by 10dB:
                 value:
-                  name: J2
+                  vol-delta: 10
+              Change Name:
+                value:
+                  name: Bedrooms
+              Change audio source:
+                value:
+                  source-id: 2
+              Update member zones:
+                value:
+                  zones:
+                    - 1
+                    - 2
+                    - 6
         description: Patch group configuration to update.
     delete:
       summary: Delete Group
