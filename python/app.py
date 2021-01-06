@@ -37,19 +37,20 @@ def ungrouped_zones(src):
   ungrouped_zones_ = source_zones.difference(grouped_zones)
   return [ zones[z] for z in ungrouped_zones_ if not zones[z]['disabled']]
 
-# Both apis
+# API
+# TODO: add debug printing, ie.
+#   if DEBUG_API:
+#     print(app.api.visualize_api())
 
 @app.route('/api', methods=['GET'])
 @app.route('/api/', methods=['GET'])
-def get():
+def get_status():
   return make_response(jsonify(app.api.get_state()))
-
-# new api
 
 def code_response(resp):
   if resp is None:
     # general commands return None to indicate success
-    return get(), 200
+    return get_status(), 200
   elif 'error' in resp:
     # TODO: refine error codes based on error message
     return jsonify(resp), 404
@@ -105,30 +106,7 @@ def delete_group(group):
 def doc():
   return render_template('rest-api-doc.html')
 
-# old api
-
-@app.route('/api', methods=['POST'])
-def parse_cmd():
-  req = request.get_json()
-  print(req)
-  cmd = req.pop('command')
-  if cmd == 'set_group':
-    out = app.api.set_group(req.pop('id'), **req)
-  elif cmd == 'set_source':
-    out = app.api.set_source(req.pop('id'), **req)
-  elif cmd == 'set_zone':
-    out = app.api.set_zone(req.pop('id'), **req)
-  elif cmd == 'set_stream':
-    out = app.api.set_stream(req.pop('id'), **req)
-  else:
-    out = {'error': 'Unknown command'}
-  if DEBUG_API:
-    print(app.api.visualize_api())
-  if out is None: # None is returned on success
-    out = app.api.get_state()
-  else:
-    print(out) # show the error message
-  return make_response(jsonify((out)))
+# Website
 
 @app.route('/')
 @app.route('/<int:src>')

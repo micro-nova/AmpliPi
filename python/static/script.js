@@ -10,11 +10,9 @@ function onSrcInputChange(obj) {
   const input = obj.value;
   const src = obj.dataset.src;
   let req = {
-    "command": "set_source",
-    "id" : Number(src),
     "input" : input
   };
-  sendRequest(req);
+  sendRequest('/sources/' + src, 'PATCH', req);
 }
 
 function onSrcAdd(obj) {
@@ -23,15 +21,13 @@ function onSrcAdd(obj) {
   if (to_add) {
     const type = to_add.substring(0,1);
     const id = Number(to_add.substring(1));
-    let req = {};
+    let req = { 'source_id' : src };
     if (type == 'z'){
-      req.command = 'set_zone';
+      path =  '/zones/' + id;
     } else if (type == 'g') {
-      req.command = 'set_group';
+      path = '/groups/' + id;
     }
-    req.id = id;
-    req.source_id = src;
-    sendRequestAndReload(req, src);
+    sendRequestAndReload(path, 'PATCH', req, src);
   }
 }
 
@@ -39,16 +35,16 @@ function onMuteToggle(icon) {
   let ctrl = icon.closest('.volume');
   let mute = !ctrl.classList.contains('muted');
   ctrl.classList.toggle('muted', mute); // immediately toggle the mute to give the user feedback
-  let req = {};
+  let req = { 'mute' : mute};
+  let path = null;
   if (ctrl.dataset.hasOwnProperty('zone')) {
-    req.command = 'set_zone';
-    req.id = Number(ctrl.dataset.zone);
+    path = '/zones/' + Number(ctrl.dataset.zone)
   } else if (ctrl.dataset.hasOwnProperty('group')) {
-    req.command = 'set_group';
-    req.id = Number(ctrl.dataset.group);
+    path = '/groups/' + Number(ctrl.dataset.group)
   }
-  req.mute = mute;
-  sendRequest(req);
+  if (path) {
+    sendRequest(path, 'PATCH', req);
+  }
 }
 
 function debounce(ms, fun){
@@ -101,12 +97,8 @@ function sendStreamCommand(ctrl, command) {
   let src_input = player.dataset.srcInput;
   if (src_input.startsWith("stream=")) {
     let stream_id = Number(src_input.replace("stream=", ""));
-    let req = {
-      "command" : "set_stream",
-      "id" : stream_id,
-      "cmd" : command
-    };
-    sendRequest(req);
+    let req = { "cmd" : command };
+    sendRequest('/streams/' + stream_id, 'PATCH', req);
   }
 }
 
@@ -220,60 +212,47 @@ function onResponse(resp) {
   updateSourceView(resp);
 }
 async function get() {
-  let response = await fetch('/api');
+  let response = await fetch('/api/');
   let result = await response.json();
   onResponse(result);
   return result;
 }
-async function sendRequest(obj) {
-  onRequest(obj)
-  let response = await fetch('/api', {
-    method: 'POST',
+
+async function sendRequest(path, method, req) {
+  onRequest(req)
+  let response = await fetch('/api' + path, {
+    method: method,
     headers: {
       'Content-Type': 'application/json;charset=utf-8'
     },
-    body: JSON.stringify(obj)
+    body: JSON.stringify(req)
   });
   let result = await response.json();
   onResponse(result);
 }
-// TODO: we shouldn't need to reload the page, this is a crutch
-async function sendRequestAndReload(obj, src) {
-  onRequest(obj)
-  let response = await fetch('/api', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json;charset=utf-8'
-    },
-    body: JSON.stringify(obj)
-  });
-  let result = await response.json();
-  onResponse(result);
+
+async function sendRequestAndReload(path, method, req, src) {
+  await sendRequest(path, method, req);
   // reload the page, making sure to stay on the same source tab
   window.location.assign('/' + src);
 }
-
 // group and zone volume control
 function onGroupVolChange(g, vol) {
   if (vol) {
     let req = {
-      "command": "set_group",
-      "id" : Number(g),
       "vol_delta" : Number(vol),
       "mute" : false
     };
-    sendRequest(req);
+    sendRequest('/groups/' + g, 'PATCH', req);
   }
 }
 function onZoneVolChange(z, vol) {
   if (vol) {
     let req = {
-      "command": "set_zone",
-      "id" : Number(z),
       "vol" : Number(vol),
       "mute" : false
     };
-    sendRequest(req);
+    sendRequest('/zones/' + z, 'PATCH', req);
   }
 }
 
