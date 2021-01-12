@@ -44,7 +44,6 @@ scp $SCRIPT_DIR/../config/eventcmd.sh               $RPI_IP_ADDRESS:${RPI_PYTHON
 scp $SCRIPT_DIR/../config/asound.conf               $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 scp $SCRIPT_DIR/../config/update_config.bash        $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 scp $SCRIPT_DIR/../config/shairport_metadata.bash   $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
-scp $SCRIPT_DIR/../config/shairport_start_all.bash  $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/../config/
 # copy firmware
 scp $SCRIPT_DIR/../fw/*.sh        $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw
 scp $SCRIPT_DIR/../fw/*.bin        $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw
