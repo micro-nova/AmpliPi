@@ -514,6 +514,12 @@ class Shairport:
         'resync_threshold': 0, # a synchronisation error greater than this will cause resynchronisation; 0 disables it
         'log_verbosity': 0, # "0" means no debug verbosity, "3" is most verbose.
       },
+      'metadata':{
+        'enabled': 'yes',
+        'include_cover_art': 'yes',
+        'pipe_name': '/home/pi/config/srcs/{}/shairport-sync-metadata'.format(src),
+        'pipe_timeout': 5000,
+      },
       'alsa': {
         'output_device': output_device(src), # alsa output device
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
@@ -545,9 +551,40 @@ class Shairport:
     self.src = None
 
   def info(self):
-    # TODO: report the status of pianobar with station name, playing/paused, song info
-    # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-    return {'details': 'No info available'}
+    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
+    sloc = '/home/pi/config/srcs/{}/sourceInfo'.format(self.src)
+    d = {}
+    f = {}
+    try:
+      with open(loc, 'r') as file:
+        for line in file.readlines():
+          if line:
+            data = line.split(',,,')
+            for i in range(len(data)):
+              data[i] = data[i].strip('".')
+            d['artist'] = data[0]
+            d['track'] = data[1]
+            d['album'] = data[2]
+    except Exception as e:
+      pass
+      # TODO: Put an actual exception here?
+    
+    try:
+      with open(sloc, 'r') as file:
+        for line in file.readlines():
+          if line:
+            info = line.split(',,,')
+            for i in range(len(info)):
+              info[i] = info[i].strip('".')
+            f['source_info'] = info[0]
+            f['active_remote_token'] = info[1]
+            f['DACP-ID'] = info[2]
+            f['client_IP'] = info[3]
+    except Exception as e:
+      pass
+
+    return d, f
+    # return {'details': 'No info available'}
 
   def status(self):
     return self.state
