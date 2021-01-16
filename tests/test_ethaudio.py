@@ -6,7 +6,7 @@ from copy import deepcopy
 import deepdiff
 
 # use the internal ethaudio library
-import ethaudio
+import amplipi
 
 # modify json config files
 import json
@@ -14,7 +14,7 @@ import os
 import tempfile
 
 # several starting configurations to load for testing including a corrupted configuration
-DEFAULT_STATUS = deepcopy(ethaudio.Api.DEFAULT_CONFIG)
+DEFAULT_STATUS = deepcopy(amplipi.api.EthAudioApi.DEFAULT_CONFIG)
 # make a good config string, that has less groups than the default (so we can tell the difference)
 GOOD_STATUS = deepcopy(DEFAULT_STATUS)
 del GOOD_STATUS['groups'][2]
@@ -372,19 +372,7 @@ def check_all_tsts(api):
     is_group_cmd = '_group' in cmd['command']
     check_json_tst(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
 
-  print('\ntesting json over http:')
-
-  # Start HTTP server (behind the scenes it runs in new thread)
-  srv = ethaudio.Server(eth_audio_api)
-
-  # Send HTTP requests and print output
-  client = ethaudio.Client()
-  for name, cmd, expected_result, expected_changes in test_sequence:
-    is_group_cmd = '_group' in cmd['command']
-    check_http_tst(name, client.send_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
-
-  # stop the server
-  srv.stop()
+# TODO: add openapi tests
 
 def delete_file(file_path):
   try:
@@ -425,7 +413,7 @@ def api_w_mock_rt(config=None, backup_config=None):
   #   (a None config file means that config file will be deleted before launch)
   setup_test_configs(config, backup_config)
   # start the api (we have a specfic config path we use for all tests)
-  return ethaudio.Api(ethaudio.api.MockRt(), config_file=CONFIG_FILE)
+  return amplipi.api.EthAudioApi(amplipi.api.MockRt(), config_file=CONFIG_FILE)
 
 def api_w_rpi_rt(config=None, backup_config=None):
   # copy in specfic config files (paths) to know config locations
@@ -433,7 +421,7 @@ def api_w_rpi_rt(config=None, backup_config=None):
   #   (a None config file means that config file will be deleted before launch)
   setup_test_configs(config, backup_config)
   # start the api (we have a specfic config path we use for all tests)
-  return ethaudio.Api(ethaudio.api.RpiRt(mock=True), config_file=CONFIG_FILE)
+  return amplipi.api.EthAudioApi(amplipi.api.RpiRt(mock=True), config_file=CONFIG_FILE)
 
 def use_tmpdir():
   # lets run these tests in a temporary directory so they dont mess with other tests config files

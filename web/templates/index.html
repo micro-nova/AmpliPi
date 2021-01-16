@@ -5,12 +5,12 @@
   <!-- This is black magic that makes the screen look good on mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AmpliPi - Home Audio</title>
-  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='imgs/favicon.png') }}">
   <!-- TODO: add css and js with offline failover like this: <link rel="stylesheet" href="cdn.css" onerror="this.onerror=null;this.href='local.css';" />-->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'>
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 <!-- partial:index.partial.html -->
@@ -49,7 +49,7 @@
           {% for src in sources %}
           <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
             <!-- TODO: this player's layout needs to be redone, the margins are too funky right now -->
-            <div class="cover"><img src="{{ url_for('static', filename='rca_inputs.svg') }}"/></div>
+            <div class="cover"><img src="{{ url_for('static', filename='imgs/rca_inputs.svg') }}"/></div>
             <div class="info-controls">
               <div class="info">
                 <h6 class="artist">The Tasty Treats </h6>
@@ -150,13 +150,13 @@
     </div>
   </div>
   <div id="micronova" class="text-center">
-    <img src="{{ url_for('static', filename='micronova-white-on-black.png') }}" alt="Micronova" />
+    <img src="{{ url_for('static', filename='imgs/micronova-white-on-black.png') }}" alt="Micronova" />
   </div>
 </div>
 <!-- partial -->
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
   <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'></script>
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

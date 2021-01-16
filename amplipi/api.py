@@ -568,7 +568,7 @@ class Shairport:
     except Exception as e:
       pass
       # TODO: Put an actual exception here?
-    
+
     try:
       with open(sloc, 'r') as file:
         for line in file.readlines():

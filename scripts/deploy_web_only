@@ -15,7 +15,9 @@ if [[ -z "${RPI_IP_ADDRESS}" ]]; then
 fi
 
 # Python folder on EthAudio controller
-RPI_PYTHON_FOLDER=/home/pi/python
+RPI_WEB_FOLDER=/home/pi/web
 
 # copy stuff to board
-scp $SCRIPT_DIR/../python/static/*                  $RPI_IP_ADDRESS:${RPI_PYTHON_FOLDER}/static/
+scp $SCRIPT_DIR/../web/static/*                  $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/static/
+scp $SCRIPT_DIR/../web/templates/*               $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/templates/
+scp $SCRIPT_DIR/../web/imgs/*                    $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/imgs/

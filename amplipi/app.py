@@ -1,13 +1,17 @@
 #!/usr/bin/python3
-
 from flask import Flask, request, render_template, jsonify, make_response
-import ethaudio
+import amplipi.api as api
 import json
 from collections import OrderedDict
 
 DEBUG_API = False
 
-app = Flask(__name__)
+# start in the web directory (where everythins is layed out for flask)
+import os
+template_dir = os.path.abspath('web/templates')
+static_dir = os.path.abspath('web/static')
+
+app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
 app.api = None
 
 # Helper functions
@@ -104,25 +108,26 @@ def delete_group(group):
 
 @app.route('/api/doc')
 def doc():
+  # TODO: add hosted python docs as well
   return render_template('rest-api-doc.html')
 
 # Website
 
 @app.route('/')
 @app.route('/<int:src>')
-def amplipi(src=0):
+def view(src=0):
   s = app.api.status
-  return render_template('index2.html', cur_src=src, sources=s['sources'],
+  return render_template('index.html', cur_src=src, sources=s['sources'],
     zones=s['zones'], groups=s['groups'], inputs=app.api.get_inputs(),
     unused_groups=[unused_groups(src) for src in range(4)],
     unused_zones=[unused_zones(src) for src in range(4)],
     ungrouped_zones=[ungrouped_zones(src) for src in range(4)])
 
-def create_app(mock=False, config_file='../config/jasons_house.json'):
+def create_app(mock=False, config_file='config/jasons_house.json'):
   if mock:
-    app.api = ethaudio.Api(ethaudio.api.MockRt(), config_file)
+    app.api = api.EthAudioApi(api.MockRt(), config_file)
   else:
-    app.api = ethaudio.Api(ethaudio.api.RpiRt(), config_file)
+    app.api = api.EthAudioApi(api.RpiRt(), config_file)
   return app
 
 if __name__ == '__main__':

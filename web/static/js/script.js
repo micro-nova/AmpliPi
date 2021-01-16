@@ -1,9 +1,9 @@
 
 const icons = {
-  'shairport' : '/static/shairport.png',
-  'local'     : '/static/rca_inputs.svg',
-  'pandora'   : '/static/pandora.png',
-  'none'      : '/static/disconnected.png'
+  'shairport' : '/static/imgs/shairport.png',
+  'local'     : '/static/imgs/rca_inputs.svg',
+  'pandora'   : '/static/imgs/pandora.png',
+  'none'      : '/static/imgs/disconnected.png'
 }
 
 function onSrcInputChange(obj) {
