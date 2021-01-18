@@ -62,9 +62,9 @@ class Api:
     ]
   }
 
-  def __init__(self, _rt = rt.MockRt(), config_file = 'saved_state.json'):
+  def __init__(self, _rt = rt.Mock(), config_file = 'saved_state.json'):
     self._rt = _rt
-    self.mock = type(_rt) is rt.MockRt
+    self.mock = type(_rt) is rt.Mock
     """ intitialize the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file

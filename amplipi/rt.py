@@ -9,7 +9,7 @@ if not DISABLE_HW:
   from smbus2 import SMBus
 
 # Preamp register addresses
-REG_ADDRS = {
+_REG_ADDRS = {
   'SRC_AD'    : 0x00,
   'CH123_SRC' : 0x01,
   'CH456_SRC' : 0x02,
@@ -22,13 +22,13 @@ REG_ADDRS = {
   'CH5_ATTEN' : 0x09,
   'CH6_ATTEN' : 0x0A
 }
-SRC_TYPES = {
+_SRC_TYPES = {
   1 : 'Digital',
   0 : 'Analog',
 }
-DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
+_DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
 
-class Preamps:
+class _Preamps:
   def __init__(self, mock=False):
     self.preamps = dict()
     if DISABLE_HW or mock:
@@ -50,12 +50,12 @@ class Preamps:
       self.bus = SMBus(1)
 
       # Discover connected preamp boards
-      for p in DEV_ADDRS:
+      for p in _DEV_ADDRS:
         if self.probe_preamp(p):
           print('Preamp found at address {}'.format(p))
           self.new_preamp(p)
         else:
-          if p == DEV_ADDRS[0]:
+          if p == _DEV_ADDRS[0]:
             print('Error: no preamps found')
           break
 
@@ -75,7 +75,7 @@ class Preamps:
                           ]
 
   def write_byte_data(self, preamp_addr, reg, data):
-    assert preamp_addr in DEV_ADDRS
+    assert preamp_addr in _DEV_ADDRS
     assert type(preamp_addr) == int
     assert type(reg) == int
     assert type(data) == int
@@ -102,7 +102,7 @@ class Preamps:
   def probe_preamp(self, index):
     # Scan for preamps, and set source registers to be completely digital
     try:
-      self.bus.write_byte_data(index, REG_ADDRS['SRC_AD'], 0x0F)
+      self.bus.write_byte_data(index, _REG_ADDRS['SRC_AD'], 0x0F)
       return True
     except Exception:
       return False
@@ -117,10 +117,10 @@ class Preamps:
     for preamp_addr in self.preamps.keys():
       preamp = int(preamp_addr / 8)
       print('preamp {}:'.format(preamp))
-      src_types = self.preamps[0x08][REG_ADDRS['SRC_AD']]
+      src_types = self.preamps[0x08][_REG_ADDRS['SRC_AD']]
       src_cfg = []
       for src in range(4):
-        src_type = SRC_TYPES.get((src_types >> src) & 0b01)
+        src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
         src_cfg += ['{}'.format(src_type)]
       print('  [{}]'.format(', '.join(src_cfg)))
       for zone in range(6):
@@ -131,17 +131,17 @@ class Preamps:
     preamp = (int(zone / 6) + 1) * 8
     z = zone % 6
     regs = self.preamps[preamp]
-    src_types = self.preamps[0x08][REG_ADDRS['SRC_AD']]
-    src = ((regs[REG_ADDRS['CH456_SRC']] << 8) | regs[REG_ADDRS['CH123_SRC']] >> 2 * z) & 0b11
-    src_type = SRC_TYPES.get((src_types >> src) & 0b01)
-    vol = -regs[REG_ADDRS['CH1_ATTEN'] + z]
-    muted = (regs[REG_ADDRS['MUTE']] & (1 << z)) > 0
+    src_types = self.preamps[0x08][_REG_ADDRS['SRC_AD']]
+    src = ((regs[_REG_ADDRS['CH456_SRC']] << 8) | regs[_REG_ADDRS['CH123_SRC']] >> 2 * z) & 0b11
+    src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
+    vol = -regs[_REG_ADDRS['CH1_ATTEN'] + z]
+    muted = (regs[_REG_ADDRS['MUTE']] & (1 << z)) > 0
     state = []
     if muted:
       state += ['muted']
     print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, utils.vol_string(vol), ', '.join(state)))
 
-class MockRt:
+class Mock:
   """ Mock of an Amplipi Runtime
 
       This pretends to be the runtime of Amplipi, but actually does nothing
@@ -222,14 +222,14 @@ class MockRt:
   def exists(self, zone):
       return True
 
-class RpiRt:
+class Rpi:
   """ Actual Amplipi Runtime
 
       This acts as an Amplipi Runtime, expected to be executed on a raspberrypi
   """
 
   def __init__(self, mock=False):
-    self._bus = Preamps(mock)
+    self._bus = _Preamps(mock)
     self._all_muted = True # preamps start up in muted/standby state
 
   def update_zone_mutes(self, zone, mutes):
@@ -252,7 +252,7 @@ class RpiRt:
       assert type(mutes[preamp * 6 + z]) == bool
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
-    self._bus.write_byte_data(DEV_ADDRS[preamp], REG_ADDRS['MUTE'], mute_cfg)
+    self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['MUTE'], mute_cfg)
 
     # Audio power needs to be on each box when subsequent boxes are playing audio
     all_muted = False not in mutes
@@ -260,12 +260,12 @@ class RpiRt:
       if all_muted:
         for p in self._bus.preamps.keys():
           # Standby all preamps
-          self._bus.write_byte_data(p, REG_ADDRS['STANDBY'], 0x00)
+          self._bus.write_byte_data(p, _REG_ADDRS['STANDBY'], 0x00)
         time.sleep(0.1)
       else:
         for p in self._bus.preamps.keys():
           # Unstandby all preamps
-          self._bus.write_byte_data(p, REG_ADDRS['STANDBY'], 0x3F)
+          self._bus.write_byte_data(p, _REG_ADDRS['STANDBY'], 0x3F)
         time.sleep(0.3)
       self._all_muted = all_muted
     return True
@@ -294,8 +294,8 @@ class RpiRt:
         source_cfg123 = source_cfg123 | (src << (z*2))
       else:
         source_cfg456 = source_cfg456 | (src << ((z-3)*2))
-    self._bus.write_byte_data(DEV_ADDRS[preamp], REG_ADDRS['CH123_SRC'], source_cfg123)
-    self._bus.write_byte_data(DEV_ADDRS[preamp], REG_ADDRS['CH456_SRC'], source_cfg456)
+    self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['CH123_SRC'], source_cfg123)
+    self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['CH456_SRC'], source_cfg456)
 
     # TODO: Add error checking on successful write
     return True
@@ -318,8 +318,8 @@ class RpiRt:
     chan = zone - (preamp * 6)
     hvol = abs(vol)
 
-    chan_reg = REG_ADDRS['CH1_ATTEN'] + chan
-    self._bus.write_byte_data(DEV_ADDRS[preamp], chan_reg, hvol)
+    chan_reg = _REG_ADDRS['CH1_ATTEN'] + chan
+    self._bus.write_byte_data(_DEV_ADDRS[preamp], chan_reg, hvol)
 
     # TODO: Add error checking on successful write
     return True
@@ -348,7 +348,7 @@ class RpiRt:
         output = output | (0x01 << i)
 
     # Send out the updated source information to the appropriate preamp
-    self._bus.write_byte_data(DEV_ADDRS[0], REG_ADDRS['SRC_AD'], output)
+    self._bus.write_byte_data(_DEV_ADDRS[0], _REG_ADDRS['SRC_AD'], output)
 
     # TODO: update this to allow for different preamps on the bus
     # TODO: Add error checking on successful write

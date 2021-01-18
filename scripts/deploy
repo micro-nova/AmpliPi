@@ -31,7 +31,7 @@ ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_HOME_FOLDER}/config"
 ssh $RPI_IP_ADDRESS "mkdir -p ${RPI_HOME_FOLDER}/fw"
 
 # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
-sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' $SCRIPT_DIR/../amplipi/api.py
+sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' $SCRIPT_DIR/../amplipi/rt.py
 
 # copy stuff to board
 scp $SCRIPT_DIR/../amplipi/*.py                      $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/amplipi
@@ -54,4 +54,4 @@ ssh $RPI_IP_ADDRESS "cd ${RPI_HOME_FOLDER}/config && ./update_config.bash"
 scp $SCRIPT_DIR/../fw/*.sh                           $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw
 scp $SCRIPT_DIR/../fw/*.bin                          $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw
 
-sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' $SCRIPT_DIR/../amplipi/api.py
+sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' $SCRIPT_DIR/../amplipi/rt.py

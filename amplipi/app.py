@@ -125,9 +125,9 @@ def view(src=0):
 
 def create_app(mock=False, config_file='config/jasons_house.json'):
   if mock:
-    app.api = ctrl.Api(rt.MockRt(), config_file)
+    app.api = ctrl.Api(rt.Mock(), config_file)
   else:
-    app.api = ctrl.Api(rt.RpiRt(), config_file)
+    app.api = ctrl.Api(rt.Rpi(), config_file)
   return app
 
 if __name__ == '__main__':
