@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from flask import Flask, request, render_template, jsonify, make_response
-import amplipi.api as api
+import amplipi.ctrl as ctrl
+import amplipi.rt as rt
 import json
 from collections import OrderedDict
 
@@ -15,7 +16,6 @@ app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
 app.api = None
 
 # Helper functions
-
 def unused_groups(src):
   """ Get groups that are not connected to src """
   groups = app.api.status['groups']
@@ -125,9 +125,9 @@ def view(src=0):
 
 def create_app(mock=False, config_file='config/jasons_house.json'):
   if mock:
-    app.api = api.Api(api.MockRt(), config_file)
+    app.api = ctrl.Api(rt.MockRt(), config_file)
   else:
-    app.api = api.Api(api.RpiRt(), config_file)
+    app.api = ctrl.Api(rt.RpiRt(), config_file)
   return app
 
 if __name__ == '__main__':
