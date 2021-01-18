@@ -31,21 +31,14 @@ import amplipi.rt as rt
 import amplipi.streams as streams
 import amplipi.utils as utils
 
-DEBUG_API = False # print out a graphical state of the api after each call
-
-# make a dict of all the api methods
-API_CMDS = {}
-def api_cmd(func):
-  """ API command decorator, any function that gets decorated with this gets added to the api """
-  API_CMDS[func.__name__] = func
-  return func
+_DEBUG_API = False # print out a graphical state of the api after each call
 
 class Api:
   """ Amplipi Controller API
 
    """
 
-  DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
+  _DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
       { "id": 0, "name": "Source 1", "input": "local" },
       { "id": 1, "name": "Source 2", "input": "local" },
@@ -62,18 +55,6 @@ class Api:
       { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
       { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
       { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 6,  "name": "Zone 7",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 7,  "name": "Zone 8",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 8,  "name": "Zone 9",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 9,  "name": "Zone 10", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 10, "name": "Zone 11", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 11, "name": "Zone 12", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 12, "name": "Zone 13", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 13, "name": "Zone 14", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 14, "name": "Zone 15", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 15, "name": "Zone 16", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 16, "name": "Zone 17", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 17, "name": "Zone 18", "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
     ],
     "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
       { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
@@ -112,7 +93,7 @@ class Api:
     if not loaded_config:
       print(errors[0])
       print('using default config')
-      self.status = deepcopy(self.DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
+      self.status = deepcopy(self._DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
     # configure all streams into a known state
     self.streams = {}
@@ -174,52 +155,6 @@ class Api:
       group_fmt = '  {}({}) --> {:' + str(gname_len) + '} {:' + str(gzone_len) + '} vol [{}] {}\n'
       viz += group_fmt.format(src, src_type, g['name'], utils.compact_str(g['zones']), vol, muted)
     return viz
-
-  # TODO: this can be removed, now that the rest api is handled in the webapp layer
-  def parse_cmd(self, cmd):
-    """ process an individual command
-
-      Args:
-        cmd(dict): a command decoded from the JSON interface
-      Returns:
-        'None' if successful, otherwise an error(dict)
-    """
-    try:
-      command = cmd['command']
-      # TODO: simplify command handling with dict->kwargs
-      # TODO: remove command from cmd (ie. command = cmd.pop('command); args = cmd)
-      # TODO: call an api function from API_CMDS using cmd dict as kwargs ie. API_CMDS[command](**cmd)
-      if command is None:
-        output = utils.error('No command specified')
-      elif command == 'return_state':
-        output = None # state is returned at a higher level on success
-      elif command == 'set_source':
-        output = self.set_source(cmd.get('id'), cmd.get('name'), cmd.get('type'))
-      elif command == 'set_zone':
-        output = self.set_zone(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('mute'), cmd.get('vol'), cmd.get('disabled'))
-      elif command == 'set_group':
-        output = self.set_group(cmd.get('id'), cmd.get('name'), cmd.get('source_id'), cmd.get('zones'), cmd.get('mute'), cmd.get('vol_delta'))
-      elif command == 'create_group':
-        output = self.create_group(cmd.get('name'), cmd.get('zones'))
-      elif command == 'delete_group':
-        output = self.delete_group(cmd.get('id'))
-      elif command == 'create_stream':
-        output = utils.error('create_stream is not implemented yet')
-      elif command == 'delete_stream':
-        output = utils.error('delete_stream is not implemented yet')
-      elif command == 'set_stream':
-        output = self.set_stream(cmd.get('id'), cmd.get('name'), cmd.get('station_id'), cmd.get('cmd'))
-      else:
-        output = utils.error('command {} is not supported'.format(command))
-
-      if output:
-        print(output)
-      elif DEBUG_API:
-        print(self.visualize_api())
-
-      return output
-    except Exception as e:
-      return utils.error(str(e)) # TODO: handle exception more verbosely
 
   @staticmethod
   def _is_digital(src_type):
