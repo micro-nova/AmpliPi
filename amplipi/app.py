@@ -125,9 +125,9 @@ def view(src=0):
 
 def create_app(mock=False, config_file='config/jasons_house.json'):
   if mock:
-    app.api = api.EthAudioApi(api.MockRt(), config_file)
+    app.api = api.Api(api.MockRt(), config_file)
   else:
-    app.api = api.EthAudioApi(api.RpiRt(), config_file)
+    app.api = api.Api(api.RpiRt(), config_file)
   return app
 
 if __name__ == '__main__':

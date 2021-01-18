@@ -114,7 +114,7 @@ SRC_TYPES = {
   1 : 'Digital',
   0 : 'Analog',
 }
-PREAMPS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
+DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
 
 class Preamps:
   def __init__(self, mock=False):
@@ -138,12 +138,12 @@ class Preamps:
       self.bus = SMBus(1)
 
       # Discover connected preamp boards
-      for p in PREAMPS:
+      for p in DEV_ADDRS:
         if self.probe_preamp(p):
           print('Preamp found at address {}'.format(p))
           self.new_preamp(p)
         else:
-          if p == PREAMPS[0]:
+          if p == DEV_ADDRS[0]:
             print('Error: no preamps found')
           break
 
@@ -163,7 +163,7 @@ class Preamps:
                           ]
 
   def write_byte_data(self, preamp_addr, reg, data):
-    assert preamp_addr in PREAMPS
+    assert preamp_addr in DEV_ADDRS
     assert type(preamp_addr) == int
     assert type(reg) == int
     assert type(data) == int
@@ -230,9 +230,9 @@ class Preamps:
     print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, vol_string(vol), ', '.join(state)))
 
 class MockRt:
-  """ Mock of an EthAudio Runtime
+  """ Mock of an Amplipi Runtime
 
-      This pretends to be the runtime of EthAudio, but actually does nothing
+      This pretends to be the runtime of Amplipi, but actually does nothing
   """
 
   def __init__(self):
@@ -311,9 +311,9 @@ class MockRt:
       return True
 
 class RpiRt:
-  """ Actual EthAudio Runtime
+  """ Actual Amplipi Runtime
 
-      This acts as an EthAudio Runtime, expected to be executed on a raspberrypi
+      This acts as an Amplipi Runtime, expected to be executed on a raspberrypi
   """
 
   def __init__(self, mock=False):
@@ -340,7 +340,7 @@ class RpiRt:
       assert type(mutes[preamp * 6 + z]) == bool
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
-    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['MUTE'], mute_cfg)
+    self._bus.write_byte_data(DEV_ADDRS[preamp], REG_ADDRS['MUTE'], mute_cfg)
 
     # Audio power needs to be on each box when subsequent boxes are playing audio
     all_muted = False not in mutes
@@ -382,8 +382,8 @@ class RpiRt:
         source_cfg123 = source_cfg123 | (src << (z*2))
       else:
         source_cfg456 = source_cfg456 | (src << ((z-3)*2))
-    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['CH123_SRC'], source_cfg123)
-    self._bus.write_byte_data(PREAMPS[preamp], REG_ADDRS['CH456_SRC'], source_cfg456)
+    self._bus.write_byte_data(DEV_ADDRS[preamp], REG_ADDRS['CH123_SRC'], source_cfg123)
+    self._bus.write_byte_data(DEV_ADDRS[preamp], REG_ADDRS['CH456_SRC'], source_cfg456)
 
     # TODO: Add error checking on successful write
     return True
@@ -407,7 +407,7 @@ class RpiRt:
     hvol = abs(vol)
 
     chan_reg = REG_ADDRS['CH1_ATTEN'] + chan
-    self._bus.write_byte_data(PREAMPS[preamp], chan_reg, hvol)
+    self._bus.write_byte_data(DEV_ADDRS[preamp], chan_reg, hvol)
 
     # TODO: Add error checking on successful write
     return True
@@ -436,7 +436,7 @@ class RpiRt:
         output = output | (0x01 << i)
 
     # Send out the updated source information to the appropriate preamp
-    self._bus.write_byte_data(PREAMPS[0], REG_ADDRS['SRC_AD'], output)
+    self._bus.write_byte_data(DEV_ADDRS[0], REG_ADDRS['SRC_AD'], output)
 
     # TODO: update this to allow for different preamps on the bus
     # TODO: Add error checking on successful write
@@ -764,12 +764,12 @@ def api_cmd(func):
   API_CMDS[func.__name__] = func
   return func
 
-class EthAudioApi:
-  """ EthAudio API
+class Api:
+  """ Amplipi Controller API
 
    """
 
-  DEFAULT_CONFIG = { # This is the system state response that will come back from the ethaudio box
+  DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
       { "id": 0, "name": "Source 1", "input": "local" },
       { "id": 1, "name": "Source 2", "input": "local" },
