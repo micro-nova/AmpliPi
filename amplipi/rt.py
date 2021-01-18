@@ -1,3 +1,23 @@
+
+# AmpliPi Home Audio
+# Copyright (C) 2021 MicroNova LLC
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""Runtimes to communicate with the AmpliPi hardware
+"""
+
 DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 
@@ -29,6 +49,8 @@ _SRC_TYPES = {
 _DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
 
 class _Preamps:
+  """ Low level discovery and communication for the AmpliPi firmware
+  """
   def __init__(self, mock=False):
     self.preamps = dict()
     if DISABLE_HW or mock:
