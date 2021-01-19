@@ -192,8 +192,7 @@ class Mock:
 
       Args:
         zone int: zone to muted/unmute
-        mutes [bool*zones]: array of configuration for zones where
-          Unmuted is False and Muted True
+        mutes [bool*zones]: array of configuration for zones where unmuted is False and Muted True
 
       Returns:
         True on success, False on hw failure
@@ -259,8 +258,7 @@ class Rpi:
 
       Args:
         zone int: zone to muted/unmute
-        mutes [bool*zones]: array of configuration for zones where
-          Unmuted is False and Muted True
+        mutes [bool*zones]: array of configuration for zones where unmuted is False and Muted True
 
       Returns:
         True on success, False on hw failure

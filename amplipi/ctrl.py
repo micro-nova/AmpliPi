@@ -65,7 +65,7 @@ class Api:
 
   def __init__(self, _rt = rt.Mock(), config_file = 'saved_state.json'):
     self._rt = _rt
-    self.mock = type(_rt) is rt.Mock
+    self._mock = type(_rt) is rt.Mock
     """ intitialize the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -98,7 +98,7 @@ class Api:
     # configure all streams into a known state
     self.streams = {}
     for stream in self.status['streams']:
-      self.streams[stream['id']] = streams.build_stream(stream, self.mock)
+      self.streams[stream['id']] = streams.build_stream(stream, self._mock)
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
       self.set_source(src['id'], input=src['input'], force_update=True)
@@ -108,7 +108,7 @@ class Api:
       # TODO: disbale zones that are not found
       self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
     # configure all of the groups (some fields may need to be updated)
-    self.update_groups()
+    self._update_groups()
 
   def save(self):
     try:
@@ -158,8 +158,8 @@ class Api:
 
   @staticmethod
   def _is_digital(src_type):
-    """
-    Determine whether a source type, @src_type, is analog or digital
+    """Determine whether a source type, @src_type, is analog or digital
+
       'local' is the analog input, anything else is some sort of digital streaming source.
       The runtime only has the concept of digital or analog
     """
@@ -183,6 +183,7 @@ class Api:
 
   def get_stream(self, input):
     """ get the stream from an input configuration
+
     Args:
       input: input configuration either ['local', 'stream=ID']
     Returns
@@ -316,7 +317,7 @@ class Api:
             return utils.error('set zone failed: unable to update zone volume')
 
         # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
-        self.update_groups()
+        self._update_groups()
 
         return None
       except Exception as e:
@@ -330,7 +331,7 @@ class Api:
         return i,g
     return None, None
 
-  def update_groups(self):
+  def _update_groups(self):
     """ Update the group's aggregate fields to maintain consistency and simplify app interface """
     for g in self.status['groups']:
       zones = [ self.status['zones'][z] for z in g['zones'] ]
@@ -393,9 +394,9 @@ class Api:
     g['vol_delta'] = vol_delta
 
     # update the group stats
-    self.update_groups()
+    self._update_groups()
 
-  def new_group_id(self):
+  def _new_group_id(self):
     """ get next available group id """
     ids = [ g['id'] for g in self.status['groups'] ]
     ids = set(ids) # simpler/faster access
@@ -423,14 +424,14 @@ class Api:
         return utils.error('failed to configure group, error parsing zones: {}'.format(e))
 
     # get the new groug's id
-    id = self.new_group_id()
+    id = self._new_group_id()
 
     # add the new group
     group = { 'id': id, 'name' : name, 'zones' : zones, 'vol_delta' : 0 }
     self.status['groups'].append(group)
 
     # update the group stats and populate uninitialized fields of the group
-    self.update_groups()
+    self._update_groups()
 
     return group
 
