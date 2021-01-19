@@ -34,9 +34,7 @@ import amplipi.utils as utils
 _DEBUG_API = False # print out a graphical state of the api after each call
 
 class Api:
-  """ Amplipi Controller API
-
-   """
+  """ Amplipi Controller API"""
 
   _DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
@@ -66,7 +64,7 @@ class Api:
   def __init__(self, _rt = rt.Mock(), config_file = 'saved_state.json'):
     self._rt = _rt
     self._mock = type(_rt) is rt.Mock
-    """ intitialize the mock system to to base configuration """
+    """Intitializes the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
@@ -111,6 +109,7 @@ class Api:
     self._update_groups()
 
   def save(self):
+    """ Saves the system state to json"""
     try:
       # save a backup copy of the config file (assuming its valid)
       if os.path.exists(self.config_file) and self.config_file_valid:
@@ -124,8 +123,35 @@ class Api:
       print('Error saving config: {}'.format(e))
 
   def visualize_api(self, prev_status=None):
+    """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
+
+    Returns:
+      A string meant to visualize the system state in a minimal way.
+    Example:
+      Visualize the current state of the running amplipi
+
+      >>> my_amplipi.visualize_api()
+      sources:
+        [stream=90891, stream=44590, local, local]
+      zones:
+        0(S) --> Local           vol [---|----------------]
+        0(S) --> Office          vol [-------|------------]
+        0(S) --> Laundry Room    vol [--------|-----------]
+        0(S) --> Dining Room     vol [--------|-----------] muted
+        0(S) --> Guest Bedroom   vol [----|---------------] muted
+        0(S) --> Main Bedroom    vol [---|----------------] muted
+        0(S) --> Main Bathroom   vol [--------|-----------] muted
+        0(S) --> Master Bathroom vol [---------|----------] muted
+        0(S) --> Kitchen High    vol [------|-------------] muted
+        0(S) --> kitchen Low     vol [------|-------------] muted
+        0(S) --> Living Room     vol [--------|-----------] muted
+      groups:
+        ( ) --> Whole House    [0,1,2,3,5,6,7,8,9,10,11] vol [------|-------------]
+        ( ) --> KitchLivDining [3,9,10,11]               vol [-------|------------] muted
+    """
     viz = ''
     # visualize source configuration
+    viz += 'sources:\n'
     src_cfg = [s['input'] for s in self.status['sources']]
     viz += '  [{}]\n'.format(', '.join(src_cfg))
     # visualize zone configuration
@@ -158,7 +184,7 @@ class Api:
 
   @staticmethod
   def _is_digital(src_type):
-    """Determine whether a source type, @src_type, is analog or digital
+    """Determines whether a source type, @src_type, is analog or digital
 
       'local' is the analog input, anything else is some sort of digital streaming source.
       The runtime only has the concept of digital or analog
@@ -166,6 +192,16 @@ class Api:
     return src_type != 'local'
 
   def get_inputs(self):
+    """Gets a dictionary of the possible inputs for a source
+
+      Returns:
+        A dictionary of the input types and a corresponding user friendly name/string for each
+      Example:
+        Get the possible inputs for any source (only one stream)
+
+        >>> my_amplipi.get_inputs()
+        { None, '', 'local', 'Local', 'stream=9449' }
+    """
     inputs = { None: '', 'local' : 'Local'}
     for s in self.get_state()['streams']:
       inputs['stream={}'.format(s['id'])] = s['name']
@@ -182,7 +218,7 @@ class Api:
     return self.status
 
   def get_stream(self, input):
-    """ get the stream from an input configuration
+    """Gets the stream from an input configuration
 
     Args:
       input: input configuration either ['local', 'stream=ID']
@@ -197,7 +233,7 @@ class Api:
 
   @utils.save_on_success
   def set_source(self, id, name=None, input=None, force_update=False):
-    """ modify any of the 4 system sources
+    """Modifes the configuration of one of the 4 system sources
 
       Args:
         id (int): source id [0,3]
@@ -260,17 +296,18 @@ class Api:
 
   @utils.save_on_success
   def set_zone(self, id, name=None, source_id=None, mute=None, vol=None, disabled=None, force_update=False):
-    """ modify any zone
+    """Configures a zone
 
-          Args:
-            id (int): any valid zone [0,p*6-1] (6 zones per preamp)
-            name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
-            source_id (int): source to connect to [0,4]
-            mute (bool): mute the zone regardless of set volume
-            vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
-            disabled (bool): disable zone, for when the zone is not connected to any speakers and not in use
-          Returns:
-            'None' on success, otherwise error (dict)
+      Args:
+        id (int): any valid zone [0,p*6-1] (6 zones per preamp)
+        name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
+        source_id (int): source to connect to [0,4]
+        mute (bool): mute the zone regardless of set volume
+        vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
+        disabled (bool): disable zone, for when the zone is not connected to any speakers and not in use
+        force_update: bool, update source even if no changes have been made (for hw startup)
+      Returns:
+        'None' on success, otherwise error (dict)
     """
     idx = None
     for i, s in enumerate(self.status['zones']):
@@ -332,7 +369,7 @@ class Api:
     return None, None
 
   def _update_groups(self):
-    """ Update the group's aggregate fields to maintain consistency and simplify app interface """
+    """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
     for g in self.status['groups']:
       zones = [ self.status['zones'][z] for z in g['zones'] ]
       mutes = [ z['mute'] for z in zones ]
@@ -348,7 +385,7 @@ class Api:
 
   @utils.save_on_success
   def set_group(self, id, name=None, source_id=None, zones=None, mute=None, vol_delta=None):
-    """ Configure an existing group
+    """Configures an existing group
         parameters will be used to configure each sone in the group's zones
         all parameters besides the group id, @id, are optional
 
@@ -409,7 +446,8 @@ class Api:
 
   @utils.save_on_success
   def create_group(self, name, zones):
-    """create a new group with a list of zones
+    """Creates a new group with a list of zones
+
     Refer to the returned system state to obtain the id for the newly created group
     """
     # verify new group's name is unique
@@ -437,7 +475,7 @@ class Api:
 
   @utils.save_on_success
   def delete_group(self, id):
-    """delete an existing group"""
+    """Deletes an existing group"""
     try:
       i, _ = self.get_group(id)
       if i is not None:
@@ -447,7 +485,7 @@ class Api:
 
   @utils.save_on_success
   def set_stream(self, id, name=None, station_id=None, cmd=None):
-    """ Set play/pause on a specific pandora source """
+    """Sets play/pause on a specific pandora source """
     if int(id) not in self.streams:
       return utils.error('Stream id {} does not exist!'.format(id))
 
@@ -492,6 +530,8 @@ class Api:
 
   @utils.save_on_success
   def get_stations(self, id, stream_index=None):
+    """Gets a pandora stream's station list"""
+    # TODO: this should be moved to be a command of the Pandora stream interface
     if id not in self.streams:
       return utils.error('Stream id {} does not exist!'.format(id))
     # TODO: move the rest of this into streams

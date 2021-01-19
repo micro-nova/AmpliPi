@@ -54,6 +54,19 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 #
 html_theme = 'alabaster'
 
+# Remove the sidebar
+html_sidebars = {
+    "index": [],
+    "**": [],
+}
+#singlehtml_sidebars = {"index": ["project.html", "localtoc.html"]}
+html_static_path = ["_static"]
+html_favicon = "../web/static/imgs/amplipi_icon_white.png"
+html_logo = "../web/static/imgs/amplipi_icon_white.png"
+html_title = f"AmpliPi Documentation ({release})"
+html_show_sourcelink = True
+
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
