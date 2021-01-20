@@ -9,4 +9,8 @@ fi
 echo "updating system alsa config"
 sudo cp asound.conf /etc/asound.conf
 
+# make scripts executable
+chmod +x eventcmd.sh shairport_metadata.bash
+
+
 # TODO: configure other systems on rpi?

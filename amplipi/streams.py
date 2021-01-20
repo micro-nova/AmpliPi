@@ -255,7 +255,7 @@ class Pandora:
     pb_src_config_file = '{}/.libao'.format(pb_home)
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(pb_config_folder))
-    # TODO: File copying for event_cmd.sh like above ^
+    os.system('cp {} {}'.format(eventcmd_template, pb_eventcmd_file))
     # write pianobar and libao config files
     write_config_file(pb_config_file, {
       'user': self.user,
@@ -266,7 +266,7 @@ class Pandora:
     })
     write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': utils.output_device(src)})
     try:
-      with open(eventcmd_template) as ect:
+      with open(pb_eventcmd_file) as ect:
         template = ect.read().replace('source_id', str(src))
       with open(pb_eventcmd_file, 'w') as ec:
         ec.write(template)
