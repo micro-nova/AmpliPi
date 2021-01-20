@@ -18,6 +18,5 @@ fi
 RPI_WEB_FOLDER=/home/pi/web
 
 # copy stuff to board
-scp $SCRIPT_DIR/../web/static/*                  $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/static/
+scp -r $SCRIPT_DIR/../web/static/*               $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/web/static/
 scp $SCRIPT_DIR/../web/templates/*               $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/templates/
-scp $SCRIPT_DIR/../web/imgs/*                    $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/imgs/
