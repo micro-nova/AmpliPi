@@ -178,7 +178,7 @@ def view(src=0):
     ungrouped_zones=[ungrouped_zones(src) for src in range(4)],
     song_info=[song_info(src) for src in range(4)])
 
-def create_app(mock=False, config_file='config/jasons_house.json'):
+def create_app(mock=False, config_file='config/house.json'):
   if mock:
     app.api = ctrl.Api(rt.Mock(), config_file)
   else:
