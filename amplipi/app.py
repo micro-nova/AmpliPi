@@ -64,6 +64,17 @@ def ungrouped_zones(src):
   ungrouped_zones_ = source_zones.difference(grouped_zones)
   return [ zones[z] for z in ungrouped_zones_ if not zones[z]['disabled']]
 
+def song_info(src):
+  """ Get the song info for a source """
+  song_fields = ['artist', 'album', 'track', 'img_url']
+  stream = app.api.get_stream(app.api.status['sources'][src]['input'])
+  info = stream.info() if stream else {}
+  # add empty strings for unpopulated fields
+  for field in song_fields:
+    if field not in info:
+      info[field] = ''
+  return info
+
 # API
 # TODO: add debug printing to each request, ie.
 #   if DEBUG_API:
@@ -84,6 +95,8 @@ def code_response(resp):
   else:
     return jsonify(resp), 200
 
+# sources
+
 @app.route('/api/sources/<int:src>', methods=['GET'])
 def get_source(src):
   # TODO: add get_X capabilities to underlying API?
@@ -97,6 +110,8 @@ def get_source(src):
 def set_source(src):
   return code_response(app.api.set_source(id=src, **request.get_json()))
 
+# zones
+
 @app.route('/api/zones/<int:zone>', methods=['GET'])
 def get_zone(zone):
   zones = app.api.get_state()['zones']
@@ -108,6 +123,8 @@ def get_zone(zone):
 @app.route('/api/zones/<int:zone>', methods=['PATCH'])
 def set_zone(zone):
   return code_response(app.api.set_zone(id=zone, **request.get_json()))
+
+# groups
 
 @app.route('/api/group', methods=['POST'])
 def create_group():
@@ -129,6 +146,20 @@ def set_group(group):
 def delete_group(group):
   return code_response(app.api.delete_group(id=group))
 
+# streams
+
+@app.route('/api/stream', methods=['POST'])
+def create_stream():
+  return None, 404 # TODO: implement create_stream
+
+@app.route('/api/streams/<int:stream>', methods=['PATCH'])
+def set_stream(stream):
+  return code_response(app.api.set_stream(id=stream, **request.get_json()))
+
+# TODO: add specific route for /api/stream/<int:stream>/cmd that sends a command to a stream returns the stream's state on success or an error
+
+# documentation
+
 @app.route('/api/doc')
 def doc():
   # TODO: add hosted python docs as well
@@ -144,7 +175,8 @@ def view(src=0):
     zones=s['zones'], groups=s['groups'], inputs=app.api.get_inputs(),
     unused_groups=[unused_groups(src) for src in range(4)],
     unused_zones=[unused_zones(src) for src in range(4)],
-    ungrouped_zones=[ungrouped_zones(src) for src in range(4)])
+    ungrouped_zones=[ungrouped_zones(src) for src in range(4)],
+    song_info=[song_info(src) for src in range(4)])
 
 def create_app(mock=False, config_file='config/jasons_house.json'):
   if mock:

@@ -132,7 +132,6 @@ class Shairport:
     loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
     sloc = '/home/pi/config/srcs/{}/sourceInfo'.format(self.src)
     d = {}
-    f = {}
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -154,14 +153,14 @@ class Shairport:
             info = line.split(',,,')
             for i in range(len(info)):
               info[i] = info[i].strip('".')
-            f['source_info'] = info[0]
-            f['active_remote_token'] = info[1]
-            f['DACP-ID'] = info[2]
-            f['client_IP'] = info[3]
+            d['source_info'] = info[0]
+            d['active_remote_token'] = info[1]
+            d['DACP-ID'] = info[2]
+            d['client_IP'] = info[3]
     except Exception as e:
       pass
 
-    return d, f
+    return d
     # return {'details': 'No info available'}
 
   def status(self):

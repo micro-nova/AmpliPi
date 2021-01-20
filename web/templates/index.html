@@ -30,7 +30,6 @@
         </ol>
       </div>
       <div class="card-body source-body">
-        <!-- TODO: populate source inputs with real options -->
         {% for src in sources %}
         <select id="s{{ src['id'] }}-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);" data-src="{{ src['id'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
           {% for input, name in inputs.items() %}
@@ -48,13 +47,14 @@
         <div class="player-wrapper">
           {% for src in sources %}
           <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
-            <!-- TODO: this player's layout needs to be redone, the margins are too funky right now -->
-            <div class="cover"><img src="{{ url_for('static', filename='imgs/rca_inputs.svg') }}"/></div>
+            {% set info = song_info[src['id']] %}
+            {% set art_url = url_for('static', filename='imgs/rca_inputs.svg') if '' == info['img_url'] else info['img_url'] %}
+            <div class="cover"><img src="{{ art_url }}"/></div>
             <div class="info-controls">
               <div class="info">
-                <h6 class="artist">The Tasty Treats </h6>
-                <h6 class="album">Premiere</h6>
-                <h6 class="song">I Need You Back</h6>
+                <h6 class="artist">{{ info['artist'] }}</h6>
+                <h6 class="album">{{ info['album'] }}</h6>
+                <h6 class="song">{{ info['track'] }}</h6>
               </div>
               <div class="controls">
                 <i class="play-pause fas fa-play" onclick="onPlayPause(this)"></i>
