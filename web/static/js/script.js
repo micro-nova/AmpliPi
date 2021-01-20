@@ -3,6 +3,7 @@ const icons = {
   'shairport' : '/static/imgs/shairport.png',
   'local'     : '/static/imgs/rca_inputs.svg',
   'pandora'   : '/static/imgs/pandora.png',
+  'spotify'   : '/static/imgs/spotify.png',
   'none'      : '/static/imgs/disconnected.png'
 }
 
