@@ -1,4 +1,13 @@
 #!/bin/bash
+
+# kill webserver
+kill -KILL $(ps ax | grep 'python3' | grep 'flask' | awk '{print $1}') > /dev/null
+
+# kill streaming services
+killall librespot > /dev/null
+killall pianobar > /dev/null
+killall shairport-sync > /dev/null
+
 # get directory that the script exists in
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # run the script from the base directory
