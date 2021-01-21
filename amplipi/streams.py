@@ -32,13 +32,15 @@ def build_stream(args, mock=False):
     return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
   elif args['type'] == 'shairport':
     return Shairport(args['name'], mock=mock)
+  elif args['type'] == 'spotify':
+    return Spotify(args['name'], mock=mock)
   else:
     raise NotImplementedError(args['type'])
 
 # TODO: how to implement base stream class in Python?, there is a lot of duplication between shairport and pandora streams...
 class Stream(object):
   def connect(self, src):
-    """ Conmnect the stream's output to src """
+    """ Connect the stream's output to src """
     pass
   def disconnect(self):
     """ Disconnect the stream's output from any connected source """
@@ -65,6 +67,7 @@ def write_sp_config_file(filename, config):
       cfg_file.write('};\n')
 
 class Shairport:
+  """ An Airplay Stream """
   def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
@@ -78,6 +81,9 @@ class Shairport:
     self.disconnect()
 
   def connect(self, src):
+    """ Connect an Airplay device to a given audio source
+    This creates an Airplay streaming option based on the configuration
+    """
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
       self.state = 'connected'
@@ -171,6 +177,58 @@ class Shairport:
     mock = ' (mock)' if self.mock else ''
     return 'airplay: {}{}{}'.format(self.name, connection, mock)
 
+class Spotify:
+  """ A Spotify Stream """
+  def __init__(self, name, mock=False):
+    self.name = name
+    self.proc = None
+    self.mock = mock
+    self.src = None
+    self.state = 'disconnected'
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, src):
+    """ Connect a Spotify output to a given audio source
+    This will create a Spotify Connect device based on the given name
+    """
+    if self.mock:
+      print('{} connected to {}'.format(self.name, src))
+      self.state = 'connected'
+      self.src = src
+      return
+    # TODO: Figure out the config for Spotify. Potentially need to get song info & play/pause ctrl
+    spotify_args = ['librespot', '-n', '{}'.format(self.name), '--device', 'ch{}'.format(src)]
+    self.proc = subprocess.Popen(args=spotify_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print('{} connected to {}'.format(self.name, src))
+    self.state = 'connected'
+    self.src = src
+
+  def _is_spot_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_spot_running():
+      self.proc.kill()
+      print('{} disconnected'.format(self.name))
+    self.state = 'disconnected'
+    self.proc = None
+    self.src = None
+
+  def info(self):
+    return {'details': 'No info available'}
+
+  def status(self):
+    return self.state
+
+  def __str__(self):
+    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return 'spotify connect: {}{}{}'.format(self.name, connection, mock)
+
 class Pandora:
   """ A Pandora Stream """
 
@@ -255,7 +313,7 @@ class Pandora:
     pb_src_config_file = '{}/.libao'.format(pb_home)
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(pb_config_folder))
-    os.system('cp {} {}'.format(eventcmd_template, pb_eventcmd_file))
+    os.system('cp {} {}'.format(eventcmd_template, pb_eventcmd_file)) # Copy to retain executable status
     # write pianobar and libao config files
     write_config_file(pb_config_file, {
       'user': self.user,

@@ -3,6 +3,7 @@ const icons = {
   'shairport' : '/static/imgs/shairport.png',
   'local'     : '/static/imgs/rca_inputs.svg',
   'pandora'   : '/static/imgs/pandora.png',
+  'spotify'   : '/static/imgs/spotify.png',
   'none'      : '/static/imgs/disconnected.png'
 }
 
@@ -174,6 +175,8 @@ function updateSourceView(status) {
         } else if (stream.type == 'shairport') {
           // TODO: populate shairport album info
           cover.src = icons['shairport'];
+        } else if (stream.type == 'spotify') {
+          cover.src = icons['spotify'];
         }
       }
     } else if (src.input == 'local') {
