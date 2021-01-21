@@ -199,7 +199,7 @@ class Spotify:
       self.src = src
       return
     # TODO: Figure out the config for Spotify. Potentially need to get song info & play/pause ctrl
-    spotify_args = ['librespot', '-n', '{}'.format(self.name), '--device', 'ch{}'.format(src)]
+    spotify_args = ['librespot', '-n', '{}'.format(self.name), '--device', 'ch{}'.format(src), '--initial-volume', '100']
     self.proc = subprocess.Popen(args=spotify_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
