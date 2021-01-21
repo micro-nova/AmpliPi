@@ -175,6 +175,8 @@ function updateSourceView(status) {
         } else if (stream.type == 'shairport') {
           // TODO: populate shairport album info
           cover.src = icons['shairport'];
+        } else if (stream.type == 'spotify') {
+          cover.src = icons['spotify'];
         }
       }
     } else if (src.input == 'local') {

@@ -40,7 +40,7 @@ def build_stream(args, mock=False):
 # TODO: how to implement base stream class in Python?, there is a lot of duplication between shairport and pandora streams...
 class Stream(object):
   def connect(self, src):
-    """ Conmnect the stream's output to src """
+    """ Connect the stream's output to src """
     pass
   def disconnect(self):
     """ Disconnect the stream's output from any connected source """
@@ -67,6 +67,7 @@ def write_sp_config_file(filename, config):
       cfg_file.write('};\n')
 
 class Shairport:
+  """ An Airplay Stream """
   def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
@@ -80,6 +81,9 @@ class Shairport:
     self.disconnect()
 
   def connect(self, src):
+    """ Connect an Airplay device to a given audio source
+    This creates an Airplay streaming option based on the configuration
+    """
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
       self.state = 'connected'
@@ -174,6 +178,7 @@ class Shairport:
     return 'airplay: {}{}{}'.format(self.name, connection, mock)
 
 class Spotify:
+  """ A Spotify Stream """
   def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
@@ -185,6 +190,9 @@ class Spotify:
     self.disconnect()
 
   def connect(self, src):
+    """ Connect a Spotify output to a given audio source
+    This will create a Spotify Connect device based on the given name
+    """
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
       self.state = 'connected'
