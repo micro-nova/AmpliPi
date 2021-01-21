@@ -1,1 +1,10 @@
 * text eol=lf
+# force git to modify all files to use lf endings
+# this is required for all scripts that get copied to the pi
+# TODO: for now we blanket force all files to have lf line-endings then mark exceptions as binary below. There should be a better way to do this
+* text eol=lf
+
+# specify binary files here, so git doesn't edit their line endings
+*.png binary
+*.jpg binary
+*.bin binary
