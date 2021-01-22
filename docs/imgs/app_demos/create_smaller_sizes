@@ -1,0 +1,8 @@
+#!/bin/bash
+
+gifs=$(ls *.gif | grep -v _small | grep -v _tiny| sed 's/.gif//')
+
+for gif in $gifs; do
+  gifsicle --resize 400x711 ${gif}.gif > ${gif}_small.gif
+  gifsicle --resize 300x533 ${gif}.gif > ${gif}_tiny.gif
+done
