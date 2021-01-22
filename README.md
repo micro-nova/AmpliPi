@@ -11,7 +11,7 @@ A source has an input selector to pick what is playing. So playing a Pandora rad
 simple as picking say Matt and Kim Radio from the drop down.
 <p align="center">
   <img alt="Selecting an audio source"
-      src="docs/imgs/app_demos/change_source.gif"
+      src="docs/imgs/app_demos/change_source_small.gif"
       width="250">
   </img>
 </p>
@@ -20,7 +20,7 @@ simple as picking say Matt and Kim Radio from the drop down.
 Underneath the input selector are the volume controls for groups and zones connected to the source. Zone volume controls only control themselves, whereas group volume controls adjust the volume for all of the zones in the group.
 <p align="center">
   <img alt="Changing group and zone volumes"
-      src="docs/imgs/app_demos/expand_group_and_change_vols.gif" width="250">
+      src="docs/imgs/app_demos/expand_group_and_change_vols_small.gif" width="250">
   </img>
 </p>
 
@@ -28,7 +28,7 @@ Underneath the input selector are the volume controls for groups and zones conne
 Below the volumes is an add zone/group selector. To play the current Pandora station when you move to the living room, just add ‘living room’ from the selector. Living room will be removed from the audio source it was previously connected to (if any).
 <p align="center">
   <img alt="Adding a group to a source"
-      src="docs/imgs/app_demos/add_group_to_source.gif"
+      src="docs/imgs/app_demos/add_group_to_source_small.gif"
       width="250">
   </img>
 </p>
