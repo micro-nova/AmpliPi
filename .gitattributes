@@ -8,3 +8,5 @@
 *.png binary
 *.jpg binary
 *.bin binary
+*.gif binary
+*.xcf binary
