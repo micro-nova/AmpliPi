@@ -1,5 +1,5 @@
-# AmpliPi generated files
-saved_state.json*
+# AmpliPi config files (and backup)
+house.json
 *.json.bak
 
 # Byte-compiled / optimized / DLL files
