@@ -1,4 +1,4 @@
-from oled import AmpliPi_OLED
+from amplipi.oled import AmpliPi_OLED
 import time
 
 oled = AmpliPi_OLED()
