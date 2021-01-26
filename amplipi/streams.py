@@ -115,8 +115,10 @@ class Shairport:
     config_file = '{}/shairport.conf'.format(config_folder)
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
+    meta_args = ['/home/pi/config/shairport_metadata.bash', '{}'.format(src)]
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.proc2 = subprocess.Popen(args=meta_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
     self.src = src
@@ -148,6 +150,7 @@ class Shairport:
             d['artist'] = data[0]
             d['track'] = data[1]
             d['album'] = data[2]
+        # return d
     except Exception as e:
       pass
       # TODO: Put an actual exception here?
@@ -163,6 +166,7 @@ class Shairport:
             d['active_remote_token'] = info[1]
             d['DACP-ID'] = info[2]
             d['client_IP'] = info[3]
+        # return d
     except Exception as e:
       pass
 

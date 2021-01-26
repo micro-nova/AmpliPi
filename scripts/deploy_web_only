@@ -18,5 +18,7 @@ fi
 RPI_WEB_FOLDER=/home/pi/web
 
 # copy stuff to board
-scp -r $SCRIPT_DIR/../web/static/*               $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/web/static/
+scp -r $SCRIPT_DIR/../docs/*                     $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/../docs/
+scp -r $SCRIPT_DIR/../web/static/*               $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/static/
+scp $SCRIPT_DIR/../docs/amplipi_api.yaml         $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/static/ # windows doesn't like soft links
 scp $SCRIPT_DIR/../web/templates/*               $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/templates/
