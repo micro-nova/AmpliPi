@@ -64,7 +64,7 @@ class Api:
     ]
   }
 
-  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='saved_state.json'):
+  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='config/house.json'):
     self._rt = _rt
     self._mock_hw = type(_rt) is rt.Mock
     self._mock_streams = mock_streams
