@@ -5,7 +5,7 @@ oled = AmpliPi_OLED()
 
 i = 0
 
-# demo 
+# demo
 while(True):
   # increment
   i = i + 2
@@ -16,8 +16,3 @@ while(True):
   oled.set_volumes([i,i,i,i,i,i])
   # sleep
   time.sleep(1)
-  
-  
-  
-  
-  
