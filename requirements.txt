@@ -2,3 +2,4 @@ deepdiff
 pytest
 serial
 smbus2
+Flask
