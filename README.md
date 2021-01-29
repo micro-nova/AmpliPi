@@ -1,7 +1,9 @@
 # AmpliPi Home Audio System
-AmpliPi is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play 4 different audio streams or sources to one or many zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable to 36 zones using AmpliPi Zone Expanders.
+AmpliPi™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio streams (Pandora, Spotify, AirPlay, etc) or sources (RCA inputs), each routed to one or many zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPi Zone Expanders.
 
-The AmpliPi design is entirely open source, from the software, to the firmware, to the hardware. The REST API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry and PCBs are open hardware as well and come with full schematics.
+The AmpliPi design is entirely open source, from the software, to the firmware, to the schematics. The REST API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (avaiable in this repo).
+
+The system is self-hosted on the Raspberry Pi and is privacy-centric. By design, AmpiPi doesn’t listen to you or spy on you — it just plays your audio! The way it should be. An internet connection is only needed for some external streaming sources, such as Pandora. The Python application running on the Pi hosts a mobile-friendly website and REST API used to control the system. The website is built on top of the REST API.
 
 ## Web interface
 AmpliPi hosts a mobile first web app that can control the system from any PC or mobile phone on the local network. It was designed around the idea that each of the 4 audio sources could be controlled individually by separate people in the house. Each of the audio sources’ controls are in their own tab at the top of the app.
@@ -17,7 +19,7 @@ simple as picking say Matt and Kim Radio from the drop down.
 </p>
 
 ### Changing Group and Zone volumes
-Underneath the input selector are the volume controls for groups and zones connected to the source. Zone volume controls only control themselves, whereas group volume controls adjust the volume for all of the zones in the group.
+Underneath the input selector are the volume controls for groups and zones connected to the source. The number of zones present is determined by the number of zone expander units discovered during system startup. Zone volume controls only control themselves, whereas group volume controls adjust the volume for all of the zones in the group. The user can create an unlimited number of groups. Zones can also belong to multiple groups.
 <p align="center">
   <img alt="Changing group and zone volumes"
       src="docs/imgs/app_demos/expand_group_and_change_vols_small.gif" width="250">
