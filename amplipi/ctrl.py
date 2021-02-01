@@ -61,9 +61,10 @@ class Api:
     ]
   }
 
-  def __init__(self, _rt = rt.Mock(), config_file = 'saved_state.json'):
+  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='saved_state.json'):
     self._rt = _rt
-    self._mock = type(_rt) is rt.Mock
+    self._mock_hw = type(_rt) is rt.Mock
+    self._mock_streams = mock_streams
     """Intitializes the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -96,7 +97,7 @@ class Api:
     # configure all streams into a known state
     self.streams = {}
     for stream in self.status['streams']:
-      self.streams[stream['id']] = streams.build_stream(stream, self._mock)
+      self.streams[stream['id']] = streams.build_stream(stream, self._mock_streams)
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
       self.set_source(src['id'], input=src['input'], force_update=True)

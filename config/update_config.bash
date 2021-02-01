@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Update AmpliPi's configuration on a raspberry pi.
+# This script should install and configure everything necessary
+
 # get directory that the script exists in
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -34,10 +37,10 @@ else
 fi
 
 # configure raspotify on pi and disable its daemon
-rs_installed=$(sudo apt list --installed 2> /dev/null | grep pianobar -c)
+rs_installed=$(sudo apt list --installed 2> /dev/null | grep raspotify -c)
 if [ 0 -eq "${rs_installed}" ]; then
   echo "installing raspotify"
-  sudo apt update && sudo apt install -y raspotify
+  curl -sL https://dtcooper.github.io/raspotify/install.sh | sh
   # disable and stop its daemon
   sudo systemctl stop raspotify.service
   sudo systemctl disable raspotify.service
@@ -45,7 +48,17 @@ else
   echo "raspotify already installed"
 fi
 
-# TODO: add other dependencies
+# configure python3 on pi
+rs_installed=$(sudo apt list --installed 2> /dev/null | grep python3-pip -c)
+if [ 0 -eq "${rs_installed}" ]; then
+  echo "installing pip"
+  sudo apt update && sudo apt install -y python3-pip
+else
+  echo "pip already installed"
+fi
+pip3 install -r ${SCRIPT_DIR}/../requirements.txt
+
+# TODO: add other dependencies?
 
 # TODO: check if boot config changed, copy over if necessary and ask user to restart
 

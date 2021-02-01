@@ -48,11 +48,13 @@ scp $SCRIPT_DIR/../config/eventcmd.sh                $RPI_IP_ADDRESS:${RPI_HOME_
 scp $SCRIPT_DIR/../config/asound.conf                $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
 scp $SCRIPT_DIR/../config/update_config.bash         $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
 scp $SCRIPT_DIR/../config/shairport_metadata.bash    $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
+
 # update configs on the pi
+scp $SCRIPT_DIR/../requirements.txt                  $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/
 ssh $RPI_IP_ADDRESS "cd ${RPI_HOME_FOLDER}/config && ./update_config.bash"
 
 # copy firmware
-scp $SCRIPT_DIR/../fw/*.sh                           $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw
-scp $SCRIPT_DIR/../fw/*.bin                          $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw
+scp $SCRIPT_DIR/../fw/*.sh                           $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw/
+scp $SCRIPT_DIR/../fw/*.bin                          $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw/
 
 sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' $SCRIPT_DIR/../amplipi/rt.py
