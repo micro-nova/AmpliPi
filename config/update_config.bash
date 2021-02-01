@@ -3,6 +3,8 @@
 # Update AmpliPi's configuration on a raspberry pi.
 # This script should install and configure everything necessary
 
+# TODO: many of the checks here depend on apt, if something is manually installed this script will not detect it yet. Please fix.
+
 # get directory that the script exists in
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
