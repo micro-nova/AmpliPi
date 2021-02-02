@@ -34,7 +34,6 @@ static GPIO_TypeDef * getPort(Pin pp){
 	case 'F':
 		return GPIOF;
 	default:
-		while(1);
 		return 0;
 	}
 }

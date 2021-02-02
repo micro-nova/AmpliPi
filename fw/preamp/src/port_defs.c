@@ -20,6 +20,8 @@
 
 #include "port_defs.h"
 
+// Enable pin mapping for each channel's four sources
+// Each channel can enable all or none of its sources. This firmware currently allows only one to be enabled at a time
 const Pin ch_src[NUM_CHANNELS][NUM_SRCS] = {
 	{{'A', 3},{'F', 5},{'A', 4},{'F', 4}},
 	{{'A', 5},{'A', 7},{'C', 4},{'A', 6}},
