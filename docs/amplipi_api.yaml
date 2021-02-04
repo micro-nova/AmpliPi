@@ -527,6 +527,46 @@ paths:
                 $ref: '#/components/schemas/Status'
         '404':
           description: Group Not Found
+  /stream:
+    post:
+      summary: Create New stream
+      tags:
+        - stream
+      operationId: post-stream
+      responses:
+        '200':
+          description: Stream Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+        '400':
+          description: Missing Required Information
+        '409':
+          description: Stream ID already taken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Friendly stream name, ie. Matt and Kim Radio
+                type:
+                  type: string
+                  description: Stream type
+                  enum:
+                    - pandora
+                    - shairport
+                info:
+                  type: object
+                  description: Additional info about the current audio playing from the stream
+                status:
+                  type: string
+                  description: connected/playing status of the stream
+        description: Post the necessary fields for the API to create a new stream.
+      description: Create a new stream.
   /streams/{streamId}:
     get:
       summary: Get Stream Info by Stream ID
@@ -541,7 +581,7 @@ paths:
             minimum: 0
       responses:
         '200':
-          description: Stream Found
+          description: Stream Command Success
           content:
             application/json:
               schema:
@@ -561,7 +601,120 @@ paths:
           description: Stream Not Found
       operationId: get-stream
       description: Retrieve the stream status and configuration information for the stream with the matching ID.
-
+    patch:
+      summary: Update Stream
+      tags:
+        - stream
+      parameters:
+        - name: streamId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+      operationId: patch-stream
+      responses:
+        '200':
+          description: Stream Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Stream Not Found
+      description: Update the configuration of a stream.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Update stream name
+                user:
+                  type: string
+                  description: Update stream account user name
+                password:
+                  type: string
+                  description: Update stream account password
+                station:
+                  type: integer
+                  minimum: 0
+                  description: Station id (number at the end of Pandora URL)
+            examples:
+              Change name:
+                value:
+                  name: Matt and Kim Radio
+              Change account info:
+                value:
+                  user: test@micro-nova.com
+                  password: sd9sk3k30
+              Change pandora radio station:
+                value:
+                  station: 0982034049300
+        description: Patch stream configuration to update.
+    delete:
+      summary: Delete Stream
+      tags:
+        - stream
+      parameters:
+        - name: streamId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+      operationId: delete-stream
+      description: Delete a stream
+      responses:
+        '200':
+          description: Stream Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Stream Not Found
+  /streams/{streamId}/{streamCmd}:
+    post:
+      summary: Send a command to a connected stream such as Play/Pause/Next
+      tags:
+        - stream
+      parameters:
+        - name: streamId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+        - name: streamCmd
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return status after command executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+              examples:
+                Play paused station:
+                  value:
+                    id: 90991
+                    name: Matt and Kim Radio
+                    status: playing
+                    info:
+                      artist: Matt and Kim
+                      song: Daylight
+                      album: Sidewalks
+        # TODO: add command not found, and stream not connected error results
+        '404':
+          description: Stream Not Found
+      operationId: post-stream-command
+      description: Send a command to the connected stream with the matching ID.
 components:
   schemas:
     Source:
@@ -595,6 +748,11 @@ components:
       type: object
       description: Digital stream such as Pandora, Airplay or Spotify
       properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Unique stream identifier
         name:
           type: string
           description: Friendly stream name, ie. Matt and Kim Radio
@@ -611,6 +769,7 @@ components:
           type: string
           description: connected/playing status of the stream
       required:
+        - id
         - name
         - type
     Zone:
