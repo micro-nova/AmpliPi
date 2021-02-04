@@ -35,6 +35,7 @@
 uint8_t volumes[NUM_CHANNELS];
 
 static void writeVolume(int ch, uint8_t vol);
+static void restoreVolumes();
 
 // returns true if ch unmuted (HI)
 bool isOn(int ch){
@@ -116,7 +117,7 @@ void writeVolume(int ch, uint8_t vol){
 	}
 }
 
-void restoreVolumes() {
+static void restoreVolumes() {
 	uint8_t ch;
 	for (ch = 0; ch < NUM_CHANNELS; ch++) {
 		writeVolume(ch, volumes[ch]);

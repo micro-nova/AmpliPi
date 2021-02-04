@@ -21,7 +21,10 @@
 #include "front_panel.h"
 #include "channel.h"
 #include "port_defs.h"
-#include "stm32f0xx.h"
+#include <stm32f0xx.h>
+
+void init_i2c(int preamp_addr);
+void USART_PutString(USART_TypeDef* USARTx, volatile unsigned char * str);
 
 // uncomment the line below to use the debugger
 // #define DEBUG_OVER_UART2
@@ -91,7 +94,7 @@ void init_gpio()
 	GPIO_Init(GPIOF, &GPIO_InitStructureF);
 }
 
-void init_i2c(preamp_addr)
+void init_i2c(int preamp_addr)
 {
 	// I2C1 is from control board
 	// I2C2 is to volume chips
@@ -378,7 +381,7 @@ int main(void)
  * Process: Sends out string character-by-character and then sends
  * carriage return and line feed when done if needed
  */
-void USART_PutString(USART_TypeDef* USARTx, uint8_t * str)
+void USART_PutString(USART_TypeDef* USARTx, volatile unsigned char * str)
 {
 	int dt = 1000; // delay time. Increase to send out message more slowly.
 	while(*str != 0)
