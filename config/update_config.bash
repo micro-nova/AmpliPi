@@ -29,6 +29,27 @@ if [ 0 -eq "${sp_installed}" ]; then
   sudo systemctl disable shairport-sync.service
 fi
 
+# rough configuration of shairport-sync-metadata-reader
+git_installed=$(sudo apt list --installed 2> /dev/null | grep git/ -c)
+if [ 0 -eq "${git_installed}" ]; then
+  echo "installing git"
+  sudo apt update && sudo apt install -y git
+else
+  echo "git already installed"
+fi
+cd /home/pi/config/
+ssmr_installed=$(sudo ls | grep shairport-sync-metadata-reader -c)
+if [ 0 -eq "${ssmr_installed}" ]; then
+  git clone https://github.com/micronova-jb/shairport-sync-metadata-reader.git
+  cd shairport-sync-metadata-reader
+  autoreconf -i -f
+  ./configure
+  make
+  sudo make install # This will fail if it has already been installed elsewhere
+else
+  echo "metadata reader already installed"
+fi
+
 # configure pianobar on pi
 pb_installed=$(sudo apt list --installed 2> /dev/null | grep pianobar -c)
 if [ 0 -eq "${pb_installed}" ]; then
