@@ -20,10 +20,6 @@ info:
 servers:
   - url: 'http://amplipi.local:5000/api'
     description: Local AmpliPi Controller
-  - url: 'http://raspberrypi.local:5000/api'
-    description: Demo AmpliPi Controller
-  - url: 'http://linkxps.local:5000/api'
-    description: Dev AmpliPi Controller
 tags:
 - name: status
   description: The status and configuration of the entire system, including source, zones, groups, and streams.
@@ -418,6 +414,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Whole House:
+              value: 1
       responses:
         '200':
           description: Group Found
@@ -448,6 +447,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Downstairs:
+              value: 2
       operationId: patch-group
       responses:
         '200':
@@ -516,6 +518,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Upstairs:
+              value: 3
       operationId: delete-group
       description: Delete a group
       responses:
@@ -540,6 +545,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Stream'
+              example:
+                name: Matt and Kim Radio
+                type: pandora
+                user: test@micro-nova.com
+                password: s79sDDkjf
+                info: {}
+                status: disconnected
         '400':
           description: Missing Required Information
         '409':
@@ -559,12 +571,20 @@ paths:
                   enum:
                     - pandora
                     - shairport
-                info:
-                  type: object
-                  description: Additional info about the current audio playing from the stream
-                status:
+                    - spotify
+                user:
                   type: string
-                  description: connected/playing status of the stream
+                  description: Stream account user name (for pandora this is an email address)
+                password:
+                  type: string
+                  description: Stream account password
+            examples:
+              Add Matt and Kim Radio:
+                value:
+                  name: Matt and Kim Radio
+                  type: pandora
+                  user: test@micro-nova.com
+                  password: s79sDDkjf
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /streams/{streamId}:
@@ -579,6 +599,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Matt and Kim Radio:
+              value: 90891
       responses:
         '200':
           description: Stream Command Success
@@ -589,7 +612,7 @@ paths:
               examples:
                 Get Matt and Kim Radio Stream:
                   value:
-                    id: 90991
+                    id: 90891
                     name: Matt and Kim Radio
                     status: playing
                     info:
@@ -612,6 +635,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Matt and Kim Radio:
+              value: 90891
       operationId: patch-stream
       responses:
         '200':
@@ -642,6 +668,8 @@ paths:
                   type: integer
                   minimum: 0
                   description: Station id (number at the end of Pandora URL)
+              required:
+                - name
             examples:
               Change name:
                 value:
@@ -665,6 +693,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Matt and Kim Radio:
+              value: 90891
       operationId: delete-stream
       description: Delete a stream
       responses:
@@ -688,11 +719,50 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Matt and Kim Radio:
+              value: 90891
         - name: streamCmd
           required: true
           in: path
           schema:
             type: string
+          examples:
+            Play Stream:
+              value: play
+            Pause Stream:
+              value: pause
+            Skip to next song:
+              value: next
+            Stop Stream:
+              value: stop
+            Like/Love Current Song:
+              value: like
+            Ban Current Song (pandora only):
+              value: ban
+            Shelve Current Song (pandora only):
+              value: shelve
+            Change Station (pandora only):
+              value: station
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                station:
+                  type: integer
+                  description: Pandora station id
+            examples:
+              Change station (pandora only):
+                value:
+                  station: 0982034049300
+              Play Stream:
+                value: {}
+              Pause Stream:
+                value: {}
+              Skip to next song:
+                value: {}
       responses:
         '200':
           description: Return status after command executed
@@ -703,7 +773,7 @@ paths:
               examples:
                 Play paused station:
                   value:
-                    id: 90991
+                    id: 90891
                     name: Matt and Kim Radio
                     status: playing
                     info:
