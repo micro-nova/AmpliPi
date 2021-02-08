@@ -65,7 +65,11 @@ if [ 0 -eq "${ssmr_installed}" ]; then
   make
   sudo make install # This will fail if it has already been installed elsewhere
 else
-  echo "metadata reader already installed"
+  echo "metadata reader already installed... attempting to update"
+  cd shairport-sync-metadata-reader
+  git pull
+  make
+  sudo make install
 fi
 
 # configure pianobar on pi
