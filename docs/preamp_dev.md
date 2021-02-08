@@ -29,4 +29,8 @@ Once this file is open, find this line: adapter_khz 1000
 And change it to: adapter_khz 480
 
 
-Once all of these steps are complete, the debugger should be functional!
+Once all of these steps are complete, the debugger should be functional! Within the IDE, it is possible to build and debug the project.
+
+The build and debug options can be found in the toolbar at the top of the debugger, and they each come with multiple options. Build should work if the project was set up properly, even without a debugger.
+
+![image](imgs/PreampIDE_Options.jpg)
