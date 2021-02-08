@@ -221,6 +221,9 @@ paths:
             type: integer
             minimum: 0
             maximum: 3
+          examples:
+            Source 2:
+              value: 1
       responses:
         '200':
           description: Source Found
@@ -250,6 +253,9 @@ paths:
             type: integer
             minimum: 0
             maximum: 3
+          examples:
+            Source 4:
+              value: 3
       operationId: patch-source
       responses:
         '200':
@@ -291,6 +297,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Office:
+              value: 1
       responses:
         '200':
           description: Zone Found
@@ -322,6 +331,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+          examples:
+            Kitchen:
+              value: 5
       operationId: patch-zone
       responses:
         '200':
