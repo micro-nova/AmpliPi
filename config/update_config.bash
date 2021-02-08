@@ -15,6 +15,7 @@ if [ 0 -eq "${d2u_installed}" ]; then
   sudo apt update && sudo apt install -y dos2unix
 fi
 dos2unix ${SCRIPT_DIR}/*
+dos2unix ${SCRIPT_DIR}/../scripts/*
 
 # make some scripts executable
 chmod +x eventcmd.sh shairport_metadata.bash
