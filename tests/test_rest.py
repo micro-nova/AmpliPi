@@ -40,4 +40,20 @@ def test_base(client):
 # TODO: test sources
 # TODO: test zones
 # TODO: test groups
+
 # TODO: test streams
+# /stream post-stream
+def test_create_pandora(client):
+  m_and_k = { 'name': 'Matt and Kim Radio', 'user': 'lincoln@micro-nova.com', 'password': ''}
+  rv = client.post('/stream', json=m_and_k)
+  # check that the stream has an id added to it and that all of the fields are still there
+  jrv = rv.get_json()
+  assert 'id' in jrv
+  assert type(jrv['id']) == int
+  for k, v in m_and_k.items():
+    assert jrv[k] == v
+
+# /streams/{streamId} get-stream
+# /streams/{streamId} patch-stream
+# /streams/{streamId} delete-stream
+# /streams/{streamId}/{streamCmd} post-stream-command
