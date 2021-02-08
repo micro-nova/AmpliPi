@@ -755,26 +755,7 @@ paths:
             Shelve Current Song (pandora only):
               value: shelve
             Change Station (pandora only):
-              value: station
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                station:
-                  type: integer
-                  description: Pandora station id
-            examples:
-              Change station (pandora only):
-                value:
-                  station: 0982034049300
-              Play Stream:
-                value: {}
-              Pause Stream:
-                value: {}
-              Skip to next song:
-                value: {}
+              value: station=0982034049300
       responses:
         '200':
           description: Return status after command executed
