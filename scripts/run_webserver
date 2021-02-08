@@ -1,16 +1,38 @@
 #!/bin/bash
 
+mock_ctrl="False"
+mock_streams="False"
+
+HELP="Run AmpliPi's webserver\n
+  usage: run_webserver [--mock-ctrl] [--mock-streams]\n
+\n
+  --mock-ctrl: Don't use actual amplipi controller, useful for testing web interface without full system\n
+  --mock-streams: Don't use actual audio streams, useful for testing web interface without full system\n
+"
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --mock-ctrl) mock_ctrl="True" ;;
+        --mock-streams) mock_streams="True" ;;
+        -h|--help) echo -e $HELP; exit 0 ;;
+        *) echo "Unknown parameter passed: $1"; echo -e $HELP; exit 1 ;;
+    esac
+    shift
+done
+
 # kill webserver
 kill -KILL $(ps ax | grep 'python3' | grep 'flask' | awk '{print $1}') > /dev/null
 
-# kill streaming services
-killall librespot > /dev/null
-killall pianobar > /dev/null
-killall shairport-sync > /dev/null
+if [[ "$mock_streams" != "True" ]] ; then
+  # kill streaming services
+  killall librespot > /dev/null
+  killall pianobar > /dev/null
+  killall shairport-sync > /dev/null
+fi
 
 # get directory that the script exists in
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # run the script from the base directory
 cd ${SCRIPT_DIR}/..
 # for some reason flask loads the app twice if reload option enabled (by default with debugging)
-FLASK_ENV=development FLASK_DEBUG=1 FLASK_APP="amplipi.app:create_app(False)" flask run --host 0.0.0.0 --no-reload
+FLASK_ENV=development FLASK_DEBUG=1 FLASK_APP="amplipi.app:create_app(${mock_ctrl},${mock_streams})" flask run --host 0.0.0.0 --no-reload

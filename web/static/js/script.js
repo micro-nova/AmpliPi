@@ -175,7 +175,13 @@ function updateSourceView(status) {
         } else if (stream.type == 'shairport') {
           // TODO: populate shairport album info
           cover.src = icons['shairport'];
+          try {
+            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
+            album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
+            song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
+          } catch (err) {}
         } else if (stream.type == 'spotify') {
+          // TODO: populate spotify album info
           cover.src = icons['spotify'];
         }
       }

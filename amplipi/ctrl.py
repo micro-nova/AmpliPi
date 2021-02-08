@@ -38,14 +38,17 @@ class Api:
 
   _DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      { "id": 0, "name": "Source 1", "input": "local" },
-      { "id": 1, "name": "Source 2", "input": "local" },
-      { "id": 2, "name": "Source 3", "input": "local" },
-      { "id": 3, "name": "Source 4", "input": "local" }
+      { "id": 0, "name": "1", "input": "local" },
+      { "id": 1, "name": "2", "input": "local" },
+      { "id": 2, "name": "3", "input": "local" },
+      { "id": 3, "name": "4", "input": "local" }
     ],
-    "streams": {
-      # TODO: should there be a default stream set? maybe a shairport instance?
-    },
+    "streams": [
+      # TODO: add example for each type of stream
+      { "id": 100, "name": "My Airplay", "type": "shairport"},
+      { "id": 101, "name": "My Pandora", "type": "pandora", "user": "", "password": "", "station": ""},
+      { "id": 102, "name": "My Spotify", "type": "spotify"},
+    ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
       { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
@@ -61,9 +64,10 @@ class Api:
     ]
   }
 
-  def __init__(self, _rt = rt.Mock(), config_file = 'saved_state.json'):
+  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='saved_state.json'):
     self._rt = _rt
-    self._mock = type(_rt) is rt.Mock
+    self._mock_hw = type(_rt) is rt.Mock
+    self._mock_streams = mock_streams
     """Intitializes the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -96,7 +100,7 @@ class Api:
     # configure all streams into a known state
     self.streams = {}
     for stream in self.status['streams']:
-      self.streams[stream['id']] = streams.build_stream(stream, self._mock)
+      self.streams[stream['id']] = streams.build_stream(stream, self._mock_streams)
     # configure all sources so that they are in a known state
     for src in self.status['sources']:
       self.set_source(src['id'], input=src['input'], force_update=True)

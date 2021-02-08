@@ -40,7 +40,7 @@ def info():
     field = ''
     while field != '"ssnc" "mden"':
         field, data = read_field()
-        print(field, ':', data)
+        # print(field, ':', data)
         if field:    
             u[field] = data
     v = u['Artist'] + ',,,' + u['Title'] + ',,,' + u['Album Name']
@@ -53,7 +53,7 @@ def s_info(inp):
     u['"ssnc" "snua"'] = inp
     while field != '"ssnc" "pbeg"':
         field, data = read_field()
-        print(field, ':', data)
+        # print(field, ':', data)
         if field:    
             u[field] = data
     v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
@@ -67,7 +67,7 @@ f.write("")
 f.close()
 while True:
     field, data = read_field()
-    print(field, ':', data)
+    # print(field, ':', data)
     p_status = ',,,PAUSED=False'
     if field == '"ssnc" "mdst"':
         q = info() + p_status

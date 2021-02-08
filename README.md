@@ -35,7 +35,6 @@ Below the volumes is an add zone/group selector. To play the current Pandora sta
   </img>
 </p>
 
-
 ## The REST API
 AmpliPi has a REST API that can be used to control volumes, switch and control audio sources, configure different streaming sources, and much more. It allows full configuration and real-time control of the AmpliPi device. The API conforms to the OpenAPI standard. It is fully documented on our [AmpliPi Open API site](https://micro-nova.github.io/amplipi).
 
@@ -48,3 +47,7 @@ AmpliPi has a REST API that can be used to control volumes, switch and control a
 With the REST API you can easily add automation to your home audio system. Use the API to trigger your AmpliPi system to play music based on smart home events. For example, only play music in zones of your house where motion has been detected, or start playing Pandora when the front door is unlocked.
 
 Not quite sure how to accomplish this? No problem - The AmpliPi controller hosts it's API documentation as well. Using a web browser pointed at your local AmpliPi box, you can view the API documentation, and also test sending and receiving API commands to and from the AmpliPi.
+
+## Development
+See [DEVELOPING.md](DEVELOPING.md) for how to get started working on AmpliPi
+

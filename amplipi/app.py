@@ -178,11 +178,11 @@ def view(src=0):
     ungrouped_zones=[ungrouped_zones(src) for src in range(4)],
     song_info=[song_info(src) for src in range(4)])
 
-def create_app(mock=False, config_file='config/house.json'):
-  if mock:
-    app.api = ctrl.Api(rt.Mock(), config_file)
+def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.json'):
+  if mock_ctrl:
+    app.api = ctrl.Api(rt.Mock(), mock_streams=mock_streams, config_file=config_file)
   else:
-    app.api = ctrl.Api(rt.Rpi(), config_file)
+    app.api = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file)
   return app
 
 if __name__ == '__main__':
