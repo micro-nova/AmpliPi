@@ -37,6 +37,24 @@ if [ 0 -eq "${git_installed}" ]; then
 else
   echo "git already installed"
 fi
+
+# build-essential and autoconf are required to make the metadata reader
+be_installed=$(sudo apt list --installed 2> /dev/null | grep build-essential -c)
+if [ 0 -eq "${be_installed}" ]; then
+  echo "installing build-essential"
+  sudo apt update && sudo apt install -y build-essential
+else
+  echo "build-essential already installed"
+fi
+
+autoconf_installed=$(sudo apt list --installed 2> /dev/null | grep autoconf -c)
+if [ 0 -eq "${autoconf_installed}" ]; then
+  echo "installing autoconf"
+  sudo apt update && sudo apt install -y autoconf
+else
+  echo "autoconf already installed"
+fi
+
 cd /home/pi/config/
 ssmr_installed=$(sudo ls | grep shairport-sync-metadata-reader -c)
 if [ 0 -eq "${ssmr_installed}" ]; then
