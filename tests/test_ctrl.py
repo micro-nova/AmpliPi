@@ -35,11 +35,11 @@ test_sequence = [
     "command" : "set_source",
     "id" : 1,
     "name" : "cd player",
-    "type": "local"
+    "input": "local"
   },
   None,
   {
-    "sources[1].type" : "local",
+    "sources[1].input" : "local",
     "sources[1].name" : "cd player"
   }
 ),
@@ -192,11 +192,11 @@ test_sequence = [
     "command" : "set_source",
     "id" : 1,
     "name" : "Pandora",
-    "type": "pandora"
+    "input": "pandora"
   },
   None,
   {
-    "sources[1].type" : "pandora",
+    "sources[1].input" : "stream=1001",
     "sources[1].name" : "Pandora"
   }
 ),
@@ -355,8 +355,8 @@ def check_all_tsts(api):
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
   # Tests
-  check_json_tst('Configure source 0 (shairport)', eth_audio_api.set_source(0, 'Shairport', 'shairport'), None, {'sources[0].name' : 'Shairport', 'sources[0].type' : 'shairport'})
-  check_json_tst('Configure source 1 (pandora)', eth_audio_api.set_source(1, 'Pandora', 'pandora'), None, {'sources[1].name' : 'Pandora', 'sources[1].type' : 'pandora'})
+  check_json_tst('Configure source 0 (shairport)', eth_audio_api.set_source(0, 'Shairport', 'stream=1000'), None, {'sources[0].name' : 'Shairport', 'sources[0].input' : 'stream=1000'})
+  check_json_tst('Configure source 1 (pandora)', eth_audio_api.set_source(1, 'Pandora', 'stream=1001'), None, {'sources[1].name' : 'Pandora', 'sources[1].input' : 'stream=1001'})
   check_json_tst('Configure source 2 (local)', eth_audio_api.set_source(2, 'TV', 'local'), None, {'sources[2].name' : 'TV'})
   check_json_tst('Configure source 3 (local)', eth_audio_api.set_source(3, 'PC', 'local'), None, {'sources[3].name' : 'PC'})
   check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1, 'zones[0].vol': 0, 'zones[0].mute' : False})
@@ -365,14 +365,6 @@ def check_all_tsts(api):
   check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, None, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3})
   check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 3, True, None, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 3})
   check_json_tst('Configure zone 4, Weird Zone', eth_audio_api.set_zone(4, 'Weird Zone', 1, None, None, None), None, {'zones[4].name' : 'Weird Zone', 'zones[4].source_id' : 1})
-
-  # Test string/json based command handler
-  print('\ntesting json:')
-  for name, cmd, expected_result, expected_changes  in test_sequence:
-    is_group_cmd = '_group' in cmd['command']
-    check_json_tst(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
-
-# TODO: add openapi tests
 
 def delete_file(file_path):
   try:
