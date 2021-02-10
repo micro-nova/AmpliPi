@@ -488,49 +488,65 @@ class Api:
       return utils.error('delete group failed: {} does not exist'.format(id))
 
   @utils.save_on_success
-  def set_stream(self, id, name=None, station_id=None, cmd=None):
+  def set_stream(self, id, **kwargs):
     """Sets play/pause on a specific pandora source """
     if int(id) not in self.streams:
-      return utils.error('Stream id {} does not exist!'.format(id))
+      return utils.error('Stream id {} does not exist'.format(id))
 
-    # try:
-    #   strm = self.status['streams'][id]
-    #   name, _ = utils.updated_val(name, strm['name'])
-    # except:
-    #   return utils.error('ERROR!')
-
-    # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     try:
-      if cmd == 'play':
+      stream = self.streams[int(id)]
+    except Exception as e:
+      return utils.error('Unable to get stream {}: {}'.format(id, e))
+
+    try:
+      stream.reconfig(**kwargs)
+    except Exception as e:
+      return utils.error('Unable to reconfigure stream {}: {}'.format(id, e))
+
+  @utils.save_on_success
+  def exec_stream_command(self, id, cmd):
+    # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
+    if int(id) not in self.streams:
+      return utils.error('Stream id {} does not exist'.format(id))
+
+    try:
+      stream = self.streams[int(id)]
+    except Exception as e:
+      return utils.error('Unable to get stream {}: {}'.format(id, e))
+
+    try:
+      if cmd is None:
+        pass
+      elif cmd == 'play':
         print('playing')
-        self.streams[id].state = 'playing'
-        self.streams[id].ctrl.play()
+        stream.state = 'playing'
+        stream.ctrl.play()
       elif cmd == 'pause':
         print('paused')
-        self.streams[id].state = 'paused'
-        self.streams[id].ctrl.pause()
+        stream.state = 'paused'
+        stream.ctrl.pause()
       elif cmd == 'stop':
-        self.streams[id].state = "stopped"
-        self.streams[id].ctrl.stop()
+        stream.state = "stopped"
+        stream.ctrl.stop()
       elif cmd == 'next':
         print('next')
-        self.streams[id].ctrl.next()
+        stream.ctrl.next()
       elif cmd == 'love':
-        self.streams[id].ctrl.love()
+        stream.ctrl.love()
       elif cmd == 'ban':
-        self.streams[id].ctrl.ban()
+        stream.ctrl.ban()
       elif cmd == 'shelve':
-        self.streams[id].ctrl.shelve()
-      elif cmd == 'station':
+        stream.ctrl.shelve()
+      elif 'station' in cmd:
+        station_id = int(cmd.replace('station=',''))
         if station_id is not None:
-          self.streams[id].ctrl.station(station_id)
+          stream.ctrl.station(station_id)
         else:
-          return utils.error('Station_ID required. Please try again.')
+          return utils.error('station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{}"'.format(cmd))
       else:
-        print('Command "{}" not recognized.'.format(cmd))
+        return utils.error('Command "{}" not recognized.'.format(cmd))
     except Exception as e:
-      print('error setting stream: {}'.format(e))
-      pass # TODO: actually report error
+      return utils.error('Failed to execute stream command: {}: {}'.format(cmd, e))
 
   @utils.save_on_success
   def get_stations(self, id, stream_index=None):

@@ -77,6 +77,18 @@ class Shairport:
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
 
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+      reconnect_needed = True
+    if reconnect_needed:
+      if self._is_sp_running():
+        last_src = self.src
+        self.disconnect()
+        time.sleep(0.1) # delay a bit, is this needed?
+        self.connect(last_src)
+
   def __del__(self):
     self.disconnect()
 
@@ -190,6 +202,18 @@ class Spotify:
     self.src = None
     self.state = 'disconnected'
 
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+      reconnect_needed = True
+    if reconnect_needed:
+      if self._is_spot_running():
+        last_src = self.src
+        self.disconnect()
+        time.sleep(0.1) # delay a bit, is this needed?
+        self.connect(last_src)
+
   def __del__(self):
     self.disconnect()
 
@@ -285,6 +309,21 @@ class Pandora:
     self.state = 'disconnected'
     self.src = None # source_id pianobar is connecting to
 
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    pb_fields = ['user', 'password', 'station']
+    fields = list(pb_fields) + ['name']
+    for k,v in kwargs.items():
+      if k in fields and self.__dict__[k] != v:
+        self.__dict__[k] = v
+        if k in pb_fields:
+          reconnect_needed = True
+    if reconnect_needed and self._is_pb_running():
+      last_src = self.src
+      self.disconnect()
+      time.sleep(0.1) # delay a bit, is this needed?
+      self.connect(last_src)
+
   def __del__(self):
     self.disconnect()
 
@@ -365,11 +404,6 @@ class Pandora:
     self.proc = None
     self.ctrl = None
     self.src = None
-
-  def set_station(self, station):
-    # TODO: send set station command over fifo
-    # TODO: how can we get the station list without playing music?
-    pass
 
   def info(self):
     loc = '/home/pi/config/srcs/{}/.config/pianobar/currentSong'.format(self.src)
