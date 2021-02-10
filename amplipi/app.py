@@ -75,6 +75,9 @@ def song_info(src):
       info[field] = ''
   return info
 
+def get_element(_list: list, id: int):
+  return next(filter(lambda element: element['id'] == id, _list), None)
+
 # API
 # TODO: add debug printing to each request, ie.
 #   if DEBUG_API:
@@ -150,12 +153,20 @@ def delete_group(group):
 
 @app.route('/api/stream', methods=['POST'])
 def create_stream():
-  return {}, 404 # TODO: implement create_stream
+  print('creating stream from {}'.format(request.get_json()))
+  return code_response(app.api.create_stream(**request.get_json()))
 
-@app.route('/api/streams/<int:stream>', methods=['PATCH'])
-def set_stream(stream):
-  print(request.get_json())
-  return code_response(app.api.set_stream(id=stream, **request.get_json()))
+@app.route('/api/streams/<int:sid>', methods=['GET'])
+def get_stream(sid):
+  stream = get_element(app.api.get_state()['streams'], sid)
+  if stream is not None:
+    return stream
+  else:
+    return {}, 404
+
+@app.route('/api/streams/<int:sid>', methods=['PATCH'])
+def set_stream(sid):
+  return code_response(app.api.set_stream(id=sid, **request.get_json()))
 
 # TODO: add specific route for /api/stream/<int:stream>/cmd that sends a command to a stream returns the stream's state on success or an error
 

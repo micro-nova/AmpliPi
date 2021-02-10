@@ -73,7 +73,7 @@ def base_stream_ids():
 
 # /stream post-stream
 def test_create_pandora(client):
-  m_and_k = { 'name': 'Matt and Kim Radio', 'user': 'lincoln@micro-nova.com', 'password': ''}
+  m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': ''}
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
