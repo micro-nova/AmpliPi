@@ -104,7 +104,7 @@ def get_source(src):
   if src >= 0 and src < len(sources):
     return sources[src]
   else:
-    return None, 404
+    return {}, 404
 
 @app.route('/api/sources/<int:src>', methods=['PATCH'])
 def set_source(src):
@@ -118,7 +118,7 @@ def get_zone(zone):
   if zone >= 0 and zone < len(zones):
     return zones[zone]
   else:
-    return None, 404
+    return {}, 404
 
 @app.route('/api/zones/<int:zone>', methods=['PATCH'])
 def set_zone(zone):
@@ -136,7 +136,7 @@ def get_group(group):
   if group >= 0 and group < len(groups):
     return groups[group]
   else:
-    return None, 404
+    return {}, 404
 
 @app.route('/api/groups/<int:group>', methods=['PATCH'])
 def set_group(group):
@@ -150,10 +150,11 @@ def delete_group(group):
 
 @app.route('/api/stream', methods=['POST'])
 def create_stream():
-  return None, 404 # TODO: implement create_stream
+  return {}, 404 # TODO: implement create_stream
 
 @app.route('/api/streams/<int:stream>', methods=['PATCH'])
 def set_stream(stream):
+  print(request.get_json())
   return code_response(app.api.set_stream(id=stream, **request.get_json()))
 
 # TODO: add specific route for /api/stream/<int:stream>/cmd that sends a command to a stream returns the stream's state on success or an error
