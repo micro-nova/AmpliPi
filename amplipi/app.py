@@ -166,6 +166,10 @@ def get_stream(sid):
 def set_stream(sid):
   return code_response(app.api.set_stream(id=sid, **request.get_json()))
 
+@app.route('/api/streams/<int:sid>', methods=['DELETE'])
+def delete_stream(sid):
+  return code_response(app.api.delete_stream(id=sid))
+
 # TODO: add specific route for /api/stream/<int:stream>/cmd that sends a command to a stream returns the stream's state on success or an error
 
 # documentation

@@ -531,6 +531,17 @@ class Api:
       return utils.error('Unable to reconfigure stream {}: {}'.format(id, e))
 
   @utils.save_on_success
+  def delete_stream(self, id):
+    """Deletes an existing stream"""
+    try:
+      del self.streams[id]
+      i, _ = utils.find(self.status['streams'], id)
+      if i is not None:
+        del self.status['streams'][i] # delete the cached stream state just in case
+    except KeyError:
+      return utils.error('delete stream failed: {} does not exist'.format(id))
+
+  @utils.save_on_success
   def exec_stream_command(self, id, cmd):
     # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     if int(id) not in self.streams:
