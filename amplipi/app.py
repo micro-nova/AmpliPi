@@ -170,7 +170,7 @@ def set_stream(sid):
 def delete_stream(sid):
   return code_response(app.api.delete_stream(id=sid))
 
-@app.route('/api/streams/<int:sid>/<str:cmd>', methods=['POST'])
+@app.route('/api/streams/<int:sid>/<cmd>', methods=['POST'])
 def exec_command(sid, cmd):
   print('creating stream from {}'.format(request.get_json()))
   return code_response(app.api.exec_stream_command(id=sid, cmd=cmd))
