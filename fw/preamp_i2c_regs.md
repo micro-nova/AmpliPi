@@ -5,8 +5,8 @@
 <table>
   <thead>
     <tr>
-      <th>Reg Address</th>
-      <th style="text-align:center">Reg Name</th>
+      <th style="text-align:left">Reg Address</th>
+      <th style="text-align:left">Reg Name</th>
       <th style="text-align:center">bit 7</th>
       <th style="text-align:center">bit 6</th>
       <th style="text-align:center">bit 5</th>
@@ -21,7 +21,7 @@
   <tbody>
     <tr>
       <td>0x00</td>
-      <td style="text-align:center">SRC_AD_REG</td>
+      <td style="text-align:left">SRC_AD_REG</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -34,21 +34,21 @@
     </tr>
     <tr>
       <td>0x01</td>
-      <td style="text-align:center">CH123_SRC_REG</td>
+      <td style="text-align:left">CH123_SRC_REG</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">- <td colspan=2, td align='center'>CH3SRC </td> <td colspan=2, td align='center'>CH2SRC </td><td colspan=2, td align='center'>CH1SRC  </td></td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x02</td>
-      <td style="text-align:center">CH456_SRC_REG</td>
+      <td style="text-align:left">CH456_SRC_REG</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">- <td colspan=2, td align='center'>CH6SRC <td colspan=2, td align='center'>CH5SRC <td colspan=2, td align='center'>CH4SRC</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x03</td>
-      <td style="text-align:center">MUTE_REG</td>
+      <td style="text-align:left">MUTE_REG</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">CH6M</td>
@@ -61,7 +61,7 @@
     </tr>
     <tr>
       <td>0x04</td>
-      <td style="text-align:center">STANDBY_REG</td>
+      <td style="text-align:left">STANDBY_REG</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">CH6STBY</td>
@@ -74,12 +74,12 @@
     </tr>
     <tr>
       <td>0x05</td>
-      <td style="text-align:center">CH1_ATTEN_REG <td colspan=8, td align='center'>Ch1 Attenuation </td></td>
+      <td style="text-align:left">CH1_ATTEN_REG <td colspan=8, td align='center'>Ch1 Attenuation </td></td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x06</td>
-      <td style="text-align:center">CH2_ATTEN_REG <td colspan=8, td align='center'>Ch2 Attenuation </td></td>
+      <td style="text-align:left">CH2_ATTEN_REG <td colspan=8, td align='center'>Ch2 Attenuation </td></td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
