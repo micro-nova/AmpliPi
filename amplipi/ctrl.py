@@ -380,12 +380,6 @@ class Api:
     else:
         return utils.error('set zone: index {} out of bounds'.format(idx))
 
-  def get_group(self, id):
-    for i, g in enumerate(self.status['groups']):
-      if g['id'] == int(id):
-        return i,g
-    return None, None
-
   def _update_groups(self):
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
     for g in self.status['groups']:
@@ -417,7 +411,7 @@ class Api:
         Returns:
             'None' on success, otherwise error (dict)
     """
-    _, g = self.get_group(id)
+    _, g = utils.find(self.status['groups'], id)
     if g is None:
       return utils.error('set group failed, group {} not found'.format(id))
     if type(zones) is str:
@@ -492,7 +486,7 @@ class Api:
   def delete_group(self, id):
     """Deletes an existing group"""
     try:
-      i, _ = self.get_group(id)
+      i, _ = utils.find(self.status['groups'], id)
       if i is not None:
         del self.status['groups'][i]
     except KeyError:

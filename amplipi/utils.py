@@ -50,6 +50,9 @@ def updated_val(update, val):
   else:
     return update, update != val
 
+def find(_list, id):
+  return next(filter(lambda ie: ie[1]['id'] == id, enumerate(_list)), (None, None))
+
 def clamp(x, xmin, xmax):
     return max(xmin, min(x, xmax))
 

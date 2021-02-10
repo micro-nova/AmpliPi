@@ -25,6 +25,7 @@ Flask is used to simplify the web plumbing.
 from flask import Flask, request, render_template, jsonify, make_response
 import amplipi.ctrl as ctrl
 import amplipi.rt as rt
+import amplipi.utils as utils
 import json
 from collections import OrderedDict
 
@@ -74,9 +75,6 @@ def song_info(src):
     if field not in info:
       info[field] = ''
   return info
-
-def get_element(_list: list, id: int):
-  return next(filter(lambda element: element['id'] == id, _list), None)
 
 # API
 # TODO: add debug printing to each request, ie.
@@ -158,7 +156,7 @@ def create_stream():
 
 @app.route('/api/streams/<int:sid>', methods=['GET'])
 def get_stream(sid):
-  stream = get_element(app.api.get_state()['streams'], sid)
+  _, stream = utils.find(app.api.get_state()['streams'], sid)
   if stream is not None:
     return stream
   else:
