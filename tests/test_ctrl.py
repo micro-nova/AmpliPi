@@ -437,26 +437,33 @@ def test_rpi():
   use_tmpdir() # run from temp dir so we don't mess with current directory
   check_all_tsts(api_w_rpi_rt())
 
+def prune_state(state: dict):
+  """ Prune generated fields from system state to make comparable """
+  for s in state['streams']:
+    s.pop('info')
+    s.pop('status')
+  return state
+
 def test_config_loading():
   use_tmpdir() # run from temp dir so we don't mess with current directory
   # test loading an empty config (should load default config)
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
-  assert DEFAULT_STATUS == api.get_state()
+  assert DEFAULT_STATUS == prune_state(api.get_state())
   # test loading a known good config file by making a copy of it and loading the api with the copy
   api = api_w_mock_rt(GOOD_CONFIG)
-  assert GOOD_STATUS == api.get_state()
+  assert GOOD_STATUS == prune_state(api.get_state())
   # test loading a corrupted config file with a good backup
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=GOOD_CONFIG)
-  assert GOOD_STATUS == api.get_state()
+  assert GOOD_STATUS == prune_state(api.get_state())
   # test loading a missing config file with a good backup
   api = api_w_mock_rt(NO_CONFIG, backup_config=GOOD_CONFIG)
-  assert GOOD_STATUS == api.get_state()
+  assert GOOD_STATUS == prune_state(api.get_state())
   # test loading a corrupted config file and a corrupted backup
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=CORRUPTED_CONFIG)
-  assert DEFAULT_STATUS == api.get_state()
+  assert DEFAULT_STATUS == prune_state(api.get_state())
   # test loading a missing config file and a missing backup
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
-  assert DEFAULT_STATUS == api.get_state()
+  assert DEFAULT_STATUS == prune_state(api.get_state())
 
 
 if __name__ == '__main__':
