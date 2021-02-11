@@ -38,6 +38,7 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 1. Start with a 32-bit version of Rasberry Pi OS. This needs to be older than december 2020 since our system only supports the ALSA audio backend currently.
 1. Connect a cmedia based, usb, 7.1 channel audio device to the pi. We have tested using this one: https://www.amazon.com/Vantec-NBA-200U-External-Channel-Adapter/dp/B004HXGJ3S
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well)
+1. Edit config/asound.conf. Uncomment the "Old Prototype" section at the bottom, and comment out the similar configuration above. This should be the configuration needed for the 7.1 channel USB audio card. Depending on the setup the card will either show up as #2 or #3. That needs to be changed on lines 27 and 32. Find the card # using ```aplay -l | grep "USB Sound Device"``` and edit those lines to include the correct #.
 1. use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file)
 1. over ssh connection, run ```scripts/run_webserver --mock-ctrl```
 
