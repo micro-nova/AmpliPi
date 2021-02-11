@@ -162,6 +162,9 @@ class Shairport:
             d['artist'] = data[0]
             d['track'] = data[1]
             d['album'] = data[2]
+            d['paused'] = data[3]
+            if int(data[4]):
+              d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5]) 
         # return d
     except Exception as e:
       pass

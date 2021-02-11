@@ -89,5 +89,15 @@ while True:
         f = open(cs_loc, 'w')
         f.write(data)
         f.close()
+    elif field == 'Image length':
+        lin = ',,,' + data
+        f = open(cs_loc, 'a')
+        f.write(lin)
+        f.close()
+    elif field == 'Image name':
+        pic = ',,,' + data
+        f = open(cs_loc, 'a')
+        f.write(pic)
+        f.close()
     elif field == '"End of file"':
         break

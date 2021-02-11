@@ -165,16 +165,16 @@ function updateSourceView(status) {
           play_pause.classList.toggle('fa-play', !playing);
           play_pause.classList.toggle('fa-pause', playing);
           try {
-            // update album art
+            // update album art and track info
             cover.src = stream.info.img_url ? stream.info.img_url : icons['pandora'];
             artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
             album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
             song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
           } catch (err) {}
         } else if (stream.type == 'shairport') {
-          // TODO: populate shairport album info
-          cover.src = icons['shairport'];
           try {
+            // update album art and track info
+            cover.src = stream.info.img_url ? stream.info.img_url : icons['shairport'];
             artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
             album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
             song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
