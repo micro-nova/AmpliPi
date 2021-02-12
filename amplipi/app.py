@@ -68,7 +68,7 @@ def ungrouped_zones(src):
 def song_info(src):
   """ Get the song info for a source """
   song_fields = ['artist', 'album', 'track', 'img_url']
-  stream = app.api.get_stream(app.api.status['sources'][src]['input'])
+  stream = app.api._get_stream(app.api.status['sources'][src]['input'])
   info = stream.info() if stream else {}
   # add empty strings for unpopulated fields
   for field in song_fields:
@@ -172,7 +172,6 @@ def delete_stream(sid):
 
 @app.route('/api/streams/<int:sid>/<cmd>', methods=['POST'])
 def exec_command(sid, cmd):
-  print('creating stream from {}'.format(request.get_json()))
   return code_response(app.api.exec_stream_command(id=sid, cmd=cmd))
 
 # documentation

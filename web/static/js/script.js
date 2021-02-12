@@ -98,7 +98,7 @@ function sendStreamCommand(ctrl, command) {
   let src_input = player.dataset.srcInput;
   if (src_input.startsWith("stream=")) {
     let stream_id = Number(src_input.replace("stream=", ""));
-    sendRequest('/streams/' + stream_id + '/' + command, 'POST`', {});
+    sendRequest('/streams/' + stream_id + '/' + command, 'POST', {});
   }
 }
 
