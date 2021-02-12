@@ -123,3 +123,27 @@ def test_delete_stream(client, sid):
 # TODO: /streams/{streamId}/{streamCmd} post-stream-command
 # TODO: mocked streams do not currently handle state changes from commands
 #       these tests will require either a real system with passwords and account info or a better mock
+
+# test presets
+def base_preset_ids():
+  """ Return all of the preset IDs belonging to each of the presets in the base config """
+  return [ s['id'] for s in base_config()['presets']]
+
+# /preset post-preset
+def test_create_mute_all(client):
+  assert False
+
+# /presets/{presetId} get-preset
+@pytest.mark.parametrize('pid', base_preset_ids())
+def test_get_preset(client, pid):
+  assert False
+
+# /presets/{presetId} patch-preset
+@pytest.mark.parametrize('pid', base_preset_ids())
+def test_patch_preset(client, pid):
+  assert False
+
+# /presets/{presetId} delete-preset
+@pytest.mark.parametrize('pid', base_preset_ids())
+def test_delete_preset(client, pid):
+  assert False

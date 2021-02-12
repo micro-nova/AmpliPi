@@ -860,7 +860,7 @@ paths:
                 $ref: '#/components/schemas/Status'
         '404':
           description: Preset Not Found
-  /load_preset/{presetId}:
+  /presets/{presetId}/load:
     post:
       summary: Load a preset
       tags:

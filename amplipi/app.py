@@ -37,7 +37,7 @@ template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
 
 app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
-app.api = None
+app.api = None # TODO: assign an unloaded API here to get auto completion / linting
 
 # Helper functions
 def unused_groups(src):
@@ -173,6 +173,33 @@ def delete_stream(sid):
 @app.route('/api/streams/<int:sid>/<cmd>', methods=['POST'])
 def exec_command(sid, cmd):
   return code_response(app.api.exec_stream_command(id=sid, cmd=cmd))
+
+# presets
+
+@app.route('/api/preset', methods=['POST'])
+def create_preset():
+  print('creating preset from {}'.format(request.get_json()))
+  return code_response(app.api.create_preset(request.get_json()))
+
+@app.route('/api/presets/<int:pid>', methods=['GET'])
+def get_preset(pid):
+  _, preset = utils.find(app.api.get_state()['presets'], pid)
+  if preset is not None:
+    return preset
+  else:
+    return {}, 404
+
+@app.route('/api/presets/<int:pid>', methods=['PATCH'])
+def set_preset(pid):
+  return code_response(app.api.set_preset(pid, request.get_json()))
+
+@app.route('/api/presets/<int:pid>', methods=['DELETE'])
+def delete_preset(pid):
+  return code_response(app.api.delete_preset(id=pid))
+
+@app.route('/api/presets/<int:pid>/load', methods=['POST'])
+def load_preset(pid):
+  return code_response(app.api.load_preset(id=pid))
 
 # documentation
 

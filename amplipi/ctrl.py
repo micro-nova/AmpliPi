@@ -64,6 +64,20 @@ class Api:
       { "id": 100, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
       { "id": 101, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
       { "id": 102, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
+    ],
+    "presets" : [
+      { "id": 10000,
+        # TODO: generate the mute all preset based on # of zones
+        "name": "Mute All",
+        "zones" : [
+          { "id": 0, "mute": True },
+          { "id": 1, "mute": True },
+          { "id": 2, "mute": True },
+          { "id": 3, "mute": True },
+          { "id": 4, "mute": True },
+          { "id": 5, "mute": True },
+        ]
+      }
     ]
   }
 
@@ -516,7 +530,6 @@ class Api:
 
   @utils.save_on_success
   def set_stream(self, id, **kwargs):
-    """Sets play/pause on a specific pandora source """
     if int(id) not in self.streams:
       return utils.error('Stream id {} does not exist'.format(id))
 
@@ -543,6 +556,7 @@ class Api:
 
   @utils.save_on_success
   def exec_stream_command(self, id, cmd):
+    """Sets play/pause on a specific pandora source """
     # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     if int(id) not in self.streams:
       return utils.error('Stream id {} does not exist'.format(id))
@@ -613,3 +627,66 @@ class Api:
       pass
       #print(utils.error('Failed to get station list - it may not exist: {}'.format(e)))
     # TODO: Change these prints to returns in final state
+
+  def _new_preset_id(self):
+    """ get next available preset id """
+    g = max(self.status['presets'], key=lambda g: g['id'])
+    if g is not None:
+      return g['id'] + 1
+    else:
+      return 10000
+
+  @utils.save_on_success
+  def create_preset(self, preset):
+    try:
+      # Make a new preset and add it to presets
+      # TODO: validate preset
+      id = self._new_preset_id()
+      preset['id'] = id
+      self.status['presets'][id] = preset
+      return utils.error('create preset failed: no preset created')
+    except Exception as e:
+      return utils.error('create preset failed: {}'.format(e))
+
+  @utils.save_on_success
+  def set_preset(self, id, preset):
+    i, old_preset = utils.find(self.status['presets'], id)
+
+    if i is None:
+      return utils.error('Unable to find preset to redefine')
+
+    try:
+      # TODO: validate preset
+      preset['id'] = i
+      self.status['presets'][i] = preset
+    except Exception as e:
+      return utils.error('Unable to reconfigure preset {}: {}'.format(id, e))
+
+  @utils.save_on_success
+  def delete_preset(self, id):
+    """Deletes an existing preset"""
+    try:
+      i, _ = utils.find(self.status['presets'], id)
+      if i is not None:
+        del self.status['presets'][i] # delete the cached preset state just in case
+    except KeyError:
+      return utils.error('delete preset failed: {} does not exist'.format(id))
+
+  @utils.save_on_success
+  def load_preset(self, id, cmd):
+    """
+    To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration. Below is an idea of how a preset configuration could be loaded to avoid any weirdness. We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
+
+    1. Grab system modification mutex to avoid accidental changes (requests during this time return some error)
+    1. Save current configuration as "Last config" preset
+    1. Mute any effected zones
+    1. Execute any stream changes (configuration then commands)
+    1. Execute changes source by source in increasing order
+    1. Execute change zone by zone in increasing order
+    1. Execute changes group by group in increasing order
+    1. Unmute effected zones that were not muted
+    1. Force web client refresh to fixup website
+    1. Release system mutex, future requests are successful after this
+    """
+    # TODO: implement preset load
+    pass
