@@ -273,12 +273,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                input:
-                  type: string
+              $ref: '#/components/schemas/Source'
             examples:
               Update Input to RCA input:
                 value:
@@ -351,23 +346,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Update zone name
-                source-id:
-                  type: integer
-                  minimum: 0
-                  maximum: 3
-                mute:
-                  type: boolean
-                  description: Mute or unmute
-                vol:
-                  type: integer
-                  minimum: -79
-                  maximum: 0
-                  description: Volume level in dB
+              $ref: '#/components/schemas/Zone'
             examples:
               Mute:
                 value:
@@ -403,17 +382,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Group name, ie. Upstairs
-                zones:
-                  type: array
-                  items:
-                    type: integer
-                    description: zone id
-                  description: Set of zones that belong to group, a zone can belong to multiple groups
+              $ref: '#/components/schemas/Group'
         description: Post the necessary fields for the API to create a new group.
       description: Create a new group.
   /groups/{groupId}:
@@ -479,28 +448,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Update group name
-                zones:
-                  type: array
-                  items:
-                    type: integer
-                  description: Update member zones
-                source-id:
-                  type: integer
-                  minimum: 0
-                  maximum: 3
-                mute:
-                  type: boolean
-                  description: Mute or unmute all of the zones in group
-                vol-delta:
-                  type: integer
-                  minimum: -79
-                  maximum: 79
-                  description: Amount to adjust volume per member zone
+              $ref: '#/components/schemas/Group'
             examples:
               Mute:
                 value:
@@ -568,30 +516,11 @@ paths:
                 status: disconnected
         '400':
           description: Missing Required Information
-        '409':
-          description: Stream ID already taken
       requestBody:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Friendly stream name, ie. Matt and Kim Radio
-                type:
-                  type: string
-                  description: Stream type
-                  enum:
-                    - pandora
-                    - shairport
-                    - spotify
-                user:
-                  type: string
-                  description: Stream account user name (for pandora this is an email address)
-                password:
-                  type: string
-                  description: Stream account password
+              $ref: '#/components/schemas/Stream'
             examples:
               Add Matt and Kim Radio:
                 value:
@@ -982,10 +911,6 @@ components:
           id: 0
           name: J1
           input: stream=90801
-      required:
-        - id
-        - name
-        - input
     Stream:
       title: Stream
       type: object
@@ -1011,10 +936,6 @@ components:
         status:
           type: string
           description: connected/playing status of the stream
-      required:
-        - id
-        - name
-        - type
     Zone:
       title: Zone
       type: object
@@ -1046,13 +967,6 @@ components:
         disabled:
           type: boolean
           description: Set to true if zone is not connected to a speaker
-      required:
-        - id
-        - name
-        - source_id
-        - mute
-        - vol
-        - disabled
       x-examples:
         Master Bedroom:
           id: 5
@@ -1095,10 +1009,6 @@ components:
           format: int32
           minimum: -79
           maximum: 0
-      required:
-        - id
-        - name
-        - zones
       x-examples:
         Master Bedroom:
           id: 5
