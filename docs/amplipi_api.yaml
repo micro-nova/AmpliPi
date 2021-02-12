@@ -31,6 +31,8 @@ tags:
   description: Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.
 - name: stream
   description: Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify.
+- name: preset
+  description: A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.
 paths:
   /:
     get:
@@ -778,6 +780,184 @@ paths:
           description: Stream Not Found
       operationId: post-stream-command
       description: Send a command to the connected stream with the matching ID.
+  /preset:
+    post:
+      summary: Create New preset
+      tags:
+        - preset
+      operationId: post-preset
+      responses:
+        '200':
+          description: Preset Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+        '400':
+          description: Missing Required Information
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preset'
+            examples:
+              Add Mute All:
+                value:
+                  value:
+                    name: Mute All
+                    zones:
+                      - id: 0
+                        mute: True
+                      - id: 1
+                        mute: True
+                      - id: 2
+                        mute: True
+                      - id: 3
+                        mute: True
+                      - id: 4
+                        mute: True
+                      - id: 5
+                        mute: True
+        description: Post the necessary fields for the API to create a new stream.
+      description: Create a new stream.
+  /presets/{presetId}:
+    get:
+      summary: Get Preset Info by Preset ID
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Matt and Kim Radio:
+              value: 90891
+      responses:
+        '200':
+          description: Preset Command Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+              examples:
+                Get Mute All:
+                  value:
+                    id: 10001
+                    name: Mute All
+                    zones:
+                      - id: 0
+                        mute: True
+                      - id: 1
+                        mute: True
+                      - id: 2
+                        mute: True
+                      - id: 3
+                        mute: True
+                      - id: 4
+                        mute: True
+                      - id: 5
+                        mute: True
+        '404':
+          description: Preset Not Found
+      operationId: get-preset
+      description: Retrieve the preset configuration.
+    patch:
+      summary: Update Preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Matt and Kim Radio:
+              value: 90891
+      operationId: patch-preset
+      responses:
+        '200':
+          description: Preset Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Preset Not Found
+      description: Update the configuration of a preset.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preset'
+            examples:
+              Change name:
+                value:
+                  name: Matt and Kim Radio
+              Change account info:
+                value:
+                  user: test@micro-nova.com
+                  password: sd9sk3k30
+              Change pandora radio station:
+                value:
+                  station: 0982034049300
+        description: Patch stream configuration to update.
+    delete:
+      summary: Delete Preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Mute All:
+              value: 10001
+      operationId: delete-preset
+      description: Delete a preset
+      responses:
+        '200':
+          description: Preset Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Preset Not Found
+  /load_preset/{presetId}:
+    post:
+      summary: Load a preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Mute All Zones:
+              value: 10000
+      responses:
+        '200':
+          description: Return status after preset loaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        # TODO: add preset not found, and preset laod failed error results
+        '404':
+          description: Preset Not Found
+      operationId: load-preset
+      description: Preset loaded
 components:
   schemas:
     Source:
@@ -947,4 +1127,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Stream'
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Preset'
+    Command:
+      title: Command
+      type: object
+      description: A command to execute (for now only stream commands are supported)
+      properties:
+        cmd:
+          type: string
+          description: the command to execute
+        stream:
+          type: integer
+          description: stream id
+      required:
+        - cmd
+        - stream
+    Preset:
+      title: Preset
+      type: object
+      description: A partial controller configuration that can be loaded on demand. In addition to most of the configurration found in Status, this can contain commands as well that configure the state of different streaming services. At the moment configuration of streams is only supported as commands.
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Unique preset identifier, generated on creation
+        name:
+          type: string
+          description: Preset name, ie. Movie Time
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Zone'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+        commands:
+          type: array
+          description: sequential list of commands to execute in order
+          items:
+            $ref: '#/components/schemas/Command'
   securitySchemes: {}
