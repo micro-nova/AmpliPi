@@ -1068,18 +1068,22 @@ components:
         name:
           type: string
           description: Preset name, ie. Movie Time
-        sources:
-          type: array
-          items:
-            $ref: '#/components/schemas/Source'
-        zones:
-          type: array
-          items:
-            $ref: '#/components/schemas/Zone'
-        groups:
-          type: array
-          items:
-            $ref: '#/components/schemas/Group'
+        state:
+          type: object
+          description: Partial system state to configure
+          properties:
+            sources:
+              type: array
+              items:
+                $ref: '#/components/schemas/Source'
+            zones:
+              type: array
+              items:
+                $ref: '#/components/schemas/Zone'
+            groups:
+              type: array
+              items:
+                $ref: '#/components/schemas/Group'
         commands:
           type: array
           description: sequential list of commands to execute in order

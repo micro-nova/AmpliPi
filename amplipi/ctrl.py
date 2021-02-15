@@ -69,14 +69,17 @@ class Api:
       { "id": 10000,
         # TODO: generate the mute all preset based on # of zones
         "name": "Mute All",
-        "zones" : [
-          { "id": 0, "mute": True },
-          { "id": 1, "mute": True },
-          { "id": 2, "mute": True },
-          { "id": 3, "mute": True },
-          { "id": 4, "mute": True },
-          { "id": 5, "mute": True },
-        ]
+        "commands" : [],
+        "state" : {
+          "zones" : [
+            { "id": 0, "mute": True },
+            { "id": 1, "mute": True },
+            { "id": 2, "mute": True },
+            { "id": 3, "mute": True },
+            { "id": 4, "mute": True },
+            { "id": 5, "mute": True },
+          ]
+        }
       }
     ]
   }
@@ -643,22 +646,23 @@ class Api:
       # TODO: validate preset
       id = self._new_preset_id()
       preset['id'] = id
-      self.status['presets'][id] = preset
-      return utils.error('create preset failed: no preset created')
+      self.status['presets'].append(preset)
+      return preset
     except Exception as e:
       return utils.error('create preset failed: {}'.format(e))
 
   @utils.save_on_success
-  def set_preset(self, id, preset):
-    i, old_preset = utils.find(self.status['presets'], id)
-
+  def set_preset(self, id, preset_changes):
+    i, preset = utils.find(self.status['presets'], id)
+    configurable_fields = ['name', 'commands', 'state']
     if i is None:
       return utils.error('Unable to find preset to redefine')
 
     try:
       # TODO: validate preset
-      preset['id'] = i
-      self.status['presets'][i] = preset
+      for f in configurable_fields:
+        if f in preset_changes:
+          preset[f] = preset_changes[f]
     except Exception as e:
       return utils.error('Unable to reconfigure preset {}: {}'.format(id, e))
 
@@ -673,7 +677,7 @@ class Api:
       return utils.error('delete preset failed: {} does not exist'.format(id))
 
   @utils.save_on_success
-  def load_preset(self, id, cmd):
+  def load_preset(self, id):
     """
     To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration. Below is an idea of how a preset configuration could be loaded to avoid any weirdness. We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
 

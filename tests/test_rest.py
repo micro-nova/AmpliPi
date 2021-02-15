@@ -130,20 +130,64 @@ def base_preset_ids():
   return [ s['id'] for s in base_config()['presets']]
 
 # /preset post-preset
-def test_create_mute_all(client):
-  assert False
+def test_create_mute_all_preset(client):
+  mute_some = { 'name' : 'Mute some', 'zones' : [ { 'id' : 1, 'mute': True}, { 'id' : 4, 'mute': True} ]}
+  rv = client.post('/api/preset', json=mute_some)
+  # check that the stream has an id added to it and that all of the fields are still there
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  assert 'id' in jrv
+  assert type(jrv['id']) == int
+  for k, v in mute_some.items():
+    assert jrv[k] == v
 
 # /presets/{presetId} get-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_get_preset(client, pid):
-  assert False
+  rv = client.get('/api/presets/{}'.format(pid))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(base_config()['presets'], pid)
+  assert s != None
+  assert s['name'] == jrv['name']
 
 # /presets/{presetId} patch-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
-def test_patch_preset(client, pid):
-  assert False
+def test_patch_preset_name(client, pid):
+  rv = client.patch('/api/presets/{}'.format(pid), json={'name': 'patched-name'})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was renamed
+  s = find(jrv['presets'], pid)
+  assert s != None
+  assert s['name'] == 'patched-name'
 
 # /presets/{presetId} delete-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_delete_preset(client, pid):
-  assert False
+  rv = client.delete('/api/presets/{}'.format(pid))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the preset was deleted
+  s = find(jrv['presets'], pid)
+  assert s == None
+  # make sure the rest of the presets are still there
+  for other_pid in base_preset_ids():
+    if other_pid != pid:
+      assert find(jrv['presets'], other_pid) != None
+
+# /presets/{presetId}/load load-preset
+@pytest.mark.parametrize('pid', base_preset_ids())
+def test_load_preset(client, pid):
+  rv = client.post('/api/presets/{}/load'.format(pid))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the preset was loaded
+  p = find(jrv['presets'], pid)
+  # make sure the rest of the config got loaded
+  for mod, config in p['state'].items():
+    for k, v in config.items():
+      assert jrv[mod][k] == v
