@@ -18,7 +18,7 @@ p_status = ''
 def read_field():
     line = sys.stdin.readline()
     line = line.strip(' \n')
-    if line[-6:] == 'bytes.':
+    if line[-6:] == 'bytes.': # Works with Mike Brady version of shairport-sync-metadata-reader
         line = '"Picture: ' + line + '".'
     if line:
         while line[-2:] != '".':
