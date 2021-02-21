@@ -6,14 +6,14 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 * Mocked out audio and mocked out controller (needs: debian based system such as Pi or Ubuntu)
 
   Supports:
-  * We interface development
-  * Api testing
+  * Web interface development
+  * API testing
 
-* Mocked out controller (with 4 stereo channel audio)  (needs: something running Raspberry Pi OS (previouly called raspbian))
+* Mocked out controller (with 4 stereo audio channels), needs: something running Raspberry Pi OS (previously called raspbian)
 
   Supports:
-  * We interface development
-  * Api testing
+  * Web interface development
+  * API testing
   * Streams integration and testing
 
   Requires:
