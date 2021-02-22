@@ -89,7 +89,7 @@ while True:
         f = open(cs_loc, 'w')
         f.write(data)
         f.close()
-    elif field == 'Image length':
+    elif field == 'Image length': # 'Image length' and 'Image name' are new outputs from the MicroNova fork of shairport-sync-metadata-reader: https://github.com/micronova-jb/shairport-sync-metadata-reader
         lin = ',,,' + data
         f = open(cs_loc, 'a')
         f.write(lin)
