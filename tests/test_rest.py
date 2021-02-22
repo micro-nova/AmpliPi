@@ -188,6 +188,10 @@ def test_load_preset(client, pid):
   # make sure the preset was loaded
   p = find(jrv['presets'], pid)
   # make sure the rest of the config got loaded
-  for mod, config in p['state'].items():
-    for k, v in config.items():
-      assert jrv[mod][k] == v
+  for mod, configs in p['state'].items():
+    for cfg in configs:
+      # each of the keys in the configuration should match
+      updated_cfg = find(jrv[mod], cfg['id'])
+      assert updated_cfg is not None
+      for k, v in cfg.items():
+        assert updated_cfg[k] == v

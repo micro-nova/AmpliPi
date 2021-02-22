@@ -676,6 +676,31 @@ class Api:
     except KeyError:
       return utils.error('delete preset failed: {} does not exist'.format(id))
 
+
+  def _effected_zones(self, preset_id):
+    """ Aggregate the zones that will be modified by changes """
+    st = self.status
+    _, preset = utils.find(st['presets'], preset_id)
+    effected = set()
+    if preset is None:
+      return effected
+    ps = preset['state']
+    src_zones = { src['id'] : [ z['id'] for z in st['zones'] if z['source_id'] == src['id']] for src in st['sources'] }
+    if 'sources' in ps:
+      for src in ps['sources']:
+        if 'id' in src:
+          effected.update(src_zones[src['id']])
+    if 'groups' in ps:
+      for g in ps['groups']:
+        if 'id' in g:
+          _, gf = utils.find(st['groups'], g['id'])
+          effected.update(gf['zones'])
+    if 'zones' in ps:
+      for z in ps['zones']:
+        if 'id' in z:
+          effected.add(z['id'])
+    return effected
+
   @utils.save_on_success
   def load_preset(self, id):
     """
@@ -684,13 +709,81 @@ class Api:
     1. Grab system modification mutex to avoid accidental changes (requests during this time return some error)
     1. Save current configuration as "Last config" preset
     1. Mute any effected zones
-    1. Execute any stream changes (configuration then commands)
-    1. Execute changes source by source in increasing order
-    1. Execute change zone by zone in increasing order
-    1. Execute changes group by group in increasing order
+    1. Execute changes to source, zone, group each in increasing order
     1. Unmute effected zones that were not muted
-    1. Force web client refresh to fixup website
+    1. Execute any stream commands
     1. Release system mutex, future requests are successful after this
     """
-    # TODO: implement preset load
-    pass
+    # Get the preset to load
+    LAST_PRESET = 9999
+    i, preset = utils.find(self.status['presets'], id)
+    if i is None:
+      return utils.error('load preset failed: {} does not exist'.format(id))
+
+    # TODO: acquire lock (all api methods that change configuration will need this)
+
+    # update last config preset for restore capabilities (creating if missing)
+    # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
+    lp, _ = utils.find(self.status['presets'], LAST_PRESET)
+    st = self.status
+    last_config = {'id': 9999, 'name' : 'last config', 'state': {'sources' : st['sources'], 'zones' : st['zones'], 'groups' : st['groups']}}
+    if lp is None:
+      self.status['presets'].append(last_config)
+    else:
+      self.status['presets'][lp] = last_config
+
+    # keep track of the zones muted by the preset configuration
+    z_muted = set()
+
+    # determine which zones will be effected and mute them
+    # we do this just in case there is intermediate state that causes audio issues. TODO: test with and without this feature (it adds a lot of complexity to presets, lets make sure its worth it)
+    z_effected = self._effected_zones(id)
+    z_temp_muted = [ zid for zid in z_effected if not self.status['zones'][zid]['mute'] ]
+    for zid in z_temp_muted:
+      self.set_zone(zid, mute=True)
+
+    # execute changes source by source in increasing order
+    if 'sources' in preset:
+      for src in preset['state']['sources']:
+        if 'id' in src:
+          self.set_source(**src)
+        else:
+          pass # TODO: support some id-less source concept that allows dynamic source allocation
+
+    # execute changes group by group in increasing order
+    if 'groups' in preset:
+      for g in preset['state']['groups']:
+        if 'id' in g:
+          self.set_group(**g)
+          if 'mute' in g:
+            # usine the updated group's zones just in case the group's zones were just changed
+            _, g_updated = utils.find(self.status, g['id'])
+            zones_changed = g_updated['zones']
+            if g['mute']:
+              # keep track of the muted zones
+              z_muted.update(zones_changed)
+            else:
+              # handle odd mute thrashing case where zone was muted by one group then unmuted by another
+              z_muted.difference_update()
+
+    # execute change zone by zone in increasing order
+    if 'zones' in preset:
+      for z in preset['state']['zones']:
+        if 'id' in z:
+          self.set_zone(**z)
+          zid = z['id']
+          if 'mute' in z:
+            if z['mute']:
+              z_muted.add(zid)
+            elif zid in z_muted:
+              z_muted.remove(zid)
+
+    # unmute effected zones that were not muted by the preset configuration
+    z_to_unmute = set(z_temp_muted).difference(z_muted)
+    for zid in z_to_unmute:
+      self.set_zone(id=zid, mute=False)
+
+    # TODO: execute stream commands
+
+    # TODO: release lock
+
