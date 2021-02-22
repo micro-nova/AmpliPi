@@ -25,8 +25,13 @@ import time
 import amplipi.utils as utils
 
 if not DISABLE_HW:
-  import serial
+  from serial import Serial
   from smbus2 import SMBus
+else:
+  # dummy class
+  class Serial:
+    def write(self, x): pass
+    def close(self): pass
 
 # Preamp register addresses
 _REG_ADDRS = {
@@ -58,7 +63,7 @@ class _Preamps:
     else:
       # Setup serial connection via UART pins - set I2C addresses for preamps
       # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
-      ser = serial.Serial ("/dev/ttyAMA0")
+      ser = Serial ("/dev/ttyAMA0")
       ser.baudrate = 9600
       addr = 0x41, 0x10, 0x0D, 0x0A
       ser.write(addr)

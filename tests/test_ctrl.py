@@ -235,6 +235,7 @@ def pretty_field(field):
   """ pretty print deepdiff's field name """
   return str(field).replace("root['", "").replace("']","").replace("['", ".")
 
+last_status = None
 def show_change():
   """ print the difference between status when this was last called
 

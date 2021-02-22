@@ -168,7 +168,7 @@ class Shairport:
             if int(data[4]):
               d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5]) 
         # return d
-    except Exception as e:
+    except Exception:
       pass
       # TODO: Put an actual exception here?
 
@@ -184,7 +184,7 @@ class Shairport:
             d['DACP-ID'] = info[2]
             d['client_IP'] = info[3]
         # return d
-    except Exception as e:
+    except Exception:
       pass
 
     return d
@@ -425,7 +425,7 @@ class Pandora:
             d['img_url'] = data[3]
             d['station'] = data[5]
         return(d)
-    except Exception as e:
+    except Exception:
       pass
       #print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
     # TODO: report the status of pianobar with station name, playing/paused, song info

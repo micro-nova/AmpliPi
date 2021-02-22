@@ -625,7 +625,7 @@ class Api:
             data = line.split(':')
             d[data[0]] = data[1]
         return(d)
-    except Exception as e:
+    except Exception:
       # TODO: throw useful exceptions to next level
       pass
       #print(utils.error('Failed to get station list - it may not exist: {}'.format(e)))
