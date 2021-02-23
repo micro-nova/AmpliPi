@@ -1,4 +1,6 @@
 # AmpliPi Home Audio System
+[![Build Status][workflow-badge]][workflow-link] [![Coverage][coverage-badge]][coverage-link] [![GPL License][license-badge]](LICENSE.md)
+
 AmpliPi™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio streams (Pandora, Spotify, AirPlay, etc) or sources (RCA inputs), each routed to one or many zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPi Zone Expanders.
 
 The AmpliPi design is entirely open source, from the software, to the firmware, to the schematics. The REST API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (avaiable in this repo).
@@ -53,3 +55,8 @@ Not quite sure how to accomplish this? No problem - The AmpliPi controller hosts
 ## Development
 See [DEVELOPING.md](DEVELOPING.md) for how to get started working on AmpliPi
 
+[workflow-badge]:  https://github.com/micro-nova/AmpliPi/actions/workflows/python-app.yml/badge.svg
+[workflow-link]:   https://github.com/micro-nova/AmpliPi/actions?query=workflow%3Apython-app.yml
+[coverage-badge]:  https://codecov.io/github/micro-nova/AmpliPi/coverage.svg?branch=master
+[coverage-link]:   https://codecov.io/github/micro-nova/AmpliPi?branch=master
+[license-badge]:   https://img.shields.io/badge/License-GPL%20v3-blue.svg
