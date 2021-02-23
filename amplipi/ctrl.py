@@ -765,6 +765,9 @@ class Api:
             else:
               # handle odd mute thrashing case where zone was muted by one group then unmuted by another
               z_muted.difference_update()
+        else:
+          # TODO: handle new groups?
+          pass
 
     # execute change zone by zone in increasing order
     if 'zones' in preset:

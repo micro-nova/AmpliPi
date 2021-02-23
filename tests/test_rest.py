@@ -20,6 +20,12 @@ def base_config():
 def base_config_copy():
   return deepcopy(base_config())
 
+def status_copy(client):
+  rv = client.get('/api/')
+  jrv = rv.get_json()
+  assert jrv != None
+  return jrv # jrv was already serialized so it should be a copy
+
 def find(list, id):
   for i in list:
     if i['id'] == id:
@@ -181,12 +187,13 @@ def test_delete_preset(client, pid):
 # /presets/{presetId}/load load-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_load_preset(client, pid):
+  last_state = status_copy(client)
   rv = client.post('/api/presets/{}/load'.format(pid))
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.get_json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the preset was loaded
-  p = find(jrv['presets'], pid)
+  p = find(last_state['presets'], pid)
   # make sure the rest of the config got loaded
   for mod, configs in p['state'].items():
     for cfg in configs:
@@ -195,3 +202,23 @@ def test_load_preset(client, pid):
       assert updated_cfg is not None
       for k, v in cfg.items():
         assert updated_cfg[k] == v
+  # verify all of the zones mute levels remained the same (unless they were changed by the preset configuration)
+  preset_zones_changes = p['state'].get('zones', None)
+  for z in jrv['zones']:
+    expected_mute = last_state['zones']
+    if preset_zones_changes:
+      pz = find(preset_zones_changes, z['id'])
+      if pz and 'mute' in pz:
+        expected_mute = pz['mute']
+    assert z['mute'] == expected_mute
+  # load the saved config and verify that the sources, zones, and groups are the same as initial state (before the preset was loaded)
+  LAST_CONFIG_PRESET = 9999
+  rv = client.post('/api/presets/{}/load'.format(LAST_CONFIG_PRESET))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json() # get the system state returned
+  for name, mod in jrv.items():
+    prev_mod = last_state[name]
+    for cfg in mod:
+      if cfg['id'] != LAST_CONFIG_PRESET:
+        prev_cfg = find(prev_mod, cfg['id'])
+        assert cfg == prev_cfg
