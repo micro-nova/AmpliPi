@@ -40,6 +40,7 @@ def parse_int(i, options):
 
 def error(msg):
   """ wrap the error message specified by msg into an error """
+  print('Error: {}'.format(msg))
   return {'error': msg}
 
 def updated_val(update, val):
@@ -48,6 +49,9 @@ def updated_val(update, val):
     return val, False
   else:
     return update, update != val
+
+def find(items, id):
+  return next(filter(lambda ie: ie[1]['id'] == id, enumerate(items)), (None, None))
 
 def clamp(x, xmin, xmax):
     return max(xmin, min(x, xmax))

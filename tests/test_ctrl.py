@@ -1,12 +1,12 @@
 #!/usr/bin/python3
-# this file is expected to be run using pytest, ie. pytest python/tests/test_ethaudio_mock.py
+# this file is expected to be run using pytest, ie. pytest tests/test_ethaudio_mock.py
 
 import argparse
 from copy import deepcopy
 import deepdiff
 
-# use the internal ethaudio library
-import amplipi
+# use the internal amplipi library
+from context import amplipi
 
 # modify json config files
 import json
@@ -14,7 +14,7 @@ import os
 import tempfile
 
 # several starting configurations to load for testing including a corrupted configuration
-DEFAULT_STATUS = deepcopy(amplipi.api.EthAudioApi.DEFAULT_CONFIG)
+DEFAULT_STATUS = deepcopy(amplipi.ctrl.Api._DEFAULT_CONFIG)
 # make a good config string, that has less groups than the default (so we can tell the difference)
 GOOD_STATUS = deepcopy(DEFAULT_STATUS)
 del GOOD_STATUS['groups'][2]
@@ -35,11 +35,11 @@ test_sequence = [
     "command" : "set_source",
     "id" : 1,
     "name" : "cd player",
-    "type": "local"
+    "input": "local"
   },
   None,
   {
-    "sources[1].type" : "local",
+    "sources[1].input" : "local",
     "sources[1].name" : "cd player"
   }
 ),
@@ -192,11 +192,11 @@ test_sequence = [
     "command" : "set_source",
     "id" : 1,
     "name" : "Pandora",
-    "type": "pandora"
+    "input": "pandora"
   },
   None,
   {
-    "sources[1].type" : "pandora",
+    "sources[1].input" : "stream=1001",
     "sources[1].name" : "Pandora"
   }
 ),
@@ -355,8 +355,8 @@ def check_all_tsts(api):
   print(eth_audio_api.get_state())
   print('\ntesting commands:')
   # Tests
-  check_json_tst('Configure source 0 (shairport)', eth_audio_api.set_source(0, 'Shairport', 'shairport'), None, {'sources[0].name' : 'Shairport', 'sources[0].type' : 'shairport'})
-  check_json_tst('Configure source 1 (pandora)', eth_audio_api.set_source(1, 'Pandora', 'pandora'), None, {'sources[1].name' : 'Pandora', 'sources[1].type' : 'pandora'})
+  check_json_tst('Configure source 0 (shairport)', eth_audio_api.set_source(0, 'Shairport', 'stream=1000'), None, {'sources[0].name' : 'Shairport', 'sources[0].input' : 'stream=1000'})
+  check_json_tst('Configure source 1 (pandora)', eth_audio_api.set_source(1, 'Pandora', 'stream=1001'), None, {'sources[1].name' : 'Pandora', 'sources[1].input' : 'stream=1001'})
   check_json_tst('Configure source 2 (local)', eth_audio_api.set_source(2, 'TV', 'local'), None, {'sources[2].name' : 'TV'})
   check_json_tst('Configure source 3 (local)', eth_audio_api.set_source(3, 'PC', 'local'), None, {'sources[3].name' : 'PC'})
   check_json_tst('Configure zone 0, Party Zone', eth_audio_api.set_zone(0, 'Party Zone', 1, False, 0, False), None, {'zones[0].name' : 'Party Zone', 'zones[0].source_id' : 1, 'zones[0].vol': 0, 'zones[0].mute' : False})
@@ -365,14 +365,6 @@ def check_all_tsts(api):
   check_json_tst('Configure zone 2, Sleep Zone', eth_audio_api.set_zone(2, 'Sleep Zone', 3, True, None, False), None, {'zones[2].name' : 'Sleep Zone', 'zones[2].source_id' : 3})
   check_json_tst('Configure zone 3, Standby Zone', eth_audio_api.set_zone(3, 'Standby Zone', 3, True, None, False), None, {'zones[3].name' : 'Standby Zone', 'zones[3].source_id' : 3})
   check_json_tst('Configure zone 4, Weird Zone', eth_audio_api.set_zone(4, 'Weird Zone', 1, None, None, None), None, {'zones[4].name' : 'Weird Zone', 'zones[4].source_id' : 1})
-
-  # Test string/json based command handler
-  print('\ntesting json:')
-  for name, cmd, expected_result, expected_changes  in test_sequence:
-    is_group_cmd = '_group' in cmd['command']
-    check_json_tst(name, eth_audio_api.parse_cmd(cmd), expected_result, expected_changes, ignore_group_changes=not is_group_cmd)
-
-# TODO: add openapi tests
 
 def delete_file(file_path):
   try:
@@ -413,7 +405,7 @@ def api_w_mock_rt(config=None, backup_config=None):
   #   (a None config file means that config file will be deleted before launch)
   setup_test_configs(config, backup_config)
   # start the api (we have a specfic config path we use for all tests)
-  return amplipi.api.EthAudioApi(amplipi.api.MockRt(), config_file=CONFIG_FILE)
+  return amplipi.ctrl.Api(amplipi.rt.Mock(), config_file=CONFIG_FILE)
 
 def api_w_rpi_rt(config=None, backup_config=None):
   # copy in specfic config files (paths) to know config locations
@@ -421,7 +413,7 @@ def api_w_rpi_rt(config=None, backup_config=None):
   #   (a None config file means that config file will be deleted before launch)
   setup_test_configs(config, backup_config)
   # start the api (we have a specfic config path we use for all tests)
-  return amplipi.api.EthAudioApi(amplipi.api.RpiRt(mock=True), config_file=CONFIG_FILE)
+  return amplipi.ctrl.Api(amplipi.rt.Rpi(mock=True), config_file=CONFIG_FILE)
 
 def use_tmpdir():
   # lets run these tests in a temporary directory so they dont mess with other tests config files
@@ -437,26 +429,33 @@ def test_rpi():
   use_tmpdir() # run from temp dir so we don't mess with current directory
   check_all_tsts(api_w_rpi_rt())
 
+def prune_state(state: dict):
+  """ Prune generated fields from system state to make comparable """
+  for s in state['streams']:
+    s.pop('info')
+    s.pop('status')
+  return state
+
 def test_config_loading():
   use_tmpdir() # run from temp dir so we don't mess with current directory
   # test loading an empty config (should load default config)
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
-  assert DEFAULT_STATUS == api.get_state()
+  assert DEFAULT_STATUS == prune_state(api.get_state())
   # test loading a known good config file by making a copy of it and loading the api with the copy
   api = api_w_mock_rt(GOOD_CONFIG)
-  assert GOOD_STATUS == api.get_state()
+  assert GOOD_STATUS == prune_state(api.get_state())
   # test loading a corrupted config file with a good backup
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=GOOD_CONFIG)
-  assert GOOD_STATUS == api.get_state()
+  assert GOOD_STATUS == prune_state(api.get_state())
   # test loading a missing config file with a good backup
   api = api_w_mock_rt(NO_CONFIG, backup_config=GOOD_CONFIG)
-  assert GOOD_STATUS == api.get_state()
+  assert GOOD_STATUS == prune_state(api.get_state())
   # test loading a corrupted config file and a corrupted backup
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=CORRUPTED_CONFIG)
-  assert DEFAULT_STATUS == api.get_state()
+  assert DEFAULT_STATUS == prune_state(api.get_state())
   # test loading a missing config file and a missing backup
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
-  assert DEFAULT_STATUS == api.get_state()
+  assert DEFAULT_STATUS == prune_state(api.get_state())
 
 
 if __name__ == '__main__':

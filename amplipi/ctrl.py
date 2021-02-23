@@ -43,11 +43,13 @@ class Api:
       { "id": 2, "name": "3", "input": "local" },
       { "id": 3, "name": "4", "input": "local" }
     ],
+    # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
+    #       this does not make sense because JSON only allows string based keys
     "streams": [
-      # TODO: add example for each type of stream
-      { "id": 100, "name": "My Airplay", "type": "shairport"},
-      { "id": 101, "name": "My Pandora", "type": "pandora", "user": "", "password": "", "station": ""},
-      { "id": 102, "name": "My Spotify", "type": "spotify"},
+      # an example for each type of stream
+      { "id": 1000, "name": "My Airplay", "type": "shairport"},
+      { "id": 1001, "name": "My Pandora", "type": "pandora", "user": "", "password": "", "station": ""},
+      { "id": 1002, "name": "My Spotify", "type": "spotify"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
@@ -57,14 +59,15 @@ class Api:
       { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
       { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
     ],
+    # TODO: make groups a dictionary
     "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-      { "id": 0, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
-      { "id": 1, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
-      { "id": 2, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
+      { "id": 100, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
+      { "id": 101, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
+      { "id": 102, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
     ]
   }
 
-  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='saved_state.json'):
+  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='config/house.json'):
     self._rt = _rt
     self._mock_hw = type(_rt) is rt.Mock
     self._mock_streams = mock_streams
@@ -214,14 +217,25 @@ class Api:
   def get_state(self):
     """ get the system state (dict) """
     # update the state with the latest stream info and status
-    for s in self.status['streams']:
-      stream = self.streams[s['id']]
-      s['name'] = stream.name
-      s['info'] = stream.info()
-      s['status'] = stream.status()
+    optional_fields = ['station', 'user', 'password'] # optional configuration fields
+    streams = []
+    for sid, sc in self.streams.items():
+      # TODO: this functionality should be in the unimplemented streams base class
+      # convert the stream class info to a dict (serialize its current configuration and status information)
+      s = {}
+      s['id'] = sid
+      s['name'] = sc.name
+      s['type'] = type(sc).__name__.lower()
+      s['info'] = sc.info()
+      s['status'] = sc.status()
+      for f in optional_fields:
+        if f in sc.__dict__:
+          s[f] = sc.__dict__[f]
+      streams.append(s)
+    self.status['streams'] = streams
     return self.status
 
-  def get_stream(self, input):
+  def _get_stream(self, input):
     """Gets the stream from an input configuration
 
     Args:
@@ -264,11 +278,11 @@ class Api:
         src['name'] = str(name)
         if input_updated or force_update:
           # shutdown old stream
-          old_stream = self.get_stream(src['input'])
+          old_stream = self._get_stream(src['input'])
           if old_stream:
             old_stream.disconnect()
           # start new stream
-          stream = self.get_stream(input)
+          stream = self._get_stream(input)
           if stream:
             # update the streams last connected source to have no input, since we have stolen its input
             if stream.src is not None and stream.src != idx:
@@ -366,12 +380,6 @@ class Api:
     else:
         return utils.error('set zone: index {} out of bounds'.format(idx))
 
-  def get_group(self, id):
-    for i, g in enumerate(self.status['groups']):
-      if g['id'] == int(id):
-        return i,g
-    return None, None
-
   def _update_groups(self):
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
     for g in self.status['groups']:
@@ -403,7 +411,7 @@ class Api:
         Returns:
             'None' on success, otherwise error (dict)
     """
-    _, g = self.get_group(id)
+    _, g = utils.find(self.status['groups'], id)
     if g is None:
       return utils.error('set group failed, group {} not found'.format(id))
     if type(zones) is str:
@@ -439,14 +447,11 @@ class Api:
 
   def _new_group_id(self):
     """ get next available group id """
-    ids = [ g['id'] for g in self.status['groups'] ]
-    ids = set(ids) # simpler/faster access
-    new_gid = len(ids)
-    for i in range(0, len(ids)):
-      if i not in ids:
-        new_gid = i
-        break
-    return new_gid
+    g = max(self.status['groups'], key=lambda g: g['id'])
+    if g is not None:
+      return g['id'] + 1
+    else:
+      return 100
 
   @utils.save_on_success
   def create_group(self, name, zones):
@@ -481,56 +486,105 @@ class Api:
   def delete_group(self, id):
     """Deletes an existing group"""
     try:
-      i, _ = self.get_group(id)
+      i, _ = utils.find(self.status['groups'], id)
       if i is not None:
         del self.status['groups'][i]
     except KeyError:
       return utils.error('delete group failed: {} does not exist'.format(id))
 
+  def _new_stream_id(self):
+    s = max(self.status['streams'], key=lambda s: s['id'])
+    if s is not None:
+      return s['id'] + 1
+    else:
+      return 1000
+
   @utils.save_on_success
-  def set_stream(self, id, name=None, station_id=None, cmd=None):
+  def create_stream(self, **kwargs):
+    try:
+      # Make a new stream and add it to streams
+      s = streams.build_stream(args=kwargs, mock=self._mock_streams)
+      id = self._new_stream_id()
+      self.streams[id] = s
+      # Get the stream as a dictionary (we use get_state() to convert it from its stream type into a dict)
+      for s in self.get_state()['streams']:
+        if s['id'] == id:
+          return s
+      return utils.error('create stream failed: no stream created')
+    except Exception as e:
+      return utils.error('create stream failed: {}'.format(e))
+
+  @utils.save_on_success
+  def set_stream(self, id, **kwargs):
     """Sets play/pause on a specific pandora source """
     if int(id) not in self.streams:
-      return utils.error('Stream id {} does not exist!'.format(id))
+      return utils.error('Stream id {} does not exist'.format(id))
 
-    # try:
-    #   strm = self.status['streams'][id]
-    #   name, _ = utils.updated_val(name, strm['name'])
-    # except:
-    #   return utils.error('ERROR!')
-
-    # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     try:
-      if cmd == 'play':
+      stream = self.streams[int(id)]
+    except Exception as e:
+      return utils.error('Unable to get stream {}: {}'.format(id, e))
+
+    try:
+      stream.reconfig(**kwargs)
+    except Exception as e:
+      return utils.error('Unable to reconfigure stream {}: {}'.format(id, e))
+
+  @utils.save_on_success
+  def delete_stream(self, id):
+    """Deletes an existing stream"""
+    try:
+      del self.streams[id]
+      i, _ = utils.find(self.status['streams'], id)
+      if i is not None:
+        del self.status['streams'][i] # delete the cached stream state just in case
+    except KeyError:
+      return utils.error('delete stream failed: {} does not exist'.format(id))
+
+  @utils.save_on_success
+  def exec_stream_command(self, id, cmd):
+    # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
+    if int(id) not in self.streams:
+      return utils.error('Stream id {} does not exist'.format(id))
+
+    try:
+      stream = self.streams[int(id)]
+    except Exception as e:
+      return utils.error('Unable to get stream {}: {}'.format(id, e))
+
+    try:
+      if cmd is None:
+        pass
+      elif cmd == 'play':
         print('playing')
-        self.streams[id].state = 'playing'
-        self.streams[id].ctrl.play()
+        stream.state = 'playing'
+        stream.ctrl.play()
       elif cmd == 'pause':
         print('paused')
-        self.streams[id].state = 'paused'
-        self.streams[id].ctrl.pause()
+        stream.state = 'paused'
+        stream.ctrl.pause()
       elif cmd == 'stop':
-        self.streams[id].state = "stopped"
-        self.streams[id].ctrl.stop()
+        stream.state = "stopped"
+        stream.ctrl.stop()
       elif cmd == 'next':
         print('next')
-        self.streams[id].ctrl.next()
+        stream.ctrl.next()
       elif cmd == 'love':
-        self.streams[id].ctrl.love()
+        stream.ctrl.love()
       elif cmd == 'ban':
-        self.streams[id].ctrl.ban()
+        stream.ctrl.ban()
       elif cmd == 'shelve':
-        self.streams[id].ctrl.shelve()
-      elif cmd == 'station':
+        stream.ctrl.shelve()
+      elif 'station' in cmd:
+        station_id = int(cmd.replace('station=',''))
         if station_id is not None:
-          self.streams[id].ctrl.station(station_id)
+          stream.ctrl.station(station_id)
         else:
-          return utils.error('Station_ID required. Please try again.')
+          return utils.error('station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{}"'.format(cmd))
       else:
-        print('Command "{}" not recognized.'.format(cmd))
+        return utils.error('Command "{}" not recognized.'.format(cmd))
     except Exception as e:
-      print('error setting stream: {}'.format(e))
-      pass # TODO: actually report error
+      return utils.error('Failed to execute stream command: {}: {}'.format(cmd, e))
 
   @utils.save_on_success
   def get_stations(self, id, stream_index=None):

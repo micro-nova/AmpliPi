@@ -25,6 +25,7 @@ Flask is used to simplify the web plumbing.
 from flask import Flask, request, render_template, jsonify, make_response
 import amplipi.ctrl as ctrl
 import amplipi.rt as rt
+import amplipi.utils as utils
 import json
 from collections import OrderedDict
 
@@ -67,7 +68,7 @@ def ungrouped_zones(src):
 def song_info(src):
   """ Get the song info for a source """
   song_fields = ['artist', 'album', 'track', 'img_url']
-  stream = app.api.get_stream(app.api.status['sources'][src]['input'])
+  stream = app.api._get_stream(app.api.status['sources'][src]['input'])
   info = stream.info() if stream else {}
   # add empty strings for unpopulated fields
   for field in song_fields:
@@ -104,7 +105,7 @@ def get_source(src):
   if src >= 0 and src < len(sources):
     return sources[src]
   else:
-    return None, 404
+    return {}, 404
 
 @app.route('/api/sources/<int:src>', methods=['PATCH'])
 def set_source(src):
@@ -118,7 +119,7 @@ def get_zone(zone):
   if zone >= 0 and zone < len(zones):
     return zones[zone]
   else:
-    return None, 404
+    return {}, 404
 
 @app.route('/api/zones/<int:zone>', methods=['PATCH'])
 def set_zone(zone):
@@ -136,7 +137,7 @@ def get_group(group):
   if group >= 0 and group < len(groups):
     return groups[group]
   else:
-    return None, 404
+    return {}, 404
 
 @app.route('/api/groups/<int:group>', methods=['PATCH'])
 def set_group(group):
@@ -150,13 +151,28 @@ def delete_group(group):
 
 @app.route('/api/stream', methods=['POST'])
 def create_stream():
-  return None, 404 # TODO: implement create_stream
+  print('creating stream from {}'.format(request.get_json()))
+  return code_response(app.api.create_stream(**request.get_json()))
 
-@app.route('/api/streams/<int:stream>', methods=['PATCH'])
-def set_stream(stream):
-  return code_response(app.api.set_stream(id=stream, **request.get_json()))
+@app.route('/api/streams/<int:sid>', methods=['GET'])
+def get_stream(sid):
+  _, stream = utils.find(app.api.get_state()['streams'], sid)
+  if stream is not None:
+    return stream
+  else:
+    return {}, 404
 
-# TODO: add specific route for /api/stream/<int:stream>/cmd that sends a command to a stream returns the stream's state on success or an error
+@app.route('/api/streams/<int:sid>', methods=['PATCH'])
+def set_stream(sid):
+  return code_response(app.api.set_stream(id=sid, **request.get_json()))
+
+@app.route('/api/streams/<int:sid>', methods=['DELETE'])
+def delete_stream(sid):
+  return code_response(app.api.delete_stream(id=sid))
+
+@app.route('/api/streams/<int:sid>/<cmd>', methods=['POST'])
+def exec_command(sid, cmd):
+  return code_response(app.api.exec_stream_command(id=sid, cmd=cmd))
 
 # documentation
 
