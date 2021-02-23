@@ -734,19 +734,20 @@ paths:
                 value:
                   value:
                     name: Mute All
-                    zones:
-                      - id: 0
-                        mute: True
-                      - id: 1
-                        mute: True
-                      - id: 2
-                        mute: True
-                      - id: 3
-                        mute: True
-                      - id: 4
-                        mute: True
-                      - id: 5
-                        mute: True
+                    state:
+                      zones:
+                        - id: 0
+                          mute: True
+                        - id: 1
+                          mute: True
+                        - id: 2
+                          mute: True
+                        - id: 3
+                          mute: True
+                        - id: 4
+                          mute: True
+                        - id: 5
+                          mute: True
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /presets/{presetId}:
@@ -776,19 +777,20 @@ paths:
                   value:
                     id: 10001
                     name: Mute All
-                    zones:
-                      - id: 0
-                        mute: True
-                      - id: 1
-                        mute: True
-                      - id: 2
-                        mute: True
-                      - id: 3
-                        mute: True
-                      - id: 4
-                        mute: True
-                      - id: 5
-                        mute: True
+                    state:
+                      zones:
+                        - id: 0
+                          mute: True
+                        - id: 1
+                          mute: True
+                        - id: 2
+                          mute: True
+                        - id: 3
+                          mute: True
+                        - id: 4
+                          mute: True
+                        - id: 5
+                          mute: True
         '404':
           description: Preset Not Found
       operationId: get-preset
@@ -805,8 +807,8 @@ paths:
             type: integer
             minimum: 0
           examples:
-            Matt and Kim Radio:
-              value: 90891
+            Mute All:
+              value: 10001
       operationId: patch-preset
       responses:
         '200':
@@ -824,16 +826,19 @@ paths:
             schema:
               $ref: '#/components/schemas/Preset'
             examples:
-              Change name:
+              Change preset to mute only some zones:
                 value:
-                  name: Matt and Kim Radio
-              Change account info:
-                value:
-                  user: test@micro-nova.com
-                  password: sd9sk3k30
-              Change pandora radio station:
-                value:
-                  station: 0982034049300
+                  name: Mute some zones
+                  state:
+                    zones:
+                      - id: 0
+                        mute: True
+                      - id: 1
+                        mute: True
+                      - id: 4
+                        mute: True
+                      - id: 5
+                        mute: True
         description: Patch stream configuration to update.
     delete:
       summary: Delete Preset
