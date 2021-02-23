@@ -15,10 +15,20 @@ from copy import deepcopy
 from context import amplipi
 
 def base_config():
-  return deepcopy(amplipi.ctrl.Api._DEFAULT_CONFIG)
+  return amplipi.ctrl.Api._DEFAULT_CONFIG
 
 def base_config_copy():
   return deepcopy(base_config())
+
+def base_config_no_presets():
+  cfg = base_config_copy()
+  del cfg['presets']
+  return cfg
+
+def base_config_no_groups():
+  cfg = base_config_copy()
+  del cfg['groups']
+  return cfg
 
 def status_copy(client):
   rv = client.get('/api/')
@@ -32,27 +42,28 @@ def find(list, id):
       return i
   return None
 
-@pytest.fixture
-def app(cfg=base_config_copy()):
+@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups()])
+def client(request):
+  cfg = request.param
   config_dir = tempfile.mkdtemp()
   config_file = os.path.join(config_dir, 'house.json')
   with open(config_file, 'w') as cfg_file:
     cfg_file.write(json.dumps(cfg))
   app = amplipi.app.create_app(mock_ctrl=True, mock_streams=True, config_file=config_file)
   app.testing = True
-  return app
-
-@pytest.fixture
-def client(app):
-  return app.test_client()
+  c = app.test_client()
+  c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
+  return c
 
 def test_base(client):
     """Start with a basic controller and just check if it gives a real response"""
     rv = client.get('/api/')
     jrv = rv.get_json()
     assert jrv != None
-    for t in ['sources', 'streams', 'zones', 'groups']:
-      assert len(jrv[t]) == len(base_config()[t])
+    og_config = client.original_config
+    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+      if t in og_config:
+        assert len(jrv[t]) == len(og_config[t])
 
 
 # To reduce the amount of boilerplate we use test parameters.
@@ -150,8 +161,13 @@ def test_create_mute_all_preset(client):
 # /presets/{presetId} get-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_get_preset(client, pid):
+  last_state = status_copy(client)
   rv = client.get('/api/presets/{}'.format(pid))
-  assert rv.status_code == HTTPStatus.OK
+  if find(last_state['presets'], pid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
   jrv = rv.get_json()
   s = find(base_config()['presets'], pid)
   assert s != None
@@ -160,8 +176,13 @@ def test_get_preset(client, pid):
 # /presets/{presetId} patch-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_patch_preset_name(client, pid):
+  last_state = status_copy(client)
   rv = client.patch('/api/presets/{}'.format(pid), json={'name': 'patched-name'})
-  assert rv.status_code == HTTPStatus.OK
+  if find(last_state['presets'], pid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
   jrv = rv.get_json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
@@ -189,7 +210,11 @@ def test_delete_preset(client, pid):
 def test_load_preset(client, pid):
   last_state = status_copy(client)
   rv = client.post('/api/presets/{}/load'.format(pid))
-  assert rv.status_code == HTTPStatus.OK
+  if find(last_state['presets'], pid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
   jrv = rv.get_json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the preset was loaded
