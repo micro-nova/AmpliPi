@@ -206,9 +206,15 @@ def test_delete_preset(client, pid):
       assert find(jrv['presets'], other_pid) != None
 
 # /presets/{presetId}/load load-preset
+# TODO: use combinations of base_preset_ids and suggested
 @pytest.mark.parametrize('pid', base_preset_ids())
-def test_load_preset(client, pid):
+def test_load_preset(client, pid, unmuted=[1,2,3]):
+  # unmute some of the zones
+  for zid in unmuted:
+    client.patch('/api/zones/{}'.format(zid), json={'mute': False})
+  # save the preloaded state
   last_state = status_copy(client)
+  # load the preset
   rv = client.post('/api/presets/{}/load'.format(pid))
   if find(last_state['presets'], pid):
     assert rv.status_code == HTTPStatus.OK
