@@ -732,22 +732,21 @@ paths:
             examples:
               Add Mute All:
                 value:
-                  value:
-                    name: Mute All
-                    state:
-                      zones:
-                        - id: 0
-                          mute: True
-                        - id: 1
-                          mute: True
-                        - id: 2
-                          mute: True
-                        - id: 3
-                          mute: True
-                        - id: 4
-                          mute: True
-                        - id: 5
-                          mute: True
+                  name: Mute All
+                  state:
+                    zones:
+                      - id: 0
+                        mute: True
+                      - id: 1
+                        mute: True
+                      - id: 2
+                        mute: True
+                      - id: 3
+                        mute: True
+                      - id: 4
+                        mute: True
+                      - id: 5
+                        mute: True
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /presets/{presetId}:
@@ -763,8 +762,8 @@ paths:
             type: integer
             minimum: 0
           examples:
-            Matt and Kim Radio:
-              value: 90891
+            Mute All:
+              value: 10001
       responses:
         '200':
           description: Preset Command Success
