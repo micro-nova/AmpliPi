@@ -731,7 +731,15 @@ class Api:
     # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
     lp, _ = utils.find(self.status['presets'], LAST_PRESET)
     st = self.status
-    last_config = {'id': 9999, 'name' : 'last config', 'state': {'sources' : st['sources'], 'zones' : st['zones'], 'groups' : st['groups']}}
+    last_config = {
+      'id': 9999,
+      'name' : 'last config',
+      'state': {
+        'sources' : deepcopy(st['sources']),
+        'zones'   : deepcopy(st['zones']),
+        'groups'  : deepcopy(st['groups'])
+      }
+    }
     if lp is None:
       self.status['presets'].append(last_config)
     else:
