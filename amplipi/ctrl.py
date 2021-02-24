@@ -712,12 +712,12 @@ class Api:
     To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration. Below is an idea of how a preset configuration could be loaded to avoid any weirdness. We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
 
     1. Grab system modification mutex to avoid accidental changes (requests during this time return some error)
-    1. Save current configuration as "Last config" preset
-    1. Mute any effected zones
-    1. Execute changes to source, zone, group each in increasing order
-    1. Unmute effected zones that were not muted
-    1. Execute any stream commands
-    1. Release system mutex, future requests are successful after this
+    2. Save current configuration as "Last config" preset
+    3. Mute any effected zones
+    4. Execute changes to source, zone, group each in increasing order
+    5. Unmute effected zones that were not muted
+    6. Execute any stream commands
+    7. Release system mutex, future requests are successful after this
     """
     # Get the preset to load
     LAST_PRESET = 9999
