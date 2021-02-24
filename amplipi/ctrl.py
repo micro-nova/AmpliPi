@@ -117,6 +117,11 @@ class Api:
       print('using default config')
       self.status = deepcopy(self._DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
+    # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
+    if not 'groups' in self.status:
+      self.status['groups'] = [] # this needs to be done before _update_groups() is called (its called in set_zone() and at below)
+    if not 'presets' in self.status:
+      self.status['presets'] = []
     # configure all streams into a known state
     self.streams = {}
     for stream in self.status['streams']:
@@ -129,11 +134,6 @@ class Api:
     for z in self.status['zones']:
       # TODO: disbale zones that are not found
       self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
-    # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
-    if not 'groups' in self.status:
-      self.status['groups'] = []
-    if not 'presets' in self.status:
-      self.status['presets'] = []
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
 
