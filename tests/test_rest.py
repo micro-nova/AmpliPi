@@ -214,7 +214,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
     client.patch('/api/zones/{}'.format(zid), json={'mute': False})
   # save the preloaded state
   last_state = status_copy(client)
-  # load the preset
+  # load the preset (in some configurations it won't exist; make sure it fails in that case)
   rv = client.post('/api/presets/{}/load'.format(pid))
   if find(last_state['presets'], pid):
     assert rv.status_code == HTTPStatus.OK

@@ -755,22 +755,24 @@ class Api:
     for zid in z_temp_muted:
       self.set_zone(zid, mute=True)
 
+    ps = preset['state']
+
     # execute changes source by source in increasing order
-    if 'sources' in preset:
-      for src in preset['state']['sources']:
+    if 'sources' in ps:
+      for src in ps['sources']:
         if 'id' in src:
           self.set_source(**src)
         else:
           pass # TODO: support some id-less source concept that allows dynamic source allocation
 
     # execute changes group by group in increasing order
-    if 'groups' in preset:
-      for g in preset['state']['groups']:
+    if 'groups' in ps:
+      for g in ps['groups']:
         if 'id' in g:
           self.set_group(**g)
           if 'mute' in g:
-            # usine the updated group's zones just in case the group's zones were just changed
-            _, g_updated = utils.find(self.status, g['id'])
+            # use the updated group's zones just in case the group's zones were just changed
+            _, g_updated = utils.find(self.status['groups'], g['id'])
             zones_changed = g_updated['zones']
             if g['mute']:
               # keep track of the muted zones
@@ -783,8 +785,8 @@ class Api:
           pass
 
     # execute change zone by zone in increasing order
-    if 'zones' in preset:
-      for z in preset['state']['zones']:
+    if 'zones' in ps:
+      for z in ps['zones']:
         if 'id' in z:
           self.set_zone(**z)
           zid = z['id']
