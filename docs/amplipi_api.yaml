@@ -383,6 +383,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Group'
+            examples: 
+              Add Upstairs Group:
+                value:
+                  name: "Upstairs"
+                  zones: [1, 2, 3, 4, 5]
         description: Post the necessary fields for the API to create a new group.
       description: Create a new group.
   /groups/{groupId}:
@@ -528,6 +533,10 @@ paths:
                   type: pandora
                   user: test@micro-nova.com
                   password: s79sDDkjf
+              Add MicroNova Spotify:
+                value:
+                  name: MicroNova Spotify
+                  type: spotify
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /streams/{streamId}:
@@ -747,6 +756,63 @@ paths:
                         mute: True
                       - id: 5
                         mute: True
+              Basic Sources and Zones:
+                value:
+                  name: Zones and Sources
+                  state:
+                    sources:
+                      - id: 0
+                        name: 1
+                        input: stream=90891
+                      - id: 1
+                        name: 2
+                        input: stream=44590
+                      - id: 2
+                        name: 3
+                        input: stream=4893
+                      - id: 3
+                        name: 4
+                        input: stream=4895
+                    zones:
+                      - id: 0
+                        name: Lab
+                        source_id: 3
+                        mute: False
+                        vol: -62
+                        disabled: False
+                      - id: 1
+                        name: Upstairs
+                        source_id: 0
+                        mute: False
+                        vol: -62
+                        disabled: False
+              Sources, Zones, Groups, and Names:
+                value:
+                  name: Sources, Zones, Groups, and Names
+                  state:
+                    sources:
+                      - id: 0
+                        name: Spotify
+                        input: stream=4895
+                      - id: 1
+                        name: Pandora1
+                        input: stream=90891
+                      - id: 2
+                        name: Pandora2
+                        input: stream=90892
+                      - id: 3
+                        name: AirPlay
+                        input: stream=44590
+                    zones:
+                      - id: 0
+                        name: Lab
+                        source_id: 0
+                        mute: False
+                        vol: -62
+                        disabled: False
+                    groups:
+                      - id: 0
+                      - id: 1
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /presets/{presetId}:
