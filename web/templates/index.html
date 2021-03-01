@@ -17,7 +17,24 @@
 <!-- partial:index.partial.html -->
 <div class="title"><span>Ampli</span><span class="text-danger">Pi</span></div>
 <div class="container">
-  <div class="card-rows">
+  <div id="main-list">
+    <div id="preset-list" card="card">
+      <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#main-list" href="#preset-list .card-body" aria-expanded="false">
+        <h6 class="card-header"><i class="fas fa-chevron-down"></i> Presets</h6>
+      </a>
+      <div class="card-body collapsed">
+        {% for pst in presets %}
+        <div class="d-flex preset flex-row-reverse" data-id="{{ pst.id }}">
+          <div class="status"><i class="fas fa-circle"></i></div>
+          <div class="apply"><button type="button" class="btn preset-btn" onclick="onLoadPreset(this);">Apply</button></div>
+          <div class="preset-header d-flex flex-items-baseline ml-2">
+            <div class="name mr-2">{{ pst['name'] }}</div>
+            <div class="last-used">7 PM</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
     <div class="card source">
       <div class="card-header text-center">
         <!-- TODO: how to left align the play-ing icon? -->
@@ -28,6 +45,9 @@
             <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['name'] }} <i class="fa fa-play text-success" ></i></a>
           </li>
           {% endfor %}
+          <li class="nav-item">
+            <a id="ps" class="nav-link" data-toggle="tab" role="tab" href="#presets"><i class="fa fa-tasks"></i></a>
+          </li>
         </ol>
       </div>
       <div class="card-body source-body">
@@ -45,6 +65,7 @@
           {% endfor %}
         </select>
         {% endfor %}
+        <div id="ps-input"></div>
         <div class="player-wrapper">
           {% for src in sources %}
           <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
@@ -66,6 +87,7 @@
             </div>
           </div>
           {% endfor %}
+          <div id="ps-player" class="preset-header text-center" style="display: none;"><h1>Preset Control</h1></div>
         </div>
       </div>
     </div>

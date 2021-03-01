@@ -215,7 +215,8 @@ def doc():
 def view(src=0):
   s = app.api.status
   return render_template('index.html', cur_src=src, sources=s['sources'],
-    zones=s['zones'], groups=s['groups'], inputs=app.api.get_inputs(),
+    zones=s['zones'], groups=s['groups'], presets=s['presets'],
+    inputs=app.api.get_inputs(),
     unused_groups=[unused_groups(src) for src in range(4)],
     unused_zones=[unused_zones(src) for src in range(4)],
     ungrouped_zones=[ungrouped_zones(src) for src in range(4)],

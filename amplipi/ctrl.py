@@ -122,6 +122,8 @@ class Api:
       self.status['groups'] = [] # this needs to be done before _update_groups() is called (its called in set_zone() and at below)
     if not 'presets' in self.status:
       self.status['presets'] = []
+    else:
+      print('presets: {}'.format(self.status['presets']))
     # configure all streams into a known state
     self.streams = {}
     for stream in self.status['streams']:

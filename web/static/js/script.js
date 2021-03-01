@@ -103,6 +103,12 @@ function sendStreamCommand(ctrl, command) {
   }
 }
 
+function onLoadPreset(ctrl) {
+  let pst = ctrl.closest(".preset");
+  let pid = pst.dataset.id;
+  sendRequest('/presets/' + pid + '/load', 'POST', {});
+}
+
 function onPlayPause(ctrl) {
   if (ctrl.classList.contains('fa-play')) {
     sendStreamCommand(ctrl, 'play');
