@@ -103,10 +103,66 @@ function sendStreamCommand(ctrl, command) {
   }
 }
 
+function timeSince(timeStamp) {
+  var now = new Date(),
+    secondsPast = (now.getTime() - timeStamp) / 1000;
+  if (secondsPast < 60) {
+    return parseInt(secondsPast) + 's';
+  }
+  if (secondsPast < 3600) {
+    return parseInt(secondsPast / 60) + 'm';
+  }
+  if (secondsPast <= 86400) {
+    return parseInt(secondsPast / 3600) + 'h';
+  }
+  if (secondsPast > 86400) {
+    day = timeStamp.getDate();
+    month = timeStamp.toDateString().match(/ [a-zA-Z]*/)[0].replace(" ", "");
+    year = timeStamp.getFullYear() == now.getFullYear() ? "" : " " + timeStamp.getFullYear();
+    return day + " " + month + year;
+  }
+}
+
+$('#preset-list').on('show.bs.collapse', function () {
+  // do something…
+  for (pst of $('#preset-list .preset')) {
+    let status = pst.querySelector(".status i");
+    status.style.visibility = "hidden";
+    status.classList.toggle('fa-check-circle', true); // we need something the right size to be there
+    status.classList.toggle('fa-exclamation-triangle', false);
+  }
+})
+
 function onLoadPreset(ctrl) {
   let pst = ctrl.closest(".preset");
   let pid = pst.dataset.id;
-  sendRequest('/presets/' + pid + '/load', 'POST', {});
+  let response = sendRequest('/presets/' + pid + '/load', 'POST', {});
+
+  response.then(function (response) {
+    let preset = null;
+    if (response.hasOwnProperty('presets')) {
+      for (const p of response['presets']) {
+        if (p['id'] == pid) {
+          preset = p;
+        }
+      }
+    }
+    let status = pst.querySelector(".status i");
+    status.style.visibility = "visible";
+    status.classList.toggle('fa-check-circle', preset != null);
+    status.classList.toggle('fa-exclamation-triangle', preset == null);
+    if (preset) {
+      let last_used = pst.querySelector(".last-used");
+      if (preset.id == 9999) {
+        last_used.innerHTML = ''; // last config shouldnt show when it was last modified
+      } else if (preset.hasOwnProperty('last_used') && preset.last_used) {
+        last_used.innerHTML = timeSince(new Date(preset.last_used * 1000)); // js expects milliseconds from epoch
+      } else {
+        last_used.innerHTML = 'never';
+      }
+    }
+  });
+  // TODO: updated last-used time
 }
 
 function onPlayPause(ctrl) {
@@ -219,6 +275,18 @@ function updateSourceView(status) {
     }
   }
 
+  // TODO: update presets (their last applied times and status)
+  for (const preset of status['presets']) {
+    let pst = $('#pst-' + preset.id)[0];
+    let last_used = pst.querySelector(".last-used");
+    if (preset.last_used) {
+      last_used.innerHTML = timeSince(new Date(preset.last_used * 1000)); // js expects milliseconds from epoch
+    } else if (preset.id == 9999) {
+      last_used.innerHTML = '';
+    } else {
+      last_used.innerHTML = 'never';
+    }
+  }
   // TODO: add/remove groups and zones?
   // TODO: for now can we detect a group/zone change and force an update?
 }
@@ -247,6 +315,7 @@ async function sendRequest(path, method, req) {
   });
   let result = await response.json();
   onResponse(result);
+  return result;
 }
 
 async function sendRequestAndReload(path, method, req, src) {

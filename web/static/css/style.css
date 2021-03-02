@@ -7,12 +7,21 @@ body {
   color: #FFF;
 }
 
+#preset-list a {
+  color: inherit;
+  text-decoration: none;
+}
 .title {
   text-align: center;
   font-size: 44px;
   font-weight: bold;
-  padding-top: 20px;
-  padding-bottom: 20px;
+  padding-top: 5px;
+}
+.title-down {
+  text-align: center;
+  color: #8a8a8a;
+  transform: scale(3, 1);
+  margin-top: -5px;
 }
 
 .source {
@@ -37,31 +46,53 @@ body {
   visibility: hidden;
 }
 
-.group, .preset {
+.group, .preset-list {
   background: #2a2a2a;
 }
-.group a, .preset a {
+.group a, .preset-list a {
   color: #FFF;
 }
 
+#preset-list .card-body {
+  margin-top: -1.5rem; /* Fix first preset spacing */
+}
 .preset {
-  border:3px solid #444;
+  border-bottom:1px solid #444;
+  margin-top: 1rem;
 }
 .preset-btn {
-	background-color:#74ad5a;
-	border:3px solid #3b6e22;
+	background-color:#0096ff;
 	display:inline-block;
 	cursor:pointer;
 	color:#ffffff;
 	font-weight:bold;
 }
 
+/* This allows us to align left and right */
 .preset-header {
   flex: 1 1 auto;
 }
 
+.preset .status {
+  font-size: 1.5rem;
+}
+
+.preset .status .fa-exclamation-triangle {
+  color: orange
+}
+
+.preset .status .fa-check-circle {
+  color: green;
+}
+
+.preset .last-used {
+  color: #aaa;
+}
+
 .preset .name {
   font-weight: bolder;
+  text-shadow: 1px 1px 4px #6a6a6a;
+  font-size: 1rem;
 }
 
 .zone, .ungrouped-zone {
