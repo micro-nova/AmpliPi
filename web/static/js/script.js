@@ -4,6 +4,7 @@ const icons = {
   'local'     : '/static/imgs/rca_inputs.svg',
   'pandora'   : '/static/imgs/pandora.png',
   'spotify'   : '/static/imgs/spotify.png',
+  'dlna'      : '/static/imgs/dlna.png',
   'none'      : '/static/imgs/disconnected.png'
 }
 
@@ -182,6 +183,9 @@ function updateSourceView(status) {
         } else if (stream.type == 'spotify') {
           // TODO: populate spotify album info
           cover.src = icons['spotify'];
+        } else if (stream.type == 'dlna') {
+          // TODO: populate dlna album info
+          cover.src = icons['dlna'];
         }
       }
     } else if (src.input == 'local') {
