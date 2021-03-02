@@ -26,6 +26,7 @@ import deepdiff
 
 import pprint
 import os # files
+import time
 
 import amplipi.rt as rt
 import amplipi.streams as streams
@@ -653,6 +654,7 @@ class Api:
       # TODO: validate preset
       id = self._new_preset_id()
       preset['id'] = id
+      preset['last_used'] = None # indicates this preset has never been used
       self.status['presets'].append(preset)
       return preset
     except Exception as e:
@@ -735,7 +737,8 @@ class Api:
     st = self.status
     last_config = {
       'id': 9999,
-      'name' : 'last config',
+      'name' : 'Restore last config',
+      'last_used' : None, # this need to be in javascript time format
       'state': {
         'sources' : deepcopy(st['sources']),
         'zones'   : deepcopy(st['zones']),
@@ -804,6 +807,8 @@ class Api:
       self.set_zone(id=zid, mute=False)
 
     # TODO: execute stream commands
+
+    preset['last_used'] = int(time.time())
 
     # TODO: release lock
 
