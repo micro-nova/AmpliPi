@@ -252,4 +252,9 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
     for cfg in mod:
       if cfg['id'] != LAST_CONFIG_PRESET:
         prev_cfg = find(prev_mod, cfg['id'])
+        # last used field will be different, just remmove them
+        if 'last_used' in prev_cfg:
+          prev_cfg.pop('last_used')
+        if 'last_used' in cfg:
+          cfg.pop('last_used')
         assert cfg == prev_cfg
