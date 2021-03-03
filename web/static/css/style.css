@@ -13,9 +13,9 @@ body {
 }
 .title {
   text-align: center;
-  font-size: 44px;
+  font-size: 30px;
   font-weight: bold;
-  padding-top: 5px;
+  padding-top: 3px;
 }
 .title-down {
   text-align: center;
@@ -66,7 +66,7 @@ body {
 	cursor:pointer;
 	color:#ffffff;
   font-weight:bold;
-  padding: 1rem;
+  /*padding: 1rem;*/
 }
 
 /* This allows us to align left and right */
@@ -84,6 +84,14 @@ body {
 
 .preset .status .fa-check-circle {
   color: green;
+}
+
+.preset .status .fa-circle {
+  color: white;
+}
+.preset .status .fa-circle-notch {
+  color: white;
+  animation: fa-spin 1s infinite linear;
 }
 
 .preset .last-used {
