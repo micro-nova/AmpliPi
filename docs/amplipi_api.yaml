@@ -539,6 +539,10 @@ paths:
                 value:
                   name: MicroNova Spotify
                   type: spotify
+              Add Generic DLNA:
+                value:
+                  name: Replace this text with a name you like!
+                  type: dlna
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /streams/{streamId}:
