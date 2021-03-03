@@ -149,6 +149,7 @@ function onLoadPreset(ctrl) {
     }
     let status = pst.querySelector(".status i");
     status.style.visibility = "visible";
+    // TODO: for some reason this check doesn't always get set, investigate tomorrow
     status.classList.toggle('fa-check-circle', preset != null);
     status.classList.toggle('fa-exclamation-triangle', preset == null);
     if (preset) {
