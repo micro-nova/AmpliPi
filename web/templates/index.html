@@ -63,7 +63,6 @@
           {% endfor %}
         </select>
         {% endfor %}
-        <div id="ps-input"></div>
         <div class="player-wrapper">
           {% for src in sources %}
           <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
@@ -85,7 +84,6 @@
             </div>
           </div>
           {% endfor %}
-          <div id="ps-player" class="preset-header text-center" style="display: none;"><h1>Preset Control</h1></div>
         </div>
       </div>
     </div>
