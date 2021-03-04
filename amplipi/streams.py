@@ -486,7 +486,7 @@ class DLNA:
                 '--gstout-audiodevice', 'ch{}'.format(src), '--gstout-initial-volume-db',
                 '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
                 '-f', '{}'.format(self.name)]
-    # TODO: figure out how to get status from DLNA
+    # TODO: ADD LOGFILE ARGUMENT FOR DLNA AND RUN A SECOND PROCESS (.BASH) SIMILARLY TO SHAIRPORT!
     self.proc = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
