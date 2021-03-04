@@ -81,6 +81,19 @@ class Api:
             { "id": 5, "mute": True },
           ]
         }
+      },
+      # We need this for testing
+      { "id": 10001,
+        "name": "Play Pandora",
+        "state" : {
+          "sources" : [
+            { "id": 1, "input": "stream=1001" },
+          ],
+          "groups" : [
+            { "id": 100, "source_id": 1 },
+            { "id": 101, "source_id": 1 },
+          ]
+        }
       }
     ]
   }
