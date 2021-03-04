@@ -194,7 +194,11 @@ def test_patch_preset_name(client, pid):
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_delete_preset(client, pid):
   rv = client.delete('/api/presets/{}'.format(pid))
-  assert rv.status_code == HTTPStatus.OK
+  if 'presets' in client.original_config and find(client.original_config['presets'], pid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
   jrv = rv.get_json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the preset was deleted

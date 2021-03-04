@@ -104,3 +104,8 @@ def save_on_success(func):
       self.save()
     return result
   return inner
+
+def with_id(elements):
+  if elements is None:
+    return []
+  return [ e for e in elements if 'id' in e ]

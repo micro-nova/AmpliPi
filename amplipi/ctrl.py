@@ -70,7 +70,6 @@ class Api:
       { "id": 10000,
         # TODO: generate the mute all preset based on # of zones
         "name": "Mute All",
-        "commands" : [],
         "state" : {
           "zones" : [
             { "id": 0, "mute": True },
@@ -695,6 +694,8 @@ class Api:
       i, _ = utils.find(self.status['presets'], id)
       if i is not None:
         del self.status['presets'][i] # delete the cached preset state just in case
+      else:
+        return utils.error('delete preset failed: {} does not exist'.format(id))
     except KeyError:
       return utils.error('delete preset failed: {} does not exist'.format(id))
 
@@ -716,7 +717,8 @@ class Api:
       for g in ps['groups']:
         if 'id' in g:
           _, gf = utils.find(st['groups'], g['id'])
-          effected.update(gf['zones'])
+          if gf:
+            effected.update(gf['zones'])
     if 'zones' in ps:
       for z in ps['zones']:
         if 'id' in z:
@@ -776,43 +778,34 @@ class Api:
     ps = preset['state']
 
     # execute changes source by source in increasing order
-    if 'sources' in ps:
-      for src in ps['sources']:
-        if 'id' in src:
-          self.set_source(**src)
-        else:
-          pass # TODO: support some id-less source concept that allows dynamic source allocation
+    for src in ps.get('sources', []):
+      if 'id' in src:
+        self.set_source(**src)
+      else:
+        pass # TODO: support some id-less source concept that allows dynamic source allocation
 
     # execute changes group by group in increasing order
-    if 'groups' in ps:
-      for g in ps['groups']:
-        if 'id' in g:
-          self.set_group(**g)
-          if 'mute' in g:
-            # use the updated group's zones just in case the group's zones were just changed
-            _, g_updated = utils.find(self.status['groups'], g['id'])
-            zones_changed = g_updated['zones']
-            if g['mute']:
-              # keep track of the muted zones
-              z_muted.update(zones_changed)
-            else:
-              # handle odd mute thrashing case where zone was muted by one group then unmuted by another
-              z_muted.difference_update()
+    for g in utils.with_id(ps.get('groups')):
+      self.set_group(**g)
+      if 'mute' in g:
+        # use the updated group's zones just in case the group's zones were just changed
+        _, g_updated = utils.find(self.status['groups'], g['id'])
+        zones_changed = g_updated['zones']
+        if g['mute']:
+          # keep track of the muted zones
+          z_muted.update(zones_changed)
         else:
-          # TODO: handle new groups?
-          pass
+          # handle odd mute thrashing case where zone was muted by one group then unmuted by another
+          z_muted.difference_update()
 
     # execute change zone by zone in increasing order
-    if 'zones' in ps:
-      for z in ps['zones']:
-        if 'id' in z:
-          self.set_zone(**z)
-          zid = z['id']
-          if 'mute' in z:
-            if z['mute']:
-              z_muted.add(zid)
-            elif zid in z_muted:
-              z_muted.remove(zid)
+    for z in utils.with_id(ps.get('zones')):
+      self.set_zone(**z)
+      if 'mute' in z:
+        if z['mute']:
+          z_muted.add(z['id'])
+        elif z['id'] in z_muted:
+          z_muted.remove(z['id'])
 
     # unmute effected zones that were not muted by the preset configuration
     z_to_unmute = set(z_temp_muted).difference(z_muted)
