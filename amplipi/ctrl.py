@@ -786,6 +786,9 @@ class Api:
 
     # execute changes group by group in increasing order
     for g in utils.with_id(ps.get('groups')):
+      _, g_to_update = utils.find(self.status['groups'], g['id'])
+      if g_to_update is None:
+        return utils.error('group {} does not exist'.format(g['id']))
       self.set_group(**g)
       if 'mute' in g:
         # use the updated group's zones just in case the group's zones were just changed

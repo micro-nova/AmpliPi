@@ -220,15 +220,24 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   last_state = status_copy(client)
   # load the preset (in some configurations it won't exist; make sure it fails in that case)
   rv = client.post('/api/presets/{}/load'.format(pid))
-  if find(last_state['presets'], pid):
-    assert rv.status_code == HTTPStatus.OK
+  p = find(last_state['presets'], pid)
+  if p:
+    # check if all of the needed groups exist (it will fail if one of the needed groups doesn't exist')
+    effected_groups = { g['id'] for g in p['state'].get('groups', [])}
+    missing = False
+    for g in effected_groups:
+      if not find(last_state['groups'], g):
+        missing = True
+    if missing:
+      assert rv.status_code != HTTPStatus.OK
+      return
+    else:
+      assert rv.status_code == HTTPStatus.OK
   else:
     assert rv.status_code != HTTPStatus.OK
     return
   jrv = rv.get_json() # get the system state returned
   # TODO: check that the system state is valid
-  # make sure the preset was loaded
-  p = find(last_state['presets'], pid)
   # make sure the rest of the config got loaded
   for mod, configs in p['state'].items():
     for cfg in configs:
@@ -238,9 +247,9 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
       for k, v in cfg.items():
         assert updated_cfg[k] == v
   # verify all of the zones mute levels remained the same (unless they were changed by the preset configuration)
-  preset_zones_changes = p['state'].get('zones', None)
+  preset_zones_changes = p['state'].get('zones', None) # TODO: this doesn't handle group changes
   for z in jrv['zones']:
-    expected_mute = last_state['zones']
+    expected_mute = last_state['zones'][z['id']]['mute']
     if preset_zones_changes:
       pz = find(preset_zones_changes, z['id'])
       if pz and 'mute' in pz:
