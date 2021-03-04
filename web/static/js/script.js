@@ -278,8 +278,9 @@ function updateSourceView(status) {
       cover.src = icons['none'];
     }
     // update each source's input
-    $("#s" + src.id + "-player")[0].dataset.srcInput = src.input;
-    $("#s" + src.id + '-input select').val(src.input);
+    player = $("#s" + src.id + "-player")[0];
+    player.dataset.srcInput = src.input;
+    $('#s' + src.id + '-input').val(src.input);
   }
 
   // update volumes
