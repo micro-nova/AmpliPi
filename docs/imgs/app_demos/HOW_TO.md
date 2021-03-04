@@ -24,3 +24,4 @@
     * set the filename to something.gif
     * Check the options: as animation, loop forever, and use delay entered. Set delay to 250ms.
 1. View the gif and make sure it looks good
+1. Use the create_smaller_sizes script to make smaller gifs
