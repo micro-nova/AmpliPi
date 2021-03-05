@@ -26,6 +26,7 @@ import deepdiff
 
 import pprint
 import os # files
+import time
 
 import amplipi.rt as rt
 import amplipi.streams as streams
@@ -64,6 +65,35 @@ class Api:
       { "id": 100, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
       { "id": 101, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
       { "id": 102, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
+    ],
+    "presets" : [
+      { "id": 10000,
+        # TODO: generate the mute all preset based on # of zones
+        "name": "Mute All",
+        "state" : {
+          "zones" : [
+            { "id": 0, "mute": True },
+            { "id": 1, "mute": True },
+            { "id": 2, "mute": True },
+            { "id": 3, "mute": True },
+            { "id": 4, "mute": True },
+            { "id": 5, "mute": True },
+          ]
+        }
+      },
+      # We need this for testing
+      { "id": 10001,
+        "name": "Play Pandora",
+        "state" : {
+          "sources" : [
+            { "id": 1, "input": "stream=1001" },
+          ],
+          "groups" : [
+            { "id": 100, "source_id": 1 },
+            { "id": 101, "source_id": 1 },
+          ]
+        }
+      }
     ]
   }
 
@@ -100,6 +130,13 @@ class Api:
       print('using default config')
       self.status = deepcopy(self._DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
+    # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
+    if not 'groups' in self.status:
+      self.status['groups'] = [] # this needs to be done before _update_groups() is called (its called in set_zone() and at below)
+    if not 'presets' in self.status:
+      self.status['presets'] = []
+    else:
+      print('presets: {}'.format(self.status['presets']))
     # configure all streams into a known state
     self.streams = {}
     for stream in self.status['streams']:
@@ -516,7 +553,6 @@ class Api:
 
   @utils.save_on_success
   def set_stream(self, id, **kwargs):
-    """Sets play/pause on a specific pandora source """
     if int(id) not in self.streams:
       return utils.error('Stream id {} does not exist'.format(id))
 
@@ -543,6 +579,7 @@ class Api:
 
   @utils.save_on_success
   def exec_stream_command(self, id, cmd):
+    """Sets play/pause on a specific pandora source """
     # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     if int(id) not in self.streams:
       return utils.error('Stream id {} does not exist'.format(id))
@@ -608,8 +645,179 @@ class Api:
             data = line.split(':')
             d[data[0]] = data[1]
         return(d)
-    except Exception as e:
+    except Exception:
       # TODO: throw useful exceptions to next level
       pass
       #print(utils.error('Failed to get station list - it may not exist: {}'.format(e)))
     # TODO: Change these prints to returns in final state
+
+  def _new_preset_id(self):
+    """ get next available preset id """
+    g = max(self.status['presets'], key=lambda g: g['id'], default={'id' : 9999})
+    if g is not None:
+      return g['id'] + 1
+    else:
+      return 10000
+
+  @utils.save_on_success
+  def create_preset(self, preset):
+    try:
+      # Make a new preset and add it to presets
+      # TODO: validate preset
+      id = self._new_preset_id()
+      preset['id'] = id
+      preset['last_used'] = None # indicates this preset has never been used
+      self.status['presets'].append(preset)
+      return preset
+    except Exception as e:
+      return utils.error('create preset failed: {}'.format(e))
+
+  @utils.save_on_success
+  def set_preset(self, id, preset_changes):
+    i, preset = utils.find(self.status['presets'], id)
+    configurable_fields = ['name', 'commands', 'state']
+    if i is None:
+      return utils.error('Unable to find preset to redefine')
+
+    try:
+      # TODO: validate preset
+      for f in configurable_fields:
+        if f in preset_changes:
+          preset[f] = preset_changes[f]
+    except Exception as e:
+      return utils.error('Unable to reconfigure preset {}: {}'.format(id, e))
+
+  @utils.save_on_success
+  def delete_preset(self, id):
+    """Deletes an existing preset"""
+    try:
+      i, _ = utils.find(self.status['presets'], id)
+      if i is not None:
+        del self.status['presets'][i] # delete the cached preset state just in case
+      else:
+        return utils.error('delete preset failed: {} does not exist'.format(id))
+    except KeyError:
+      return utils.error('delete preset failed: {} does not exist'.format(id))
+
+
+  def _effected_zones(self, preset_id):
+    """ Aggregate the zones that will be modified by changes """
+    st = self.status
+    _, preset = utils.find(st['presets'], preset_id)
+    effected = set()
+    if preset is None:
+      return effected
+    ps = preset['state']
+    src_zones = { src['id'] : [ z['id'] for z in st['zones'] if z['source_id'] == src['id']] for src in st['sources'] }
+    if 'sources' in ps:
+      for src in ps['sources']:
+        if 'id' in src:
+          effected.update(src_zones[src['id']])
+    if 'groups' in ps:
+      for g in ps['groups']:
+        if 'id' in g:
+          _, gf = utils.find(st['groups'], g['id'])
+          if gf:
+            effected.update(gf['zones'])
+    if 'zones' in ps:
+      for z in ps['zones']:
+        if 'id' in z:
+          effected.add(z['id'])
+    return effected
+
+  @utils.save_on_success
+  def load_preset(self, id):
+    """
+    To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration. Below is an idea of how a preset configuration could be loaded to avoid any weirdness. We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
+
+    1. Grab system modification mutex to avoid accidental changes (requests during this time return some error)
+    2. Save current configuration as "Last config" preset
+    3. Mute any effected zones
+    4. Execute changes to source, zone, group each in increasing order
+    5. Unmute effected zones that were not muted
+    6. Execute any stream commands
+    7. Release system mutex, future requests are successful after this
+    """
+    # Get the preset to load
+    LAST_PRESET = 9999
+    i, preset = utils.find(self.status['presets'], id)
+    if i is None:
+      return utils.error('load preset failed: {} does not exist'.format(id))
+
+    # TODO: acquire lock (all api methods that change configuration will need this)
+
+    # update last config preset for restore capabilities (creating if missing)
+    # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
+    lp, _ = utils.find(self.status['presets'], LAST_PRESET)
+    st = self.status
+    last_config = {
+      'id': 9999,
+      'name' : 'Restore last config',
+      'last_used' : None, # this need to be in javascript time format
+      'state': {
+        'sources' : deepcopy(st['sources']),
+        'zones'   : deepcopy(st['zones']),
+        'groups'  : deepcopy(st['groups'])
+      }
+    }
+    if lp is None:
+      self.status['presets'].append(last_config)
+    else:
+      self.status['presets'][lp] = last_config
+
+    # keep track of the zones muted by the preset configuration
+    z_muted = set()
+
+    # determine which zones will be effected and mute them
+    # we do this just in case there is intermediate state that causes audio issues. TODO: test with and without this feature (it adds a lot of complexity to presets, lets make sure its worth it)
+    z_effected = self._effected_zones(id)
+    z_temp_muted = [ zid for zid in z_effected if not self.status['zones'][zid]['mute'] ]
+    for zid in z_temp_muted:
+      self.set_zone(zid, mute=True)
+
+    ps = preset['state']
+
+    # execute changes source by source in increasing order
+    for src in ps.get('sources', []):
+      if 'id' in src:
+        self.set_source(**src)
+      else:
+        pass # TODO: support some id-less source concept that allows dynamic source allocation
+
+    # execute changes group by group in increasing order
+    for g in utils.with_id(ps.get('groups')):
+      _, g_to_update = utils.find(self.status['groups'], g['id'])
+      if g_to_update is None:
+        return utils.error('group {} does not exist'.format(g['id']))
+      self.set_group(**g)
+      if 'mute' in g:
+        # use the updated group's zones just in case the group's zones were just changed
+        _, g_updated = utils.find(self.status['groups'], g['id'])
+        zones_changed = g_updated['zones']
+        if g['mute']:
+          # keep track of the muted zones
+          z_muted.update(zones_changed)
+        else:
+          # handle odd mute thrashing case where zone was muted by one group then unmuted by another
+          z_muted.difference_update()
+
+    # execute change zone by zone in increasing order
+    for z in utils.with_id(ps.get('zones')):
+      self.set_zone(**z)
+      if 'mute' in z:
+        if z['mute']:
+          z_muted.add(z['id'])
+        elif z['id'] in z_muted:
+          z_muted.remove(z['id'])
+
+    # unmute effected zones that were not muted by the preset configuration
+    z_to_unmute = set(z_temp_muted).difference(z_muted)
+    for zid in z_to_unmute:
+      self.set_zone(id=zid, mute=False)
+
+    # TODO: execute stream commands
+
+    preset['last_used'] = int(time.time())
+
+    # TODO: release lock
+

@@ -20,6 +20,8 @@ info:
 servers:
   - url: 'http://amplipi.local:5000/api'
     description: Local AmpliPi Controller
+  - url: 'http://localhost:5000/api'
+    description: Test AmpliPi Controller
 tags:
 - name: status
   description: The status and configuration of the entire system, including source, zones, groups, and streams.
@@ -31,6 +33,8 @@ tags:
   description: Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.
 - name: stream
   description: Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify.
+- name: preset
+  description: A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.
 paths:
   /:
     get:
@@ -271,12 +275,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                input:
-                  type: string
+              $ref: '#/components/schemas/Source'
             examples:
               Update Input to RCA input:
                 value:
@@ -349,23 +348,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Update zone name
-                source-id:
-                  type: integer
-                  minimum: 0
-                  maximum: 3
-                mute:
-                  type: boolean
-                  description: Mute or unmute
-                vol:
-                  type: integer
-                  minimum: -79
-                  maximum: 0
-                  description: Volume level in dB
+              $ref: '#/components/schemas/Zone'
             examples:
               Mute:
                 value:
@@ -401,17 +384,12 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Group name, ie. Upstairs
-                zones:
-                  type: array
-                  items:
-                    type: integer
-                    description: zone id
-                  description: Set of zones that belong to group, a zone can belong to multiple groups
+              $ref: '#/components/schemas/Group'
+            examples: 
+              Add Upstairs Group:
+                value:
+                  name: "Upstairs"
+                  zones: [1, 2, 3, 4, 5]
         description: Post the necessary fields for the API to create a new group.
       description: Create a new group.
   /groups/{groupId}:
@@ -477,28 +455,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Update group name
-                zones:
-                  type: array
-                  items:
-                    type: integer
-                  description: Update member zones
-                source-id:
-                  type: integer
-                  minimum: 0
-                  maximum: 3
-                mute:
-                  type: boolean
-                  description: Mute or unmute all of the zones in group
-                vol-delta:
-                  type: integer
-                  minimum: -79
-                  maximum: 79
-                  description: Amount to adjust volume per member zone
+              $ref: '#/components/schemas/Group'
             examples:
               Mute:
                 value:
@@ -566,30 +523,11 @@ paths:
                 status: disconnected
         '400':
           description: Missing Required Information
-        '409':
-          description: Stream ID already taken
       requestBody:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: Friendly stream name, ie. Matt and Kim Radio
-                type:
-                  type: string
-                  description: Stream type
-                  enum:
-                    - pandora
-                    - shairport
-                    - spotify
-                user:
-                  type: string
-                  description: Stream account user name (for pandora this is an email address)
-                password:
-                  type: string
-                  description: Stream account password
+              $ref: '#/components/schemas/Stream'
             examples:
               Add Matt and Kim Radio:
                 value:
@@ -597,6 +535,14 @@ paths:
                   type: pandora
                   user: test@micro-nova.com
                   password: s79sDDkjf
+              Add MicroNova Spotify:
+                value:
+                  name: MicroNova Spotify
+                  type: spotify
+              Add Generic DLNA:
+                value:
+                  name: Replace this text with a name you like!
+                  type: dlna
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /streams/{streamId}:
@@ -778,6 +724,245 @@ paths:
           description: Stream Not Found
       operationId: post-stream-command
       description: Send a command to the connected stream with the matching ID.
+  /preset:
+    post:
+      summary: Create New preset
+      tags:
+        - preset
+      operationId: post-preset
+      responses:
+        '200':
+          description: Preset Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+        '400':
+          description: Missing Required Information
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preset'
+            examples:
+              Add Mute All:
+                value:
+                  name: Mute All
+                  state:
+                    zones:
+                      - id: 0
+                        mute: True
+                      - id: 1
+                        mute: True
+                      - id: 2
+                        mute: True
+                      - id: 3
+                        mute: True
+                      - id: 4
+                        mute: True
+                      - id: 5
+                        mute: True
+              Basic Sources and Zones:
+                value:
+                  name: Zones and Sources
+                  state:
+                    sources:
+                      - id: 0
+                        name: 1
+                        input: stream=90891
+                      - id: 1
+                        name: 2
+                        input: stream=44590
+                      - id: 2
+                        name: 3
+                        input: stream=4893
+                      - id: 3
+                        name: 4
+                        input: stream=4895
+                    zones:
+                      - id: 0
+                        name: Lab
+                        source_id: 3
+                        mute: False
+                        vol: -62
+                        disabled: False
+                      - id: 1
+                        name: Upstairs
+                        source_id: 0
+                        mute: False
+                        vol: -62
+                        disabled: False
+              Sources, Zones, Groups, and Names:
+                value:
+                  name: Sources, Zones, Groups, and Names
+                  state:
+                    sources:
+                      - id: 0
+                        name: Spotify
+                        input: stream=4895
+                      - id: 1
+                        name: Pandora1
+                        input: stream=90891
+                      - id: 2
+                        name: Pandora2
+                        input: stream=90892
+                      - id: 3
+                        name: AirPlay
+                        input: stream=44590
+                    zones:
+                      - id: 0
+                        name: Lab
+                        source_id: 0
+                        mute: False
+                        vol: -62
+                        disabled: False
+                    groups:
+                      - id: 0
+                      - id: 1
+        description: Post the necessary fields for the API to create a new stream.
+      description: Create a new stream.
+  /presets/{presetId}:
+    get:
+      summary: Get Preset Info by Preset ID
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Mute All:
+              value: 10001
+      responses:
+        '200':
+          description: Preset Command Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+              examples:
+                Get Mute All:
+                  value:
+                    id: 10001
+                    name: Mute All
+                    state:
+                      zones:
+                        - id: 0
+                          mute: True
+                        - id: 1
+                          mute: True
+                        - id: 2
+                          mute: True
+                        - id: 3
+                          mute: True
+                        - id: 4
+                          mute: True
+                        - id: 5
+                          mute: True
+        '404':
+          description: Preset Not Found
+      operationId: get-preset
+      description: Retrieve the preset configuration.
+    patch:
+      summary: Update Preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Mute All:
+              value: 10001
+      operationId: patch-preset
+      responses:
+        '200':
+          description: Preset Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Preset Not Found
+      description: Update the configuration of a preset.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preset'
+            examples:
+              Change preset to mute only some zones:
+                value:
+                  name: Mute some zones
+                  state:
+                    zones:
+                      - id: 0
+                        mute: True
+                      - id: 1
+                        mute: True
+                      - id: 4
+                        mute: True
+                      - id: 5
+                        mute: True
+        description: Patch stream configuration to update.
+    delete:
+      summary: Delete Preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Mute All:
+              value: 10001
+      operationId: delete-preset
+      description: Delete a preset
+      responses:
+        '200':
+          description: Preset Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Preset Not Found
+  /presets/{presetId}/load:
+    post:
+      summary: Load a preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Mute All Zones:
+              value: 10000
+      responses:
+        '200':
+          description: Return status after preset loaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        # TODO: add preset not found, and preset laod failed error results
+        '404':
+          description: Preset Not Found
+      operationId: load-preset
+      description: Preset loaded
 components:
   schemas:
     Source:
@@ -802,10 +987,6 @@ components:
           id: 0
           name: J1
           input: stream=90801
-      required:
-        - id
-        - name
-        - input
     Stream:
       title: Stream
       type: object
@@ -831,10 +1012,6 @@ components:
         status:
           type: string
           description: connected/playing status of the stream
-      required:
-        - id
-        - name
-        - type
     Zone:
       title: Zone
       type: object
@@ -866,13 +1043,6 @@ components:
         disabled:
           type: boolean
           description: Set to true if zone is not connected to a speaker
-      required:
-        - id
-        - name
-        - source_id
-        - mute
-        - vol
-        - disabled
       x-examples:
         Master Bedroom:
           id: 5
@@ -915,10 +1085,6 @@ components:
           format: int32
           minimum: -79
           maximum: 0
-      required:
-        - id
-        - name
-        - zones
       x-examples:
         Master Bedroom:
           id: 5
@@ -947,4 +1113,56 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Stream'
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Preset'
+    Command:
+      title: Command
+      type: object
+      description: A command to execute (for now only stream commands are supported)
+      properties:
+        cmd:
+          type: string
+          description: the command to execute
+        stream:
+          type: integer
+          description: stream id
+      required:
+        - cmd
+        - stream
+    Preset:
+      title: Preset
+      type: object
+      description: A partial controller configuration that can be loaded on demand. In addition to most of the configurration found in Status, this can contain commands as well that configure the state of different streaming services. At the moment configuration of streams is only supported as commands.
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Unique preset identifier, generated on creation
+        name:
+          type: string
+          description: Preset name, ie. Movie Time
+        state:
+          type: object
+          description: Partial system state to configure
+          properties:
+            sources:
+              type: array
+              items:
+                $ref: '#/components/schemas/Source'
+            zones:
+              type: array
+              items:
+                $ref: '#/components/schemas/Zone'
+            groups:
+              type: array
+              items:
+                $ref: '#/components/schemas/Group'
+        commands:
+          type: array
+          description: sequential list of commands to execute in order
+          items:
+            $ref: '#/components/schemas/Command'
   securitySchemes: {}

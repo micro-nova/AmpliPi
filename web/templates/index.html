@@ -15,9 +15,27 @@
 </head>
 <body>
 <!-- partial:index.partial.html -->
-<div class="title"><span>Ampli</span><span class="text-danger">Pi</span></div>
 <div class="container">
-  <div class="card-rows">
+  <div id="main-list">
+    <div id="preset-list" card="card">
+      <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#main-list" href="#preset-list .card-body" aria-expanded="false">
+        <!--h6 class="card-header"><i class="fas fa-chevron-down"></i> </h6-->
+        <div class="title"><span class="text-white">Ampli</span><span class="text-danger">Pi</span></div>
+        <div class="title-down"> <i class="fa fa-chevron-down"></i></div>
+      </a>
+      <div class="card-body collapse">
+        {% for pst in presets %}
+        <div id="pst-{{ pst.id }}" class="d-flex preset flex-row-reverse" data-id="{{ pst.id }}">
+          <div class="status align-self-center ml-2 mr-2"><i class="fas fa-check-circle" style="visibility: hidden;"></i></div>
+          <div class="apply"><button type="button" class="btn preset-btn" onclick="onLoadPreset(this);">Apply</button></div>
+          <div class="preset-header d-flex flex-items-baseline ml-2">
+            <div class="name mr-2 align-self-center">{{ pst['name'] }}</div>
+            <div class="last-used align-self-center"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
     <div class="card source">
       <div class="card-header text-center">
         <!-- TODO: how to left align the play-ing icon? -->

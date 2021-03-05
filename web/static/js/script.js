@@ -4,6 +4,7 @@ const icons = {
   'local'     : '/static/imgs/rca_inputs.svg',
   'pandora'   : '/static/imgs/pandora.png',
   'spotify'   : '/static/imgs/spotify.png',
+  'dlna'      : '/static/imgs/dlna.png',
   'none'      : '/static/imgs/disconnected.png'
 }
 
@@ -102,6 +103,89 @@ function sendStreamCommand(ctrl, command) {
   }
 }
 
+function timeSince(timeStamp) {
+  var now = new Date(),
+    secondsPast = (now.getTime() - timeStamp) / 1000;
+  if (secondsPast < 60) {
+    return parseInt(secondsPast) + 's';
+  }
+  if (secondsPast < 3600) {
+    return parseInt(secondsPast / 60) + 'm';
+  }
+  if (secondsPast <= 86400) {
+    return parseInt(secondsPast / 3600) + 'h';
+  }
+  if (secondsPast > 86400) {
+    day = timeStamp.getDate();
+    month = timeStamp.toDateString().match(/ [a-zA-Z]*/)[0].replace(" ", "");
+    year = timeStamp.getFullYear() == now.getFullYear() ? "" : " " + timeStamp.getFullYear();
+    return day + " " + month + year;
+  }
+}
+
+$('#preset-list').on('show.bs.collapse', function () {
+  // do something…
+  for (pst of $('#preset-list .preset')) {
+    let status = pst.querySelector(".status i");
+    status.style.visibility = "hidden";
+    status.classList.toggle('fa-check-circle', true); // we need something the right size to be there
+    status.classList.toggle('fa-exclamation-triangle', false);
+    status.classList.toggle('fa-circle-notch', false);
+  }
+})
+
+function onLoadPreset(ctrl) {
+  let pst = ctrl.closest(".preset");
+  let pid = pst.dataset.id;
+  let status = pst.querySelector(".status i");
+  let name = pst.querySelector(".name");
+  let last_used = pst.querySelector(".last-used");
+  // start the progress spinner
+  status.title='';
+  status.style.visibility = "visible";
+  status.classList.toggle('fa-check-circle', false);
+  status.classList.toggle('fa-exclamation-triangle', false);
+  status.classList.toggle('fa-circle-notch', true);
+  let response = sendRequest('/presets/' + pid + '/load', 'POST', {},
+  function (response) {
+    try {
+      status.classList.toggle('fa-circle-notch', false); // testing to see when we get here
+      let preset = null;
+      for (const p of response['presets']) {
+        if (p['id'] == pid) {
+          preset = p;
+        }
+      }
+      // TODO: for some reason this check doesn't always get set, investigate tomorrow
+      status.classList.toggle('fa-check-circle', preset != null);
+      status.classList.toggle('fa-exclamation-triangle', preset == null);
+      if (preset) {
+        if (preset.id == 9999) {
+          last_used.innerHTML = ''; // last config shouldnt show when it was last modified
+        } else if (preset.hasOwnProperty('last_used') && preset.last_used) {
+          last_used.innerHTML = timeSince(new Date(preset.last_used * 1000)); // js expects milliseconds from epoch
+        } else {
+          last_used.innerHTML = 'never';
+        }
+      }
+    } catch (err) {
+      last_used.innerHTML = err;
+      console.log('err1: ' + err);
+      status.classList.toggle('fa-circle-notch', false);
+      status.classList.toggle('fa-check-circle', false);
+      status.classList.toggle('fa-exclamation-triangle', true);
+    }
+  },
+  function (err) {
+    last_used.innerHTML = err;
+    console.log('err2: ' + err);
+    status.classList.toggle('fa-circle-notch', false);
+    status.classList.toggle('fa-check-circle', false);
+    status.classList.toggle('fa-exclamation-triangle', true);
+  });
+  // TODO: updated last-used time
+}
+
 function onPlayPause(ctrl) {
   if (ctrl.classList.contains('fa-play')) {
     sendStreamCommand(ctrl, 'play');
@@ -182,6 +266,9 @@ function updateSourceView(status) {
         } else if (stream.type == 'spotify') {
           // TODO: populate spotify album info
           cover.src = icons['spotify'];
+        } else if (stream.type == 'dlna') {
+          // TODO: populate dlna album info
+          cover.src = icons['dlna'];
         }
       }
     } else if (src.input == 'local') {
@@ -191,8 +278,9 @@ function updateSourceView(status) {
       cover.src = icons['none'];
     }
     // update each source's input
-    $("#s" + src.id + "-player")[0].dataset.srcInput = src.input;
-    $("#s" + src.id + '-input select').val(src.input);
+    player = $("#s" + src.id + "-player")[0];
+    player.dataset.srcInput = src.input;
+    $('#s' + src.id + '-input').val(src.input);
   }
 
   // update volumes
@@ -209,6 +297,18 @@ function updateSourceView(status) {
     }
   }
 
+  // TODO: update presets (their last applied times and status)
+  for (const preset of status['presets']) {
+    let pst = $('#pst-' + preset.id)[0];
+    let last_used = pst.querySelector(".last-used");
+    if (preset.last_used) {
+      last_used.innerHTML = timeSince(new Date(preset.last_used * 1000)); // js expects milliseconds from epoch
+    } else if (preset.id == 9999) {
+      last_used.innerHTML = '';
+    } else {
+      last_used.innerHTML = 'never';
+    }
+  }
   // TODO: add/remove groups and zones?
   // TODO: for now can we detect a group/zone change and force an update?
 }
@@ -226,7 +326,7 @@ async function get() {
   return result;
 }
 
-async function sendRequest(path, method, req) {
+async function sendRequest(path, method, req, handleResponse=function(result){}, handleErr=function(err){}) {
   onRequest(req)
   let response = await fetch('/api' + path, {
     method: method,
@@ -235,8 +335,11 @@ async function sendRequest(path, method, req) {
     },
     body: JSON.stringify(req)
   });
-  let result = await response.json();
-  onResponse(result);
+  response.json()
+  .then(function(response){
+    handleResponse(response);
+    onResponse(response);
+  }).catch(handleErr);
 }
 
 async function sendRequestAndReload(path, method, req, src) {

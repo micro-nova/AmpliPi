@@ -42,6 +42,7 @@ scp $SCRIPT_DIR/../tests/*.bash                      $RPI_IP_ADDRESS:${RPI_HOME_
 scp $SCRIPT_DIR/../web/templates/*                   $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/web/templates/
 scp -r $SCRIPT_DIR/../web/static/*                   $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/web/static/
 scp $SCRIPT_DIR/../docs/amplipi_api.yaml             $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/web/static/ # windows doesn't like soft links
+ssh $RPI_IP_ADDRESS "touch ${RPI_HOME_FOLDER}/web/static/amplipi_api.yaml" # testing
 # copy config files that need to be moved with sudo, then call a script to move/configure them
 scp $SCRIPT_DIR/../config/*.json                     $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
 scp $SCRIPT_DIR/../config/eventcmd.sh                $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/

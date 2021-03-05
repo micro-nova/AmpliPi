@@ -1,4 +1,6 @@
 # AmpliPi Home Audio System
+[![Build Status][workflow-badge]][workflow-link] [![Coverage][coverage-badge]][coverage-link] [![GPL License][license-badge]](LICENSE.md)
+
 AmpliPi™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio streams (Pandora, Spotify, AirPlay, etc) or sources (RCA inputs), each routed to one or many zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPi Zone Expanders.
 
 The AmpliPi design is entirely open source, from the software, to the firmware, to the schematics. The REST API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (avaiable in this repo).
@@ -37,6 +39,15 @@ Below the volumes is an add zone/group selector. To play the current Pandora sta
   </img>
 </p>
 
+### Loading a preset
+We figured that presets should be simple to access, while not taking up much space while they weren't in use. This compromise led us to hide the presets in the AmpliPi logo. Just click the AmpliPi logo to access the preset control pane. Using presets we can play the Matt and Kim radio station thoughout the house in a couple clicks.
+<p align="center">
+  <img alt="Load a preset"
+      src="docs/imgs/app_demos/load_preset_small.gif"
+      width="250">
+  </img>
+</p>
+
 ## The REST API
 AmpliPi has a REST API that can be used to control volumes, switch and control audio sources, configure different streaming sources, and much more. It allows full configuration and real-time control of the AmpliPi device. The API conforms to the OpenAPI standard. It is fully documented on our [AmpliPi Open API site](https://micro-nova.github.io/AmpliPi).
 
@@ -53,3 +64,8 @@ Not quite sure how to accomplish this? No problem - The AmpliPi controller hosts
 ## Development
 See [DEVELOPING.md](DEVELOPING.md) for how to get started working on AmpliPi
 
+[workflow-badge]:  https://github.com/micro-nova/AmpliPi/actions/workflows/python-app.yml/badge.svg
+[workflow-link]:   https://github.com/micro-nova/AmpliPi/actions?query=workflow%3Apython-app.yml
+[coverage-badge]:  https://codecov.io/github/micro-nova/AmpliPi/coverage.svg?branch=master
+[coverage-link]:   https://codecov.io/github/micro-nova/AmpliPi?branch=master
+[license-badge]:   https://img.shields.io/badge/License-GPL%20v3-blue.svg

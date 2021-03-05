@@ -34,6 +34,8 @@ def build_stream(args, mock=False):
     return Shairport(args['name'], mock=mock)
   elif args['type'] == 'spotify':
     return Spotify(args['name'], mock=mock)
+  elif args['type'] == 'dlna':
+    return DLNA(args['name'], mock=mock)
   else:
     raise NotImplementedError(args['type'])
 
@@ -166,7 +168,7 @@ class Shairport:
             if int(data[4]):
               d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5]) 
         # return d
-    except Exception as e:
+    except Exception:
       pass
       # TODO: Put an actual exception here?
 
@@ -182,7 +184,7 @@ class Shairport:
             d['DACP-ID'] = info[2]
             d['client_IP'] = info[3]
         # return d
-    except Exception as e:
+    except Exception:
       pass
 
     return d
@@ -423,7 +425,7 @@ class Pandora:
             d['img_url'] = data[3]
             d['station'] = data[5]
         return(d)
-    except Exception as e:
+    except Exception:
       pass
       #print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
     # TODO: report the status of pianobar with station name, playing/paused, song info
@@ -432,3 +434,91 @@ class Pandora:
 
   def status(self):
     return self.state
+
+class DLNA:
+  """ A DLNA Stream """
+  def __init__(self, name, mock=False):
+    self.name = name
+    self.proc = None
+    self.mock = mock
+    self.src = None
+    self.state = 'disconnected'    
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+      reconnect_needed = True
+    if reconnect_needed:
+      if self._is_dlna_running():
+        last_src = self.src
+        self.disconnect()
+        time.sleep(0.1) # delay a bit, is this needed?
+        self.connect(last_src)
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, src):
+    """ Connect a DLNA device to a given audio source
+    This creates a DLNA streaming option based on the configuration
+    """
+    if self.mock:
+      print('{} connected to {}'.format(self.name, src))
+      self.state = 'connected'
+      self.src = src
+      return
+    
+    # Generate some of the DLNA_Args
+    self.uuid = 0
+    self.uuid_gen()
+    portnum = 49494 + int(src)
+
+    # Potentially need to add more - especially when it comes to metadata and stuff like that
+    dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
+                '--gstout-audiodevice', 'ch{}'.format(src), '--gstout-initial-volume-db',
+                '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
+                '-f', '{}'.format(self.name)]
+    # TODO: figure out how to get status from DLNA
+    self.proc = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print('{} connected to {}'.format(self.name, src))
+    self.state = 'connected'
+    self.src = src
+
+  def _is_dlna_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_dlna_running():
+      self.proc.kill()
+      print('{} disconnected'.format(self.name))
+    self.state = 'disconnected'
+    self.proc = None
+    self.src = None
+
+  def info(self):
+    return {'details': 'No info available'}
+
+  def uuid_gen(self):
+    # Get new UUID for the DLNA endpoint
+    u_args = 'uuidgen'
+    uuid_proc = subprocess.run(args=u_args, capture_output=True)
+    uuid_str = str(uuid_proc).split(',')
+    c_check = uuid_str[0]
+    val = uuid_str[2]
+
+    if c_check[0:16] == 'CompletedProcess':
+      self.uuid = val[10:46]
+    else:
+      self.uuid = '39ae35cc-b4c1-444d-b13a-294898d771fa' # Generic UUID in case of failure
+    return
+
+  def status(self):
+    return self.state
+
+  def __str__(self):
+    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return 'DLNA: {}{}{}'.format(self.name, connection, mock)

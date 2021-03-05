@@ -50,8 +50,8 @@ def updated_val(update, val):
   else:
     return update, update != val
 
-def find(items, id):
-  return next(filter(lambda ie: ie[1]['id'] == id, enumerate(items)), (None, None))
+def find(items, id, key='id'):
+  return next(filter(lambda ie: ie[1][key] == id, enumerate(items)), (None, None))
 
 def clamp(x, xmin, xmax):
     return max(xmin, min(x, xmax))
@@ -104,3 +104,8 @@ def save_on_success(func):
       self.save()
     return result
   return inner
+
+def with_id(elements):
+  if elements is None:
+    return []
+  return [ e for e in elements if 'id' in e ]

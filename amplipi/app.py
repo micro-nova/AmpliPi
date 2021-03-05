@@ -37,7 +37,7 @@ template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
 
 app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
-app.api = None
+app.api = None # TODO: assign an unloaded API here to get auto completion / linting
 
 # Helper functions
 def unused_groups(src):
@@ -174,6 +174,33 @@ def delete_stream(sid):
 def exec_command(sid, cmd):
   return code_response(app.api.exec_stream_command(id=sid, cmd=cmd))
 
+# presets
+
+@app.route('/api/preset', methods=['POST'])
+def create_preset():
+  print('creating preset from {}'.format(request.get_json()))
+  return code_response(app.api.create_preset(request.get_json()))
+
+@app.route('/api/presets/<int:pid>', methods=['GET'])
+def get_preset(pid):
+  _, preset = utils.find(app.api.get_state()['presets'], pid)
+  if preset is not None:
+    return preset
+  else:
+    return {}, 404
+
+@app.route('/api/presets/<int:pid>', methods=['PATCH'])
+def set_preset(pid):
+  return code_response(app.api.set_preset(pid, request.get_json()))
+
+@app.route('/api/presets/<int:pid>', methods=['DELETE'])
+def delete_preset(pid):
+  return code_response(app.api.delete_preset(id=pid))
+
+@app.route('/api/presets/<int:pid>/load', methods=['POST'])
+def load_preset(pid):
+  return code_response(app.api.load_preset(id=pid))
+
 # documentation
 
 @app.route('/api/doc')
@@ -188,7 +215,8 @@ def doc():
 def view(src=0):
   s = app.api.status
   return render_template('index.html', cur_src=src, sources=s['sources'],
-    zones=s['zones'], groups=s['groups'], inputs=app.api.get_inputs(),
+    zones=s['zones'], groups=s['groups'], presets=s['presets'],
+    inputs=app.api.get_inputs(),
     unused_groups=[unused_groups(src) for src in range(4)],
     unused_zones=[unused_zones(src) for src in range(4)],
     ungrouped_zones=[ungrouped_zones(src) for src in range(4)],
