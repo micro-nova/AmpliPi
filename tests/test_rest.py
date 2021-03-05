@@ -55,16 +55,27 @@ def client(request):
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
-def test_base(client):
-    """Start with a basic controller and just check if it gives a real response"""
-    rv = client.get('/api/')
-    jrv = rv.get_json()
-    assert jrv != None
-    og_config = client.original_config
-    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
-      if t in og_config:
-        assert len(jrv[t]) == len(og_config[t])
+# TODO: the web view test should be added to its own testfile once we add more functionality to the site
+@pytest.mark.parametrize('path', [',' , '/'] + [ '/{}'.format(i) for i in range(4) ])
+def test_view(client, path):
+  rv = client.get('/')
+  assert rv.status_code == HTTPStatus.OK
 
+@pytest.mark.parametrize('path', ['/api', '/api/'])
+def test_base(client, path):
+    """Start with a basic controller and just check if it gives a real response"""
+    rv = client.get(path)
+    assert rv.status_code in [ HTTPStatus.OK, HTTPStatus.PERMANENT_REDIRECT] # flask inserts a redirect here for some reason
+    if rv.status_code == HTTPStatus.OK:
+      jrv = rv.get_json()
+      assert jrv != None
+      og_config = client.original_config
+      for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+        if t in og_config:
+          assert len(jrv[t]) == len(og_config[t])
+    else:
+      assert path == '/api'
+      assert '/api/' in rv.location
 
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
