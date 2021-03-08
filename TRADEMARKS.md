@@ -93,7 +93,7 @@ You may use the Word Marks, but not the Logos, to truthfully describe the relati
 
 ### Use of trademarks to show community affiliation
 
-This section discusses the use of our Marks for software such an application themes, skins and personas. The use of our Marks on websites is discussed below.
+This section discusses the use of our Marks for software such as application themes, skins and personas. The use of our Marks on websites is discussed below.
 
 You may use the Word Marks and the Logos in themes, personas, or skins for applications to show your support for the Project, provided that the use is non-commercial and the use is clearly decorative, as contrasted with a use that appears to be the branding for a website or application. 
 
@@ -103,8 +103,8 @@ You may use the Word Marks and the Logos in themes, personas, or skins for appli
 
 This kind of use concerns hardware associated with AmpliPi (This may include: hardware that comes preloaded with AmpliPi software, hardware that is advertised, marketed, or documented as being compatible with AmpliPi software, or hardware otherwise intended for use with AmpliPi software.)
 
-You may use use the Word Marks and the Logos in association with hardware devices if and only if ALL of the following conditions are met:
-- The AmpliPi software installed on the device is only be modified so far as necessary to operate on the hardware platforms and the essential functions of the software are unchanged. 
+You may use the Word Marks and the Logos in association with hardware devices if and only if ALL of the following conditions are met:
+- The AmpliPi software installed on the device is only to be modified so far as necessary to operate on the hardware platform, while the essential functions of the software are unchanged.
 - You do not suggest that the Project is the source of the hardware device itself but rather that the Marks are for the software incorporated into the device. For example, "[Your product name] runs AmpliPi software" or "[Your product name] with AmpliPi software" are acceptable, but "[Your product name] AmpliPi", "[Your product name] AmpliPi controller", or "AmpliPi by [your company name]" are not acceptable.
 - You must release full and unabridged schematics for your hardware device.
 - You must contact us and obtain prior written approval. See section "Where to Get Further Information" for our contact information. This review process helps ensure that hardware products associated with AmpliPi adhere to open source principles, benefit the AmpliPi community and our contributors, and are compliant with the AmpliPi trademark policies, software license, and applicable laws.
@@ -133,7 +133,7 @@ You may use the Word Marks and Logos, but not the Trade Dress, on your webpage t
 
 ### Publications and presentations
 
-You can use the Word Marks in book and article titles, and the Logo in illustrations within the document, as long as the use does not suggest that we have published, endorse, or agree with your work. 
+You can use the Word Marks in book and article titles, and the Logo in illustrations within the document, as long as the use does not suggest that we have published, endorsed, or agreed with your work.
 
 ## Uses for which we are granting a license
 
@@ -146,7 +146,7 @@ You can use the Word Marks as part of your user group name provided that:
 - The group does not make a profit;
 - Any charge to attend meetings are to cover the cost of the venue, food and drink only.
 
-Note that the Universal considerations for all uses, above, still apply, specifically, that you may not use or register the Marks as part of your own trademark, service mark, domain name, company name, trade name, product name or service name. 
+Note that the Universal considerations for all uses above still apply, specifically that you may not use or register the Marks as part of your own trademark, service mark, domain name, company name, trade name, product name or service name.
 
 ## Uses we consider infringing without seeking further permission from us
 
@@ -156,17 +156,17 @@ We would likely consider using the Marks on promotional goods for sale an infrin
 
 # General Considerations About Trademarks and Their Use
 
-### What is a trademark?
+### What is a Trademark?
 
 A trademark is a word, phrase, symbol or design, or a combination of words, phrases, symbols or designs, that identifies and distinguishes the source of the goods of one party from those of others. A service mark is the same as a trademark, except that it identifies and distinguishes the source of a service rather than a product. "Trade dress" or "get up" refers to the look and feel of the packaging, which in this context can include the layout, colors, images, and design choices in a web page. Throughout this Policy, the terms "trademark" and "mark" refer to both trademarks, service marks and trade dress.
 
 However, the use of a word is "not as a trademark" when it is used functionally as part of the software program, for example, in a file, folder, directory, or path name. Use in this way is not a trademark infringement. 
 
-### What is "likelihood of confusion"?
+### What is "Likelihood of Confusion"?
 
 There is trademark infringement if your use of a trademark has created a "likelihood of confusion." This means using a trademark in a way that will likely confuse or deceive the relevant consuming public about the source of a product or service using the mark in question. For example, if the "Foo" software extension removes all double spaces after periods, but someone else later creates "Foo" software that adds a third space after periods, consumers would be confused between the two and the newcomer will likely be a trademark infringer. As another example, if a company makes "Foobar" software and a third party offers training called "Foobar Certification," a person is likely to believe, wrongly, that the certification is being offered by the makers of Foobar software. The third party has likely misled consumers about the source of its training and is a trademark infringer. 
 
-### What is "nominative" use?
+### What is "Nominative" Use?
 
 So-called "nominative use" (or "nominative fair use"), which is the name of the doctrine under U.S. trademark law, allows the use of another's trademark where it is necessary for understanding. Other countries' trademark laws also have similar provisions. For example, a car repair shop that specializes in a particular brand of automobile, VW for example, must be allowed to say that they repair VW cars. Here is what you should consider when deciding whether your use of a trademark is a nominative fair use:
 
@@ -178,41 +178,33 @@ With our "Foobar Certification" example above, the person offering the certifica
 
 It is almost never the case that using a Logo will be a nominative fair use since it will be a rare case where the logo is needed for strictly informational purposes.
 
-### Proper use of trademarks in text
+### Proper Use of Trademarks in Text
 
-These rules hold true for all trademarks, not just ours, so you should follow them for our Marks as well as anyone else's. 
+These rules generally hold true for all trademarks, not just ours, so you should follow them for our Marks as well as anyone else's.
 
-- Always distinguish trademarks from surrounding text with at least initial capital letters or in all capital letters.
-  - Unacceptable: <<~mark>>
-  - Acceptable: <<~Mark, ~MARK>>
+- Always distinguish trademarks from surrounding text by capitalising them correctly. "AmpliPi" is correctly written in CamelCase with the first 'A' and last 'P' capitalized. Note that this is not always possible in technical contexts that are case-insensitive (such as DNS names and email addresses.)
+  - Unacceptable: amplipi, AMPLIPI
+  - Acceptable: AmpliPi, amplipi.local
 
 - Always use trademarks in their exact form with the correct spelling, neither abbreviated, hyphenated, or combined with any other word or words.
-  - Unacceptable: <<~Mark misspelled or wrong case>>
-  - Acceptable: <<~Mark>>
+  - Unacceptable: Ampli-Pi, AmpliPie
+  - Acceptable: AmpliPi
 
 - Don't pluralize a trademark.
-  - Unacceptable: I have seventeen <<~Marks>> running in my lab.
-  - Acceptable: I have seventeen <<~Mark>> systems running in my lab.
+  - Unacceptable: I have three AmpliPi's running in my house.
+  - Acceptable: I have three AmpliPi units running in my house.
 
-- Don't use "a" or "the" to refer to an instance of the trademark.
-  - Unacceptable: I put a <<~Mark>> on my mom's computer.
-  - Acceptable: I put a <<~Mark>> system on my mom's computer.
+- Don't use "an" or "the" to refer to an instance of the trademark.
+  - Unacceptable: I installed the AmpliPi on my Raspberry Pi.
+  - Acceptable: I installed the AmpliPi software on my Raspberry Pi.
 
-- Always use a trademark as an adjective modifying a noun. You can see the nouns we prefer under "Our trademarks."
-  - Unacceptable: This is a <<~Mark>>. Anyone can install it.
-  - Acceptable: This is a <<~Mark>> application. Anyone can install it.
+- Don't use a trademark as a verb.
+  - Unacceptable: I AmpliPied my home today!
+  - Acceptable: I installed the AmpliPi system in my home today!
 
-- Don't use a trademark as a verb. Trademarks are products or services, never actions.
-  - Unacceptable: I <<~Markified>> my computer today!
-  - Acceptable: I installed <<~Mark>> software on my computer today!
-
-- Don't use a trademark as a possessive. Instead, the following noun should be used in possessive form or the sentence reworded so there is no possessive.
-  - Unacceptable: <<~Mark's>> desktop interface is very clean.
-  - Acceptable: The <<~Mark>> desktop's interface is very clean.
-
-- Don't translate a trademark into another language.
-  - Acceptable: Quiero instalar <<~Mark>> en mi sistema.
-  - Unacceptable: Quiero instalar <<~Mark translated into Spanish>> en mi sistema.
+- Don't use a trademark as a possessive.
+  - Unacceptable: AmpliPi's user interface is very clean.
+  - Acceptable: The AmpliPi user interface is very clean.
 
 ### Proper Use of Logos
 
