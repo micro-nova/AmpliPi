@@ -1526,13 +1526,6 @@ class Instance(_Ctype):
             libvlc_audio_output_list_release(head)
         return r
 
-    def audio_filter_list_get(self):
-        """Returns a list of available audio filters.
-
-        """
-        return module_description_list(libvlc_audio_filter_list_get(self))
-
-
     def playlist_play(self):
         '''Start playing (if there is any item in the playlist).
         Additionnal playlist item options can be specified for addition to the
@@ -1672,31 +1665,6 @@ class Instance(_Ctype):
         return libvlc_media_new_as_node(self, str_to_bytes(psz_name))
 
 
-    def media_discoverer_new(self, psz_name):
-        '''Create a media discoverer object by name.
-        After this object is created, you should attach to media_list events in
-        order to be notified of new items discovered.
-        You need to call L{media_discoverer_start}() in order to start the
-        discovery.
-        See L{media_discoverer_media_list}
-        See L{media_discoverer_start}.
-        @param psz_name: service name; use L{media_discoverer_list_get}() to get a list of the discoverer names available in this libVLC instance.
-        @return: media discover object or None in case of error.
-        @version: LibVLC 3.0.0 or later.
-        '''
-        return libvlc_media_discoverer_new(self, str_to_bytes(psz_name))
-
-
-    def media_discoverer_list_get(self, i_cat, ppp_services):
-        '''Get media discoverer services by category.
-        @param i_cat: category of services to fetch.
-        @param ppp_services: address to store an allocated array of media discoverer services (must be freed with L{media_discoverer_list_release}() by the caller) [OUT].
-        @return: the number of media discoverer services (0 on error).
-        @version: LibVLC 3.0.0 and later.
-        '''
-        return libvlc_media_discoverer_list_get(self, i_cat, ppp_services)
-
-
     def audio_output_list_get(self):
         '''Gets the list of available audio output modules.
         @return: list of available audio outputs. It must be freed with In case of error, None is returned.
@@ -1720,30 +1688,6 @@ class Instance(_Ctype):
         '''
         return libvlc_audio_output_device_list_get(self, str_to_bytes(aout))
 
-
-    def renderer_discoverer_new(self, psz_name):
-        '''Create a renderer discoverer object by name
-        After this object is created, you should attach to events in order to be
-        notified of the discoverer events.
-        You need to call L{renderer_discoverer_start}() in order to start the
-        discovery.
-        See L{renderer_discoverer_event_manager}()
-        See L{renderer_discoverer_start}().
-        @param psz_name: service name; use L{renderer_discoverer_list_get}() to get a list of the discoverer names available in this libVLC instance.
-        @return: media discover object or None in case of error.
-        @version: LibVLC 3.0.0 or later.
-        '''
-        return libvlc_renderer_discoverer_new(self, str_to_bytes(psz_name))
-
-
-    def renderer_discoverer_list_get(self, ppp_services):
-        '''Get media discoverer services
-        See libvlc_renderer_list_release().
-        @param ppp_services: address to store an allocated array of renderer discoverer services (must be freed with libvlc_renderer_list_release() by the caller) [OUT].
-        @return: the number of media discoverer services (0 on error).
-        @version: LibVLC 3.0.0 and later.
-        '''
-        return libvlc_renderer_discoverer_list_get(self, ppp_services)
 
 class Media(_Ctype):
     '''Create a new Media instance.
@@ -2060,94 +2004,12 @@ class Media(_Ctype):
         return libvlc_media_get_type(self)
 
 
-    def slaves_add(self, i_type, i_priority, psz_uri):
-        '''Add a slave to the current media.
-        A slave is an external input source that may contains an additional subtitle
-        track (like a .srt) or an additional audio track (like a .ac3).
-        @note: This function must be called before the media is parsed (via
-        L{parse_with_options}()) or before the media is played (via
-        L{player_play}()).
-        @param i_type: subtitle or audio.
-        @param i_priority: from 0 (low priority) to 4 (high priority).
-        @param psz_uri: Uri of the slave (should contain a valid scheme).
-        @return: 0 on success, -1 on error.
-        @version: LibVLC 3.0.0 and later.
-        '''
-        return libvlc_media_slaves_add(self, i_type, i_priority, str_to_bytes(psz_uri))
-
-
-    def slaves_clear(self):
-        '''Clear all slaves previously added by L{slaves_add}() or
-        internally.
-        @version: LibVLC 3.0.0 and later.
-        '''
-        return libvlc_media_slaves_clear(self)
-
-
-    def slaves_get(self, ppp_slaves):
-        '''Get a media descriptor's slave list
-        The list will contain slaves parsed by VLC or previously added by
-        L{slaves_add}(). The typical use case of this function is to save
-        a list of slave in a database for a later use.
-        @param ppp_slaves: address to store an allocated array of slaves (must be freed with L{slaves_release}()) [OUT].
-        @return: the number of slaves (zero on error).
-        @version: LibVLC 3.0.0 and later. See L{slaves_add}.
-        '''
-        return libvlc_media_slaves_get(self, ppp_slaves)
-
-
     def player_new_from_media(self):
         '''Create a Media Player object from a Media.
         @return: a new media player object, or None on error. It must be released by L{player_release}().
         '''
         return libvlc_media_player_new_from_media(self)
 
-class MediaDiscoverer(_Ctype):
-    '''N/A
-    '''
-
-    def __new__(cls, ptr=_internal_guard):
-        '''(INTERNAL) ctypes wrapper constructor.
-        '''
-        return _Constructor(cls, ptr)
-
-    def start(self):
-        '''Start media discovery.
-        To stop it, call L{stop}() or
-        L{list_release}() directly.
-        See L{stop}.
-        @return: -1 in case of error, 0 otherwise.
-        @version: LibVLC 3.0.0 or later.
-        '''
-        return libvlc_media_discoverer_start(self)
-
-
-    def stop(self):
-        '''Stop media discovery.
-        See L{start}.
-        @version: LibVLC 3.0.0 or later.
-        '''
-        return libvlc_media_discoverer_stop(self)
-
-
-    def release(self):
-        '''Release media discover object. If the reference count reaches 0, then
-        the object will be released.
-        '''
-        return libvlc_media_discoverer_release(self)
-
-
-    def media_list(self):
-        '''Get media service discover media list.
-        @return: list of media items.
-        '''
-        return libvlc_media_discoverer_media_list(self)
-
-
-    def is_running(self):
-        '''Query if media service discover object is running.
-        '''
-        return libvlc_media_discoverer_is_running(self)
 
 class MediaList(_Ctype):
     '''Create a new MediaList instance.
@@ -2497,44 +2359,6 @@ class MediaPlayer(_Ctype):
         self.set_media(m)
         return m
 
-    def audio_get_track_description(self):
-        """Get the description of available audio tracks.
-        """
-        return track_description_list(libvlc_audio_get_track_description(self))
-
-    def get_full_title_descriptions(self):
-        '''Get the full description of available titles.
-        @return: the titles list
-        @version: LibVLC 3.0.0 and later.
-        '''
-        titleDescription_pp = ctypes.POINTER(TitleDescription)()
-        n = libvlc_media_player_get_full_title_descriptions(self, ctypes.byref(titleDescription_pp))
-        info = ctypes.cast(titleDescription_pp, ctypes.POINTER(ctypes.POINTER(TitleDescription) * n))
-        try:
-            contents = info.contents
-        except ValueError:
-            # Media not parsed, no info.
-            return None
-        descr = ( contents[i].contents for i in range(len(contents)) )
-        return descr
-
-    def get_full_chapter_descriptions(self, i_chapters_of_title):
-        '''Get the full description of available chapters.
-        @param i_chapters_of_title: index of the title to query for chapters (uses current title if set to -1).
-        @return: the chapters list
-        @version: LibVLC 3.0.0 and later.
-        '''
-        chapterDescription_pp = ctypes.POINTER(ChapterDescription)()
-        n = libvlc_media_player_get_full_chapter_descriptions(self, ctypes.byref(chapterDescription_pp))
-        info = ctypes.cast(chapterDescription_pp, ctypes.POINTER(ctypes.POINTER(ChapterDescription) * n))
-        try:
-            contents = info.contents
-        except ValueError:
-            # Media not parsed, no info.
-            return None
-        descr = ( contents[i].contents for i in range(len(contents)) )
-        return descr
-
     def audio_get_track_count(self):
         '''Get number of available audio tracks.
         @return: the number of available audio tracks (int), or -1 if unavailable.
@@ -2862,14 +2686,6 @@ class MediaPlayer(_Ctype):
         '''Display the next frame (if supported).
         '''
         return libvlc_media_player_next_frame(self)
-
-
-    def navigate(self, navigate):
-        '''Navigate through DVD Menu.
-        @param navigate: the Navigation mode.
-        @version: libVLC 2.0.0 or later.
-        '''
-        return libvlc_media_player_navigate(self, navigate)
 
 
     def get_tracklist(self, type):
@@ -3220,55 +3036,6 @@ class Renderer(_Ctype):
         @version: LibVLC 3.0.0 or later.
         '''
         return libvlc_renderer_item_flags(self)
-
-class RendererDiscoverer(_Ctype):
-    '''N/A
-    '''
-
-    def __new__(cls, ptr=_internal_guard):
-        '''(INTERNAL) ctypes wrapper constructor.
-        '''
-        return _Constructor(cls, ptr)
-
-    def release(self):
-        '''Release a renderer discoverer object.
-        @version: LibVLC 3.0.0 or later.
-        '''
-        return libvlc_renderer_discoverer_release(self)
-
-
-    def start(self):
-        '''Start renderer discovery
-        To stop it, call L{stop}() or
-        L{release}() directly.
-        See L{stop}().
-        @return: -1 in case of error, 0 otherwise.
-        @version: LibVLC 3.0.0 or later.
-        '''
-        return libvlc_renderer_discoverer_start(self)
-
-
-    def stop(self):
-        '''Stop renderer discovery.
-        See L{start}().
-        @version: LibVLC 3.0.0 or later.
-        '''
-        return libvlc_renderer_discoverer_stop(self)
-
-    @memoize_parameterless
-    def event_manager(self):
-        '''Get the event manager of the renderer discoverer
-        The possible events to attach are @ref libvlc_RendererDiscovererItemAdded
-        and @ref libvlc_RendererDiscovererItemDeleted.
-        The @ref L{Renderer} struct passed to event callbacks is owned by
-        VLC, users should take care of holding/releasing this struct for their
-        internal usage.
-        See L{Event}.u.renderer_discoverer_item_added.item
-        See L{Event}.u.renderer_discoverer_item_removed.item.
-        @return: a valid event manager (can't fail).
-        @version: LibVLC 3.0.0 or later.
-        '''
-        return libvlc_renderer_discoverer_event_manager(self)
 
 
  # LibVLC __version__ functions #
@@ -3668,35 +3435,6 @@ def libvlc_log_set_file(p_instance, stream):
         _Cfunction('libvlc_log_set_file', ((1,), (1,),), None,
                     None, Instance, FILE_ptr)
     return f(p_instance, stream)
-
-def libvlc_module_description_list_release(p_list):
-    '''Release a list of module descriptions.
-    @param p_list: the list to be released.
-    '''
-    f = _Cfunctions.get('libvlc_module_description_list_release', None) or \
-        _Cfunction('libvlc_module_description_list_release', ((1,),), None,
-                    None, ctypes.POINTER(ModuleDescription))
-    return f(p_list)
-
-def libvlc_audio_filter_list_get(p_instance):
-    '''Returns a list of audio filters that are available.
-    @param p_instance: libvlc instance.
-    @return: a list of module descriptions. It should be freed with L{libvlc_module_description_list_release}(). In case of an error, None is returned. See L{ModuleDescription} See L{libvlc_module_description_list_release}.
-    '''
-    f = _Cfunctions.get('libvlc_audio_filter_list_get', None) or \
-        _Cfunction('libvlc_audio_filter_list_get', ((1,),), None,
-                    ctypes.POINTER(ModuleDescription), Instance)
-    return f(p_instance)
-
-def libvlc_video_filter_list_get(p_instance):
-    '''Returns a list of video filters that are available.
-    @param p_instance: libvlc instance.
-    @return: a list of module descriptions. It should be freed with L{libvlc_module_description_list_release}(). In case of an error, None is returned. See L{ModuleDescription} See L{libvlc_module_description_list_release}.
-    '''
-    f = _Cfunctions.get('libvlc_video_filter_list_get', None) or \
-        _Cfunction('libvlc_video_filter_list_get', ((1,),), None,
-                    ctypes.POINTER(ModuleDescription), Instance)
-    return f(p_instance)
 
 def libvlc_clock():
     '''Return the current time as defined by LibVLC. The unit is the microsecond.
@@ -4150,158 +3888,6 @@ def libvlc_media_get_type(p_md):
                     MediaType, Media)
     return f(p_md)
 
-
-def libvlc_media_slaves_add(p_md, i_type, i_priority, psz_uri):
-    '''Add a slave to the current media.
-    A slave is an external input source that may contains an additional subtitle
-    track (like a .srt) or an additional audio track (like a .ac3).
-    @note: This function must be called before the media is parsed (via
-    L{libvlc_media_parse_with_options}()) or before the media is played (via
-    L{libvlc_media_player_play}()).
-    @param p_md: media descriptor object.
-    @param i_type: subtitle or audio.
-    @param i_priority: from 0 (low priority) to 4 (high priority).
-    @param psz_uri: Uri of the slave (should contain a valid scheme).
-    @return: 0 on success, -1 on error.
-    @version: LibVLC 3.0.0 and later.
-    '''
-    f = _Cfunctions.get('libvlc_media_slaves_add', None) or \
-        _Cfunction('libvlc_media_slaves_add', ((1,), (1,), (1,), (1,),), None,
-                    ctypes.c_int, Media, MediaSlaveType, ctypes.c_uint, ctypes.c_char_p)
-    return f(p_md, i_type, i_priority, psz_uri)
-
-def libvlc_media_slaves_clear(p_md):
-    '''Clear all slaves previously added by L{libvlc_media_slaves_add}() or
-    internally.
-    @param p_md: media descriptor object.
-    @version: LibVLC 3.0.0 and later.
-    '''
-    f = _Cfunctions.get('libvlc_media_slaves_clear', None) or \
-        _Cfunction('libvlc_media_slaves_clear', ((1,),), None,
-                    None, Media)
-    return f(p_md)
-
-def libvlc_media_slaves_get(p_md, ppp_slaves):
-    '''Get a media descriptor's slave list
-    The list will contain slaves parsed by VLC or previously added by
-    L{libvlc_media_slaves_add}(). The typical use case of this function is to save
-    a list of slave in a database for a later use.
-    @param p_md: media descriptor object.
-    @param ppp_slaves: address to store an allocated array of slaves (must be freed with L{libvlc_media_slaves_release}()) [OUT].
-    @return: the number of slaves (zero on error).
-    @version: LibVLC 3.0.0 and later. See L{libvlc_media_slaves_add}.
-    '''
-    f = _Cfunctions.get('libvlc_media_slaves_get', None) or \
-        _Cfunction('libvlc_media_slaves_get', ((1,), (1,),), None,
-                    ctypes.c_uint, Media, ctypes.POINTER(ctypes.POINTER(MediaSlave)))
-    return f(p_md, ppp_slaves)
-
-def libvlc_media_slaves_release(pp_slaves, i_count):
-    '''Release a media descriptor's slave list.
-    @param pp_slaves: slave array to release.
-    @param i_count: number of elements in the array.
-    @version: LibVLC 3.0.0 and later.
-    '''
-    f = _Cfunctions.get('libvlc_media_slaves_release', None) or \
-        _Cfunction('libvlc_media_slaves_release', ((1,), (1,),), None,
-                    None, ctypes.POINTER(ctypes.POINTER(MediaSlave)), ctypes.c_uint)
-    return f(pp_slaves, i_count)
-
-def libvlc_media_discoverer_new(p_inst, psz_name):
-    '''Create a media discoverer object by name.
-    After this object is created, you should attach to media_list events in
-    order to be notified of new items discovered.
-    You need to call L{libvlc_media_discoverer_start}() in order to start the
-    discovery.
-    See L{libvlc_media_discoverer_media_list}
-    See L{libvlc_media_discoverer_start}.
-    @param p_inst: libvlc instance.
-    @param psz_name: service name; use L{libvlc_media_discoverer_list_get}() to get a list of the discoverer names available in this libVLC instance.
-    @return: media discover object or None in case of error.
-    @version: LibVLC 3.0.0 or later.
-    '''
-    f = _Cfunctions.get('libvlc_media_discoverer_new', None) or \
-        _Cfunction('libvlc_media_discoverer_new', ((1,), (1,),), class_result(MediaDiscoverer),
-                    ctypes.c_void_p, Instance, ctypes.c_char_p)
-    return f(p_inst, psz_name)
-
-def libvlc_media_discoverer_start(p_mdis):
-    '''Start media discovery.
-    To stop it, call L{libvlc_media_discoverer_stop}() or
-    L{libvlc_media_discoverer_list_release}() directly.
-    See L{libvlc_media_discoverer_stop}.
-    @param p_mdis: media discover object.
-    @return: -1 in case of error, 0 otherwise.
-    @version: LibVLC 3.0.0 or later.
-    '''
-    f = _Cfunctions.get('libvlc_media_discoverer_start', None) or \
-        _Cfunction('libvlc_media_discoverer_start', ((1,),), None,
-                    ctypes.c_int, MediaDiscoverer)
-    return f(p_mdis)
-
-def libvlc_media_discoverer_stop(p_mdis):
-    '''Stop media discovery.
-    See L{libvlc_media_discoverer_start}.
-    @param p_mdis: media discover object.
-    @version: LibVLC 3.0.0 or later.
-    '''
-    f = _Cfunctions.get('libvlc_media_discoverer_stop', None) or \
-        _Cfunction('libvlc_media_discoverer_stop', ((1,),), None,
-                    None, MediaDiscoverer)
-    return f(p_mdis)
-
-def libvlc_media_discoverer_release(p_mdis):
-    '''Release media discover object. If the reference count reaches 0, then
-    the object will be released.
-    @param p_mdis: media service discover object.
-    '''
-    f = _Cfunctions.get('libvlc_media_discoverer_release', None) or \
-        _Cfunction('libvlc_media_discoverer_release', ((1,),), None,
-                    None, MediaDiscoverer)
-    return f(p_mdis)
-
-def libvlc_media_discoverer_media_list(p_mdis):
-    '''Get media service discover media list.
-    @param p_mdis: media service discover object.
-    @return: list of media items.
-    '''
-    f = _Cfunctions.get('libvlc_media_discoverer_media_list', None) or \
-        _Cfunction('libvlc_media_discoverer_media_list', ((1,),), class_result(MediaList),
-                    ctypes.c_void_p, MediaDiscoverer)
-    return f(p_mdis)
-
-def libvlc_media_discoverer_is_running(p_mdis):
-    '''Query if media service discover object is running.
-    @param p_mdis: media service discover object \retval true running \retval false not running.
-    '''
-    f = _Cfunctions.get('libvlc_media_discoverer_is_running', None) or \
-        _Cfunction('libvlc_media_discoverer_is_running', ((1,),), None,
-                    ctypes.c_bool, MediaDiscoverer)
-    return f(p_mdis)
-
-def libvlc_media_discoverer_list_get(p_inst, i_cat, ppp_services):
-    '''Get media discoverer services by category.
-    @param p_inst: libvlc instance.
-    @param i_cat: category of services to fetch.
-    @param ppp_services: address to store an allocated array of media discoverer services (must be freed with L{libvlc_media_discoverer_list_release}() by the caller) [OUT].
-    @return: the number of media discoverer services (0 on error).
-    @version: LibVLC 3.0.0 and later.
-    '''
-    f = _Cfunctions.get('libvlc_media_discoverer_list_get', None) or \
-        _Cfunction('libvlc_media_discoverer_list_get', ((1,), (1,), (1,),), None,
-                    ctypes.c_size_t, Instance, MediaDiscovererCategory, ctypes.POINTER(ctypes.POINTER(MediaDiscovererDescription)))
-    return f(p_inst, i_cat, ppp_services)
-
-def libvlc_media_discoverer_list_release(pp_services, i_count):
-    '''Release an array of media discoverer services.
-    @param pp_services: array to release.
-    @param i_count: number of elements in the array.
-    @version: LibVLC 3.0.0 and later. See L{libvlc_media_discoverer_list_get}().
-    '''
-    f = _Cfunctions.get('libvlc_media_discoverer_list_release', None) or \
-        _Cfunction('libvlc_media_discoverer_list_release', ((1,), (1,),), None,
-                    None, ctypes.POINTER(MediaDiscovererDescription), ctypes.c_size_t)
-    return f(pp_services, i_count)
 
 def libvlc_media_list_new():
     '''Create an empty media list.
@@ -5861,102 +5447,6 @@ def libvlc_renderer_item_flags(p_item):
                     ctypes.c_int, Renderer)
     return f(p_item)
 
-def libvlc_renderer_discoverer_new(p_inst, psz_name):
-    '''Create a renderer discoverer object by name
-    After this object is created, you should attach to events in order to be
-    notified of the discoverer events.
-    You need to call L{libvlc_renderer_discoverer_start}() in order to start the
-    discovery.
-    See L{libvlc_renderer_discoverer_event_manager}()
-    See L{libvlc_renderer_discoverer_start}().
-    @param p_inst: libvlc instance.
-    @param psz_name: service name; use L{libvlc_renderer_discoverer_list_get}() to get a list of the discoverer names available in this libVLC instance.
-    @return: media discover object or None in case of error.
-    @version: LibVLC 3.0.0 or later.
-    '''
-    f = _Cfunctions.get('libvlc_renderer_discoverer_new', None) or \
-        _Cfunction('libvlc_renderer_discoverer_new', ((1,), (1,),), class_result(RendererDiscoverer),
-                    ctypes.c_void_p, Instance, ctypes.c_char_p)
-    return f(p_inst, psz_name)
-
-def libvlc_renderer_discoverer_release(p_rd):
-    '''Release a renderer discoverer object.
-    @param p_rd: renderer discoverer object.
-    @version: LibVLC 3.0.0 or later.
-    '''
-    f = _Cfunctions.get('libvlc_renderer_discoverer_release', None) or \
-        _Cfunction('libvlc_renderer_discoverer_release', ((1,),), None,
-                    None, RendererDiscoverer)
-    return f(p_rd)
-
-def libvlc_renderer_discoverer_start(p_rd):
-    '''Start renderer discovery
-    To stop it, call L{libvlc_renderer_discoverer_stop}() or
-    L{libvlc_renderer_discoverer_release}() directly.
-    See L{libvlc_renderer_discoverer_stop}().
-    @param p_rd: renderer discoverer object.
-    @return: -1 in case of error, 0 otherwise.
-    @version: LibVLC 3.0.0 or later.
-    '''
-    f = _Cfunctions.get('libvlc_renderer_discoverer_start', None) or \
-        _Cfunction('libvlc_renderer_discoverer_start', ((1,),), None,
-                    ctypes.c_int, RendererDiscoverer)
-    return f(p_rd)
-
-def libvlc_renderer_discoverer_stop(p_rd):
-    '''Stop renderer discovery.
-    See L{libvlc_renderer_discoverer_start}().
-    @param p_rd: renderer discoverer object.
-    @version: LibVLC 3.0.0 or later.
-    '''
-    f = _Cfunctions.get('libvlc_renderer_discoverer_stop', None) or \
-        _Cfunction('libvlc_renderer_discoverer_stop', ((1,),), None,
-                    None, RendererDiscoverer)
-    return f(p_rd)
-
-def libvlc_renderer_discoverer_event_manager(p_rd):
-    '''Get the event manager of the renderer discoverer
-    The possible events to attach are @ref libvlc_RendererDiscovererItemAdded
-    and @ref libvlc_RendererDiscovererItemDeleted.
-    The @ref L{Renderer} struct passed to event callbacks is owned by
-    VLC, users should take care of holding/releasing this struct for their
-    internal usage.
-    See L{Event}.u.renderer_discoverer_item_added.item
-    See L{Event}.u.renderer_discoverer_item_removed.item.
-    @return: a valid event manager (can't fail).
-    @version: LibVLC 3.0.0 or later.
-    '''
-    f = _Cfunctions.get('libvlc_renderer_discoverer_event_manager', None) or \
-        _Cfunction('libvlc_renderer_discoverer_event_manager', ((1,),), class_result(EventManager),
-                    ctypes.c_void_p, RendererDiscoverer)
-    return f(p_rd)
-
-def libvlc_renderer_discoverer_list_get(p_inst, ppp_services):
-    '''Get media discoverer services
-    See libvlc_renderer_list_release().
-    @param p_inst: libvlc instance.
-    @param ppp_services: address to store an allocated array of renderer discoverer services (must be freed with libvlc_renderer_list_release() by the caller) [OUT].
-    @return: the number of media discoverer services (0 on error).
-    @version: LibVLC 3.0.0 and later.
-    '''
-    f = _Cfunctions.get('libvlc_renderer_discoverer_list_get', None) or \
-        _Cfunction('libvlc_renderer_discoverer_list_get', ((1,), (1,),), None,
-                    ctypes.c_size_t, Instance, ctypes.POINTER(ctypes.POINTER(RDDescription)))
-    return f(p_inst, ppp_services)
-
-def libvlc_renderer_discoverer_list_release(pp_services, i_count):
-    '''Release an array of media discoverer services
-    See L{libvlc_renderer_discoverer_list_get}().
-    @param pp_services: array to release.
-    @param i_count: number of elements in the array.
-    @version: LibVLC 3.0.0 and later.
-    '''
-    f = _Cfunctions.get('libvlc_renderer_discoverer_list_release', None) or \
-        _Cfunction('libvlc_renderer_discoverer_list_release', ((1,), (1,),), None,
-                    None, ctypes.POINTER(ctypes.POINTER(RdDescription)), ctypes.c_size_t)
-    return f(pp_services, i_count)
-
-
 # 5 function(s) blacklisted:
 #  libvlc_dialog_set_callbacks
 #  libvlc_printerr
@@ -5964,7 +5454,7 @@ def libvlc_renderer_discoverer_list_release(pp_services, i_count):
 #  libvlc_video_output_set_resize_cb
 #  libvlc_video_set_output_callbacks
 
-# 48 function(s) not wrapped as methods:
+# 47 function(s) not wrapped as methods:
 #  libvlc_audio_equalizer_get_band_count
 #  libvlc_audio_equalizer_get_band_frequency
 #  libvlc_audio_equalizer_get_preset_count
@@ -5999,7 +5489,6 @@ def libvlc_renderer_discoverer_list_release(pp_services, i_count):
 #  libvlc_media_tracklist_count
 #  libvlc_media_tracklist_delete
 #  libvlc_media_tracks_release
-#  libvlc_module_description_list_release
 #  libvlc_new
 #  libvlc_picture_list_at
 #  libvlc_picture_list_count
@@ -6141,6 +5630,7 @@ if __name__ == '__main__':
     # Allow stream to start playing
     time.sleep(2)
     current_track = ''
+    current_url = ''
     
     # Monitor track meta data and update currently_playing file if the track changed
     while True:

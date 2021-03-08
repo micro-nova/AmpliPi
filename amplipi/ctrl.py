@@ -255,7 +255,7 @@ class Api:
   def get_state(self):
     """ get the system state (dict) """
     # update the state with the latest stream info and status
-    optional_fields = ['station', 'user', 'password'] # optional configuration fields
+    optional_fields = ['station', 'user', 'password', 'url', 'logo'] # optional configuration fields
     streams = []
     for sid, sc in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
