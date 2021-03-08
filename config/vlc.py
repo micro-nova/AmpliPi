@@ -5607,11 +5607,11 @@ if __name__ == '__main__':
 
 
     if len(sys.argv) >= 4:
-        add_src = " --alsa-audio-device={}".format(sys.argv[3])
+        add_src = " --alsa-audio-device {}".format(sys.argv[3])
     else:
         add_src = ""
-    
-    instance = Instance(["--aout=alsa --alsa-audio-channels 2" + add_src])
+
+    instance = Instance(("--aout=alsa " + add_src).split())
     try:
         media = instance.media_new(url)
     except (AttributeError, NameError) as e:
