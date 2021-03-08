@@ -553,7 +553,7 @@ class InternetRadio:
         self.__dict__[k] = v
         if k in ir_fields:
           reconnect_needed = True
-    if reconnect_needed and self._is_pb_running():
+    if reconnect_needed and self._is_running():
       last_src = self.src
       self.disconnect()
       time.sleep(0.1) # delay a bit, is this needed?
