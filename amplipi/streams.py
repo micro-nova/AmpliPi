@@ -173,7 +173,7 @@ class Shairport:
             d['album'] = data[2]
             d['paused'] = data[3]
             if int(data[4]):
-              d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5]) 
+              d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5])
         # return d
     except Exception:
       pass
@@ -449,7 +449,7 @@ class DLNA:
     self.proc = None
     self.mock = mock
     self.src = None
-    self.state = 'disconnected'    
+    self.state = 'disconnected'
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -475,7 +475,7 @@ class DLNA:
       self.state = 'connected'
       self.src = src
       return
-    
+
     # Generate some of the DLNA_Args
     self.uuid = 0
     self.uuid_gen()
@@ -558,31 +558,31 @@ class InternetRadio:
       self.disconnect()
       time.sleep(0.1) # delay a bit, is this needed?
       self.connect(last_src)
-        
+
   def __del__(self):
     self.disconnect()
-    
+
   def connect(self, src):
     """ Connect a VLC output to a given audio source
     This will create a VLC process based on the given name
     """
     print('connecting {} to {}...'.format(self.name, src))
-    
+
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
       self.state = 'connected'
       self.src = src
       return
-    
+
     # Start audio via VLC.py
     inetradio_args = ['python3 /home/pi/config/vlc.py {} {} {}'.format(self.url, src, utils.output_device(src))]
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, preexec_fn=os.setpgrp)
-    
+
     # Make all of the necessary dir(s)
     config_folder = '/home/pi/config/srcs/{}'.format(src)
     os.system('mkdir -p {}'.format(config_folder))
     config_file = '{}/internetradio-station.json'.format(config_folder)
-    
+
     # Write the config file in JSON format
     stationDetails = json.dumps({
         "pid": str(self.proc.pid)
@@ -590,7 +590,7 @@ class InternetRadio:
     f = open(config_file, "w")
     f.write(stationDetails)
     f.close()
-    
+
     print('{} (stream: {}) connected to {} via {}'.format(self.name, self.url, src, utils.output_device(src)))
     self.state = 'connected'
     self.src = src
@@ -610,9 +610,9 @@ class InternetRadio:
 
         if (len(data['pid']) > 0 and int(data['pid']) > 0):
           os.killpg(os.getpgid(int(data['pid'])), signal.SIGTERM)
-      
+
         os.remove(loc)
-      
+
       self.proc.kill()
       print('{} disconnected'.format(self.name))
     else:
@@ -627,7 +627,7 @@ class InternetRadio:
       with open(loc, 'r') as file:
         d = {}
         data = json.loads(file.read())
-        
+
         d['artist'] = data['artist']
         d['song'] = data['song']
         d['img_url'] = self.logo

@@ -385,7 +385,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Group'
-            examples: 
+            examples:
               Add Upstairs Group:
                 value:
                   name: "Upstairs"
