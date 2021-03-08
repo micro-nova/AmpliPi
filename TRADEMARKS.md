@@ -35,14 +35,14 @@ We want to encourage and facilitate the use of our trademarks by the community, 
 This policy covers:
 
 1. Our word trademark (the "Word Marks"): AmpliPi
-2. Our logos ("the Logos"): AmpliPi logos
+2. Our logos (the "Logos"): AmpliPi logos
 3. And the unique visual styling of our website and packaging (the "Trade Dress").
 
 This Policy encompasses all trademarks and service marks, whether Word Marks, Logos or Trade Dress, which are collectively referred to as the “Marks.” Some Marks may not be registered, but registration does not equal ownership of trademarks. This Policy covers our Marks whether they are registered or not.
 
 ### The trademarks we are not licensing in this Policy
 
-The "MicroNova" word mark, logos and visual styling are reserved exclusively to our use and are not covered by the Policy. Contact us as described in "Where to get further information" below if you have questions about any of these excluded trademarks.
+The "MicroNova" word mark, logos and visual styling are reserved exclusively to our use and are not covered by the Policy. Contact us as described in "Where to Get Further Information" below if you have questions about any of these excluded trademarks.
 
 # Universal Considerations for All Uses
 
