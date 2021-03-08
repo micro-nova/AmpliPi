@@ -10,7 +10,7 @@ Last Modified: March 8, 2021
 - [Trademarks Subject to the Guidelines](#Trademarks-Subject-to-the-Guidelines)
 - [Universal Considerations for All Uses](#Universal-Considerations-for-All-Uses)
 - [Use for Software](#Use-for-Software)
-- [Use for Non-Software Goods and Services](#Use-for-Non-Software-Goods-an-Services)
+- [Use for Non-Software Goods and Services](#Use-for-Non-Software-Goods-and-Services)
 - [General Considerations About Trademarks and Their Use](#General-Considerations-About-Trademarks-and-Their-Use)
 - [Where to Get Further Information](#Where-to-Get-Further-Information)
 
@@ -22,7 +22,7 @@ The role of trademarks is to provide assurance about the quality of the products
 
 In this Policy we are not trying to limit the lawful use of our trademarks, but rather describe for you what we consider the parameters of lawful use to be. Trademark law can be ambiguous, so we hope to provide enough clarity for you to understand whether we will consider your use licensed or non-infringing.
 
-The sections that follow describe what trademarks are covered by this Policy, as well as uses of the trademarks that are allowed without additional permission from us. If you want to use our trademarks in ways that are not described in this Policy, or if you are uncertain about any of the following information contained in this Policy, please see "Where to get further information" below for contact information. Any use that does not comply with this Policy or for which we have not separately provided written permission is not a use that we have approved.
+The sections that follow describe what trademarks are covered by this Policy, as well as uses of the trademarks that are allowed without additional permission from us. If you want to use our trademarks in ways that are not described in this Policy, or if you are uncertain about any of the following information contained in this Policy, please see "Where to Get Further Information" below for contact information. Any use that does not comply with this Policy or for which we have not separately provided written permission is not a use that we have approved.
 
 # Our Commitment to Open Source Principles
 
