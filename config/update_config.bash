@@ -94,6 +94,15 @@ else
   echo "raspotify already installed"
 fi
 
+# configure vlc for internet radio on pi
+ir_installed=$(sudo apt list --installed 2> /dev/null | grep vlc -c)
+if [ 0 -eq "${ir_installed}" ]; then
+  echo "installing vlc"
+  sudo apt update && sudo apt install -y vlc
+else
+  echo "vlc already installed"
+fi
+
 # configure python3 on pi
 rs_installed=$(sudo apt list --installed 2> /dev/null | grep python3-pip -c)
 if [ 0 -eq "${rs_installed}" ]; then

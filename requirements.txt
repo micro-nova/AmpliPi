@@ -2,3 +2,4 @@ deepdiff
 Flask
 smbus2
 pyserial
+python-vlc
