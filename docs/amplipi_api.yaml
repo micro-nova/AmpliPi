@@ -543,12 +543,18 @@ paths:
                 value:
                   name: Replace this text with a name you like!
                   type: dlna
-              Add Internet Radio Station:
+              Add KEXP Internet Radio Station:
                 value:
                   name: KEXP 90.3
                   type: internetradio
                   url: http://live-aacplus-64.kexp.org/kexp64.aac
                   logo: https://i.iheart.com/v3/re/new_assets/cc4e0a17-5233-4e4b-9b6b-7799904f78ea
+              Add Groove Salad Internet Radio Station:
+                value:
+                  name: Groove Salad
+                  type: internetradio
+                  url: http://ice2.somafm.com/groovesalad-16-aac
+                  logo: https://somafm.com/img3/groovesalad-200.jpg
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /streams/{streamId}:
@@ -645,6 +651,9 @@ paths:
               Change pandora radio station:
                 value:
                   station: 0982034049300
+              Upgrade groove salad stream quality:
+                value:
+                  url: http://ice2.somafm.com/groovesalad-64-aac
         description: Patch stream configuration to update.
     delete:
       summary: Delete Stream
