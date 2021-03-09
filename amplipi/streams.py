@@ -481,13 +481,14 @@ class DLNA:
     self.uuid_gen()
     portnum = 49494 + int(src)
 
-    # Potentially need to add more - especially when it comes to metadata and stuff like that
+    meta_args = ['/home/pi/config/dlna_metadata.bash', '{}'.format(src)]
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
                 '--gstout-audiodevice', 'ch{}'.format(src), '--gstout-initial-volume-db',
                 '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
-                '-f', '{}'.format(self.name)]
-    # TODO: ADD LOGFILE ARGUMENT FOR DLNA AND RUN A SECOND PROCESS (.BASH) SIMILARLY TO SHAIRPORT!
-    self.proc = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                '-f', '{}'.format(self.name), '--logfile',
+                '/home/pi/config/dlna/{}/metafifo'.format(src)]
+    self.proc = subprocess.Popen(args=meta_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
     self.src = src
