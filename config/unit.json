@@ -1,0 +1,20 @@
+{
+    "listeners": {
+        "*:80": {
+            "pass": "applications/flask"
+        }
+    },
+
+    "applications": {
+        "flask": {
+	    "user": "pi",
+	    "group": "pi",
+            "type": "python 3.7",
+            "path": "/home/pi/",
+            "home": "/home/pi/venv/",
+            "module": "amplipi.wsgi",
+	    "working_directory": "/home/pi/",
+	    "environment": { "APPGEN" : "999" }
+        }
+    }
+}
