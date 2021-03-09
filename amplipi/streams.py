@@ -506,6 +506,17 @@ class DLNA:
     self.src = None
 
   def info(self):
+    loc = '/home/pi/config/dlna/{}/currentSong'.format(self.src)
+    try:
+      with open(loc, 'r') as file:
+        d = {}
+        for line in file.readlines():
+          line = line.strip()
+          if line:
+            d = eval(line)
+        return(d)
+    except Exception as e:
+      pass
     return {'details': 'No info available'}
 
   def uuid_gen(self):
