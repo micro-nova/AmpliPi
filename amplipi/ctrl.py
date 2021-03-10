@@ -52,6 +52,7 @@ class Api:
       { "id": 1001, "name": "My Pandora", "type": "pandora", "user": "", "password": "", "station": ""},
       { "id": 1002, "name": "My Spotify", "type": "spotify"},
       { "id": 1003, "name": "My Internet Radio", "type": "internetradio", "url": "", "logo": ""},
+      { "id": 1004, "name": "My DLNA Renderer", "type": "dlna"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },

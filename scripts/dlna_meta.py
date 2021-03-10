@@ -16,9 +16,11 @@ except:
     sys.exit('Failure.')
 print('Targeting {}'.format(loc))
 cs_loc = loc + 'currentSong'
-TS_prev = ''
-TS_curr = 'TransportState: PLAYING'
-cs_conf = {}
+cs_conf = {
+    'TransportState': 'PLAYING'
+}
+ctmd = re.compile(r'dc:(.*?)>(.*?)</dc:|upnp:(.*?)>(.*?)</upnp:')
+ts = re.compile(r'TransportState: ([A-Z\S]*)')
 
 def read_field():
     line = sys.stdin.readline()
@@ -29,27 +31,16 @@ def read_field():
     else:
         return None
 
-def meta_parser(CTMD):
-    s = CTMD.split('>')
-    ind = 0
-    val = {}
+def meta_parser(fstring):
     u = {}
-    r1 = '</upnp:'
-    r2 = '</dc:'
-
-    for i in range(len(s)):
-        p = s[i]
-        if p[0:4] == '<dc:' or p[0:6] == '<upnp:':
-            val[ind] = s[i+1]
-            ind += 1
-    for l in range(len(val)):
-        if re.search(r1, val[l]):
-            t, y = val[l].split(r1)
-            u[y] = t
-        elif re.search(r2, val[l]):
-            t, y = val[l].split(r2)
-            u[y] = t
-    print(u)
+    for m in ts.finditer(fstring):
+        if m[1]:
+            u['TransportState'] = m[1]
+    for n in ctmd.finditer(fstring):
+        if n[1]:
+            u[n[1]] = n[2]
+        else:
+            u[n[3]] = n[4]
     return u
 
 f = open(cs_loc, 'w')
@@ -58,19 +49,9 @@ f.close()
 
 while True:
     field = read_field()
-    # print(field +'\n')
-    if re.search('TransportState', str(field)):
-        TS_prev = TS_curr
-        TS_curr = field
-        form = TS_curr.split(': ')
-        cs_conf[form[0]] = form[1]
-        f = open(cs_loc, 'w')
-        f.write(str(cs_conf)) # Do we need str() here for writing cs_conf?
-        f.close()
-    elif re.search('CurrentTrackMetaData', str(field)):
-        cs_conf = meta_parser(field)
-        form = TS_curr.split(': ')
-        cs_conf[form[0]] = form[1]
+    if field:
+        cs_conf.update(meta_parser(field))
+        print(cs_conf)
         f = open(cs_loc, 'w')
         f.write(str(cs_conf))
         f.close()
