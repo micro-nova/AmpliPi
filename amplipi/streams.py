@@ -574,22 +574,14 @@ class InternetRadio:
       self.src = src
       return
 
-    # Start audio via VLC.py
-    inetradio_args = ['python3 /home/pi/config/vlc.py {} {} {}'.format(self.url, src, utils.output_device(src))]
-    self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, preexec_fn=os.setpgrp)
+    # Start audio via runvlc.py
+    inetradio_args = ['python3', '/home/pi/config/runvlc.py', '{}'.format(self.url), '{}'.format(src), '{}'.format(utils.output_device(src))]
+    self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
     # Make all of the necessary dir(s)
     config_folder = '/home/pi/config/srcs/{}'.format(src)
     os.system('mkdir -p {}'.format(config_folder))
     config_file = '{}/internetradio-station.json'.format(config_folder)
-
-    # Write the config file in JSON format
-    stationDetails = json.dumps({
-        "pid": str(self.proc.pid)
-    })
-    f = open(config_file, "w")
-    f.write(stationDetails)
-    f.close()
 
     print('{} (stream: {}) connected to {} via {}'.format(self.name, self.url, src, utils.output_device(src)))
     self.state = 'connected'
@@ -602,17 +594,6 @@ class InternetRadio:
 
   def disconnect(self):
     if self._is_running():
-      # We run vlc.py with a shell, so to kill it, we have to kill the parent group ID, which we store in the station config file
-      loc = '/home/pi/config/srcs/{}/internetradio-station.json'.format(self.src)
-      if os.path.exists(loc):
-        with open(loc, 'r') as file:
-          data = json.loads(file.read())
-
-        if (len(data['pid']) > 0 and int(data['pid']) > 0):
-          os.killpg(os.getpgid(int(data['pid'])), signal.SIGTERM)
-
-        os.remove(loc)
-
       self.proc.kill()
       print('{} disconnected'.format(self.name))
     else:
