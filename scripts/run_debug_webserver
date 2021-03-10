@@ -20,8 +20,11 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# kill webserver
+# kill debug webserver
 kill -KILL $(ps ax | grep 'python3' | grep 'flask' | awk '{print $1}') > /dev/null
+
+# stop the production web server
+test 'active' = $(systemctl is-active unit.service) && echo "Stopping production webserver" && sudo systemctl stop unit.service
 
 if [[ "$mock_streams" != "True" ]] ; then
   # kill streaming services
