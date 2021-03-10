@@ -40,9 +40,6 @@ will be implicitly created.  The latter can be obtained using the
 C{get_instance} method of L{MediaPlayer} and L{MediaListPlayer}.
 """
 
-import ctypes
-from ctypes.util import find_library
-import os
 import sys
 import time
 import json
@@ -58,25 +55,19 @@ if __name__ == '__main__':
         src = sys.argv[2]
     else:
         print('Error starting VLC component: missing URL or SRC parameter.')
-        #f = open('/home/pi/config/internetradio-error', "a")
-        #f.write('Error starting VLC component: missing URL or SRC parameter.')
-        #f.close()
-        
         sys.exit(1)
-
 
     if len(sys.argv) >= 4:
         add_src = " --alsa-audio-device {}".format(sys.argv[3])
     else:
         add_src = ""
-    
+
     instance = vlc.Instance(("--aout=alsa " + add_src).split())
     try:
         media = instance.media_new(url)
     except (AttributeError, NameError) as e:
-        print('%s: %s (%s %s vs LibVLC %s)' % (e.__class__.__name__, e,
-                                               sys.argv[0], __version__,
-                                               libvlc_get_version()))
+        print('%s: %s (%s LibVLC %s)' % (e.__class__.__name__, e,
+                                         sys.argv[0], vlc.libvlc_get_version()))
         sys.exit(1)
     player = instance.media_player_new()
     player.set_media(media)
@@ -101,9 +92,13 @@ if __name__ == '__main__':
                     current_track = cur
                     current_url = vlc.bytes_to_str(media.get_mrl())
                     print('Current track: %s - %s' % (media.get_meta(vlc.Meta.Artist), media.get_meta(vlc.Meta.Title)))
-                    
-                    json_write = json.dumps({"artist": media.get_meta(vlc.Meta.Artist), "song": media.get_meta(vlc.Meta.Title), "state": str(player.get_state())})
-                    
+
+                    json_write = json.dumps({
+                        "artist": media.get_meta(vlc.Meta.Artist),
+                        "song": media.get_meta(vlc.Meta.Title),
+                        "state": str(player.get_state())
+                    })
+
                     try:
                         f = open('/home/pi/config/srcs/{}/currentSong'.format(src), "wt")
                         f.write(json_write)
@@ -112,8 +107,8 @@ if __name__ == '__main__':
                         print('Error: %s' % sys.exc_info()[1])
             else:
                 print('State: %s' % player.get_state())
-            
+
         except Exception:
             print('Error: %s' % sys.exc_info()[1])
-        
+
         time.sleep(1)
