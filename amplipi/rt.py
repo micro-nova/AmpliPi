@@ -60,6 +60,7 @@ class _Preamps:
     self.preamps = dict()
     if DISABLE_HW or mock:
       self.bus = None
+      print('Mocking preamp connection')
     else:
       # Setup serial connection via UART pins - set I2C addresses for preamps
       # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
