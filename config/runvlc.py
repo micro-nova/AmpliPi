@@ -1,8 +1,8 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Python ctypes bindings for VLC
-#
+# Use libvlc to play internetradio stations to a specific alsa output
+
 # Copyright (C) 2009-2017 the VideoLAN team
 # $Id: $
 #
@@ -23,22 +23,6 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301 USA
-
-"""This module provides bindings for the LibVLC public API, see
-U{http://wiki.videolan.org/LibVLC}.
-
-You can find the documentation and a README file with some examples
-at U{https://www.olivieraubert.net/vlc/python-ctypes/}.
-
-Basically, the most important class is L{Instance}, which is used
-to create a libvlc instance.  From this instance, you then create
-L{MediaPlayer} and L{MediaListPlayer} instances.
-
-Alternatively, you may create instances of the L{MediaPlayer} and
-L{MediaListPlayer} class directly and an instance of L{Instance}
-will be implicitly created.  The latter can be obtained using the
-C{get_instance} method of L{MediaPlayer} and L{MediaListPlayer}.
-"""
 
 import sys
 import time
