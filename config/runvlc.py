@@ -34,7 +34,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(prog='runvlc', description='play an internet radio station using vlc')
     parser.add_argument('url', type=str, help='internet radio station url')
-    parser.add_argument('src', type=int, help='amplipi src (0-3)', nargs='?', default=0)
+    parser.add_argument('output', type=str, help='alsa output', nargs='?', default=None)
+    parser.add_argument('--song-info', type=str, help='file to update with current song information in json format')
     parser.add_argument('--test', action='store_true', help='verify the url is valid and return')
     args = parser.parse_args()
 
@@ -42,8 +43,8 @@ if __name__ == '__main__':
     if args.test:
         # when we are testing the url, don't use real output, we don't want extra playback
         config += " --alsa-audio-device null"
-    elif args.src:
-        alsa_device = "ch{}".format(args.src)
+    elif args.output:
+        alsa_device = args.output
         config += " --alsa-audio-device {}".format(alsa_device)
 
     instance = vlc.Instance(config.split())
@@ -57,11 +58,14 @@ if __name__ == '__main__':
     player.set_media(media)
     player.play()
 
-    current_song_file = '/home/pi/config/srcs/{}/currentSong'.format(args.src)
-    f = open(current_song_file, "wt")
-    f.write(json.dumps({"state": str(player.get_state())}))
-    f.close()
-
+    if args.song_info:
+        try:
+            f = open(args.song_info, "wt")
+            f.write(json.dumps({"state": str(player.get_state())}))
+            f.close()
+        except Exception:
+            print(sys.exc_info())
+            exit(1)
     # Allow stream to start playing
     time.sleep(2)
     current_track = ''
@@ -78,7 +82,7 @@ if __name__ == '__main__':
                     current_url = vlc.bytes_to_str(media.get_mrl())
                     print('Current track: %s - %s' % (media.get_meta(vlc.Meta.Artist), media.get_meta(vlc.Meta.Title)))
 
-                    json_write = json.dumps({
+                    song_info_json = json.dumps({
                         "artist": media.get_meta(vlc.Meta.Artist),
                         "song": media.get_meta(vlc.Meta.Title),
                         "state": str(player.get_state())
@@ -88,12 +92,13 @@ if __name__ == '__main__':
                       print('success')
                       sys.exit(0)
 
-                    try:
-                        f = open(current_song_file, "wt")
-                        f.write(json_write)
-                        f.close()
-                    except Exception:
-                        print('Error: %s' % sys.exc_info()[1])
+                    if args.song_info:
+                      try:
+                          f = open(args.song_info, "wt")
+                          f.write(song_info_json)
+                          f.close()
+                      except Exception:
+                          print('Error: %s' % sys.exc_info()[1])
             else:
                 if args.test:
                     print('fail')
