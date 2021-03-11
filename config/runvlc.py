@@ -28,27 +28,27 @@ import sys
 import time
 import json
 import vlc
-
+import argparse
 
 if __name__ == '__main__':
-    # Requires:
-    #  vlc.py [http source] [zone ID] [zone audio hw device]
 
-    if len(sys.argv) >= 3:
-        url = sys.argv[1]
-        src = sys.argv[2]
-    else:
-        print('Error starting VLC component: missing URL or SRC parameter.')
-        sys.exit(1)
+    parser = argparse.ArgumentParser(prog='runvlc', description='play an internet radio station using vlc')
+    parser.add_argument('url', type=str, help='internet radio station url')
+    parser.add_argument('src', type=int, help='amplipi src (0-3)', nargs='?', default=0)
+    parser.add_argument('--test', action='store_true', help='verify the url is valid and return')
+    args = parser.parse_args()
 
-    if len(sys.argv) >= 4:
-        add_src = " --alsa-audio-device {}".format(sys.argv[3])
-    else:
-        add_src = ""
+    config = "--aout=alsa "
+    if args.test:
+        # when we are testing the url, don't use real output, we don't want extra playback
+        config += " --alsa-audio-device null"
+    elif args.src:
+        alsa_device = "ch{}".format(args.src)
+        config += " --alsa-audio-device {}".format(alsa_device)
 
-    instance = vlc.Instance(("--aout=alsa " + add_src).split())
+    instance = vlc.Instance(config.split())
     try:
-        media = instance.media_new(url)
+        media = instance.media_new(args.url)
     except (AttributeError, NameError) as e:
         print('%s: %s (%s LibVLC %s)' % (e.__class__.__name__, e,
                                          sys.argv[0], vlc.libvlc_get_version()))
@@ -57,7 +57,8 @@ if __name__ == '__main__':
     player.set_media(media)
     player.play()
 
-    f = open('/home/pi/config/srcs/{}/currentSong'.format(src), "wt")
+    current_song_file = '/home/pi/config/srcs/{}/currentSong'.format(args.src)
+    f = open(current_song_file, "wt")
     f.write(json.dumps({"state": str(player.get_state())}))
     f.close()
 
@@ -83,13 +84,20 @@ if __name__ == '__main__':
                         "state": str(player.get_state())
                     })
 
+                    if args.test:
+                      print('success')
+                      sys.exit(0)
+
                     try:
-                        f = open('/home/pi/config/srcs/{}/currentSong'.format(src), "wt")
+                        f = open(current_song_file, "wt")
                         f.write(json_write)
                         f.close()
                     except Exception:
                         print('Error: %s' % sys.exc_info()[1])
             else:
+                if args.test:
+                    print('fail')
+                    sys.exit(1)
                 print('State: %s' % player.get_state())
 
         except Exception:

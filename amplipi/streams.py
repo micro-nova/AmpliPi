@@ -575,13 +575,12 @@ class InternetRadio:
       return
 
     # Start audio via runvlc.py
-    inetradio_args = ['python3', '/home/pi/config/runvlc.py', '{}'.format(self.url), '{}'.format(src), '{}'.format(utils.output_device(src))]
+    inetradio_args = ['python3', '/home/pi/config/runvlc.py', '{}'.format(self.url), '{}'.format(src)]
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
     # Make all of the necessary dir(s)
     config_folder = '/home/pi/config/srcs/{}'.format(src)
     os.system('mkdir -p {}'.format(config_folder))
-    config_file = '{}/internetradio-station.json'.format(config_folder)
 
     print('{} (stream: {}) connected to {} via {}'.format(self.name, self.url, src, utils.output_device(src)))
     self.state = 'connected'
@@ -615,7 +614,7 @@ class InternetRadio:
         d['album'] = ""
 
         return(d)
-    except Exception as e:
+    except Exception:
       pass
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     # TODO: report the status of pianobar with station name, playing/paused, song info
