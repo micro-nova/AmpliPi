@@ -579,7 +579,7 @@ class InternetRadio:
     os.system('mkdir -p {}'.format(config_folder))
 
     # Start audio via runvlc.py
-    song_info_path = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
+    song_info_path = '/home/pi/config/srcs/{}/currentSong'.format(src)
     inetradio_args = ['python3', '/home/pi/config/runvlc.py', '{}'.format(self.url), '{}'.format(utils.output_device(src)), '--song-info', song_info_path]
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
