@@ -19,10 +19,10 @@ except:
 print('Targeting {}'.format(loc))
 cs_loc = loc + 'currentSong'
 cs_conf = {
-    'TransportState': 'PLAYING'
+    'state': 'playing'
 }
 ctmd = re.compile(r'dc:(.*?)>(.*?)</dc:|upnp:(.*?)>(.*?)</upnp:')
-ts = re.compile(r'TransportState: ([A-Z\S]*)')
+ts = re.compile(r'TransportState: ([A-Z]*)')
 
 def read_field():
     line = sys.stdin.readline()
@@ -37,7 +37,8 @@ def meta_parser(fstring):
     u = {}
     for m in ts.finditer(fstring):
         if m[1]:
-            u['TransportState'] = m[1]
+            phs = m[1].lower()
+            u['state'] = phs
     for n in ctmd.finditer(fstring):
         if n[1]:
             u[n[1]] = n[2]
