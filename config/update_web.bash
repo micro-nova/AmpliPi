@@ -10,8 +10,10 @@ test 'active' != $(systemctl is-active unit.service) && sudo systemctl restart u
 
 # update the flask application configuration, then force a configuration reload
 if [ 'active' == $(systemctl is-active unit.service) ]; then
+  # set the configuration to nothing
+  sudo curl -s -X PUT -d '{}' --unix-socket /var/run/control.unit.sock http://localhost/config
+  # update the server configuration
   sudo curl -s -X PUT --data-binary @/home/pi/config/unit.json --unix-socket /var/run/control.unit.sock http://localhost/config
-  sudo curl -s -X PUT -d '"'$(date +"%s")'"' --unix-socket /var/run/control.unit.sock http://localhost/config/applications/flask/environment/APPGEN
 else
   echo "Error: Failed to start web server, is it installed?" >&2
 fi
