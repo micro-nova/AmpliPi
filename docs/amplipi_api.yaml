@@ -16,10 +16,12 @@ info:
     url: http://micro-nova.com
   license:
     name: GPL
-    url: http://amplipi.local:5000/license
+    url: http://amplipi.local/license
 servers:
-  - url: 'http://amplipi.local:5000/api'
+  - url: 'http://amplipi.local/api'
     description: Local AmpliPi Controller
+  - url: 'http://amplipi.local:5000/api'
+    description: Local Debug AmpliPi Controller
   - url: 'http://localhost:5000/api'
     description: Test AmpliPi Controller
 tags:
