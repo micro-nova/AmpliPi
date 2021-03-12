@@ -16,9 +16,20 @@ fi
 
 # Python folder on EthAudio controller
 RPI_WEB_FOLDER=/home/pi/web
+RPI_HOME_FOLDER=/home/pi
+
+# set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
+sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' $SCRIPT_DIR/../amplipi/rt.py
 
 # copy stuff to board
+scp $SCRIPT_DIR/../amplipi/*.py                  $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/amplipi/
 scp -r $SCRIPT_DIR/../docs/*                     $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/../docs/
 scp -r $SCRIPT_DIR/../web/static/*               $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/static/
 scp $SCRIPT_DIR/../docs/amplipi_api.yaml         $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/static/ # windows doesn't like soft links
 scp $SCRIPT_DIR/../web/templates/*               $RPI_IP_ADDRESS:${RPI_WEB_FOLDER}/templates/
+
+# update the web app configuration
+ssh $RPI_IP_ADDRESS "bash ${RPI_HOME_FOLDER}/config/update_web.bash"
+
+# revert changes locally
+sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' $SCRIPT_DIR/../amplipi/rt.py

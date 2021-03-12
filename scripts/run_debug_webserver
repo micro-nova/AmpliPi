@@ -20,8 +20,11 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# kill webserver
+# kill debug webserver
 kill -KILL $(ps ax | grep 'python3' | grep 'flask' | awk '{print $1}') > /dev/null
+
+# reconfigure the production server to serve nothing
+test 'active' = $(systemctl is-active unit.service) && sudo curl -s -X PUT -d '{}' --unix-socket /var/run/control.unit.sock http://localhost/config
 
 if [[ "$mock_streams" != "True" ]] ; then
   # kill streaming services
@@ -34,5 +37,8 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # run the script from the base directory
 cd ${SCRIPT_DIR}/..
+# use our virtual environment
+source venv/bin/activate
 # for some reason flask loads the app twice if reload option enabled (by default with debugging)
 FLASK_ENV=development FLASK_DEBUG=1 FLASK_APP="amplipi.app:create_app(${mock_ctrl},${mock_streams})" flask run --host 0.0.0.0 --no-reload
+deactivate
