@@ -13,7 +13,7 @@ if [ 'active' == $(systemctl is-active unit.service) ]; then
   # set the configuration to nothing
   sudo curl -s -X PUT -d '{}' --unix-socket /var/run/control.unit.sock http://localhost/config
   # update the server configuration
-  sudo curl -s -X PUT --data-binary @/home/pi/config/unit.json --unix-socket /var/run/control.unit.sock http://localhost/config
+  sudo curl -s -X PUT --data-binary @/home/pi/config/webserver.conf --unix-socket /var/run/control.unit.sock http://localhost/config
 else
   echo "Error: Failed to start web server, is it installed?" >&2
 fi

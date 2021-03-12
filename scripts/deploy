@@ -49,7 +49,7 @@ ssh $RPI_IP_ADDRESS "touch ${RPI_HOME_FOLDER}/web/static/amplipi_api.yaml" # tes
 scp $SCRIPT_DIR/../config/*.json                     $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
 scp $SCRIPT_DIR/../config/*.py                       $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
 scp $SCRIPT_DIR/../config/eventcmd.sh                $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
-scp $SCRIPT_DIR/../config/asound.conf                $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
+scp $SCRIPT_DIR/../config/*.conf                     $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
 scp $SCRIPT_DIR/../config/*.bash                     $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/config/
 
 # update configs on the pi
