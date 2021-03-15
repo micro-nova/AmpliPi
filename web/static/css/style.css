@@ -182,6 +182,10 @@ body {
   transform: rotate(180deg);
 }
 
+.api-link {
+  font-size: 1.5rem;
+}
+
 .player-wrapper {
   display: block;
   margin-left: auto;
