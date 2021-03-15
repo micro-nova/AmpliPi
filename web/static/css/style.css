@@ -182,6 +182,11 @@ body {
   transform: rotate(180deg);
 }
 
+#micronova-info {
+  font-size: 1.5rem;
+  margin-top: 20px
+}
+
 .player-wrapper {
   display: block;
   margin-left: auto;
