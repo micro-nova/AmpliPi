@@ -18,7 +18,7 @@ dos2unix ${SCRIPT_DIR}/*
 dos2unix ${SCRIPT_DIR}/../scripts/*
 
 # make some scripts executable
-chmod +x eventcmd.sh shairport_metadata.bash
+chmod +x eventcmd.sh shairport_metadata.bash dlna_metadata.bash
 
 # configure shairport-sync on pi for multi instance support and disable its daemon
 sp_installed=$(sudo apt list --installed 2> /dev/null | grep shairport-sync -c)
