@@ -32,7 +32,7 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 ## Testing mocked out audio and mocked out controller on a debian based os
 1. Checkout this repo
 1. Install python dependencies
-1. Use ```scripts/run_webserver --mock-ctrl --mock-streams``` to start the mock server
+1. Use ```scripts/run_debug_webserver --mock-ctrl --mock-streams``` to start the mock server
 
 ## Testing mocked out controller (with 4 stereo channel audio) on something running Raspberry Pi OS
 1. Start with a 32-bit version of Rasberry Pi OS. This needs to be older than december 2020 since our system only supports the ALSA audio backend currently.
@@ -40,7 +40,7 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well)
 1. Edit config/asound.conf. Uncomment the "Old Prototype" section at the bottom, and comment out the similar configuration above. This should be the configuration needed for the 7.1 channel USB audio card. Depending on the setup the card will either show up as #2 or #3. That needs to be changed on lines 27 and 32. Find the card # using ```aplay -l | grep "USB Sound Device"``` and edit those lines to include the correct #.
 1. use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file)
-1. over ssh connection, run ```scripts/run_webserver --mock-ctrl```
+1. over ssh connection, run ```scripts/run_debug_webserver --mock-ctrl```
 
 ## Testing on a pi 3+ compute module connected to an AmpliPi Controller
 1. Install a fresh version of Raspberry Pi OS - Lite on the Pi3+ module
@@ -49,7 +49,7 @@ We are currently using https://downloads.raspberrypi.org/raspios_lite_armhf/imag
 1. Checkout this repo on a linux based system  (a git bash shell on windows works fine as well)
 1. Use ssh-copy-id to copy your public key to the pi
 1. use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file)
-1. over ssh connection, run ```scripts/run_webserver```
+1. over ssh connection, run ```scripts/run_debug_webserver```
 
 ## Testing on windows
 This should be possible but has not been documented
