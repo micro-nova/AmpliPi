@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "amplipi"
+version = "0.1.0"
+description = "A Pi-based whole house audio controller"
+authors = ["Lincoln Lorenz <lincoln@micro-nova.com>"]
+license = "GPLv3"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+Flask = "^1.1.2"
+smbus2 = "^0.4.1"
+pyserial = "^3.5"
+deepdiff = "^5.2.3"
+python-vlc = "^3.0.11115"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
