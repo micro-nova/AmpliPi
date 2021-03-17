@@ -122,7 +122,7 @@ class Shairport:
       'metadata':{
         'enabled': 'yes',
         'include_cover_art': 'yes',
-        'pipe_name': '/home/pi/config/srcs/{}/shairport-sync-metadata'.format(src),
+        'pipe_name': '{}/srcs/{}/shairport-sync-metadata'.format(utils.get_folder('config'), src),
         'pipe_timeout': 5000,
       },
       'alsa': {
@@ -130,13 +130,13 @@ class Shairport:
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
-    config_folder = '/home/pi/config/srcs/{}'.format(src)
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
     # make all of the necessary dir(s)
-    os.system('mkdir -p {}'.format(config_folder))
-    config_file = '{}/shairport.conf'.format(config_folder)
+    os.system('mkdir -p {}'.format(src_config_folder)) # TODO: we need to delete all of the old cover art files!
+    config_file = '{}/shairport.conf'.format(src_config_folder)
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
-    meta_args = ['/home/pi/config/shairport_metadata.bash', '{}'.format(src)]
+    meta_args = ['{}/shairport_metadata.bash'.format(utils.get_folder('streams')), '{}'.format(src_config_folder)]
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -160,8 +160,9 @@ class Shairport:
     self.src = None
 
   def info(self):
-    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
-    sloc = '/home/pi/config/srcs/{}/sourceInfo'.format(self.src)
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
+    loc = '{}/currentSong'.format(src_config_folder)
+    sloc = '{}/sourceInfo'.format(src_config_folder)
     d = {}
     try:
       with open(loc, 'r') as file:
@@ -276,7 +277,7 @@ class Pandora:
 
   class Control:
     """ Controlling a running pianobar instance via its fifo control """
-    def __init__(self, pb_fifo='~/.config/pianobar/ctl'):
+    def __init__(self, pb_fifo='.config/pianobar/ctl'):
       # open the CTL fifo ('ctl' name specified in pianobar 'config' file)
       self.fifo = open(pb_fifo, 'w')
       print('Controlling pianobar with FIFO = {}'.format(pb_fifo))
@@ -358,8 +359,9 @@ class Pandora:
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
 
-    eventcmd_template = '/home/pi/config/eventcmd.sh'
-    pb_home = '/home/pi/config/srcs/{}'.format(src) # the simulated HOME for an instance of pianobar
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    eventcmd_template = '{}/eventcmd.sh'.format(utils.get_folder('streams'))
+    pb_home = src_config_folder
     pb_config_folder = '{}/.config/pianobar'.format(pb_home)
     pb_control_fifo = '{}/ctl'.format(pb_config_folder)
     pb_status_fifo = '{}/stat'.format(pb_config_folder)
@@ -370,7 +372,7 @@ class Pandora:
     pb_src_config_file = '{}/.libao'.format(pb_home)
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(pb_config_folder))
-    os.system('cp {} {}'.format(eventcmd_template, pb_eventcmd_file)) # Copy to retain executable status
+    os.system('cp {} {}'.format(eventcmd_template, pb_eventcmd_file)) # Copy to retains necessary executable status
     # write pianobar and libao config files
     write_config_file(pb_config_file, {
       'user': self.user,
@@ -380,13 +382,6 @@ class Pandora:
       'event_command': pb_eventcmd_file
     })
     write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': utils.output_device(src)})
-    try:
-      with open(pb_eventcmd_file) as ect:
-        template = ect.read().replace('source_id', str(src))
-      with open(pb_eventcmd_file, 'w') as ec:
-        ec.write(template)
-    except Exception as e:
-      print('error creating eventcmd: {}'.format(e))
     # create fifos if needed
     if not os.path.exists(pb_control_fifo):
       os.system('mkfifo {}'.format(pb_control_fifo))
@@ -420,7 +415,8 @@ class Pandora:
     self.src = None
 
   def info(self):
-    loc = '/home/pi/config/srcs/{}/.config/pianobar/currentSong'.format(self.src)
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
+    loc = '{}/.config/pianobar/currentSong'.format(src_config_folder)
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -546,9 +542,6 @@ class DLNA:
     mock = ' (mock)' if self.mock else ''
     return 'DLNA: {}{}{}'.format(self.name, connection, mock)
 
-
-
-
 class InternetRadio:
   """ An Internet Radio Stream """
   def __init__(self, name, url, logo, mock=False):
@@ -591,12 +584,12 @@ class InternetRadio:
       return
 
     # Make all of the necessary dir(s)
-    config_folder = '/home/pi/config/srcs/{}'.format(src)
-    os.system('mkdir -p {}'.format(config_folder))
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    os.system('mkdir -p {}'.format(src_config_folder))
 
     # Start audio via runvlc.py
-    song_info_path = '/home/pi/config/srcs/{}/currentSong'.format(src)
-    inetradio_args = ['python3', '/home/pi/config/runvlc.py', '{}'.format(self.url), '{}'.format(utils.output_device(src)), '--song-info', song_info_path]
+    song_info_path = '{}/currentSong'.format(src_config_folder)
+    inetradio_args = ['python3', '{}/runvlc.py'.format(utils.get_folder('streams')), '{}'.format(self.url), '{}'.format(utils.output_device(src)), '--song-info', song_info_path]
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
     print('{} (stream: {}) connected to {} via {}'.format(self.name, self.url, src, utils.output_device(src)))
@@ -619,7 +612,8 @@ class InternetRadio:
     self.src = None
 
   def info(self):
-    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
+    loc = '{}/currentSong'.format(src_config_folder)
     try:
       with open(loc, 'r') as file:
         d = {}

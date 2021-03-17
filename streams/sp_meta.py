@@ -1,18 +1,24 @@
 #!/usr/bin/python3
 import sys
 import time
+# args validation
+import argparse
+import os
 
-args = sys.argv[1:]
-print('Input Arguments: {}'.format(args[0]))
-try:
-    src = int(args[0])
-    loc = '/home/pi/config/srcs/{}/'.format(src)
-except:
-    print('Error: Invalid source choice. Sources range from 0 to 3. Please try again.')
-    sys.exit('Failure.')
-print('Targeting {}'.format(loc))
-cs_loc = loc + 'currentSong'
-si_loc = loc + 'sourceInfo'
+parser = argparse.ArgumentParser(description="shairport metadata interpreter")
+parser.add_argument('sp_config_dir', description='directory used for shairport song info generation')
+args = parser.parse_args()
+
+# Check if the folder is valid and writeable
+if not os.path.exists(args.sp_config_dir) or not os.access(args.sp_config_dir, os.W_OK):
+  print('Error: unable to access: {}'.format(args.sp_config_dir))
+
+# trim trailing /
+if args.sp_config_dir[-1] == '/':
+  args.sp_config_dir = args.sp_config_dir[:-1]
+
+cs_loc = '{}/currentSong'.format(args.sp_config_dir)
+si_loc = '{}/sourceInfo'.format(args.sp_config_dir)
 p_status = ''
 
 def read_field():

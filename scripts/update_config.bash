@@ -31,6 +31,7 @@ if [ 0 -eq "${sp_installed}" ]; then
 fi
 
 # rough configuration of shairport-sync-metadata-reader
+# TODO: we need to build this and install it as a binary
 git_installed=$(sudo apt list --installed 2> /dev/null | grep git/ -c)
 if [ 0 -eq "${git_installed}" ]; then
   echo "installing git"

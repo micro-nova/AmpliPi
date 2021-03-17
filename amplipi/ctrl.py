@@ -633,9 +633,9 @@ class Api:
       return utils.error('Stream id {} does not exist!'.format(id))
     # TODO: move the rest of this into streams
     if stream_index is not None:
-      root = '/home/pi/config/srcs/{}/'.format(stream_index)
+      root = '{}/srcs/{}/'.format(utils.get_folder('config'), stream_index)
     else:
-      root = '/home/pi/'
+      root = ''
     stat_dir = root + '.config/pianobar/stationList'
 
     try:

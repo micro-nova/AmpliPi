@@ -93,6 +93,9 @@ def vol_string(vol, min_vol=-79, max_vol=0):
 def output_device(src):
   return 'ch' + str(src)
 
+def get_folder(folder):
+  return folder # TODO: this should be install path aware, for now we assume amplipi was started in the base directory
+
 def save_on_success(func):
   """ A decorator that calls a class object's save method when successful
         (in the case of our API None=Success)
