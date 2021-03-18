@@ -55,7 +55,7 @@ scp $SCRIPT_DIR/../config/*.bash                     $RPI_IP_ADDRESS:${RPI_HOME_
 
 # update configs on the pi
 scp $SCRIPT_DIR/../requirements.txt                  $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/
-ssh $RPI_IP_ADDRESS "cd ${RPI_HOME_FOLDER}/config && ./update_config.bash"
+ssh $RPI_IP_ADDRESS "cd ${RPI_HOME_FOLDER}/config && ./install_deps.bash"
 
 # copy firmware
 scp $SCRIPT_DIR/../fw/*.sh                           $RPI_IP_ADDRESS:${RPI_HOME_FOLDER}/fw/
