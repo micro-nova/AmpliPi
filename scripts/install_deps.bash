@@ -34,30 +34,7 @@ fi
 
 # rough configuration of shairport-sync-metadata-reader
 # TODO: we need to build this and install it as a binary
-git_installed=$(sudo apt list --installed 2> /dev/null | grep git/ -c)
-if [ 0 -eq "${git_installed}" ]; then
-  echo "installing git"
-  sudo apt update && sudo apt install -y git
-else
-  echo "git already installed"
-fi
 
-# build-essential and autoconf are required to make the metadata reader
-be_installed=$(sudo apt list --installed 2> /dev/null | grep build-essential -c)
-if [ 0 -eq "${be_installed}" ]; then
-  echo "installing build-essential"
-  sudo apt update && sudo apt install -y build-essential
-else
-  echo "build-essential already installed"
-fi
-
-autoconf_installed=$(sudo apt list --installed 2> /dev/null | grep autoconf -c)
-if [ 0 -eq "${autoconf_installed}" ]; then
-  echo "installing autoconf"
-  sudo apt update && sudo apt install -y autoconf
-else
-  echo "autoconf already installed"
-fi
 
 cd /home/pi/config/
 ssmr_installed=$(sudo ls | grep shairport-sync-metadata-reader -c)
@@ -133,7 +110,7 @@ deactivate
 unit_installed=$(sudo apt list --installed 2> /dev/null | grep unit-python -c)
 if [ 0 -eq "${unit_installed}" ]; then
   echo "installing unit"
-  sudo apt update && sudo apt install -y ${SCRIPT_DIR}/../debs/unit_*.deb ${SCRIPT_DIR}/../debs/unit-python3.7_*.deb
+  sudo apt update && sudo apt install -y ../debs/unit_*.deb ../debs/unit-python3.7_*.deb
 else
   echo "unit already installed"
 fi

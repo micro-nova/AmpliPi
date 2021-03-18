@@ -36,6 +36,9 @@ include = [
   "web/**/*",
 ]
 
+[tool.poetry.scripts]
+amplipi_install_deps = 'amplipi.scripts:install_deps'
+
 [tool.poetry.urls]
 "Issues" = "https://github.com/micro-nova/AmpliPi/issues"
 
