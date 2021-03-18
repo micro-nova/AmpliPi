@@ -81,9 +81,20 @@ def test_base(client, path):
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
 # TODO: test sources
-# TODO: /sources/{sourceId} get-source
-# TODO: /sources/{sourceId} patch-source
+def base_source_ids():
+  return [ s['id'] for s in base_config()['sources']]
 
+# TODO: /sources/{sourceId} get-source
+@pytest.mark.parametrize('ids', base_source_ids())
+def test_get_source(client, ids):
+  rv = client.get('/api/sources/{}'.format(ids))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(base_config()['sources'], ids)
+  assert s != None
+  assert s['name'] == jrv['name']
+
+# TODO: /sources/{sourceId} patch-source
 # TODO: test zones
 # TODO: /zones/{zoneId} get-zone
 # TODO: /zones/{zoneId} patch-zone
