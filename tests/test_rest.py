@@ -398,3 +398,23 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
         if 'last_used' in cfg:
           cfg.pop('last_used')
         assert cfg == prev_cfg
+
+def test_generate(client):
+  fullpath = os.path.abspath('web/generated')
+  fullerpath = '{}/shairport/srcs/t'.format(fullpath)
+  if os.path.exists(fullerpath) != True:
+    os.makedirs(fullerpath)
+  test_filenames = ['test.txt', 'shairport/srcs/t/IMG_A1', '../shairport/srcs/t/Trying-to-cheat-the-system']
+  for fn in test_filenames:
+    test_name = fn
+    fn = fn.replace('../', '') # Taken from app.py > generated
+    with open('{}/{}'.format(fullpath, fn), 'w') as f:
+      f.write('Test for {}'.format(fn))
+    rv = client.get('/generated/{}'.format(test_name))
+    assert rv.status_code == HTTPStatus.OK
+  # TODO: Figure out how to delete. The last file is being held hostage in python
+  # time.sleep(10)
+  # for fn in test_filenames:
+  #   fn = fn.replace('..\\', '') # Taken from app.py > generated
+  #   if os.path.exists('{}/{}'.format(fullpath, fn)):
+  #     os.remove('{}/{}'.format(fullpath, fn))

@@ -23,6 +23,7 @@ Flask is used to simplify the web plumbing.
 """
 
 from flask import Flask, request, render_template, jsonify, make_response
+from flask.helpers import send_from_directory
 import amplipi.ctrl as ctrl
 import amplipi.rt as rt
 import amplipi.utils as utils
@@ -35,9 +36,15 @@ DEBUG_API = False
 import os
 template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
+generated_dir = os.path.abspath('web/generated')
 
 app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
 app.api = None # TODO: assign an unloaded API here to get auto completion / linting
+
+@app.route('/generated/<path:filename>')
+def generated(filename=''):
+  filename = filename.replace('../', '') # TODO: Get a fancier regex that checks for bad names
+  return send_from_directory(generated_dir, filename, conditional=True)
 
 # Helper functions
 def unused_groups(src):
