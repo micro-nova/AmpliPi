@@ -6,7 +6,7 @@
 # TODO: many of the checks here depend on apt, if something is manually installed this script will not detect it yet. Please fix.
 
 # get directory that the script exists in
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$( dirname "$0" )"
 
 # fix the line endings of the scripts copied over (thanks windows) (NOTE: we need to force LF line endings on this file)
 d2u_installed=$(sudo apt list --installed 2> /dev/null | grep dos2unix -c)
@@ -17,8 +17,10 @@ fi
 dos2unix ${SCRIPT_DIR}/*
 dos2unix ${SCRIPT_DIR}/../scripts/*
 
-# make some scripts executable
+# make some stream scripts executable
+pushd ../streams
 chmod +x eventcmd.sh shairport_metadata.bash dlna_metadata.bash
+popd
 
 # configure shairport-sync on pi for multi instance support and disable its daemon
 sp_installed=$(sudo apt list --installed 2> /dev/null | grep shairport-sync -c)

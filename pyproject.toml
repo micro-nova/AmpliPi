@@ -31,7 +31,7 @@ include = [
   "config/*.conf",
   "debs/**/*",
   "fw/preamp_*", # no need to add full source tree
-  "scripts/run_debug_webserver", # other scripts only support development
+  "scripts/run_debug_webserver", "scripts/install_deps.bash", "scripts/update_web.bash", # other scripts only support development
   "streams/**/*",
   "web/**/*",
 ]
