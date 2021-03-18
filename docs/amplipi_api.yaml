@@ -34,7 +34,7 @@ tags:
 - name: group
   description: Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.
 - name: stream
-  description: Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify, Internet Radio.
+  description: Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify, Internet Radio, DLNA.
 - name: preset
   description: A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.
 paths:

@@ -139,7 +139,7 @@ class Shairport:
     meta_args = ['/home/pi/config/shairport_metadata.bash', '{}'.format(src)]
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    self.proc2 = subprocess.Popen(args=meta_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
     self.src = src
@@ -151,9 +151,11 @@ class Shairport:
 
   def disconnect(self):
     if self._is_sp_running():
+      os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
       self.proc.kill()
       print('{} disconnected'.format(self.name))
     self.state = 'disconnected'
+    self.proc2 = None
     self.proc = None
     self.src = None
 
@@ -481,13 +483,14 @@ class DLNA:
     self.uuid_gen()
     portnum = 49494 + int(src)
 
-    # Potentially need to add more - especially when it comes to metadata and stuff like that
+    meta_args = ['/home/pi/config/dlna_metadata.bash', '{}'.format(src)]
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
                 '--gstout-audiodevice', 'ch{}'.format(src), '--gstout-initial-volume-db',
                 '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
-                '-f', '{}'.format(self.name)]
-    # TODO: figure out how to get status from DLNA
-    self.proc = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                '-f', '{}'.format(self.name), '--logfile',
+                '/home/pi/config/dlna/{}/metafifo'.format(src)]
+    self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
     self.src = src
@@ -499,13 +502,26 @@ class DLNA:
 
   def disconnect(self):
     if self._is_dlna_running():
-      self.proc.kill()
+      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      self.proc2.kill()
       print('{} disconnected'.format(self.name))
     self.state = 'disconnected'
     self.proc = None
+    self.proc2 = None
     self.src = None
 
   def info(self):
+    loc = '/home/pi/config/dlna/{}/currentSong'.format(self.src)
+    try:
+      with open(loc, 'r') as file:
+        d = {}
+        for line in file.readlines():
+          line = line.strip()
+          if line:
+            d = eval(line)
+        return(d)
+    except Exception as e:
+      pass
     return {'details': 'No info available'}
 
   def uuid_gen(self):
