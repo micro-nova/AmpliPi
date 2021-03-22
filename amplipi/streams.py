@@ -242,7 +242,7 @@ class Spotify:
       self.src = src
       return
     # TODO: Figure out the config for Spotify. Potentially need to get song info & play/pause ctrl
-    spotify_args = ['librespot', '-n', '{}'.format(self.name), '--device', 'ch{}'.format(src), '--initial-volume', '100']
+    spotify_args = ['librespot', '-n', '{}'.format(self.name), '--device', utils.output_device(src), '--initial-volume', '100']
     self.proc = subprocess.Popen(args=spotify_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
@@ -481,7 +481,7 @@ class DLNA:
 
     meta_args = ['/home/pi/config/dlna_metadata.bash', '{}'.format(src)]
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
-                '--gstout-audiodevice', 'ch{}'.format(src), '--gstout-initial-volume-db',
+                '--gstout-audiodevice', utils.output_device(src), '--gstout-initial-volume-db',
                 '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
                 '-f', '{}'.format(self.name), '--logfile',
                 '/home/pi/config/dlna/{}/metafifo'.format(src)]
