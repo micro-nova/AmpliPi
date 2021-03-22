@@ -486,7 +486,7 @@ class Api:
 
   def _new_group_id(self):
     """ get next available group id """
-    g = max(self.status['groups'], key=lambda g: g['id'])
+    g = max(self.status['groups'], key=lambda g: g['id'], default=None)
     if g is not None:
       return g['id'] + 1
     else:
@@ -528,6 +528,8 @@ class Api:
       i, _ = utils.find(self.status['groups'], id)
       if i is not None:
         del self.status['groups'][i]
+      else:
+        return utils.error('delete group failed: {} does not exist'.format(id))
     except KeyError:
       return utils.error('delete group failed: {} does not exist'.format(id))
 
