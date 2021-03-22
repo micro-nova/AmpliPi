@@ -90,8 +90,31 @@ def vol_string(vol, min_vol=-79, max_vol=0):
   vol_string[vol_level] = '|' # place the volume slider bar at its current spot
   return ''.join(vol_string) # turn that char array into a string
 
+cached_outputs = None
+def available_outputs():
+  """ get the available alsa outputs (we are expecting ch0-ch3).
+
+  Returns:
+    outputs: iterable list of alsa outputs
+
+  This will cache the result since alsa outputs do not change dynamically (unless you edit a config file).
+  """
+  global cached_outputs
+  if cached_outputs is None:
+    try:
+      cached_outputs = [ o for o in subprocess.check_output('aplay -L'.split()).decode().split('\n') if l and l[0] != ' ' ]
+    except:
+      cached_outputs = []
+    if 'ch0' not in cached_outputs:
+      print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
+  return cached_outputs
+
 def output_device(src):
-  return 'ch' + str(src)
+  dev = 'ch' + str(src)
+  if dev in available_outputs():
+    return dev
+  else:
+    return 'default' # fallback to default
 
 def get_folder(folder):
   return folder # TODO: this should be install path aware, for now we assume amplipi was started in the base directory
