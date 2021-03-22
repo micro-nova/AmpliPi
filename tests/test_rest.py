@@ -80,11 +80,10 @@ def test_base(client, path):
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
-# TODO: test sources
+# Test Sources
 def base_source_ids():
   return [ s['id'] for s in base_config()['sources']]
 
-# TODO: /sources/{sourceId} get-source
 @pytest.mark.parametrize('ids', base_source_ids())
 def test_get_source(client, ids):
   rv = client.get('/api/sources/{}'.format(ids))
@@ -94,16 +93,93 @@ def test_get_source(client, ids):
   assert s != None
   assert s['name'] == jrv['name']
 
-# TODO: /sources/{sourceId} patch-source
-# TODO: test zones
-# TODO: /zones/{zoneId} get-zone
-# TODO: /zones/{zoneId} patch-zone
+@pytest.mark.parametrize('ids', base_source_ids())
+def test_patch_source(client, ids):
+  rv = client.patch('/api/sources/{}'.format(ids), json={'name': 'patched-name'})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(jrv['sources'], ids)
+  assert s != None
+  assert s['name'] == 'patched-name'
 
-# TODO: test groups
-# TODO: /group post-group
-# TODO: /groups/{groupId} get-group
-# TODO: /groups/{groupId} patch-group
-# TODO: /groups/{groupId} delete-group
+# Test Zones
+def base_zone_ids():
+  return [ s['id'] for s in base_config()['zones']]
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_get_zone(client, zid):
+  rv = client.get('/api/zones/{}'.format(zid))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(base_config()['zones'], zid)
+  assert s != None
+  assert s['name'] == jrv['name']
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_patch_zone(client, zid):
+  rv = client.patch('/api/zones/{}'.format(zid), json={'name': 'patched-name'})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(jrv['zones'], zid)
+  assert s != None
+  assert s['name'] == 'patched-name'
+
+# Test Groups
+def base_group_ids():
+  return [ s['id'] for s in base_config()['groups']]
+
+def test_post_group(client):
+  grp = {'name' : 'Whole House', 'zones' : [0, 1, 2, 3, 4, 5]}
+  rv = client.post('/api/group', json=grp)
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  assert 'id' in jrv
+  assert type(jrv['id']) == int
+  for k, v in grp.items():
+    assert jrv[k] == v
+
+@pytest.mark.parametrize('gid', base_group_ids())
+def test_get_group(client, gid):
+  last_state = status_copy(client)
+  rv = client.get('/api/groups/{}'.format(gid))
+  if find(last_state['groups'], gid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.get_json()
+  s = find(base_config()['groups'], gid)
+  assert s != None
+  assert s['name'] == jrv['name']
+
+@pytest.mark.parametrize('gid', base_group_ids())
+def test_patch_group(client, gid):
+  last_state = status_copy(client)
+  rv = client.patch('/api/groups/{}'.format(gid), json={'name': 'patched-name'})
+  if find(last_state['groups'], gid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.get_json()
+  s = find(jrv['groups'], gid)
+  assert s != None
+  assert s['name'] == 'patched-name'
+
+@pytest.mark.parametrize('gid', base_group_ids())
+def test_delete_group(client, gid):
+  rv = client.delete('/api/groups/{}'.format(gid))
+  if 'groups' in client.original_config and find(client.original_config['groups'], gid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.get_json()
+  s = find(jrv['groups'], gid)
+  assert s == None
+  for other_gid in base_group_ids():
+    if other_gid != gid:
+      assert find(jrv['groups'], other_gid) != None
 
 # test streams
 def base_stream_ids():
