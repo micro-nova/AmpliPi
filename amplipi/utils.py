@@ -20,6 +20,7 @@ This module contains helper functions are used across the amplipi python library
 """
 
 import json
+import os
 import functools
 
 # Helper functions
@@ -116,8 +117,9 @@ def output_device(src):
   else:
     return 'default' # fallback to default
 
+@functools.lru_cache(maxsize=8)
 def get_folder(folder):
-  return folder # TODO: this should be install path aware, for now we assume amplipi was started in the base directory
+  return os.path.abspath(folder)
 
 def save_on_success(func):
   """ A decorator that calls a class object's save method when successful
