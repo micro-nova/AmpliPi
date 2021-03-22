@@ -133,9 +133,9 @@ def create_group():
 
 @app.route('/api/groups/<int:group>', methods=['GET'])
 def get_group(group):
-  groups = app.api.get_state()['groups']
-  if group >= 0 and group < len(groups):
-    return groups[group]
+  _, grp = utils.find(app.api.get_state()['groups'], group)
+  if grp is not None:
+    return grp
   else:
     return {}, 404
 
