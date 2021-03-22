@@ -1,6 +1,7 @@
 # AmpliPi config files (and backup)
 house.json
 *.json.bak
+config/srcs/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
