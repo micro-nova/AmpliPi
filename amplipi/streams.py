@@ -359,7 +359,7 @@ class Pandora:
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
 
-    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    src_config_folder = os.path.abspath('{}/srcs/{}'.format(utils.get_folder('config'), src))
     eventcmd_template = '{}/eventcmd.sh'.format(utils.get_folder('streams'))
     pb_home = src_config_folder
     pb_config_folder = '{}/.config/pianobar'.format(pb_home)
