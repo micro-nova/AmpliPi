@@ -516,7 +516,7 @@ class DLNA:
           if line:
             d = eval(line)
         return(d)
-    except Exception as e:
+    except Exception:
       pass
     return {'details': 'No info available'}
 

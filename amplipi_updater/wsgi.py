@@ -23,12 +23,41 @@ Simple web based software updates
 
 from flask import Flask, request, render_template, jsonify, make_response
 
-application = Flask(__name__, static_folder='static')
+import os
+import subprocess
+from tempfile import mkdtemp
 
-@application.route('/update')
+app = Flask(__name__, static_folder='static')
+
+@app.route('/update')
 def update():
-  return "Web Updates"
+  return app.send_static_file('index.html')
+
+@app.route('/update/upload', methods=['POST'])
+def start_update():
+  try:
+    print('got update file')
+    os.makedirs('web/uploads', exist_ok=True)
+    for f in request.files.values():
+      f.save('web/uploads/update.tar.gz')
+    temp_dir = mkdtemp()
+    print('Attempting to extract firmware to temp directory')
+    subprocess.check_call('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split())
+#    # verification check for special file
+#    if 0 != subprocess.call('cat {}/ps_mag1c'.format(temp_dir).split()):
+#      raise Exception('update not valid')
+#    subprocess.check_call('cp -a {}/python ../'.format(temp_dir).split())
+#    subprocess.check_call('sync'.split())
+#    subprocess.check_call('chmod +x start_ps.sh'.split())
+#    print(request)
+#    initiate_software_restart()
+    return jsonify({'status': 'ok', 'path': temp_dir}), 200
+  except Exception as e:
+    print(e)
+    app.last_error = str(e)
+    return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
-  application.run(debug=True, host= '0.0.0.0')
+  app.run(debug=True, host= 'localhost')
 
+application = app # wsgi expects application var for app
