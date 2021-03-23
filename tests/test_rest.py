@@ -55,6 +55,19 @@ def client(request):
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
+@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups()])
+def clientnm(request):# Non-mock systems should use this client - mock_ctrl and mock_streams are False here
+  cfg = request.param
+  config_dir = tempfile.mkdtemp()
+  config_file = os.path.join(config_dir, 'house.json')
+  with open(config_file, 'w') as cfg_file:
+    cfg_file.write(json.dumps(cfg))
+  app = amplipi.app.create_app(mock_ctrl=False, mock_streams=False, config_file=config_file)
+  app.testing = True
+  c = app.test_client()
+  c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
+  return c
+
 # TODO: the web view test should be added to its own testfile once we add more functionality to the site
 @pytest.mark.parametrize('path', [',' , '/'] + [ '/{}'.format(i) for i in range(4) ])
 def test_view(client, path):
@@ -240,10 +253,10 @@ def test_delete_stream(client, sid):
 #       these tests will require either a real system with passwords and account info or a better mock
 # @pytest.mark.parametrize('sid', base_stream_ids())
 @pytest.mark.parametrize('cmd', ['play', 'pause'])
-def test_post_stream_cmd(client, cmd):
+def test_post_stream_cmd(clientnm, cmd):
   # Add a stream to send commands to
   m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
-  rv = client.post('/api/stream', json=m_and_k)
+  rv = clientnm.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.get_json()
@@ -251,11 +264,10 @@ def test_post_stream_cmd(client, cmd):
   assert type(jrv['id']) == int
   for k, v in m_and_k.items():
     assert jrv[k] == v
-  rv = client.patch('/api/sources/0'.format(jrv['id']), json={'input': 'stream={}'.format(jrv['id'])})
+  rv = clientnm.patch('/api/sources/0'.format(jrv['id']), json={'input': 'stream={}'.format(jrv['id'])})
   assert rv.status_code == HTTPStatus.OK
-  rv1 = client.post('/api/streams/{}/{}'.format(jrv['id'], cmd))
+  rv1 = clientnm.post('/api/streams/{}/{}'.format(jrv['id'], cmd))
   assert rv1.status_code == HTTPStatus.OK
-  #return None
 
 # test presets
 def base_preset_ids():
