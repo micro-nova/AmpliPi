@@ -7,15 +7,15 @@
 
 # get directory that the script exists in
 cd "$( dirname "$0" )"
-
+pwd
 # fix the line endings of the scripts copied over (thanks windows) (NOTE: we need to force LF line endings on this file)
 d2u_installed=$(sudo apt list --installed 2> /dev/null | grep dos2unix -c)
 if [ 0 -eq "${d2u_installed}" ]; then
   echo "installing dos2unix"
   sudo apt update && sudo apt install -y dos2unix
 fi
-dos2unix ${SCRIPT_DIR}/*
-dos2unix ${SCRIPT_DIR}/../scripts/*
+dos2unix *
+dos2unix ../streams/*
 
 # make some stream scripts executable
 pushd ../streams
@@ -36,22 +36,22 @@ fi
 # TODO: we need to build this and install it as a binary
 
 
-cd /home/pi/config/
-ssmr_installed=$(sudo ls | grep shairport-sync-metadata-reader -c)
-if [ 0 -eq "${ssmr_installed}" ]; then
-  git clone https://github.com/micronova-jb/shairport-sync-metadata-reader.git
-  cd shairport-sync-metadata-reader
-  autoreconf -i -f
-  ./configure
-  make
-  sudo make install # This will fail if it has already been installed elsewhere
-else
-  echo "metadata reader already installed... attempting to update"
-  cd shairport-sync-metadata-reader
-  git pull
-  make
-  sudo make install
-fi
+# cd /home/pi/config/
+# ssmr_installed=$(sudo ls | grep shairport-sync-metadata-reader -c)
+# if [ 0 -eq "${ssmr_installed}" ]; then
+#   git clone https://github.com/micronova-jb/shairport-sync-metadata-reader.git
+#   cd shairport-sync-metadata-reader
+#   autoreconf -i -f
+#   ./configure
+#   make
+#   sudo make install # This will fail if it has already been installed elsewhere
+# else
+#   echo "metadata reader already installed... attempting to update"
+#   cd shairport-sync-metadata-reader
+#   git pull
+#   make
+#   sudo make install
+# fi
 
 # configure pianobar on pi
 pb_installed=$(sudo apt list --installed 2> /dev/null | grep pianobar -c)
@@ -101,10 +101,11 @@ else
   echo "venv already installed"
 fi
 echo "updating virtual environment"
-python3 -m venv ${SCRIPT_DIR}/../venv
-source ${SCRIPT_DIR}/../venv/bin/activate
-pip3 install -r ${SCRIPT_DIR}/../requirements.txt
-deactivate
+# TODO: Add back requirements.txt
+# python3 -m venv ${SCRIPT_DIR}/../venv
+# source ${SCRIPT_DIR}/../venv/bin/activate
+# pip3 install -r ${SCRIPT_DIR}/../requirements.txt
+# deactivate
 
 # install nginx unit from debians built on the pi and configure its service
 unit_installed=$(sudo apt list --installed 2> /dev/null | grep unit-python -c)
@@ -114,12 +115,12 @@ if [ 0 -eq "${unit_installed}" ]; then
 else
   echo "unit already installed"
 fi
-bash ${SCRIPT_DIR}/update_web.bash
+source update_web.bash
 
 # TODO: add other dependencies?
 # TODO: check if boot config changed, copy over if necessary and ask user to restart
 
 echo "updating system alsa config"
-sudo cp ${SCRIPT_DIR}/asound.conf /etc/asound.conf
+sudo cp ../config/asound.conf /etc/asound.conf
 
 # webserver

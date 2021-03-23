@@ -18,7 +18,7 @@
 """Runtimes to communicate with the AmpliPi hardware
 """
 
-DISABLE_HW = False # disable hardware based packages (smbus2 is not installable on Windows)
+DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 
 import time
