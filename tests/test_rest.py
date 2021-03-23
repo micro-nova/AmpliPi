@@ -238,6 +238,24 @@ def test_delete_stream(client, sid):
 # TODO: /streams/{streamId}/{streamCmd} post-stream-command
 # TODO: mocked streams do not currently handle state changes from commands
 #       these tests will require either a real system with passwords and account info or a better mock
+# @pytest.mark.parametrize('sid', base_stream_ids())
+@pytest.mark.parametrize('cmd', ['play', 'pause'])
+def test_post_stream_cmd(client, cmd):
+  # Add a stream to send commands to
+  m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
+  rv = client.post('/api/stream', json=m_and_k)
+  # check that the stream has an id added to it and that all of the fields are still there
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  assert 'id' in jrv
+  assert type(jrv['id']) == int
+  for k, v in m_and_k.items():
+    assert jrv[k] == v
+  rv = client.patch('/api/sources/0'.format(jrv['id']), json={'input': 'stream={}'.format(jrv['id'])})
+  assert rv.status_code == HTTPStatus.OK
+  rv1 = client.post('/api/streams/{}/{}'.format(jrv['id'], cmd))
+  assert rv1.status_code == HTTPStatus.OK
+  #return None
 
 # test presets
 def base_preset_ids():
