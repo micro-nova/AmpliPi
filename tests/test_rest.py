@@ -248,12 +248,10 @@ def test_delete_stream(client, sid):
     if other_sid != sid:
       assert find(jrv['streams'], other_sid) != None
 
-# TODO: /streams/{streamId}/{streamCmd} post-stream-command
-# TODO: mocked streams do not currently handle state changes from commands
-#       these tests will require either a real system with passwords and account info or a better mock
-# @pytest.mark.parametrize('sid', base_stream_ids())
+# Non-Mock client used - run this test on the Pi
+# _live tests will be excluded from GitHub testing
 @pytest.mark.parametrize('cmd', ['play', 'pause'])
-def test_post_stream_cmd(clientnm, cmd):
+def test_post_stream_cmd_live(clientnm, cmd):
   # Add a stream to send commands to
   m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
   rv = clientnm.post('/api/stream', json=m_and_k)
