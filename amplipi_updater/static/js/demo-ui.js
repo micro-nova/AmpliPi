@@ -72,11 +72,10 @@ function ui_begin_update() {
   source.onmessage = function(event) {
     var data = JSON.parse(event.data);
     ui_show_update_progress(data);
+    if (data.type == 'success' || data.type == 'error') {
+      source.close();
+    }
   };
-  //source.addEventListener("info", (event) => {
-  //  var data = JSON.parse(event.data);
-  //  ui_add_log(data.message, "info");
-  //});
   fetch("update/install"); // start the install TODO: check response
 }
 

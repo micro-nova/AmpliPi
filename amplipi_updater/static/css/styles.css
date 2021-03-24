@@ -1,4 +1,4 @@
-/* 
+/*
 	A couple styles to make the demo page look good
  */
 body {
@@ -27,7 +27,8 @@ hr {
 }
 #debug {
 	overflow-y: scroll !important;
-	height: 180px;	
+	min-height: 100px;
+	min-height: 500px;
 }
 
 .dm-uploader {

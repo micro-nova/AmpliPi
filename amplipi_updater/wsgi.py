@@ -21,7 +21,7 @@
 Simple web based software updates
 """
 
-from flask import Flask, request, render_template, jsonify, Response
+from flask import Flask, request, render_template, jsonify, Response, stream_with_context
 
 import os
 import subprocess
@@ -40,6 +40,7 @@ def update():
 def start_update():
   try:
     print('got update file')
+    # TODO: use a temp directory and pass it the installation
     os.makedirs('web/uploads', exist_ok=True)
     for f in request.files.values():
       f.save('web/uploads/update.tar.gz')
@@ -66,12 +67,16 @@ def sse_done(msg):
 app.install_progress_announcer = sse.MessageAnnouncer()
 @app.route('/update/install/progress')
 def progress():
+  @stream_with_context
   def stream():
-    messages = app.install_progress_announcer.listen()  # returns a queue.Queue
-    while True:
-      # TODO: break out and send a non-text/event-stream message when we get a done message
-      msg = messages.get()  # blocks until a new message arrives
-      yield msg
+    try:
+      messages = app.install_progress_announcer.listen()  # returns a queue.Queue
+      while True:
+        # TODO: break out and send a non-text/event-stream message when we get a done message
+        msg = messages.get()  # blocks until a new message arrives
+        yield msg
+    finally:
+      print('progress reporting done')
   # return response with a function
   return Response(stream(), mimetype='text/event-stream')
 
@@ -82,6 +87,16 @@ def install_thread():
   print('Attempting to extract firmware to temp directory')
   subprocess.check_call('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split())
   sse_info('done extracting software')
+
+  # TODO: add install then call install_deps.bash
+# # verification check for special file
+# if 0 != subprocess.call('cat {}/ps_mag1c'.format(temp_dir).split()):
+#   raise Exception('update not valid')
+# subprocess.check_call('cp -a {}/python ../'.format(temp_dir).split())
+# subprocess.check_call('sync'.split())
+# subprocess.check_call('chmod +x start_ps.sh'.split())
+# print(request)
+# initiate_software_restart()
   sse_done('installation done')
 
 @app.route('/update/install')
@@ -89,14 +104,6 @@ def install():
   t = threading.Thread(target=install_thread)
   t.start()
   return {}
-#    # verification check for special file
-#    if 0 != subprocess.call('cat {}/ps_mag1c'.format(temp_dir).split()):
-#      raise Exception('update not valid')
-#    subprocess.check_call('cp -a {}/python ../'.format(temp_dir).split())
-#    subprocess.check_call('sync'.split())
-#    subprocess.check_call('chmod +x start_ps.sh'.split())
-#    print(request)
-#    initiate_software_restart()
 
 if __name__ == '__main__':
   app.run(debug=True, host= 'localhost', threaded=True)
