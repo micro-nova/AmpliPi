@@ -250,22 +250,18 @@ def test_delete_stream(client, sid):
 
 # Non-Mock client used - run this test on the Pi
 # _live tests will be excluded from GitHub testing
-@pytest.mark.parametrize('cmd', ['play', 'pause'])
+@pytest.mark.parametrize('cmd', ['play', 'pause', 'stop', 'next', 'love', 'ban', 'shelve'])
 def test_post_stream_cmd_live(clientnm, cmd):
   # Add a stream to send commands to
   m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
   rv = clientnm.post('/api/stream', json=m_and_k)
-  # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.get_json()
-  assert 'id' in jrv
-  assert type(jrv['id']) == int
-  for k, v in m_and_k.items():
-    assert jrv[k] == v
-  rv = clientnm.patch('/api/sources/0'.format(jrv['id']), json={'input': 'stream={}'.format(jrv['id'])})
+  id = jrv['id']
+  rv = clientnm.patch('/api/sources/0'.format(id), json={'input': 'stream={}'.format(id)})
   assert rv.status_code == HTTPStatus.OK
-  rv1 = clientnm.post('/api/streams/{}/{}'.format(jrv['id'], cmd))
-  assert rv1.status_code == HTTPStatus.OK
+  rv = clientnm.post('/api/streams/{}/{}'.format(id, cmd))
+  assert rv.status_code == HTTPStatus.OK
 
 # test presets
 def base_preset_ids():
