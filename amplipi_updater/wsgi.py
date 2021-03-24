@@ -21,11 +21,14 @@
 Simple web based software updates
 """
 
-from flask import Flask, request, render_template, jsonify, make_response
+from flask import Flask, request, render_template, jsonify, Response
 
 import os
 import subprocess
 from tempfile import mkdtemp
+import json
+import threading
+import sse
 
 app = Flask(__name__, static_folder='static')
 
@@ -40,9 +43,52 @@ def start_update():
     os.makedirs('web/uploads', exist_ok=True)
     for f in request.files.values():
       f.save('web/uploads/update.tar.gz')
-    temp_dir = mkdtemp()
-    print('Attempting to extract firmware to temp directory')
-    subprocess.check_call('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split())
+    return jsonify({'status': 'ok', 'path': 'web/uploads/'}), 200
+  except Exception as e:
+    print(e)
+    app.last_error = str(e)
+    return jsonify({'status': 'error', 'message': str(e)}), 500
+
+def sse_message(t, msg):
+  with app.app_context():
+    sse_msg = sse.format({'message': msg, 'type' : t})
+    app.install_progress_announcer.announce(sse_msg)
+
+def sse_info(msg):
+  return sse_message('info', msg)
+def sse_warning(msg):
+  return sse_message('warning', msg)
+def sse_error(msg):
+  return sse_message('error', msg)
+def sse_done(msg):
+  return sse_message('success', msg)
+
+app.install_progress_announcer = sse.MessageAnnouncer()
+@app.route('/update/install/progress')
+def progress():
+  def stream():
+    messages = app.install_progress_announcer.listen()  # returns a queue.Queue
+    while True:
+      # TODO: break out and send a non-text/event-stream message when we get a done message
+      msg = messages.get()  # blocks until a new message arrives
+      yield msg
+  # return response with a function
+  return Response(stream(), mimetype='text/event-stream')
+
+def install_thread():
+  sse_info('starting installation')
+  temp_dir = mkdtemp()
+  sse_info('extracting software')
+  print('Attempting to extract firmware to temp directory')
+  subprocess.check_call('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split())
+  sse_info('done extracting software')
+  sse_done('installation done')
+
+@app.route('/update/install')
+def install():
+  t = threading.Thread(target=install_thread)
+  t.start()
+  return {}
 #    # verification check for special file
 #    if 0 != subprocess.call('cat {}/ps_mag1c'.format(temp_dir).split()):
 #      raise Exception('update not valid')
@@ -51,13 +97,8 @@ def start_update():
 #    subprocess.check_call('chmod +x start_ps.sh'.split())
 #    print(request)
 #    initiate_software_restart()
-    return jsonify({'status': 'ok', 'path': temp_dir}), 200
-  except Exception as e:
-    print(e)
-    app.last_error = str(e)
-    return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
-  app.run(debug=True, host= 'localhost')
+  app.run(debug=True, host= 'localhost', threaded=True)
 
 application = app # wsgi expects application var for app

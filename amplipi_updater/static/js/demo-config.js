@@ -18,7 +18,7 @@ $(function(){
     },
     onInit: function(){
       // Plugin is ready to use
-      ui_add_log('Penguin initialized :)', 'info');
+      ui_add_log('Updater initialized', 'info');
     },
     onComplete: function(){
       // All files in the queue are processed (success or error)
@@ -50,6 +50,7 @@ $(function(){
       ui_add_log('Upload of file #' + id + ' COMPLETED', 'success');
       ui_multi_update_file_status(id, 'success', 'Upload Complete');
       ui_multi_update_file_progress(id, 100, 'success', false);
+      ui_begin_update();
     },
     onUploadError: function(id, xhr, status, message){
       ui_multi_update_file_status(id, 'danger', message);

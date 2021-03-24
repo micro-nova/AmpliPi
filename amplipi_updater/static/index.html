@@ -20,20 +20,18 @@
 
       <h1>AmpliPi Updater</h1>
       <p class="lead mb-4">
-        A very lightweight Plugin for file uploading using ajax(async) and includes support for queues, progress tracking and drag and drop.
-        This page demostrates the default basic setup/config.
+        Update your AmpliPi device
       </p>
 
-      <div class="row">
+      <div id="file-upload-container" class="row">
         <div class="col-md-6 col-sm-12">
 
-          <!-- Our markup, the important part here! -->
           <div id="drag-and-drop-zone" class="dm-uploader p-5">
-            <h3 class="mb-5 mt-5 text-muted">Drag &amp; drop files here</h3>
+            <h3 class="text-muted">Drag &amp; drop installation file here</h3>
 
             <div class="btn btn-primary btn-block mb-5">
                 <span>Open the file Browser</span>
-                <input type="file" title='Click to add Files' />
+                <input type="file" title='Click to add File' />
             </div>
           </div><!-- /uploader -->
 
@@ -51,15 +49,11 @@
         </div>
       </div><!-- /file list -->
 
-      <div class="alert alert-info" role="alert">
-        More setup demos on: <a href="https://danielmg.org/demo/java-script/uploader/basic">https://danielmg.org/demo/java-script/uploader/basic</a>
-      </div>
-
       <div class="row">
         <div class="col-12">
            <div class="card h-100">
             <div class="card-header">
-              Debug Messages
+              Update Log
             </div>
 
             <ul class="list-group list-group-flush" id="debug">
@@ -70,10 +64,6 @@
       </div> <!-- /debug -->
 
     </main> <!-- /container -->
-
-    <footer class="text-center">
-        <p>&copy; Daniel Morales &middot; <a href="https://www.danielmg.org">www.danielmg.org</a></p>
-    </footer>
 
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>

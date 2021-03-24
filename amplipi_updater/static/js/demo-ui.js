@@ -17,7 +17,7 @@ function ui_add_log(message, color)
   template = template.replace('%%date%%', dateString);
   template = template.replace('%%message%%', message);
   template = template.replace('%%color%%', color);
-  
+
   $('#debug').find('li.empty').fadeOut(); // remove the 'no messages yet'
   $('#debug').prepend(template);
 }
@@ -63,4 +63,25 @@ function ui_multi_update_file_progress(id, percent, color, active)
     bar.removeClass('bg-success bg-info bg-warning bg-danger');
     bar.addClass('bg-' + color);
   }
+}
+
+function ui_begin_update() {
+  // TODO: hide file uploader
+  // TODO: setup SSE events, for intermediate step info
+  var source = new EventSource("update/install/progress");
+  source.onmessage = function(event) {
+    var data = JSON.parse(event.data);
+    ui_show_update_progress(data);
+  };
+  //source.addEventListener("info", (event) => {
+  //  var data = JSON.parse(event.data);
+  //  ui_add_log(data.message, "info");
+  //});
+  fetch("update/install"); // start the install TODO: check response
+}
+
+function ui_show_update_progress(status) {
+  // assumes status {'message': str, 'type': 'info'|'warning'|'error'|'success'}
+  let color = status.type == 'error' ? 'danger' : status.type;
+  ui_add_log(status.message, color);
 }
