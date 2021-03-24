@@ -22,6 +22,7 @@ This module contains helper functions are used across the amplipi python library
 import json
 import os
 import functools
+import subprocess
 
 # Helper functions
 def encode(pydata):
@@ -103,7 +104,7 @@ def available_outputs():
   global cached_outputs
   if cached_outputs is None:
     try:
-      cached_outputs = [ o for o in subprocess.check_output('aplay -L'.split()).decode().split('\n') if l and l[0] != ' ' ]
+      cached_outputs = [ o for o in subprocess.check_output('aplay -L'.split()).decode().split('\n') if o and o[0] != ' ' ]
     except:
       cached_outputs = []
     if 'ch0' not in cached_outputs:

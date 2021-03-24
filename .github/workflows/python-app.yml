@@ -40,7 +40,7 @@ jobs:
       run: |
         pip install pytest
         pip install pytest-cov
-        pytest --cov=./ --cov-report=xml -vv
+        pytest --cov=./ --cov-report=xml -vv -k 'not _live'
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
