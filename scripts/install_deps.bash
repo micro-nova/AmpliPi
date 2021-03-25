@@ -33,25 +33,8 @@ if [ 0 -eq "${sp_installed}" ]; then
 fi
 
 # rough configuration of shairport-sync-metadata-reader
-# TODO: we need to build this and install it as a binary
-
-
-# cd /home/pi/config/
-# ssmr_installed=$(sudo ls | grep shairport-sync-metadata-reader -c)
-# if [ 0 -eq "${ssmr_installed}" ]; then
-#   git clone https://github.com/micronova-jb/shairport-sync-metadata-reader.git
-#   cd shairport-sync-metadata-reader
-#   autoreconf -i -f
-#   ./configure
-#   make
-#   sudo make install # This will fail if it has already been installed elsewhere
-# else
-#   echo "metadata reader already installed... attempting to update"
-#   cd shairport-sync-metadata-reader
-#   git pull
-#   make
-#   sudo make install
-# fi
+# TODO: copy the shairport-sync-metadata-reader to scripts
+# TODO: generate a x64 build
 
 # configure pianobar on pi
 pb_installed=$(sudo apt list --installed 2> /dev/null | grep pianobar -c)
@@ -63,6 +46,7 @@ else
 fi
 
 # configure raspotify on pi and disable its daemon
+# TODO: upgrade to "curl -sL https://spocon.github.io/spocon/install.sh | sh" which handles x64 as well
 rs_installed=$(sudo apt list --installed 2> /dev/null | grep raspotify -c)
 if [ 0 -eq "${rs_installed}" ]; then
   echo "installing raspotify"
