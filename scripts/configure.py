@@ -6,6 +6,7 @@ import subprocess
 import os
 import glob
 import sys
+import requests # simple http requests
 
 os_deps = {
   'base' : {
@@ -105,9 +106,58 @@ def install_python_deps(deps):
     os.chdir(last_dir)
   return tasks
 
+
+def get_web_config(base_dir):
+  base_dir = base_dir.rstrip('/') # remove trailing slash if any
+  return {
+    "listeners": {
+      "*:80": {
+        "pass": "applications/flask"
+      }
+    },
+    "applications": {
+      "flask": {
+        # TODO: make user configurable
+        "user": "pi",
+        "group": "pi",
+          "type": "python 3.7",
+          "path": base_dir,
+          "home": f'{base_dir}/venv/',
+          "module": "amplipi.wsgi",
+        "working_directory": base_dir
+      }
+    }
+  }
+
+CONFIG_URL = 'http://localhost/config'
+
+def is_running():
+  success = False
+  try:
+    r = requests.get(CONFIG_URL)
+    success = r.ok()
+  except Exception as e:
+    print(e)
+  return success
+
+def restart_web():
+  print('restarting webserver')
+  subprocess.check_call('sudo systemctl restart unit.service'.split())
+
+def update_web():
+  if not is_running():
+    restart_web()
+  base_dir = script_dir.rstrip('/scripts')
+  r = requests.put(CONFIG_URL, json=get_web_config(base_dir))
+  if not r.ok():
+    print(f'Error updating web configuration: {r.status}')
+
 if __name__ == '__main__':
   check_and_setup_platorm()
   print(install_os_deps())
   with open(os.path.join(script_dir, '../requirements.txt')) as f:
     deps = f.read().splitlines()
     print(install_python_deps(deps))
+  # only update web in production
+  if not test_env:
+    update_web()
