@@ -476,7 +476,7 @@ class DLNA:
                 '--gstout-audiodevice', utils.output_device(src), '--gstout-initial-volume-db',
                 '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
                 '-f', '{}'.format(self.name), '--logfile',
-                '/home/pi/config/dlna/{}/metafifo'.format(src)]
+                '/home/pi/config/srcs/{}/metafifo'.format(src)]
     self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
@@ -499,7 +499,7 @@ class DLNA:
     self.src = None
 
   def info(self):
-    loc = '/home/pi/config/dlna/{}/currentSong'.format(self.src)
+    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
     try:
       with open(loc, 'r') as file:
         d = {}
