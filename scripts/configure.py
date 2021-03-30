@@ -122,9 +122,9 @@ def get_web_config(base_dir):
       "*:80": {
         "pass": "applications/amplipi"
       },
-      #"*:5001": {
-      #  "pass": "applications/amplipi_updater"
-      #}
+      "*:5001": {
+        "pass": "applications/amplipi_updater"
+      }
     },
     "applications": {
       "amplipi": {
@@ -137,16 +137,16 @@ def get_web_config(base_dir):
           "module": "amplipi.wsgi",
         "working_directory": base_dir
       },
-      #"amplipi_updater": {
-      #  # TODO: use amplipi_updater user?
-      #  "user": "pi",
-      #  "group": "pi",
-      #    "type": "python 3.7",
-      #    "path": base_dir,
-      #    "home": f'{base_dir}/venv/', # TODO: should the updater have a seperate venv?
-      #    "module": "amplipi_updater.wsgi",
-      #  "working_directory": base_dir
-      #}
+      "amplipi_updater": {
+        # TODO: use amplipi_updater user?
+        "user": "pi",
+        "group": "pi",
+          "type": "python 3.7",
+          "path": base_dir,
+          "home": f'{base_dir}/venv/', # TODO: should the updater have a seperate venv?
+          "module": "amplipi_updater.wsgi",
+        "working_directory": base_dir
+      }
     }
   }
 
