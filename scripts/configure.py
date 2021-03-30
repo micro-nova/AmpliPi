@@ -153,7 +153,8 @@ def get_web_config(base_dir):
 CONFIG_URL = 'http://localhost/config'
 
 def _get_web_config():
-  """ NOTE: this theoretically can be done in python but this and only this needs to run as sudo
+  """ Grab the current Nginx Unit server configuration
+    NOTE: this theoretically can be done in python but this and only this needs to run as sudo
     import requests_unixsocket
     session = requests_unixsocket.Session()
     session.get('http+unix://%2Fvar%2Frun%2Fcontrol.unit.sock/config')
@@ -162,12 +163,32 @@ def _get_web_config():
   return t
 
 def _put_web_config(cfg):
+  """ Configure Nginx Unit Server """
   cmds = 'sudo curl -s -X PUT -d DATA --unix-socket /var/run/control.unit.sock http://localhost/config'.split()
   assert cmds[6] == 'DATA'
   cmds[6] = '{}'.format(json.dumps(cfg))
   t = run_task('Put web config', cmds)
+  # unit returns status as json, rewrite this in an expected format
+  """ example Unit outputs
+  Example success: {
+    "success": "Reconfiguration done."
+  }
+  Example failure: {
+    "error": "Invalid JSON.",
+    "detail": "An empty JSON payload isn't allowed."
+  }
+  """
   js = json.loads(t['output'])
-
+  if 'success' in js:
+    t['status'] = "success"
+    t['output'] = js['success']
+  elif 'error' in js:
+    t['status'] = "error"
+    t['output'] = js['error']
+  else:
+    t['status'] = "error"
+  if 'detail' in js:
+    t['output'] += '\n{}'.format(js['detail'])
   return t
 
 def is_web_running():
