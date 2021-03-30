@@ -1,4 +1,6 @@
 #!/bin/bash
+# Install AmpliPi software on a remote system
+
 set -e
 
 # get directory that the script exists in
@@ -16,21 +18,27 @@ if [[ -z "${RPI_IP_ADDRESS}" ]]; then
 fi
 
 # TODO: deploy amplipi as a python installed package with pip or something similar
-
-# Home folder on AmpliPi controller
-RPI_HOME_FOLDER=/home/pi
+# NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
+EN_HW=1
 
 # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
 sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
 
+poetry version prepatch
 poetry build
 
-# copy stuff to board
-ssh $RPI_IP_ADDRESS "rm -f amplipi-*.tar.gz"
-scp ../dist/amplipi-*.tar.gz $RPI_IP_ADDRESS:
-ssh $RPI_IP_ADDRESS "tar -xvf amplipi-*.tar.gz"
-ssh $RPI_IP_ADDRESS "chmod +x amplipi-*/scripts/install_deps.bash"
-ssh $RPI_IP_ADDRESS "./amplipi-*/scripts/install_deps.bash"
-
-
 sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py
+
+# copy stuff to board
+latest_release=$(ls -d -t ../dist/amplipi-*.tar.gz | head --lines=1)
+release_name=$(echo $latest_release | sed -e 's@../dist/@@' -e 's/.tar.gz//')
+echo "Copying $latest_release to $RPI_IP_ADDRESS"
+scp $latest_release $RPI_IP_ADDRESS:
+echo "Making development folder on pi"
+ssh $RPI_IP_ADDRESS "mkdir -p amplipi-dev"
+echo "Extracting folder into $RPI_IP_ADDRESS:~/amplipi-dev"
+ssh $RPI_IP_ADDRESS "cd amplipi-dev && tar -xvf ../${release_name}.tar.gz && cp -a ${release_name}/* . && rm -r ${release_name}"
+echo "Configuring installation"
+ssh $RPI_IP_ADDRESS "chmod +x amplipi-dev/scripts/configure.py"
+ssh $RPI_IP_ADDRESS "./amplipi-dev/scripts/configure.py --os-deps --python-deps"
+ssh $RPI_IP_ADDRESS "./amplipi-dev/scripts/configure.py --webserver"

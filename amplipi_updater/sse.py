@@ -1,5 +1,7 @@
 
-# Simple Server-Sent Events (SSE) implementation
+# A simple Server-Sent Events (SSE) implementation
+#
+# This gives a websever like flask the ability to report events to connected clients
 #
 # based on https://github.com/MaxHalford/flask-sse-no-deps
 #
@@ -35,10 +37,12 @@ class MessageAnnouncer:
     self.listeners = []
 
   def listen(self):
+    """ Add an SSE listener """
     self.listeners.append(queue.Queue(maxsize=5))
     return self.listeners[-1]
 
   def announce(self, msg: str):
+    """ Announce an SSE message to any listeners """
     # We go in reverse order because we might have to delete an element, which will shift the
     # indices backward
     for i in reversed(range(len(self.listeners))):

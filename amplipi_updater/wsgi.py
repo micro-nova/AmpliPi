@@ -23,9 +23,13 @@ Simple web based software updates
 
 from flask import Flask, request, render_template, jsonify, Response, stream_with_context
 
+# file and process handling
 import os
 import subprocess
+import glob
+import sys
 from tempfile import mkdtemp
+
 import json
 import threading
 import sse
@@ -70,7 +74,7 @@ def progress():
   @stream_with_context
   def stream():
     try:
-      messages = app.install_progress_announcer.listen()  # returns a queue.Queue
+      messages = app.install_progress_announcer.listen() # returns a queue.Queue
       while True:
         # TODO: break out and send a non-text/event-stream message when we get a done message
         msg = messages.get()  # blocks until a new message arrives
@@ -80,23 +84,37 @@ def progress():
   # return response with a function
   return Response(stream(), mimetype='text/event-stream')
 
-def install_thread():
-  sse_info('starting installation')
+def extract_to_home(home):
+  """ The simple, pip-less install. Extract tarball and copy into users home directory """
   temp_dir = mkdtemp()
   sse_info('extracting software')
   print('Attempting to extract firmware to temp directory')
   subprocess.check_call('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split())
-  sse_info('done extracting software')
+  sse_info('copying software')
+  ap_dir = glob.glob(f'{temp_dir}/amplipi-*')
+  subprocess.check_call(f'cp -a {ap_dir}/*  {home}/amplipi'.split())
+
+def install_thread():
+  sse_info('starting installation')
+  # TODO: add pip install
+
+  home = os.environ.get('HOME')
+  extract_to_home(home)
+
+  sys.path.insert(0, f'{home}/scripts')
+  import configure
+  configure.install()
+
 
   # TODO: add install then call install_deps.bash
-# # verification check for special file
-# if 0 != subprocess.call('cat {}/ps_mag1c'.format(temp_dir).split()):
-#   raise Exception('update not valid')
-# subprocess.check_call('cp -a {}/python ../'.format(temp_dir).split())
-# subprocess.check_call('sync'.split())
-# subprocess.check_call('chmod +x start_ps.sh'.split())
-# print(request)
-# initiate_software_restart()
+  # # verification check for special file
+  # if 0 != subprocess.call('cat {}/ps_mag1c'.format(temp_dir).split()):
+  #   raise Exception('update not valid')
+  # subprocess.check_call('cp -a {}/python ../'.format(temp_dir).split())
+  # subprocess.check_call('sync'.split())
+  # subprocess.check_call('chmod +x start_ps.sh'.split())
+  # print(request)
+  # initiate_software_restart()
   sse_done('installation done')
 
 @app.route('/update/install')

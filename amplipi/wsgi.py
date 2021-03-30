@@ -23,4 +23,4 @@ This initializes the webapplication found in app.py. Used as a helper to nginx's
 
 import amplipi.app
 
-application = amplipi.app.create_app()
+application = amplipi.app.create_app(mock_ctrl=True) # TODO: this was needed for testing!
