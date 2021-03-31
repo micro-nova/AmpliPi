@@ -253,7 +253,7 @@ def install(os_deps=True, python_deps=True, web=True, progress=print_task_result
       _os_deps['web']['debs'] = ['unit', 'unit-python3.7']
     progress(_install_os_deps(env, _os_deps))
   if python_deps:
-    with open(os.path.join(env['script_dir'], '../requirements.txt')) as f:
+    with open(os.path.join(env['script_dir'], '..', 'requirements.txt')) as f:
       deps = f.read().splitlines()
       progress(_install_python_deps(env, deps))
   if web:
