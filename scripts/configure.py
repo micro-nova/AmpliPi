@@ -10,6 +10,7 @@ import os
 import glob
 import sys
 import json
+import requests
 
 _os_deps = {
   'base' : {
@@ -115,7 +116,6 @@ class Task:
       self.success = out.returncode == 0
     return self
 
-
 def _install_os_deps(env, deps=_os_deps.keys()):
   tasks = []
   # TODO: add extra apt repos
@@ -192,7 +192,7 @@ def _create_web_config(base_dir, amplipi_up = True, updater_up = True):
     del config['applications']['amplipi']
   if not updater_up:
     del config['listeners']['*:5001']
-    del config['applications']['updater']
+    del config['applications']['amplipi_updater']
   return config
 
 CONFIG_URL = 'http://localhost/config'
@@ -207,12 +207,20 @@ def _get_web_config() -> Task:
   t = Task('Get web config', 'sudo curl -s --unix-socket /var/run/control.unit.sock http://localhost/config'.split()).run()
   return t
 
-def _put_web_config(cfg) -> Task:
+def _put_web_config(cfg, test_url='') -> Task:
   """ Configure Nginx Unit Server """
   cmds = 'sudo curl -s -X PUT -d DATA --unix-socket /var/run/control.unit.sock http://localhost/config'.split()
   assert cmds[6] == 'DATA'
   cmds[6] = '{}'.format(json.dumps(cfg))
   t = Task('Put web config', cmds, json_out=True).run()
+  if t.success and test_url:
+    t.output += f'\ntesting: {test_url}'
+    r = requests.get(test_url)
+    if r.ok:
+      t.output += "\n  Ok!"
+    else:
+      t.output += f"\n  Error: {r.reason}"
+      t.success = False
   return t
 
 def _is_web_running() -> bool:
@@ -226,8 +234,13 @@ def _update_web(env):
   if not _is_web_running():
     tasks.append(_restart_web())
   base_dir = env['script_dir'].rstrip('/scripts')
-  # TODO: bringup amplipi and updater separately (checking if they are working before starting the next)
-  tasks.append(_put_web_config(_create_web_config(base_dir)))
+  # bringup amplipi and updater separately
+  # TODO: checking if they are working before starting the next
+  only_amplipi = _create_web_config(base_dir, amplipi_up=True, updater_up=False)
+  amplipi_and_updater = _create_web_config(base_dir, amplipi_up=True, updater_up=True)
+  tasks.append(_put_web_config(only_amplipi, 'http://localhost'))
+  if tasks[-1].success:
+    tasks.append(_put_web_config(amplipi_and_updater, 'http://localhost:5001/update'))
   return tasks
 
 def print_task_results(tasks):
