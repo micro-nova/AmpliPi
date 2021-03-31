@@ -11,9 +11,9 @@ import glob
 import sys
 import json
 
-os_deps = {
+_os_deps = {
   'base' : {
-    'apt' : ['python3-pip', 'python3-venv']
+    'apt' : ['python3-pip', 'python3-venv', 'curl']
   },
   'web' : {
   },
@@ -38,7 +38,7 @@ os_deps = {
   # }
 }
 
-def check_and_setup_platorm():
+def _check_and_setup_platorm():
   env = {
     'has_apt': False,
     'is_git_repo': False,
@@ -69,8 +69,8 @@ def check_and_setup_platorm():
 
   return env
 
-def run_task(name, args):
-  task = dict()
+def _run_task(name, args):
+  task = dict() # TODO: migrate this task report to an actual class
   task['name'] = name
   task['args'] = args
   out = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
@@ -78,18 +78,18 @@ def run_task(name, args):
   task['status'] = 'success' if out.returncode == 0 else 'failed' # TODO: apt update returns 100 on my machine :/
   return task
 
-def install_os_deps(env, deps=os_deps.keys()):
+def _install_os_deps(env, deps=_os_deps.keys()):
   tasks = []
   # TODO: add extra apt repos
   # find latest apt packages
-  tasks += [run_task('get latest debian packages', 'sudo apt update'.split())]
+  tasks += [_run_task('get latest debian packages', 'sudo apt update'.split())]
 
   # install debian packages
   packages = set()
   for d in deps:
-    if 'apt' in os_deps[d]:
-      packages.update(os_deps[d]['apt'])
-  tasks += [run_task('install debian packages', 'sudo apt install -y'.split() + list(packages))]
+    if 'apt' in _os_deps[d]:
+      packages.update(_os_deps[d]['apt'])
+  tasks += [_run_task('install debian packages', 'sudo apt install -y'.split() + list(packages))]
 
   # install local debian packages
   packages = set()
@@ -97,27 +97,27 @@ def install_os_deps(env, deps=os_deps.keys()):
   last_dir = os.path.abspath(os.curdir)
   os.chdir(env['script_dir'] + '/..')
   for d in deps:
-    if 'debs' in os_deps[d]:
-      for db in os_deps[d]['debs']:
+    if 'debs' in _os_deps[d]:
+      for db in _os_deps[d]['debs']:
         # get the full name of the debian file
         packages.update(glob.glob(f'{db}_*.deb'))
   if len(packages) > 0:
-    tasks += [run_task('install local debian packages', 'sudo apt install -y'.split() + list(packages))]
+    tasks += [_run_task('install local debian packages', 'sudo apt install -y'.split() + list(packages))]
   os.chdir(last_dir)
   return tasks
 
-def install_python_deps(env, deps):
+def _install_python_deps(env, deps):
   tasks = []
   if len(deps) > 0:
     last_dir = os.path.abspath(os.curdir)
     os.chdir(env['script_dir'])
-    tasks += [run_task('install python packages', 'sh install_python_deps.bash'.split())]
+    tasks += [_run_task('install python packages', 'sh install_python_deps.bash'.split())]
     os.chdir(last_dir)
   return tasks
 
-def get_web_config(base_dir):
+def _create_web_config(base_dir, amplipi_up = True, updater_up = True):
   base_dir = base_dir.rstrip('/') # remove trailing slash if any
-  return {
+  config = {
     "listeners": {
       "*:80": {
         "pass": "applications/amplipi"
@@ -149,6 +149,13 @@ def get_web_config(base_dir):
       }
     }
   }
+  if not amplipi_up:
+    del config['listeners']['*:80']
+    del config['applications']['amplipi']
+  if not updater_up:
+    del config['listeners']['*:5001']
+    del config['applications']['updater']
+  return config
 
 CONFIG_URL = 'http://localhost/config'
 
@@ -159,7 +166,7 @@ def _get_web_config():
     session = requests_unixsocket.Session()
     session.get('http+unix://%2Fvar%2Frun%2Fcontrol.unit.sock/config')
   """
-  t = run_task('Get web config', 'sudo curl -s --unix-socket /var/run/control.unit.sock http://localhost/config'.split())
+  t = _run_task('Get web config', 'sudo curl -s --unix-socket /var/run/control.unit.sock http://localhost/config'.split())
   return t
 
 def _put_web_config(cfg):
@@ -167,7 +174,7 @@ def _put_web_config(cfg):
   cmds = 'sudo curl -s -X PUT -d DATA --unix-socket /var/run/control.unit.sock http://localhost/config'.split()
   assert cmds[6] == 'DATA'
   cmds[6] = '{}'.format(json.dumps(cfg))
-  t = run_task('Put web config', cmds)
+  t = _run_task('Put web config', cmds)
   # unit returns status as json, rewrite this in an expected format
   """ example Unit outputs
   Example success: {
@@ -191,21 +198,57 @@ def _put_web_config(cfg):
     t['output'] += '\n{}'.format(js['detail'])
   return t
 
-def is_web_running():
+def _is_web_running():
   return _get_web_config()['status'] == 'success'
 
-def restart_web():
+def _restart_web():
   print('restarting webserver')
   subprocess.check_call('sudo systemctl restart unit.service'.split())
 
 def update_web(env):
-  if not is_web_running():
-    restart_web()
+  if not _is_web_running():
+    _restart_web()
   base_dir = env['script_dir'].rstrip('/scripts')
-  t = _put_web_config(get_web_config(base_dir))
+  # TODO: bringup amplipi and updater separately (checking if they are working before starting the next)
+  t = _put_web_config(_create_web_config(base_dir))
   if t['status'] != 'success':
     print('Error updating web configuration: {}'.format(t['status']))
   return [t]
+
+def print_task_results(tasks):
+  for task in tasks:
+    print(f"{task['name']} : {task['args']}")
+    for line in task['output'].splitlines():
+      print(f'  {line}')
+    if 'success' != task['status']:
+      status = task['status']
+      print(f'  ERROR: {status}')
+
+def install(os_deps=True, python_deps=True, web=True, progress=print_task_results):
+  """ Install and configure AmpliPi's dependencies """
+  t = {'name': 'setup', 'args': [], 'output': '', 'status' : 'success'}
+  env = _check_and_setup_platorm()
+  if not env['platform_supported']:
+    t['output'] = f'untested platform: {platform.platform()}. Please fix this this script and make us a PR'
+    t['status'] = 'error'
+    exit(1)
+  if web and not env['nginx_supported']:
+    t['output'] = 'nginx unit webserver is not supported on this platform yet'
+    t['status'] = 'error'
+    exit(1)
+  t['output'] = str(env)
+  progress([t])
+  if os_deps:
+    if web and env['nginx_supported']:
+      # add unit web server
+      _os_deps['web']['debs'] = ['unit', 'unit-python3.7']
+    progress(_install_os_deps(env, _os_deps))
+  if python_deps:
+    with open(os.path.join(env['script_dir'], '../requirements.txt')) as f:
+      deps = f.read().splitlines()
+      progress(_install_python_deps(env, deps))
+  if web:
+    progress(update_web(env))
 
 if __name__ == '__main__':
   import argparse
@@ -214,35 +257,7 @@ if __name__ == '__main__':
     help='Install python dependencies (using venv)')
   parser.add_argument('--os-deps', action='store_true', default=False,
     help='Install os dependencies using apt')
-  parser.add_argument('--webserver', action='store_true', default=False,
+  parser.add_argument('--web','--webserver', action='store_true', default=False,
     help="Install and configure webserver (Nginx Unit)")
   args = parser.parse_args()
-
-  def print_task_results(tasks):
-    for task in tasks:
-      print(f"{task['name']} : {task['args']}")
-      for line in task['output'].splitlines():
-        print(f'  {line}')
-      if 'success' != task['status']:
-        status = task['status']
-        print(f'  ERROR: {status}')
-
-  env = check_and_setup_platorm()
-
-  if not env['platform_supported']:
-    print(f'untested platform: {platform.platform()}. Please fix this this script and make us a PR')
-    exit(1)
-  if args.webserver and not env['nginx_supported']:
-    print('nginx unit webserver is not supported on this platform yet')
-    exit(1)
-  if args.os_deps:
-    if args.webserver and env['nginx_supported']:
-      # add unit web server
-      os_deps['web']['debs'] = ['unit', 'unit-python3.7']
-    print_task_results(install_os_deps(env, os_deps))
-  if args.python_deps:
-    with open(os.path.join(env['script_dir'], '../requirements.txt')) as f:
-      deps = f.read().splitlines()
-      print_task_results(install_python_deps(env, deps))
-  if args.webserver:
-    print_task_results(update_web(env))
+  install(os_deps=args.os_deps, python_deps=args.python_deps, web=args.web)
