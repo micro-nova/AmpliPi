@@ -32,7 +32,7 @@ from tempfile import mkdtemp
 
 import json
 import threading
-import sse
+import amplipi.updater.sse as sse
 
 app = Flask(__name__, static_folder='static')
 

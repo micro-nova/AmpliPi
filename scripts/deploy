@@ -24,7 +24,7 @@ EN_HW=1
 # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
 sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
 
-poetry version prepatch
+poetry version prerelease
 poetry build
 
 sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py

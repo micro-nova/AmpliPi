@@ -144,7 +144,7 @@ def get_web_config(base_dir):
           "type": "python 3.7",
           "path": base_dir,
           "home": f'{base_dir}/venv/', # TODO: should the updater have a seperate venv?
-          "module": "amplipi_updater.wsgi",
+          "module": "amplipi.updater.wsgi",
         "working_directory": base_dir
       }
     }
