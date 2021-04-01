@@ -3,3 +3,4 @@ Flask
 smbus2
 pyserial
 python-vlc
+requests

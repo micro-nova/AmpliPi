@@ -29,10 +29,11 @@ import subprocess
 import glob
 import sys
 from tempfile import mkdtemp
-
+import re
 import json
 import threading
 import amplipi.updater.sse as sse
+import typing
 
 app = Flask(__name__, static_folder='static')
 
@@ -55,6 +56,7 @@ def start_update():
     return jsonify({'status': 'error', 'message': str(e)}), 500
 
 def sse_message(t, msg):
+  msg = msg.replace('\n', '<br>')
   with app.app_context():
     sse_msg = sse.format({'message': msg, 'type' : t})
     app.install_progress_announcer.announce(sse_msg)
@@ -87,34 +89,41 @@ def progress():
 def extract_to_home(home):
   """ The simple, pip-less install. Extract tarball and copy into users home directory """
   temp_dir = mkdtemp()
-  sse_info('extracting software')
-  print('Attempting to extract firmware to temp directory')
-  subprocess.check_call('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split())
+  sse_info(f'Extracting software to temp directory {temp_dir}')
+  file_list = subprocess.getoutput('tar -tvf web/uploads/update.tar.gz')
+  release = re.search(r'(amplipi-.*?)/', file_list).group(1) # get the full name of the release
+  sse_info(f'Got amplipi release: {release}')
+  out = subprocess.run('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   sse_info('copying software')
-  ap_dir = glob.glob(f'{temp_dir}/amplipi-*')
-  subprocess.check_call(f'cp -a {ap_dir}/*  {home}/amplipi'.split())
+  files_to_copy = ' '.join(glob.glob(f'{temp_dir}/amplipi-*/*'))
+  subprocess.check_call(f'mkdir -p {home}'.split())
+  subprocess.check_call(f'cp -a {files_to_copy}  {home}/'.split())
+
+def indent(p: str):
+  """ indent paragraph p """
+  return '  ' + '  '.join(p.splitlines(keepends=True))
 
 def install_thread():
   sse_info('starting installation')
   # TODO: add pip install
 
-  home = os.environ.get('HOME')
+  home = os.environ.get('HOME') + '/amplipi-dev2' # placeholder
+
+  sse_info(f'home={home}')
   extract_to_home(home)
 
   sys.path.insert(0, f'{home}/scripts')
-  import configure
-  configure.install()
+  import configure # we want the new configure!
+  def progress_sse(tl):
+    for task in tl:
+      sse_info(task.name)
+      output = indent(task.output)
+      if task.success:
+        sse_info(output)
+      else:
+        sse_error(output)
+  configure.install(progress=progress_sse)
 
-
-  # TODO: add install then call install_deps.bash
-  # # verification check for special file
-  # if 0 != subprocess.call('cat {}/ps_mag1c'.format(temp_dir).split()):
-  #   raise Exception('update not valid')
-  # subprocess.check_call('cp -a {}/python ../'.format(temp_dir).split())
-  # subprocess.check_call('sync'.split())
-  # subprocess.check_call('chmod +x start_ps.sh'.split())
-  # print(request)
-  # initiate_software_restart()
   sse_done('installation done')
 
 @app.route('/update/install')

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+HELP="""Run AmpliPi's update webserver
+  usage: run_debug_updater
+"""
+
+set -e
+
+# get directory that the script exists in
+cd "$( dirname "$0" )/.."
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -h|--help) echo -e $HELP; exit 0 ;;
+        *) echo "Unknown parameter passed: $1"; echo -e $HELP; exit 1 ;;
+    esac
+    shift
+done
+
+# TODO: kill an old debug updater
+#kill -KILL $(ps ax | grep 'python3' | grep 'flask' | awk '{print $1}') > /dev/null
+
+# TDOO: reconfigure the production server to remove updater
+#test 'active' = $(systemctl is-active unit.service) && sudo curl -s -X PUT -d '{}' --unix-socket /var/run/control.unit.sock http://localhost/config
+
+# use our virtual environment
+source venv/bin/activate
+cd amplipi/updater/ && flask run -p 5001 -h 0.0.0.0 --with-threads --debugger
+deactivate

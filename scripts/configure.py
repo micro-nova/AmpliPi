@@ -10,7 +10,6 @@ import os
 import glob
 import sys
 import json
-import requests
 
 _os_deps = {
   'base' : {
@@ -169,21 +168,22 @@ def _create_web_config(base_dir, amplipi_up = True, updater_up = True):
         # TODO: use amplpi user?
         "user": "pi",
         "group": "pi",
-          "type": "python 3.7",
-          "path": base_dir,
-          "home": f'{base_dir}/venv/',
-          "module": "amplipi.wsgi",
-        "working_directory": base_dir
+        "type": "python 3.7",
+        "path": base_dir,
+        "home": f'{base_dir}/venv/',
+        "module": "amplipi.wsgi",
+        "working_directory": base_dir,
       },
       "amplipi_updater": {
         # TODO: use amplipi_updater user?
         "user": "pi",
         "group": "pi",
-          "type": "python 3.7",
-          "path": base_dir,
-          "home": f'{base_dir}/venv/', # TODO: should the updater have a seperate venv?
-          "module": "amplipi.updater.wsgi",
-        "working_directory": base_dir
+        "type": "python 3.7",
+        "path": base_dir,
+        "home": f'{base_dir}/venv/', # TODO: should the updater have a seperate venv?
+        "module": "amplipi.updater.wsgi",
+        "working_directory": base_dir,
+        "threads": 100, # TODO: how many threads do we need for SSE?
       }
     }
   }
@@ -209,6 +209,7 @@ def _get_web_config() -> Task:
 
 def _put_web_config(cfg, test_url='') -> Task:
   """ Configure Nginx Unit Server """
+  import requests
   cmds = 'sudo curl -s -X PUT -d DATA --unix-socket /var/run/control.unit.sock http://localhost/config'.split()
   assert cmds[6] == 'DATA'
   cmds[6] = '{}'.format(json.dumps(cfg))
@@ -239,6 +240,7 @@ def _update_web(env):
   only_amplipi = _create_web_config(base_dir, amplipi_up=True, updater_up=False)
   amplipi_and_updater = _create_web_config(base_dir, amplipi_up=True, updater_up=True)
   tasks.append(_put_web_config(only_amplipi, 'http://localhost'))
+  # NOTE: if debugging updater comment out the following lines and run the with scripts/run_debug_updater
   if tasks[-1].success:
     tasks.append(_put_web_config(amplipi_and_updater, 'http://localhost:5001/update'))
   return tasks

@@ -7,6 +7,7 @@ $(function(){
    */
   $('#drag-and-drop-zone').dmUploader({ //
     url: '/update/upload',
+    extFilter: ["gz"],
     multiple: false,
     onDragEnter: function(){
       // Happens when dragging something over the DnD area

@@ -17,9 +17,10 @@ if [[ -z "${RPI_IP_ADDRESS}" ]]; then
   exit 1
 fi
 
+echo "Deploying amplipi project (development build) to $RPI_IP_ADDRESS"
+
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
-EN_HW=1
 
 # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
 sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
