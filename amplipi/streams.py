@@ -122,7 +122,9 @@ class Shairport:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
     web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
     # make all of the necessary dir(s)
-    os.system('mkdir -p {}'.format(src_config_folder)) # TODO: we need to delete all of the old cover art files!
+    os.system('rm -r -f {}'.format(web_dir))
+    os.system('mkdir -p {}'.format(web_dir))
+    os.system('mkdir -p {}'.format(src_config_folder))
     config_file = '{}/shairport.conf'.format(src_config_folder)
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
@@ -168,8 +170,7 @@ class Shairport:
             d['album'] = data[2]
             d['paused'] = data[3]
             if int(data[4]):
-              d['img_url'] = '/generated/shairport/srcs/{}/{}'.format(self.src, data[5])
-        # return d
+              d['img_url'] = '/generated/{}/{}'.format(self.src, data[5])
     except Exception:
       pass
       # TODO: Log actual exception here?
@@ -419,7 +420,7 @@ class Pandora:
             d['album'] = data[2]
             d['img_url'] = data[3]
             d['station'] = data[5]
-        return(d)
+        return d
     except Exception:
       pass
       #print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
@@ -471,12 +472,13 @@ class DLNA:
     self.uuid_gen()
     portnum = 49494 + int(src)
 
-    meta_args = ['/home/pi/config/dlna_metadata.bash', '{}'.format(src)]
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    meta_args = ['{}/dlna_metadata.bash'.format(utils.get_folder('streams')), '{}'.format(src_config_folder)]
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
                 '--gstout-audiodevice', utils.output_device(src), '--gstout-initial-volume-db',
                 '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
                 '-f', '{}'.format(self.name), '--logfile',
-                '/home/pi/config/srcs/{}/metafifo'.format(src)]
+                '{}/metafifo'.format(src_config_folder)]
     self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
@@ -499,7 +501,8 @@ class DLNA:
     self.src = None
 
   def info(self):
-    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
+    loc = '{}/currentSong'.format(src_config_folder)
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -507,7 +510,7 @@ class DLNA:
           line = line.strip()
           if line:
             d = eval(line)
-        return(d)
+        return d
     except Exception:
       pass
     return {'details': 'No info available'}
@@ -616,7 +619,7 @@ class InternetRadio:
         d['img_url'] = self.logo
         d['station'] = data['station']
 
-        return(d)
+        return d
     except Exception:
       pass
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
