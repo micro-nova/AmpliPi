@@ -18,7 +18,7 @@ dos2unix ${SCRIPT_DIR}/*
 dos2unix ${SCRIPT_DIR}/../scripts/*
 
 # make some scripts executable
-chmod +x eventcmd.sh shairport_metadata.bash
+chmod +x eventcmd.sh shairport_metadata.bash dlna_metadata.bash
 
 # configure shairport-sync on pi for multi instance support and disable its daemon
 sp_installed=$(sudo apt list --installed 2> /dev/null | grep shairport-sync -c)
@@ -94,6 +94,15 @@ else
   echo "raspotify already installed"
 fi
 
+# configure vlc for internet radio on pi
+ir_installed=$(sudo apt list --installed 2> /dev/null | grep vlc -c)
+if [ 0 -eq "${ir_installed}" ]; then
+  echo "installing vlc"
+  sudo apt update && sudo apt install -y vlc
+else
+  echo "vlc already installed"
+fi
+
 # configure python3 on pi
 rs_installed=$(sudo apt list --installed 2> /dev/null | grep python3-pip -c)
 if [ 0 -eq "${rs_installed}" ]; then
@@ -102,11 +111,35 @@ if [ 0 -eq "${rs_installed}" ]; then
 else
   echo "pip already installed"
 fi
+
+# create a virtual environment and install all of our packages (needed by nginx, but we should use this anyway)
+venv_installed=$(sudo apt list --installed 2> /dev/null | grep python3-venv -c)
+if [ 0 -eq "${venv_installed}" ]; then
+  echo "installing venv"
+  sudo apt update && sudo apt install -y python3-venv
+else
+  echo "venv already installed"
+fi
+echo "updating virtual environment"
+python3 -m venv ${SCRIPT_DIR}/../venv
+source ${SCRIPT_DIR}/../venv/bin/activate
 pip3 install -r ${SCRIPT_DIR}/../requirements.txt
+deactivate
+
+# install nginx unit from debians built on the pi and configure its service
+unit_installed=$(sudo apt list --installed 2> /dev/null | grep unit-python -c)
+if [ 0 -eq "${unit_installed}" ]; then
+  echo "installing unit"
+  sudo apt update && sudo apt install -y ${SCRIPT_DIR}/../debs/unit_*.deb ${SCRIPT_DIR}/../debs/unit-python3.7_*.deb
+else
+  echo "unit already installed"
+fi
+bash ${SCRIPT_DIR}/update_web.bash
 
 # TODO: add other dependencies?
-
 # TODO: check if boot config changed, copy over if necessary and ask user to restart
 
 echo "updating system alsa config"
 sudo cp ${SCRIPT_DIR}/asound.conf /etc/asound.conf
+
+# webserver

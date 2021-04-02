@@ -27,6 +27,11 @@ import time
 
 import amplipi.utils as utils
 
+# Used by InternetRadio
+import urllib.request
+import json
+import signal
+
 def build_stream(args, mock=False):
   if args['type'] == 'pandora':
     return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
@@ -36,6 +41,8 @@ def build_stream(args, mock=False):
     return Spotify(args['name'], mock=mock)
   elif args['type'] == 'dlna':
     return DLNA(args['name'], mock=mock)
+  elif args['type'] == 'internetradio':
+    return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
   else:
     raise NotImplementedError(args['type'])
 
@@ -132,7 +139,7 @@ class Shairport:
     meta_args = ['/home/pi/config/shairport_metadata.bash', '{}'.format(src)]
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    self.proc2 = subprocess.Popen(args=meta_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
     self.src = src
@@ -144,9 +151,11 @@ class Shairport:
 
   def disconnect(self):
     if self._is_sp_running():
+      os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
       self.proc.kill()
       print('{} disconnected'.format(self.name))
     self.state = 'disconnected'
+    self.proc2 = None
     self.proc = None
     self.src = None
 
@@ -166,7 +175,7 @@ class Shairport:
             d['album'] = data[2]
             d['paused'] = data[3]
             if int(data[4]):
-              d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5]) 
+              d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5])
         # return d
     except Exception:
       pass
@@ -442,7 +451,7 @@ class DLNA:
     self.proc = None
     self.mock = mock
     self.src = None
-    self.state = 'disconnected'    
+    self.state = 'disconnected'
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -468,19 +477,20 @@ class DLNA:
       self.state = 'connected'
       self.src = src
       return
-    
+
     # Generate some of the DLNA_Args
     self.uuid = 0
     self.uuid_gen()
     portnum = 49494 + int(src)
 
-    # Potentially need to add more - especially when it comes to metadata and stuff like that
+    meta_args = ['/home/pi/config/dlna_metadata.bash', '{}'.format(src)]
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
                 '--gstout-audiodevice', 'ch{}'.format(src), '--gstout-initial-volume-db',
                 '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
-                '-f', '{}'.format(self.name)]
-    # TODO: figure out how to get status from DLNA
-    self.proc = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                '-f', '{}'.format(self.name), '--logfile',
+                '/home/pi/config/dlna/{}/metafifo'.format(src)]
+    self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
     self.src = src
@@ -492,13 +502,26 @@ class DLNA:
 
   def disconnect(self):
     if self._is_dlna_running():
-      self.proc.kill()
+      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      self.proc2.kill()
       print('{} disconnected'.format(self.name))
     self.state = 'disconnected'
     self.proc = None
+    self.proc2 = None
     self.src = None
 
   def info(self):
+    loc = '/home/pi/config/dlna/{}/currentSong'.format(self.src)
+    try:
+      with open(loc, 'r') as file:
+        d = {}
+        for line in file.readlines():
+          line = line.strip()
+          if line:
+            d = eval(line)
+        return(d)
+    except Exception as e:
+      pass
     return {'details': 'No info available'}
 
   def uuid_gen(self):
@@ -522,3 +545,103 @@ class DLNA:
     connection = ' connected to src={}'.format(self.src) if self.src else ''
     mock = ' (mock)' if self.mock else ''
     return 'DLNA: {}{}{}'.format(self.name, connection, mock)
+
+
+
+
+class InternetRadio:
+  """ An Internet Radio Stream """
+  def __init__(self, name, url, logo, mock=False):
+    self.name = name
+    self.url = url
+    self.logo = logo
+    self.proc = None
+    self.mock = mock
+    self.src = None
+    self.state = 'disconnected'
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    ir_fields = ['url', 'logo']
+    fields = list(ir_fields) + ['name']
+    for k,v in kwargs.items():
+      if k in fields and self.__dict__[k] != v:
+        self.__dict__[k] = v
+        if k in ir_fields:
+          reconnect_needed = True
+    if reconnect_needed and self._is_running():
+      last_src = self.src
+      self.disconnect()
+      time.sleep(0.1) # delay a bit, is this needed?
+      self.connect(last_src)
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, src):
+    """ Connect a VLC output to a given audio source
+    This will create a VLC process based on the given name
+    """
+    print('connecting {} to {}...'.format(self.name, src))
+
+    if self.mock:
+      print('{} connected to {}'.format(self.name, src))
+      self.state = 'connected'
+      self.src = src
+      return
+
+    # Make all of the necessary dir(s)
+    config_folder = '/home/pi/config/srcs/{}'.format(src)
+    os.system('mkdir -p {}'.format(config_folder))
+
+    # Start audio via runvlc.py
+    song_info_path = '/home/pi/config/srcs/{}/currentSong'.format(src)
+    inetradio_args = ['python3', '/home/pi/config/runvlc.py', '{}'.format(self.url), '{}'.format(utils.output_device(src)), '--song-info', song_info_path]
+    self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+
+    print('{} (stream: {}) connected to {} via {}'.format(self.name, self.url, src, utils.output_device(src)))
+    self.state = 'connected'
+    self.src = src
+
+  def _is_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_running():
+      self.proc.kill()
+      print('{} disconnected'.format(self.name))
+    else:
+      print('Warning: {} was not running'.format(self.name))
+    self.state = 'disconnected'
+    self.proc = None
+    self.src = None
+
+  def info(self):
+    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
+    try:
+      with open(loc, 'r') as file:
+        d = {}
+        data = json.loads(file.read())
+
+        d['artist'] = data['artist']
+        d['song'] = data['song']
+        d['img_url'] = self.logo
+        d['album'] = ""
+
+        return(d)
+    except Exception:
+      pass
+      #print('Failed to get currentSong - it may not exist: {}'.format(e))
+    # TODO: report the status of pianobar with station name, playing/paused, song info
+    # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
+    return {'details': 'No info available'}
+
+  def status(self):
+    return self.state
+
+  def __str__(self):
+    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return 'internetradio connect: {}{}{}'.format(self.name, connection, mock)

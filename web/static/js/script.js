@@ -267,8 +267,27 @@ function updateSourceView(status) {
           // TODO: populate spotify album info
           cover.src = icons['spotify'];
         } else if (stream.type == 'dlna') {
-          // TODO: populate dlna album info
+          // update dlna album info
           cover.src = icons['dlna'];
+          artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
+          album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
+          song.innerHTML = stream.info.title ? stream.info.title : song.innerHTML;
+        } else if (stream.type == 'internetradio') {
+          const playing = stream.status == "connected";
+          album.style.display = "none";
+          next.style.visibility = "hidden";
+          like.style.visibility = "hidden";
+          dislike.style.visibility = "hidden";
+          playing_indicator.style.visibility = playing ? "visible" : "hidden";
+          play_pause.style.visibility = "hidden";
+          play_pause.classList.toggle('fa-play', !playing);
+          play_pause.classList.toggle('fa-pause', playing);
+          try {
+            // update album art and track info
+            cover.src = stream.info.img_url ? stream.info.img_url : icons['none'];
+            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
+            song.innerHTML = stream.info.song ? stream.info.song : song.innerHTML;
+          } catch (err) {}
         }
       }
     } else if (src.input == 'local') {

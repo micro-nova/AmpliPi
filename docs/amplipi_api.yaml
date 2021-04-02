@@ -16,10 +16,12 @@ info:
     url: http://micro-nova.com
   license:
     name: GPL
-    url: http://amplipi.local:5000/license
+    url: http://amplipi.local/license
 servers:
-  - url: 'http://amplipi.local:5000/api'
+  - url: 'http://amplipi.local/api'
     description: Local AmpliPi Controller
+  - url: 'http://amplipi.local:5000/api'
+    description: Local Debug AmpliPi Controller
   - url: 'http://localhost:5000/api'
     description: Test AmpliPi Controller
 tags:
@@ -32,7 +34,7 @@ tags:
 - name: group
   description: Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.
 - name: stream
-  description: Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify.
+  description: Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify, Internet Radio, DLNA.
 - name: preset
   description: A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.
 paths:
@@ -385,7 +387,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Group'
-            examples: 
+            examples:
               Add Upstairs Group:
                 value:
                   name: "Upstairs"
@@ -543,6 +545,18 @@ paths:
                 value:
                   name: Replace this text with a name you like!
                   type: dlna
+              Add KEXP Internet Radio Station:
+                value:
+                  name: KEXP 90.3
+                  type: internetradio
+                  url: http://live-aacplus-64.kexp.org/kexp64.aac
+                  logo: https://i.iheart.com/v3/re/new_assets/cc4e0a17-5233-4e4b-9b6b-7799904f78ea
+              Add Groove Salad Internet Radio Station:
+                value:
+                  name: Groove Salad
+                  type: internetradio
+                  url: http://ice2.somafm.com/groovesalad-16-aac
+                  logo: https://somafm.com/img3/groovesalad-200.jpg
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /streams/{streamId}:
@@ -639,6 +653,9 @@ paths:
               Change pandora radio station:
                 value:
                   station: 0982034049300
+              Upgrade groove salad stream quality:
+                value:
+                  url: http://ice2.somafm.com/groovesalad-64-aac
         description: Patch stream configuration to update.
     delete:
       summary: Delete Stream

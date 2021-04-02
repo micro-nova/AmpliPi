@@ -51,6 +51,8 @@ class Api:
       { "id": 1000, "name": "My Airplay", "type": "shairport"},
       { "id": 1001, "name": "My Pandora", "type": "pandora", "user": "", "password": "", "station": ""},
       { "id": 1002, "name": "My Spotify", "type": "spotify"},
+      { "id": 1003, "name": "My Internet Radio", "type": "internetradio", "url": "", "logo": ""},
+      { "id": 1004, "name": "My DLNA Renderer", "type": "dlna"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
@@ -254,7 +256,7 @@ class Api:
   def get_state(self):
     """ get the system state (dict) """
     # update the state with the latest stream info and status
-    optional_fields = ['station', 'user', 'password'] # optional configuration fields
+    optional_fields = ['station', 'user', 'password', 'url', 'logo'] # optional configuration fields
     streams = []
     for sid, sc in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
