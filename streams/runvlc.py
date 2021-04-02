@@ -67,21 +67,42 @@ if args.song_info:
 time.sleep(2)
 current_track = ''
 current_url = ''
+this_artist = ''
+this_title = ''
 
 # Monitor track meta data and update currently_playing file if the track changed
 while True:
   try:
     if str(player.get_state()) == 'State.Playing':
-      cur = str(media.get_meta(vlc.Meta.Artist)) + ' - ' + str(media.get_meta(vlc.Meta.Title))
+      nowplaying = str(media.get_meta(vlc.Meta.NowPlaying))
+
+      # 'nowplaying' metadata is used by some internet radio stations instead of separate artist and title
+      if nowplaying and nowplaying != 'None':
+        cur = nowplaying
+        # 'nowplaying' metadata is "almost" always: title - artist
+        split = nowplaying.split(' - ', 1)
+        
+        if (len(split) > 1):
+            this_artist = split[0]
+            this_title = split[1]
+        else:
+            this_artist = ''
+            this_title = cur
+      else:
+        # If 'nowplaying' metadata isn't being used, use separate 'artist' and 'title' metadata
+        cur = str(media.get_meta(vlc.Meta.Artist)) + ' - ' + str(media.get_meta(vlc.Meta.Title))
+        this_artist = str(media.get_meta(vlc.Meta.Artist))
+        this_title = str(media.get_meta(vlc.Meta.Title))
+
       if current_track != cur or current_url != vlc.bytes_to_str(media.get_mrl()):
         # Update currently_playing file if the track has changed
         current_track = cur
         current_url = vlc.bytes_to_str(media.get_mrl())
-        print('Current track: %s - %s' % (media.get_meta(vlc.Meta.Artist), media.get_meta(vlc.Meta.Title)))
+        print('Current track: %s' % (cur))
 
         song_info_json = json.dumps({
-          "artist": media.get_meta(vlc.Meta.Artist),
-          "song": media.get_meta(vlc.Meta.Title),
+          "artist": this_artist,
+          "song": this_title,
           "state": str(player.get_state())
         })
 
