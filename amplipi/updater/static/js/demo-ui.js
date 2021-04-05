@@ -22,26 +22,6 @@ function ui_add_log(message, color)
   $('#debug').prepend(template);
 }
 
-// Creates a new file and add it to our list
-function ui_multi_add_file(id, file)
-{
-  var template = $('#files-template').text();
-  template = template.replace('%%filename%%', file.name);
-
-  template = $(template);
-  template.prop('id', 'uploaderFile' + id);
-  template.data('file-id', id);
-
-  $('#files').find('li.empty').fadeOut(); // remove the 'no files yet'
-  $('#files').prepend(template);
-}
-
-// Changes the status messages on our list
-function ui_multi_update_file_status(id, status, message)
-{
-  $('#uploaderFile' + id).find('span').html(message).prop('class', 'status text-' + status);
-}
-
 // Updates a file progress, depending on the parameters it may animate it or change the color.
 function ui_multi_update_file_progress(id, percent, color, active)
 {
@@ -83,4 +63,21 @@ function ui_show_update_progress(status) {
   // assumes status {'message': str, 'type': 'info'|'warning'|'error'|'success'}
   let color = status.type == 'error' ? 'danger' : status.type;
   ui_add_log(status.message, color);
+}
+
+function upload_software_update() {
+  let data = new FormData();
+  let file = $('#update-file-selector')[0].files[0];
+  data.append('file', file);
+  try{
+    fetch('/update/upload', {
+      method: 'POST',
+      body: data,
+    }).then((response) => {
+      ui_add_log('file uploaded', 'info');
+      ui_begin_update();
+    });
+  } catch(e) {
+    ui_add_log(e, 'danger');
+  }
 }

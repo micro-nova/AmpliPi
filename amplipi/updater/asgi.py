@@ -21,8 +21,13 @@
 Simple web based software updates
 """
 
-from flask import Flask, request, render_template, jsonify, Response, stream_with_context
-
+# web framework
+from fastapi import FastAPI, Request, File, UploadFile
+from sse_starlette.sse import EventSourceResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
+#web server
+import uvicorn
 # file and process handling
 import os
 import subprocess
@@ -32,34 +37,50 @@ from tempfile import mkdtemp
 import re
 import json
 import threading
-import amplipi.updater.sse as sse
 import typing
+import queue
+import pathlib
+import shutil
+import asyncio
+from typing import List
 
-app = Flask(__name__, static_folder='static')
+app = FastAPI()
+app.sse_messages = queue.Queue()
+# TODO: locate the static directory path not depending on cwd
+real_path = os.path.realpath(__file__)
+dir_path = os.path.dirname(real_path)
+print(f'{dir_path}/static')
+app.mount("/static", StaticFiles(directory=f"{dir_path}/static"), name="static")
 
-@app.route('/update')
-def update():
-  return app.send_static_file('index.html')
+@app.get('/update')
+def get_index():
+  print('get index!')
+  return FileResponse('static/index.html')
 
-@app.route('/update/upload', methods=['POST'])
-def start_update():
+def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None:
   try:
-    print('got update file')
+    with destination.open("wb") as buffer:
+      shutil.copyfileobj(upload_file.file, buffer)
+  finally:
+    upload_file.file.close()
+
+@app.post("/update/upload/")
+async def start_update(file: UploadFile = File(...)):
+  print(file.filename)
+  try:
     # TODO: use a temp directory and pass it the installation
     os.makedirs('web/uploads', exist_ok=True)
-    for f in request.files.values():
-      f.save('web/uploads/update.tar.gz')
-    return jsonify({'status': 'ok', 'path': 'web/uploads/'}), 200
+    save_upload_file(file, pathlib.Path('web/uploads/update.tar.gz'))
+    return 200
   except Exception as e:
     print(e)
     app.last_error = str(e)
-    return jsonify({'status': 'error', 'message': str(e)}), 500
+    return 500
 
 def sse_message(t, msg):
   msg = msg.replace('\n', '<br>')
-  with app.app_context():
-    sse_msg = sse.format({'message': msg, 'type' : t})
-    app.install_progress_announcer.announce(sse_msg)
+  sse_msg = {'message': msg, 'type' : t}
+  app.sse_messages.put(sse_msg)
 
 def sse_info(msg):
   return sse_message('info', msg)
@@ -70,21 +91,23 @@ def sse_error(msg):
 def sse_done(msg):
   return sse_message('success', msg)
 
-app.install_progress_announcer = sse.MessageAnnouncer()
 @app.route('/update/install/progress')
-def progress():
-  @stream_with_context
-  def stream():
+async def progress(req: Request):
+  async def stream():
     try:
-      messages = app.install_progress_announcer.listen() # returns a queue.Queue
       while True:
-        # TODO: break out and send a non-text/event-stream message when we get a done message
-        msg = messages.get()  # blocks until a new message arrives
+        if await req.is_disconnected():
+          print('disconnected')
+          break
+        msg = app.sse_messages.get()  # blocks until a new message arrives
         yield msg
-    finally:
-      print('progress reporting done')
-  # return response with a function
-  return Response(stream(), mimetype='text/event-stream')
+        await asyncio.sleep(0.1)
+      print(f"Disconnected from client {req.client}")
+    except asyncio.CancelledError as e:
+      print(f"Disconnected from client (via refresh/close) {req.client}")
+      # Do any other cleanup, if any
+      raise e
+  return EventSourceResponse(stream())
 
 def extract_to_home(home):
   """ The simple, pip-less install. Extract tarball and copy into users home directory """
@@ -111,6 +134,8 @@ def install_thread():
 
   sse_info(f'home={home}')
   extract_to_home(home)
+  sse_done('pretend done')
+  return
 
   sys.path.insert(0, f'{home}/scripts')
   import configure # we want the new configure!
@@ -126,13 +151,13 @@ def install_thread():
 
   sse_done('installation done')
 
-@app.route('/update/install')
+@app.get('/update/install')
 def install():
   t = threading.Thread(target=install_thread)
   t.start()
   return {}
 
 if __name__ == '__main__':
-  app.run(debug=True, host= 'localhost', threaded=True)
+  uvicorn.run(app, host="0.0.0.0", port=8000, debug=True, workers=3)
 
 application = app # wsgi expects application var for app

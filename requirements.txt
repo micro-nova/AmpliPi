@@ -4,3 +4,9 @@ smbus2
 pyserial
 python-vlc
 requests
+fastapi
+sse-starlette
+starlette
+uvicorn
+aiofiles
+pydantic

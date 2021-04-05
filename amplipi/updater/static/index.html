@@ -23,31 +23,10 @@
         Update your AmpliPi device
       </p>
 
-      <div id="file-upload-container" class="row">
-        <div class="col-md-6 col-sm-12">
-
-          <div id="drag-and-drop-zone" class="dm-uploader p-5">
-            <h3 class="text-muted">Drag &amp; drop installation file here</h3>
-
-            <div class="btn btn-primary btn-block mb-5">
-                <span>Open the file Browser</span>
-                <input type="file" title='Click to add File' />
-            </div>
-          </div><!-- /uploader -->
-
-        </div>
-        <div class="col-md-6 col-sm-12">
-          <div class="card h-100">
-            <div class="card-header">
-              File List
-            </div>
-
-            <ul class="list-unstyled p-2 d-flex flex-column col" id="files">
-              <li class="text-muted text-center empty">No files uploaded.</li>
-            </ul>
-          </div>
-        </div>
-      </div><!-- /file list -->
+      <div>
+        <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);"></input>
+        <a id="submit-update" role="button" class="btn btn-lg btn-warning disabled" onclick="upload_software_update();"><i class="fas fa-upload"></i> Upload software</a>
+      </div>
 
       <div class="row">
         <div class="col-12">
@@ -68,9 +47,7 @@
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
 
-    <script src="static/js/jquery.dm-uploader.min.js"></script>
     <script src="static/js/demo-ui.js"></script>
-    <script src="static/js/demo-config.js"></script>
 
     <!-- File item template -->
     <script type="text/html" id="files-template">
