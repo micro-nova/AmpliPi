@@ -1,0 +1,17 @@
+{
+    "player": {
+      "name": "AmpliPi-Template",
+      "identifier": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    },
+    "user": {
+      "id": 9999999,
+      "token": "_"
+    },
+    "state": null,
+    "server": null,
+    "audio": {
+      "normalize": false,
+      "crossfade": false,
+      "mpd_path": "/home/pi/streams/mpd.conf"
+    }
+  }

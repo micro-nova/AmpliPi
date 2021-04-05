@@ -63,6 +63,19 @@ def write_sp_config_file(filename, config):
           cfg_file.write('  {} = {}\n'.format(key, value))
       cfg_file.write('};\n')
 
+def uuid_gen():
+  # Get new UUID for the DLNA endpoint
+  u_args = 'uuidgen'
+  uuid_proc = subprocess.run(args=u_args, capture_output=True)
+  uuid_str = str(uuid_proc).split(',')
+  c_check = uuid_str[0]
+  val = uuid_str[2]
+
+  if c_check[0:16] == 'CompletedProcess':
+    return val[10:46]
+  else:
+    return '39ae35cc-b4c1-444d-b13a-294898d771fa' # Generic UUID in case of failure
+
 class Shairport:
   """ An Airplay Stream """
   def __init__(self, name, mock=False):
@@ -469,7 +482,7 @@ class DLNA:
 
     # Generate some of the DLNA_Args
     self.uuid = 0
-    self.uuid_gen()
+    self.uuid = uuid_gen()
     portnum = 49494 + int(src)
 
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
@@ -515,19 +528,19 @@ class DLNA:
       pass
     return {'details': 'No info available'}
 
-  def uuid_gen(self):
-    # Get new UUID for the DLNA endpoint
-    u_args = 'uuidgen'
-    uuid_proc = subprocess.run(args=u_args, capture_output=True)
-    uuid_str = str(uuid_proc).split(',')
-    c_check = uuid_str[0]
-    val = uuid_str[2]
+  # def uuid_gen(self):
+  #   # Get new UUID for the DLNA endpoint
+  #   u_args = 'uuidgen'
+  #   uuid_proc = subprocess.run(args=u_args, capture_output=True)
+  #   uuid_str = str(uuid_proc).split(',')
+  #   c_check = uuid_str[0]
+  #   val = uuid_str[2]
 
-    if c_check[0:16] == 'CompletedProcess':
-      self.uuid = val[10:46]
-    else:
-      self.uuid = '39ae35cc-b4c1-444d-b13a-294898d771fa' # Generic UUID in case of failure
-    return
+  #   if c_check[0:16] == 'CompletedProcess':
+  #     self.uuid = val[10:46]
+  #   else:
+  #     self.uuid = '39ae35cc-b4c1-444d-b13a-294898d771fa' # Generic UUID in case of failure
+  #   return
 
   def status(self):
     return self.state
@@ -635,8 +648,129 @@ class InternetRadio:
     mock = ' (mock)' if self.mock else ''
     return 'internetradio connect: {self.name}{connection}{mock}'
 
+class Plexamp:
+  """ A Plexamp Stream """
+  def __init__(self, name, user, token, mock=False):
+    self.name = name
+    self.user = user
+    self.token = token
+    self.mock = mock
+    self.proc = None  # underlying plexamp process
+    self.state = 'disconnected'
+    self.src = None # source_id plexamp is connecting to
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+      reconnect_needed = True
+    if reconnect_needed:
+      if self._is_plexamp_running():
+        last_src = self.src
+        self.disconnect()
+        time.sleep(0.1) # delay a bit, is this needed?
+        self.connect(last_src)
+
+  def __del__(self):
+    self.disconnect()
+
+  def __str__(self):
+    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return 'plexamp: {}{}{}'.format(self.name, connection, mock )
+
+  def connect(self, src):
+    """ Connect plexamp output to a given audio source
+    This will start up plexamp with a configuration specific to @src
+    """
+    if self.mock:
+      print('{} connected to {}'.format(self.name, src))
+      self.state = 'connected'
+      self.src = src
+      return
+
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    mpd_template = '{}/mpd.conf'.format(utils.get_folder('streams'))
+    plexamp_template = '{}/server.json'.format(utils.get_folder('streams'))
+    plexamp_home = src_config_folder
+    plexamp_config_folder = '{}/.config/Plexamp'.format(plexamp_home)
+    mpd_conf_file = '{}/mpd.conf'.format(plexamp_home)
+    server_json_file = '{}/server.json'.format(plexamp_config_folder)
+    # make all of the necessary dir(s)
+    os.system('mkdir -p {}'.format(plexamp_config_folder))
+    os.system('cp {} {}'.format(mpd_template, mpd_conf_file))
+    os.system('cp {} {}'.format(plexamp_template, server_json_file))
+    self.uuid = uuid_gen()
+    # server.json config (TODO: ADD TOKEN/IDENTIFIER MANAGEMENT. SEE DLNA FOR UUID, BUT TOKEN COMES FROM USER)
+    # Double quotes ("") !!!REQUIRED!!! for Python -> JSON translation
+    with open(server_json_file) as json_file:
+      contents = json.load(json_file)
+      r_id = contents['user']['id']
+      if r_id != 9999999:
+        self.user = r_id
+      r_token = contents['user']['token']
+      if r_token != '_':
+        self.token = r_token
+
+    json_config = {
+      "player": {
+        "name": "{}".format(self.name),
+        "identifier": "{}".format(self.uuid)
+      },
+      "user": {
+        "id": self.user,
+        "token": self.token
+      },
+      "state": "null",
+      "server": "null",
+      "audio": {
+        "normalize": "false",
+        "crossfade": "false",
+        "mpd_path": "{}".format(mpd_conf_file)
+      }
+    }
+
+    with open(server_json_file, 'w') as new_json:
+      json.dump(json_config, new_json, indent=2)
+
+    # mpd.conf creation
+    with open(mpd_conf_file, 'r') as MPD:
+      data = MPD.read()
+      data = data.replace('ch', 'ch{}'.format(src))
+      data = data.replace('GENERIC_LOGFILE_LOCATION', '{}/mpd.log'.format(plexamp_config_folder))
+    with open(mpd_conf_file, 'w') as MPD:
+      MPD.write(data)
+    # PROCESS
+    plexamp_args = '/usr/bin/node /home/pi/plexamp/server/server.prod.js'
+    try:
+      self.proc = subprocess.Popen(args=plexamp_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : plexamp_home})
+      time.sleep(0.1) # Delay a bit
+      self.src = src
+      print('{} connected to {}'.format(self.name, src))
+    except Exception as e:
+      print('error starting plexamp: {}'.format(e))
+
+  def _is_plexamp_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_plexamp_running():
+      self.proc.kill()
+      print('{} disconnected'.format(self.name))
+    self.state = 'disconnected'
+    self.proc = None
+    self.src = None
+
+  def info(self):
+    return {'details': 'No info available'}
+
+  def status(self):
+    return self.state
+
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora]
+AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -654,4 +788,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return DLNA(args['name'], mock=mock)
   elif stream.type == 'internetradio':
     return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
+  elif stream.type == 'plexamp':
+    return Plexamp(args['name'], args['user'], args['token'], mock=mock)
   raise NotImplementedError(stream.type)
+

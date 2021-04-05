@@ -5,6 +5,7 @@ const icons = {
   'pandora'   : '/static/imgs/pandora.png',
   'spotify'   : '/static/imgs/spotify.png',
   'dlna'      : '/static/imgs/dlna.png',
+  'plexamp'   : '/static/imgs/plexamp.png',
   'none'      : '/static/imgs/disconnected.png'
 }
 
@@ -295,6 +296,9 @@ function updateSourceView(status) {
             artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
             song.innerHTML = stream.info.song ? stream.info.song : song.innerHTML;
           } catch (err) {}
+        } else if (stream.type == 'plexamp') {
+          // TODO: populate plexamp album info
+          cover.src = icons['plexamp'];
         }
       }
     } else if (src.input == 'local') {
