@@ -45,7 +45,7 @@ import asyncio
 from typing import List
 
 app = FastAPI()
-app.sse_messages = queue.Queue()
+sse_messages = queue.Queue()
 # TODO: locate the static directory path not depending on cwd
 real_path = os.path.realpath(__file__)
 dir_path = os.path.dirname(real_path)
@@ -79,17 +79,18 @@ async def start_update(file: UploadFile = File(...)):
 
 def sse_message(t, msg):
   msg = msg.replace('\n', '<br>')
-  sse_msg = {'message': msg, 'type' : t}
-  app.sse_messages.put(sse_msg)
+  sse_msg = {'data' : json.dumps({'message': msg, 'type' : t})}
+  sse_messages.put(sse_msg)
+  asyncio.sleep(0.1)
 
 def sse_info(msg):
-  return sse_message('info', msg)
+  sse_message('info', msg)
 def sse_warning(msg):
-  return sse_message('warning', msg)
+  sse_message('warning', msg)
 def sse_error(msg):
-  return sse_message('error', msg)
+  sse_message('error', msg)
 def sse_done(msg):
-  return sse_message('success', msg)
+  sse_message('success', msg)
 
 @app.route('/update/install/progress')
 async def progress(req: Request):
@@ -99,9 +100,10 @@ async def progress(req: Request):
         if await req.is_disconnected():
           print('disconnected')
           break
-        msg = app.sse_messages.get()  # blocks until a new message arrives
-        yield msg
-        await asyncio.sleep(0.1)
+        if not sse_messages.empty():
+          msg = sse_messages.get()  # blocks until a new message arrives
+          yield msg
+        await asyncio.sleep(0.2)
       print(f"Disconnected from client {req.client}")
     except asyncio.CancelledError as e:
       print(f"Disconnected from client (via refresh/close) {req.client}")
@@ -156,8 +158,18 @@ def install():
   t = threading.Thread(target=install_thread)
   t.start()
   return {}
+  yield {}
+  sse_info('starting installation')
+  # TODO: add pip install
+
+  home = os.environ.get('HOME') + '/amplipi-dev2' # placeholder
+
+  sse_info(f'home={home}')
+  extract_to_home(home)
+  sse_done('pretend done')
+  yield {}
 
 if __name__ == '__main__':
-  uvicorn.run(app, host="0.0.0.0", port=8000, debug=True, workers=3)
+  uvicorn.run(app, host="0.0.0.0", port=8000, debug=True)
 
 application = app # wsgi expects application var for app
