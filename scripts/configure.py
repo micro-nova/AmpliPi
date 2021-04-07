@@ -7,13 +7,15 @@ This script is initially designed to support local git installs, pi installs, an
 import platform
 import subprocess
 import os
+import pwd # username
 import glob
-import sys
-import json
+import requests
+import traceback
+import tempfile
 
 _os_deps = {
   'base' : {
-    'apt' : ['python3-pip', 'python3-venv', 'curl']
+    'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind']
   },
   'web' : {
   },
@@ -39,12 +41,14 @@ _os_deps = {
 }
 
 def _check_and_setup_platorm():
+  script_dir = os.path.dirname(os.path.realpath(__file__))
   env = {
+    'user': pwd.getpwuid(os.getuid()).pw_name,
     'has_apt': False,
     'is_git_repo': False,
-    'nginx_supported': False,
     'platform_supported': False,
-    'script_dir': os.path.dirname(os.path.realpath(__file__)),
+    'script_dir': script_dir,
+    'base_dir': script_dir.rstrip('/scripts'),
     'is_amplipi': False,
   }
 
@@ -62,7 +66,6 @@ def _check_and_setup_platorm():
         env['has_apt'] = True
         env['platform_supported'] = True
     elif 'armv7l' in p and 'debian' in p:
-      env['nginx_supported'] = True
       env['platform_supported'] = True
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
@@ -71,15 +74,18 @@ def _check_and_setup_platorm():
 
 class Task:
   """ Task runner for scripted installation tasks """
-  def __init__(self, name: str, args=[], output='', success=False, json_out=False):
+  def __init__(self, name: str, args=[], multiargs=None, output='', success=False):
     self.name = name
-    self.args = args
+    if multiargs:
+      assert len(args) == 0
+      self.margs = multiargs
+    else:
+      self.margs = [args]
     self.output = output
     self.success = success
-    self.json_out = json_out
 
   def __str__(self):
-    s = f"{self.name} : {self.args}"
+    s = f"{self.name} : {self.margs}" if len(self.margs) > 0 else f"{self.name} :"
     for line in self.output.splitlines():
       s += f'\n  {line}'
     if not self.success:
@@ -87,46 +93,30 @@ class Task:
     return s
 
   def run(self):
-    out = subprocess.run(self.args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
-    self.output = out.stdout.decode()
-    if self.json_out:
-      # unit returns status as json, rewrite this in an expected format
-      """ example Unit outputs
-      Example success: {
-        "success": "Reconfiguration done."
-      }
-      Example failure: {
-        "error": "Invalid JSON.",
-        "detail": "An empty JSON payload isn't allowed."
-      }
-      """
-      js = json.loads(self.output)
-      if 'success' in js:
-        self.success = True
-        self.output = js['success']
-      elif 'error' in js:
-        self.success = False
-        self.output = js['error']
-      else:
-        self.success = False
-      if 'detail' in js:
-        self.output += '\n{}'.format(js['detail'])
-    else:
+    for args in self.margs:
+      out = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+      self.output += out.stdout.decode()
       self.success = out.returncode == 0
+      if not self.success:
+        break
     return self
 
-def _install_os_deps(env, deps=_os_deps.keys()):
+
+def _install_os_deps(env, progress, deps=_os_deps.keys()):
+  def p2(tasks):
+    progress(tasks)
+    return tasks
   tasks = []
   # TODO: add extra apt repos
   # find latest apt packages
-  tasks += [Task('get latest debian packages', 'sudo apt update'.split()).run()]
+  tasks += p2([Task('get latest debian packages', 'sudo apt update'.split()).run()])
 
   # install debian packages
   packages = set()
   for d in deps:
     if 'apt' in _os_deps[d]:
       packages.update(_os_deps[d]['apt'])
-  tasks += [Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()]
+  tasks += p2([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
 
   # install local debian packages
   packages = set()
@@ -139,7 +129,7 @@ def _install_os_deps(env, deps=_os_deps.keys()):
         # get the full name of the debian file
         packages.update(glob.glob(f'{db}_*.deb'))
   if len(packages) > 0:
-    tasks += [Task('install local debian packages', 'sudo apt install -y'.split() + list(packages)).run()]
+    tasks += p2([Task('install local debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
   os.chdir(last_dir)
   return tasks
 
@@ -152,95 +142,112 @@ def _install_python_deps(env, deps):
     os.chdir(last_dir)
   return tasks
 
-def _create_web_config(base_dir, amplipi_up = True, updater_up = True):
-  base_dir = base_dir.rstrip('/') # remove trailing slash if any
-  config = {
-    "listeners": {
-      "*:80": {
-        "pass": "applications/amplipi"
-      },
-      "*:5001": {
-        "pass": "applications/amplipi_updater"
-      }
-    },
-    "applications": {
-      "amplipi": {
-        # TODO: use amplpi user?
-        "user": "pi",
-        "group": "pi",
-        "type": "python 3.7",
-        "path": base_dir,
-        "home": f'{base_dir}/venv/',
-        "module": "amplipi.wsgi",
-        "working_directory": base_dir,
-      },
-      "amplipi_updater": {
-        # TODO: use amplipi_updater user?
-        "user": "pi",
-        "group": "pi",
-        "type": "python 3.7",
-        "path": base_dir,
-        "home": f'{base_dir}/venv/', # TODO: should the updater have a seperate venv?
-        "module": "amplipi.updater.asgi",
-        "working_directory": base_dir,
-      }
-    }
-  }
-  if not amplipi_up:
-    del config['listeners']['*:80']
-    del config['applications']['amplipi']
-  if not updater_up:
-    del config['listeners']['*:5001']
-    del config['applications']['amplipi_updater']
-  return config
+def _web_service(user, dir):
+  return f"""
+  [Unit]
+  Description=Amplipi Home Audio System
+  After=syslog.target network.target
 
-CONFIG_URL = 'http://localhost/config'
+  [Service]
+  Type=simple
+  User={user}
+  Group={user}
+  WorkingDirectory={dir}
+  ExecStart=authbind --deep {dir}/venv/bin/python -m uvicorn --host 0.0.0.0 --port 80 --interface wsgi amplipi.wsgi:application
+  Restart=on-abort
 
-def _get_web_config() -> Task:
-  """ Grab the current Nginx Unit server configuration
-    NOTE: this theoretically can be done in python but this and only this needs to run as sudo
-    import requests_unixsocket
-    session = requests_unixsocket.Session()
-    session.get('http+unix://%2Fvar%2Frun%2Fcontrol.unit.sock/config')
+  [Install]
+  WantedBy=multi-user.target(venv)
   """
-  t = Task('Get web config', 'sudo curl -s --unix-socket /var/run/control.unit.sock http://localhost/config'.split()).run()
-  return t
 
-def _put_web_config(cfg, test_url='') -> Task:
-  """ Configure Nginx Unit Server """
-  import requests
-  cmds = 'sudo curl -s -X PUT -d DATA --unix-socket /var/run/control.unit.sock http://localhost/config'.split()
-  assert cmds[6] == 'DATA'
-  cmds[6] = '{}'.format(json.dumps(cfg))
-  t = Task('Put web config', cmds, json_out=True).run()
-  if t.success and test_url:
-    t.output += f'\ntesting: {test_url}'
-    r = requests.get(test_url)
-    if r.ok:
-      t.output += "\n  Ok!"
-    else:
-      t.output += f"\n  Error: {r.reason}"
-      t.success = False
-  return t
+def _update_service(user, dir):
+  return f"""
+  [Unit]
+  Description=Amplipi Software Updater
+  After=syslog.target network.target
 
-def _is_web_running() -> bool:
-  return _get_web_config().success
+  [Service]
+  Type=simple
+  User={user}
+  Group={user}
+  WorkingDirectory={dir}
+  ExecStart={dir}/venv/bin/python -m uvicorn amplipi.updater.asgi:app --host 0.0.0.0 --port 5001
+  Restart=on-abort
 
-def _restart_web():
-  return Task('restart webserver', 'sudo systemctl restart unit.service'.split()).run()
+  [Install]
+  WantedBy=multi-user.target
+  """
 
-def _update_web(env):
+def _create_and_start_service(name, config):
+  service = f'{name}.service'
+  c = Task('Create {service}')
+  # create the service file
+  try:
+    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+      f.write(config)
+      file = f.name
+  except IOError as e:
+    c.output = ''.join(traceback.format_exception())
+    c.success = False
+  # copy the service file to the systemd service directory
+  c.margs = [f'sudo mv {file} /lib/systemd/system/{service}'.split()]
+  c.run()
+  if not c.success:
+    return [c]
+  # start the service
+  s = Task(f'Start {service}', multiargs=[
+    'sudo systemctl daemon-reload'.split(),
+    'sleep 1'.split(),
+    f'sudo systemctl restart {name}'.split(),
+  ])
+  s.run()
+  if s.success:
+    # we need to check if the service is running
+    try:
+      # TODO: do we need to sleep for a sec?
+      out = subprocess.check_output('sudo systemctl is-active amplipi'.split(), text=True)
+      s.success = 'active' in out
+    except subprocess.CalledProcessError:
+      s.output += 'ERROR: '
+      s.output += ''.join(traceback.format_exception())
+      s.success = False
+  return [c, s]
+
+def _configure_authbind():
+  """ Configure access to port 80 so we can run amplipi as a non-root user """
+  """ Execute the following commands
+  sudo touch /etc/authbind/byport/80
+  sudo chmod 777 /etc/authbind/byport/80
+  """
+  t = Task('Setup autobind', multiargs=[
+    'sudo touch /etc/authbind/byport/80'.split(),
+    'sudo chmod 777 /etc/authbind/byport/80'.split()
+  ])
+  t.run()
+  return [t]
+
+def check_url(url):
+  t = Task('Check url')
+  t.output = f'\ntesting: {url}'
+  r = requests.get(url)
+  if r.ok:
+    t.output += "\n  Ok!"
+  else:
+    t.output += f"\n  Error: {r.reason}"
+    t.success = False
+  return [t]
+
+def _update_web(env, progress):
+  def p2(tasks):
+    progress(tasks)
+    return tasks
   tasks = []
-  if not _is_web_running():
-    tasks.append(_restart_web())
-  base_dir = env['script_dir'].rstrip('/scripts')
   # bringup amplipi and updater separately
-  only_amplipi = _create_web_config(base_dir, amplipi_up=True, updater_up=False)
-  amplipi_and_updater = _create_web_config(base_dir, amplipi_up=True, updater_up=True)
-  tasks.append(_put_web_config(only_amplipi, 'http://localhost'))
+  tasks += p2(_configure_authbind())
+  tasks += p2(_create_and_start_service('amplipi', _web_service(env['user'], env['base_dir'])))
   # NOTE: if debugging updater comment out the following lines and run the with scripts/run_debug_updater
   if tasks[-1].success:
-    tasks.append(_put_web_config(amplipi_and_updater, 'http://localhost:5001/update'))
+    tasks += p2(_create_and_start_service('amplipi-updater', _update_service(env['user'], env['base_dir'])))
   return tasks
 
 def print_task_results(tasks):
@@ -253,8 +260,6 @@ def install(os_deps=True, python_deps=True, web=True, progress=print_task_result
   env = _check_and_setup_platorm()
   if not env['platform_supported']:
     t.output = f'untested platform: {platform.platform()}. Please fix this this script and make us a PR'
-  elif web and not env['nginx_supported']:
-    t.output = 'nginx unit webserver is not supported on this platform yet'
   else:
     t.output = str(env)
     t.success = True
@@ -262,16 +267,14 @@ def install(os_deps=True, python_deps=True, web=True, progress=print_task_result
   if not t.success:
     return False
   if os_deps:
-    if web and env['nginx_supported']:
-      # add unit web server
-      _os_deps['web']['debs'] = ['unit', 'unit-python3.7']
-    progress(_install_os_deps(env, _os_deps))
+    _install_os_deps(env, progress, _os_deps)
   if python_deps:
     with open(os.path.join(env['script_dir'], '..', 'requirements.txt')) as f:
       deps = f.read().splitlines()
+      # TODO: embed python progress reporting
       progress(_install_python_deps(env, deps))
   if web:
-    progress(_update_web(env))
+    _update_web(env, progress)
   return True
 
 if __name__ == '__main__':
@@ -282,6 +285,6 @@ if __name__ == '__main__':
   parser.add_argument('--os-deps', action='store_true', default=False,
     help='Install os dependencies using apt')
   parser.add_argument('--web','--webserver', action='store_true', default=False,
-    help="Install and configure webserver (Nginx Unit)")
+    help="Install and configure webserver")
   args = parser.parse_args()
   install(os_deps=args.os_deps, python_deps=args.python_deps, web=args.web)
