@@ -181,9 +181,8 @@ def _create_web_config(base_dir, amplipi_up = True, updater_up = True):
         "type": "python 3.7",
         "path": base_dir,
         "home": f'{base_dir}/venv/', # TODO: should the updater have a seperate venv?
-        "module": "amplipi.updater.wsgi",
+        "module": "amplipi.updater.asgi",
         "working_directory": base_dir,
-        "threads": 100, # TODO: how many threads do we need for SSE?
       }
     }
   }
@@ -236,7 +235,6 @@ def _update_web(env):
     tasks.append(_restart_web())
   base_dir = env['script_dir'].rstrip('/scripts')
   # bringup amplipi and updater separately
-  # TODO: checking if they are working before starting the next
   only_amplipi = _create_web_config(base_dir, amplipi_up=True, updater_up=False)
   amplipi_and_updater = _create_web_config(base_dir, amplipi_up=True, updater_up=True)
   tasks.append(_put_web_config(only_amplipi, 'http://localhost'))
@@ -255,13 +253,14 @@ def install(os_deps=True, python_deps=True, web=True, progress=print_task_result
   env = _check_and_setup_platorm()
   if not env['platform_supported']:
     t.output = f'untested platform: {platform.platform()}. Please fix this this script and make us a PR'
-    exit(1)
-  if web and not env['nginx_supported']:
+  elif web and not env['nginx_supported']:
     t.output = 'nginx unit webserver is not supported on this platform yet'
-    exit(1)
-  t.output = str(env)
-  t.success = True
+  else:
+    t.output = str(env)
+    t.success = True
   progress([t])
+  if not t.success:
+    return False
   if os_deps:
     if web and env['nginx_supported']:
       # add unit web server
@@ -273,6 +272,7 @@ def install(os_deps=True, python_deps=True, web=True, progress=print_task_result
       progress(_install_python_deps(env, deps))
   if web:
     progress(_update_web(env))
+  return True
 
 if __name__ == '__main__':
   import argparse

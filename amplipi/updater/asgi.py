@@ -37,7 +37,7 @@ from tempfile import mkdtemp
 import re
 import json
 import threading
-import typing
+import time
 import queue
 import pathlib
 import shutil
@@ -46,16 +46,17 @@ from typing import List
 
 app = FastAPI()
 sse_messages = queue.Queue()
-# TODO: locate the static directory path not depending on cwd
+
+# host all of the static files the client will look for
+# TODO: put static files somewhere else?
 real_path = os.path.realpath(__file__)
 dir_path = os.path.dirname(real_path)
-print(f'{dir_path}/static')
 app.mount("/static", StaticFiles(directory=f"{dir_path}/static"), name="static")
 
 @app.get('/update')
 def get_index():
   print('get index!')
-  return FileResponse('static/index.html')
+  return FileResponse(f'{dir_path}/static/index.html') # FileResponse knows nothing about the static mount
 
 def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None:
   try:
@@ -81,7 +82,7 @@ def sse_message(t, msg):
   msg = msg.replace('\n', '<br>')
   sse_msg = {'data' : json.dumps({'message': msg, 'type' : t})}
   sse_messages.put(sse_msg)
-  asyncio.sleep(0.1)
+  time.sleep(0.1) # Give the SSE publisher time to handle the messages, is there a way to just yield?
 
 def sse_info(msg):
   sse_message('info', msg)
@@ -101,7 +102,7 @@ async def progress(req: Request):
           print('disconnected')
           break
         if not sse_messages.empty():
-          msg = sse_messages.get()  # blocks until a new message arrives
+          msg = sse_messages.get()
           yield msg
         await asyncio.sleep(0.2)
       print(f"Disconnected from client {req.client}")
@@ -129,25 +130,26 @@ def indent(p: str):
   return '  ' + '  '.join(p.splitlines(keepends=True))
 
 def install_thread():
+  """ Basic tar.gz based installation """
+
   sse_info('starting installation')
-  # TODO: add pip install
 
   home = os.environ.get('HOME') + '/amplipi-dev2' # placeholder
 
-  sse_info(f'home={home}')
   extract_to_home(home)
-  sse_done('pretend done')
-  return
 
+  # use the configure script provided by the new install to configure the installation
   sys.path.insert(0, f'{home}/scripts')
-  import configure # we want the new configure!
+  import configure # we want the new configure! TODO: Make checkers ignore this import issue
   def progress_sse(tl):
     for task in tl:
       sse_info(task.name)
       output = indent(task.output)
       if task.success:
+        print(f'info: {output}')
         sse_info(output)
       else:
+        print(f'error: {output}')
         sse_error(output)
   configure.install(progress=progress_sse)
 
@@ -158,18 +160,8 @@ def install():
   t = threading.Thread(target=install_thread)
   t.start()
   return {}
-  yield {}
-  sse_info('starting installation')
-  # TODO: add pip install
-
-  home = os.environ.get('HOME') + '/amplipi-dev2' # placeholder
-
-  sse_info(f'home={home}')
-  extract_to_home(home)
-  sse_done('pretend done')
-  yield {}
 
 if __name__ == '__main__':
   uvicorn.run(app, host="0.0.0.0", port=8000, debug=True)
 
-application = app # wsgi expects application var for app
+application = app # asgi assumes application var for app

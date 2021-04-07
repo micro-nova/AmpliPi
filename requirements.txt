@@ -4,9 +4,10 @@ smbus2
 pyserial
 python-vlc
 requests
-fastapi
+fastapi==0.63.0
 sse-starlette
-starlette
+starlette==0.14.2
 uvicorn
 aiofiles
 pydantic
+python-multipart
