@@ -48,7 +48,7 @@ def _check_and_setup_platorm():
     'is_git_repo': False,
     'platform_supported': False,
     'script_dir': script_dir,
-    'base_dir': script_dir.rstrip('/scripts'),
+    'base_dir': script_dir.rsplit('/', 1)[0],
     'is_amplipi': False,
   }
 

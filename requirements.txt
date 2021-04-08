@@ -10,4 +10,3 @@ starlette==0.14.2
 uvicorn
 aiofiles
 pydantic
-python-multipart
