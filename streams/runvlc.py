@@ -69,6 +69,7 @@ current_track = ''
 current_url = ''
 this_artist = ''
 this_title = ''
+this_stationname = ''
 
 # Monitor track meta data and update currently_playing file if the track changed
 while True:
@@ -82,6 +83,9 @@ while True:
         # 'nowplaying' metadata is "almost" always: title - artist
         split = nowplaying.split(' - ', 1)
         
+        # Pass along the station name if it exists in Title metadata
+        this_stationname = str(media.get_meta(vlc.Meta.Title))
+        
         if (len(split) > 1):
             this_artist = split[0]
             this_title = split[1]
@@ -89,7 +93,6 @@ while True:
             this_artist = ''
             this_title = cur
       else:
-        # If 'nowplaying' metadata isn't being used, use separate 'artist' and 'title' metadata
         cur = str(media.get_meta(vlc.Meta.Artist)) + ' - ' + str(media.get_meta(vlc.Meta.Title))
         this_artist = str(media.get_meta(vlc.Meta.Artist))
         this_title = str(media.get_meta(vlc.Meta.Title))
@@ -103,6 +106,7 @@ while True:
         song_info_json = json.dumps({
           "artist": this_artist,
           "song": this_title,
+          "album": this_stationname,
           "state": str(player.get_state())
         })
 
