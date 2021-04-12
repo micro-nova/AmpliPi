@@ -86,6 +86,9 @@ def test_base(client, path):
       for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
         if t in og_config:
           assert len(jrv[t]) == len(og_config[t])
+      # make sure a real version is reported
+      assert 'version' in jrv
+      assert len(jrv['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
     else:
       assert path == '/api'
       assert '/api/' in rv.location
@@ -359,6 +362,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
     assert rv.status_code != HTTPStatus.OK
     return
   jrv = rv.get_json() # get the system state returned
+  jrv.pop('version')
   # TODO: check that the system state is valid
   # make sure the rest of the config got loaded
   for mod, configs in p['state'].items():
@@ -382,6 +386,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   rv = client.post('/api/presets/{}/load'.format(LAST_CONFIG_PRESET))
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.get_json() # get the system state returned
+  jrv.pop('version')
   for name, mod in jrv.items():
     prev_mod = last_state[name]
     for cfg in mod:

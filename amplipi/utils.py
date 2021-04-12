@@ -151,8 +151,9 @@ def detect_version() -> None:
     # assume the application is running in its base directory and check the pyproject.toml file to determine the version
     # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
     TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
+    script_folder = os.path.dirname(os.path.realpath(__file__))
     try:
-      with open('pyproject.toml') as f:
+      with open(os.path.join(script_folder, '..', 'pyproject.toml')) as f:
         for line in f.readlines():
           if 'version' in line:
             match = TOML_VERSION_STR.search(line)
