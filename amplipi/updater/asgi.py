@@ -42,6 +42,7 @@ import queue
 import pathlib
 import shutil
 import asyncio
+import pkg_resources
 from typing import List
 
 app = FastAPI()
@@ -52,6 +53,8 @@ sse_messages = queue.Queue()
 real_path = os.path.realpath(__file__)
 dir_path = os.path.dirname(real_path)
 app.mount("/static", StaticFiles(directory=f"{dir_path}/static"), name="static")
+
+home = os.environ.get('HOME') + '/amplipi-dev2' # placeholder
 
 @app.get('/update')
 def get_index():
@@ -78,6 +81,20 @@ async def start_update(file: UploadFile = File(...)):
     app.last_error = str(e)
     return 500
 
+@app.get('/update/restart')
+def restart():
+  subprocess.Popen(f'python3 {home}/scripts/configure.py --restart-updater'.split())
+  return {}
+
+@app.get('/update/version')
+def version():
+  version = 'unknown'
+  try:
+    version = pkg_resources.get_distribution('amplipi').version
+  except:
+    pass
+  return {'version': version}
+
 def sse_message(t, msg):
   msg = msg.replace('\n', '<br>')
   sse_msg = {'data' : json.dumps({'message': msg, 'type' : t})}
@@ -92,6 +109,8 @@ def sse_error(msg):
   sse_message('error', msg)
 def sse_done(msg):
   sse_message('success', msg)
+def sse_failed(msg):
+  sse_message('failed', msg)
 
 @app.route('/update/install/progress')
 async def progress(req: Request):
@@ -134,8 +153,6 @@ def install_thread():
 
   sse_info('starting installation')
 
-  home = os.environ.get('HOME') + '/amplipi-dev2' # placeholder
-
   extract_to_home(home)
 
   # use the configure script provided by the new install to configure the installation
@@ -151,9 +168,12 @@ def install_thread():
       else:
         print(f'error: {output}')
         sse_error(output)
-  configure.install(progress=progress_sse)
-
-  sse_done('installation done')
+  success = configure.install(progress=progress_sse)
+  if success:
+    sse_done('installation done')
+  else:
+    sse_failed('installation failed')
+  # TODO: now we have to install the updater if needed
 
 @app.get('/update/install')
 def install():

@@ -47,21 +47,45 @@ function ui_multi_update_file_progress(id, percent, color, active)
 
 function ui_begin_update() {
   // TODO: hide file uploader
-  // TODO: setup SSE events, for intermediate step info
+  // setup SSE events, for intermediate step info
   var source = new EventSource("update/install/progress");
   source.onmessage = function(event) {
     var data = JSON.parse(event.data);
     ui_show_update_progress(data);
-    if (data.type == 'success' || data.type == 'error') {
+    if (data.type == 'success' || data.type == 'failed') {
       source.close();
+      if (data.type == 'success') {
+        ui_reboot_app();
+      }
     }
   };
   fetch("update/install"); // start the install TODO: check response
 }
 
+function ui_reboot_app() {
+  // initiate a reboot
+  fetch("update/restart").then(function (response) {
+    if (response.ok) {
+      ui_add_log('Restarting AmpliPi Update server to finish update', 'info')
+      setTimeout(function () {
+        // check reported version
+        r = fetch("update/version").then(function (response){
+          response.json().then(function(json) {
+            ui_add_log(json.version, 'info')
+            ui_add_log('Done restarting updater', 'info')
+          }).catch( err => {ui_add_log('Error checking version: ' + err.message, 'danger');});
+        }).catch( err => {ui_add_log('Error checking version: ' + err.message, 'danger');})
+      }, 3000)
+        // TODO: on fail -> show info on how to recover
+    } else {
+      ui_add_log('Error restarting update server: ' + response, 'danger')
+    }
+  }).catch( err => {ui_add_log('Error restarting update server: ' + err.message, 'danger');})
+}
+
 function ui_show_update_progress(status) {
-  // assumes status {'message': str, 'type': 'info'|'warning'|'error'|'success'}
-  let color = status.type == 'error' ? 'danger' : status.type;
+  // assumes status {'message': str, 'type': 'info'|'warning'|'error'|'success'|'failed'}
+  let color = (status.type == 'error' || status.type == 'failed') ? 'danger' : status.type;
   ui_add_log(status.message, color);
 }
 
