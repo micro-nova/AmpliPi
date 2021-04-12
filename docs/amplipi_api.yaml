@@ -211,6 +211,7 @@ paths:
                       name: Living Room
                       source_id: 0
                       vol: -46
+                    version: 0.0.1
       operationId: get-status
       description: Retrieve the system configuration and status.
   /sources/{sourceId}:
@@ -1134,6 +1135,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Preset'
+        version:
+          type: string
     Command:
       title: Command
       type: object

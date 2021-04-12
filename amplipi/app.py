@@ -220,7 +220,9 @@ def view(src=0):
     unused_groups=[unused_groups(src) for src in range(4)],
     unused_zones=[unused_zones(src) for src in range(4)],
     ungrouped_zones=[ungrouped_zones(src) for src in range(4)],
-    song_info=[song_info(src) for src in range(4)])
+    song_info=[song_info(src) for src in range(4)],
+    version=s['version'],
+    )
 
 def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.json'):
   if mock_ctrl:

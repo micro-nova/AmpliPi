@@ -132,6 +132,7 @@ class Api:
       print('using default config')
       self.status = deepcopy(self._DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
+    self.status['version'] = utils.detect_version()
     # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
     if not 'groups' in self.status:
       self.status['groups'] = [] # this needs to be done before _update_groups() is called (its called in set_zone() and at below)

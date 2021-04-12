@@ -123,6 +123,10 @@ body {
   width: 25%;
 }
 
+#amplipi-info {
+  color: grey
+}
+
 .volume {
   display: flex;
   justify-content: center;

@@ -23,6 +23,8 @@ import json
 import os
 import functools
 import subprocess
+import re
+import pkg_resources # version
 
 # Helper functions
 def encode(pydata):
@@ -138,3 +140,24 @@ def with_id(elements):
   if elements is None:
     return []
   return [ e for e in elements if 'id' in e ]
+
+def detect_version() -> None:
+  version = 'unknown'
+  try:
+    version = pkg_resources.get_distribution('amplipi').version()
+  except:
+    pass
+  if 'unknown' in version:
+    # assume the application is running in its base directory and check the pyproject.toml file to determine the version
+    # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
+    TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
+    try:
+      with open('pyproject.toml') as f:
+        for line in f.readlines():
+          if 'version' in line:
+            match = TOML_VERSION_STR.search(line)
+            if match is not None:
+              version = match.group(1)
+    except:
+      pass
+  return version
