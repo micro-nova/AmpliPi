@@ -255,14 +255,25 @@ def _check_url(url) -> Task:
   try:
     r = requests.get(url)
     if r.ok:
-      t.output += "\n  Ok!"
+      t.output += "\nOk!"
       t.success = True
     else:
-      t.output += f"\n  Error: {r.reason}"
-      t.success = False
+      t.output += f"\nError: {r.reason}"
   except:
     t.output = 'Failed to check url, this happens when the server is offline'
-    t.success = False
+  return t
+
+def _check_version(url) -> Task:
+  t = Task('Checking version reported by API')
+  t.output = f'\nusing: {url}'
+  try:
+    r = requests.get(url)
+    if r.ok:
+      reported_version = r.json()['version']
+      t.success = True
+      t.output += f'\nversion={reported_version}'
+  except Exception:
+    t.output = ''.join(traceback.format_exception())
   return t
 
 def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
@@ -276,6 +287,7 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   tasks += p2(_configure_authbind())
   tasks += p2(_create_service('amplipi', _web_service(env['user'], env['base_dir'])))
   tasks += p2(_start_service('amplipi', test_url='http://0.0.0.0'))
+  tasks += p2([_check_version('http://0.0.0.0/api')])
   tasks += p2(_create_service('amplipi-updater', _update_service(env['user'], env['base_dir'])))
   if restart_updater:
     tasks += p2(_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
