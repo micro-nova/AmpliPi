@@ -48,6 +48,7 @@ function ui_multi_update_file_progress(id, percent, color, active)
 function ui_begin_update() {
   // TODO: hide file uploader
   // setup SSE events, for intermediate step info
+  // TODO: start spinner
   var source = new EventSource("update/install/progress");
   source.onmessage = function(event) {
     var data = JSON.parse(event.data);
@@ -67,20 +68,29 @@ function ui_reboot_app() {
   fetch("update/restart").then(function (response) {
     if (response.ok) {
       ui_add_log('Restarting AmpliPi Update server to finish update', 'info')
-      setTimeout(function () {
-        // check reported version
-        r = fetch("update/version").then(function (response){
-          response.json().then(function(json) {
-            ui_add_log(json.version, 'info')
-            ui_add_log('Done restarting updater', 'info')
-          }).catch( err => {ui_add_log('Error checking version: ' + err.message, 'danger');});
-        }).catch( err => {ui_add_log('Error checking version: ' + err.message, 'danger');})
-      }, 3000)
+      setTimeout(ui_check_after_reboot, 3000)
         // TODO: on fail -> show info on how to recover
     } else {
       ui_add_log('Error restarting update server: ' + response, 'danger')
     }
   }).catch( err => {ui_add_log('Error restarting update server: ' + err.message, 'danger');})
+}
+
+function ui_check_after_reboot() {
+  // check reported version
+  r = fetch("update/version").then(function (response){
+    response.json().then(function(json) {
+      ui_add_log(json.version, 'info')
+      ui_add_log('Done restarting updater', 'info')
+      ui_add_log('Redirecting back to AmpliPi server', 'info')
+      // TODO: stop spinner and show good/done
+      setTimeout(ui_redirect_to_amplipi, 3000)
+    }).catch( err => {ui_add_log('Error checking version: ' + err.message, 'danger');});
+  }).catch( err => {ui_add_log('Error checking version: ' + err.message, 'danger');})
+}
+
+function ui_redirect_to_amplipi() {
+  window.location = window.location.toString().replace(":5001/update", ":80")
 }
 
 function ui_show_update_progress(status) {
