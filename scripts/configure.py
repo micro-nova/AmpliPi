@@ -136,7 +136,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   os.chdir(last_dir)
   return tasks
 
-def _install_python_deps(env, deps):
+def _install_python_deps(env: dict, deps: List[str]):
   tasks = []
   if len(deps) > 0:
     last_dir = os.path.abspath(os.curdir)
@@ -145,7 +145,7 @@ def _install_python_deps(env, deps):
     os.chdir(last_dir)
   return tasks
 
-def _web_service(user, dir):
+def _web_service(user: str, dir: str):
   return f"""
   [Unit]
   Description=Amplipi Home Audio System
@@ -163,7 +163,7 @@ def _web_service(user, dir):
   WantedBy=multi-user.target(venv)
   """
 
-def _update_service(user, dir, port=5001):
+def _update_service(user: str, dir: str, port: int=5001):
   return f"""
   [Unit]
   Description=Amplipi Software Updater
@@ -232,7 +232,7 @@ def _create_service(name: str, config: str) -> List[Task]:
   ]).run())
   return tasks
 
-def _configure_authbind():
+def _configure_authbind() -> List[Task]:
   """ Configure access to port 80 so we can run amplipi as a non-root user """
   """ Execute the following commands
   sudo touch /etc/authbind/byport/80
@@ -301,11 +301,11 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
     tasks += p2(_remove_service('amplipi-updater-test'))
   return tasks
 
-def print_task_results(tasks):
+def print_task_results(tasks : List[Task]) -> None:
   for task in tasks:
     print(task)
 
-def install(os_deps=True, python_deps=True, web=True, restart_updater=False, progress=print_task_results):
+def install(os_deps=True, python_deps=True, web=True, restart_updater=False, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   tasks = [Task('setup')]
   def failed():
