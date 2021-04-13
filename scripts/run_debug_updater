@@ -17,13 +17,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# TODO: kill an old debug updater
-#kill -KILL $(ps ax | grep 'python3' | grep 'flask' | awk '{print $1}') > /dev/null
-
-# TDOO: reconfigure the production server to remove updater
-#test 'active' = $(systemctl is-active unit.service) && sudo curl -s -X PUT -d '{}' --unix-socket /var/run/control.unit.sock http://localhost/config
-
 # use our virtual environment
 source venv/bin/activate
-cd amplipi/updater/ && flask run -p 5001 -h 0.0.0.0 --with-threads --debugger
+./venv/bin/python -m uvicorn --host 0.0.0.0 --port 5001 amplipi.updater.asgi:application
 deactivate

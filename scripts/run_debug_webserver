@@ -21,10 +21,10 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # kill debug webserver
-kill -KILL $(ps ax | grep 'python3' | grep 'flask' | awk '{print $1}') > /dev/null
+kill -KILL $(ps ax | grep 'python' | grep 'uvicorn' | awk '{print $1}') > /dev/null
 
-# reconfigure the production server to serve nothing
-test 'active' = $(systemctl is-active unit.service) && sudo curl -s -X PUT -d '{}' --unix-socket /var/run/control.unit.sock http://localhost/config
+# stop the production server
+test 'active' = $(systemctl is-active amplipi.service) && sudo systemctl stop amplipi
 
 if [[ "$mock_streams" != "True" ]] ; then
   # kill streaming services
@@ -39,6 +39,5 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd ${SCRIPT_DIR}/..
 # use our virtual environment
 source venv/bin/activate
-# for some reason flask loads the app twice if reload option enabled (by default with debugging)
-FLASK_ENV=development FLASK_DEBUG=1 FLASK_APP="amplipi.app:create_app(${mock_ctrl},${mock_streams})" flask run --host 0.0.0.0 --no-reload
+./venv/bin/python -m uvicorn --host 0.0.0.0 --port 5000 --interface wsgi amplipi.wsgi:application
 deactivate
