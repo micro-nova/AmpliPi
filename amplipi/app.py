@@ -214,7 +214,7 @@ def doc():
 @app.route('/<int:src>')
 def view(src=0):
   s = app.api.status
-  return render_template('index.html.jinja', cur_src=src, sources=s['sources'],
+  return render_template('index.html.j2', cur_src=src, sources=s['sources'],
     zones=s['zones'], groups=s['groups'], presets=s['presets'],
     inputs=app.api.get_inputs(),
     unused_groups=[unused_groups(src) for src in range(4)],
