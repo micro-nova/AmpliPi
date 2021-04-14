@@ -121,19 +121,6 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       packages.update(_os_deps[d]['apt'])
   tasks += p2([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
 
-  # install local debian packages
-  packages = set()
-  # set the local directory so glob knows where to look
-  last_dir = os.path.abspath(os.curdir)
-  os.chdir(env['script_dir'] + '/..')
-  for d in deps:
-    if 'debs' in _os_deps[d]:
-      for db in _os_deps[d]['debs']:
-        # get the full name of the debian file
-        packages.update(glob.glob(f'{db}_*.deb'))
-  if len(packages) > 0:
-    tasks += p2([Task('install local debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
-  os.chdir(last_dir)
   return tasks
 
 def _install_python_deps(env: dict, deps: List[str]):
