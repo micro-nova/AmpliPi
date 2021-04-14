@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # -*- coding: utf-8 -*-
 
 # Use libvlc to play internetradio stations to a specific alsa output
@@ -35,6 +35,7 @@ parser.add_argument('url', type=str, help='internet radio station url')
 parser.add_argument('output', type=str, help='alsa output', nargs='?', default=None)
 parser.add_argument('--song-info', type=str, help='file to update with current song information in json format')
 parser.add_argument('--test', action='store_true', help='verify the url is valid and return')
+parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
 
 config = "--aout=alsa "
@@ -63,27 +64,64 @@ if args.song_info:
   except Exception:
     print(sys.exc_info())
     exit(1)
-# Allow stream to start playing
+
+# Wait for stream to start playing
 time.sleep(2)
-current_track = ''
-current_url = ''
+
+# Keep track of the current state so we only update on change
+cur_url = ''
+cur_info = {
+  'song':'',
+  'artist':'',
+  'station': '',
+  'state': 'stopped',
+}
 
 # Monitor track meta data and update currently_playing file if the track changed
 while True:
   try:
     if str(player.get_state()) == 'State.Playing':
-      cur = str(media.get_meta(vlc.Meta.Artist)) + ' - ' + str(media.get_meta(vlc.Meta.Title))
-      if current_track != cur or current_url != vlc.bytes_to_str(media.get_mrl()):
-        # Update currently_playing file if the track has changed
-        current_track = cur
-        current_url = vlc.bytes_to_str(media.get_mrl())
-        print('Current track: %s - %s' % (media.get_meta(vlc.Meta.Artist), media.get_meta(vlc.Meta.Title)))
 
-        song_info_json = json.dumps({
-          "artist": media.get_meta(vlc.Meta.Artist),
-          "song": media.get_meta(vlc.Meta.Title),
-          "state": str(player.get_state())
-        })
+      latest_info = {
+        'song':'',
+        'artist':'',
+        'station': '',
+        'state': 'playing',
+      }
+
+      if args.verbose:
+        print(f"""vlc metadata:
+          Title: {media.get_meta(vlc.Meta.Title)}
+          NowPlaying: {media.get_meta(vlc.Meta.NowPlaying)}
+          Artist: {media.get_meta(vlc.Meta.Artist)}
+          Album: {media.get_meta(vlc.Meta.Album)}
+          Description: {media.get_meta(vlc.Meta.Description)}
+        """)
+
+      # Pass along the station name if it exists in Title metadata
+      latest_info['station'] = media.get_meta(vlc.Meta.Title)
+
+      # 'nowplaying' metadata is used by some internet radio stations instead of separate artist and title
+      nowplaying = media.get_meta(vlc.Meta.NowPlaying)
+
+      if nowplaying:
+        # 'nowplaying' metadata is "almost" always: title - artist
+        if '-' in nowplaying:
+          parts = nowplaying.split(' - ', 1)
+          latest_info['artist'] = parts[0]
+          latest_info['song'] = parts[1]
+        else:
+          latest_info['artist'] = None
+          latest_info['song'] = nowplaying
+      else:
+        latest_info['artist'] = media.get_meta(vlc.Meta.Artist)
+        latest_info['song'] = media.get_meta(vlc.Meta.Title)
+
+      # Update currently_playing file if the track has changed
+      if cur_info != latest_info or cur_url != vlc.bytes_to_str(media.get_mrl()):
+        cur_info = latest_info
+        cur_url = vlc.bytes_to_str(media.get_mrl())
+        print(f"Current track: {latest_info['song']}{latest_info['artist']}")
 
         if args.test:
           print('success')
@@ -92,7 +130,7 @@ while True:
         if args.song_info:
           try:
             f = open(args.song_info, "wt")
-            f.write(song_info_json)
+            f.write(json.dumps(cur_info))
             f.close()
           except Exception:
             print('Error: %s' % sys.exc_info()[1])
@@ -103,6 +141,8 @@ while True:
       print('State: %s' % player.get_state())
 
   except Exception:
+    if args.test:
+      print('fail')
     print('Error: %s' % sys.exc_info()[1])
 
-  time.sleep(1)
+  time.sleep(1) # throttle metadata

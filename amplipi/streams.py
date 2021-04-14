@@ -622,7 +622,7 @@ class InternetRadio:
         d['artist'] = data['artist']
         d['song'] = data['song']
         d['img_url'] = self.logo
-        d['album'] = ""
+        d['station'] = data['station']
 
         return(d)
     except Exception:
