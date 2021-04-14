@@ -538,6 +538,10 @@ paths:
                   type: pandora
                   user: test@micro-nova.com
                   password: s79sDDkjf
+              Add Micronova Airplay:
+                value:
+                  name: Micronova AP
+                  type: shairport
               Add MicroNova Spotify:
                 value:
                   name: MicroNova Spotify
