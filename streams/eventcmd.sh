@@ -1,7 +1,8 @@
 #!/bin/bash
-# this script needs to be placed in the /home/pi/config/srcs/source_id/.config/pianobar directory, with source_id replaced
-stationList="/home/pi/config/srcs/source_id/.config/pianobar/stationList"
-currentSong="/home/pi/config/srcs/source_id/.config/pianobar/currentSong"
+# this script expects to be placed in pianobar's config directory
+cd "$(dirname "$0")"
+stationList="stationList"
+currentSong="currentSong"
 
 while read L; do
 	k="`echo "$L" | cut -d '=' -f 1`"

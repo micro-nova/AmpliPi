@@ -18,6 +18,7 @@
 """Runtimes to communicate with the AmpliPi hardware
 """
 
+# TODO: move constants like this to their own file
 DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 

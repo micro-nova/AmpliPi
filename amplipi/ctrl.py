@@ -132,6 +132,7 @@ class Api:
       print('using default config')
       self.status = deepcopy(self._DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
+    self.status['version'] = utils.detect_version()
     # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
     if not 'groups' in self.status:
       self.status['groups'] = [] # this needs to be done before _update_groups() is called (its called in set_zone() and at below)
@@ -486,7 +487,7 @@ class Api:
 
   def _new_group_id(self):
     """ get next available group id """
-    g = max(self.status['groups'], key=lambda g: g['id'])
+    g = max(self.status['groups'], key=lambda g: g['id'], default=None)
     if g is not None:
       return g['id'] + 1
     else:
@@ -528,6 +529,8 @@ class Api:
       i, _ = utils.find(self.status['groups'], id)
       if i is not None:
         del self.status['groups'][i]
+      else:
+        return utils.error('delete group failed: {} does not exist'.format(id))
     except KeyError:
       return utils.error('delete group failed: {} does not exist'.format(id))
 
@@ -633,9 +636,9 @@ class Api:
       return utils.error('Stream id {} does not exist!'.format(id))
     # TODO: move the rest of this into streams
     if stream_index is not None:
-      root = '/home/pi/config/srcs/{}/'.format(stream_index)
+      root = '{}/srcs/{}/'.format(utils.get_folder('config'), stream_index)
     else:
-      root = '/home/pi/'
+      root = ''
     stat_dir = root + '.config/pianobar/stationList'
 
     try:

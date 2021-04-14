@@ -8,6 +8,7 @@ set -e
 # make sure the webserver is running
 test 'active' != $(systemctl is-active unit.service) && sudo systemctl restart unit.service
 
+# TODO: rewrite this in python now that the server configuration is dependent on the location of the amplipi folder
 # update the flask application configuration, then force a configuration reload
 if [ 'active' == $(systemctl is-active unit.service) ]; then
   # set the configuration to nothing

@@ -133,9 +133,9 @@ def create_group():
 
 @app.route('/api/groups/<int:group>', methods=['GET'])
 def get_group(group):
-  groups = app.api.get_state()['groups']
-  if group >= 0 and group < len(groups):
-    return groups[group]
+  _, grp = utils.find(app.api.get_state()['groups'], group)
+  if grp is not None:
+    return grp
   else:
     return {}, 404
 
@@ -214,13 +214,15 @@ def doc():
 @app.route('/<int:src>')
 def view(src=0):
   s = app.api.status
-  return render_template('index.html', cur_src=src, sources=s['sources'],
+  return render_template('index.html.j2', cur_src=src, sources=s['sources'],
     zones=s['zones'], groups=s['groups'], presets=s['presets'],
     inputs=app.api.get_inputs(),
     unused_groups=[unused_groups(src) for src in range(4)],
     unused_zones=[unused_zones(src) for src in range(4)],
     ungrouped_zones=[ungrouped_zones(src) for src in range(4)],
-    song_info=[song_info(src) for src in range(4)])
+    song_info=[song_info(src) for src in range(4)],
+    version=s['version'],
+    )
 
 def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.json'):
   if mock_ctrl:

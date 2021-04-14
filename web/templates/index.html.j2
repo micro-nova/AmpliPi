@@ -46,6 +46,9 @@
             <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['name'] }} <i class="fa fa-play text-success" ></i></a>
           </li>
           {% endfor %}
+          <li class="nav-item">
+            <a id="settings-nav" class="nav-link" data-toggle="tab" role="tab" href="#settings"><i class="fa fa-cog"></i></a>
+          </li>
         </ol>
       </div>
       <div class="card-body source-body">
@@ -85,9 +88,20 @@
           </div>
           {% endfor %}
         </div>
+      <div id="settings-header" class="text-center" style="display: none"><h3>Settings</h3></div>
       </div>
     </div>
     <div class="tab-content">
+      <div id="settings" class="tab-pane">
+        <div class="card settings">
+          <h6 class="card-header">Updates</h6>
+          <div class="card-body">
+            <div class="text-center">
+              <a class="btn btn-success" onclick="javascript:event.target.port=5001" href="/update">Check for Updates</a>
+            </div>
+          </div>
+        </div>
+      </div>
       {% for src in range(4) %}
       <div id="s{{ src }}-groups" class="tab-pane {% if src == cur_src %} active {% endif %}">
         {% for group in groups if group['source_id'] == src %}
@@ -168,12 +182,12 @@
       {% endfor %}
     </div>
   </div>
-  <div id="micronova-info" class="text-center">
+  <div id="amplipi-info" class="text-center">
     <div>
       <span><a href="http://www.AmpliPi.com" target="_blank" rel="noopener noreferrer">AmpliPi</a>™ by <a href="http://www.micro-nova.com" target="_blank" rel="noopener noreferrer">MicroNova</a></span>
     </div>
-    <div>
-      © 2021
+    <div id="version">
+      v{{version}} © 2021
     </div>
     <div>
       <span><a href="api/doc" target="_blank" rel="noopener noreferrer">API</a> | <a href="http://www.github.com/micro-nova/AmpliPi" target="_blank" rel="noopener noreferrer">GitHub</a> | <a href="https://github.com/micro-nova/AmpliPi/blob/master/COPYING" target="_blank" rel="noopener noreferrer">License</a></span>

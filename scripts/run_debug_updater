@@ -1,0 +1,23 @@
+#!/bin/bash
+
+HELP="""Run AmpliPi's update webserver
+  usage: run_debug_updater
+"""
+
+set -e
+
+# get directory that the script exists in
+cd "$( dirname "$0" )/.."
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -h|--help) echo -e $HELP; exit 0 ;;
+        *) echo "Unknown parameter passed: $1"; echo -e $HELP; exit 1 ;;
+    esac
+    shift
+done
+
+# use our virtual environment
+source venv/bin/activate
+./venv/bin/python -m uvicorn --host 0.0.0.0 --port 5001 amplipi.updater.asgi:application
+deactivate
