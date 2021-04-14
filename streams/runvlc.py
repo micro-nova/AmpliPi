@@ -63,52 +63,55 @@ if args.song_info:
   except Exception:
     print(sys.exc_info())
     exit(1)
-# Allow stream to start playing
+
+# Wait for stream to start playing
 time.sleep(2)
-current_track = ''
-current_url = ''
-this_artist = ''
-this_title = ''
-this_stationname = ''
+
+# Keep track of the current state so we only update on change
+cur_url = ''
+cur_info = {
+  'song':'',
+  'artist':'',
+  'station': '',
+  'state': 'stopped',
+}
 
 # Monitor track meta data and update currently_playing file if the track changed
 while True:
   try:
     if str(player.get_state()) == 'State.Playing':
-      nowplaying = str(media.get_meta(vlc.Meta.NowPlaying))
+
+      latest_info = {
+        'song':'',
+        'artist':'',
+        'station': '',
+        'state': 'playing',
+      }
+
+      # Pass along the station name if it exists in Title metadata
+      latest_info['station'] = media.get_meta(vlc.Meta.Title)
 
       # 'nowplaying' metadata is used by some internet radio stations instead of separate artist and title
-      if nowplaying and nowplaying != 'None':
-        cur = nowplaying
+      nowplaying = media.get_meta(vlc.Meta.NowPlaying)
+
+      if nowplaying:
         # 'nowplaying' metadata is "almost" always: title - artist
-        split = nowplaying.split(' - ', 1)
-        
-        # Pass along the station name if it exists in Title metadata
-        this_stationname = str(media.get_meta(vlc.Meta.Title))
-        
-        if (len(split) > 1):
-            this_artist = split[0]
-            this_title = split[1]
+        if '-' in nowplaying:
+          parts = nowplaying.split(' - ', 1)
+          latest_info['artist'] = parts[0]
+          latest_info['song'] = parts[1]
         else:
-            this_artist = ''
-            this_title = cur
+          latest_info['artist'] = None
+          latest_info['song'] = nowplaying
       else:
-        cur = str(media.get_meta(vlc.Meta.Artist)) + ' - ' + str(media.get_meta(vlc.Meta.Title))
-        this_artist = str(media.get_meta(vlc.Meta.Artist))
-        this_title = str(media.get_meta(vlc.Meta.Title))
+        latest_info['artist'] = media.get_meta(vlc.Meta.Artist)
+        latest_info['song'] = media.get_meta(vlc.Meta.Title)
 
-      if current_track != cur or current_url != vlc.bytes_to_str(media.get_mrl()):
-        # Update currently_playing file if the track has changed
-        current_track = cur
-        current_url = vlc.bytes_to_str(media.get_mrl())
-        print('Current track: %s' % (cur))
-
-        song_info_json = json.dumps({
-          "artist": this_artist,
-          "song": this_title,
-          "album": this_stationname,
-          "state": str(player.get_state())
-        })
+      # Update currently_playing file if the track has changed
+      if cur_info != latest_info or cur_url != vlc.bytes_to_str(media.get_mrl()):
+        cur_info = latest_info
+        cur_url = vlc.bytes_to_str(media.get_mrl())
+        print(f"Current track: {latest_info['song']}{latest_info['artist']}")
 
         if args.test:
           print('success')
@@ -117,7 +120,7 @@ while True:
         if args.song_info:
           try:
             f = open(args.song_info, "wt")
-            f.write(song_info_json)
+            f.write(json.dumps(cur_info))
             f.close()
           except Exception:
             print('Error: %s' % sys.exc_info()[1])
@@ -128,6 +131,8 @@ while True:
       print('State: %s' % player.get_state())
 
   except Exception:
+    if args.test:
+      print('fail')
     print('Error: %s' % sys.exc_info()[1])
 
-  time.sleep(1)
+  time.sleep(1) # throttle metadata
