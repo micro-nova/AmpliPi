@@ -42,7 +42,7 @@ _os_deps = {
   # }
 }
 
-def _check_and_setup_platorm():
+def _check_and_setup_platform():
   script_dir = os.path.dirname(os.path.realpath(__file__))
   env = {
     'user': pwd.getpwuid(os.getuid()).pw_name,
@@ -314,7 +314,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False, pro
         return True
     return False
 
-  env = _check_and_setup_platorm()
+  env = _check_and_setup_platform()
   if not env['platform_supported']:
     tasks[0].output = f'untested platform: {platform.platform()}. Please fix this this script and make a PR to github.com/micro-nova/AmpliPi'
   else:
