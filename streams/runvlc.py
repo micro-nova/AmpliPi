@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # -*- coding: utf-8 -*-
 
 # Use libvlc to play internetradio stations to a specific alsa output
@@ -35,6 +35,7 @@ parser.add_argument('url', type=str, help='internet radio station url')
 parser.add_argument('output', type=str, help='alsa output', nargs='?', default=None)
 parser.add_argument('--song-info', type=str, help='file to update with current song information in json format')
 parser.add_argument('--test', action='store_true', help='verify the url is valid and return')
+parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
 
 config = "--aout=alsa "
@@ -87,6 +88,15 @@ while True:
         'station': '',
         'state': 'playing',
       }
+
+      if args.verbose:
+        print(f"""vlc metadata:
+          Title: {media.get_meta(vlc.Meta.Title)}
+          NowPlaying: {media.get_meta(vlc.Meta.NowPlaying)}
+          Artist: {media.get_meta(vlc.Meta.Artist)}
+          Album: {media.get_meta(vlc.Meta.Album)}
+          Description: {media.get_meta(vlc.Meta.Description)}
+        """)
 
       # Pass along the station name if it exists in Title metadata
       latest_info['station'] = media.get_meta(vlc.Meta.Title)
