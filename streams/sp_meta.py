@@ -57,12 +57,15 @@ def s_info(inp):
     v = {}
     field = ''
     u['"ssnc" "snua"'] = inp
-    while field != '"ssnc" "pbeg"':
-        field, data = read_field()
-        # print(field, ':', data)
-        if field:
-            u[field] = data
-    #v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
+    try:
+      while field != '"ssnc" "pbeg"':
+          field, data = read_field()
+          # print(field, ':', data)
+          if field:
+              u[field] = data
+      v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
+    except:
+      pass
     return v
 
 f = open(cs_loc, 'w')
