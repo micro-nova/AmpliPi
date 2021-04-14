@@ -558,6 +558,18 @@ paths:
                   type: internetradio
                   url: http://ice2.somafm.com/groovesalad-16-aac
                   logo: https://somafm.com/img3/groovesalad-200.jpg
+              Add Beatles Internet Radio Station:
+                value:
+                  name: Beatles Radio
+                  type: internetradio
+                  url: http://www.beatlesradio.com:8000/stream/1/
+                  logo: http://www.beatlesradio.com/content/images/thumbs/0000587.gif
+              Add Classical KING Internet Radio Station:
+                value:
+                  name: Classical KING FM 98.1
+                  type: internetradio
+                  url: http://classicalking.streamguys1.com/king-fm-aac-iheart
+                  logo: https://i.iheart.com/v3/re/assets/images/7bcfd87a-de3e-47d0-b896-be0ed38c9d74.png
         description: Post the necessary fields for the API to create a new stream.
       description: Create a new stream.
   /streams/{streamId}:
