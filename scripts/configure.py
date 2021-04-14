@@ -120,23 +120,23 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
 
   # organize stuff to install
   packages = set()
-  files = set()
+  files = []
   for d in deps:
     if 'copy' in _os_deps[d]:
-      files.update(_os_deps[d]['copy'])
+      files += _os_deps[d]['copy']
     if 'apt' in _os_deps[d]:
       packages.update(_os_deps[d]['apt'])
 
   # copy files
   for file in files:
-    # prepend home to relative paths
-    if _from[0] != '/':
-      _from = f"env['base_dir']/{_from}"
-    if _to[0] != '/':
-      _to = f"env['base_dir']/{_to}"
     _from = file['from'].replace('ARCH', env['arch'])
     _to = file['to']
-    tasks += p2(Task(f"copy {_from} to {_to}", f"cp {_from} {_to}".split()).run())
+    # prepend home to relative paths
+    if _from[0] != '/':
+      _from = f"{env['base_dir']}/{_from}"
+    if _to[0] != '/':
+      _to = f"{env['base_dir']}/{_to}"
+    tasks += p2([Task(f"copy {_from} to {_to}", f"cp {_from} {_to}".split()).run()])
 
   # install debian packages
   tasks += p2([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])

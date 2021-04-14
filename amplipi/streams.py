@@ -131,12 +131,13 @@ class Shairport:
       },
     }
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(src_config_folder)) # TODO: we need to delete all of the old cover art files!
     config_file = '{}/shairport.conf'.format(src_config_folder)
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
-    meta_args = ['{}/shairport_metadata.bash'.format(utils.get_folder('streams')), '{}'.format(src_config_folder)]
+    meta_args = [f"{utils.get_folder('streams')}/shairport_metadata.bash", src_config_folder, web_dir]
     print(f'shairport_args: {shairport_args}')
     print(f'meta_args: {meta_args}')
     # TODO: figure out how to get status from shairport

@@ -31,6 +31,7 @@ if [[ "$mock_streams" != "True" ]] ; then
   killall librespot > /dev/null
   killall pianobar > /dev/null
   killall shairport-sync > /dev/null
+  kill -KILL $(ps ax | grep 'python' | grep 'sp_meta' | awk '{print $1}') > /dev/null
   kill -KILL $(ps ax | grep 'python' | grep 'runvlc' | awk '{print $1}') > /dev/null
 fi
 

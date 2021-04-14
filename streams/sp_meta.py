@@ -62,7 +62,7 @@ def s_info(inp):
         # print(field, ':', data)
         if field:
             u[field] = data
-    v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
+    #v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
     return v
 
 f = open(cs_loc, 'w')

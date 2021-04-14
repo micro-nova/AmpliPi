@@ -144,3 +144,9 @@ dmypy.json
 
 # Poetry
 poetry.lock
+
+# Copied architecture specific files
+streams/shairport-sync-metadata-reader
+
+# Amplipi Web
+web/generated/*
