@@ -71,7 +71,7 @@ def _check_and_setup_platform():
         env['has_apt'] = True
         env['platform_supported'] = True
     elif 'armv7l' in p and 'debian' in p:
-      env['env'] = 'arm'
+      env['arch'] = 'arm'
       env['platform_supported'] = True
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
