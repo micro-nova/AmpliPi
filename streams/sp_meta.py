@@ -6,7 +6,7 @@ import argparse
 import os
 
 parser = argparse.ArgumentParser(description="shairport metadata interpreter")
-parser.add_argument('sp_config_dir', description='directory used for shairport song info generation')
+parser.add_argument('sp_config_dir', help='directory used for shairport song info generation')
 args = parser.parse_args()
 
 # Check if the folder is valid and writeable

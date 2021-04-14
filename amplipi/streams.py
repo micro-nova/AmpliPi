@@ -137,6 +137,8 @@ class Shairport:
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
     meta_args = ['{}/shairport_metadata.bash'.format(utils.get_folder('streams')), '{}'.format(src_config_folder)]
+    print(f'shairport_args: {shairport_args}')
+    print(f'meta_args: {meta_args}')
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
