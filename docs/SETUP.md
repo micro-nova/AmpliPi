@@ -1,6 +1,36 @@
 # AmpliPi Setup
 Implementation of the AmpliPi Controller on the Raspberry Pi
 ## Configuration (Compute Module)
+### From Ubuntu Linux
+
+    git clone --depth=1 https://github.com/raspberrypi/usbboot
+    pushd usbboot
+    sudo apt install libusb-1.0-0-dev
+    make
+    
+    echo "Plug in a usb cable from the service port to your computer. Don't turn on the AmpliPi yet." 
+    read -p "Plug in the AmpliPi after pressing any key" -n 1
+    sudo ./rpiboot
+    popd
+
+    echo "Downloading and extracting Raspberry Pi OS"
+    wget https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/2020-08-20-raspios-buster-armhf-lite.zip
+    mkdir 2020-08-20-raspios-buster-armhf-lite
+    cd 2020-08-20-raspios-buster-armhf-lite
+    unzip ../2020-08-20-raspios-buster-armhf-lite.zip
+    
+    echo "Copying the image to the AmpliPi"
+    sudo dd if=2020-08-20-raspios-buster-arm64-lite.img of=/dev/sda bs=1024MiB
+    
+    echo "Setup SSH so we can configure the Pi"
+    sudo mkdir -p /mnt/pi
+    sudo mount /dev/sda1 /mnt/pi
+    cd /mnt/pi
+    sudo touch ssh
+    sudo emacs etc/dhcpcd.conf # add a static ip address using your favorite editor
+    cd -
+    sudo umount /mnt/pi
+
 Download Raspberry Pi OS from [here](https://www.raspberrypi.org/downloads/raspberry-pi-os/) we are currently using the "Raspberry Pi OS (32-bit) with desktop and recommended software"
 Follow steps on [rpi](https://www.raspberrypi.org/documentation/hardware/computemodule/cm-emmc-flashing.md) to flash the eMMC on the device
 ## Configuration (RPi 4)
