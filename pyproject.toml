@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "amplipi"
-version = "0.1.3-alpha.140"
+version = "0.1.3-alpha.143"
 description = "A Pi-based whole house audio controller"
 authors = [
   "Lincoln Lorenz <lincoln@micro-nova.com>",
@@ -35,6 +35,8 @@ include = [
   "scripts/run_debug_webserver", "scripts/run_debug_updater", "scripts/configure.py", "scripts/install_python_deps.bash", # other scripts only support development
   "streams/**/*",
   "web/**/*",
+  "bin/**",
+  "docs/**",
 ]
 
 [tool.poetry.scripts]

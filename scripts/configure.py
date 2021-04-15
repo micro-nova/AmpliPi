@@ -17,7 +17,8 @@ import time
 
 _os_deps = {
   'base' : {
-    'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind']
+    'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind'],
+    'copy' : [{'from': 'docs/amplipi_api.yaml', 'to': 'web/static/amplipi_api.yaml'}],
   },
   'web' : {
   },
@@ -28,7 +29,7 @@ _os_deps = {
   },
   'airplay' : {
     'apt' : [ 'shairport-sync' ],
-    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'}]
+    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'}],
   },
   'internet_radio' : {
     'apt' : [ 'vlc' ]
@@ -167,7 +168,7 @@ def _web_service(user: str, dir: str):
   Restart=on-abort
 
   [Install]
-  WantedBy=multi-user.target(venv)
+  WantedBy=multi-user.target
   """
 
 def _update_service(user: str, dir: str, port: int=5001):
@@ -206,7 +207,7 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
   tasks = []
   tasks.append(Task(f'Start {service}', multiargs=[
     f'sudo systemctl restart {name}'.split(),
-    'sleep 0.5'.split(), # wait a bit, so initial failures are detected before is-active is called
+    'sleep 2'.split(), # wait a bit, so initial failures are detected before is-active is called
   ]).run())
   if tasks[0].success:
     # we need to check if the service is running
@@ -215,6 +216,8 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
     if test_url and tasks[1].success:
       time.sleep(1) # give the server time to start
       tasks.append(_check_url(test_url))
+      # We also need to enable the service so that it starts on startup
+      tasks.append(Task(f'Enable {service}', f'sudo systemctl enable {service}'.split()).run())
   return tasks
 
 def _create_service(name: str, config: str) -> List[Task]:
