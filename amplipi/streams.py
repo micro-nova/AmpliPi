@@ -183,7 +183,7 @@ class Shairport:
         # return d
     except Exception:
       pass
-      # TODO: Put an actual exception here?
+      # TODO: Log actual exception here?
 
     try:
       with open(sloc, 'r') as file:
@@ -196,12 +196,10 @@ class Shairport:
             d['active_remote_token'] = info[1]
             d['DACP-ID'] = info[2]
             d['client_IP'] = info[3]
-        # return d
     except Exception:
       pass
 
     return d
-    # return {'details': 'No info available'}
 
   def status(self):
     return self.state
