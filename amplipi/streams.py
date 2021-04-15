@@ -131,12 +131,15 @@ class Shairport:
       },
     }
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(src_config_folder)) # TODO: we need to delete all of the old cover art files!
     config_file = '{}/shairport.conf'.format(src_config_folder)
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
-    meta_args = ['{}/shairport_metadata.bash'.format(utils.get_folder('streams')), '{}'.format(src_config_folder)]
+    meta_args = [f"{utils.get_folder('streams')}/shairport_metadata.bash", src_config_folder, web_dir]
+    print(f'shairport_args: {shairport_args}')
+    print(f'meta_args: {meta_args}')
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -176,11 +179,11 @@ class Shairport:
             d['album'] = data[2]
             d['paused'] = data[3]
             if int(data[4]):
-              d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5])
+              d['img_url'] = '/generated/shairport/srcs/{}/{}'.format(self.src, data[5])
         # return d
     except Exception:
       pass
-      # TODO: Put an actual exception here?
+      # TODO: Log actual exception here?
 
     try:
       with open(sloc, 'r') as file:
@@ -193,12 +196,10 @@ class Shairport:
             d['active_remote_token'] = info[1]
             d['DACP-ID'] = info[2]
             d['client_IP'] = info[3]
-        # return d
     except Exception:
       pass
 
     return d
-    # return {'details': 'No info available'}
 
   def status(self):
     return self.state

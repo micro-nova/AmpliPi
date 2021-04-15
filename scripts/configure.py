@@ -27,7 +27,8 @@ _os_deps = {
     'apt' : [ 'pianobar']
   },
   'airplay' : {
-    'apt' : [ 'shairport-sync' ]
+    'apt' : [ 'shairport-sync' ],
+    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'}]
   },
   'internet_radio' : {
     'apt' : [ 'vlc' ]
@@ -52,6 +53,7 @@ def _check_and_setup_platform():
     'script_dir': script_dir,
     'base_dir': script_dir.rsplit('/', 1)[0],
     'is_amplipi': False,
+    'arch': 'unknown',
   }
 
   """ Get the platform name
@@ -64,10 +66,12 @@ def _check_and_setup_platform():
   if 'linux' in p:
     if 'x86_64' in p:
       apt = subprocess.run('which apt'.split())
+      env['arch'] = 'x64'
       if apt:
         env['has_apt'] = True
         env['platform_supported'] = True
     elif 'armv7l' in p and 'debian' in p:
+      env['arch'] = 'arm'
       env['platform_supported'] = True
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
@@ -114,26 +118,29 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # find latest apt packages
   tasks += p2([Task('get latest debian packages', 'sudo apt update'.split()).run()])
 
-  # install debian packages
+  # organize stuff to install
   packages = set()
+  files = []
   for d in deps:
+    if 'copy' in _os_deps[d]:
+      files += _os_deps[d]['copy']
     if 'apt' in _os_deps[d]:
       packages.update(_os_deps[d]['apt'])
+
+  # copy files
+  for file in files:
+    _from = file['from'].replace('ARCH', env['arch'])
+    _to = file['to']
+    # prepend home to relative paths
+    if _from[0] != '/':
+      _from = f"{env['base_dir']}/{_from}"
+    if _to[0] != '/':
+      _to = f"{env['base_dir']}/{_to}"
+    tasks += p2([Task(f"copy {_from} to {_to}", f"cp {_from} {_to}".split()).run()])
+
+  # install debian packages
   tasks += p2([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
 
-  # install local debian packages
-  packages = set()
-  # set the local directory so glob knows where to look
-  last_dir = os.path.abspath(os.curdir)
-  os.chdir(env['script_dir'] + '/..')
-  for d in deps:
-    if 'debs' in _os_deps[d]:
-      for db in _os_deps[d]['debs']:
-        # get the full name of the debian file
-        packages.update(glob.glob(f'{db}_*.deb'))
-  if len(packages) > 0:
-    tasks += p2([Task('install local debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
-  os.chdir(last_dir)
   return tasks
 
 def _install_python_deps(env: dict, deps: List[str]):

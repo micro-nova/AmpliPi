@@ -6,7 +6,7 @@ import argparse
 import os
 
 parser = argparse.ArgumentParser(description="shairport metadata interpreter")
-parser.add_argument('sp_config_dir', description='directory used for shairport song info generation')
+parser.add_argument('sp_config_dir', help='directory used for shairport song info generation')
 args = parser.parse_args()
 
 # Check if the folder is valid and writeable
@@ -57,12 +57,15 @@ def s_info(inp):
     v = {}
     field = ''
     u['"ssnc" "snua"'] = inp
-    while field != '"ssnc" "pbeg"':
-        field, data = read_field()
-        # print(field, ':', data)
-        if field:
-            u[field] = data
-    v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
+    try:
+      while field != '"ssnc" "pbeg"':
+          field, data = read_field()
+          # print(field, ':', data)
+          if field:
+              u[field] = data
+      v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
+    except:
+      pass
     return v
 
 f = open(cs_loc, 'w')
