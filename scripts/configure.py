@@ -4,6 +4,7 @@
 
 This script is initially designed to support local git installs, pi installs, and amplipi installs
 """
+from os.path import split
 import platform
 import subprocess
 import os
@@ -139,8 +140,24 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _to = f"{env['base_dir']}/{_to}"
     tasks += p2([Task(f"copy {_from} to {_to}", f"cp {_from} {_to}".split()).run()])
 
+  if env['is_amplipi']:
+    # copy alsa configuration file
+    _from = f"{env['base_dir']}/config/asound.conf"
+    _to = f"/etc/asound.conf"
+    tasks += p2([Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
+    # serial port permission granting
+    tasks.append(Task(f'Check serial permissions', f'groups'.split()).run())
+    tasks[-1].success = 'pi' in tasks[1].output
+    if not tasks[-1].success:
+      tasks += p2([Task(f"Giving pi serial permission. !!!AmpliPi will need to be restarted after this!!!", "sudo gpasswd -a pi dialout".split()).run()])
+      return tasks
   # install debian packages
   tasks += p2([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
+
+  # cleanup
+  # shairport-sync install sets up a deamon we need to stop, remove it
+  tasks += p2(_stop_service('shairport-sync'))
+  tasks += p2(_remove_service('shairport-sync'))
 
   return tasks
 
