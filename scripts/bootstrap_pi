@@ -1,0 +1,127 @@
+#!/bin/bash
+# Instal AmpliPi from scratch on a new pi compute module
+
+# stop on errors
+set -e
+
+# feel free to change these or better yet make them parameters
+FALLBACK_IP=192.168.0.101
+HOSTNAME=amplipi
+
+# do all of this stuff in a temporary directory so it will be lost/erased on reboot
+pushd $(mktemp --directory)
+
+echo "Downloading Raspberry Pi boot"
+git clone --depth=1 https://github.com/raspberrypi/usbboot
+
+echo "Installing Raspberry Pi boot"
+pushd usbboot
+sudo apt update
+sudo apt install libusb-1.0-0-dev
+make
+
+echo -e "\nPlug in a usb cable from the service port to your computer. Keep AmpliPi Unplugged / Powered OFF for now."
+read -p "Press any key to continue" -n 1
+read -p "\nPress any key and then plug in the AmpliPi" -n 1
+sudo ./rpiboot
+popd
+
+release=2020-08-20-raspios-buster-armhf-lite
+echo "Downloading and extracting Raspberry Pi OS"
+if [[ -f $HOME/Downloads/$release.zip ]] ; then
+  zip_file=$HOME/Downloads/$release.zip
+else
+  wget http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+  zip_file=*.zip
+fi
+mkdir $release
+pushd $release
+unzip $zip_file
+
+echo "Verifying /dev/sda is the only device"
+all_parts=$(echo /dev/sd* | wc -w) # all devices/partitions
+sda_parts=$(echo /dev/sda* | wc -w) # only sda's device and partitions (ie. a pi with an image typically shows /dev/sda /dev/sda1 /dev/sda2)
+if [[ $sda_parts -eq $all_parts ]] && [[ -e /dev/sda ]]; then
+  echo "Valid /dev/sda device found"
+elif [[ ! -e /dev/sda ]]; then
+  echo "ERROR: Expected device /dev/sda not found"
+  exit 1
+else
+  echo "ERROR: Can't handle the devices/partitions detected, maybe dd failed or other devices were detected"
+  exit 1
+fi
+
+echo "Copying the image to the AmpliPi. This takes about 5 minutes. Go get a coffee or something :)"
+sudo dd if=$release.img of=/dev/sda bs=4MiB
+popd
+
+echo "Editing some configuration"
+sudo mkdir -p /mnt/pi-boot
+sudo mkdir -p /mnt/pi-root
+sudo mount /dev/sda1 /mnt/pi-boot # boot partition
+sudo mount /dev/sda2 /mnt/pi-root # root filesystem partition
+pushd /mnt/pi-boot
+sudo touch ssh # enable SSH access
+popd
+pushd /mnt/pi-root
+echo "# A basic configuration for dhcpcd.
+# See dhcpcd.conf(5) for details.
+
+# Inform the DHCP server of our hostname for DDNS.
+hostname
+
+# Persist interface configuration when dhcpcd exits.
+persistent
+
+# Rapid commit support.
+# Safe to enable by default because it requires the equivalent option set
+# on the server to actually work.
+option rapid_commit
+
+# A list of options to request from the DHCP server.
+option domain_name_servers, domain_name, domain_search, host_name
+option classless_static_routes
+# Respect the network MTU. This is applied to DHCP routes.
+option interface_mtu
+
+# Most distributions have NTP support.
+#option ntp_servers
+
+# A ServerID is required by RFC2131.
+require dhcp_server_identifier
+
+# Generate SLAAC address using the Hardware Address of the interface
+#slaac hwaddr
+# OR generate Stable Private IPv6 Addresses based from the DUID
+slaac private
+
+# Example static IP configuration:
+#interface eth0
+#static ip_address=192.168.0.101/24
+#static ip6_address=fd51:42f8:caae:d92e::ff/64
+#static routers=192.168.0.1
+#static domain_name_servers=192.168.0.1 8.8.8.8 fd51:42f8:caae:d92e::1
+
+# It is possible to fall back to a static IP if DHCP fails:
+define static profile
+profile static_eth0
+static ip_address=$FALLBACK_IP/24
+static routers=192.168.0.1
+static domain_name_servers=192.168.1.1
+
+# fallback to static profile on eth0
+interface eth0
+fallback static_eth0
+" | sudo tee etc/dhcpcd.conf > /dev/null # enable dhcp with a backup static ip (no need to reprint to screen)
+
+echo $HOSTNAME | sudo tee etc/hostname # set the hostname to amplipi
+popd
+sudo umount /mnt/pi-boot
+sudo umount /mnt/pi-root
+
+echo "Bootstrapping successful. Please complete the following steps:
+  1. Disconnect the service USB cable.
+  2. Unplug the AmpliPi unit.
+  3. Plug it back in to power it on.
+  4. Run the deploy script to install the latest AmpliPi version.
+"

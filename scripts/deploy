@@ -33,6 +33,9 @@ poetry build
 
 sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py
 
+# setup ssh access if necessary
+ssh -o PasswordAuthentication=no $user_host echo "AmpliPi has your SSH Key" || echo "Trying to copy your SSH id to AmpliPi, you will need to enter your AmpliPi's password below" && ssh-copy-id $user_host
+
 # copy stuff to board
 latest_release=$(ls -d -t ../dist/amplipi-*.tar.gz | head --lines=1)
 release_name=$(echo $latest_release | sed -e 's@../dist/@@' -e 's/.tar.gz//')
