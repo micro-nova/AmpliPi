@@ -116,6 +116,12 @@ fallback static_eth0
 
 echo $HOSTNAME | sudo tee etc/hostname # set the hostname to amplipi
 popd
+
+# add pi user manually to dialout group, avoiding an additional restart
+sed -i'' -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' etc/group
+
+# cleanup
+popd # /mnt/pi-root
 sudo umount /mnt/pi-boot
 sudo umount /mnt/pi-root
 
