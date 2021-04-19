@@ -1,5 +1,6 @@
 #!/bin/bash
 # Instal AmpliPi from scratch on a new pi compute module
+# This script is mainly intended for MicroNova employees to bringup Pi's. Your AmpliPi device should already have this configuration.
 
 # stop on errors
 set -e
@@ -39,6 +40,7 @@ mkdir $release
 pushd $release
 unzip $zip_file
 
+# TODO: allow user to specify disk device
 echo "Verifying /dev/sda is the only device"
 all_parts=$(echo /dev/sd* | wc -w) # all devices/partitions
 sda_parts=$(echo /dev/sda* | wc -w) # only sda's device and partitions (ie. a pi with an image typically shows /dev/sda /dev/sda1 /dev/sda2)

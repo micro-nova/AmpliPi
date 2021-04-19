@@ -43,13 +43,11 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 1. over ssh connection, run ```scripts/run_debug_webserver --mock-ctrl```
 
 ## Testing on a pi 3+ compute module connected to an AmpliPi Controller
-1. Install a fresh version of Raspberry Pi OS - Lite on the Pi3+ module
-We are currently using https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/ since later versions switched from the ALSA audio backend to using pulse audio. Our system only supports ALSA currently although we will investigate how to use more up to date software in the future.
-1. After installing enable ssh and configure a password for the pi user
-1. Checkout this repo on a linux based system  (a git bash shell on windows works fine as well)
-1. Use ssh-copy-id to copy your public key to the pi
-1. use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file)
-1. over ssh connection, run ```scripts/run_debug_webserver```
+1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
+1. All AmpliPi's have already been configured with ```scripts/bootstrap-pi```. For a fresh installation run that script. This should not be necessary. After this SSH is enabled from a fresh Raspberry Pi OS.
+1. Use ```scripts/deploy``` to deploy the latest software.
+1. Use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file).
+1. Over an ssh connection, run ```scripts/run_debug_webserver```
 
 ## Testing on windows
 This should be possible but has not been documented
