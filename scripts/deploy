@@ -6,32 +6,50 @@ set -e
 # get directory that the script exists in
 cd "$( dirname "$0" )"
 
-if [[ $# -eq 1 ]] && [[ $1 == '--help' || $1 == '-h' ]] ; then
-    echo -e 'deploy USER@HOST\n  Install AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)'
-    exit 0
-fi
-if [[ $# -eq 1 ]] ; then
-    user_host=$1
-elif [[ $# -eq 0 ]] ; then
-    user_host='pi@amplipi.local'
-else
-    echo -e "Error: Too many arguments specified.\nUsage:\n"
-    echo -e 'deploy USER@HOST\n  Install AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)'
-    exit 1
-fi
+
+HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
+  usage: deploy [USER@HOST] [--mock-ctrl]\n
+\n
+  --mock-ctrl: Don't use actual amplipi controller, useful for testing without actual AmpliPi controller\n
+"
+
+user_host='pi@amplipi.local'
+user_host_set=false
+mock_ctrl='False'
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --mock-ctrl) mock_ctrl="True" ;;
+        -h|--help) echo -e $HELP; exit 0 ;;
+        *) if ! $user_host_set; then
+              user_host=$1
+              user_host_set=true
+          else
+              echo "Unknown parameter passed: $1";
+              echo -e $HELP;
+              exit 1
+          fi
+          ;;
+    esac
+    shift
+done
 
 read -p "Deploying amplipi project (development build) to $user_host, press any key to continue (Ctrl-C to quit)" -n 1
 
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
 
-# set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
-sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
+if [[ mock_ctrl == 'False' ]]; then
+  # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
+  sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
+fi
 
 poetry version prerelease
 poetry build
 
-sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py
+if [[ mock_ctrl == 'False' ]]; then
+  # revert changes to the local file
+  sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py
+fi
 
 # setup ssh access if necessary
 ssh -o PasswordAuthentication=no $user_host echo "AmpliPi has your SSH Key" || echo "Trying to copy your SSH id to AmpliPi, you will need to enter your AmpliPi's password below" && ssh-copy-id $user_host

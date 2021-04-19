@@ -39,15 +39,16 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 1. Connect a cmedia based, usb, 7.1 channel audio device to the pi. We have tested using this one: https://www.amazon.com/Vantec-NBA-200U-External-Channel-Adapter/dp/B004HXGJ3S
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well)
 1. Edit config/asound.conf. Uncomment the "Old Prototype" section at the bottom, and comment out the similar configuration above. This should be the configuration needed for the 7.1 channel USB audio card. Depending on the setup the card will either show up as #2 or #3. That needs to be changed on lines 27 and 32. Find the card # using ```aplay -l | grep "USB Sound Device"``` and edit those lines to include the correct #.
-1. use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file)
-1. over ssh connection, run ```scripts/run_debug_webserver --mock-ctrl```
+1. Execute ```scripts/deploy USER@HOSTNAME --mock-ctrl``` or ```scripts/deploy USER@IP_ADDRESS``` replacing USER and HOSTNAME/IP_ADDRESS with the appropriate values for the pi device
+1. Over ssh connection, run ```scripts/run_debug_webserver --mock-ctrl``` from the ```~/amplipi-dev``` directory.
 
 ## Testing on a pi 3+ compute module connected to an AmpliPi Controller
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
 1. All AmpliPi's have already been configured with ```scripts/bootstrap-pi```. For a fresh installation run that script. This should not be necessary. After this SSH is enabled from a fresh Raspberry Pi OS.
 1. Use ```scripts/deploy``` to deploy the latest software.
 1. Use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file).
-1. Over an ssh connection, run ```scripts/run_debug_webserver```
+1. [amplipi.local] should now be hosted on your network.
+1. For development. To run the amplipi server in debug mode Over an ssh connection, run ```scripts/run_debug_webserver``` it will run a debug webserver on [amplipi.local:5000]
 
 ## Testing on windows
 This should be possible but has not been documented
