@@ -6,8 +6,18 @@
 set -e
 
 # feel free to change these or better yet make them parameters
-FALLBACK_IP=192.168.0.101
-HOSTNAME=amplipi
+fallback_ip=192.168.0.101
+hostname=${2:-amplipi}
+diskpath=${1:-/dev/sda}
+
+only_list_disks=0
+if [[ $# < 1 ]]; then
+  printf "Usage: bootstrap_pi diskpath [hostname]\n\n"
+  printf "diskpath should be /dev/sdX.\n"
+  printf "This script will exit after connecting to the pi and listing disks.\n"
+  read -p "Press any key to continue" -n 1
+  only_list_disks=1
+fi
 
 # do all of this stuff in a temporary directory so it will be lost/erased on reboot
 pushd $(mktemp --directory)
@@ -26,6 +36,8 @@ done
 if [[ $inst == 1 ]]; then
   sudo apt update
   sudo apt install libusb-1.0-0-dev make gcc
+else
+  sudo -n true # request sudo password now to avoid confusion later
 fi
 
 make
@@ -36,6 +48,14 @@ echo  # newline
 read -p "Press any key and then plug in the AmpliPi" -n 1
 sudo ./rpiboot
 popd # usbboot
+
+if [[ $only_list_disks > 0 ]]; then
+  sleep 2 # TODO: how to determine the disk has been attached?
+  printf "\nListing available disks.\n"
+  printf "The pi should be the last /dev/sdX.\n\n"
+  lsblk
+  exit 0
+fi
 
 release=2020-08-20-raspios-buster-armhf-lite
 echo "Downloading and extracting Raspberry Pi OS"
@@ -50,14 +70,10 @@ mkdir $release
 pushd $release
 unzip $zip_file
 
-# TODO: allow user to specify disk device
-echo "Verifying /dev/sda is the only device"
-all_parts=$(echo /dev/sd* | wc -w) # all devices/partitions
-sda_parts=$(echo /dev/sda* | wc -w) # only sda's device and partitions (ie. a pi with an image typically shows /dev/sda /dev/sda1 /dev/sda2)
-if [[ $sda_parts -eq $all_parts ]] && [[ -e /dev/sda ]]; then
-  echo "Valid /dev/sda device found"
-elif [[ ! -e /dev/sda ]]; then
-  echo "ERROR: Expected device /dev/sda not found"
+if [[ -e $diskpath ]]; then
+  echo "Valid $diskpath device found"
+elif [[ ! -e $diskpath ]]; then
+  echo "ERROR: Expected device $diskpath not found"
   exit 1
 else
   echo "ERROR: Can't handle the devices/partitions detected, maybe dd failed or other devices were detected"
@@ -65,14 +81,14 @@ else
 fi
 
 echo "Copying the image to the AmpliPi. This takes about 5 minutes. Go get a coffee or something :)"
-sudo dd if=$release.img of=/dev/sda bs=4MiB
+sudo dd if=$release.img of=$diskpath bs=4MiB
 popd # $release
 
 echo "Editing some configuration"
 sudo mkdir -p /mnt/pi-boot
 sudo mkdir -p /mnt/pi-root
-sudo mount /dev/sda1 /mnt/pi-boot # boot partition
-sudo mount /dev/sda2 /mnt/pi-root # root filesystem partition
+sudo mount ${diskpath}1 /mnt/pi-boot # boot partition
+sudo mount ${diskpath}2 /mnt/pi-root # root filesystem partition
 pushd /mnt/pi-boot
 sudo touch ssh # enable SSH access
 popd # /mnt/pi-boot
@@ -118,7 +134,7 @@ slaac private
 # It is possible to fall back to a static IP if DHCP fails:
 define static profile
 profile static_eth0
-static ip_address=$FALLBACK_IP/24
+static ip_address=$fallback_ip/24
 static routers=192.168.0.1
 static domain_name_servers=192.168.1.1
 
@@ -128,10 +144,10 @@ fallback static_eth0
 " | sudo tee etc/dhcpcd.conf > /dev/null # enable dhcp with a backup static ip (no need to reprint to screen)
 
 # set the hostname to amplipi
-echo $HOSTNAME | sudo tee etc/hostname
+echo $hostname | sudo tee etc/hostname
 
 # add pi user manually to dialout group, avoiding an additional restart
-sed -i'' -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' etc/group
+sudo sed -i'' -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' etc/group
 
 # cleanup
 popd # /mnt/pi-root
