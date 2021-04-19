@@ -1,5 +1,5 @@
-#!/bin/bash
-# Instal AmpliPi from scratch on a new pi compute module
+#!/usr/bin/env bash
+# Install AmpliPi from scratch on a new pi compute module
 # This script is mainly intended for MicroNova employees to bringup Pi's. Your AmpliPi device should already have this configuration.
 
 # stop on errors
@@ -17,13 +17,23 @@ git clone --depth=1 https://github.com/raspberrypi/usbboot
 
 echo "Installing Raspberry Pi boot"
 pushd usbboot
-sudo apt update
-sudo apt install libusb-1.0-0-dev
+
+# install dependencies as necessary
+inst=0
+for dep in libusb-1.0-0-dev make gcc; do
+  dpkg-query -s $dep >/dev/null || inst=1
+done
+if [[ $inst == 1 ]]; then
+  sudo apt update
+  sudo apt install libusb-1.0-0-dev make gcc
+fi
+
 make
 
 echo -e "\nPlug in a usb cable from the service port to your computer. Keep AmpliPi Unplugged / Powered OFF for now."
 read -p "Press any key to continue" -n 1
-read -p "\nPress any key and then plug in the AmpliPi" -n 1
+echo  # newline
+read -p "Press any key and then plug in the AmpliPi" -n 1
 sudo ./rpiboot
 popd # usbboot
 
