@@ -1,6 +1,6 @@
 # Developing for the AmpliPi Project
 Thanks for considering developing for AmpliPi. We appreciate your support!
-Many of you will not have the luxery of having an AmpliPi system to test with, after all they are not currently available.
+Many of you will not have the luxury of having an AmpliPi system to test with, after all they are not currently available.
 ## Different development setups
 Below are a couple of different ways you can start developing for the AmpliPi without an actual system:
 * Mocked out audio and mocked out controller (needs: debian based system such as Pi or Ubuntu)
@@ -23,8 +23,8 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 * Actual system
 
   Supports:
-  * We interface development
-  * Api testing
+  * Web interface development
+  * API testing
   * Streams integration and testing
   * Group and zone configuration
   * Analog Audio input
@@ -44,11 +44,13 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 
 ## Testing on a pi 3+ compute module connected to an AmpliPi Controller
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
-1. All AmpliPi's have already been configured with ```scripts/bootstrap-pi```. For a fresh installation run that script. This should not be necessary. After this SSH is enabled from a fresh Raspberry Pi OS.
-1. Use ```scripts/deploy``` to deploy the latest software.
+1. All AmpliPi's have already been configured using `scripts/bootstrap-pi`.
+   For a fresh installation run that script from the host system, but this should not be necessary.
+   After this SSH is enabled from a fresh Raspberry Pi OS.
+1. Use `scripts/deploy` to deploy the latest software.
 1. Use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file).
 1. [amplipi.local] should now be hosted on your network.
-1. For development. To run the amplipi server in debug mode Over an ssh connection, run ```scripts/run_debug_webserver``` it will run a debug webserver on [amplipi.local:5000]
+1. For development. To run the amplipi server in debug mode Over an ssh connection, run `scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000]
 
 ## Testing on windows
 This should be possible but has not been documented
