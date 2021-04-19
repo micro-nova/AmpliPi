@@ -147,7 +147,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     tasks += p2([Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
     # serial port permission granting
     tasks.append(Task(f'Check serial permissions', f'groups'.split()).run())
-    tasks[-1].success = 'pi' in tasks[1].output
+    tasks[-1].success = 'pi' in tasks[-1].output
     if not tasks[-1].success:
       tasks += p2([Task(f"Giving pi serial permission. !!!AmpliPi will need to be restarted after this!!!", "sudo gpasswd -a pi dialout".split()).run()])
       return tasks
