@@ -38,6 +38,25 @@ read -p "Deploying amplipi project (development build) to $user_host, press any 
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
 
+# install dependencies as necessary
+inst=false
+for dep in python3-venv python3-pip; do
+  dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
+done
+if $inst; then
+  sudo apt update
+  sudo apt install python3-venv python3-pip
+fi
+
+# create a virtual environment and install pip dependencies
+if [[ ! -d ../venv ]]; then
+  mkdir ../venv
+  python3 -m venv ../venv
+fi
+source ../venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install poetry
+
 if ! $mock_ctrl; then
   # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
   sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
@@ -46,6 +65,9 @@ fi
 # Bump version and generate tar
 poetry version prerelease
 poetry build
+
+# exit virtual environment
+deactivate
 
 if ! $mock_ctrl; then
   # revert changes to the local file
