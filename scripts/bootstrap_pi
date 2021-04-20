@@ -27,7 +27,16 @@ current_dir="$(dirname "$(realpath ${BASH_SOURCE[0]})")"
 amplipi_config_dir="$(realpath $current_dir/../config)"
 
 # do all of this stuff in a temporary directory so it will be lost/erased on reboot
-pushd $(mktemp --directory)
+tmpdir=$(mktemp --directory)
+pushd $tmpdir
+
+cleanup () {
+  sudo umount /mnt/pi-boot 2>/dev/null || true # don't error if not mounted
+  sudo umount /mnt/pi-root 2>/dev/null || true
+  if [[ -d $tmpdir ]] ; then
+    rm -rf $tmpdir
+  fi
+}
 
 echo "Downloading Raspberry Pi boot"
 git clone --depth=1 https://github.com/raspberrypi/usbboot
@@ -112,15 +121,8 @@ sudo cp $amplipi_config_dir/boot_config.txt /mnt/pi-boot/config.txt
 
 # cleanup
 popd # /mnt/pi-root
-sudo umount /mnt/pi-boot
-sudo umount /mnt/pi-root
-if [[ -d $release ]] ; then
-  rm -r $release/*
-fi
-if [[ -d usbboot ]] ; then
-  rm -rf usbboot
-fi
 popd # /tmp/*
+cleanup
 
 echo "Bootstrapping successful. Please complete the following steps:
   1. Disconnect the service USB cable.
