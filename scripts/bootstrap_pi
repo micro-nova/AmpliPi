@@ -9,7 +9,7 @@ set -e
 hostname=${2:-amplipi}
 diskpath=${1:-/dev/sda}
 
-only_list_disks=0
+only_list_disks=false
 if [[ $# < 1 ]]; then
   printf "Usage: bootstrap_pi diskpath [hostname]\n"
   printf "  diskpath should be /dev/sdX.\n"
@@ -20,7 +20,7 @@ if [[ $# < 1 ]]; then
   printf "Re-run this script with the correct diskpath to bootstrap.\n"
   read -p "Press any key to continue" -n 1
   printf "\n"
-  only_list_disks=1
+  only_list_disks=true
 fi
 
 current_dir="$(dirname "$(realpath ${BASH_SOURCE[0]})")"
@@ -36,11 +36,11 @@ echo "Installing Raspberry Pi boot"
 pushd usbboot
 
 # install dependencies as necessary
-inst=0
+inst=false
 for dep in libusb-1.0-0-dev make gcc; do
-  dpkg-query -s $dep >/dev/null || inst=1
+  dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
 done
-if [[ $inst == 1 ]]; then
+if $inst; then
   sudo apt update
   sudo apt install libusb-1.0-0-dev make gcc
 else
@@ -56,7 +56,7 @@ read -p "Press any key and then plug in the AmpliPi" -n 1
 sudo ./rpiboot
 popd # usbboot
 
-if [[ $only_list_disks > 0 ]]; then
+if $only_list_disks; then
   sleep 2 # TODO: how to determine the disk has been attached?
   printf "\nListing available disks.\n"
   printf "The pi should be the last /dev/sdX.\n\n"
@@ -116,6 +116,9 @@ sudo umount /mnt/pi-boot
 sudo umount /mnt/pi-root
 if [[ -d $release ]] ; then
   rm -r $release/*
+fi
+if [[ -d usbboot ]] ; then
+  rm -rf usbboot
 fi
 popd # /tmp/*
 
