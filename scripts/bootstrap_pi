@@ -39,7 +39,7 @@ if [[ $inst == 1 ]]; then
   sudo apt update
   sudo apt install libusb-1.0-0-dev make gcc
 else
-  sudo -n true # request sudo password now to avoid confusion later
+  sudo echo "sudo permission granted"  # request sudo password now to avoid confusion later
 fi
 
 make
