@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Install AmpliPi software on a remote system
 
 set -e
@@ -15,22 +15,22 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
 
 user_host='pi@amplipi.local'
 user_host_set=false
-mock_ctrl='False'
+mock_ctrl=false
 while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --mock-ctrl) mock_ctrl="True" ;;
-        -h|--help) echo -e $HELP; exit 0 ;;
-        *) if ! $user_host_set; then
-              user_host=$1
-              user_host_set=true
-          else
-              echo "Unknown parameter passed: $1";
-              echo -e $HELP;
-              exit 1
-          fi
-          ;;
-    esac
-    shift
+  case $1 in
+    --mock-ctrl) mock_ctrl=true ;;
+    -h|--help) echo -e $HELP; exit 0 ;;
+    *) if ! $user_host_set; then
+          user_host=$1
+          user_host_set=true
+      else
+          echo "Unknown parameter passed: $1";
+          echo -e $HELP;
+          exit 1
+      fi
+      ;;
+  esac
+  shift
 done
 
 read -p "Deploying amplipi project (development build) to $user_host, press any key to continue (Ctrl-C to quit)" -n 1
@@ -38,15 +38,16 @@ read -p "Deploying amplipi project (development build) to $user_host, press any 
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
 
-if [[ mock_ctrl == 'False' ]]; then
+if ! $mock_ctrl; then
   # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
   sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
 fi
 
+# Bump version and generate tar
 poetry version prerelease
 poetry build
 
-if [[ mock_ctrl == 'False' ]]; then
+if ! $mock_ctrl; then
   # revert changes to the local file
   sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py
 fi

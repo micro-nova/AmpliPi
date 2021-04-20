@@ -50,6 +50,7 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
    Running the script without any arguments will print the instructions.
    After this step is done SSH is enabled from a fresh Raspberry Pi OS at [amplipi.local].
 1. Use `scripts/deploy` to deploy the latest software.
+   The pi must have access to the internet to successfully run this script.
 1. [amplipi.local] should now be hosted on your network.
 1. For development. To run the amplipi server in debug mode Over an ssh connection, run `scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000]
 

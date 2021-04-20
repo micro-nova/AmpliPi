@@ -210,7 +210,7 @@ def _stop_service(name: str) -> List[Task]:
   service = f'{name}.service'
   tasks = [Task(f'Check {service} status', f'systemctl is-active {service}'.split()).run()]
   tasks[0].success = True # when a task is failed the return code sets success=False
-  if 'active' in tasks[0].output:
+  if 'active' == tasks[0].output:
     tasks.append(Task(f'Stop {service}', f'sudo systemctl stop {service}'.split()).run())
   return tasks
 
