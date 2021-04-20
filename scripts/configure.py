@@ -157,7 +157,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # cleanup
   # shairport-sync install sets up a deamon we need to stop, remove it
   tasks += p2(_stop_service('shairport-sync'))
-  tasks += p2(_remove_service('shairport-sync'))
+  tasks += p2(_disable_service('shairport-sync'))
 
   return tasks
 
@@ -217,6 +217,11 @@ def _stop_service(name: str) -> List[Task]:
 def _remove_service(name: str) -> List[Task]:
   service = f'{name}.service'
   tasks = [Task(f'Remove {service}', f'sudo rm -f /lib/systemd/system/{service}'.split()).run()]
+  return tasks
+
+def _disable_service(name: str) -> List[Task]:
+  service = f'{name}.service'
+  tasks = [Task(f'Disable {service}', f'sudo systemctl disable {service}'.split()).run()]
   return tasks
 
 def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
