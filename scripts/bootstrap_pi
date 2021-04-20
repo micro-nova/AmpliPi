@@ -67,9 +67,12 @@ popd # usbboot
 
 if $only_list_disks; then
   sleep 2 # TODO: how to determine the disk has been attached?
-  printf "\nListing available disks.\n"
-  printf "The pi should be the last /dev/sdX.\n\n"
-  lsblk
+  printf "\nListing available disks sorted by time.\n"
+  printf "The pi should be the first /dev/sdX.\n\n"
+  for d in $(ls -t -1 /dev/sd?); do
+    lsblk -plndo name,size $d
+  done
+  cleanup
   exit 0
 fi
 
