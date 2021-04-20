@@ -44,9 +44,11 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 
 ## Testing on a pi 3+ compute module connected to an AmpliPi Controller
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
-1. All AmpliPi's have already been configured using `scripts/bootstrap-pi`.
-   For a fresh installation run that script from the host system, but this should not be necessary.
-   After this SSH is enabled from a fresh Raspberry Pi OS.
+1. For a fresh pi compute module, run `scripts/bootstrap-pi`.
+   All pi compute modules shipped with AmpliPi's have already been configured using this script,
+   so this step should not be necessary.
+   Running the script without any arguments will print the instructions.
+   After this step is done SSH is enabled from a fresh Raspberry Pi OS at [amplipi.local].
 1. Use `scripts/deploy` to deploy the latest software.
 1. Use the scripts/deploy to configure the pi (TODO: make this configure the pi's boot file).
 1. [amplipi.local] should now be hosted on your network.
