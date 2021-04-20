@@ -23,7 +23,8 @@ if [[ $# < 1 ]]; then
   only_list_disks=1
 fi
 
-amplipi_config_dir=$(dirname "${BASH_SOURCE[0]}/../config")
+current_dir="$(dirname "$(realpath ${BASH_SOURCE[0]})")"
+amplipi_config_dir="$(realpath $current_dir/../config)"
 
 # do all of this stuff in a temporary directory so it will be lost/erased on reboot
 pushd $(mktemp --directory)
