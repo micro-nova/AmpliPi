@@ -56,7 +56,19 @@ pushd $tmpdir
 
 # cleanup temp files on exit
 cleanup () {
-  if ! $debug; then
+  # check if an arg was passed to cleanup, in which case we assume this script was successful (trap handler doesn't pass any args)
+  if [[ -z "$1" ]]; then
+    success=false
+  else
+    success=true
+  fi
+  if ! $success; then
+    printf "\nbootstrap_pi failed\n"
+    if ! $debug; then
+      printf "  Try running again with --debug for more details.\n"
+    fi
+  fi
+  if ! $debug || $success; then
     sudo umount /mnt/pi-boot 2>/dev/null
     sudo umount /mnt/pi-root 2>/dev/null
     if [[ -d $tmpdir ]] ; then
@@ -195,4 +207,4 @@ echo "Bootstrapping successful. Please complete the following steps:
   3. Plug it back in to power it on.
   4. Run the deploy script to install the latest AmpliPi version.
 "
-cleanup
+cleanup "success"
