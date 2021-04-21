@@ -41,5 +41,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd ${SCRIPT_DIR}/..
 # use our virtual environment
 source venv/bin/activate
+# pass environment variables
+MOCK_CTRL=$mock_ctrl
+MOCK_STREAMS=$mock_streams
 ./venv/bin/python -m uvicorn --host 0.0.0.0 --port 5000 --interface wsgi amplipi.wsgi:application
 deactivate

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Install AmpliPi software on a remote system
 
 set -e
@@ -6,39 +6,86 @@ set -e
 # get directory that the script exists in
 cd "$( dirname "$0" )"
 
-# check if RPI_IP_ADDRESS is set
-if [[ -z "${RPI_IP_ADDRESS}" ]]; then
-  echo ""
-  echo "Please set RPI_IP_ADDRESS, for example:"
-  echo -e '\033[1;32mexport RPI_IP_ADDRESS=192.168.0.140\033[0m'
-  echo "for ssh key access"
-  echo -e '\033[1;32mexport RPI_IP_ADDRESS=pi@192.168.0.140\033[0m'
-  echo ""
-  exit 1
-fi
 
-echo "Deploying amplipi project (development build) to $RPI_IP_ADDRESS"
+HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
+  usage: deploy [USER@HOST] [--mock-ctrl]\n
+\n
+  --mock-ctrl: Don't use actual amplipi controller, useful for testing without actual AmpliPi controller\n
+"
+
+user_host='pi@amplipi.local'
+user_host_set=false
+mock_ctrl=false
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --mock-ctrl) mock_ctrl=true ;;
+    -h|--help) echo -e $HELP; exit 0 ;;
+    *) if ! $user_host_set; then
+          user_host=$1
+          user_host_set=true
+      else
+          echo "Unknown parameter passed: $1";
+          echo -e $HELP;
+          exit 1
+      fi
+      ;;
+  esac
+  shift
+done
+
+read -p "Deploying amplipi project (development build) to $user_host, press any key to continue (Ctrl-C to quit)" -n 1
 
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
 
-# set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
-sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
+# install dependencies as necessary
+inst=false
+for dep in python3-venv python3-pip; do
+  dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
+done
+if $inst; then
+  sudo apt update
+  sudo apt install python3-venv python3-pip
+fi
 
+# create a virtual environment and install pip dependencies
+if [[ ! -d ../venv ]]; then
+  mkdir ../venv
+  python3 -m venv ../venv
+fi
+source ../venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install poetry
+
+if ! $mock_ctrl; then
+  # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
+  sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
+fi
+
+# Bump version and generate tar
 poetry version prerelease
 poetry build
 
-sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py
+# exit virtual environment
+deactivate
+
+if ! $mock_ctrl; then
+  # revert changes to the local file
+  sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py
+fi
+
+# setup ssh access if necessary
+ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"' || echo "Trying to copy your SSH id to AmpliPi, you will need to enter your AmpliPi's password below" && ssh-copy-id $user_host
 
 # copy stuff to board
 latest_release=$(ls -d -t ../dist/amplipi-*.tar.gz | head --lines=1)
 release_name=$(echo $latest_release | sed -e 's@../dist/@@' -e 's/.tar.gz//')
-echo "Copying $latest_release to $RPI_IP_ADDRESS"
-scp $latest_release $RPI_IP_ADDRESS:
+echo "Copying $latest_release to $user_host"
+scp $latest_release $user_host:
 echo "Making development folder on pi"
-ssh $RPI_IP_ADDRESS "mkdir -p amplipi-dev"
-echo "Extracting folder into $RPI_IP_ADDRESS:~/amplipi-dev"
-ssh $RPI_IP_ADDRESS "cd amplipi-dev && tar -xvf ../${release_name}.tar.gz && cp -a ${release_name}/* . && rm -r ${release_name}"
+ssh $user_host "mkdir -p amplipi-dev"
+echo "Extracting folder into $user_host:~/amplipi-dev"
+ssh $user_host "cd amplipi-dev && tar -xvf ../${release_name}.tar.gz && cp -a ${release_name}/* . && rm -r ${release_name}"
 echo "Configuring installation"
-ssh $RPI_IP_ADDRESS "chmod +x amplipi-dev/scripts/configure.py"
-ssh $RPI_IP_ADDRESS "./amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater"
+ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
+ssh $user_host -t "./amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater"

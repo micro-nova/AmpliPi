@@ -64,8 +64,7 @@ class _Preamps:
       print('Mocking preamp connection')
     else:
       # Setup serial connection via UART pins - set I2C addresses for preamps
-      # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
-      ser = Serial ("/dev/ttyAMA0")
+      ser = Serial("/dev/serial0")
       ser.baudrate = 9600
       addr = 0x41, 0x10, 0x0D, 0x0A
       ser.write(addr)

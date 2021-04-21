@@ -1,8 +1,11 @@
 # AmpliPi Setup
 Implementation of the AmpliPi Controller on the Raspberry Pi
 ## Configuration (Compute Module)
-Download Raspberry Pi OS from [here](https://www.raspberrypi.org/downloads/raspberry-pi-os/) we are currently using the "Raspberry Pi OS (32-bit) with desktop and recommended software"
-Follow steps on [rpi](https://www.raspberrypi.org/documentation/hardware/computemodule/cm-emmc-flashing.md) to flash the eMMC on the device
+### From Ubuntu Linux
+We have a script to configure the compute module as an AmpliPi
+    ./scripts/bootstrap_pi
+Then use the deploy script to put the AmpliPi software on the compute module
+    ./scripts/deploy pi@amplipi.local
 ## Configuration (RPi 4)
 Download and install Raspberry Pi Imager from [here.](https://www.raspberrypi.org/downloads/) We are currently using v1.4
 Using this program with an SD card reader, install "Raspberry Pi OS (32-bit) onto the SD card.

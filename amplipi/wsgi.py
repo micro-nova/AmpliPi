@@ -22,5 +22,9 @@ This initializes the webapplication found in app.py. Used as a helper to nginx's
 """
 
 import amplipi.app
+import os
 
-application = amplipi.app.create_app(mock_ctrl=True) # TODO: this was needed for testing!
+mock_ctrl = bool(os.environ.get('MOCK_CTRL', 'False'))
+mock_streams = bool(os.environ.get('MOCK_STREAMS', 'False'))
+
+application = amplipi.app.create_app()
