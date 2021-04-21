@@ -122,8 +122,10 @@ print_disks () {
   done
 }
 
-if ! $diskpath_set; then
-  sleep 2 # TODO: how to determine the disk has been attached?
+
+sleep 2 # TODO: how to determine the disk has been attached?
+if ! [[ -e $diskpath ]]; then
+  printf "\n$diskpath is not available\n"
   print_disks
   cleanup
 fi
