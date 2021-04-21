@@ -229,17 +229,23 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
   tasks = []
   tasks.append(Task(f'Start {service}', multiargs=[
     f'sudo systemctl restart {name}'.split(),
-    'sleep 2'.split(), # wait a bit, so initial failures are detected before is-active is called
+    'sleep 3'.split(), # wait a bit, so initial failures are detected before is-active is called
   ]).run())
-  if tasks[0].success:
+  if tasks[-1].success:
     # we need to check if the service is running
     tasks.append(Task(f'Check {service} Status', f'systemctl is-active {service}'.split()).run())
-    tasks[1].success = 'active' in tasks[1].output
-    if test_url and tasks[1].success:
+    tasks[-1].success = 'active' in tasks[-1].output and not 'inactive' in tasks[-1].output
+    if test_url and tasks[-1].success:
       time.sleep(1) # give the server time to start
       tasks.append(_check_url(test_url))
       # We also need to enable the service so that it starts on startup
       tasks.append(Task(f'Enable {service}', f'sudo systemctl enable {service}'.split()).run())
+    elif 'amplipi' == name:
+      tasks[-1].output += "\ntry checking this service failure using 'scripts/run_debug_webserver' on the system"
+      tasks.append(Task(f'Check {service} Status', f'systemctl status {service}'.split()).run())
+    elif 'amplipi-updater' in name:
+      tasks[-1].output += "\ntry debugging this service failure using 'scripts/run_debug_updater' on the system"
+      tasks.append(Task(f'Check {service} Status', f'systemctl status {service}'.split()).run())
   return tasks
 
 def _create_service(name: str, config: str) -> List[Task]:
@@ -319,6 +325,8 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   tasks += p2(_configure_authbind())
   tasks += p2(_create_service('amplipi', _web_service(env['user'], env['base_dir'])))
   tasks += p2(_start_service('amplipi', test_url='http://0.0.0.0'))
+  if not tasks[-1].success:
+    return tasks
   tasks += p2([_check_version('http://0.0.0.0/api')])
   tasks += p2(_create_service('amplipi-updater', _update_service(env['user'], env['base_dir'])))
   if restart_updater:
