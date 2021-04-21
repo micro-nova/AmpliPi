@@ -6,10 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AmpliPi - Home Audio</title>
   <link rel="shortcut icon" href="{{ url_for('static', filename='imgs/amplipi-small-logo.png') }}">
-  <!-- TODO: add css and js with offline failover like this: <link rel="stylesheet" href="cdn.css" onerror="this.onerror=null;this.href='local.css';" />-->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
-  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'>
-  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css"
+                onerror="this.onerror=null;this.href='static/css/libs/normalize/5.0.0/normalize.min.css';">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'
+                onerror="this.onerror=null;this.href='static/css/libs/font-awesome/5.15.1/all.min.css';">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'
+                onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='imgs/amplipi-small-logo.png') }}">
 </head>
@@ -195,9 +197,19 @@
   </div>
 </div>
 <!-- partial -->
+  <!-- jQuery JS CDN -->
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+  <!-- jQuery JS local fallback -->
+  <script>window.jQuery || document.write('<script src="static/js/libs/jquery/3.5.1/jquery.min.js"><\/script>')</script>
+  <!-- jQuery UI JS CDN -->
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+  <!-- jQuery JS local fallback -->
+  <script>(window.jQuery.ui === undefined) && document.write('<script src="static/js/libs/jqueryui/1.12.1/jquery-ui.min.js"><\/script>')</script>
+  <!-- Bootstrap JS CDN -->
   <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'></script>
+  <!-- Bootstrap JS local fallback -->
+  <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.min.js"><\/script>')</script>
+  <!-- Local application script -->
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
