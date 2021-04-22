@@ -31,7 +31,6 @@ import json
 from collections import OrderedDict
 
 DEBUG_API = False
-PROFILE_API = True
 
 # start in the web directory (where everythins is layed out for flask)
 import os
@@ -41,29 +40,6 @@ generated_dir = os.path.abspath('web/generated')
 
 app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
 app.api = None # TODO: assign an unloaded API here to get auto completion / linting
-if PROFILE_API:
-  from flask_debugtoolbar import DebugToolbarExtension
-  from flask_debugtoolbar_lineprofilerpanel.profile import line_profile
-  import flask_debugtoolbar_lineprofilerpanel.panels
-  app.debug = True
-  app.config['SECRET_KEY'] = 'silly key for the profiler'
-  app.config['DEBUG_TB_PROFILER_ENABLED'] = True
-  # Specify the debug panels you want
-  app.config['DEBUG_TB_PANELS'] = [
-      'flask_debugtoolbar.panels.versions.VersionDebugPanel',
-      'flask_debugtoolbar.panels.timer.TimerDebugPanel',
-      'flask_debugtoolbar.panels.headers.HeaderDebugPanel',
-      'flask_debugtoolbar.panels.request_vars.RequestVarsDebugPanel',
-      'flask_debugtoolbar.panels.template.TemplateDebugPanel',
-      'flask_debugtoolbar.panels.logger.LoggingPanel',
-      'flask_debugtoolbar.panels.profiler.ProfilerDebugPanel',
-      # Add the line profiling
-      'flask_debugtoolbar_lineprofilerpanel.panels.LineProfilerPanel'
-  ]
-else:
-  # make the profile decorator do nothing
-  def line_profile(func):
-    return func
 
 @app.route('/generated/<path:filename>')
 def generated(filename=''):
@@ -127,10 +103,6 @@ def code_response(resp):
   else:
     return jsonify(resp), 200
 
-@line_profile
-def code_response_prof(resp):
-  return code_response(resp)
-
 # sources
 
 @app.route('/api/sources', methods=['GET'])
@@ -188,7 +160,7 @@ def get_group(group):
 
 @app.route('/api/groups/<int:group>', methods=['PATCH'])
 def set_group(group):
-  return code_response_prof(app.api.set_group(id=group, **request.get_json()))
+  return code_response(app.api.set_group(id=group, **request.get_json()))
 
 @app.route('/api/groups/<int:group>', methods=['DELETE'])
 def delete_group(group):
@@ -267,7 +239,6 @@ def doc():
 
 @app.route('/')
 @app.route('/<int:src>')
-@line_profile
 def view(src=0):
   s = app.api.status
   return render_template('index.html.j2', cur_src=src, sources=s['sources'],
@@ -287,7 +258,9 @@ def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.js
     app.api = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file)
   return app
 
-if PROFILE_API:
+if DEBUG_API:
+  app.debug = True
+  from flask_debugtoolbar import DebugToolbarExtension
   toolbar = DebugToolbarExtension(app)
 
 if __name__ == '__main__':
