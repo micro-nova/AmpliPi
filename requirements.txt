@@ -10,3 +10,5 @@ uvicorn
 aiofiles
 pydantic
 python-multipart
+flask_debugtoolbar_lineprofilerpanel # depends on line_profiler which needs to be installed manually
+ipython

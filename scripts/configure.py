@@ -229,7 +229,7 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
   tasks = []
   tasks.append(Task(f'Start {service}', multiargs=[
     f'sudo systemctl restart {name}'.split(),
-    'sleep 3'.split(), # wait a bit, so initial failures are detected before is-active is called
+    'sleep 5'.split(), # wait a bit, so initial failures are detected before is-active is called
   ]).run())
   if tasks[-1].success:
     # we need to check if the service is running
