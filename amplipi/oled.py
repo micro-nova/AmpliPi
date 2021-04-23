@@ -22,19 +22,18 @@ from luma.oled.device import ssd1309
 from PIL import ImageFont
 
 # +--------------------------------------------------+
-# �               AmpliPI OLED class                 �
-# �    Provides OLED display for AmpliPi system      �
+#                  AmpliPI OLED class
+#       Provides OLED display for AmpliPi system
 # +--------------------------------------------------+
 class AmpliPi_OLED():
 
   # ================
   #  initialization
   # ================
-  def __init__(self):
+  def __init__(self, mock=False):
     print("Initializing AmpliPi_OLED display")
 
     # Connection for AmpliPi controller board -> OLED board
-    #
     # Pi GPIO #   AmpliPi sch net   OLED board
     # -------------------------------------
     #   43        SPI2_CE0_N        CS
@@ -42,9 +41,26 @@ class AmpliPi_OLED():
     #   40        SPI2_MISO         RST
     #   41        SPI2_MOSI         SDA
     #   42        SPI2_SCLK         SCL
+    #
+    # Connection for Compute Module PoE Board -> OLED board
+    # Pi GPIO #   PI1 Header pin #  OLED board
+    # -------------------------------------
+    #   8         24/P_CE0_N        CS
+    #   25        22/P6             DC
+    #   9         21/P_MISO         RST
+    #   10        19/P_MOSI         SDA
+    #   11        23/P_SCLK         SCL
+    #   3.3V                        VCC
+    #   Ground                      GND
 
-    # For SPI2 CS0, we would want port=2, device=0
-    self.device = ssd1309(spi(port=2, device=0, gpio_DC=39, gpio_RST=40))
+    if mock:
+      # For SPI0 CS0, we would want port=0, device=0
+      self.device = ssd1309(spi(port=0, device=0, gpio_DC=25, gpio_RST=9))
+    else:
+      # For SPI2 CS0, we would want port=2, device=0
+      self.device = ssd1309(spi(port=2, device=0, gpio_DC=39, gpio_RST=40))
+
+    self.running = True
 
     # thread to periodically update display with stats
     gather_stats_thread = threading.Thread(target=self.__gather_stats, daemon=True)
@@ -83,8 +99,14 @@ class AmpliPi_OLED():
   def __display_update(self):
 
     # get fonts
-    item_font  = ImageFont.truetype("AndaleMono.ttf", 10)
-    tiny_font  = ImageFont.truetype("AndaleMono.ttf", 8)
+    font = "fonts/AndaleMono.ttf"
+    try:
+      item_font  = ImageFont.truetype(font, 10)
+      tiny_font  = ImageFont.truetype(font, 8)
+    except:
+      print("Failed to load font")
+      self.running = False
+      return
 
     # variables to store screen status
     system_stats_strings = ["", "", "", ""]
@@ -184,8 +206,7 @@ class AmpliPi_OLED():
   # =====================
   def __gather_stats(self):
 
-    # run forever
-    while(True):
+    while(self.running):
 
       # get IP address
       # ni.ifaddresses('eth0')
@@ -197,7 +218,7 @@ class AmpliPi_OLED():
         ip_address = "IP:   Disconnected"
 
       # get CPU utilization % and temperature
-      cpu_temp_float = psutil.sensors_temperatures(fahrenheit=False)['cpu-thermal'][0].current
+      cpu_temp_float = psutil.sensors_temperatures(fahrenheit=False)['cpu_thermal'][0].current
       cpu_utilization = "CPU:  %.1f%%  %.1f\xb0C" % (psutil.cpu_percent(), cpu_temp_float)
 
       # get RAM
