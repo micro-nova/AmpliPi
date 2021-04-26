@@ -33,6 +33,8 @@ import amplipi.rt as rt
 import amplipi.streams as streams
 import amplipi.utils as utils
 
+from typing import List
+
 _DEBUG_API = False # print out a graphical state of the api after each call
 
 class Api:
@@ -511,7 +513,7 @@ class Api:
       return 100
 
   @utils.save_on_success
-  def create_group(self, name, zones):
+  def create_group(self, name: str, zones: List[int]):
     """Creates a new group with a list of zones
 
     Refer to the returned system state to obtain the id for the newly created group
@@ -540,7 +542,7 @@ class Api:
     return group
 
   @utils.save_on_success
-  def delete_group(self, id):
+  def delete_group(self, id: int):
     """Deletes an existing group"""
     try:
       i, _ = utils.find(self.status['groups'], id)
