@@ -29,6 +29,8 @@ import pprint
 import os # files
 import time
 
+import threading
+
 import amplipi.rt as rt
 import amplipi.streams as streams
 import amplipi.utils as utils
@@ -184,6 +186,17 @@ class Api:
         api.write(self._api_template.render(self.status))
     except Exception as e:
       print(f'Error updating API spec: {e}')
+
+  def postpone_save(self):
+    """ Saves the system state in the future
+
+    This attempts to avoid excessive saving and the resulting delays by only saving 60 seconds after the last change
+    """
+    if not self.save_timer:
+      self.save_timer = threading.Timer(60.0, self.save)
+    else:
+      self.save_timer.cancel()
+    self.save_timer.start()
 
   def visualize_api(self, prev_status=None):
     """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
