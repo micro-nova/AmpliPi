@@ -119,8 +119,8 @@ class _Preamps:
     self.preamps[preamp_addr][reg] = data
     # TODO: need to handle volume modifying mute state in mock
     if self.bus is not None:
-      time.sleep(0.001)
       try:
+        time.sleep(0.001) # space out sequential calls to avoid bus errors
         self.bus.write_byte_data(preamp_addr, reg, data)
       except Exception:
         time.sleep(0.001)
