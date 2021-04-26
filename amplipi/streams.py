@@ -22,6 +22,7 @@ a consistent interface.
 """
 
 import os
+import sys
 import subprocess
 import time
 
@@ -591,7 +592,7 @@ class InternetRadio:
     # Start audio via runvlc.py
     song_info_path = f'{src_config_folder}/currentSong'
     log_file_path = f'{src_config_folder}/log'
-    inetradio_args = [python3, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
+    inetradio_args = [sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
     print(f'running: {inetradio_args}')
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
