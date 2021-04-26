@@ -132,7 +132,9 @@ def save_on_success(func):
   def inner(self, *args, **kwargs):
     result = func(self, *args, **kwargs)
     if result is None:
-      self.save()
+      # TODO: call postpone_save instead to reduce the load on a request
+      #self.save()
+      pass
     return result
   return inner
 
