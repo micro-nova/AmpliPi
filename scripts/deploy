@@ -33,7 +33,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 read -p "Deploying amplipi project (development build) to $user_host, press any key to continue (Ctrl-C to quit)" -n 1
-
+echo "" # newline
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
 
