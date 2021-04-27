@@ -40,12 +40,22 @@ read -p "Deploying amplipi project (development build) to $user_host, press any 
 
 # install dependencies as necessary
 inst=false
-for dep in python3-venv python3-pip; do
-  dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
-done
-if $inst; then
-  sudo apt update
-  sudo apt install python3-venv python3-pip
+if [[ $(which dpkg) ]]; then
+  for dep in python3-venv python3-pip; do
+    dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
+  done
+  if $inst; then
+    sudo apt update
+    sudo apt install python3-venv python3-pip
+  fi
+else
+  which pip || echo "pip needs to be installed to use this script" && inst=true
+  if ! $inst; then
+    pip install venv || echo "Failed to install python virtual environments, you may need to install this manually" && inst=true
+  fi
+  if $inst; then
+    exit 1;
+  fi
 fi
 
 # create a virtual environment and install pip dependencies
