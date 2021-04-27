@@ -18,18 +18,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FRONT_PANEL_H_
-#define FRONT_PANEL_H_
+#ifndef POWER_BOARD_H_
+#define POWER_BOARD_H_
 
 #include "port_defs.h"
 
-#define ON (true)
-#define OFF (false)
+void enablePowerBoard();
+void enable12V();
+void write_ADC(uint8_t data);
+int read_ADC();
 
-void delay(int a);
-void setAudioPower(bool on);
-
-void enableFrontPanel();
-void updateFrontPanel(bool on);
-
-#endif /* FRONT_PANEL_H_ */
+#endif /* POWER_BOARD_H_ */

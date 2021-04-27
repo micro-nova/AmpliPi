@@ -38,7 +38,21 @@ typedef enum {
 	REG_VOL_CH4 = 8,
 	REG_VOL_CH5 = 9,
 	REG_VOL_CH6 = 10,
-	NUM_REGS = 11
+	REG_POWER_GOOD = 11,
+	REG_FAN_STATUS = 12,
+	REG_EXTERNAL_GPIO = 13,
+	REG_LED_OVERRIDE = 14,
+	REG_HV1_VOLTAGE = 16,
+	REG_HV2_VOLTAGE = 17,
+	REG_HV1_TEMP = 18,
+	REG_HV2_TEMP = 19,
+	REG_VERSION_MAJOR = 250,
+	REG_VERSION_MINOR = 251,
+	REG_GIT_HASH_27_20 = 252,
+	REG_GIT_HASH_19_12 = 253,
+	REG_GIT_HASH_11_04 = 254,
+	REG_GIT_HASH_STATUS = 255,
+	NUM_REGS = 25
 } CmdReg;
 
 extern const Pin ch_src[NUM_CHANNELS][NUM_SRCS];
@@ -50,6 +64,10 @@ extern const I2CReg ch_left[NUM_CHANNELS];
 extern const I2CReg ch_right[NUM_CHANNELS];
 extern const I2CReg front_panel;
 extern const I2CReg front_panel_dir;
+extern const I2CReg pwr_temp_mntr_gpio;
+extern const I2CReg pwr_temp_mntr_olat;
+extern const I2CReg pwr_temp_mntr_dir;
+extern const I2CReg adc_dev;
 
 #define ALL_OUTPUT (0)
 

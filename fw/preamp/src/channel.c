@@ -42,9 +42,9 @@ bool isOn(int ch){
 	return readPin(ch_mute[ch]);
 }
 
-static inline bool isMuted(int ch){
-	return !isOn(ch);
-}
+//static inline bool isMuted(int ch){
+//	return !isOn(ch);
+//}
 
 // returns true if any ch unmuted (HI)
 bool anyOn(){
@@ -56,9 +56,9 @@ bool anyOn(){
 	return on;
 }
 
-static inline bool allMuted(){
-	return !anyOn();
-}
+//static inline bool allMuted(){
+//	return !anyOn();
+//}
 
 // pull all pins LOW to standby all amps
 void standby(){
@@ -82,6 +82,7 @@ void unstandby(){
 }
 
 bool instandby(){
+	// Checks if any of the channels are in standby
 	uint8_t ch;
 	bool in_stby = false;
 	for(ch = 0; ch < NUM_CHANNELS; ch++){
@@ -101,16 +102,17 @@ static inline void quick_unmute(int ch){
 // pull pin LOW to mute
 void mute(int ch){
 	quick_mute(ch);
-	updateFrontPanel();
+	updateFrontPanel(true);
 }
 
 // pull pin HI to unmute
 void unmute(int ch){
 	quick_unmute(ch);
-	updateFrontPanel();
+	updateFrontPanel(true);
 }
 
 void writeVolume(int ch, uint8_t vol){
+	// Writes volume level to the volume ICs
 	if (!instandby()){ // we can't write to the volume registers if they are disabled
 		writeI2C2(ch_left[ch], vol);
 		writeI2C2(ch_right[ch], vol);
@@ -118,6 +120,7 @@ void writeVolume(int ch, uint8_t vol){
 }
 
 static void restoreVolumes() {
+	// restores the volume state when returning from standby
 	uint8_t ch;
 	for (ch = 0; ch < NUM_CHANNELS; ch++) {
 		writeVolume(ch, volumes[ch]);
@@ -125,6 +128,7 @@ static void restoreVolumes() {
 }
 
 void initChannels(){
+	// initialize each channel's volume state (does not write to volume control ICs)
 	uint8_t ch;
 	for (ch = 0; ch < NUM_CHANNELS; ch++) {
 		volumes[ch] = DEFAULT_VOL;
@@ -135,6 +139,7 @@ void initChannels(){
 }
 
 void initSources(){
+	// initialize each source's analog/digital state
 	uint8_t src;
 	for (src=0; src < NUM_SRCS; src++) {
 		configInput(src, IT_DIGITAL);
@@ -159,10 +164,12 @@ void setChannelVolume(int ch, uint8_t vol){
 }
 
 static inline void clearConnection(int src, int ch){
+	// Removes a source/channel dependency
 	clearPin(ch_src[ch][src]);
 }
 
 static inline void addConnection(int src, int ch){
+	// Connects a source to a channel
 	setPin(ch_src[ch][src]);
 }
 
@@ -184,7 +191,7 @@ void connectChannel(int src, int ch){
 	// mute the channel during the switch to avoid an audible pop
 	bool was_unmuted = isOn(ch);
 	if (was_unmuted) {
-		quick_mute(ch); // mute() has extra logic to disable amps and audio power
+		quick_mute(ch);
 	}
 
 	uint8_t asrc;
@@ -197,7 +204,7 @@ void connectChannel(int src, int ch){
 	}
 
 	if (was_unmuted) {
-		quick_unmute(ch); // unmute() has extra logic to disable amps and audio power
+		quick_unmute(ch);
 	}
 
 }
