@@ -57,6 +57,40 @@ bool readPin(Pin pp){
 	}
 }
 
+int readI2C2(I2CReg r){
+
+	uint8_t data;
+
+	// wait if I2C2 is busy
+	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY));
+
+	// setup to write start, addr, subaddr
+	I2C_TransferHandling(I2C2, r.dev, 1, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
+
+	// wait for transmit flag
+	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET);
+
+	// send register address
+	I2C_SendData(I2C2, r.reg);
+
+	// wait for transfer complete flag
+	while(I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET);
+
+	// this is the actual read transfer setup
+	I2C_TransferHandling(I2C2, r.dev, 1, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
+
+	// wait until we get the rx data then read it out
+	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET);
+	data = I2C_ReceiveData(I2C2);
+
+	// wait for stop condition to get sent then clear it
+	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET);
+	I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
+
+	// Return data that was read
+	return data;
+}
+
 void writeI2C2(I2CReg r,  uint8_t data)
 {
 	// wait if I2C2 is busy
@@ -75,4 +109,19 @@ void writeI2C2(I2CReg r,  uint8_t data)
 	// wait for stop flag to be sent and then clear it
 	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET);
 	I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
+}
+
+void writeI2C1(uint8_t data)
+{
+	// Expanded transfer handling that makes more sense as a slave transmitter
+	uint32_t tmpreg = 0;
+	uint8_t Number_Bytes = 1;
+	tmpreg = I2C1->CR2;
+	tmpreg &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_AUTOEND | I2C_CR2_RD_WRN | I2C_CR2_START | I2C_CR2_STOP));
+	tmpreg |= (uint32_t)((((uint32_t)Number_Bytes << 16 ) & I2C_CR2_NBYTES) | \
+	            (uint32_t)I2C_SoftEnd_Mode | (uint32_t)I2C_Generate_Start_Write);
+	I2C1->CR2 = tmpreg;
+
+	// send subaddress and data
+	I2C_SendData(I2C1, data);
 }

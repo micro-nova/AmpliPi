@@ -25,6 +25,7 @@
 
 bool audio_power_on = false;
 
+// Simple counter used for time-sensitive operations
 void delay(int a) {
 	volatile int i,j;
 	for (i=0 ; i < a ; i++){
@@ -33,9 +34,22 @@ void delay(int a) {
 	return;
 }
 
+// Enables/disables the 9V power supply along with the green LED
 void setAudioPower(bool on){
+	uint8_t msg = 0;
+	uint8_t ap_mask = 0x01;
+
 	audio_power_on = on;
-	updateFrontPanel();
+	msg = readI2C2(pwr_temp_mntr_gpio);
+
+	if(on == 0){ // Set EN 9V to Audio Power ON/OFF
+		msg &= ~(ap_mask);
+	} else if(on == 1){
+		msg |= ap_mask;
+	}
+
+	writeI2C2(pwr_temp_mntr_olat, msg);
+	updateFrontPanel(!on);
 	if(on == 1)
 	{
 		delay(125000); // need time for volume IC to turn on
@@ -45,19 +59,22 @@ void setAudioPower(bool on){
 void enableFrontPanel(){
 	// init the i2c->gpio chip on the led board
 	// this sets all IO pins to output
-	// this ic controlls the 5V digital USB and 9V analog preamp power supplies
-	// this ic also controls all the LEDs on the front of the box
+	// this ic controls all the LEDs on the front of the box
 	writeI2C2(front_panel_dir, ALL_OUTPUT);
 }
 
-void updateFrontPanel(){
-	// bit 0: 5V usb power (inverted, off is '1')
-	// bit 1: 9V analog power (not inverted, off is '0')
+// Updates the LEDs on the front panel depending on the system state
+void updateFrontPanel(bool red_on){
+	// bit 0: Green "System On" LED
+	// bit 1: Red "System Standby" LED
 	// bits 2-7: channels 1 to 6 (in that corresponding order)
 	uint8_t bits = 0;
+	if(audio_power_on == true){
+		red_on = false; // Turn off the RED LED when the GREEN LED is going to be on
+	}
 
-	bits |= 0; // 5V usb power always on
-	bits |= audio_power_on ? 2 : 0;
+	bits |= audio_power_on ? 1 : 0; // Green LED if the system is not in standby
+	bits |= red_on ? 2 : 0;         // Red LED for general power. Blinks while waiting for an I2C address from the controller board
 
 	uint8_t ch;
 	for(ch = 0; ch < NUM_CHANNELS; ch++){
