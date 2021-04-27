@@ -345,6 +345,17 @@ def print_task_results(tasks : List[Task]) -> None:
   for task in tasks:
     print(task)
 
+def fix_file_props(env) -> List[Task]:
+  tasks = []
+  p = platform.platform().lower()
+  if 'linux' in p:
+    tasks += [Task('Make scripts executable', multiargs=[
+      f"sudo chmod +x {env['base_dir']}/scripts/*".split(),
+      f"sudo chmod +x {env['base_dir']}/streams/*.bash".split(),
+      f"sudo chmod +x {env['base_dir']}/streams/*.sh".split(),
+    ]).run()]
+  return tasks
+
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   tasks = [Task('setup')]
@@ -363,6 +374,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False, pro
   progress(tasks)
   if failed():
     return False
+  tasks += fix_file_props(env)
   if os_deps:
     tasks += _install_os_deps(env, progress, _os_deps)
     if failed():
