@@ -166,7 +166,7 @@ def _install_python_deps(env: dict, deps: List[str]):
   if len(deps) > 0:
     last_dir = os.path.abspath(os.curdir)
     os.chdir(env['script_dir'])
-    tasks += [Task('install python packages', 'sh install_python_deps.bash'.split()).run()]
+    tasks += [Task('install python packages', 'bash install_python_deps.bash'.split()).run()]
     os.chdir(last_dir)
   return tasks
 
