@@ -18,12 +18,10 @@ info:
     name: GPL
     url: http://amplipi.local/license
 servers:
-  - url: 'http://amplipi.local/api'
-    description: Local AmpliPi Controller
-  - url: 'http://amplipi.local:5000/api'
-    description: Local Debug AmpliPi Controller
-  - url: 'http://localhost:5000/api'
-    description: Test AmpliPi Controller
+  - url: '/api'
+    description: AmpliPi Controller
+  - url: ':5000/api'
+    description: Debug AmpliPi Controller
 tags:
 - name: status
   description: The status and configuration of the entire system, including source, zones, groups, and streams.
