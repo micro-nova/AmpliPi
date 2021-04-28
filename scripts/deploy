@@ -36,7 +36,15 @@ read -p "Deploying amplipi project (development build) to $user_host, press any 
 echo "" # newline
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
-
+# check if amplipi is found
+host=$(echo $user_host | sed 's/.*@//')
+echo 'Checking if $host is found'
+if ! ping -c2 $host; then
+  echo ""
+  echo "Error: Unable to find $host"
+  echo "  On older versions of windows (< 10) you may need to install an MDNS server like Bonjour: https://support.apple.com/kb/DL999?locale=en_US"
+  exit 1;
+fi
 # install dependencies as necessary
 inst=false
 python='python'
