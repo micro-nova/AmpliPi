@@ -559,6 +559,7 @@ paths:
                 type: pandora
                 user: test@micro-nova.com
                 password: s79sDDkjf
+                station: '4473713754798410236'
                 info: {}
                 status: disconnected
         '400':
@@ -569,11 +570,13 @@ paths:
             schema:
               $ref: '#/components/schemas/Stream'
             examples:
-              Add Matt and Kim Radio:
+              Add Matt and Kim Pandora Station:
+                summary: Station is the number at the end of the Pandora URL for a station
                 value:
                   name: Matt and Kim Radio
                   type: pandora
                   user: test@micro-nova.com
+                  station: '4473713754798410236'
                   password: s79sDDkjf
               Add Micronova Airplay:
                 value:
