@@ -20,8 +20,6 @@ info:
 servers:
   - url: '/api'
     description: AmpliPi Controller
-  - url: ':5000/api'
-    description: Debug AmpliPi Controller
 tags:
 - name: status
   description: The status and configuration of the entire system, including source, zones, groups, and streams.
