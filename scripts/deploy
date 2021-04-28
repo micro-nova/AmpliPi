@@ -41,6 +41,7 @@ echo "" # newline
 inst=false
 python='python'
 if which dpkg; then
+  # since dpkg exists lets use it to install python dependencies as system dependencies
   for dep in python3-venv python3-pip; do
     dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
   done
@@ -50,8 +51,14 @@ if which dpkg; then
   fi
   python='python3' # older version of ubuntu still use python3 to differentiate from python version 2
 else
+  if which python3; then # prefer python3 in an attempt to avoid using python2
+    python='python3'
+  elif ! which python; then
+    echo "python needs to be installed to use this script"
+    exit 1;
+  fi
   if ! which pip; then
-    echo "pip needs to be installed to use this script";
+    echo "pip needs to be installed to use this script"
     exit 1;
   fi
   if ! $python -m pip install virtualenv; then
