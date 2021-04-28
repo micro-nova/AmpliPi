@@ -571,7 +571,6 @@ paths:
               $ref: '#/components/schemas/Stream'
             examples:
               Add Matt and Kim Pandora Station:
-                summary: Station is the number at the end of the Pandora URL for a station
                 value:
                   name: Matt and Kim Radio
                   type: pandora
@@ -615,7 +614,9 @@ paths:
                   url: http://classicalking.streamguys1.com/king-fm-aac-iheart
                   logo: https://i.iheart.com/v3/re/assets/images/7bcfd87a-de3e-47d0-b896-be0ed38c9d74.png
         description: Post the necessary fields for the API to create a new stream.
-      description: Create a new stream.
+      description: |
+        Create a new stream.
+        - For Pandora the station is the number at the end of the Pandora URL for a station
   /streams/{streamId}:
     get:
       summary: Get Stream Info by Stream ID
@@ -1080,12 +1081,25 @@ components:
           enum:
             - pandora
             - shairport
+            - dlna
+            - internetradio
+            - spotify
         info:
           type: object
-          description: Additional info about the current audio playing from the stream
+          description: Additional info about the current audio playing from the stream (generated during playback)
         status:
           type: string
-          description: connected/playing status of the stream
+          description: connected/playing status of the stream (generated during source connection)
+        user:
+          type: string
+          description: account username/email (only needed for pandora)
+        password:
+          type: string
+          description: account password (only needed for pandora)
+        station:
+          type: integer
+          format: int64
+          description: Pandora station id (found at the end of a pandora station's url)
     Zone:
       title: Zone
       type: object
