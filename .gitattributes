@@ -2,3 +2,4 @@
 # force the executable to use linux line endings so there aren't any issues when they are copied over
 scripts/* text eol=lf
 streams/* text eol=lf
+fw/*.sh text eol=lf

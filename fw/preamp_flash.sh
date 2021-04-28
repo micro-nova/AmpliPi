@@ -18,8 +18,7 @@ set -e
 # get directory that the script exists in
 cd "$( dirname "$0" )"
 
-stm32flash_installed=$(sudo apt list --installed 2> /dev/null | grep stm32flash -c)
-if [ 0 -eq "${stm32flash_installed}" ]; then
+if ! which stm32flash; then
   echo "installing stm32flash"
   sudo apt update && sudo apt install -y stm32flash
 else
