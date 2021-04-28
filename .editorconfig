@@ -3,24 +3,18 @@
 # top-most EditorConfig file
 root = true
 
-# newline ending every file
+# Every file
 [*]
-insert_final_newline = true
 
-# matches multiple files with brace expansion notation
 # Set default charset
-[*.{py,md,bash,sh,js,css,html,json,yaml}]
 charset = utf-8
-# remove any extraneous whitespace
-trim_trailing_whitespace = true
-
-# cleanup scripts with no extensions
-[{scripts/*,config/*}]
-charset = utf-8
-# remove any extraneous whitespace
-trim_trailing_whitespace = true
 
 # 2 space indentation
-[*.py]
-indent_style = space
 indent_size = 2
+indent_style = space
+
+# Ensure a newline is at the end of every file
+insert_final_newline = true
+
+# Remove any extraneous whitespace
+trim_trailing_whitespace = true
