@@ -1,7 +1,24 @@
 # Developing for the AmpliPi Project
 Thanks for considering developing for AmpliPi. We appreciate your support!
-Many of you will not have the luxury of having an AmpliPi system to test with, after all they are not currently available.
+
+## Testing remotely for an AmpliPi Controller
+1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
+1. Make changes with your favorite editor, we suggest vscode
+1. Use `scripts/deploy` to deploy the latest software.
+   The pi must have access to the internet to successfully run this script.
+1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
+1. Change directory to the development root `~/amplipi-dev` (this is where deploy put the software)
+1. To run the amplipi server in debug mode Over an ssh connection, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
+1. Restart amplipi service (it was stopped by `./scripts/run_debug_webserver`) with `sudo systemctl restart amplipi`.
+
+## Testing locally on an AmpliPi Controller over SSH
+1. Make a git checkout at `~/amplipi-dev` using `git checkout https://github.com/micro-nova/AmpliPi ~/amplipi-dev` (you may need to delete `amplipi-dev` if it already exists)
+1. Change directory to amplipi-dev `cd ~/amplipi-dev`
+1. Make changes using your favorite editor
+1. To run the amplipi server in debug mode, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
+
 ## Different development setups
+Many of you will not have the luxury of having an AmpliPi system to test with, after all they are not currently available.
 Below are a couple of different ways you can start developing for the AmpliPi without an actual system:
 * Mocked out audio and mocked out controller (needs: debian based system such as Pi or Ubuntu)
 
@@ -42,17 +59,13 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 1. Execute ```scripts/deploy USER@HOSTNAME --mock-ctrl``` or ```scripts/deploy USER@IP_ADDRESS``` replacing USER and HOSTNAME/IP_ADDRESS with the appropriate values for the pi device
 1. Over ssh connection, run ```scripts/run_debug_webserver --mock-ctrl``` from the ```~/amplipi-dev``` directory.
 
-## Testing on a pi 3+ compute module connected to an AmpliPi Controller
-1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
+## Installing AmpliPi from scratch on a Pi Compute Module
 1. For a fresh pi compute module, run `scripts/bootstrap-pi`.
    All pi compute modules shipped with AmpliPi's have already been configured using this script,
    so this step should not be necessary.
    Running the script without any arguments will print the instructions.
    After this step is done SSH is enabled from a fresh Raspberry Pi OS at [amplipi.local].
-1. Use `scripts/deploy` to deploy the latest software.
-   The pi must have access to the internet to successfully run this script.
 1. [amplipi.local] should now be hosted on your network.
-1. For development. To run the amplipi server in debug mode Over an ssh connection, run `scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000]
 
 ## Testing on windows
 This should be possible but has not been documented
