@@ -181,6 +181,7 @@ pushd /mnt/pi-root
 
 # set the hostname to amplipi
 echo $hostname | sudo tee etc/hostname
+sudo sed -i'' -e "s/raspberrypi/$hostname/" etc/hosts # need to change hostname reference too (if you don't it causes a message to be reported after every sudo)
 
 # add pi user manually to dialout group, avoiding an additional restart
 sudo sed -i'' -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' etc/group
