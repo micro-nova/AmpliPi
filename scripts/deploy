@@ -59,9 +59,7 @@ if which dpkg; then
   fi
   python='python3' # older version of ubuntu still use python3 to differentiate from python version 2
 else
-  if which python3; then # prefer python3 in an attempt to avoid using python2
-    python='python3'
-  elif ! which python; then
+ if ! which python; then
     echo "python needs to be installed to use this script"
     exit 1;
   fi
