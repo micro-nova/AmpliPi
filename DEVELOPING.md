@@ -17,6 +17,16 @@ Thanks for considering developing for AmpliPi. We appreciate your support!
 1. Make changes using your favorite editor
 1. To run the amplipi server in debug mode, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
 
+## Additional setup and notes for testing on Windows
+
+__You will need to install the following:__
+- git (you will need git bash)
+- vscode (only recommended)
+- python 3 and setup the python path (step 6 in the following guide) https://- com/kb/how-to-install-python-3-windows
+
+__Notes:__
+- The latest Windows 10 supports mDNS which we use to easily ssh into amplipi, however we had some problems using WiFi so we suggest a ethernet connection on windows.
+
 ## Different development setups
 Many of you will not have the luxury of having an AmpliPi system to test with, after all they are not currently available.
 Below are a couple of different ways you can start developing for the AmpliPi without an actual system:
@@ -66,7 +76,3 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
    Running the script without any arguments will print the instructions.
    After this step is done SSH is enabled from a fresh Raspberry Pi OS at [amplipi.local].
 1. [amplipi.local] should now be hosted on your network.
-
-## Testing on windows
-This should be possible but has not been documented
-TODO: investigation and testing needed
