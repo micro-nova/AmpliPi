@@ -43,6 +43,7 @@ if ! ping -c2 $host; then
   echo ""
   echo "Error: Unable to find $host"
   echo "  On older versions of windows (< 10) you may need to install an MDNS server like Bonjour: https://support.apple.com/kb/DL999?locale=en_US"
+  echo "  Some users on windows 10 have reported MDNS does not work over Wifi. Try using a wired connection."
   exit 1;
 fi
 # install dependencies as necessary
