@@ -38,7 +38,7 @@ echo "" # newline
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
 # check if amplipi is found
 host=$(echo $user_host | sed 's/.*@//')
-echo 'Checking if $host is found'
+echo "Checking if $host is found"
 if ! ping -c2 $host; then
   echo ""
   echo "Error: Unable to find $host"
@@ -60,7 +60,8 @@ if which dpkg; then
   fi
   python='python3' # older version of ubuntu still use python3 to differentiate from python version 2
 else
- if ! which python; then
+  echo ""
+  if ! which python; then
     echo "python needs to be installed to use this script"
     exit 1;
   fi
@@ -76,6 +77,7 @@ fi
 # create a virtual environment and install pip dependencies
 if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate
 ]]; then
+  echo  ""
   echo "Setting up virtual environment"
   mkdir -p ../venv
   $python -m venv ../venv
