@@ -106,7 +106,17 @@ if ! $mock_ctrl; then
 fi
 
 # setup ssh access if necessary
-ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"' || echo "Trying to copy your SSH id to AmpliPi, you will need to enter your AmpliPi's password below" && ssh-copy-id $user_host
+if ! ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"'; then
+  # By default ssh only searches the default keys, lets make sure one of them exist
+  if [[ ! -f ~/.ssh/id_ed25519 ]] && [[ ! -f ~/.ssh/id_ecdsa ]] && [[ ! -f ~/.ssh/id_rsa ]]; then
+    echo ""
+    echo "Generating new ssh key for amplipi"
+    ssh-keygen -P '' -N '' -t ed25519 -f ~/.ssh/id_ed25519
+  fi
+  echo ""
+  echo "Trying to copy your SSH id to AmpliPi, you will need to enter your AmpliPi's password below"
+  ssh-copy-id $user_host
+fi
 
 # copy stuff to board
 latest_release=$(ls -d -t ../dist/amplipi-*.tar.gz | head --lines=1)
