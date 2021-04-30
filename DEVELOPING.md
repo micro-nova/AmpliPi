@@ -19,7 +19,7 @@ Thanks for considering developing for AmpliPi. We appreciate your support!
 
 ## Developing on an AmpliPi Controller remotely using vscode
 
-See our [remote vscode guide](docs/VSCode_RemoteDev.md) for more information.
+See our [remote vscode guide](docs/vscode_remote_dev.md) for more information.
 
 ## Additional setup and notes for testing on Windows
 
