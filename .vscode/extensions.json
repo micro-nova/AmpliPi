@@ -3,6 +3,6 @@
     "ms-python.python",
     "editorconfig.editorconfig",
     "42crunch.vscode-openapi",
-    "ms-vscode-remote.vscode-remote-extensionpack",
+    "ms-vscode-remote.remote-ssh",
   ]
 }

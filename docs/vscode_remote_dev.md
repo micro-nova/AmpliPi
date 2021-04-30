@@ -20,9 +20,14 @@ For information on the Git extension, check out this [link.](https://code.visual
 
 ![image](imgs/remote_dev/green_button.jpg)
 
-6. From the list that now opens at the top of VS Code, choose “Remote-SSH: Connect to Host…” or whatever your connection preference is. You can type pi@amplipi.local, or select the existing amplipi.local if you went through the previous effort of adding it as an SSH connection.
+   From the list that now opens at the top of VS Code, choose "Remote-SSH: Connect to Host…" to open the remote in a new window or "Remote-SSH: Connect Current Window to Host" to open it in the current window.
+   You can type pi@amplipi.local, or select the existing amplipi.local if you went through the previous effort of adding it as an SSH connection.
 
-7. Once the new window/tab opens, VS Code will take some time to initialize the new environment. After the initialization, you can go to the file explorer on the left side bar (or hit Ctrl+Shift+E).
+6. Once the new window/tab opens, you'll need to enter the Pi's password if you haven't previously copied an SSH key it.
+   The default is password is `raspberry`.
+
+7. The first time you connect VS Code will take some time to initialize the new environment.
+   After the initialization, you can go to the file explorer on the left side bar (or hit Ctrl+Shift+E).
 
 ![image](imgs/remote_dev/vs_explorer.jpg)
 
