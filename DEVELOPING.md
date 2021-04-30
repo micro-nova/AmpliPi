@@ -22,7 +22,7 @@ Thanks for considering developing for AmpliPi. We appreciate your support!
 __You will need to install the following:__
 - git (you will need git bash)
 - vscode (only recommended)
-- python 3 and setup the python path (step 6 in the following guide) https://- com/kb/how-to-install-python-3-windows
+- python 3 and setup the python path (step 6 in the following guide) https://phoenixnap.com/kb/how-to-install-python-3-windows
 
 __Notes:__
 - The latest Windows 10 supports mDNS which we use to easily ssh into amplipi, however we had some problems using WiFi so we suggest a ethernet connection on windows.
