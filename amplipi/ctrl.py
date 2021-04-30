@@ -285,7 +285,10 @@ class Api:
     """
     if 'stream=' in input:
       stream_id = int(input.split('=')[1])
-      return self.streams[stream_id]
+      if stream_id in self.streams:
+        return self.streams[stream_id]
+      else:
+        return None
     else:
       return None
 
@@ -575,6 +578,11 @@ class Api:
   def delete_stream(self, id):
     """Deletes an existing stream"""
     try:
+      # if input is connected to a source change that input to nothing
+      for src in self.status['sources']:
+        if 'stream=' in src['input'] and src['input'].split('=')[1] == str(id):
+          self.set_source(src['id'], input='')
+      # actually delete it
       del self.streams[id]
       i, _ = utils.find(self.status['streams'], id)
       if i is not None:
