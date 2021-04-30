@@ -6,7 +6,6 @@ set -e
 # get directory that the script exists in
 cd "$( dirname "$0" )"
 
-
 HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
   usage: deploy [USER@HOST] [--mock-ctrl]\n
 \n
@@ -34,28 +33,62 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 read -p "Deploying amplipi project (development build) to $user_host, press any key to continue (Ctrl-C to quit)" -n 1
-
+echo "" # newline
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
-
+# check if amplipi is found
+host=$(echo $user_host | sed 's/.*@//')
+echo "Checking if $host is found"
+if ! ping -c2 $host; then
+  echo ""
+  echo "Error: Unable to find $host"
+  echo "  On older versions of windows (< 10) you may need to install an MDNS server like Bonjour: https://support.apple.com/kb/DL999?locale=en_US"
+  echo "  Some users on windows 10 have reported MDNS does not work over Wifi. Try using a wired connection."
+  exit 1;
+fi
 # install dependencies as necessary
 inst=false
-for dep in python3-venv python3-pip; do
-  dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
-done
-if $inst; then
-  sudo apt update
-  sudo apt install python3-venv python3-pip
+python='python'
+if which dpkg; then
+  # since dpkg exists lets use it to install python dependencies as system dependencies
+  for dep in python3-venv python3-pip; do
+    dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
+  done
+  if $inst; then
+    sudo apt update
+    sudo apt install python3-venv python3-pip
+  fi
+  python='python3' # older version of ubuntu still use python3 to differentiate from python version 2
+else
+  echo ""
+  if ! which python; then
+    echo "python needs to be installed to use this script"
+    exit 1;
+  fi
+  if ! which pip; then
+    echo "pip needs to be installed to use this script"
+    exit 1;
+  fi
+  if ! $python -m pip install virtualenv; then
+    echo "Failed to install python virtual environments, you may need to install this manually"
+    exit 1;
+  fi
 fi
-
 # create a virtual environment and install pip dependencies
-if [[ ! -d ../venv ]]; then
-  mkdir ../venv
-  python3 -m venv ../venv
+if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate
+]]; then
+  echo  ""
+  echo "Setting up virtual environment"
+  mkdir -p ../venv
+  $python -m venv ../venv
 fi
-source ../venv/bin/activate
-python3 -m pip install --upgrade pip
-python3 -m pip install poetry
+if [[ -e ../venv/Scripts/activate ]]; then
+  source ../venv/Scripts/activate
+else
+  source ../venv/bin/activate
+fi
+$python -m pip install --upgrade pip
+$python -m pip install poetry
 
 if ! $mock_ctrl; then
   # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
@@ -75,7 +108,17 @@ if ! $mock_ctrl; then
 fi
 
 # setup ssh access if necessary
-ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"' || echo "Trying to copy your SSH id to AmpliPi, you will need to enter your AmpliPi's password below" && ssh-copy-id $user_host
+if ! ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"'; then
+  # By default ssh only searches the default keys, lets make sure one of them exist
+  if [[ ! -f ~/.ssh/id_ed25519 ]] && [[ ! -f ~/.ssh/id_ecdsa ]] && [[ ! -f ~/.ssh/id_rsa ]]; then
+    echo ""
+    echo "Generating new ssh key for amplipi"
+    ssh-keygen -P '' -N '' -t ed25519 -f ~/.ssh/id_ed25519
+  fi
+  echo ""
+  echo "Trying to copy your SSH id to AmpliPi, you will need to enter your AmpliPi's password below"
+  ssh-copy-id $user_host
+fi
 
 # copy stuff to board
 latest_release=$(ls -d -t ../dist/amplipi-*.tar.gz | head --lines=1)
@@ -88,4 +131,4 @@ echo "Extracting folder into $user_host:~/amplipi-dev"
 ssh $user_host "cd amplipi-dev && tar -xvf ../${release_name}.tar.gz && cp -a ${release_name}/* . && rm -r ${release_name}"
 echo "Configuring installation"
 ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
-ssh $user_host -t "./amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater"
+ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater"

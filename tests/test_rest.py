@@ -251,6 +251,16 @@ def test_delete_stream(client, sid):
     if other_sid != sid:
       assert find(jrv['streams'], other_sid) != None
 
+@pytest.mark.parametrize('sid', base_stream_ids())
+def test_delete_connected_stream(client, sid):
+  """ Delete a connected stream and make sure it gets disconnected from the source it is connected to"""
+  rv = client.patch('/api/sources/0', json={'input': f'stream={sid}'})
+  assert rv.status_code == HTTPStatus.OK
+  rv = client.delete('/api/streams/{}'.format(sid))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json() # get the system state returned
+  assert '' == jrv['sources'][0]['input']
+
 # Non-Mock client used - run this test on the Pi
 # _live tests will be excluded from GitHub testing
 @pytest.mark.parametrize('cmd', ['play', 'pause', 'stop', 'next', 'love', 'ban', 'shelve'])

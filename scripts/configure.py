@@ -166,7 +166,7 @@ def _install_python_deps(env: dict, deps: List[str]):
   if len(deps) > 0:
     last_dir = os.path.abspath(os.curdir)
     os.chdir(env['script_dir'])
-    tasks += [Task('install python packages', 'sh install_python_deps.bash'.split()).run()]
+    tasks += [Task('install python packages', 'bash install_python_deps.bash'.split()).run()]
     os.chdir(last_dir)
   return tasks
 
@@ -345,6 +345,19 @@ def print_task_results(tasks : List[Task]) -> None:
   for task in tasks:
     print(task)
 
+def fix_file_props(env, progress) -> List[Task]:
+  tasks = []
+  p = platform.platform().lower()
+  if 'linux' in p:
+    needs_exec = ['scripts/*', '*/*.bash', '*/*.sh']
+    make_exec = set()
+    for d in needs_exec:
+      make_exec.update(glob.glob(f"{env['base_dir']}/{d}"))
+    cmd = f"sudo chmod +x {' '.join(make_exec)}"
+    tasks += [Task('Make scripts executable', cmd.split()).run()]
+  progress(tasks)
+  return tasks
+
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   tasks = [Task('setup')]
@@ -361,6 +374,9 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False, pro
     tasks[0].output = str(env)
     tasks[0].success = True
   progress(tasks)
+  if failed():
+    return False
+  tasks += fix_file_props(env, progress)
   if failed():
     return False
   if os_deps:

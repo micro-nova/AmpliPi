@@ -105,6 +105,10 @@ def code_response(resp):
 
 # sources
 
+@app.route('/api/sources', methods=['GET'])
+def get_sources():
+  return {'sources' : app.api.get_state()['sources']}
+
 @app.route('/api/sources/<int:src>', methods=['GET'])
 def get_source(src):
   # TODO: add get_X capabilities to underlying API?
@@ -119,6 +123,10 @@ def set_source(src):
   return code_response(app.api.set_source(id=src, **request.get_json()))
 
 # zones
+
+@app.route('/api/zones', methods=['GET'])
+def get_zones():
+  return {'zones': app.api.get_state()['zones']}
 
 @app.route('/api/zones/<int:zone>', methods=['GET'])
 def get_zone(zone):
@@ -137,6 +145,10 @@ def set_zone(zone):
 @app.route('/api/group', methods=['POST'])
 def create_group():
   return code_response(app.api.create_group(**request.get_json()))
+
+@app.route('/api/groups', methods=['GET'])
+def get_groups():
+  return {'groups' : app.api.get_state()['groups']}
 
 @app.route('/api/groups/<int:group>', methods=['GET'])
 def get_group(group):
@@ -160,6 +172,10 @@ def delete_group(group):
 def create_stream():
   print('creating stream from {}'.format(request.get_json()))
   return code_response(app.api.create_stream(**request.get_json()))
+
+@app.route('/api/streams', methods=['GET'])
+def get_streams():
+  return {'streams' : app.api.get_state()['streams']}
 
 @app.route('/api/streams/<int:sid>', methods=['GET'])
 def get_stream(sid):
@@ -187,6 +203,10 @@ def exec_command(sid, cmd):
 def create_preset():
   print('creating preset from {}'.format(request.get_json()))
   return code_response(app.api.create_preset(request.get_json()))
+
+@app.route('/api/presets', methods=['GET'])
+def get_presets():
+  return {'presets' : app.api.get_state()['presets']}
 
 @app.route('/api/presets/<int:pid>', methods=['GET'])
 def get_preset(pid):
