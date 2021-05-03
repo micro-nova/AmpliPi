@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 #
 # Requirements:
-# pip: adafruit-circuitpython-rgb-display pillow
+# pip: adafruit-circuitpython-rgb-display pillow numpy
+# apt: libatlas-base-dev
 #
 # TODO:
 # Clear screen on exit/failure or provide some other indication that the
@@ -14,6 +15,8 @@ import cProfile
 import digitalio
 import pwmio
 import RPi.GPIO as GPIO
+import random
+import socket
 import subprocess
 import time
 
@@ -29,6 +32,7 @@ import psutil             # CPU, RAM, etc.
 
 
 profile = False
+update_period = 0.5       # Display update rate in seconds
 
 # Configuration for extra TFT pins:
 cs_pin = digitalio.DigitalInOut(board.CE0) #board.D43
@@ -60,6 +64,14 @@ iface_name = "eth0"
 #  2  100.0  26.3 ms Fails on breadboard setup
 spi_baud = 50 * 10**6
 
+# Dummy info until AmpliPi integration
+sources = ('Michael\'s AmpliPi Spotify', 'Matt and Kim Radio', 'test', '123456789 123456789 123456789 1234567890')
+random.seed(0)
+volumes = [random.randint(-79,0) for i in range(36)]
+volumes[0] = 0
+volumes[-1] = -79
+volumes[4] = -40
+volumes[5] = -40
 
 # Convert number range to color gradient (min=green, max=red)
 def gradient(num, min_val=0, max_val=100):
@@ -138,16 +150,16 @@ led.duty_cycle = 32000
 # Get fonts
 fontname = 'DejaVuSansMono'
 try:
-  font = ImageFont.truetype(fontname, 18)
+  font = ImageFont.truetype(fontname, 14)
 except:
-  print("Failed to load font")
+  print('Failed to load font')
 
 # Create a blank image for drawing.
 # Swap height/width to rotate it to landscape
 # TODO: Reduce size if possible to save CPU time
 height = display.width
 width = display.height
-image = Image.new("RGB", (width, height)) # Fill entire screen with drawing space
+image = Image.new('RGB', (width, height)) # Fill entire screen with drawing space
 draw = ImageDraw.Draw(image)
 draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0)) # Black background
 
@@ -155,15 +167,15 @@ if profile:
   pr = cProfile.Profile()
   pr.enable()
 
-first_frame = True
+frame_num = 0
 frame_times = []
 cpu_load = []
-while first_frame == True:
+while frame_num < 10:
   start = time.time()
 
   # Get stats
   try:
-    ip_str = ni.ifaddresses(iface_name)[ni.AF_INET][0]['addr']
+    ip_str = ni.ifaddresses(iface_name)[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
   except:
     ip_str = 'Disconnected'
 
@@ -187,37 +199,60 @@ while first_frame == True:
   disk_str2 = f'{disk_used:.2f}/{disk_total:.2f} GB'
 
   # Render text
-  cw = 11  # Character width
-  ch = 20 # Character height
+  cw = 8    # Character width
+  ch = 16   # Character height
   draw.rectangle((0, 0, width, height), fill=0) # Clear image
-  draw.text((0*cw, 0*ch), 'IP:',      font=font, fill="#FFFFFF")
-  draw.text((0*cw, 1*ch), 'CPU:',     font=font, fill="#FFFFFF")
-  draw.text((0*cw, 2*ch), 'Mem:',     font=font, fill="#FFFFFF")
-  draw.text((0*cw, 3*ch), 'Disk:',    font=font, fill="#FFFFFF")
+  draw.text((0*cw, 0*ch), 'IP:',      font=font, fill='#FFFFFF')
+  draw.text((0*cw, 1*ch), 'CPU:',     font=font, fill='#FFFFFF')
+  draw.text((0*cw, 2*ch), 'Mem:',     font=font, fill='#FFFFFF')
+  draw.text((0*cw, 3*ch), 'Disk:',    font=font, fill='#FFFFFF')
 
-  draw.text((6*cw, 0*ch), ip_str,     font=font, fill="#FFFFFF")
+  draw.text((6*cw, 0*ch), ip_str,     font=font, fill='#FFFFFF')
   draw.text((6*cw, 1*ch), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
   draw.text((6*cw, 2*ch), ram_str1,   font=font, fill=gradient(ram_pcnt))
   draw.text((6*cw, 3*ch), disk_str1,  font=font, fill=gradient(disk_pcnt))
 
   # BCM2837 is rated for [-40, 85] C
+  # For now show green for anything below room temp
   draw.text((13*cw, 1*ch), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
-  draw.text((13*cw, 2*ch), ram_str2,  font=font, fill="#FFFFFF")
-  draw.text((13*cw, 3*ch), disk_str2, font=font, fill="#FFFFFF")
+  draw.text((13*cw, 2*ch), ram_str2,  font=font, fill='#FFFFFF')
+  draw.text((13*cw, 3*ch), disk_str2, font=font, fill='#FFFFFF')
 
-  # Update display
+  # Show source input names
+  draw.text((0*cw, 4*ch), 'Source inputs:', font=font, fill='#FFFFFF')
+  draw.line(((0, 5*ch), (width-1, 5*ch)), fill='#FFFFFF')
+  draw.text((0*cw, 5*ch), sources[0], font=font, fill='#F0E68C')
+  draw.text((0*cw, 6*ch), sources[1], font=font, fill='#F0E68C')
+  draw.text((0*cw, 7*ch), sources[2], font=font, fill='#F0E68C')
+  draw.text((0*cw, 8*ch), sources[3], font=font, fill='#F0E68C')
+
+  # Volume bars: center line
+  # Spacing: 7 pixels per bar, 36 bars max = 252 pixels.
+  #          1 pixel between each bar (within groups of 6) = 30 pixels
+  #          6 pixels between each group of 6 = 30 pixels.
+  #          4 extra pixels on both sides = 8 pixels.
+  #
+  # First bar = 4+3-1 = 6
+  bar_h = 80  # Height of the volume bars
+  #bar_y = height - bar_h
+  for i in range(36):
+    x = 6 + 8*i + 5*int(i/6)
+    draw.line(((x, height-1), (x, height-bar_h)), fill='#999999')
+    draw.line(((x-3, height-bar_h-volumes[i]), (x+3, height-bar_h-volumes[i])), fill='#0096ff')
+
+  # Send the updated image to the display
   display.image(image)
   end = time.time()
-  time.sleep(2.0 - (end-start))
   frame_times.append(end - start)
-  print(f'frame time: {sum(frame_times)/len(frame_times):.3f}s, {sum(cpu_load)/len(cpu_load):.1f}%')
-  # Original:       frame time: 1.191s, 26.8%
-  # Install Numpy:  frame time: 1.179s, 26.6%
-  # Reduce height:  frame time: 0.409s, 28.4%
-  # 1s rate:        frame time: 0.438s, 16.3%
+  #print(f'frame time: {sum(frame_times)/len(frame_times):.3f}s, {sum(cpu_load)/len(cpu_load):.1f}%')
+  sleep_time = update_period - (end-start)
+  if sleep_time > 0:
+    time.sleep(sleep_time)
+  else:
+    print('Warning: frame took too long')
 
   if profile:
-    first_frame = False
+    frame_num = frame_num + 1
 
 if profile:
   pr.disable()
