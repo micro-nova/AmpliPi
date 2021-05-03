@@ -23,6 +23,7 @@ zones, groups and streams.
 import json
 from copy import deepcopy
 import deepdiff
+import jinja2
 
 import pprint
 import os # files
@@ -132,6 +133,11 @@ class Api:
       print('using default config')
       self.status = deepcopy(self._DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
+
+    # load the template engine for the API documentation so the api can be updated based on the current configuration
+    self._template_env = jinja2.Environment(loader=jinja2.PackageLoader('amplipi', '../docs/templates'))
+    self._api_template = self._template_env.get_template('amplipi_api.yaml.j2')
+
     self.status['version'] = utils.detect_version()
     # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
     if not 'groups' in self.status:
@@ -168,6 +174,14 @@ class Api:
       self.config_file_valid = True
     except Exception as e:
       print('Error saving config: {}'.format(e))
+    API_DOC = 'amplipi_api.yaml'
+    try:
+      # update the api documentation (TODO: only do this if theere is a significant change)
+      # this simplifies the interface to the user since each of the example id's are relative to the current configuration
+      with open(f"{utils.get_folder('docs')}/{API_DOC}", 'w') as api:
+        api.write(self._api_template.render(self.status))
+    except Exception as e:
+      print(f'Error updating API spec: {e}')
 
   def visualize_api(self, prev_status=None):
     """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
