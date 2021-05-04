@@ -178,7 +178,7 @@ class Api:
     try:
       # update the api documentation (TODO: only do this if theere is a significant change)
       # this simplifies the interface to the user since each of the example id's are relative to the current configuration
-      with open(f"{utils.get_folder('docs')}/{API_DOC}", 'w') as api:
+      with open(f"{utils.get_folder('web/generated')}/{API_DOC}", 'w') as api:
         api.write(self._api_template.render(self.status))
     except Exception as e:
       print(f'Error updating API spec: {e}')
