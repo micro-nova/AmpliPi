@@ -501,12 +501,14 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(zones) > 0 %}
           examples:
-          {% for z in zones %}
+{% endif %}
+{% for z in zones %}
             {{ z['name'] }}:
               value: {{ z['id'] }}
               summary: {{ z['name'] }}
-          {% endfor %}
+{% endfor %}
       responses:
         '200':
           description: Zone Found
@@ -538,12 +540,14 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(zones) > 0 %}
           examples:
-          {% for z in zones %}
+{% endif %}
+{% for z in zones %}
             {{ z['name'] }}:
               value: {{ z['id'] }}
               summary: {{ z['name'] }}
-          {% endfor %}
+{% endfor %}
       operationId: patch-zone
       responses:
         '200':
@@ -664,7 +668,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(groups) > 0 %}
           examples:
+{% endif %}
 {% for g in groups %}
             {{ g['name'] }}:
               value: {{ g['id'] }}
@@ -700,7 +706,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(groups) > 0 %}
           examples:
+{% endif %}
 {% for g in groups %}
             {{ g['name'] }}:
               value: {{ g['id'] }}
@@ -753,7 +761,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(groups) > 0 %}
           examples:
+{% endif %}
 {% for g in groups %}
             {{ g['name'] }}:
               value: {{ g['id'] }}
@@ -923,7 +933,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(streams) > 0 %}
           examples:
+{% endif %}
 {% for s in streams %}
             {{ s['name'] }} - {{ s['type'] }}:
               value: {{ s['id'] }}
@@ -962,7 +974,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(streams) > 0 %}
           examples:
+{% endif %}
 {% for s in streams %}
             {{ s['name'] }} - {{ s['type'] }}:
               value: {{ s['id'] }}
@@ -1026,7 +1040,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(streams) > 0 %}
           examples:
+{% endif %}
 {% for s in streams %}
             {{ s['name'] }} - {{ s['type'] }}:
               value: {{ s['id'] }}
@@ -1055,7 +1071,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(streams) > 0 %}
           examples:
+{% endif %}
 {% for s in streams %}
             {{ s['name'] }} - {{ s['type'] }}:
               value: {{ s['id'] }}
@@ -1252,7 +1270,9 @@ paths:
           schema:
             type: integer
             minimum: 0
+{% if len(presets) > 0 %}
           examples:
+{% endif %}
 {% for p in presets %}
             {{ p['name'] }}:
               value: {{ p['id'] }}
@@ -1300,6 +1320,9 @@ paths:
             type: integer
             minimum: 0
           examples:
+{% if len(presets) > 0 %}
+          examples:
+{% endif %}
 {% for p in presets %}
             {{ p['name'] }}:
               value: {{ p['id'] }}
