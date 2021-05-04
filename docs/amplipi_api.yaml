@@ -1,0 +1,1565 @@
+openapi: 3.0.0
+info:
+  title: AmpliPi
+  description: | # The links in the description below are tested to work with redoc and may not be portable
+    This is the AmpliPi home audio system's control server.
+
+    # Configuration
+
+    This web interface allows you to control and configure your AmpliPi device.
+    At the moment the API is the only way to configure the AmpliPi.
+
+    ## Try it out!
+
+    __Using this web interface to test API commands:__
+
+      1. Go to an API request
+      1. Pick one of the examples
+      2. Edit it
+      3. Press try button, it will send an API command/request to the AmpliPi
+
+    __Try using the get status:__
+
+      1. Go to [Status -> Get Status](#get-/)
+      2. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
+
+    __Try creating a new group:__
+
+      1. Go to [Group -> Create Group](#post-/group)
+      2. Click Example
+      3. Edit the zones and group name
+      4. Click the try button, you will see a response with the newly created group
+
+    __Here are some other things that you might want to change:__
+
+      - [Stream -> Create new stream](#post-/stream)
+      - [Zone -> Update Zone](#patch-/zones/-zoneId-) (to change the zone name)
+      - [Preset -> Create preset](#post-/preset) (Have a look at the model to see what can be added here)
+
+    # More Info
+
+    Check out all of the different things you can do with this API:
+
+      - [Status](#tag--status)
+      - [Source](#tag--source)
+      - [Zone](#tag--zone)
+      - [Group](#tag--group)
+      - [Stream](#tag--stream)
+      - [Preset](#tag--preset)
+
+    # OpenAPI
+
+    This API is documented using the OpenAPI specification
+  version: '1.0'
+  contact:
+    email: info@micro-nova.com
+    name: Micronova
+    url: http://micro-nova.com
+  license:
+    name: GPL
+    url: http://amplipi.local/license
+servers:
+  - url: '/api'
+    description: AmpliPi Controller
+tags:
+- name: status
+  description: The status and configuration of the entire system, including source, zones, groups, and streams.
+- name: source
+  description: Audio source. Can accept sudio input from a local (RCA) connection or any stream. Sources can be connected to one or multiple zones, or connected to nothing at all.
+- name: zone
+  description: Stereo output to a set of speakers, typically a room. Individually controllable with its own volume control. Can be connected to one of the 4 audio sources.
+- name: group
+  description: Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.
+- name: stream
+  description: Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify, Internet Radio, DLNA.
+- name: preset
+  description: A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.
+paths:
+  /:
+    get:
+      summary: "Get Status and Configuration Information"
+      tags:
+        - status
+      responses:
+        '200':
+          description: Report status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+              examples:
+                Get Status of Jason's AmpliPi:
+                  value:
+                    groups:
+                    - id: 0
+                      mute: false
+                      name: Whole House
+                      source_id:
+                      vol_delta: -44
+                      zones:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                      - 5
+                      - 6
+                      - 7
+                      - 8
+                      - 9
+                      - 10
+                      - 11
+                    - id: 1
+                      mute: true
+                      name: KitchLivDining
+                      source_id: 0
+                      vol_delta: -49
+                      zones:
+                      - 3
+                      - 9
+                      - 10
+                      - 11
+                    presets:
+                    - id: 10000
+                      name: Mute All
+                      state:
+                        zones:
+                          - id: 0
+                            mute: True
+                          - id: 1
+                            mute: True
+                          - id: 2
+                            mute: True
+                          - id: 3
+                            mute: True
+                          - id: 4
+                            mute: True
+                          - id: 5
+                            mute: True
+                    sources:
+                    - id: 0
+                      input: stream=90890
+                      name: J1
+                    - id: 1
+                      input: stream=44590
+                      name: J2
+                    - id: 2
+                      input: local
+                      name: Marc
+                    - id: 3
+                      input: local
+                      name: Source 4
+                    streams:
+                    - id: 90890
+                      info:
+                        album: Far (Deluxe Version)
+                        artist: Regina Spektor
+                        img_url: http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg
+                        station: Regina Spektor Radio
+                        track: Eet
+                      name: Regina Spektor Radio
+                      password: ''
+                      station: '4473713754798410236'
+                      status: playing
+                      type: pandora
+                      user: 'example1@micro-nova.com'
+                    - id: 90891
+                      info:
+                        details: No info available
+                      name: Matt and Kim Radio
+                      password: ''
+                      station: '4610303469018478727'
+                      status: disconnected
+                      type: pandora
+                      user: 'example2@micro-nova.com'
+                    - id: 90892
+                      info:
+                        details: No info available
+                      name: Pink Radio
+                      password: ''
+                      station: '4326539910057675260'
+                      status: disconnected
+                      type: pandora
+                      user: 'example3@micro-nova.com'
+                    - id: 44590
+                      info:
+                        details: No info available
+                      name: Jason's iPhone
+                      status: connected
+                      type: shairport
+                    - id: 4894
+                      info:
+                        details: No info available
+                      name: Rnay
+                      status: disconnected
+                      type: shairport
+                    zones:
+                    - disabled: false
+                      id: 0
+                      mute: false
+                      name: Local
+                      source_id: 1
+                      vol: -35
+                    - disabled: false
+                      id: 1
+                      mute: false
+                      name: Office
+                      source_id: 0
+                      vol: -41
+                    - disabled: false
+                      id: 2
+                      mute: true
+                      name: Laundry Room
+                      source_id: 0
+                      vol: -48
+                    - disabled: false
+                      id: 3
+                      mute: true
+                      name: Dining Room
+                      source_id: 0
+                      vol: -44
+                    - disabled: true
+                      id: 4
+                      mute: true
+                      name: BROKEN
+                      source_id: 0
+                      vol: -50
+                    - disabled: false
+                      id: 5
+                      mute: true
+                      name: Guest Bedroom
+                      source_id: 0
+                      vol: -48
+                    - disabled: false
+                      id: 6
+                      mute: true
+                      name: Main Bedroom
+                      source_id: 0
+                      vol: -40
+                    - disabled: false
+                      id: 7
+                      mute: true
+                      name: Main Bathroom
+                      source_id: 0
+                      vol: -44
+                    - disabled: false
+                      id: 8
+                      mute: true
+                      name: Master Bathroom
+                      source_id: 0
+                      vol: -41
+                    - disabled: false
+                      id: 9
+                      mute: true
+                      name: Kitchen High
+                      source_id: 0
+                      vol: -53
+                    - disabled: false
+                      id: 10
+                      mute: true
+                      name: kitchen Low
+                      source_id: 0
+                      vol: -52
+                    - disabled: false
+                      id: 11
+                      mute: true
+                      name: Living Room
+                      source_id: 0
+                      vol: -46
+                    version: 0.0.1
+      operationId: get-status
+      description: Retrieve the system configuration and status.
+  /sources:
+    get:
+      summary: "Get All Source Info"
+      tags:
+        - source
+      responses:
+        '200':
+          description: Sources Found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: All Sources
+                properties:
+                  sources:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Source'
+              examples:
+                Get Sources:
+                  value:
+                    sources:
+                    - id: 0
+                      input: stream=90890
+                      name: J1
+                    - id: 1
+                      input: stream=44590
+                      name: J2
+                    - id: 2
+                      input: local
+                      name: Marc
+                    - id: 3
+                      input: local
+                      name: Source 4
+  /sources/{sourceId}:
+    get:
+      summary: "Get Source Info by Source ID"
+      tags:
+        - source
+      parameters:
+        - name: sourceId
+          description: Source ID
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 3
+          examples:
+            Source 1:
+              value: 0
+              summary: Source 1
+            Source 2:
+              value: 1
+              summary: Source 2
+            Source 3:
+              value: 2
+              summary: Source 3
+            Source 4:
+              value: 3
+              summary: Source 4
+      responses:
+        '200':
+          description: Source Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Source'
+              examples:
+                Get Source J1:
+                  value:
+                    id: 1
+                    name: J1
+                    input: stream=8081
+        '404':
+          description: Source Not Found
+      operationId: get-source
+      description: Retrieve the information of the source with the matching source ID.
+    patch:
+      summary: Update Source Information
+      tags:
+        - source
+      parameters:
+        - name: sourceId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 3
+          examples:
+            Source 1:
+              value: 0
+              summary: Source 1
+            Source 2:
+              value: 1
+              summary: Source 2
+            Source 3:
+              value: 2
+              summary: Source 3
+            Source 4:
+              value: 3
+              summary: Source 4
+      operationId: patch-source
+      responses:
+        '200':
+          description: Source Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Source Not Found
+      description: Update the configuration of a source.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Source'
+            examples:
+              Update Input to RCA input:
+                value:
+                  input: local
+              Update name:
+                value:
+                  name: J2
+        description: Patch source configuration to update.
+  /zones:
+    get:
+      summary: "Get All Zone Info"
+      tags:
+        - zone
+      responses:
+        '200':
+          description: Zones Found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: All Zones
+                properties:
+                  zones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Zone'
+              examples:
+                Get Zones:
+                  value:
+                    zones:
+                    - disabled: false
+                      id: 0
+                      mute: false
+                      name: Local
+                      source_id: 1
+                      vol: -35
+                    - disabled: false
+                      id: 1
+                      mute: false
+                      name: Office
+                      source_id: 0
+                      vol: -41
+                    - disabled: false
+                      id: 2
+                      mute: true
+                      name: Laundry Room
+                      source_id: 0
+                      vol: -48
+                    - disabled: false
+                      id: 3
+                      mute: true
+                      name: Dining Room
+                      source_id: 0
+                      vol: -44
+                    - disabled: true
+                      id: 4
+                      mute: true
+                      name: BROKEN
+                      source_id: 0
+                      vol: -50
+                    - disabled: false
+                      id: 5
+                      mute: true
+                      name: Guest Bedroom
+                      source_id: 0
+                      vol: -48
+                    - disabled: false
+                      id: 6
+                      mute: true
+                      name: Main Bedroom
+                      source_id: 0
+                      vol: -40
+                    - disabled: false
+                      id: 7
+                      mute: true
+                      name: Main Bathroom
+                      source_id: 0
+                      vol: -44
+                    - disabled: false
+                      id: 8
+                      mute: true
+                      name: Master Bathroom
+                      source_id: 0
+                      vol: -41
+                    - disabled: false
+                      id: 9
+                      mute: true
+                      name: Kitchen High
+                      source_id: 0
+                      vol: -53
+                    - disabled: false
+                      id: 10
+                      mute: true
+                      name: kitchen Low
+                      source_id: 0
+                      vol: -52
+                    - disabled: false
+                      id: 11
+                      mute: true
+                      name: Living Room
+                      source_id: 0
+                      vol: -46
+  /zones/{zoneId}:
+    get:
+      summary: Get Zone Info by Zone ID
+      tags:
+        - zone
+      parameters:
+        - name: zoneId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      responses:
+        '200':
+          description: Zone Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zone'
+              examples:
+                Get Zone Master Bedroom:
+                  value:
+                    id: 7
+                    name: Master Bedroom
+                    source_id: 2
+                    mute: False
+                    vol: -42
+                    disabled: false
+        '404':
+          description: Zone Not Found
+      operationId: get-zone
+      description: Retrieve the information of the zone with the matching zone ID.
+    patch:
+      summary: Update Zone
+      tags:
+        - zone
+      parameters:
+        - name: zoneId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      operationId: patch-zone
+      responses:
+        '200':
+          description: Zone Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Zone Not Found
+      description: Update the configuration of a zone.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Zone'
+            examples:
+              Mute:
+                value:
+                  mute: true
+              Increase Volume:
+                value:
+                  vol: -45
+              Change Name:
+                value:
+                  name: Bedroom
+              Change audio source:
+                value:
+                  source-id: 3
+        description: Patch zone configuration to update.
+  /group:
+    post:
+      summary: Create New Group
+      tags:
+        - group
+      operationId: post-group
+      responses:
+        '200':
+          description: Group Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Missing Required Information
+        '409':
+          description: Group ID already taken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+            examples:
+              Add Upstairs Group:
+                value:
+                  name: "Upstairs"
+                  zones: [1, 2, 3, 4, 5]
+        description: Post the necessary fields for the API to create a new group.
+      description: Create a new group.
+  /groups:
+    get:
+      summary: "Get All Group Info"
+      tags:
+        - group
+      responses:
+        '200':
+          description: Groups Found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: All Groups
+                properties:
+                  groups:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Group'
+              examples:
+                Get Groups:
+                  value:
+                    groups:
+                    - id: 0
+                      mute: false
+                      name: Whole House
+                      source_id:
+                      vol_delta: -44
+                      zones:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                      - 5
+                      - 6
+                      - 7
+                      - 8
+                      - 9
+                      - 10
+                      - 11
+                    - id: 1
+                      mute: true
+                      name: KitchLivDining
+                      source_id: 0
+                      vol_delta: -49
+                      zones:
+                      - 3
+                      - 9
+                      - 10
+                      - 11
+  /groups/{groupId}:
+    get:
+      summary: Get Group Info by Group ID
+      tags:
+        - group
+      parameters:
+        - name: groupId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      responses:
+        '200':
+          description: Group Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+              examples:
+                Get Group Downstairs:
+                  value:
+                    id: 3
+                    name: Downstairs
+                    source_id: 1
+                    mute: False
+                    vol: -50
+        '404':
+          description: Group Not Found
+      operationId: get-group
+      description: Retrieve the information of the group with the matching group ID.
+    patch:
+      summary: Update Group
+      tags:
+        - group
+      parameters:
+        - name: groupId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      operationId: patch-group
+      responses:
+        '200':
+          description: Group Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Group Not Found
+      description: Update the configuration of a group.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+            examples:
+              Mute:
+                value:
+                  mute: true
+              Increase Volume by 10dB:
+                value:
+                  vol-delta: 10
+              Change Name:
+                value:
+                  name: Bedrooms
+              Change audio source:
+                value:
+                  source-id: 2
+              Update member zones:
+                value:
+                  zones:
+                    - 1
+                    - 2
+                    - 6
+        description: Patch group configuration to update.
+    delete:
+      summary: Delete Group
+      tags:
+        - group
+      parameters:
+        - name: groupId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      operationId: delete-group
+      description: Delete a group
+      responses:
+        '200':
+          description: Group Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Group Not Found
+  /stream:
+    post:
+      summary: Create New stream
+      tags:
+        - stream
+      operationId: post-stream
+      responses:
+        '200':
+          description: Stream Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+              example:
+                name: Matt and Kim Radio
+                type: pandora
+                user: test@micro-nova.com
+                password: s79sDDkjf
+                station: '4473713754798410236'
+                info: {}
+                status: disconnected
+        '400':
+          description: Missing Required Information
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Stream'
+            examples:
+              Add Matt and Kim Pandora Station:
+                value:
+                  name: Matt and Kim Radio
+                  type: pandora
+                  user: test@micro-nova.com
+                  station: '4473713754798410236'
+                  password: s79sDDkjf
+              Add Micronova Airplay:
+                value:
+                  name: Micronova AP
+                  type: shairport
+              Add MicroNova Spotify:
+                value:
+                  name: MicroNova Spotify
+                  type: spotify
+              Add Generic DLNA:
+                value:
+                  name: Replace this text with a name you like!
+                  type: dlna
+              Add KEXP Internet Radio Station:
+                value:
+                  name: KEXP 90.3
+                  type: internetradio
+                  url: http://live-aacplus-64.kexp.org/kexp64.aac
+                  logo: https://i.iheart.com/v3/re/new_assets/cc4e0a17-5233-4e4b-9b6b-7799904f78ea
+              Add Groove Salad Internet Radio Station:
+                value:
+                  name: Groove Salad
+                  type: internetradio
+                  url: http://ice2.somafm.com/groovesalad-16-aac
+                  logo: https://somafm.com/img3/groovesalad-200.jpg
+              Add Beatles Internet Radio Station:
+                value:
+                  name: Beatles Radio
+                  type: internetradio
+                  url: http://www.beatlesradio.com:8000/stream/1/
+                  logo: http://www.beatlesradio.com/content/images/thumbs/0000587.gif
+              Add Classical KING Internet Radio Station:
+                value:
+                  name: Classical KING FM 98.1
+                  type: internetradio
+                  url: http://classicalking.streamguys1.com/king-fm-aac-iheart
+                  logo: https://i.iheart.com/v3/re/assets/images/7bcfd87a-de3e-47d0-b896-be0ed38c9d74.png
+        description: Post the necessary fields for the API to create a new stream.
+      description: |
+        Create a new stream.
+        - For Pandora the station is the number at the end of the Pandora URL for a station
+  /streams:
+    get:
+      summary: "Get All Stream Info"
+      tags:
+        - stream
+      responses:
+        '200':
+          description: Streams Found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: All Streams
+                properties:
+                  streams:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Stream'
+              examples:
+                Get Streams:
+                  value:
+                    streams:
+                    - id: 90890
+                      info:
+                        album: Far (Deluxe Version)
+                        artist: Regina Spektor
+                        img_url: http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg
+                        station: Regina Spektor Radio
+                        track: Eet
+                      name: Regina Spektor Radio
+                      password: ''
+                      station: '4473713754798410236'
+                      status: playing
+                      type: pandora
+                      user: 'example1@micro-nova.com'
+                    - id: 90891
+                      info:
+                        details: No info available
+                      name: Matt and Kim Radio
+                      password: ''
+                      station: '4610303469018478727'
+                      status: disconnected
+                      type: pandora
+                      user: 'example2@micro-nova.com'
+                    - id: 90892
+                      info:
+                        details: No info available
+                      name: Pink Radio
+                      password: ''
+                      station: '4326539910057675260'
+                      status: disconnected
+                      type: pandora
+                      user: 'example3@micro-nova.com'
+                    - id: 44590
+                      info:
+                        details: No info available
+                      name: Jason's iPhone
+                      status: connected
+                      type: shairport
+                    - id: 4894
+                      info:
+                        details: No info available
+                      name: Rnay
+                      status: disconnected
+                      type: shairport
+  /streams/{streamId}:
+    get:
+      summary: Get Stream Info by Stream ID
+      tags:
+        - stream
+      parameters:
+        - name: streamId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      responses:
+        '200':
+          description: Stream Command Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+              examples:
+                Get Matt and Kim Radio Stream:
+                  value:
+                    id: 90891
+                    name: Matt and Kim Radio
+                    status: playing
+                    info:
+                      artist: Matt and Kim
+                      song: Daylight
+                      album: Sidewalks
+
+        '404':
+          description: Stream Not Found
+      operationId: get-stream
+      description: Retrieve the stream status and configuration information for the stream with the matching ID.
+    patch:
+      summary: Update Stream
+      tags:
+        - stream
+      parameters:
+        - name: streamId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      operationId: patch-stream
+      responses:
+        '200':
+          description: Stream Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Stream Not Found
+      description: Update the configuration of a stream.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Update stream name
+                user:
+                  type: string
+                  description: Update stream account user name
+                password:
+                  type: string
+                  description: Update stream account password
+                station:
+                  type: integer
+                  minimum: 0
+                  description: Station id (number at the end of Pandora URL)
+              required:
+                - name
+            examples:
+              Change name:
+                value:
+                  name: Matt and Kim Radio
+              Change account info:
+                value:
+                  user: test@micro-nova.com
+                  password: sd9sk3k30
+              Change pandora radio station:
+                value:
+                  station: 0982034049300
+              Upgrade groove salad stream quality:
+                value:
+                  url: http://ice2.somafm.com/groovesalad-64-aac
+        description: Patch stream configuration to update.
+    delete:
+      summary: Delete Stream
+      tags:
+        - stream
+      parameters:
+        - name: streamId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      operationId: delete-stream
+      description: Delete a stream
+      responses:
+        '200':
+          description: Stream Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Stream Not Found
+  /streams/{streamId}/{streamCmd}:
+    post:
+      summary: Send a command to a connected stream such as Play/Pause/Next
+      tags:
+        - stream
+      parameters:
+        - name: streamId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+        - name: streamCmd
+          required: true
+          in: path
+          schema:
+            type: string
+          examples:
+            Play Stream:
+              value: play
+            Pause Stream:
+              value: pause
+            Skip to next song:
+              value: next
+            Stop Stream:
+              value: stop
+            Like/Love Current Song:
+              value: like
+            Ban Current Song (pandora only):
+              value: ban
+            Shelve Current Song (pandora only):
+              value: shelve
+            Change Station (pandora only):
+              value: station=0982034049300
+      responses:
+        '200':
+          description: Return status after command executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+              examples:
+                Play paused station:
+                  value:
+                    id: 90891
+                    name: Matt and Kim Radio
+                    status: playing
+                    info:
+                      artist: Matt and Kim
+                      song: Daylight
+                      album: Sidewalks
+        # TODO: add command not found, and stream not connected error results
+        '404':
+          description: Stream Not Found
+      operationId: post-stream-command
+      description: Send a command to the connected stream with the matching ID.
+  /preset:
+    post:
+      summary: Create New preset
+      tags:
+        - preset
+      operationId: post-preset
+      responses:
+        '200':
+          description: Preset Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+        '400':
+          description: Missing Required Information
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preset'
+            examples:
+              Add Mute All:
+                value:
+                  name: Mute All
+                  state:
+                    zones:
+                      - id: 0
+                        mute: True
+                      - id: 1
+                        mute: True
+                      - id: 2
+                        mute: True
+                      - id: 3
+                        mute: True
+                      - id: 4
+                        mute: True
+                      - id: 5
+                        mute: True
+              Basic Sources and Zones:
+                value:
+                  name: Zones and Sources
+                  state:
+                    sources:
+                      - id: 0
+                        name: 1
+                        input: stream=90891
+                      - id: 1
+                        name: 2
+                        input: stream=44590
+                      - id: 2
+                        name: 3
+                        input: stream=4893
+                      - id: 3
+                        name: 4
+                        input: stream=4895
+                    zones:
+                      - id: 0
+                        name: Lab
+                        source_id: 3
+                        mute: False
+                        vol: -62
+                        disabled: False
+                      - id: 1
+                        name: Upstairs
+                        source_id: 0
+                        mute: False
+                        vol: -62
+                        disabled: False
+              Sources, Zones, Groups, and Names:
+                value:
+                  name: Sources, Zones, Groups, and Names
+                  state:
+                    sources:
+                      - id: 0
+                        name: Spotify
+                        input: stream=4895
+                      - id: 1
+                        name: Pandora1
+                        input: stream=90891
+                      - id: 2
+                        name: Pandora2
+                        input: stream=90892
+                      - id: 3
+                        name: AirPlay
+                        input: stream=44590
+                    zones:
+                      - id: 0
+                        name: Lab
+                        source_id: 0
+                        mute: False
+                        vol: -62
+                        disabled: False
+                    groups:
+                      - id: 0
+                      - id: 1
+        description: Post the necessary fields for the API to create a new stream.
+      description: Create a new stream.
+  /presets:
+    get:
+      summary: "Get All Preset Info"
+      tags:
+        - preset
+      responses:
+        '200':
+          description: Presets Found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: All Presets
+                properties:
+                  presets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Preset'
+              examples:
+                Get Presets:
+                  value:
+                    presets:
+                    - id: 10000
+                      name: Mute All
+                      state:
+                        zones:
+                          - id: 0
+                            mute: True
+                          - id: 1
+                            mute: True
+                          - id: 2
+                            mute: True
+                          - id: 3
+                            mute: True
+                          - id: 4
+                            mute: True
+                          - id: 5
+                            mute: True
+  /presets/{presetId}:
+    get:
+      summary: Get Preset Info by Preset ID
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+
+
+      responses:
+        '200':
+          description: Preset Command Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+              examples:
+                Get Mute All:
+                  value:
+                    id: 10000
+                    name: Mute All
+                    state:
+                      zones:
+                        - id: 0
+                          mute: True
+                        - id: 1
+                          mute: True
+                        - id: 2
+                          mute: True
+                        - id: 3
+                          mute: True
+                        - id: 4
+                          mute: True
+                        - id: 5
+                          mute: True
+        '404':
+          description: Preset Not Found
+      operationId: get-preset
+      description: Retrieve the preset configuration.
+    patch:
+      summary: Update Preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+
+
+      operationId: patch-preset
+      responses:
+        '200':
+          description: Preset Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Preset Not Found
+      description: Update the configuration of a preset.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preset'
+            examples:
+              Change preset to mute only some zones:
+                value:
+                  name: Mute some zones
+                  state:
+                    zones:
+                      - id: 0
+                        mute: True
+                      - id: 1
+                        mute: True
+                      - id: 4
+                        mute: True
+                      - id: 5
+                        mute: True
+        description: Patch stream configuration to update.
+    delete:
+      summary: Delete Preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Mute All:
+              value: 10001
+      operationId: delete-preset
+      description: Delete a preset
+      responses:
+        '200':
+          description: Preset Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: Preset Not Found
+  /presets/{presetId}/load:
+    post:
+      summary: Load a preset
+      tags:
+        - preset
+      parameters:
+        - name: presetId
+          required: true
+          in: path
+          schema:
+            type: integer
+            minimum: 0
+          examples:
+            Mute All Zones:
+              value: 10000
+      responses:
+        '200':
+          description: Return status after preset loaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        # TODO: add preset not found, and preset laod failed error results
+        '404':
+          description: Preset Not Found
+      operationId: load-preset
+      description: Preset loaded
+components:
+  schemas:
+    Source:
+      title: Source
+      type: object
+      description: Audio source that can output on any zone. Can be connected to an RCA input or a digital stream.
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3
+          description: Unique source identifier
+        name:
+          type: string
+          description: friendly source name
+        input:
+          type: string
+          description: the connected input to the source, either 'local' (RCA)or 'stream=STREAM_ID' for (sharport/pandora/..) or '' to indicate disconnected
+      x-examples:
+        J1:
+          id: 0
+          name: J1
+          input: stream=90801
+    Stream:
+      title: Stream
+      type: object
+      description: Digital stream such as Pandora, Airplay or Spotify
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Unique stream identifier
+        name:
+          type: string
+          description: Friendly stream name, ie. Matt and Kim Radio
+        type:
+          type: string
+          description: Stream type
+          enum:
+            - pandora
+            - shairport
+            - dlna
+            - internetradio
+            - spotify
+        info:
+          type: object
+          description: Additional info about the current audio playing from the stream (generated during playback)
+        status:
+          type: string
+          description: connected/playing status of the stream (generated during source connection)
+        user:
+          type: string
+          description: account username/email (only needed for pandora)
+        password:
+          type: string
+          description: account password (only needed for pandora)
+        station:
+          type: integer
+          format: int64
+          description: Pandora station id (found at the end of a pandora station's url)
+    Zone:
+      title: Zone
+      type: object
+      description: Audio output to a stereo pair of speakers, typically belonging to a room.
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Zero based id of the physical audio output (controller * 6 + zone)
+        name:
+          type: string
+          description: Room name, ie. Dining Room
+        source_id:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3
+          description: Id of connected audio source
+        mute:
+          type: boolean
+          description: Set to true if audio output is muted
+        vol:
+          type: integer
+          description: Output volume in dB
+          format: int32
+          minimum: -79
+          maximum: 0
+        disabled:
+          type: boolean
+          description: Set to true if zone is not connected to a speaker
+      x-examples:
+        Master Bedroom:
+          id: 5
+          name: Master Bedroom
+          mute: false
+          vol: -40
+          disabled: false
+    Group:
+      title: Group
+      type: object
+      description: A group of zones that can share the same audio input and be controlled as a group ie. Updstairs. Volume, mute, and source_id fields are aggregates of the member zones.
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Unique group identifier
+        name:
+          type: string
+          description: Group name, ie. Upstairs
+        zones:
+          type: array
+          items:
+            type: integer
+            description: zone id
+          description: Set of zones that belong to group, a zone can belong to multiple groups
+        source_id:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3
+          nullable: true
+          description: Id of connected audio source if any (null if individual zones have difference connected sources)
+        mute:
+          type: boolean
+          description: Set to true if all zones audio output is muted
+        vol:
+          type: integer
+          description: Aggregate output volume of all zones in dB
+          format: int32
+          minimum: -79
+          maximum: 0
+      x-examples:
+        Master Bedroom:
+          id: 5
+          name: Master Bedroom
+          mute: false
+          vol: -40
+          disabled: false
+    Status:
+      title: Status
+      type: object
+      description: Full Controller Configuration and Status
+      properties:
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Zone'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+        streams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stream'
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Preset'
+        version:
+          type: string
+    Command:
+      title: Command
+      type: object
+      description: A command to execute (for now only stream commands are supported)
+      properties:
+        cmd:
+          type: string
+          description: the command to execute
+        stream:
+          type: integer
+          description: stream id
+      required:
+        - cmd
+        - stream
+    Preset:
+      title: Preset
+      type: object
+      description: A partial controller configuration that can be loaded on demand. In addition to most of the configurration found in Status, this can contain commands as well that configure the state of different streaming services. At the moment configuration of streams is only supported as commands.
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Unique preset identifier, generated on creation
+        name:
+          type: string
+          description: Preset name, ie. Movie Time
+        state:
+          type: object
+          description: Partial system state to configure
+          properties:
+            sources:
+              type: array
+              items:
+                $ref: '#/components/schemas/Source'
+            zones:
+              type: array
+              items:
+                $ref: '#/components/schemas/Zone'
+            groups:
+              type: array
+              items:
+                $ref: '#/components/schemas/Group'
+        commands:
+          type: array
+          description: sequential list of commands to execute in order
+          items:
+            $ref: '#/components/schemas/Command'
+  securitySchemes: {}
