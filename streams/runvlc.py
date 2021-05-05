@@ -34,6 +34,7 @@ parser = argparse.ArgumentParser(prog='runvlc', description='play an internet ra
 parser.add_argument('url', type=str, help='internet radio station url')
 parser.add_argument('output', type=str, help='alsa output', nargs='?', default=None)
 parser.add_argument('--song-info', type=str, help='file to update with current song information in json format')
+parser.add_argument('--log', type=str, help='log file (defaults to stdout)', default=None)
 parser.add_argument('--test', action='store_true', help='verify the url is valid and return')
 parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
@@ -46,15 +47,30 @@ elif args.output:
   alsa_device = args.output
   config += " --alsa-audio-device {}".format(alsa_device)
 
+def log(info):
+  if args.log:
+    try:
+      with open(args.log, 'a') as f:
+        print(info, file=f)
+    except:
+      print(f'Error writing to logfile: {args.log}')
+      print(info)
+  else:
+    print(info)
+
 instance = vlc.Instance(config.split())
 try:
   media = instance.media_new(args.url)
 except (AttributeError, NameError) as e:
-  print('%s: %s (%s LibVLC %s)' % (e.__class__.__name__, e, sys.argv[0], vlc.libvlc_get_version()))
+  log('%s: %s (%s LibVLC %s)' % (e.__class__.__name__, e, sys.argv[0], vlc.libvlc_get_version()))
   sys.exit(1)
-player = instance.media_player_new()
-player.set_media(media)
-player.play()
+try:
+  player = instance.media_player_new()
+  player.set_media(media)
+  player.play()
+except Exception:
+  log(sys.exc_info())
+  exit(1)
 
 if args.song_info:
   try:
@@ -62,7 +78,7 @@ if args.song_info:
     f.write(json.dumps({"state": str(player.get_state())}))
     f.close()
   except Exception:
-    print(sys.exc_info())
+    log(sys.exc_info())
     exit(1)
 
 # Wait for stream to start playing
@@ -121,10 +137,10 @@ while True:
       if cur_info != latest_info or cur_url != vlc.bytes_to_str(media.get_mrl()):
         cur_info = latest_info
         cur_url = vlc.bytes_to_str(media.get_mrl())
-        print(f"Current track: {latest_info['song']}{latest_info['artist']}")
+        log(f"Current track: {latest_info['song']}{latest_info['artist']}")
 
         if args.test:
-          print('success')
+          log('success')
           sys.exit(0)
 
         if args.song_info:
@@ -133,16 +149,16 @@ while True:
             f.write(json.dumps(cur_info))
             f.close()
           except Exception:
-            print('Error: %s' % sys.exc_info()[1])
+            log('Error: %s' % sys.exc_info()[1])
     else:
       if args.test:
-        print('fail')
+        log('fail')
         sys.exit(1)
-      print('State: %s' % player.get_state())
+      log('State: %s' % player.get_state())
 
   except Exception:
     if args.test:
-      print('fail')
-    print('Error: %s' % sys.exc_info()[1])
+      log('fail')
+    log('Error: %s' % sys.exc_info()[1])
 
   time.sleep(1) # throttle metadata

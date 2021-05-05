@@ -258,6 +258,11 @@ def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.js
     app.api = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file)
   return app
 
+if DEBUG_API:
+  app.debug = True
+  from flask_debugtoolbar import DebugToolbarExtension
+  toolbar = DebugToolbarExtension(app)
+
 if __name__ == '__main__':
   app = create_app()
   app.run(debug=True, host= '0.0.0.0')

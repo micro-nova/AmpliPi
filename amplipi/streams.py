@@ -22,6 +22,7 @@ a consistent interface.
 """
 
 import os
+import sys
 import subprocess
 import time
 
@@ -576,24 +577,26 @@ class InternetRadio:
     """ Connect a VLC output to a given audio source
     This will create a VLC process based on the given name
     """
-    print('connecting {} to {}...'.format(self.name, src))
+    print(f'connecting {self.name} to {src}...')
 
     if self.mock:
-      print('{} connected to {}'.format(self.name, src))
+      print(f'{self.name} connected to {src}')
       self.state = 'connected'
       self.src = src
       return
 
     # Make all of the necessary dir(s)
-    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
     os.system('mkdir -p {}'.format(src_config_folder))
 
     # Start audio via runvlc.py
-    song_info_path = '{}/currentSong'.format(src_config_folder)
-    inetradio_args = ['python3', '{}/runvlc.py'.format(utils.get_folder('streams')), '{}'.format(self.url), '{}'.format(utils.output_device(src)), '--song-info', song_info_path]
+    song_info_path = f'{src_config_folder}/currentSong'
+    log_file_path = f'{src_config_folder}/log'
+    inetradio_args = [sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
+    print(f'running: {inetradio_args}')
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
-    print('{} (stream: {}) connected to {} via {}'.format(self.name, self.url, src, utils.output_device(src)))
+    print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.output_device(src)}')
     self.state = 'connected'
     self.src = src
 
@@ -605,16 +608,16 @@ class InternetRadio:
   def disconnect(self):
     if self._is_running():
       self.proc.kill()
-      print('{} disconnected'.format(self.name))
+      print(f'{self.name} disconnected')
     else:
-      print('Warning: {} was not running'.format(self.name))
+      print(f'Warning: {self.name} was not running')
     self.state = 'disconnected'
     self.proc = None
     self.src = None
 
   def info(self):
-    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
-    loc = '{}/currentSong'.format(src_config_folder)
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+    loc = f'{src_config_folder}/currentSong'
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -637,6 +640,6 @@ class InternetRadio:
     return self.state
 
   def __str__(self):
-    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    connection = f' connected to src={self.src}' if self.src else ''
     mock = ' (mock)' if self.mock else ''
-    return 'internetradio connect: {}{}{}'.format(self.name, connection, mock)
+    return 'internetradio connect: {self.name}{connection}{mock}'

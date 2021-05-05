@@ -29,9 +29,13 @@ import pprint
 import os # files
 import time
 
+import threading
+
 import amplipi.rt as rt
 import amplipi.streams as streams
 import amplipi.utils as utils
+
+from typing import List
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -104,6 +108,7 @@ class Api:
     self._rt = _rt
     self._mock_hw = type(_rt) is rt.Mock
     self._mock_streams = mock_streams
+    self.save_timer = None
     """Intitializes the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -161,6 +166,13 @@ class Api:
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
 
+  def __del__(self):
+    # stop save in the future so we can save right away
+    if self.save_timer:
+      self.save_timer.cancel()
+      self.save_timer = None
+    self.save()
+
   def save(self):
     """ Saves the system state to json"""
     try:
@@ -182,6 +194,18 @@ class Api:
         api.write(self._api_template.render(self.status))
     except Exception as e:
       print(f'Error updating API spec: {e}')
+
+  def postpone_save(self):
+    """ Saves the system state in the future
+
+    This attempts to avoid excessive saving and the resulting delays by only saving 60 seconds after the last change
+    """
+    if self.save_timer:
+      self.save_timer.cancel()
+      self.save_timer = None
+    # start can only be called once on a thread
+    self.save_timer = threading.Timer(5.0, self.save)
+    self.save_timer.start()
 
   def visualize_api(self, prev_status=None):
     """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
@@ -511,7 +535,7 @@ class Api:
       return 100
 
   @utils.save_on_success
-  def create_group(self, name, zones):
+  def create_group(self, name: str, zones: List[int]):
     """Creates a new group with a list of zones
 
     Refer to the returned system state to obtain the id for the newly created group
@@ -540,7 +564,7 @@ class Api:
     return group
 
   @utils.save_on_success
-  def delete_group(self, id):
+  def delete_group(self, id: int):
     """Deletes an existing group"""
     try:
       i, _ = utils.find(self.status['groups'], id)
