@@ -501,8 +501,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if zones %}
+          examples:
+{%- endif %}
+{%- for z in zones %}
+            {{ z['name'] }}:
+              value: {{ z['id'] }}
+              summary: {{ z['name'] }}
+{%- endfor %}
       responses:
         '200':
           description: Zone Found
@@ -534,8 +540,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if zones %}
+          examples:
+{%- endif %}
+{%- for z in zones %}
+            {{ z['name'] }}:
+              value: {{ z['id'] }}
+              summary: {{ z['name'] }}
+{%- endfor %}
       operationId: patch-zone
       responses:
         '200':
@@ -656,8 +668,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if groups %}
+          examples:
+{%- endif %}
+{%- for g in groups %}
+            {{ g['name'] }}:
+              value: {{ g['id'] }}
+              summary: {{ g['name'] }}
+{%- endfor %}
       responses:
         '200':
           description: Group Found
@@ -688,8 +706,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if groups %}
+          examples:
+{%- endif %}
+{%- for g in groups %}
+            {{ g['name'] }}:
+              value: {{ g['id'] }}
+              summary: {{ g['name'] }}
+{%- endfor %}
       operationId: patch-group
       responses:
         '200':
@@ -737,8 +761,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if groups %}
+          examples:
+{%- endif %}
+{%- for g in groups %}
+            {{ g['name'] }}:
+              value: {{ g['id'] }}
+              summary: {{ g['name'] }}
+{%- endfor %}
       operationId: delete-group
       description: Delete a group
       responses:
@@ -903,8 +933,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if streams %}
+          examples:
+{%- endif %}
+{%- for s in streams %}
+            {{ s['name'] }} - {{ s['type'] }}:
+              value: {{ s['id'] }}
+              summary: {{ s['name'] }} - {{ s['type'] }}
+{%- endfor %}
       responses:
         '200':
           description: Stream Command Success
@@ -938,8 +974,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if streams %}
+          examples:
+{%- endif %}
+{%- for s in streams %}
+            {{ s['name'] }} - {{ s['type'] }}:
+              value: {{ s['id'] }}
+              summary: {{ s['name'] }} - {{ s['type'] }}
+{%- endfor %}
       operationId: patch-stream
       responses:
         '200':
@@ -998,8 +1040,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if streams %}
+          examples:
+{%- endif %}
+{%- for s in streams %}
+            {{ s['name'] }} - {{ s['type'] }}:
+              value: {{ s['id'] }}
+              summary: {{ s['name'] }} - {{ s['type'] }}
+{%- endfor %}
       operationId: delete-stream
       description: Delete a stream
       responses:
@@ -1023,8 +1071,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if streams %}
+          examples:
+{%- endif %}
+{%- for s in streams %}
+            {{ s['name'] }} - {{ s['type'] }}:
+              value: {{ s['id'] }}
+              summary: {{ s['name'] }} - {{ s['type'] }}
+{%- endfor %}
         - name: streamCmd
           required: true
           in: path
@@ -1216,8 +1270,14 @@ paths:
           schema:
             type: integer
             minimum: 0
-
-
+{%- if presets %}
+          examples:
+{%- endif %}
+{%- for p in presets %}
+            {{ p['name'] }}:
+              value: {{ p['id'] }}
+              summary: {{ p['name'] }}
+{%- endfor %}
       responses:
         '200':
           description: Preset Command Success
@@ -1259,9 +1319,14 @@ paths:
           schema:
             type: integer
             minimum: 0
+{%- if presets %}
           examples:
-
-
+{%- endif %}
+{%- for p in presets %}
+            {{ p['name'] }}:
+              value: {{ p['id'] }}
+              summary: {{ p['name'] }}
+{%- endfor %}
       operationId: patch-preset
       responses:
         '200':
