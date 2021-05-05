@@ -166,6 +166,13 @@ class Api:
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
 
+  def __del__(self):
+    # stop save in the future so we can save right away
+    if self.save_timer:
+      self.save_timer.cancel()
+      self.save_timer = None
+    self.save()
+
   def save(self):
     """ Saves the system state to json"""
     try:
@@ -197,7 +204,7 @@ class Api:
       self.save_timer.cancel()
       self.save_timer = None
     # start can only be called once on a thread
-    self.save_timer = threading.Timer(60.0, self.save)
+    self.save_timer = threading.Timer(5.0, self.save)
     self.save_timer.start()
 
   def visualize_api(self, prev_status=None):
