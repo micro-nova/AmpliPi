@@ -1259,7 +1259,6 @@ paths:
           schema:
             type: integer
             minimum: 0
-          examples:
 
 
       operationId: patch-preset

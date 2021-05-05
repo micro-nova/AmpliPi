@@ -103,7 +103,7 @@ if ! $mock_ctrl; then
 fi
 
 # Generate the simplified version of the api doc without dynamic suggestions, this will get built in the release and is checked in since it is used on the github website
-perl -0pe 's|{%.*?%}.*?{%.*?%}||smg' docs/templates/amplipi_api.yaml.j2 > ../docs/amplipi_api.yaml
+perl -0pe 's|{%.*?%}.*?{%.*?%}||smg' ../docs/templates/amplipi_api.yaml.j2 > ../docs/amplipi_api.yaml
 
 # Bump version and generate tar
 poetry version prerelease
