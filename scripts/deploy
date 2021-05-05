@@ -39,7 +39,14 @@ echo "" # newline
 # check if amplipi is found
 host=$(echo $user_host | sed 's/.*@//')
 echo "Checking if $host is found"
-if ! ping -c2 $host; then
+ping_loc=$(which ping)
+found=false
+if [[ "$ping_loc" == /c/Windows/system32/ping ]] && ping -n 2 $host; then
+  found=true
+elif ping -c 2 $host; then
+  found=true
+fi
+if ! $found; then
   echo ""
   echo "Error: Unable to find $host"
   echo "  On older versions of windows (< 10) you may need to install an MDNS server like Bonjour: https://support.apple.com/kb/DL999?locale=en_US"
