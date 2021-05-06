@@ -1,5 +1,7 @@
 import pytest
 
+from fastapi.testclient import TestClient
+
 # json utils
 import json
 from http import HTTPStatus
@@ -32,7 +34,7 @@ def base_config_no_groups():
 
 def status_copy(client):
   rv = client.get('/api/')
-  jrv = rv.get_json()
+  jrv = rv.json()
   assert jrv != None
   return jrv # jrv was already serialized so it should be a copy
 
@@ -50,8 +52,7 @@ def client(request):
   with open(config_file, 'w') as cfg_file:
     cfg_file.write(json.dumps(cfg))
   app = amplipi.app.create_app(mock_ctrl=True, mock_streams=True, config_file=config_file)
-  app.testing = True
-  c = app.test_client()
+  c = TestClient(app, base_url="http://0.0.0.0:5000/")
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
@@ -63,15 +64,14 @@ def clientnm(request):# Non-mock systems should use this client - mock_ctrl and 
   with open(config_file, 'w') as cfg_file:
     cfg_file.write(json.dumps(cfg))
   app = amplipi.app.create_app(mock_ctrl=False, mock_streams=False, config_file=config_file)
-  app.testing = True
-  c = app.test_client()
+  c = TestClient(app, base_url="http://0.0.0.0:5000/")
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
 # TODO: the web view test should be added to its own testfile once we add more functionality to the site
 @pytest.mark.parametrize('path', [',' , '/'] + [ '/{}'.format(i) for i in range(4) ])
 def test_view(client, path):
-  rv = client.get('/')
+  rv = client.get(path)
   assert rv.status_code == HTTPStatus.OK
 
 @pytest.mark.parametrize('path', ['/api', '/api/'])
@@ -80,7 +80,7 @@ def test_base(client, path):
     rv = client.get(path)
     assert rv.status_code in [ HTTPStatus.OK, HTTPStatus.PERMANENT_REDIRECT] # flask inserts a redirect here for some reason
     if rv.status_code == HTTPStatus.OK:
-      jrv = rv.get_json()
+      jrv = rv.json()
       assert jrv != None
       og_config = client.original_config
       for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
@@ -100,12 +100,12 @@ def test_base(client, path):
 def base_source_ids():
   return [ s['id'] for s in base_config()['sources']]
 
-@pytest.mark.parametrize('ids', base_source_ids())
-def test_get_source(client, ids):
-  rv = client.get('/api/sources/{}'.format(ids))
+@pytest.mark.parametrize('sid', base_source_ids())
+def test_get_source(client, sid):
+  rv = client.get(f'/api/sources/{sid}')
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
-  s = find(base_config()['sources'], ids)
+  jrv = rv.json()
+  s = find(base_config()['sources'], sid)
   assert s != None
   assert s['name'] == jrv['name']
 
@@ -113,7 +113,7 @@ def test_get_source(client, ids):
 def test_patch_source(client, ids):
   rv = client.patch('/api/sources/{}'.format(ids), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
+  jrv = rv.json()
   s = find(jrv['sources'], ids)
   assert s != None
   assert s['name'] == 'patched-name'
@@ -126,7 +126,7 @@ def base_zone_ids():
 def test_get_zone(client, zid):
   rv = client.get('/api/zones/{}'.format(zid))
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
+  jrv = rv.json()
   s = find(base_config()['zones'], zid)
   assert s != None
   assert s['name'] == jrv['name']
@@ -135,7 +135,7 @@ def test_get_zone(client, zid):
 def test_patch_zone(client, zid):
   rv = client.patch('/api/zones/{}'.format(zid), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
+  jrv = rv.json()
   s = find(jrv['zones'], zid)
   assert s != None
   assert s['name'] == 'patched-name'
@@ -148,7 +148,7 @@ def test_post_group(client):
   grp = {'name' : 'Whole House', 'zones' : [0, 1, 2, 3, 4, 5]}
   rv = client.post('/api/group', json=grp)
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
+  jrv = rv.json()
   assert 'id' in jrv
   assert type(jrv['id']) == int
   for k, v in grp.items():
@@ -163,7 +163,7 @@ def test_get_group(client, gid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.get_json()
+  jrv = rv.json()
   s = find(base_config()['groups'], gid)
   assert s != None
   assert s['name'] == jrv['name']
@@ -177,7 +177,7 @@ def test_patch_group(client, gid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.get_json()
+  jrv = rv.json()
   s = find(jrv['groups'], gid)
   assert s != None
   assert s['name'] == 'patched-name'
@@ -190,7 +190,7 @@ def test_delete_group(client, gid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.get_json()
+  jrv = rv.json()
   s = find(jrv['groups'], gid)
   assert s == None
   for other_gid in base_group_ids():
@@ -208,7 +208,7 @@ def test_create_pandora(client):
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
+  jrv = rv.json()
   assert 'id' in jrv
   assert type(jrv['id']) == int
   for k, v in m_and_k.items():
@@ -219,7 +219,7 @@ def test_create_pandora(client):
 def test_get_stream(client, sid):
   rv = client.get('/api/streams/{}'.format(sid))
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
+  jrv = rv.json()
   s = find(base_config()['streams'], sid)
   assert s != None
   assert s['name'] == jrv['name']
@@ -229,7 +229,7 @@ def test_get_stream(client, sid):
 def test_patch_stream_rename(client, sid):
   rv = client.patch('/api/streams/{}'.format(sid), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json() # get the system state returned
+  jrv = rv.json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['streams'], sid)
@@ -241,7 +241,7 @@ def test_patch_stream_rename(client, sid):
 def test_delete_stream(client, sid):
   rv = client.delete('/api/streams/{}'.format(sid))
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json() # get the system state returned
+  jrv = rv.json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was deleted
   s = find(jrv['streams'], sid)
@@ -258,7 +258,7 @@ def test_delete_connected_stream(client, sid):
   assert rv.status_code == HTTPStatus.OK
   rv = client.delete('/api/streams/{}'.format(sid))
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json() # get the system state returned
+  jrv = rv.json() # get the system state returned
   assert '' == jrv['sources'][0]['input']
 
 # Non-Mock client used - run this test on the Pi
@@ -269,9 +269,9 @@ def test_post_stream_cmd_live(clientnm, cmd):
   m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
   rv = clientnm.post('/api/stream', json=m_and_k)
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
+  jrv = rv.json()
   id = jrv['id']
-  rv = clientnm.patch('/api/sources/0'.format(id), json={'input': 'stream={}'.format(id)})
+  rv = clientnm.patch('/api/sources/0', json={'input': f'stream={id}'})
   assert rv.status_code == HTTPStatus.OK
   rv = clientnm.post('/api/streams/{}/{}'.format(id, cmd))
   assert rv.status_code == HTTPStatus.OK
@@ -287,7 +287,7 @@ def test_create_mute_all_preset(client):
   rv = client.post('/api/preset', json=mute_some)
   # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json()
+  jrv = rv.json()
   assert 'id' in jrv
   assert type(jrv['id']) == int
   for k, v in mute_some.items():
@@ -303,7 +303,7 @@ def test_get_preset(client, pid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.get_json()
+  jrv = rv.json()
   s = find(base_config()['presets'], pid)
   assert s != None
   assert s['name'] == jrv['name']
@@ -318,7 +318,7 @@ def test_patch_preset_name(client, pid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.get_json() # get the system state returned
+  jrv = rv.json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['presets'], pid)
@@ -334,7 +334,7 @@ def test_delete_preset(client, pid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.get_json() # get the system state returned
+  jrv = rv.json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the preset was deleted
   s = find(jrv['presets'], pid)
@@ -371,7 +371,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.get_json() # get the system state returned
+  jrv = rv.json() # get the system state returned
   jrv.pop('version')
   # TODO: check that the system state is valid
   # make sure the rest of the config got loaded
@@ -395,7 +395,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   LAST_CONFIG_PRESET = 9999
   rv = client.post('/api/presets/{}/load'.format(LAST_CONFIG_PRESET))
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.get_json() # get the system state returned
+  jrv = rv.json() # get the system state returned
   jrv.pop('version')
   for name, mod in jrv.items():
     prev_mod = last_state[name]
