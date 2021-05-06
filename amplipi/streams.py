@@ -701,17 +701,17 @@ class Plexamp:
     os.system('cp {} {}'.format(mpd_template, mpd_conf_file))
     os.system('cp {} {}'.format(plexamp_template, server_json_file))
     self.uuid = uuid_gen()
-    # server.json config (TODO: ADD TOKEN/IDENTIFIER MANAGEMENT. SEE DLNA FOR UUID, BUT TOKEN COMES FROM USER)
-    # Double quotes ("") !!!REQUIRED!!! for Python -> JSON translation
+    # server.json config (Proper server.json file must be copied over for this to work)
     with open(server_json_file) as json_file:
       contents = json.load(json_file)
       r_id = contents['user']['id']
-      if r_id != 9999999:
+      if r_id != 9999999: # Dummy value from template
         self.user = r_id
       r_token = contents['user']['token']
-      if r_token != '_':
+      if r_token != '_': # Dummy value from template
         self.token = r_token
 
+    # Double quotes required for Python -> JSON translation
     json_config = {
       "player": {
         "name": "{}".format(self.name),
@@ -741,9 +741,9 @@ class Plexamp:
     with open(mpd_conf_file, 'w') as MPD:
       MPD.write(data)
     # PROCESS
-    plexamp_args = '/usr/bin/node /home/pi/plexamp/server/server.prod.js'
+    plexamp_args = ['/usr/bin/node', '/home/pi/plexamp/server/server.prod.js']
     try:
-      self.proc = subprocess.Popen(args=plexamp_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : plexamp_home})
+      self.proc = subprocess.Popen(args=plexamp_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : plexamp_home})
       time.sleep(0.1) # Delay a bit
       self.src = src
       print('{} connected to {}'.format(self.name, src))
@@ -757,7 +757,7 @@ class Plexamp:
 
   def disconnect(self):
     if self._is_plexamp_running():
-      self.proc.kill()
+      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
       print('{} disconnected'.format(self.name))
     self.state = 'disconnected'
     self.proc = None
