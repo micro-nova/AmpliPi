@@ -5,15 +5,15 @@
   <!-- This is black magic that makes the screen look good on mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AmpliPi - Home Audio</title>
-  <link rel="shortcut icon" href="{{ url_for('static', filename='imgs/amplipi-small-logo.png') }}">
+  <link rel="shortcut icon" href="static/imgs/amplipi-small-logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css"
                 onerror="this.onerror=null;this.href='static/css/libs/normalize/5.0.0/normalize.min.css';">
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'
                 onerror="this.onerror=null;this.href='static/css/libs/font-awesome/5.15.1/all.min.css';">
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'
                 onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='imgs/amplipi-small-logo.png') }}">
+  <link rel="stylesheet" href="static/css/style.css">
+  <link rel="apple-touch-icon" href="static/imgs/amplipi-small-logo.png">
 </head>
 <body>
 <!-- partial:index.partial.html -->
@@ -72,7 +72,7 @@
           {% for src in sources %}
           <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
             {% set info = song_info[src['id']] %}
-            {% set art_url = url_for('static', filename='imgs/rca_inputs.svg') if '' == info['img_url'] else info['img_url'] %}
+            {% set art_url = 'static/imgs/rca_inputs.svg' if '' == info['img_url'] else info['img_url'] %}
             <div class="cover"><img src="{{ art_url }}"/></div>
             <div class="info-controls">
               <div class="info">
@@ -210,6 +210,6 @@
   <!-- Bootstrap JS local fallback -->
   <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.min.js"><\/script>')</script>
   <!-- Local application script -->
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="static/js/script.js"></script>
 </body>
 </html>

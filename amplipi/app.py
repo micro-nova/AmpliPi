@@ -19,48 +19,76 @@
 """AmpliPi Webapp
 
 This serves the amplipi webpp and underlying rest api, that it uses.
-Flask is used to simplify the web plumbing.
+The FastAPI/Starlette web framework is used to simplify the web plumbing.
 """
 
-from flask import Flask, request, render_template, jsonify, make_response
-from flask.helpers import send_from_directory
+# web framework
+from fastapi import FastAPI, Request, HTTPException
+from sse_starlette.sse import EventSourceResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
+from fastapi.templating import Jinja2Templates
+# type handling, fastapi leverages type checking for performance and easy docs
+from typing import List, Optional
+# web server
+import uvicorn
+# amplipi
 import amplipi.ctrl as ctrl
 import amplipi.rt as rt
 import amplipi.utils as utils
-import json
-from collections import OrderedDict
-
+#helpers
+from json import dumps as jsonify
 DEBUG_API = False
 
-# start in the web directory (where everythins is layed out for flask)
+# start in the web directory (where everything is layed out for flask)
 import os
 template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
 generated_dir = os.path.abspath('web/generated')
 
-app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
-app.api = None # TODO: assign an unloaded API here to get auto completion / linting
+app = FastAPI(title='Amplipi')
+app.ctrl = ctrl.Api(rt.Mock(), mock_streams=True, config_file='/tmp/amplipi.conf') # TODO: assign an unloaded API here to get auto completion / linting
+templates = Jinja2Templates(template_dir)
 
-@app.route('/generated/<path:filename>')
-def generated(filename=''):
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+app.mount("/generated", StaticFiles(directory=generated_dir), name="generated") # TODO: make this register as a dynamic folder???
+
+# TODO: move this to ctrl
+from pydantic import BaseModel
+
+class ZoneUpdate(BaseModel):
+  name: Optional[str]
+  source_id: Optional[int]
+  zones: Optional[List[int]]
+  mute: Optional[bool]
+  vol: Optional[int]
+
+@app.get('/static/{filename}')
+def generated(filename):
+  print(f'looking for {filename}')
   filename = filename.replace('../', '') # TODO: Get a fancier regex that checks for bad names
-  return send_from_directory(generated_dir, filename, conditional=True)
+  return FileResponse(f'{static_dir}/{filename}')
+
+@app.get('/generated/{filename}')
+def generated(filename):
+  filename = filename.replace('../', '') # TODO: Get a fancier regex that checks for bad names
+  return FileResponse(f'{generated_dir}/{filename}')
 
 # Helper functions
 def unused_groups(src):
   """ Get groups that are not connected to src """
-  groups = app.api.status['groups']
+  groups = app.ctrl.status['groups']
   return { g['id'] : g['name'] for g in groups if g['source_id'] != src}
 
 def unused_zones(src):
   """ Get zones that are not conencted to src """
-  zones = app.api.status['zones']
+  zones = app.ctrl.status['zones']
   return { z['id'] : z['name'] for z in zones if z['source_id'] != src }
 
 def ungrouped_zones(src):
   """ Get zones that are connected to src, but don't belong to a full group """
-  zones = app.api.status['zones']
-  groups = app.api.status['groups']
+  zones = app.ctrl.status['zones']
+  groups = app.ctrl.status['groups']
   # get all of the zones that belong to this sources groups
   grouped_zones = set()
   for g in groups:
@@ -75,7 +103,7 @@ def ungrouped_zones(src):
 def song_info(src):
   """ Get the song info for a source """
   song_fields = ['artist', 'album', 'track', 'img_url']
-  stream = app.api._get_stream(app.api.status['sources'][src]['input'])
+  stream = app.ctrl._get_stream(app.ctrl.status['sources'][src]['input'])
   info = stream.info() if stream else {}
   # add empty strings for unpopulated fields
   for field in song_fields:
@@ -86,183 +114,191 @@ def song_info(src):
 # API
 # TODO: add debug printing to each request, ie.
 #   if DEBUG_API:
-#     print(app.api.visualize_api())
+#     print(app.ctrl.visualize_api())
 
-@app.route('/api', methods=['GET'])
-@app.route('/api/', methods=['GET'])
-def get_status():
-  return make_response(jsonify(app.api.get_state()))
+@app.get('/api')
+@app.get('/api/')
+async def get_status():
+  return app.ctrl.get_state()
 
 def code_response(resp):
   if resp is None:
     # general commands return None to indicate success
-    return get_status(), 200
+    return app.ctrl.get_state()
   elif 'error' in resp:
     # TODO: refine error codes based on error message
-    return jsonify(resp), 404
+    raise HTTPException(404, resp['error'])
   else:
-    return jsonify(resp), 200
+    return jsonify(resp)
 
 # sources
 
-@app.route('/api/sources', methods=['GET'])
-def get_sources():
-  return {'sources' : app.api.get_state()['sources']}
+@app.get('/api/sources')
+async def get_sources():
+  return {'sources' : app.ctrl.get_state()['sources']}
 
-@app.route('/api/sources/<int:src>', methods=['GET'])
-def get_source(src):
+@app.get('/api/sources/{src}')
+async def get_source(src):
   # TODO: add get_X capabilities to underlying API?
-  sources = app.api.get_state()['sources']
+  sources = app.ctrl.get_state()['sources']
   if src >= 0 and src < len(sources):
     return sources[src]
   else:
     return {}, 404
 
-@app.route('/api/sources/<int:src>', methods=['PATCH'])
-def set_source(src):
-  return code_response(app.api.set_source(id=src, **request.get_json()))
+@app.patch('/api/sources/{src}')
+async def set_source(request: Request, src: int):
+  params = await request.json()
+  return code_response(app.ctrl.set_source(id=src, **params))
 
 # zones
 
-@app.route('/api/zones', methods=['GET'])
-def get_zones():
-  return {'zones': app.api.get_state()['zones']}
+@app.get('/api/zones')
+async def get_zones():
+  return {'zones': app.ctrl.get_state()['zones']}
 
-@app.route('/api/zones/<int:zone>', methods=['GET'])
-def get_zone(zone):
-  zones = app.api.get_state()['zones']
-  if zone >= 0 and zone < len(zones):
-    return zones[zone]
+@app.get('/api/zones/{zone>}')
+async def get_zone(zid: int):
+  zones = app.ctrl.get_state()['zones']
+  if zid >= 0 and zid < len(zones):
+    return zones[zid]
   else:
     return {}, 404
 
-@app.route('/api/zones/<int:zone>', methods=['PATCH'])
-def set_zone(zone):
-  return code_response(app.api.set_zone(id=zone, **request.get_json()))
+@app.patch('/api/zones/{zid}')
+async def set_zone(zid: int, zone: ZoneUpdate):
+  return code_response(app.ctrl.set_zone(id=zid, name=zone.name, source_id=zone.source_id, mute=zone.mute, vol=zone.vol))
 
 # groups
 
-@app.route('/api/group', methods=['POST'])
-def create_group():
-  return code_response(app.api.create_group(**request.get_json()))
+@app.post('/api/group')
+async def create_group(request: Request):
+  params = await request.json()
+  return code_response(app.ctrl.create_group(**params))
 
-@app.route('/api/groups', methods=['GET'])
-def get_groups():
-  return {'groups' : app.api.get_state()['groups']}
+@app.get('/api/groups')
+async def get_groups():
+  return {'groups' : app.ctrl.get_state()['groups']}
 
-@app.route('/api/groups/<int:group>', methods=['GET'])
-def get_group(group):
-  _, grp = utils.find(app.api.get_state()['groups'], group)
+@app.get('/api/groups/{group}')
+async def get_group(group: int):
+  _, grp = utils.find(app.ctrl.get_state()['groups'], group)
   if grp is not None:
     return grp
   else:
     return {}, 404
 
-@app.route('/api/groups/<int:group>', methods=['PATCH'])
-def set_group(group):
-  return code_response(app.api.set_group(id=group, **request.get_json()))
+@app.patch('/api/groups/{group}')
+async def set_group(request: Request, group: int):
+  params = await request.json()
+  return code_response(app.ctrl.set_group(id=group, **params))
 
-@app.route('/api/groups/<int:group>', methods=['DELETE'])
+@app.delete('/api/groups/{group}')
 def delete_group(group):
-  return code_response(app.api.delete_group(id=group))
+  return code_response(app.ctrl.delete_group(id=group))
 
 # streams
 
-@app.route('/api/stream', methods=['POST'])
-def create_stream():
-  print('creating stream from {}'.format(request.get_json()))
-  return code_response(app.api.create_stream(**request.get_json()))
+@app.post('/api/stream')
+async def create_stream(request: Request):
+  params = await request.json()
+  return code_response(app.ctrl.create_stream(**params))
 
-@app.route('/api/streams', methods=['GET'])
+@app.get('/api/streams')
 def get_streams():
-  return {'streams' : app.api.get_state()['streams']}
+  return {'streams' : app.ctrl.get_state()['streams']}
 
-@app.route('/api/streams/<int:sid>', methods=['GET'])
-def get_stream(sid):
-  _, stream = utils.find(app.api.get_state()['streams'], sid)
+@app.get('/api/streams/{sid}')
+def get_stream(sid: int):
+  _, stream = utils.find(app.ctrl.get_state()['streams'], sid)
   if stream is not None:
     return stream
   else:
     return {}, 404
 
-@app.route('/api/streams/<int:sid>', methods=['PATCH'])
-def set_stream(sid):
-  return code_response(app.api.set_stream(id=sid, **request.get_json()))
+@app.patch('/api/streams/{sid}')
+async def set_stream(request: Request, sid: int):
+  params = await request.json()
+  return code_response(app.ctrl.set_stream(id=sid, **params))
 
-@app.route('/api/streams/<int:sid>', methods=['DELETE'])
-def delete_stream(sid):
-  return code_response(app.api.delete_stream(id=sid))
+@app.delete('/api/streams/{sid}')
+def delete_stream(sid: int):
+  return code_response(app.ctrl.delete_stream(id=sid))
 
-@app.route('/api/streams/<int:sid>/<cmd>', methods=['POST'])
-def exec_command(sid, cmd):
-  return code_response(app.api.exec_stream_command(id=sid, cmd=cmd))
+@app.post('/api/streams/{sid}/<cmd>')
+def exec_command(sid: int, cmd: str):
+  return code_response(app.ctrl.exec_stream_command(id=sid, cmd=cmd))
 
 # presets
 
-@app.route('/api/preset', methods=['POST'])
-def create_preset():
-  print('creating preset from {}'.format(request.get_json()))
-  return code_response(app.api.create_preset(request.get_json()))
+@app.post('/api/preset')
+async def create_preset(request: Request):
+  params = await request.json()
+  return code_response(app.ctrl.create_preset(params))
 
-@app.route('/api/presets', methods=['GET'])
+@app.get('/api/presets')
 def get_presets():
-  return {'presets' : app.api.get_state()['presets']}
+  return {'presets' : app.ctrl.get_state()['presets']}
 
-@app.route('/api/presets/<int:pid>', methods=['GET'])
-def get_preset(pid):
-  _, preset = utils.find(app.api.get_state()['presets'], pid)
+@app.get('/api/presets/{pid}')
+def get_preset(pid: int):
+  _, preset = utils.find(app.ctrl.get_state()['presets'], pid)
   if preset is not None:
     return preset
   else:
     return {}, 404
 
-@app.route('/api/presets/<int:pid>', methods=['PATCH'])
-def set_preset(pid):
-  return code_response(app.api.set_preset(pid, request.get_json()))
+@app.patch('/api/presets/{pid}')
+async def set_preset(request: Request, pid: int):
+  params = await request.json()
+  return code_response(app.ctrl.set_preset(pid, params))
 
-@app.route('/api/presets/<int:pid>', methods=['DELETE'])
-def delete_preset(pid):
-  return code_response(app.api.delete_preset(id=pid))
+@app.delete('/api/presets/{pid}')
+async def delete_preset(pid: int):
+  return code_response(app.ctrl.delete_preset(id=pid))
 
-@app.route('/api/presets/<int:pid>/load', methods=['POST'])
-def load_preset(pid):
-  return code_response(app.api.load_preset(id=pid))
+@app.post('/api/presets/{pid}/load')
+async def load_preset(pid: int):
+  return code_response(app.ctrl.load_preset(id=pid))
 
 # documentation
 
-@app.route('/api/doc')
+@app.get('/api/doc')
 def doc():
   # TODO: add hosted python docs as well
-  return render_template('rest-api-doc.html')
+  return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
 
 # Website
 
-@app.route('/')
-@app.route('/<int:src>')
-def view(src=0):
-  s = app.api.status
-  return render_template('index.html.j2', cur_src=src, sources=s['sources'],
-    zones=s['zones'], groups=s['groups'], presets=s['presets'],
-    inputs=app.api.get_inputs(),
-    unused_groups=[unused_groups(src) for src in range(4)],
-    unused_zones=[unused_zones(src) for src in range(4)],
-    ungrouped_zones=[ungrouped_zones(src) for src in range(4)],
-    song_info=[song_info(src) for src in range(4)],
-    version=s['version'],
-    )
+@app.get('/')
+@app.get('/{src}')
+async def view(request: Request, src=0):
+  s = app.ctrl.status
+  context = {
+    # needed for template to make response
+    'request': request,
+    # simplified amplipi state
+    'cur_src': src,
+    'sources': s['sources'],
+    'zones': s['zones'],
+    'groups': s['groups'],
+    'presets': s['presets'],
+    'inputs': app.ctrl.get_inputs(),
+    'unused_groups': [unused_groups(src) for src in range(4)],
+    'unused_zones': [unused_zones(src) for src in range(4)],
+    'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
+    'song_info': [song_info(src) for src in range(4)],
+    'version': s['version'],
+  }
+  return templates.TemplateResponse("index.html.j2", context)
 
 def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.json'):
   if mock_ctrl:
-    app.api = ctrl.Api(rt.Mock(), mock_streams=mock_streams, config_file=config_file)
+    app.ctrl = ctrl.Api(rt.Mock(), mock_streams=mock_streams, config_file=config_file)
   else:
-    app.api = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file)
+    app.ctrl = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file)
   return app
-
-if DEBUG_API:
-  app.debug = True
-  from flask_debugtoolbar import DebugToolbarExtension
-  toolbar = DebugToolbarExtension(app)
 
 if __name__ == '__main__':
   app = create_app()
-  app.run(debug=True, host= '0.0.0.0')
+  uvicorn.run(app, host="0.0.0.0", port=5000, debug=True)
