@@ -63,14 +63,14 @@ class ZoneUpdate(BaseModel):
   mute: Optional[bool]
   vol: Optional[int]
 
-@app.get('/static/{filename}')
-def generated(filename):
+@app.get('/static/{filename:path}')
+def generated(filename: str):
   print(f'looking for {filename}')
   filename = filename.replace('../', '') # TODO: Get a fancier regex that checks for bad names
   return FileResponse(f'{static_dir}/{filename}')
 
-@app.get('/generated/{filename}')
-def generated(filename):
+@app.get('/generated/{filename:path}')
+def generated(filename: str):
   filename = filename.replace('../', '') # TODO: Get a fancier regex that checks for bad names
   return FileResponse(f'{generated_dir}/{filename}')
 
@@ -129,7 +129,7 @@ def code_response(resp):
     # TODO: refine error codes based on error message
     raise HTTPException(404, resp['error'])
   else:
-    return jsonify(resp)
+    return resp
 
 # sources
 
@@ -137,19 +137,16 @@ def code_response(resp):
 async def get_sources():
   return {'sources' : app.ctrl.get_state()['sources']}
 
-@app.get('/api/sources/{src}')
-async def get_source(src):
+@app.get('/api/sources/{sid}')
+async def get_source(sid: int):
   # TODO: add get_X capabilities to underlying API?
   sources = app.ctrl.get_state()['sources']
-  if src >= 0 and src < len(sources):
-    return sources[src]
-  else:
-    return {}, 404
+  return sources[sid]
 
-@app.patch('/api/sources/{src}')
-async def set_source(request: Request, src: int):
+@app.patch('/api/sources/{sid}')
+async def set_source(request: Request, sid: int):
   params = await request.json()
-  return code_response(app.ctrl.set_source(id=src, **params))
+  return code_response(app.ctrl.set_source(id=sid, **params))
 
 # zones
 
@@ -157,13 +154,13 @@ async def set_source(request: Request, src: int):
 async def get_zones():
   return {'zones': app.ctrl.get_state()['zones']}
 
-@app.get('/api/zones/{zone>}')
+@app.get('/api/zones/{zid}')
 async def get_zone(zid: int):
   zones = app.ctrl.get_state()['zones']
   if zid >= 0 and zid < len(zones):
     return zones[zid]
   else:
-    return {}, 404
+    raise HTTPException(404, f'zone {zid} not found')
 
 @app.patch('/api/zones/{zid}')
 async def set_zone(zid: int, zone: ZoneUpdate):
@@ -186,7 +183,7 @@ async def get_group(group: int):
   if grp is not None:
     return grp
   else:
-    return {}, 404
+    raise HTTPException(404, f'group {group} not found')
 
 @app.patch('/api/groups/{group}')
 async def set_group(request: Request, group: int):
@@ -194,7 +191,7 @@ async def set_group(request: Request, group: int):
   return code_response(app.ctrl.set_group(id=group, **params))
 
 @app.delete('/api/groups/{group}')
-def delete_group(group):
+def delete_group(group: int):
   return code_response(app.ctrl.delete_group(id=group))
 
 # streams
@@ -214,7 +211,7 @@ def get_stream(sid: int):
   if stream is not None:
     return stream
   else:
-    return {}, 404
+    raise HTTPException(404, f'stream {sid} not found')
 
 @app.patch('/api/streams/{sid}')
 async def set_stream(request: Request, sid: int):
@@ -225,7 +222,7 @@ async def set_stream(request: Request, sid: int):
 def delete_stream(sid: int):
   return code_response(app.ctrl.delete_stream(id=sid))
 
-@app.post('/api/streams/{sid}/<cmd>')
+@app.post('/api/streams/{sid}/{cmd}')
 def exec_command(sid: int, cmd: str):
   return code_response(app.ctrl.exec_stream_command(id=sid, cmd=cmd))
 
@@ -246,7 +243,7 @@ def get_preset(pid: int):
   if preset is not None:
     return preset
   else:
-    return {}, 404
+    raise HTTPException(404, f'preset {pid} not found')
 
 @app.patch('/api/presets/{pid}')
 async def set_preset(request: Request, pid: int):
@@ -292,11 +289,11 @@ async def view(request: Request, src=0):
   }
   return templates.TemplateResponse("index.html.j2", context)
 
-def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.json'):
+def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.json', delay_saves=True):
   if mock_ctrl:
-    app.ctrl = ctrl.Api(rt.Mock(), mock_streams=mock_streams, config_file=config_file)
+    app.ctrl = ctrl.Api(rt.Mock(), mock_streams=mock_streams, config_file=config_file, delay_saves=delay_saves)
   else:
-    app.ctrl = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file)
+    app.ctrl = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file, delay_saves=delay_saves)
   return app
 
 if __name__ == '__main__':

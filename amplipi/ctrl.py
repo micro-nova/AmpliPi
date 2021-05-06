@@ -104,11 +104,12 @@ class Api:
     ]
   }
 
-  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='config/house.json'):
+  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='config/house.json', delay_saves=False):
     self._rt = _rt
     self._mock_hw = type(_rt) is rt.Mock
     self._mock_streams = mock_streams
-    self.save_timer = None
+    self._save_timer = None
+    self._delay_saves = delay_saves
     """Intitializes the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -168,9 +169,9 @@ class Api:
 
   def __del__(self):
     # stop save in the future so we can save right away
-    if self.save_timer:
-      self.save_timer.cancel()
-      self.save_timer = None
+    if self._save_timer:
+      self._save_timer.cancel()
+      self._save_timer = None
     self.save()
 
   def save(self):
@@ -200,12 +201,15 @@ class Api:
 
     This attempts to avoid excessive saving and the resulting delays by only saving 60 seconds after the last change
     """
-    if self.save_timer:
-      self.save_timer.cancel()
-      self.save_timer = None
-    # start can only be called once on a thread
-    self.save_timer = threading.Timer(5.0, self.save)
-    self.save_timer.start()
+    if self._delay_saves:
+      if self._save_timer:
+        self._save_timer.cancel()
+        self._save_timer = None
+      # start can only be called once on a thread
+      self._save_timer = threading.Timer(5.0, self.save)
+      self._save_timer.start()
+    else:
+      self.save()
 
   def visualize_api(self, prev_status=None):
     """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
