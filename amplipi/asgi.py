@@ -18,7 +18,7 @@
 
 """AmpliPi Webapp Init
 
-This initializes the webapplication found in app.py. Used as a helper to nginx's unit webserver.
+This initializes the webapplication found in app.py.
 """
 
 import amplipi.app
@@ -27,4 +27,4 @@ import os
 mock_ctrl = bool(os.environ.get('MOCK_CTRL', 'False'))
 mock_streams = bool(os.environ.get('MOCK_STREAMS', 'False'))
 
-application = amplipi.app.create_app()
+application = amplipi.app.create_app(delay_saves=True)
