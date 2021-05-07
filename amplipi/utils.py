@@ -122,6 +122,11 @@ def output_device(src):
 
 @functools.lru_cache(maxsize=8)
 def get_folder(folder):
+  if not os.path.exists(folder):
+    try:
+      os.mkdir(folder)
+    except:
+      print(f'Error creating dir: {folder}')
   return os.path.abspath(folder)
 
 def save_on_success(func):
