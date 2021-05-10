@@ -29,13 +29,14 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Optional
+from typing import List, Optional, Dict
 # web server
 import uvicorn
 # amplipi
 import amplipi.ctrl as ctrl
 import amplipi.rt as rt
 import amplipi.utils as utils
+import amplipi.models as models
 #helpers
 from json import dumps as jsonify
 DEBUG_API = False
@@ -52,16 +53,6 @@ templates = Jinja2Templates(template_dir)
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 app.mount("/generated", StaticFiles(directory=generated_dir), name="generated") # TODO: make this register as a dynamic folder???
-
-# TODO: move this to ctrl
-from pydantic import BaseModel
-
-class ZoneUpdate(BaseModel):
-  name: Optional[str]
-  source_id: Optional[int]
-  zones: Optional[List[int]]
-  mute: Optional[bool]
-  vol: Optional[int]
 
 @app.get('/static/{filename:path}')
 def generated(filename: str):
@@ -118,7 +109,7 @@ def song_info(src):
 
 @app.get('/api')
 @app.get('/api/')
-async def get_status():
+def get_status():
   return app.ctrl.get_state()
 
 def code_response(resp):
@@ -134,11 +125,11 @@ def code_response(resp):
 # sources
 
 @app.get('/api/sources')
-async def get_sources():
+def get_sources():
   return {'sources' : app.ctrl.get_state()['sources']}
 
 @app.get('/api/sources/{sid}')
-async def get_source(sid: int):
+def get_source(sid: int):
   # TODO: add get_X capabilities to underlying API?
   sources = app.ctrl.get_state()['sources']
   return sources[sid]
@@ -151,11 +142,11 @@ async def set_source(request: Request, sid: int):
 # zones
 
 @app.get('/api/zones')
-async def get_zones():
+def get_zones() -> Dict[str, List[models.Zone]]:
   return {'zones': app.ctrl.get_state()['zones']}
 
 @app.get('/api/zones/{zid}')
-async def get_zone(zid: int):
+def get_zone(zid: int) -> models.Zone:
   zones = app.ctrl.get_state()['zones']
   if zid >= 0 and zid < len(zones):
     return zones[zid]
@@ -163,36 +154,34 @@ async def get_zone(zid: int):
     raise HTTPException(404, f'zone {zid} not found')
 
 @app.patch('/api/zones/{zid}')
-async def set_zone(zid: int, zone: ZoneUpdate):
-  return code_response(app.ctrl.set_zone(id=zid, name=zone.name, source_id=zone.source_id, mute=zone.mute, vol=zone.vol))
+def set_zone(zid: int, zone: models.ZoneUpdate):
+  return code_response(app.ctrl.set_zone(zid, zone))
 
 # groups
 
 @app.post('/api/group')
-async def create_group(request: Request):
-  params = await request.json()
-  return code_response(app.ctrl.create_group(**params))
+def create_group(group: models.Group) -> models.Group:
+  return code_response(app.ctrl.create_group(group))
 
 @app.get('/api/groups')
-async def get_groups():
+def get_groups() -> Dict[str, List[models.Group]]:
   return {'groups' : app.ctrl.get_state()['groups']}
 
-@app.get('/api/groups/{group}')
-async def get_group(group: int):
-  _, grp = utils.find(app.ctrl.get_state()['groups'], group)
+@app.get('/api/groups/{gid}')
+def get_group(gid: int) -> models.Group:
+  _, grp = utils.find(app.ctrl.get_state()['groups'], gid)
   if grp is not None:
     return grp
   else:
-    raise HTTPException(404, f'group {group} not found')
+    raise HTTPException(404, f'group {gid} not found')
 
-@app.patch('/api/groups/{group}')
-async def set_group(request: Request, group: int):
-  params = await request.json()
-  return code_response(app.ctrl.set_group(id=group, **params))
+@app.patch('/api/groups/{gid}')
+def set_group(gid: int, group: models.GroupUpdate):
+  return code_response(app.ctrl.set_group(gid, group)) # TODO: pass update directly
 
-@app.delete('/api/groups/{group}')
-def delete_group(group: int):
-  return code_response(app.ctrl.delete_group(id=group))
+@app.delete('/api/groups/{gid}')
+def delete_group(gid: int) -> None:
+  return code_response(app.ctrl.delete_group(id=gid))
 
 # streams
 
@@ -251,11 +240,11 @@ async def set_preset(request: Request, pid: int):
   return code_response(app.ctrl.set_preset(pid, params))
 
 @app.delete('/api/presets/{pid}')
-async def delete_preset(pid: int):
+def delete_preset(pid: int):
   return code_response(app.ctrl.delete_preset(id=pid))
 
 @app.post('/api/presets/{pid}/load')
-async def load_preset(pid: int):
+def load_preset(pid: int):
   return code_response(app.ctrl.load_preset(id=pid))
 
 # documentation
