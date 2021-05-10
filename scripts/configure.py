@@ -179,7 +179,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory={dir}
-ExecStart=/usr/bin/authbind --deep {dir}/venv/bin/python -m uvicorn --host 0.0.0.0 --port 80 --interface wsgi amplipi.wsgi:application
+ExecStart=/usr/bin/authbind --deep {dir}/venv/bin/python -m uvicorn --host 0.0.0.0 --port 80 amplipi.wsgi:application
 Restart=on-abort
 
 [Install]
