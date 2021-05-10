@@ -31,6 +31,7 @@ import time
 
 import threading
 
+import amplipi.models as models
 import amplipi.rt as rt
 import amplipi.streams as streams
 import amplipi.utils as utils
@@ -162,8 +163,12 @@ class Api:
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for z in self.status['zones']:
-      # TODO: disbale zones that are not found
-      self.set_zone(z['id'], source_id=z['source_id'], mute=True, vol=z['vol'], force_update=True)
+      # TODO: disable zones that are not found
+      z_update = models.ZoneUpdate()
+      z_update.source_id = z['source_id']
+      z_update.mute = True
+      z_update.vol = z['vol']
+      self.set_zone(z['id'], z_update, force_update=True)
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
 
@@ -398,8 +403,8 @@ class Api:
       return utils.error('failed to set source: index {} out of bounds'.format(idx))
 
   @utils.save_on_success
-  def set_zone(self, id, name=None, source_id=None, mute=None, vol=None, disabled=None, force_update=False):
-    """Configures a zone
+  def set_zone(self, id, update:models.ZoneUpdate, force_update=False):
+    """Reconfigures a zone
 
       Args:
         id (int): any valid zone [0,p*6-1] (6 zones per preamp)
@@ -412,19 +417,15 @@ class Api:
       Returns:
         'None' on success, otherwise error (dict)
     """
-    idx = None
-    for i, s in enumerate(self.status['zones']):
-      if s['id'] == int(id):
-        idx = i
+    idx, z = utils.find(self.status['zones'], id)
     if idx is not None:
       try:
-        z = self.status['zones'][idx]
         # TODO: use updated? value
-        name, _ = utils.updated_val(name, z['name'])
-        source_id, update_source_id = utils.updated_val(source_id, z['source_id'])
-        mute, update_mutes = utils.updated_val(mute, z['mute'])
-        vol, update_vol = utils.updated_val(vol, z['vol'])
-        disabled, _ = utils.updated_val(disabled, z['disabled'])
+        name, _ = utils.updated_val(update.name, z['name'])
+        source_id, update_source_id = utils.updated_val(update.source_id, z['source_id'])
+        mute, update_mutes = utils.updated_val(update.mute, z['mute'])
+        vol, update_vol = utils.updated_val(update.vol, z['vol'])
+        disabled, _ = utils.updated_val(update.disabled, z['disabled'])
       except Exception as e:
         return utils.error('failed to set zone, error getting current state: {}'.format(e))
       try:
@@ -481,7 +482,7 @@ class Api:
       g['vol_delta'] = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
   @utils.save_on_success
-  def set_group(self, id, name=None, source_id=None, zones=None, mute=None, vol_delta=None):
+  def set_group(self, id, update:models.GroupUpdate):
     """Configures an existing group
         parameters will be used to configure each sone in the group's zones
         all parameters besides the group id, @id, are optional
@@ -499,15 +500,10 @@ class Api:
     _, g = utils.find(self.status['groups'], id)
     if g is None:
       return utils.error('set group failed, group {} not found'.format(id))
-    if type(zones) is str:
-      try:
-        zones = eval(zones)
-      except Exception as e:
-        return utils.error('failed to configure group, error parsing zones: {}'.format(e))
     try:
-      name, _ = utils.updated_val(name, g['name'])
-      zones, _ = utils.updated_val(zones, g['zones'])
-      vol_delta, vol_updated = utils.updated_val(vol_delta, g['vol_delta'])
+      name, _ = utils.updated_val(update.name, g['name'])
+      zones, _ = utils.updated_val(update.zones, g['zones'])
+      vol_delta, vol_updated = utils.updated_val(update.vol_delta, g['vol_delta'])
       if vol_updated:
         vol_change = vol_delta - g['vol_delta']
       else:
@@ -518,13 +514,17 @@ class Api:
     g['name'] = name
     g['zones'] = zones
 
+    # update each of the member zones
+    z_update = models.ZoneUpdate()
+    z_update.source_id = update.source_id
+    z_update.mute = update.mute
+    if vol_change != 0:
+      # TODO: make this use volume delta adjustment, for now its a fixed group volume
+      z_update.vol = vol_delta # vol = z['vol'] + vol_change
     for z in [ self.status['zones'][zone] for zone in zones ]:
-      if vol_change != 0:
-        # TODO: make this use volume delta adjustment, for now its a fixed group volume
-        vol = vol_delta # vol = z['vol'] + vol_change
-      else:
-        vol = None
-      self.set_zone(z['id'], None, source_id, mute, vol)
+      self.set_zone(z['id'], z_update)
+
+    # save the volume
     g['vol_delta'] = vol_delta
 
     # update the group stats
@@ -539,27 +539,21 @@ class Api:
       return 100
 
   @utils.save_on_success
-  def create_group(self, name: str, zones: List[int]):
+  def create_group(self, new_group:models.Group):
     """Creates a new group with a list of zones
 
     Refer to the returned system state to obtain the id for the newly created group
     """
     # verify new group's name is unique
     names = [ g['name'] for g in self.status['groups'] ]
-    if name in names:
-      return utils.error('create group failed: {} already exists'.format(name))
-
-    if type(zones) is str:
-      try:
-        zones = eval(zones)
-      except Exception as e:
-        return utils.error('failed to configure group, error parsing zones: {}'.format(e))
+    if new_group.name in names:
+      return utils.error('create group failed: {} already exists'.format(new_group.name))
 
     # get the new groug's id
     id = self._new_group_id()
 
     # add the new group
-    group = { 'id': id, 'name' : name, 'zones' : zones, 'vol_delta' : 0 }
+    group = { 'id': id, 'name' : new_group.name, 'zones' : new_group.zones, 'vol_delta' : 0 }
     self.status['groups'].append(group)
 
     # update the group stats and populate uninitialized fields of the group
@@ -827,8 +821,10 @@ class Api:
     # we do this just in case there is intermediate state that causes audio issues. TODO: test with and without this feature (it adds a lot of complexity to presets, lets make sure its worth it)
     z_effected = self._effected_zones(id)
     z_temp_muted = [ zid for zid in z_effected if not self.status['zones'][zid]['mute'] ]
+    z_update = models.ZoneUpdate()
+    z_update.mute = True
     for zid in z_temp_muted:
-      self.set_zone(zid, mute=True)
+      self.set_zone(zid, z_update)
 
     ps = preset['state']
 
@@ -844,7 +840,10 @@ class Api:
       _, g_to_update = utils.find(self.status['groups'], g['id'])
       if g_to_update is None:
         return utils.error('group {} does not exist'.format(g['id']))
-      self.set_group(**g)
+      to_parse = g.copy()
+      to_parse.pop('id')
+      g_update = models.GroupUpdate.parse_obj(to_parse)
+      self.set_group(g['id'], g_update)
       if 'mute' in g:
         # use the updated group's zones just in case the group's zones were just changed
         _, g_updated = utils.find(self.status['groups'], g['id'])
@@ -858,7 +857,9 @@ class Api:
 
     # execute change zone by zone in increasing order
     for z in utils.with_id(ps.get('zones')):
-      self.set_zone(**z)
+      to_parse = z.copy()
+      to_parse.pop('id')
+      self.set_zone(z['id'], models.ZoneUpdate.parse_obj(to_parse))
       if 'mute' in z:
         if z['mute']:
           z_muted.add(z['id'])
@@ -867,8 +868,10 @@ class Api:
 
     # unmute effected zones that were not muted by the preset configuration
     z_to_unmute = set(z_temp_muted).difference(z_muted)
+    z_update = models.ZoneUpdate()
+    z_update.mute = False
     for zid in z_to_unmute:
-      self.set_zone(id=zid, mute=False)
+      self.set_zone(zid, z_update)
 
     # TODO: execute stream commands
 
