@@ -6,6 +6,7 @@ python-vlc
 requests
 fastapi
 sse-starlette
+fastapi_utils
 uvicorn
 aiofiles
 pydantic

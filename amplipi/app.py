@@ -23,17 +23,19 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 """
 
 # web framework
-from fastapi import FastAPI, Request, HTTPException
-from sse_starlette.sse import EventSourceResponse
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 from fastapi.templating import Jinja2Templates
+from fastapi_utils import cbv
+from fastapi_utils.inferring_router import InferringRouter
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
+from functools import lru_cache
 # web server
 import uvicorn
 # amplipi
-import amplipi.ctrl as ctrl
+import amplipi
 import amplipi.rt as rt
 import amplipi.utils as utils
 import amplipi.models as models
@@ -48,22 +50,10 @@ static_dir = os.path.abspath('web/static')
 generated_dir = os.path.abspath('web/generated')
 
 app = FastAPI(title='Amplipi')
-app.ctrl = ctrl.Api(rt.Mock(), mock_streams=True, config_file='/tmp/amplipi.conf') # TODO: assign an unloaded API here to get auto completion / linting
 templates = Jinja2Templates(template_dir)
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 app.mount("/generated", StaticFiles(directory=generated_dir), name="generated") # TODO: make this register as a dynamic folder???
-
-@app.get('/static/{filename:path}')
-def generated(filename: str):
-  print(f'looking for {filename}')
-  filename = filename.replace('../', '') # TODO: Get a fancier regex that checks for bad names
-  return FileResponse(f'{static_dir}/{filename}')
-
-@app.get('/generated/{filename:path}')
-def generated(filename: str):
-  filename = filename.replace('../', '') # TODO: Get a fancier regex that checks for bad names
-  return FileResponse(f'{generated_dir}/{filename}')
 
 # Helper functions
 def unused_groups(src):
@@ -102,189 +92,196 @@ def song_info(src):
       info[field] = ''
   return info
 
-# API
-# TODO: add debug printing to each request, ie.
-#   if DEBUG_API:
-#     print(app.ctrl.visualize_api())
+# Add our own router so we can bind/inject our API object
+settings = models.AppSettings()
 
-@app.get('/api')
-@app.get('/api/')
-def get_status():
-  return app.ctrl.get_state()
+@lru_cache(1)
+def get_ctrl() -> amplipi.ctrl.Api:
+  return amplipi.ctrl.Api(settings)
 
-def code_response(resp):
-  if resp is None:
-    # general commands return None to indicate success
-    return app.ctrl.get_state()
-  elif 'error' in resp:
-    # TODO: refine error codes based on error message
-    raise HTTPException(404, resp['error'])
-  else:
-    return resp
+api_router = InferringRouter()
+class API:
 
-# sources
+  ctrl: amplipi.ctrl.Api = Depends(get_ctrl)
 
-@app.get('/api/sources')
-def get_sources():
-  return {'sources' : app.ctrl.get_state()['sources']}
+  @api_router.get('/api')
+  @api_router.get('/api/')
+  def get_status(self):
+    return self.ctrl.get_state()
 
-@app.get('/api/sources/{sid}')
-def get_source(sid: int):
-  # TODO: add get_X capabilities to underlying API?
-  sources = app.ctrl.get_state()['sources']
-  return sources[sid]
+  def code_response(self, resp):
+    if resp is None:
+      # general commands return None to indicate success
+      return self.ctrl.get_state()
+    elif 'error' in resp:
+      # TODO: refine error codes based on error message
+      raise HTTPException(404, resp['error'])
+    else:
+      return resp
 
-@app.patch('/api/sources/{sid}')
-async def set_source(request: Request, sid: int):
-  params = await request.json()
-  return code_response(app.ctrl.set_source(id=sid, **params))
+  # sources
 
-# zones
+  @api_router.get('/api/sources')
+  def get_sources(self):
+    return {'sources' : self.ctrl.get_state()['sources']}
 
-@app.get('/api/zones')
-def get_zones() -> Dict[str, List[models.Zone]]:
-  return {'zones': app.ctrl.get_state()['zones']}
+  @api_router.get('/api/sources/{sid}')
+  def get_source(self, sid: int):
+    # TODO: add get_X capabilities to underlying API?
+    sources = self.ctrl.get_state()['sources']
+    return sources[sid]
 
-@app.get('/api/zones/{zid}')
-def get_zone(zid: int) -> models.Zone:
-  zones = app.ctrl.get_state()['zones']
-  if zid >= 0 and zid < len(zones):
-    return zones[zid]
-  else:
-    raise HTTPException(404, f'zone {zid} not found')
+  @api_router.patch('/api/sources/{sid}')
+  async def set_source(self, sid: int, request:Request):
+    params = await request.json()
+    return self.code_response(self.ctrl.set_source(id=sid, **params))
 
-@app.patch('/api/zones/{zid}')
-def set_zone(zid: int, zone: models.ZoneUpdate):
-  return code_response(app.ctrl.set_zone(zid, zone))
+  # zones
 
-# groups
+  @api_router.get('/api/zones')
+  def get_zones(self) -> Dict[str, List[models.Zone]]:
+    return {'zones': self.ctrl.get_state()['zones']}
 
-@app.post('/api/group')
-def create_group(group: models.Group) -> models.Group:
-  return code_response(app.ctrl.create_group(group))
+  @api_router.get('/api/zones/{zid}')
+  def get_zone(self, zid: int) -> models.Zone:
+    zones = self.ctrl.get_state()['zones']
+    if zid >= 0 and zid < len(zones):
+      return zones[zid]
+    else:
+      raise HTTPException(404, f'zone {zid} not found')
 
-@app.get('/api/groups')
-def get_groups() -> Dict[str, List[models.Group]]:
-  return {'groups' : app.ctrl.get_state()['groups']}
+  @api_router.patch('/api/zones/{zid}')
+  def set_zone(self, zid: int, zone: models.ZoneUpdate):
+    return self.code_response(self.ctrl.set_zone(zid, zone))
 
-@app.get('/api/groups/{gid}')
-def get_group(gid: int) -> models.Group:
-  _, grp = utils.find(app.ctrl.get_state()['groups'], gid)
-  if grp is not None:
-    return grp
-  else:
-    raise HTTPException(404, f'group {gid} not found')
+  # groups
 
-@app.patch('/api/groups/{gid}')
-def set_group(gid: int, group: models.GroupUpdate):
-  return code_response(app.ctrl.set_group(gid, group)) # TODO: pass update directly
+  @api_router.post('/api/group')
+  def create_group(self, group: models.Group) -> models.Group:
+    return self.code_response(self.ctrl.create_group(group))
 
-@app.delete('/api/groups/{gid}')
-def delete_group(gid: int) -> None:
-  return code_response(app.ctrl.delete_group(id=gid))
+  @api_router.get('/api/groups')
+  def get_groups(self) -> Dict[str, List[models.Group]]:
+    return {'groups' : self.ctrl.get_state()['groups']}
 
-# streams
+  @api_router.get('/api/groups/{gid}')
+  def get_group(self, gid: int) -> models.Group:
+    _, grp = utils.find(self.ctrl.get_state()['groups'], gid)
+    if grp is not None:
+      return grp
+    else:
+      raise HTTPException(404, f'group {gid} not found')
 
-@app.post('/api/stream')
-async def create_stream(request: Request):
-  params = await request.json()
-  return code_response(app.ctrl.create_stream(**params))
+  @api_router.patch('/api/groups/{gid}')
+  def set_group(self, gid: int, group: models.GroupUpdate):
+    return self.code_response(self.ctrl.set_group(gid, group)) # TODO: pass update directly
 
-@app.get('/api/streams')
-def get_streams():
-  return {'streams' : app.ctrl.get_state()['streams']}
+  @api_router.delete('/api/groups/{gid}')
+  def delete_group(self, gid: int) -> None:
+    return self.code_response(self.ctrl.delete_group(id=gid))
 
-@app.get('/api/streams/{sid}')
-def get_stream(sid: int):
-  _, stream = utils.find(app.ctrl.get_state()['streams'], sid)
-  if stream is not None:
-    return stream
-  else:
-    raise HTTPException(404, f'stream {sid} not found')
+  # streams
 
-@app.patch('/api/streams/{sid}')
-async def set_stream(request: Request, sid: int):
-  params = await request.json()
-  return code_response(app.ctrl.set_stream(id=sid, **params))
+  @api_router.post('/api/stream')
+  async def create_stream(self, request: Request):
+    params = await request.json()
+    return self.code_response(self.ctrl.create_stream(**params))
 
-@app.delete('/api/streams/{sid}')
-def delete_stream(sid: int):
-  return code_response(app.ctrl.delete_stream(id=sid))
+  @api_router.get('/api/streams')
+  def get_streams(self):
+    return {'streams' : self.ctrl.get_state()['streams']}
 
-@app.post('/api/streams/{sid}/{cmd}')
-def exec_command(sid: int, cmd: str):
-  return code_response(app.ctrl.exec_stream_command(id=sid, cmd=cmd))
+  @api_router.get('/api/streams/{sid}')
+  def get_stream(self, sid: int):
+    _, stream = utils.find(self.ctrl.get_state()['streams'], sid)
+    if stream is not None:
+      return stream
+    else:
+      raise HTTPException(404, f'stream {sid} not found')
 
-# presets
+  @api_router.patch('/api/streams/{sid}')
+  async def set_stream(self, request: Request, sid: int):
+    params = await request.json()
+    return self.code_response(self.ctrl.set_stream(id=sid, **params))
 
-@app.post('/api/preset')
-async def create_preset(request: Request):
-  params = await request.json()
-  return code_response(app.ctrl.create_preset(params))
+  @api_router.delete('/api/streams/{sid}')
+  def delete_stream(self, sid: int):
+    return self.code_response(self.ctrl.delete_stream(id=sid))
 
-@app.get('/api/presets')
-def get_presets():
-  return {'presets' : app.ctrl.get_state()['presets']}
+  @api_router.post('/api/streams/{sid}/{cmd}')
+  def exec_command(self, sid: int, cmd: str):
+    return self.code_response(self.ctrl.exec_stream_command(id=sid, cmd=cmd))
 
-@app.get('/api/presets/{pid}')
-def get_preset(pid: int):
-  _, preset = utils.find(app.ctrl.get_state()['presets'], pid)
-  if preset is not None:
-    return preset
-  else:
-    raise HTTPException(404, f'preset {pid} not found')
+  # presets
 
-@app.patch('/api/presets/{pid}')
-async def set_preset(request: Request, pid: int):
-  params = await request.json()
-  return code_response(app.ctrl.set_preset(pid, params))
+  @api_router.post('/api/preset')
+  async def create_preset(self, preset: models.Preset) -> models.Preset:
+    return self.code_response(self.ctrl.create_preset(preset))
 
-@app.delete('/api/presets/{pid}')
-def delete_preset(pid: int):
-  return code_response(app.ctrl.delete_preset(id=pid))
+  @api_router.get('/api/presets')
+  def get_presets(self) -> Dict[str, List[models.Preset]]:
+    return {'presets' : self.ctrl.get_state()['presets']}
 
-@app.post('/api/presets/{pid}/load')
-def load_preset(pid: int):
-  return code_response(app.ctrl.load_preset(id=pid))
+  @api_router.get('/api/presets/{pid}')
+  def get_preset(self, pid: int) -> models.Preset:
+    _, preset = utils.find(self.ctrl.get_state()['presets'], pid)
+    if preset is not None:
+      return preset
+    else:
+      raise HTTPException(404, f'preset {pid} not found')
 
-# documentation
+  @api_router.patch('/api/presets/{pid}')
+  async def set_preset(self, pid: int, update: models.PresetUpdate) -> models.Status:
+    return self.code_response(self.ctrl.set_preset(pid, update))
 
-@app.get('/api/doc')
-def doc():
-  # TODO: add hosted python docs as well
-  return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
+  @api_router.delete('/api/presets/{pid}')
+  def delete_preset(self, pid: int) -> models.Status:
+    return self.code_response(self.ctrl.delete_preset(pid))
 
-# Website
+  @api_router.post('/api/presets/{pid}/load')
+  def load_preset(self, pid: int) -> models.Status:
+    return self.code_response(self.ctrl.load_preset(pid))
 
-@app.get('/')
-@app.get('/{src}')
-async def view(request: Request, src=0):
-  s = app.ctrl.status
-  context = {
-    # needed for template to make response
-    'request': request,
-    # simplified amplipi state
-    'cur_src': src,
-    'sources': s['sources'],
-    'zones': s['zones'],
-    'groups': s['groups'],
-    'presets': s['presets'],
-    'inputs': app.ctrl.get_inputs(),
-    'unused_groups': [unused_groups(src) for src in range(4)],
-    'unused_zones': [unused_zones(src) for src in range(4)],
-    'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
-    'song_info': [song_info(src) for src in range(4)],
-    'version': s['version'],
-  }
-  return templates.TemplateResponse("index.html.j2", context)
+  # Documentation
 
-def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.json', delay_saves=True):
-  if mock_ctrl:
-    app.ctrl = ctrl.Api(rt.Mock(), mock_streams=mock_streams, config_file=config_file, delay_saves=delay_saves)
-  else:
-    app.ctrl = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file, delay_saves=delay_saves)
+  @api_router.get('/api/doc')
+  def doc(self):
+    # TODO: add hosted python docs as well
+    return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
+
+  # Website
+
+  @api_router.get('/')
+  @api_router.get('/{src}')
+  def view(self, request: Request, src=0):
+    s = self.ctrl.status
+    context = {
+      # needed for template to make response
+      'request': request,
+      # simplified amplipi state
+      'cur_src': src,
+      'sources': s['sources'],
+      'zones': s['zones'],
+      'groups': s['groups'],
+      'presets': s['presets'],
+      'inputs': app.ctrl.get_inputs(),
+      'unused_groups': [unused_groups(src) for src in range(4)],
+      'unused_zones': [unused_zones(src) for src in range(4)],
+      'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
+      'song_info': [song_info(src) for src in range(4)],
+      'version': s['version'],
+    }
+    return templates.TemplateResponse("index.html.j2", context)
+
+def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, s:models.AppSettings=models.AppSettings()) -> FastAPI:
+  # specify old parameters
+  if mock_ctrl: s.mock_ctrl = mock_ctrl
+  if mock_streams: s.mock_streams = mock_streams
+  if config_file: s.config_file = config_file
+  if delay_saves: s.delay_saves = delay_saves
+  # modify settings
+  global settings
+  settings = s # set the settings class the api_router uses to instantiate the API class
+  # instantiate api
+  app.include_router(api_router)
   return app
-
-if __name__ == '__main__':
-  app = create_app()
-  uvicorn.run(app, host="0.0.0.0", port=5000, debug=True)

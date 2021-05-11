@@ -1,6 +1,27 @@
+# AmpliPi Home Audio
+# Copyright (C) 2021 MicroNova LLC
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""AmpliPi Data Models
+
+Encourages reuse of datastructures across AmpliPi
+"""
+
 # type handling, fastapi leverages type checking for performance and easy docs
 from typing import List, Optional, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, BaseSettings
 
 class Base(BaseModel):
   """ Base class for AmpliPi Models
@@ -101,3 +122,9 @@ class Status(Base):
   streams: List[Stream]
   presets: List[Preset]
   version: str
+
+class AppSettings(BaseSettings):
+  mock_ctrl: bool = False
+  mock_streams: bool = False
+  config_file: str = 'house.json'
+  delay_saves: bool = True

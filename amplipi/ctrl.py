@@ -105,18 +105,18 @@ class Api:
     ]
   }
 
-  def __init__(self, _rt=rt.Mock(), mock_streams=True, config_file='config/house.json', delay_saves=False):
-    self._rt = _rt
-    self._mock_hw = type(_rt) is rt.Mock
-    self._mock_streams = mock_streams
+  def __init__(self, settings:models.AppSettings=models.AppSettings()):
+    self._mock_hw = settings.mock_ctrl
+    self._mock_streams = settings.mock_streams
     self._save_timer = None
-    self._delay_saves = delay_saves
+    self._delay_saves = settings.delay_saves
+    self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi()
     """Intitializes the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
-    with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
+    with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
-    self.config_file = config_file
-    self.backup_config_file = config_file + '.bak'
+    self.config_file = settings.config_file
+    self.backup_config_file = settings.config_file + '.bak'
     self.config_file_valid = True # initially we assume the config file is valid
     # try to load the config file or its backup
     config_paths = [self.config_file, self.backup_config_file]
