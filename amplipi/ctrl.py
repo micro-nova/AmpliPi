@@ -110,7 +110,7 @@ class Api:
       {"id": 1002, "name": "My Spotify", "type": "spotify"},
       {"id": 1003, "name": "My Internet Radio", "type": "internetradio", "url": "http://change.me", "logo": "http://change.me/image.png"},
       {"id": 1004, "name": "My DLNA Renderer", "type": "dlna"},
-      {"id": 1005, "name": "My Plexamp", "type": "plexamp", "identifier": "", "token": ""},
+      {"id": 1005, "name": "My Plexamp", "type": "plexamp", "token": ""},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
