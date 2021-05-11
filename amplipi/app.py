@@ -103,150 +103,158 @@ settings = models.AppSettings()
 def get_ctrl() -> amplipi.ctrl.Api:
   return amplipi.ctrl.Api(settings)
 
-@app.get('/api')
-@app.get('/api/')
-def get_status(ctrl=Depends(get_ctrl)):
-  return ctrl.get_state()
+api_router = InferringRouter()
+class API:
 
-def code_response(resp):
-  if resp is None:
-    # general commands return None to indicate success
-    return get_ctrl().get_state()
-  elif 'error' in resp:
-    # TODO: refine error codes based on error message
-    raise HTTPException(404, resp['error'])
-  else:
-    return resp
+  ctrl: amplipi.ctrl.Api = Depends(get_ctrl)
 
-# sources
+  @api_router.get('')
+  @api_router.get('/')
+  def get_status(self):
+    return self.ctrl.get_state()
 
-@app.get('/api/sources')
-def get_sources(ctrl=Depends(get_ctrl)):
-  return {'sources' : ctrl.get_state()['sources']}
+  def code_response(self, resp):
+    if resp is None:
+      # general commands return None to indicate success
+      return self.ctrl.get_state()
+    elif 'error' in resp:
+      # TODO: refine error codes based on error message
+      raise HTTPException(404, resp['error'])
+    else:
+      return resp
 
-@app.get('/api/sources/{sid}')
-def get_source(sid: int, ctrl=Depends(get_ctrl)):
-  # TODO: add get_X capabilities to underlying API?
-  sources = ctrl.get_state()['sources']
-  return sources[sid]
+  # sources
 
-@app.patch('/api/sources/{sid}')
-async def set_source(sid: int, request:Request, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  params = await request.json()
-  return code_response(ctrl.set_source(id=sid, **params))
+  @api_router.get('/sources')
+  def get_sources(self):
+    return {'sources' : self.ctrl.get_state()['sources']}
 
-# zones
+  @api_router.get('/sources/{sid}')
+  def get_source(self, sid: int):
+    # TODO: add get_X capabilities to underlying API?
+    sources = self.ctrl.get_state()['sources']
+    return sources[sid]
 
-@app.get('/api/zones')
-def get_zones(ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> Dict[str, List[models.Zone]]:
-  return {'zones': ctrl.get_state()['zones']}
+  @api_router.patch('/sources/{sid}')
+  async def set_source(self, sid: int, request:Request):
+    params = await request.json()
+    return self.code_response(self.ctrl.set_source(id=sid, **params))
 
-@app.get('/api/zones/{zid}')
-def get_zone(zid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> models.Zone:
-  zones = ctrl.get_state()['zones']
-  if zid >= 0 and zid < len(zones):
-    return zones[zid]
-  else:
-    raise HTTPException(404, f'zone {zid} not found')
+  # zones
 
-@app.patch('/api/zones/{zid}')
-def set_zone(zid: int, zone: models.ZoneUpdate, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  return code_response(ctrl.set_zone(zid, zone))
+  @api_router.get('/zones')
+  def get_zones(self) -> Dict[str, List[models.Zone]]:
+    return {'zones': self.ctrl.get_state()['zones']}
 
-# groups
+  @api_router.get('/zones/{zid}')
+  def get_zone(self, zid: int) -> models.Zone:
+    zones = self.ctrl.get_state()['zones']
+    if zid >= 0 and zid < len(zones):
+      return zones[zid]
+    else:
+      raise HTTPException(404, f'zone {zid} not found')
 
-@app.post('/api/group')
-def create_group(group: models.Group, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> models.Group:
-  return code_response(ctrl.create_group(group))
+  @api_router.patch('/zones/{zid}')
+  def set_zone(self, zid: int, zone: models.ZoneUpdate):
+    return self.code_response(self.ctrl.set_zone(zid, zone))
 
-@app.get('/api/groups')
-def get_groups(ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> Dict[str, List[models.Group]]:
-  return {'groups' : ctrl.get_state()['groups']}
+  # groups
 
-@app.get('/api/groups/{gid}')
-def get_group(gid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> models.Group:
-  _, grp = utils.find(ctrl.get_state()['groups'], gid)
-  if grp is not None:
-    return grp
-  else:
-    raise HTTPException(404, f'group {gid} not found')
+  @api_router.post('/group')
+  def create_group(self, group: models.Group) -> models.Group:
+    return self.code_response(self.ctrl.create_group(group))
 
-@app.patch('/api/groups/{gid}')
-def set_group(gid: int, group: models.GroupUpdate, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  return code_response(ctrl.set_group(gid, group)) # TODO: pass update directly
+  @api_router.get('/groups')
+  def get_groups(self) -> Dict[str, List[models.Group]]:
+    return {'groups' : self.ctrl.get_state()['groups']}
 
-@app.delete('/api/groups/{gid}')
-def delete_group(gid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> None:
-  return code_response(ctrl.delete_group(id=gid))
+  @api_router.get('/groups/{gid}')
+  def get_group(self, gid: int) -> models.Group:
+    _, grp = utils.find(self.ctrl.get_state()['groups'], gid)
+    if grp is not None:
+      return grp
+    else:
+      raise HTTPException(404, f'group {gid} not found')
 
-# streams
+  @api_router.patch('/groups/{gid}')
+  def set_group(self, gid: int, group: models.GroupUpdate):
+    return self.code_response(self.ctrl.set_group(gid, group)) # TODO: pass update directly
 
-@app.post('/api/stream')
-async def create_stream(request: Request, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  params = await request.json()
-  return code_response(ctrl.create_stream(**params))
+  @api_router.delete('/groups/{gid}')
+  def delete_group(self, gid: int) -> None:
+    return self.code_response(self.ctrl.delete_group(id=gid))
 
-@app.get('/api/streams')
-def get_streams(ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  return {'streams' : ctrl.get_state()['streams']}
+  # streams
 
-@app.get('/api/streams/{sid}')
-def get_stream(sid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  _, stream = utils.find(ctrl.get_state()['streams'], sid)
-  if stream is not None:
-    return stream
-  else:
-    raise HTTPException(404, f'stream {sid} not found')
+  @api_router.post('/stream')
+  async def create_stream(self, request: Request):
+    params = await request.json()
+    return self.code_response(self.ctrl.create_stream(**params))
 
-@app.patch('/api/streams/{sid}')
-async def set_stream(request: Request, sid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  params = await request.json()
-  return code_response(ctrl.set_stream(id=sid, **params))
+  @api_router.get('/streams')
+  def get_streams(self):
+    return {'streams' : self.ctrl.get_state()['streams']}
 
-@app.delete('/api/streams/{sid}')
-def delete_stream(sid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  return code_response(ctrl.delete_stream(id=sid))
+  @api_router.get('/streams/{sid}')
+  def get_stream(self, sid: int):
+    _, stream = utils.find(self.ctrl.get_state()['streams'], sid)
+    if stream is not None:
+      return stream
+    else:
+      raise HTTPException(404, f'stream {sid} not found')
 
-@app.post('/api/streams/{sid}/{cmd}')
-def exec_command(sid: int, cmd: str, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)):
-  return code_response(ctrl.exec_stream_command(id=sid, cmd=cmd))
+  @api_router.patch('/streams/{sid}')
+  async def set_stream(self, request: Request, sid: int):
+    params = await request.json()
+    return self.code_response(self.ctrl.set_stream(id=sid, **params))
 
-# presets
+  @api_router.delete('/streams/{sid}')
+  def delete_stream(self, sid: int):
+    return self.code_response(self.ctrl.delete_stream(id=sid))
 
-@app.post('/api/preset')
-def create_preset(preset:models.Preset, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> models.Preset:
-  return code_response(ctrl.create_preset(preset))
+  @api_router.post('/streams/{sid}/{cmd}')
+  def exec_command(self, sid: int, cmd: str):
+    return self.code_response(self.ctrl.exec_stream_command(id=sid, cmd=cmd))
 
-@app.get('/api/presets')
-def get_presets(ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> Dict[str, List[models.Preset]]:
-  return {'presets' : ctrl.get_state()['presets']}
+  # presets
 
-@app.get('/api/presets/{pid}')
-def get_preset(pid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> models.Preset:
-  _, preset = utils.find(ctrl.get_state()['presets'], pid)
-  if preset is not None:
-    return preset
-  else:
-    raise HTTPException(404, f'preset {pid} not found')
+  @api_router.post('/preset')
+  async def create_preset(self, preset: models.Preset) -> models.Preset:
+    return self.code_response(self.ctrl.create_preset(preset))
 
-@app.patch('/api/presets/{pid}')
-def set_preset(pid: int, update: models.PresetUpdate, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> models.Status:
-  return code_response(ctrl.set_preset(pid, update))
+  @api_router.get('/presets')
+  def get_presets(self) -> Dict[str, List[models.Preset]]:
+    return {'presets' : self.ctrl.get_state()['presets']}
 
-@app.delete('/api/presets/{pid}')
-def delete_preset(pid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> models.Status:
-  return code_response(ctrl.delete_preset(pid))
+  @api_router.get('/presets/{pid}')
+  def get_preset(self, pid: int) -> models.Preset:
+    _, preset = utils.find(self.ctrl.get_state()['presets'], pid)
+    if preset is not None:
+      return preset
+    else:
+      raise HTTPException(404, f'preset {pid} not found')
 
-@app.post('/api/presets/{pid}/load')
-def load_preset(pid: int, ctrl: amplipi.ctrl.Api = Depends(get_ctrl)) -> models.Status:
-  return code_response(ctrl.load_preset(pid))
+  @api_router.patch('/presets/{pid}')
+  async def set_preset(self, pid: int, update: models.PresetUpdate) -> models.Status:
+    return self.code_response(self.ctrl.set_preset(pid, update))
 
-# Documentation
+  @api_router.delete('/presets/{pid}')
+  def delete_preset(self, pid: int) -> models.Status:
+    return self.code_response(self.ctrl.delete_preset(pid))
 
-@app.get('/api/doc')
-def doc():
-  # TODO: add hosted python docs as well
-  return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
+  @api_router.post('/presets/{pid}/load')
+  def load_preset(self, pid: int) -> models.Status:
+    return self.code_response(self.ctrl.load_preset(pid))
+
+  # Documentation
+
+  @api_router.get('/doc')
+  def doc(self):
+    # TODO: add hosted python docs as well
+    return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
+
+# TODO: investigate why none of the routes are succeeding here
+app.include_router(router=api_router, prefix='/api')
 
 # Website
 
