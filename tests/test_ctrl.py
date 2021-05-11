@@ -64,7 +64,10 @@ def api_w_mock_rt(config=None, backup_config=None):
   #   (a None config file means that config file will be deleted before launch)
   setup_test_configs(config, backup_config)
   # start the api (we have a specfic config path we use for all tests)
-  return amplipi.ctrl.Api(amplipi.rt.Mock(), config_file=CONFIG_FILE)
+  settings = amplipi.models.AppSettings()
+  settings.config_file = CONFIG_FILE
+  settings.mock_ctrl = True
+  return amplipi.ctrl.Api(settings)
 
 def api_w_rpi_rt(config=None, backup_config=None):
   # copy in specfic config files (paths) to know config locations
@@ -72,7 +75,10 @@ def api_w_rpi_rt(config=None, backup_config=None):
   #   (a None config file means that config file will be deleted before launch)
   setup_test_configs(config, backup_config)
   # start the api (we have a specfic config path we use for all tests)
-  return amplipi.ctrl.Api(amplipi.rt.Rpi(mock=True), config_file=CONFIG_FILE)
+  settings = amplipi.models.AppSettings()
+  settings.config_file = CONFIG_FILE
+  settings.mock_ctrl = False
+  return amplipi.ctrl.Api(settings)
 
 def use_tmpdir():
   # lets run these tests in a temporary directory so they dont mess with other tests config files

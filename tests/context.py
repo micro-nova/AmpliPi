@@ -7,3 +7,4 @@ import amplipi.ctrl
 import amplipi.rt
 import amplipi.streams
 import amplipi.app
+import amplipi.models
