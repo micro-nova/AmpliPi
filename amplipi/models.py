@@ -20,7 +20,7 @@ Encourages reuse of datastructures across AmpliPi
 """
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Optional, Dict
+from typing import List, Dict, Optional, Union
 from pydantic import BaseModel, BaseSettings
 
 class Base(BaseModel):
@@ -53,6 +53,9 @@ class Source(Base):
 class SourceUpdate(BaseUpdate):
   input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
 
+class SourceUpdate2(SourceUpdate):
+  id : int
+
 class Zone(Base):
   source_id: int = 0
   mute: bool = True
@@ -69,6 +72,9 @@ class ZoneUpdate(BaseUpdate):
   mute: Optional[bool]
   vol: Optional[int]
   disabled: Optional[bool]
+
+class ZoneUpdate2(ZoneUpdate):
+  id: int
 
 class Group(Base):
   source_id: int = 0
@@ -87,13 +93,16 @@ class GroupUpdate(BaseUpdate):
   mute: Optional[bool]
   vol_delta: Optional[int]
 
+class GroupUpdate2(GroupUpdate):
+  id: int
+
 class Stream(Base):
   pass # TODO: figure out streams
 
 class PresetState(BaseModel):
-  sources: List[Source]
-  zones: List[Zone]
-  groups: List[Group]
+  sources: Optional[List[SourceUpdate2]]
+  zones: Optional[List[ZoneUpdate2]]
+  groups: Optional[List[GroupUpdate2]]
 
 class Command(BaseModel):
   """ A command to execute on a stream
@@ -107,21 +116,22 @@ class Preset(Base):
   """ A partial controller configuration the can be loaded on demand.
   In addition to most of the configuration found in Status, this can contain commands as well that configure the state of different streaming services.
   """
-  state: PresetState
-  cmd: Optional[Command]
+  state: PresetState # TODO: should state be optional for a preset?
+  commands: Optional[List[Command]]
+  last_used: Union[int, None] = None
 
 class PresetUpdate(BaseUpdate):
   state: Optional[PresetState]
-  cmd: Optional[Command]
+  commands: Optional[List[Command]]
 
-class Status(Base):
+class Status(BaseModel):
   """ Full Controller Configuration and Status """
   sources: List[Source]
   zones: List[Zone]
   groups: List[Group]
   streams: List[Stream]
   presets: List[Preset]
-  version: str
+  info: Dict[str, Union[str, int, bool]]
 
 class AppSettings(BaseSettings):
   mock_ctrl: bool = False

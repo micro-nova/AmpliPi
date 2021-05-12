@@ -145,7 +145,7 @@ class Api:
     self._template_env = jinja2.Environment(loader=jinja2.PackageLoader('amplipi', '../docs/templates'))
     self._api_template = self._template_env.get_template('amplipi_api.yaml.j2')
 
-    self.status['version'] = utils.detect_version()
+    self.status['info'] = {'config_file': self.config_file, 'version': utils.detect_version()}
     # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
     if not 'groups' in self.status:
       self.status['groups'] = [] # this needs to be done before _update_groups() is called (its called in set_zone() and at below)
@@ -709,30 +709,29 @@ class Api:
       return 10000
 
   @utils.save_on_success
-  def create_preset(self, preset):
+  def create_preset(self, preset: models.Preset):
     try:
       # Make a new preset and add it to presets
       # TODO: validate preset
       id = self._new_preset_id()
-      preset['id'] = id
-      preset['last_used'] = None # indicates this preset has never been used
-      self.status['presets'].append(preset)
+      preset.id = id
+      preset.last_used = None # indicates this preset has never been used
+      self.status['presets'].append(preset.dict())
       return preset
     except Exception as e:
       return utils.error('create preset failed: {}'.format(e))
 
   @utils.save_on_success
-  def set_preset(self, id, preset_changes):
+  def set_preset(self, id, update: models.PresetUpdate):
     i, preset = utils.find(self.status['presets'], id)
-    configurable_fields = ['name', 'commands', 'state']
+    changes = update.dict(exclude_unset=True)
     if i is None:
       return utils.error('Unable to find preset to redefine')
 
     try:
       # TODO: validate preset
-      for f in configurable_fields:
-        if f in preset_changes:
-          preset[f] = preset_changes[f]
+      for field, val in changes.items():
+        preset[field] = val
     except Exception as e:
       return utils.error('Unable to reconfigure preset {}: {}'.format(id, e))
 

@@ -51,8 +51,8 @@ def client(request):
   config_file = os.path.join(config_dir, 'house.json')
   with open(config_file, 'w') as cfg_file:
     cfg_file.write(json.dumps(cfg))
-  app = amplipi.app.create_app(mock_ctrl=True, mock_streams=True, config_file=config_file)
-  c = TestClient(app, base_url="http://0.0.0.0:5000/")
+  app = amplipi.app.create_app(mock_ctrl=True, mock_streams=True, config_file=config_file, delay_saves=False)
+  c = TestClient(app)
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
@@ -63,8 +63,8 @@ def clientnm(request):# Non-mock systems should use this client - mock_ctrl and 
   config_file = os.path.join(config_dir, 'house.json')
   with open(config_file, 'w') as cfg_file:
     cfg_file.write(json.dumps(cfg))
-  app = amplipi.app.create_app(mock_ctrl=False, mock_streams=False, config_file=config_file)
-  c = TestClient(app, base_url="http://0.0.0.0:5000/")
+  app = amplipi.app.create_app(mock_ctrl=False, mock_streams=False, config_file=config_file, delay_saves=False)
+  c = TestClient(app)
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
@@ -87,8 +87,8 @@ def test_base(client, path):
         if t in og_config:
           assert len(jrv[t]) == len(og_config[t])
       # make sure a real version is reported
-      assert 'version' in jrv
-      assert len(jrv['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
+      assert 'info' in jrv and 'version' in jrv['info']
+      assert len(jrv['info']['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
     else:
       assert path == '/api'
       assert '/api/' in rv.location
@@ -145,6 +145,15 @@ def base_group_ids():
   return [ s['id'] for s in base_config()['groups']]
 
 def test_post_group(client):
+  # check that the whole house group doesn't already exist
+  rv = client.get('/api')
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert 'groups' in jrv
+  for g in jrv['groups']:
+    assert 'name' in g
+    assert g['name'] != 'Whole House'
+  # try creating the whole house group
   grp = {'name' : 'Whole House', 'zones' : [0, 1, 2, 3, 4, 5]}
   rv = client.post('/api/group', json=grp)
   assert rv.status_code == HTTPStatus.OK
@@ -283,15 +292,17 @@ def base_preset_ids():
 
 # /preset post-preset
 def test_create_mute_all_preset(client):
-  mute_some = { 'name' : 'Mute some', 'zones' : [ { 'id' : 1, 'mute': True}, { 'id' : 4, 'mute': True} ]}
+  mute_some = { 'name' : 'Mute some', 'state': { 'zones' : [ { 'id' : 1, 'mute': True}, { 'id' : 4, 'mute': True} ]}}
   rv = client.post('/api/preset', json=mute_some)
   # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   assert 'id' in jrv
   assert type(jrv['id']) == int
-  for k, v in mute_some.items():
-    assert jrv[k] == v
+  assert jrv['name'] == mute_some['name']
+  for i, z in enumerate(mute_some['state']['zones']):
+    for k,v in z.items():
+      assert jrv['state']['zones'][i][k] == v
 
 # /presets/{presetId} get-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
@@ -372,7 +383,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
     assert rv.status_code != HTTPStatus.OK
     return
   jrv = rv.json() # get the system state returned
-  jrv.pop('version')
+  jrv.pop('info')
   # TODO: check that the system state is valid
   # make sure the rest of the config got loaded
   for mod, configs in p['state'].items():
@@ -396,17 +407,18 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   rv = client.post('/api/presets/{}/load'.format(LAST_CONFIG_PRESET))
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json() # get the system state returned
-  jrv.pop('version')
+  jrv.pop('info')
+  ignore = ['last_used', 'info', 'status']
   for name, mod in jrv.items():
     prev_mod = last_state[name]
     for cfg in mod:
       if cfg['id'] != LAST_CONFIG_PRESET:
         prev_cfg = find(prev_mod, cfg['id'])
-        # last used field will be different, just remmove them
-        if 'last_used' in prev_cfg:
-          prev_cfg.pop('last_used')
-        if 'last_used' in cfg:
-          cfg.pop('last_used')
+        for ignored_field in ignore:
+          if ignored_field in prev_cfg:
+            prev_cfg.pop(ignored_field)
+          if ignored_field in cfg:
+            cfg.pop(ignored_field)
         assert cfg == prev_cfg
 
 # TODO: this test will fail until we come up with a good scheme for specifying folder locations in a global config
