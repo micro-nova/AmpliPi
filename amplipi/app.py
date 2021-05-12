@@ -127,7 +127,7 @@ class API:
   ctrl: Api = Depends(get_ctrl)
 
   @api_router.get('/')
-  def get_status(self):
+  def get_status(self) -> models.Status:
     return self.ctrl.get_state()
 
   def code_response(self, resp):
@@ -312,5 +312,5 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   global settings
   settings = s # set the settings class the api_router uses to instantiate the API class
   get_ctrl.cache_clear()
-  get_ctrl()
+  app.state.ctrl = get_ctrl()
   return app

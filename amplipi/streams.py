@@ -609,8 +609,6 @@ class InternetRadio:
     if self._is_running():
       self.proc.kill()
       print(f'{self.name} disconnected')
-    else:
-      print(f'Warning: {self.name} was not running')
     self.state = 'disconnected'
     self.proc = None
     self.src = None
