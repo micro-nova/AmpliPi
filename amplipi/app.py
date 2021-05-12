@@ -182,7 +182,7 @@ class API:
     return self.code_response(self.ctrl.set_group(gid, group)) # TODO: pass update directly
 
   @api_router.delete('/groups/{gid}')
-  def delete_group(self, gid: int) -> None:
+  def delete_group(self, gid: int) -> models.Status:
     return self.code_response(self.ctrl.delete_group(id=gid))
 
   # streams
@@ -210,7 +210,7 @@ class API:
     return self.code_response(self.ctrl.set_stream(id=sid, **params))
 
   @api_router.delete('/streams/{sid}')
-  def delete_stream(self, sid: int):
+  def delete_stream(self, sid: int) -> models.Status:
     return self.code_response(self.ctrl.delete_stream(id=sid))
 
   @api_router.post('/streams/{sid}/{cmd}')
@@ -257,6 +257,10 @@ class API:
 # TODO: investigate why none of the routes are succeeding here
 app.include_router(api_router, prefix='/api')
 
+@app.get('/api')
+def get_status() -> models.Status:
+  return get_ctrl().get_state()
+
 # Website
 
 @app.get('/')
@@ -278,7 +282,7 @@ def view(request: Request, src=0):
     'unused_zones': [unused_zones(src) for src in range(4)],
     'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
     'song_info': [song_info(src) for src in range(4)],
-    'version': s['version'],
+    'version': s['info']['version'],
   }
   return templates.TemplateResponse("index.html.j2", context)
 
@@ -291,4 +295,6 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   # modify settings
   global settings
   settings = s # set the settings class the api_router uses to instantiate the API class
+  get_ctrl.cache_clear()
+  get_ctrl()
   return app

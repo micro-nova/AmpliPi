@@ -91,7 +91,7 @@ def prune_state(state: dict):
   for s in state['streams']:
     s.pop('info')
     s.pop('status')
-  state.pop('version')
+  state.pop('info')
   return state
 
 def test_config_loading():
