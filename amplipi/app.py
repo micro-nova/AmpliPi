@@ -35,7 +35,7 @@ from functools import lru_cache
 # web server
 import uvicorn
 # amplipi
-import amplipi
+from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 import amplipi.rt as rt
 import amplipi.utils as utils
 import amplipi.models as models
@@ -100,15 +100,15 @@ def song_info(src):
 settings = models.AppSettings()
 
 @lru_cache(1)
-def get_ctrl() -> amplipi.ctrl.Api:
-  return amplipi.ctrl.Api(settings)
+def get_ctrl() -> Api:
+  return Api(settings)
 
 api_router = InferringRouter()
 
 @cbv(api_router)
 class API:
 
-  ctrl: amplipi.ctrl.Api = Depends(get_ctrl)
+  ctrl: Api = Depends(get_ctrl)
 
   @api_router.get('/')
   def get_status(self):
@@ -258,14 +258,14 @@ class API:
 app.include_router(api_router, prefix='/api')
 
 @app.get('/api')
-def get_status() -> models.Status:
-  return get_ctrl().get_state()
+def get_status(ctrl:Api=Depends(get_ctrl)) -> models.Status:
+  return ctrl.get_state()
 
 # Website
 
 @app.get('/')
 @app.get('/{src}')
-def view(request: Request, src=0):
+def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl)):
   ctrl = get_ctrl()
   s = ctrl.get_state()
   context = {

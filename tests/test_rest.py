@@ -69,7 +69,7 @@ def clientnm(request):# Non-mock systems should use this client - mock_ctrl and 
   return c
 
 # TODO: the web view test should be added to its own testfile once we add more functionality to the site
-@pytest.mark.parametrize('path', [',' , '/'] + [ '/{}'.format(i) for i in range(4) ])
+@pytest.mark.parametrize('path', ['' , '/'] + [ '/{}'.format(i) for i in range(4) ])
 def test_view(client, path):
   rv = client.get(path)
   assert rv.status_code == HTTPStatus.OK
