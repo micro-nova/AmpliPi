@@ -27,7 +27,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 from fastapi.templating import Jinja2Templates
-from fastapi_utils import cbv
+from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 # type handling, fastapi leverages type checking for performance and easy docs
 from typing import List, Optional, Dict, Union
@@ -104,11 +104,12 @@ def get_ctrl() -> amplipi.ctrl.Api:
   return amplipi.ctrl.Api(settings)
 
 api_router = InferringRouter()
+
+@cbv(api_router)
 class API:
 
   ctrl: amplipi.ctrl.Api = Depends(get_ctrl)
 
-  @api_router.get('')
   @api_router.get('/')
   def get_status(self):
     return self.ctrl.get_state()
@@ -254,7 +255,7 @@ class API:
     return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
 
 # TODO: investigate why none of the routes are succeeding here
-app.include_router(router=api_router, prefix='/api')
+app.include_router(api_router, prefix='/api')
 
 # Website
 
