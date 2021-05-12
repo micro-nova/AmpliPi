@@ -97,7 +97,15 @@ class GroupUpdate2(GroupUpdate):
   id: int
 
 class Stream(Base):
-  pass # TODO: figure out streams
+  type: str
+  user: Optional[str]
+  password: Optional[str]
+  station: Optional[str]
+  url: Optional[str]
+  logo: Optional[str]
+  # generated fields
+  info: Optional[Dict] # TODO: formalize stream info
+  status: Optional[str]
 
 class PresetState(BaseModel):
   sources: Optional[List[SourceUpdate2]]
