@@ -55,6 +55,22 @@ templates = Jinja2Templates(template_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 app.mount("/generated", StaticFiles(directory=generated_dir), name="generated") # TODO: make this register as a dynamic folder???
 
+from typing import TYPE_CHECKING, Any, Callable, get_type_hints
+from fastapi import APIRouter
+
+class SimplifyingRouter(APIRouter):
+  """
+  Overrides the route decorator logic to:
+  - to use the annotated return type as the `response_model` if unspecified.
+  - always exclude unset fields (this makes so much more sense!)
+  """
+  if not TYPE_CHECKING:  # pragma: no branch
+    def add_api_route(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+      if kwargs.get("response_model") is None:
+        kwargs["response_model"] = get_type_hints(endpoint).get("return")
+      kwargs["response_model_exclude_unset"] = True
+      return super().add_api_route(path, endpoint, **kwargs)
+
 # Helper functions
 def unused_groups(src):
   """ Get groups that are not connected to src """
@@ -103,7 +119,7 @@ settings = models.AppSettings()
 def get_ctrl() -> Api:
   return Api(settings)
 
-api_router = InferringRouter()
+api_router = SimplifyingRouter()
 
 @cbv(api_router)
 class API:
@@ -257,7 +273,7 @@ class API:
 # TODO: investigate why none of the routes are succeeding here
 app.include_router(api_router, prefix='/api')
 
-@app.get('/api')
+@app.get('/api', response_model_exclude_unset=True)
 def get_status(ctrl:Api=Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
 
