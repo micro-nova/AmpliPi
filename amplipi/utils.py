@@ -84,17 +84,6 @@ def max_len(items, len_determiner=len):
 def abbreviate_src(src_type):
   return src_type[0].upper() if src_type else '_'
 
-def vol_string(vol, min_vol=-79, max_vol=0):
-  """ Make a visual representation of a volume """
-  VOL_RANGE = max_vol - min_vol + 1
-  VOL_STR_LEN = 20
-  VOL_SCALE = VOL_RANGE / VOL_STR_LEN
-  vol_level = int((vol - min_vol)  / VOL_SCALE)
-  assert vol_level >= 0 and vol_level < VOL_STR_LEN
-  vol_string = ['-'] * VOL_STR_LEN
-  vol_string[vol_level] = '|' # place the volume slider bar at its current spot
-  return ''.join(vol_string) # turn that char array into a string
-
 cached_outputs = None
 def available_outputs():
   """ get the available alsa outputs (we are expecting ch0-ch3).
