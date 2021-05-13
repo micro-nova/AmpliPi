@@ -22,6 +22,7 @@ This module contains helper functions are used across the amplipi python library
 import json
 import os
 import functools
+import wrapt
 import subprocess
 import re
 import pkg_resources # version
@@ -129,19 +130,14 @@ def get_folder(folder):
       print(f'Error creating dir: {folder}')
   return os.path.abspath(folder)
 
-def save_on_success(func):
-  """ A decorator that calls a class object's save method when successful
-        (in the case of our API None=Success)
-  """
-  @functools.wraps(func) # transfer func's documentation to decorated function to assist documentation generation
-  def inner(self, *args, **kwargs):
-    result = func(self, *args, **kwargs)
-    if result is None:
-      # call postpone_save instead of save to reduce the load/delay of a request
-      self.postpone_save()
-      pass
-    return result
-  return inner
+@wrapt.decorator
+def save_on_success(wrapped, instance, args, kwargs):
+  result = wrapped(*args, **kwargs)
+  if result is None:
+    # call postpone_save instead of save to reduce the load/delay of a request
+    instance.postpone_save()
+    pass
+  return result
 
 def with_id(elements):
   if elements is None:

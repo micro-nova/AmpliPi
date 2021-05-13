@@ -30,7 +30,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Set
 from functools import lru_cache
 # web server
 import uvicorn
@@ -72,25 +72,25 @@ class SimplifyingRouter(APIRouter):
       return super().add_api_route(path, endpoint, **kwargs)
 
 # Helper functions
-def unused_groups(src):
+def unused_groups(src: int) -> Dict[int,str]:
   """ Get groups that are not connected to src """
   ctrl = get_ctrl()
   groups = ctrl.status['groups']
   return { g['id'] : g['name'] for g in groups if g['source_id'] != src}
 
-def unused_zones(src):
+def unused_zones(src: int) -> Dict[int,str]:
   """ Get zones that are not conencted to src """
   ctrl = get_ctrl()
   zones = ctrl.status['zones']
   return { z['id'] : z['name'] for z in zones if z['source_id'] != src }
 
-def ungrouped_zones(src):
+def ungrouped_zones(src: int) -> List[models.Zone]:
   """ Get zones that are connected to src, but don't belong to a full group """
   ctrl = get_ctrl()
   zones = ctrl.status['zones']
   groups = ctrl.status['groups']
   # get all of the zones that belong to this sources groups
-  grouped_zones = set()
+  grouped_zones: Set[int] = set()
   for g in groups:
     if g['source_id'] == src:
       grouped_zones = grouped_zones.union(g['zones'])
@@ -100,7 +100,7 @@ def ungrouped_zones(src):
   ungrouped_zones_ = source_zones.difference(grouped_zones)
   return [ zones[z] for z in ungrouped_zones_ if not zones[z]['disabled']]
 
-def song_info(src):
+def song_info(src: int) -> Dict[str,str]:
   """ Get the song info for a source """
   ctrl =  get_ctrl()
   song_fields = ['artist', 'album', 'track', 'img_url']
@@ -112,18 +112,18 @@ def song_info(src):
       info[field] = ''
   return info
 
-# Add our own router so we can bind/inject our API object
-settings = models.AppSettings()
 
-@lru_cache(1)
+# Add our own router so we can bind/inject custom settings into our API routes
+api_router = SimplifyingRouter()
+settings = models.AppSettings()
+@lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
   return Api(settings)
-
-api_router = SimplifyingRouter()
 
 @cbv(api_router)
 class API:
 
+  # embedded ctrl dependency used by every api route
   ctrl: Api = Depends(get_ctrl)
 
   @api_router.get('/')
@@ -143,19 +143,18 @@ class API:
   # sources
 
   @api_router.get('/sources')
-  def get_sources(self):
+  def get_sources(self) -> Dict[str, List[models.Source]]:
     return {'sources' : self.ctrl.get_state()['sources']}
 
   @api_router.get('/sources/{sid}')
-  def get_source(self, sid: int):
+  def get_source(self, sid: int) -> models.Source:
     # TODO: add get_X capabilities to underlying API?
     sources = self.ctrl.get_state()['sources']
     return sources[sid]
 
   @api_router.patch('/sources/{sid}')
-  async def set_source(self, sid: int, request:Request):
-    params = await request.json()
-    return self.code_response(self.ctrl.set_source(id=sid, **params))
+  def set_source(self, sid: int, update: models.SourceUpdate) -> models.Status:
+    return self.code_response(self.ctrl.set_source(sid, update))
 
   # zones
 
@@ -194,7 +193,7 @@ class API:
       raise HTTPException(404, f'group {gid} not found')
 
   @api_router.patch('/groups/{gid}')
-  def set_group(self, gid: int, group: models.GroupUpdate):
+  def set_group(self, gid: int, group: models.GroupUpdate) -> models.Status:
     return self.code_response(self.ctrl.set_group(gid, group)) # TODO: pass update directly
 
   @api_router.delete('/groups/{gid}')
@@ -204,16 +203,16 @@ class API:
   # streams
 
   @api_router.post('/stream')
-  async def create_stream(self, request: Request):
+  async def create_stream(self, request: Request) -> models.Stream:
     params = await request.json()
     return self.code_response(self.ctrl.create_stream(**params))
 
   @api_router.get('/streams')
-  def get_streams(self):
+  def get_streams(self) -> Dict[str, List[models.Stream]]:
     return {'streams' : self.ctrl.get_state()['streams']}
 
   @api_router.get('/streams/{sid}')
-  def get_stream(self, sid: int):
+  def get_stream(self, sid: int) -> models.Stream:
     _, stream = utils.find(self.ctrl.get_state()['streams'], sid)
     if stream is not None:
       return stream
@@ -221,7 +220,7 @@ class API:
       raise HTTPException(404, f'stream {sid} not found')
 
   @api_router.patch('/streams/{sid}')
-  async def set_stream(self, request: Request, sid: int):
+  async def set_stream(self, request: Request, sid: int) -> models.Status:
     params = await request.json()
     return self.code_response(self.ctrl.set_stream(id=sid, **params))
 
@@ -230,7 +229,7 @@ class API:
     return self.code_response(self.ctrl.delete_stream(id=sid))
 
   @api_router.post('/streams/{sid}/{cmd}')
-  def exec_command(self, sid: int, cmd: str):
+  def exec_command(self, sid: int, cmd: str) -> models.Status:
     return self.code_response(self.ctrl.exec_stream_command(id=sid, cmd=cmd))
 
   # presets
@@ -270,9 +269,9 @@ class API:
     # TODO: add hosted python docs as well
     return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
 
-# TODO: investigate why none of the routes are succeeding here
 app.include_router(api_router, prefix='/api')
 
+# add the root of the API as well, since empty paths are invalid this needs to be handled outside of the router
 @app.get('/api', response_model_exclude_unset=True)
 def get_status(ctrl:Api=Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
@@ -310,7 +309,7 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   if delay_saves: s.delay_saves = delay_saves
   # modify settings
   global settings
-  settings = s # set the settings class the api_router uses to instantiate the API class
+  settings = s # set the settings class the api_router uses to instantiate a singleton of the API class
   get_ctrl.cache_clear()
   app.state.ctrl = get_ctrl()
   return app
