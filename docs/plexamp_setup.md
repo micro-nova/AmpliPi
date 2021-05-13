@@ -2,16 +2,25 @@
 This guide will detail multiple ways to setup Plexamp on the AmpliPi system.
 
 ## Prerequisites
-Regardless of which setup path you take, a few requirements must be met. First, Plexamp must be installed on the Pi. This should come standard with our AmpliPi install. If you find yourself needing to install it, we use a modified copy of Plexamp v1.0.5 for the Pi. Our version can be found here ####WHERE CAN IT BE FOUND?####
+Regardless of which setup path you take, a few requirements must be met. First, Plexamp must be installed on the Pi. This should come standard with our AmpliPi install. If you find yourself needing to install it, we use a modified copy of Plexamp v1.0.5 for the Pi. Download version 1.0.5 from this [link](https://files.plexapp.com/elan/plexamp-v1.0.5-pi.tar.gz), copy it over to AmpliPi, and extract it in '/home/pi' with
+```
+tar -xvzf plexamp-v1.0.5-pi.tar.gz
+```
+Once everything is extracted, navigate to '/home/pi/plexamp/server/' and find 'server.prod.js'. This file needs to be replaced with our modified version.
+Our version can be found here: ####WHERE CAN IT BE FOUND?####
 
 You will also need a Plex Pass subscription to be able to discover the device (Plexamp is a subscription-only service).
 
-Finally, Node 9 is required since this is an older version of the Plexamp software ####IS THIS STILL NECESSARY???????####
+Finally, Node 9 is required since this is an older version of the Plexamp software. To get the proper version of Nodejs, follow the official install guide [here.](https://forums.plex.tv/t/plexamp-for-raspberry-pi-release-notes/368282)
+To get the proper version, simply run
+```
+sudo apt-get install nodejs=9.11.2-1nodesource1
+```
 
 ## Option 1 - Using the AmpliPi API
 This is the simplest option available. Simply navigate to the Settings pane on 'amplipi.local/' and select "Connect Plex Account"
 # (INCLUDE PICTURE ONCE THE SITE SUPPORTS THIS. POTENTIALLY EDIT NAMES AND WHATNOT AS WELL)
-Connecting your Plex account is as simple as clicking a button, then entering your username/password. Upon entering the information for an account with a Plex Pass subscription, a unique identifier/token pair will be generated for your AmpliPi. This information will be used to create a Plexamp stream in a similar fashion to Pandora, Spotify, etc.
+Connecting your Plex account is as easy as clicking a button, then entering your username/password. Upon entering the information for an account with a Plex Pass subscription, a unique identifier/token pair will be generated for your AmpliPi. This information will be used to create a Plexamp stream in a similar fashion to Pandora, Spotify, etc.
 
 ## Option 2 - Manual ID/Token creation
 If you would like to do some development of your own, or want access to the token generation process for any other reason, this is the way to go.
