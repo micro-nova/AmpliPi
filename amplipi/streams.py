@@ -26,6 +26,7 @@ import sys
 import subprocess
 import time
 
+import amplipi.models as models
 import amplipi.utils as utils
 
 from typing import Union
@@ -633,16 +634,21 @@ class InternetRadio:
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora]
 
-def build_stream(args, mock=False) -> AnyStream:
-  if args['type'] == 'pandora':
+def build_stream(stream: models.Stream, mock=False) -> AnyStream:
+  """ Build a stream from the generic arguments given in stream, discriminated by strea.type
+
+  we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
+  """
+  args = stream.dict(exclude_unset=True)
+  if stream.type == 'pandora':
     return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
-  elif args['type'] == 'shairport':
+  elif stream.type == 'shairport':
     return Shairport(args['name'], mock=mock)
-  elif args['type'] == 'spotify':
+  elif stream.type == 'spotify':
     return Spotify(args['name'], mock=mock)
-  elif args['type'] == 'dlna':
+  elif stream.type == 'dlna':
     return DLNA(args['name'], mock=mock)
-  elif args['type'] == 'internetradio':
+  elif stream.type == 'internetradio':
     return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
   else:
-    raise NotImplementedError(args['type'])
+    raise NotImplementedError(stream.type)

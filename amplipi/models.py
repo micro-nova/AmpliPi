@@ -45,9 +45,9 @@ class Source(Base):
   Options:
   - Digital Stream ('stream=SID') where SID is the ID of the connected stream
   - Analog RCA Input ('local') connects to the RCA inputs associated
-  - Nothing ('None') behind the scenes this is muxed to a digital output
+  - Nothing ('') behind the scenes this is muxed to a digital output
   """
-  input: str
+  input: str = ''
 
   def get_stream(self) -> Optional[int]:
     try:
@@ -135,7 +135,6 @@ class Stream(Base):
   status: Optional[str]
 
 class StreamUpdate(BaseUpdate):
-  type: str
   # TODO: how to support different stream types
   user: Optional[str]
   password: Optional[str]
@@ -170,12 +169,12 @@ class PresetUpdate(BaseUpdate):
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
-  sources: List[Source]
-  zones: List[Zone]
-  groups: List[Group]
-  streams: List[Stream]
-  presets: List[Preset]
-  info: Dict[str, Union[str, int, bool]]
+  sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
+  zones: List[Zone] = [Zone(id=i, name=f'Zone {i}') for i in range(6) ]
+  groups: List[Group] = []
+  streams: List[Stream] = []
+  presets: List[Preset] = []
+  info: Dict[str, Union[str, int, bool]] = {}
 
 class AppSettings(BaseSettings):
   mock_ctrl: bool = False

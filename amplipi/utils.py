@@ -60,7 +60,7 @@ def updated_val(update: Optional[VT], val: VT) -> Tuple[VT, bool]:
     return update, update != val
 
 def find(items: Collection[VT], id, key='id') -> Tuple[Optional[int], Optional[VT]]:
-  return next(filter(lambda ie: ie[1][key] == id, enumerate(items)), (None, None))
+  return next(filter(lambda ie: ie[1].__dict__['id'] == id, enumerate(items)), (None, None))
 
 def clamp(x, xmin, xmax):
     return max(xmin, min(x, xmax))

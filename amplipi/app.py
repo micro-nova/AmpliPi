@@ -75,37 +75,37 @@ class SimplifyingRouter(APIRouter):
 def unused_groups(src: int) -> Dict[int,str]:
   """ Get groups that are not connected to src """
   ctrl = get_ctrl()
-  groups = ctrl.status['groups']
-  return { g['id'] : g['name'] for g in groups if g['source_id'] != src}
+  groups = ctrl.status.groups
+  return { g.id : g.name for g in groups if g.source_id != src}
 
 def unused_zones(src: int) -> Dict[int,str]:
   """ Get zones that are not conencted to src """
   ctrl = get_ctrl()
-  zones = ctrl.status['zones']
-  return { z['id'] : z['name'] for z in zones if z['source_id'] != src }
+  zones = ctrl.status.zones
+  return { z.id : z.name for z in zones if z.source_id != src }
 
 def ungrouped_zones(src: int) -> List[models.Zone]:
   """ Get zones that are connected to src, but don't belong to a full group """
   ctrl = get_ctrl()
-  zones = ctrl.status['zones']
-  groups = ctrl.status['groups']
+  zones = ctrl.status.zones
+  groups = ctrl.status.groups
   # get all of the zones that belong to this sources groups
   grouped_zones: Set[int] = set()
   for g in groups:
-    if g['source_id'] == src:
-      grouped_zones = grouped_zones.union(g['zones'])
+    if g.source_id == src:
+      grouped_zones = grouped_zones.union(g.zones)
   # get all of the zones connected to this soource
-  source_zones = set([ z['id'] for z in zones if z['source_id'] == src ])
+  source_zones = set([ z.id for z in zones if z.source_id == src ])
   # return all of the zones connected to this source that aren't in a group
   ungrouped_zones_ = source_zones.difference(grouped_zones)
-  return [ zones[z] for z in ungrouped_zones_ if not zones[z]['disabled']]
+  return [ zones[z] for z in ungrouped_zones_ if not zones[z].disabled]
 
 def song_info(src: int) -> Dict[str,str]:
   """ Get the song info for a source """
   ctrl =  get_ctrl()
   song_fields = ['artist', 'album', 'track', 'img_url']
-  stream = ctrl._get_stream(ctrl.status['sources'][src]['input'])
-  info = stream.info() if stream else {}
+  stream = ctrl._get_stream(ctrl.status.sources[src].input)
+  info = stream.info if stream else {}
   # add empty strings for unpopulated fields
   for field in song_fields:
     if field not in info:
@@ -144,12 +144,12 @@ class API:
 
   @api_router.get('/sources')
   def get_sources(self) -> Dict[str, List[models.Source]]:
-    return {'sources' : self.ctrl.get_state()['sources']}
+    return {'sources' : self.ctrl.get_state().sources}
 
   @api_router.get('/sources/{sid}')
   def get_source(self, sid: int) -> models.Source:
     # TODO: add get_X capabilities to underlying API?
-    sources = self.ctrl.get_state()['sources']
+    sources = self.ctrl.get_state().sources
     return sources[sid]
 
   @api_router.patch('/sources/{sid}')
@@ -160,11 +160,11 @@ class API:
 
   @api_router.get('/zones')
   def get_zones(self) -> Dict[str, List[models.Zone]]:
-    return {'zones': self.ctrl.get_state()['zones']}
+    return {'zones': self.ctrl.get_state().zones}
 
   @api_router.get('/zones/{zid}')
   def get_zone(self, zid: int) -> models.Zone:
-    zones = self.ctrl.get_state()['zones']
+    zones = self.ctrl.get_state().zones
     if zid >= 0 and zid < len(zones):
       return zones[zid]
     else:
@@ -182,11 +182,11 @@ class API:
 
   @api_router.get('/groups')
   def get_groups(self) -> Dict[str, List[models.Group]]:
-    return {'groups' : self.ctrl.get_state()['groups']}
+    return {'groups' : self.ctrl.get_state().groups}
 
   @api_router.get('/groups/{gid}')
   def get_group(self, gid: int) -> models.Group:
-    _, grp = utils.find(self.ctrl.get_state()['groups'], gid)
+    _, grp = utils.find(self.ctrl.get_state().groups, gid)
     if grp is not None:
       return grp
     else:
@@ -209,11 +209,11 @@ class API:
 
   @api_router.get('/streams')
   def get_streams(self) -> Dict[str, List[models.Stream]]:
-    return {'streams' : self.ctrl.get_state()['streams']}
+    return {'streams' : self.ctrl.get_state().streams}
 
   @api_router.get('/streams/{sid}')
   def get_stream(self, sid: int) -> models.Stream:
-    _, stream = utils.find(self.ctrl.get_state()['streams'], sid)
+    _, stream = utils.find(self.ctrl.get_state().streams, sid)
     if stream is not None:
       return stream
     else:
@@ -240,11 +240,11 @@ class API:
 
   @api_router.get('/presets')
   def get_presets(self) -> Dict[str, List[models.Preset]]:
-    return {'presets' : self.ctrl.get_state()['presets']}
+    return {'presets' : self.ctrl.get_state().presets}
 
   @api_router.get('/presets/{pid}')
   def get_preset(self, pid: int) -> models.Preset:
-    _, preset = utils.find(self.ctrl.get_state()['presets'], pid)
+    _, preset = utils.find(self.ctrl.get_state().presets, pid)
     if preset is not None:
       return preset
     else:
@@ -288,16 +288,16 @@ def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl)):
     'request': request,
     # simplified amplipi state
     'cur_src': src,
-    'sources': s['sources'],
-    'zones': s['zones'],
-    'groups': s['groups'],
-    'presets': s['presets'],
+    'sources': s.sources,
+    'zones': s.zones,
+    'groups': s.groups,
+    'presets': s.presets,
     'inputs': ctrl.get_inputs(),
     'unused_groups': [unused_groups(src) for src in range(4)],
     'unused_zones': [unused_zones(src) for src in range(4)],
     'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
     'song_info': [song_info(src) for src in range(4)],
-    'version': s['info']['version'],
+    'version': s.info.version,
   }
   return templates.TemplateResponse("index.html.j2", context)
 

@@ -20,6 +20,7 @@ This module provides complete control of the AmpliPi Audio System's sources,
 zones, groups and streams.
 """
 
+from inspect import indentsize
 import json
 import deepdiff
 import jinja2
@@ -135,8 +136,7 @@ class Api:
     for cfg_path in config_paths:
       try:
         if os.path.exists(cfg_path):
-          with open(cfg_path, 'r') as cfg:
-            self.status = json.load(cfg)
+          self.status = models.Status.parse_file(cfg_path)
           loaded_config = True
           break
         else:
@@ -189,7 +189,7 @@ class Api:
           os.remove(self.backup_config_file)
         os.rename(self.config_file, self.backup_config_file)
       with open(self.config_file, 'w') as cfg:
-        json.dump(self.status, cfg, indent=2)
+        cfg.write(self.status.json(exclude_unset=True, indent=2))
       self.config_file_valid = True
     except Exception as e:
       print('Error saving config: {}'.format(e))
