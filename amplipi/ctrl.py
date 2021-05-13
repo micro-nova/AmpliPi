@@ -214,66 +214,6 @@ class Api:
     else:
       self.save()
 
-  def visualize_api(self, prev_status=None):
-    """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
-
-    Returns:
-      A string meant to visualize the system state in a minimal way.
-    Example:
-      Visualize the current state of the running amplipi
-
-      >>> my_amplipi.visualize_api()
-      sources:
-        [stream=90891, stream=44590, local, local]
-      zones:
-        0(S) --> Local           vol [---|----------------]
-        0(S) --> Office          vol [-------|------------]
-        0(S) --> Laundry Room    vol [--------|-----------]
-        0(S) --> Dining Room     vol [--------|-----------] muted
-        0(S) --> Guest Bedroom   vol [----|---------------] muted
-        0(S) --> Main Bedroom    vol [---|----------------] muted
-        0(S) --> Main Bathroom   vol [--------|-----------] muted
-        0(S) --> Master Bathroom vol [---------|----------] muted
-        0(S) --> Kitchen High    vol [------|-------------] muted
-        0(S) --> kitchen Low     vol [------|-------------] muted
-        0(S) --> Living Room     vol [--------|-----------] muted
-      groups:
-        ( ) --> Whole House    [0,1,2,3,5,6,7,8,9,10,11] vol [------|-------------]
-        ( ) --> KitchLivDining [3,9,10,11]               vol [-------|------------] muted
-    """
-    viz = ''
-    # visualize source configuration
-    viz += 'sources:\n'
-    src_cfg = [s['input'] for s in self.status['sources']]
-    viz += '  [{}]\n'.format(', '.join(src_cfg))
-    # visualize zone configuration
-    enabled_zones = [z for z in self.status['zones'] if not z['disabled']]
-    viz += 'zones:\n'
-    zone_len = utils.max_len(enabled_zones, lambda z: len(z['name']))
-    for z in enabled_zones:
-      src = z['source_id']
-      src_type = utils.abbreviate_src(src_cfg[src])
-      muted = 'muted' if z['mute'] else ''
-      zone_fmt = '  {}({}) --> {:' + str(zone_len) + '} vol [{}] {}\n'
-      viz += zone_fmt.format(src, src_type, z['name'], utils.vol_string(z['vol']), muted)
-    # print group configuration
-    viz += 'groups:\n'
-    enabled_groups = self.status['groups']
-    gzone_len = utils.max_len(enabled_groups, lambda g: len(utils.compact_str(g['zones'])))
-    gname_len = utils.max_len(enabled_groups, lambda g: len(g['name']))
-    for g in enabled_groups:
-      if g['source_id']:
-        src = g['source_id']
-        src_type = utils.abbreviate_src(src_cfg[src])
-      else:
-        src = ' '
-        src_type = ' '
-      muted = 'muted' if g['mute'] else ''
-      vol = utils.vol_string(g['vol_delta'])
-      group_fmt = '  {}({}) --> {:' + str(gname_len) + '} {:' + str(gzone_len) + '} vol [{}] {}\n'
-      viz += group_fmt.format(src, src_type, g['name'], utils.compact_str(g['zones']), vol, muted)
-    return viz
-
   @staticmethod
   def _is_digital(src_type: str) -> bool:
     """Determines whether a source type, @src_type, is analog or digital
