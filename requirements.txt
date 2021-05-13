@@ -12,3 +12,4 @@ aiofiles
 pydantic
 python-multipart
 flask_debugtoolbar
+wrapt
