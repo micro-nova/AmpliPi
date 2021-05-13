@@ -48,13 +48,29 @@ class Source(Base):
   - Nothing ('None') behind the scenes this is muxed to a digital output
   """
   input: str
-  # TODO: add status
+
+  def get_stream(self) -> Optional[int]:
+    try:
+      if 'stream=' in self.input:
+        return int(self.input.split('=')[1])
+    finally:
+      return None
+
+  def as_update(self):
+    update = self.dict()
+    update.pop('id')
+    return SourceUpdate.parse_obj(update)
 
 class SourceUpdate(BaseUpdate):
   input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
 
 class SourceUpdate2(SourceUpdate):
   id : int
+
+  def as_update(self):
+    update = self.dict()
+    update.pop('id')
+    return SourceUpdate.parse_obj(update)
 
 class Zone(Base):
   source_id: int = 0
@@ -76,6 +92,11 @@ class ZoneUpdate(BaseUpdate):
 class ZoneUpdate2(ZoneUpdate):
   id: int
 
+  def as_update(self):
+    update = self.dict()
+    update.pop('id')
+    return ZoneUpdate.parse_obj(update)
+
 class Group(Base):
   source_id: int = 0
   zones: List[int]
@@ -96,8 +117,14 @@ class GroupUpdate(BaseUpdate):
 class GroupUpdate2(GroupUpdate):
   id: int
 
+  def as_update(self):
+    update = self.dict()
+    update.pop('id')
+    return GroupUpdate.parse_obj(update)
+
 class Stream(Base):
   type: str
+  # TODO: how to support different stream types
   user: Optional[str]
   password: Optional[str]
   station: Optional[str]
@@ -106,6 +133,15 @@ class Stream(Base):
   # generated fields
   info: Optional[Dict] # TODO: formalize stream info
   status: Optional[str]
+
+class StreamUpdate(BaseUpdate):
+  type: str
+  # TODO: how to support different stream types
+  user: Optional[str]
+  password: Optional[str]
+  station: Optional[str]
+  url: Optional[str]
+  logo: Optional[str]
 
 class PresetState(BaseModel):
   sources: Optional[List[SourceUpdate2]]

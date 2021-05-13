@@ -27,6 +27,8 @@ import subprocess
 import re
 import pkg_resources # version
 
+from typing import Collection, Optional, Tuple, TypeVar
+
 # Helper functions
 def encode(pydata):
   """ Encode a dictionary as JSON """
@@ -48,14 +50,16 @@ def error(msg):
   print('Error: {}'.format(msg))
   return {'error': msg}
 
-def updated_val(update, val):
+VT = TypeVar("VT")
+
+def updated_val(update: Optional[VT], val: VT) -> Tuple[VT, bool]:
   """ get the potentially updated value, @update, defaulting to the current value, @val, if it is None """
   if update is None:
     return val, False
   else:
     return update, update != val
 
-def find(items, id, key='id'):
+def find(items: Collection[VT], id, key='id') -> Tuple[Optional[int], Optional[VT]]:
   return next(filter(lambda ie: ie[1][key] == id, enumerate(items)), (None, None))
 
 def clamp(x, xmin, xmax):
@@ -128,12 +132,12 @@ def save_on_success(wrapped, instance, args, kwargs):
     pass
   return result
 
-def with_id(elements):
+def with_id(elements: Optional[Collection[VT]]) -> Optional[VT]:
   if elements is None:
     return []
   return [ e for e in elements if 'id' in e ]
 
-def detect_version() -> None:
+def detect_version() -> str:
   version = 'unknown'
   try:
     version = pkg_resources.get_distribution('amplipi').version()
