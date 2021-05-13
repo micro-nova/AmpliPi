@@ -21,7 +21,6 @@ zones, groups and streams.
 """
 
 import json
-from copy import deepcopy
 import deepdiff
 import jinja2
 
@@ -33,15 +32,26 @@ import threading
 
 import amplipi.models as models
 import amplipi.rt as rt
-import amplipi.streams as streams
+import amplipi.streams
 import amplipi.utils as utils
 
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
 class Api:
   """ Amplipi Controller API"""
+
+  _mock_hw: bool
+  _mock_streams: bool
+  _save_timer: Optional[threading.Timer] = None
+  _delay_saves: bool
+  _rt: Union[rt.Rpi, rt.Mock]
+  config_file: str
+  backup_config_file: str
+  config_file_valid: bool
+  status: models.Status
+  streams: Dict[int, amplipi.streams.AnyStream]
 
   _DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
@@ -138,35 +148,28 @@ class Api:
     if not loaded_config:
       print(errors[0])
       print('using default config')
-      self.status = deepcopy(self._DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
+      self.status = models.Status.parse_obj(self._DEFAULT_CONFIG)
       self.save()
 
     # load the template engine for the API documentation so the api can be updated based on the current configuration
     self._template_env = jinja2.Environment(loader=jinja2.PackageLoader('amplipi', '../docs/templates'))
     self._api_template = self._template_env.get_template('amplipi_api.yaml.j2')
 
-    self.status['info'] = {'config_file': self.config_file, 'version': utils.detect_version()}
-    # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
-    if not 'groups' in self.status:
-      self.status['groups'] = [] # this needs to be done before _update_groups() is called (its called in set_zone() and at below)
-    if not 'presets' in self.status:
-      self.status['presets'] = []
-    else:
-      print('presets: {}'.format(self.status['presets']))
+    self.status.info = {'config_file': self.config_file, 'version': utils.detect_version()}
     # configure all streams into a known state
     self.streams = {}
-    for stream in self.status['streams']:
-      self.streams[stream['id']] = streams.build_stream(stream, self._mock_streams)
+    for stream in self.status.streams:
+      self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams)
     # configure all sources so that they are in a known state
-    for src in self.status['sources']:
-      update = models.SourceUpdate(input=src['input'])
-      self.set_source(src['id'], update, force_update=True)
+    for src in self.status.sources:
+      update = models.SourceUpdate(input=src.input)
+      self.set_source(src.id, update, force_update=True)
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
-    for z in self.status['zones']:
+    for z in self.status.zones:
       # TODO: disable zones that are not found
-      z_update = models.ZoneUpdate(source_id=z['source_id'], mute=True, vol=z['vol'])
-      self.set_zone(z['id'], z_update, force_update=True)
+      z_update = models.ZoneUpdate(source_id=z.source_id, mute=True, vol=z.vol)
+      self.set_zone(z.id, z_update, force_update=True)
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
 
@@ -235,8 +238,8 @@ class Api:
         { None, '', 'local', 'Local', 'stream=9449' }
     """
     inputs = { None: '', 'local' : 'Local'}
-    for s in self.get_state()['streams']:
-      inputs['stream={}'.format(s['id'])] = s['name']
+    for s in self.get_state().streams:
+      inputs['stream={}'.format(s.id)] = s.name
     return inputs
 
   def get_state(self) -> models.Status:
@@ -247,35 +250,24 @@ class Api:
     for sid, sc in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
       # convert the stream class info to a dict (serialize its current configuration and status information)
-      s = {}
-      s['id'] = sid
-      s['name'] = sc.name
-      s['type'] = type(sc).__name__.lower()
-      s['info'] = sc.info()
-      s['status'] = sc.status()
+      st_type = type(sc).__name__.lower()
+      s = models.Stream(id=sid, name=sc.name, type=st_type, info=sc.info(), status=sc.status())
       for f in optional_fields:
         if f in sc.__dict__:
-          s[f] = sc.__dict__[f]
+          s.__dict__[f] = sc.__dict__[f]
       streams.append(s)
-    self.status['streams'] = streams
+    self.status.streams = streams
     return self.status
 
-  def _get_stream(self, input):
-    """Gets the stream from an input configuration
+  def _get_stream(self, src) -> Optional[amplipi.streams.AnyStream]:
+    """Gets the stream from a source
 
     Args:
-      input: input configuration either ['local', 'stream=ID']
+      src: An audio source that may have a stream connected
     Returns
       a stream, or None if input does not specify a valid stream
     """
-    if 'stream=' in input:
-      stream_id = int(input.split('=')[1])
-      if stream_id in self.streams:
-        return self.streams[stream_id]
-      else:
-        return None
-    else:
-      return None
+    return self.streams.get(src.get_stream())
 
   @utils.save_on_success
   def set_source(self, id: int, update:models.SourceUpdate, force_update:bool=False) -> None:
@@ -290,44 +282,44 @@ class Api:
       Returns:
         'None' on success, otherwise error (dict)
     """
-    idx, src = utils.find(self.status['sources'], id)
-    if idx is not None:
-      name, _ = utils.updated_val(update.name, src['name'])
-      input, input_updated = utils.updated_val(update.input, src['input'])
+    idx, src = utils.find(self.status.sources, id)
+    if idx is not None and src is not None:
+      name, _ = utils.updated_val(update.name, src.name)
+      input, input_updated = utils.updated_val(update.input, src.input)
       try:
         # update the name
-        src['name'] = str(name)
+        src.name = str(name)
         if input_updated or force_update:
           # shutdown old stream
-          old_stream = self._get_stream(src['input'])
+          old_stream = self._get_stream(src)
           if old_stream:
             old_stream.disconnect()
           # start new stream
-          stream = self._get_stream(input)
+          stream = self._get_stream(src)
           if stream:
             # update the streams last connected source to have no input, since we have stolen its input
             if stream.src is not None and stream.src != idx:
-              other_src = self.status['sources'][stream.src]
-              print('stealing {} from source {}'.format(stream.name, other_src['name']))
-              other_src['input'] = ''
+              other_src = self.status.sources[stream.src]
+              print('stealing {} from source {}'.format(stream.name, other_src.name))
+              other_src.input = ''
             else:
               print('stream.src={} idx={}'.format(stream.src, idx))
             stream.disconnect()
             stream.connect(idx)
-          rt_needs_update = self._is_digital(input) != self._is_digital(src['input'])
+          rt_needs_update = self._is_digital(input) != self._is_digital(src.input)
           if rt_needs_update or force_update:
             # get the current underlying type of each of the sources, for configuration of the runtime
-            src_cfg = [ self._is_digital(self.status['sources'][s]['input']) for s in range(4) ]
+            src_cfg = [ self._is_digital(self.status.sources[s].input) for s in range(4) ]
             # update this source
             src_cfg[idx] = self._is_digital(input)
             if self._rt.update_sources(src_cfg):
               # update the status
-              src['input'] = input
+              src.input = input
               return None
             else:
               return utils.error('failed to set source')
           else:
-            src['input'] = input
+            src.input = input
       except Exception as e:
         return utils.error('failed to set source: ' + str(e))
     else:
@@ -348,39 +340,39 @@ class Api:
       Returns:
         'None' on success, otherwise error (dict)
     """
-    idx, z = utils.find(self.status['zones'], id)
+    idx, z = utils.find(self.status.zones, id)
     if idx is not None:
-      name, _ = utils.updated_val(update.name, z['name'])
-      source_id, update_source_id = utils.updated_val(update.source_id, z['source_id'])
-      mute, update_mutes = utils.updated_val(update.mute, z['mute'])
-      vol, update_vol = utils.updated_val(update.vol, z['vol'])
-      disabled, _ = utils.updated_val(update.disabled, z['disabled'])
+      name, _ = utils.updated_val(update.name, z.name)
+      source_id, update_source_id = utils.updated_val(update.source_id, z.source_id)
+      mute, update_mutes = utils.updated_val(update.mute, z.mute)
+      vol, update_vol = utils.updated_val(update.vol, z.vol)
+      disabled, _ = utils.updated_val(update.disabled, z.disabled)
       try:
-        sid = utils.parse_int(source_id, [0, 1, 2, 3, 4])
+        sid = utils.parse_int(source_id, [0, 1, 2, 3])
         vol = utils.parse_int(vol, range(-79, 79)) # hold additional state for group delta volume adjustments, output volume will be saturated to 0dB
-        zones = self.status['zones']
+        zones = self.status.zones
         # update non hw state
-        z['name'] = name
-        z['disabled'] = disabled
+        z.name = name
+        z.disabled = disabled
         # TODO: figure out an order of operations here, like does mute need to be done before changing sources?
         if update_source_id or force_update:
-          zone_sources = [ zone['source_id'] for zone in zones ]
+          zone_sources = [ zone.source_id for zone in zones ]
           zone_sources[idx] = sid
           if self._rt.update_zone_sources(idx, zone_sources):
-            z['source_id'] = sid
+            z.source_id = sid
           else:
             return utils.error('set zone failed: unable to update zone source')
         if update_mutes or force_update:
-          mutes = [ zone['mute'] for zone in zones ]
+          mutes = [ zone.mute for zone in zones ]
           mutes[idx] = mute
           if self._rt.update_zone_mutes(idx, mutes):
-            z['mute'] = mute
+            z.mute = mute
           else:
             return utils.error('set zone failed: unable to update zone mute')
         if update_vol or force_update:
           real_vol = utils.clamp(vol, -79, 0)
           if self._rt.update_zone_vol(idx, real_vol):
-            z['vol'] = vol
+            z.vol = vol
           else:
             return utils.error('set zone failed: unable to update zone volume')
 
@@ -395,18 +387,18 @@ class Api:
 
   def _update_groups(self):
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
-    for g in self.status['groups']:
-      zones = [ self.status['zones'][z] for z in g['zones'] ]
-      mutes = [ z['mute'] for z in zones ]
-      sources  = set([ z['source_id'] for z in zones ])
-      vols = [ z['vol'] for z in zones ]
+    for g in self.status.groups:
+      zones = [ self.status.zones[z] for z in g.zones ]
+      mutes = [ z.mute for z in zones ]
+      sources  = set([ z.source_id for z in zones ])
+      vols = [ z.vol for z in zones ]
       vols.sort()
-      g['mute'] = False not in mutes # group is only considered muted if all zones are muted
+      g.mute = False not in mutes # group is only considered muted if all zones are muted
       if len(sources) == 1:
-        g['source_id'] = sources.pop() # TODO: how should we handle different sources in the group?
+        g.source_id = sources.pop() # TODO: how should we handle different sources in the group?
       else: # multiple sources
-        g['source_id'] = None
-      g['vol_delta'] = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
+        g.source_id = None
+      g.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
   @utils.save_on_success
   def set_group(self, id, update:models.GroupUpdate) -> None:
@@ -424,59 +416,59 @@ class Api:
         Returns:
             'None' on success, otherwise error (dict)
     """
-    _, g = utils.find(self.status['groups'], id)
+    _, g = utils.find(self.status.groups, id)
     if g is None:
       return utils.error('set group failed, group {} not found'.format(id))
-    name, _ = utils.updated_val(update.name, g['name'])
-    zones, _ = utils.updated_val(update.zones, g['zones'])
-    vol_delta, vol_updated = utils.updated_val(update.vol_delta, g['vol_delta'])
+    name, _ = utils.updated_val(update.name, g.name)
+    zones, _ = utils.updated_val(update.zones, g.zones)
+    vol_delta, vol_updated = utils.updated_val(update.vol_delta, g.vol_delta)
     if vol_updated:
-      vol_change = vol_delta - g['vol_delta']
+      vol_change = vol_delta - g.vol_delta
     else:
       vol_change = 0
 
-    g['name'] = name
-    g['zones'] = zones
+    g.name = name
+    g.zones = zones
 
     # update each of the member zones
     z_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)
     if vol_change != 0:
       # TODO: make this use volume delta adjustment, for now its a fixed group volume
-      z_update.vol = vol_delta # vol = z['vol'] + vol_change
-    for z in [ self.status['zones'][zone] for zone in zones ]:
-      self.set_zone(z['id'], z_update)
+      z_update.vol = vol_delta # vol = z.vol + vol_change
+    for z in [ self.status.zones[zone] for zone in zones ]:
+      self.set_zone(z.id, z_update)
 
     # save the volume
-    g['vol_delta'] = vol_delta
+    g.vol_delta = vol_delta
 
     # update the group stats
     self._update_groups()
 
   def _new_group_id(self):
     """ get next available group id """
-    g = max(self.status['groups'], key=lambda g: g['id'], default=None)
+    g = max(self.status.groups, key=lambda g: g.id, default=None)
     if g is not None:
-      return g['id'] + 1
+      return g.id + 1
     else:
       return 100
 
   @utils.save_on_success
-  def create_group(self, new_group:models.Group) -> models.Group:
+  def create_group(self, group:models.Group) -> models.Group:
     """Creates a new group with a list of zones
 
     Refer to the returned system state to obtain the id for the newly created group
     """
     # verify new group's name is unique
-    names = [ g['name'] for g in self.status['groups'] ]
-    if new_group.name in names:
-      return utils.error('create group failed: {} already exists'.format(new_group.name))
+    names = [ g.name for g in self.status.groups ]
+    if group.name in names:
+      return utils.error('create group failed: {} already exists'.format(group.name))
 
     # get the new groug's id
-    id = self._new_group_id()
+    group.id = self._new_group_id()
+
 
     # add the new group
-    group = { 'id': id, 'name' : new_group.name, 'zones' : new_group.zones, 'vol_delta' : 0 }
-    self.status['groups'].append(group)
+    self.status.groups.append(group)
 
     # update the group stats and populate uninitialized fields of the group
     self._update_groups()
@@ -487,38 +479,38 @@ class Api:
   def delete_group(self, id: int) -> None:
     """Deletes an existing group"""
     try:
-      i, _ = utils.find(self.status['groups'], id)
+      i, _ = utils.find(self.status.groups, id)
       if i is not None:
-        del self.status['groups'][i]
+        del self.status.groups[i]
       else:
         return utils.error('delete group failed: {} does not exist'.format(id))
     except KeyError:
       return utils.error('delete group failed: {} does not exist'.format(id))
 
   def _new_stream_id(self):
-    s = max(self.status['streams'], key=lambda s: s['id'])
-    if s is not None:
-      return s['id'] + 1
+    s:Optional[models.Stream] = max(self.status.streams, key=lambda s: s.id)
+    if s and s.id:
+      return s.id + 1
     else:
       return 1000
 
   @utils.save_on_success
-  def create_stream(self, **kwargs):
+  def create_stream(self, stream: models.Stream):
     try:
       # Make a new stream and add it to streams
-      s = streams.build_stream(args=kwargs, mock=self._mock_streams)
+      s = amplipi.streams.build_stream(args=stream.dict(exclude_unset=True), mock=self._mock_streams)
       id = self._new_stream_id()
       self.streams[id] = s
       # Get the stream as a dictionary (we use get_state() to convert it from its stream type into a dict)
-      for s in self.get_state()['streams']:
-        if s['id'] == id:
+      for s in self.get_state().streams:
+        if s.id == id:
           return s
       return utils.error('create stream failed: no stream created')
     except Exception as e:
       return utils.error('create stream failed: {}'.format(e))
 
   @utils.save_on_success
-  def set_stream(self, id: int, **kwargs) -> None:
+  def set_stream(self, id: int, update: models.StreamUpdate) -> None:
     if int(id) not in self.streams:
       return utils.error('Stream id {} does not exist'.format(id))
 
@@ -528,23 +520,23 @@ class Api:
       return utils.error('Unable to get stream {}: {}'.format(id, e))
 
     try:
-      stream.reconfig(**kwargs)
+      stream.reconfig(**update)
     except Exception as e:
       return utils.error('Unable to reconfigure stream {}: {}'.format(id, e))
 
   @utils.save_on_success
-  def delete_stream(self, id) -> None:
+  def delete_stream(self, id: int) -> None:
     """Deletes an existing stream"""
     try:
       # if input is connected to a source change that input to nothing
-      for src in self.status['sources']:
-        if 'stream=' in src['input'] and src['input'].split('=')[1] == str(id):
-          self.set_source(src['id'], models.SourceUpdate(input=''))
+      for src in self.status.sources:
+        if src.get_stream() == id:
+          self.set_source(src.id, models.SourceUpdate(input=''))
       # actually delete it
       del self.streams[id]
-      i, _ = utils.find(self.status['streams'], id)
+      i, _ = utils.find(self.status.streams, id)
       if i is not None:
-        del self.status['streams'][i] # delete the cached stream state just in case
+        del self.status.streams[i] # delete the cached stream state just in case
     except KeyError:
       return utils.error('delete stream failed: {} does not exist'.format(id))
 
@@ -624,9 +616,9 @@ class Api:
 
   def _new_preset_id(self) -> int:
     """ get next available preset id """
-    g = max(self.status['presets'], key=lambda g: g['id'], default={'id' : 9999})
+    g = max(self.status.presets, key=lambda g: g.id, default=None)
     if g is not None:
-      return g['id'] + 1
+      return g.id + 1
     else:
       return 10000
 
@@ -638,22 +630,22 @@ class Api:
       id = self._new_preset_id()
       preset.id = id
       preset.last_used = None # indicates this preset has never been used
-      self.status['presets'].append(preset.dict())
+      self.status.presets.append(preset.dict())
       return preset
     except Exception as e:
       return utils.error('create preset failed: {}'.format(e))
 
   @utils.save_on_success
   def set_preset(self, id: int, update: models.PresetUpdate) -> None:
-    i, preset = utils.find(self.status['presets'], id)
+    i, preset = utils.find(self.status.presets, id)
     changes = update.dict(exclude_unset=True)
     if i is None:
       return utils.error('Unable to find preset to redefine')
 
     try:
       # TODO: validate preset
-      for field, val in changes.items():
-        preset[field] = val
+      for field in changes.keys():
+        preset[field] = update[field]
     except Exception as e:
       return utils.error('Unable to reconfigure preset {}: {}'.format(id, e))
 
@@ -661,9 +653,9 @@ class Api:
   def delete_preset(self, id: int):
     """Deletes an existing preset"""
     try:
-      i, _ = utils.find(self.status['presets'], id)
+      i, _ = utils.find(self.status.presets, id)
       if i is not None:
-        del self.status['presets'][i] # delete the cached preset state just in case
+        del self.status.presets[i] # delete the cached preset state just in case
       else:
         return utils.error('delete preset failed: {} does not exist'.format(id))
     except KeyError:
@@ -673,26 +665,26 @@ class Api:
   def _effected_zones(self, preset_id):
     """ Aggregate the zones that will be modified by changes """
     st = self.status
-    _, preset = utils.find(st['presets'], preset_id)
+    _, preset = utils.find(st.presets, preset_id)
     effected = set()
     if preset is None:
       return effected
-    ps = preset['state']
-    src_zones = { src['id'] : [ z['id'] for z in st['zones'] if z['source_id'] == src['id']] for src in st['sources'] }
+    ps = preset.state
+    src_zones = { src.id : [ z.id for z in st.zones if z.source_id == src.id] for src in st.sources }
     if 'sources' in ps:
-      for src in ps['sources']:
+      for src in ps.sources:
         if 'id' in src:
-          effected.update(src_zones[src['id']])
+          effected.update(src_zones[src.id])
     if 'groups' in ps:
-      for g in ps['groups']:
+      for g in ps.groups:
         if 'id' in g:
-          _, gf = utils.find(st['groups'], g['id'])
+          _, gf = utils.find(st.groups, g.id)
           if gf:
-            effected.update(gf['zones'])
+            effected.update(gf.zones)
     if 'zones' in ps:
-      for z in ps['zones']:
+      for z in ps.zones:
         if 'id' in z:
-          effected.add(z['id'])
+          effected.add(z.id)
     return effected
 
   @utils.save_on_success
@@ -710,7 +702,7 @@ class Api:
     """
     # Get the preset to load
     LAST_PRESET = 9999
-    i, preset = utils.find(self.status['presets'], id)
+    i, preset = utils.find(self.status.presets, id)
     if i is None:
       return utils.error('load preset failed: {} does not exist'.format(id))
 
@@ -718,22 +710,22 @@ class Api:
 
     # update last config preset for restore capabilities (creating if missing)
     # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
-    lp, _ = utils.find(self.status['presets'], LAST_PRESET)
+    lp, _ = utils.find(self.status.presets, LAST_PRESET)
     st = self.status
-    last_config = {
-      'id': 9999,
-      'name' : 'Restore last config',
-      'last_used' : None, # this need to be in javascript time format
-      'state': {
-        'sources' : deepcopy(st['sources']),
-        'zones'   : deepcopy(st['zones']),
-        'groups'  : deepcopy(st['groups'])
-      }
-    }
+    last_config = models.Preset(
+      id = 9999,
+      name = 'Restore last config',
+      last_used = None, # this need to be in javascript time format
+      state = models.PresetState(
+        sources = st.sources.copy(deep=True),
+        zones = st.zones.copy(deep=True),
+        groups = st.groups.copy(deep=True)
+      )
+    )
     if lp is None:
-      self.status['presets'].append(last_config)
+      self.status.presets.append(last_config)
     else:
-      self.status['presets'][lp] = last_config
+      self.status.presets[lp] = last_config
 
     # keep track of the zones muted by the preset configuration
     z_muted = set()
@@ -741,36 +733,31 @@ class Api:
     # determine which zones will be effected and mute them
     # we do this just in case there is intermediate state that causes audio issues. TODO: test with and without this feature (it adds a lot of complexity to presets, lets make sure its worth it)
     z_effected = self._effected_zones(id)
-    z_temp_muted = [ zid for zid in z_effected if not self.status['zones'][zid]['mute'] ]
+    z_temp_muted = [ zid for zid in z_effected if not self.status.zones[zid].mute ]
     z_update = models.ZoneUpdate(mute=True)
     for zid in z_temp_muted:
       self.set_zone(zid, z_update)
 
-    ps = preset['state']
+    ps = preset.state
 
     # execute changes source by source in increasing order
-    for src in ps.get('sources', []):
-      if 'id' in src:
-        to_parse = src.copy()
-        sid = to_parse.pop('id')
-        self.set_source(sid, models.SourceUpdate.parse_obj(to_parse))
+    for src in ps.sources or []:
+      if src.id:
+        self.set_source(src.id, src.as_update())
       else:
         pass # TODO: support some id-less source concept that allows dynamic source allocation
 
     # execute changes group by group in increasing order
-    for g in utils.with_id(ps.get('groups')):
-      _, g_to_update = utils.find(self.status['groups'], g['id'])
+    for g in ps.groups or []:
+      _, g_to_update = utils.find(self.status.groups, g.id)
       if g_to_update is None:
-        return utils.error('group {} does not exist'.format(g['id']))
-      to_parse = g.copy()
-      to_parse.pop('id')
-      g_update = models.GroupUpdate.parse_obj(to_parse)
-      self.set_group(g['id'], g_update)
+        return utils.error('group {} does not exist'.format(g.id))
+      self.set_group(g.id, g.as_update())
       if 'mute' in g:
         # use the updated group's zones just in case the group's zones were just changed
-        _, g_updated = utils.find(self.status['groups'], g['id'])
-        zones_changed = g_updated['zones']
-        if g['mute']:
+        _, g_updated = utils.find(self.status.groups, g.id)
+        zones_changed = g_updated.zones
+        if g.mute:
           # keep track of the muted zones
           z_muted.update(zones_changed)
         else:
@@ -778,15 +765,13 @@ class Api:
           z_muted.difference_update()
 
     # execute change zone by zone in increasing order
-    for z in utils.with_id(ps.get('zones')):
-      to_parse = z.copy()
-      to_parse.pop('id')
-      self.set_zone(z['id'], models.ZoneUpdate.parse_obj(to_parse))
+    for z in ps.zones or []:
+      self.set_zone(z.id, z.as_update())
       if 'mute' in z:
-        if z['mute']:
-          z_muted.add(z['id'])
-        elif z['id'] in z_muted:
-          z_muted.remove(z['id'])
+        if z.mute:
+          z_muted.add(z.id)
+        elif z.id in z_muted:
+          z_muted.remove(z.id)
 
     # unmute effected zones that were not muted by the preset configuration
     z_to_unmute = set(z_temp_muted).difference(z_muted)
@@ -796,7 +781,7 @@ class Api:
 
     # TODO: execute stream commands
 
-    preset['last_used'] = int(time.time())
+    preset.last_used = int(time.time())
 
     # TODO: release lock
 

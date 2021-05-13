@@ -28,24 +28,12 @@ import time
 
 import amplipi.utils as utils
 
+from typing import Union
+
 # Used by InternetRadio
 import urllib.request
 import json
 import signal
-
-def build_stream(args, mock=False):
-  if args['type'] == 'pandora':
-    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
-  elif args['type'] == 'shairport':
-    return Shairport(args['name'], mock=mock)
-  elif args['type'] == 'spotify':
-    return Spotify(args['name'], mock=mock)
-  elif args['type'] == 'dlna':
-    return DLNA(args['name'], mock=mock)
-  elif args['type'] == 'internetradio':
-    return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
-  else:
-    raise NotImplementedError(args['type'])
 
 # TODO: how to implement base stream class in Python?, there is a lot of duplication between shairport and pandora streams...
 class Stream(object):
@@ -641,3 +629,20 @@ class InternetRadio:
     connection = f' connected to src={self.src}' if self.src else ''
     mock = ' (mock)' if self.mock else ''
     return 'internetradio connect: {self.name}{connection}{mock}'
+
+# Simple handling of stream types before we have a type heirarchy
+AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora]
+
+def build_stream(args, mock=False) -> AnyStream:
+  if args['type'] == 'pandora':
+    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
+  elif args['type'] == 'shairport':
+    return Shairport(args['name'], mock=mock)
+  elif args['type'] == 'spotify':
+    return Spotify(args['name'], mock=mock)
+  elif args['type'] == 'dlna':
+    return DLNA(args['name'], mock=mock)
+  elif args['type'] == 'internetradio':
+    return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
+  else:
+    raise NotImplementedError(args['type'])
