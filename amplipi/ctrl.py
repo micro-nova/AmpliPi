@@ -557,9 +557,12 @@ class Api:
       return utils.error('Stream id {} does not exist'.format(id))
 
     try:
-      stream = self.streams[int(id)]
+      stream = self.streams[id]
     except Exception as e:
       return utils.error('Unable to get stream {}: {}'.format(id, e))
+
+    if type(stream) != amplipi.streams.Pandora or stream.mock:
+      return utils.error(f'Stream "{stream}" does not support commands yet')
 
     try:
       if cmd is None:
