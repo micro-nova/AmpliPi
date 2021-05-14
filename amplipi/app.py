@@ -219,7 +219,7 @@ class API:
       raise HTTPException(404, f'stream {sid} not found')
 
   @api_router.patch('/streams/{sid}')
-  async def set_stream(self, sid: int, update: models.StreamUpdate) -> models.Status:
+  def set_stream(self, sid: int, update: models.StreamUpdate) -> models.Status:
     return self.code_response(self.ctrl.set_stream(sid, update))
 
   @api_router.delete('/streams/{sid}')
@@ -233,7 +233,7 @@ class API:
   # presets
 
   @api_router.post('/preset')
-  async def create_preset(self, preset: models.Preset) -> models.Preset:
+  def create_preset(self, preset: models.Preset) -> models.Preset:
     return self.code_response(self.ctrl.create_preset(preset))
 
   @api_router.get('/presets')
