@@ -189,7 +189,7 @@ class Api:
           os.remove(self.backup_config_file)
         os.rename(self.config_file, self.backup_config_file)
       with open(self.config_file, 'w') as cfg:
-        cfg.write(self.status.json(exclude_unset=True, indent=2))
+        cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as e:
       print('Error saving config: {}'.format(e))
@@ -498,7 +498,7 @@ class Api:
   def create_stream(self, stream: models.Stream):
     try:
       # Make a new stream and add it to streams
-      s = amplipi.streams.build_stream(args=stream.dict(exclude_unset=True), mock=self._mock_streams)
+      s = amplipi.streams.build_stream(args=stream.dict(exclude_none=True), mock=self._mock_streams)
       id = self._new_stream_id()
       self.streams[id] = s
       # Get the stream as a dictionary (we use get_state() to convert it from its stream type into a dict)
@@ -638,7 +638,7 @@ class Api:
   @utils.save_on_success
   def set_preset(self, id: int, update: models.PresetUpdate) -> None:
     i, preset = utils.find(self.status.presets, id)
-    changes = update.dict(exclude_unset=True)
+    changes = update.dict(exclude_none=True)
     if i is None:
       return utils.error('Unable to find preset to redefine')
 

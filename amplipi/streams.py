@@ -639,7 +639,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
 
   we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
   """
-  args = stream.dict(exclude_unset=True)
+  args = stream.dict(exclude_none=True)
   if stream.type == 'pandora':
     return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
   elif stream.type == 'shairport':

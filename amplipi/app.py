@@ -68,7 +68,7 @@ class SimplifyingRouter(APIRouter):
     def add_api_route(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
       if kwargs.get("response_model") is None:
         kwargs["response_model"] = get_type_hints(endpoint).get("return")
-      kwargs["response_model_exclude_unset"] = True
+      kwargs["response_model_exclude_none"] = True
       return super().add_api_route(path, endpoint, **kwargs)
 
 # Helper functions
@@ -272,7 +272,7 @@ class API:
 app.include_router(api_router, prefix='/api')
 
 # add the root of the API as well, since empty paths are invalid this needs to be handled outside of the router
-@app.get('/api', response_model_exclude_unset=True)
+@app.get('/api', response_model_exclude_none=True)
 def get_status(ctrl:Api=Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
 
