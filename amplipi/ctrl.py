@@ -529,7 +529,8 @@ class Api:
       return utils.error('Unable to get stream {}: {}'.format(id, e))
 
     try:
-      stream.reconfig(**update)
+      changes = update.dict(exclude_none=True)
+      stream.reconfig(**changes)
     except Exception as e:
       return utils.error('Unable to reconfigure stream {}: {}'.format(id, e))
 
