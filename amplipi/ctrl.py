@@ -303,6 +303,7 @@ class Api:
           if old_stream:
             old_stream.disconnect()
           # start new stream
+          last_input = src.input
           src.input = input # reconfigure the input so get_stream knows which stream to get
           stream = self._get_stream(src)
           if stream:
@@ -311,11 +312,9 @@ class Api:
               other_src = self.status.sources[stream.src]
               print('stealing {} from source {}'.format(stream.name, other_src.name))
               other_src.input = ''
-            else:
-              print('stream.src={} idx={}'.format(stream.src, idx))
             stream.disconnect()
             stream.connect(idx)
-          rt_needs_update = self._is_digital(input) != self._is_digital(src.input)
+          rt_needs_update = self._is_digital(input) != self._is_digital(last_input)
           if rt_needs_update or force_update:
             # get the current underlying type of each of the sources, for configuration of the runtime
             src_cfg = [ self._is_digital(self.status.sources[s].input) for s in range(4) ]
