@@ -98,13 +98,13 @@ def ungrouped_zones(src: int) -> List[models.Zone]:
   source_zones = set([ z.id for z in zones if z.source_id == src ])
   # return all of the zones connected to this source that aren't in a group
   ungrouped_zones_ = source_zones.difference(grouped_zones)
-  return [ zones[z] for z in ungrouped_zones_ if not zones[z].disabled]
+  return [ zones[z] for z in ungrouped_zones_ if z and not zones[z].disabled]
 
 def song_info(src: int) -> Dict[str,str]:
   """ Get the song info for a source """
   ctrl =  get_ctrl()
   song_fields = ['artist', 'album', 'track', 'img_url']
-  stream = ctrl._get_stream(ctrl.status.sources[src].input)
+  stream = ctrl._get_stream(src)
   info = stream.info if stream else {}
   # add empty strings for unpopulated fields
   for field in song_fields:
@@ -203,9 +203,8 @@ class API:
   # streams
 
   @api_router.post('/stream')
-  async def create_stream(self, request: Request) -> models.Stream:
-    params = await request.json()
-    return self.code_response(self.ctrl.create_stream(**params))
+  def create_stream(self, stream: models.Stream) -> models.Stream:
+    return self.code_response(self.ctrl.create_stream(stream))
 
   @api_router.get('/streams')
   def get_streams(self) -> Dict[str, List[models.Stream]]:
@@ -220,17 +219,16 @@ class API:
       raise HTTPException(404, f'stream {sid} not found')
 
   @api_router.patch('/streams/{sid}')
-  async def set_stream(self, request: Request, sid: int) -> models.Status:
-    params = await request.json()
-    return self.code_response(self.ctrl.set_stream(id=sid, **params))
+  async def set_stream(self, sid: int, update: models.StreamUpdate) -> models.Status:
+    return self.code_response(self.ctrl.set_stream(sid, update))
 
   @api_router.delete('/streams/{sid}')
   def delete_stream(self, sid: int) -> models.Status:
-    return self.code_response(self.ctrl.delete_stream(id=sid))
+    return self.code_response(self.ctrl.delete_stream(sid))
 
   @api_router.post('/streams/{sid}/{cmd}')
   def exec_command(self, sid: int, cmd: str) -> models.Status:
-    return self.code_response(self.ctrl.exec_stream_command(id=sid, cmd=cmd))
+    return self.code_response(self.ctrl.exec_stream_command(sid, cmd=cmd))
 
   # presets
 
@@ -297,7 +295,7 @@ def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl)):
     'unused_zones': [unused_zones(src) for src in range(4)],
     'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
     'song_info': [song_info(src) for src in range(4)],
-    'version': s.info.version,
+    'version': s.info['version'],
   }
   return templates.TemplateResponse("index.html.j2", context)
 

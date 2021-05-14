@@ -21,11 +21,8 @@ zones, groups and streams.
 """
 
 from inspect import indentsize
-import json
-import deepdiff
+from copy import deepcopy
 import jinja2
-
-import pprint
 import os # files
 import time
 
@@ -197,6 +194,8 @@ class Api:
     try:
       # update the api documentation (TODO: only do this if theere is a significant change)
       # this simplifies the interface to the user since each of the example id's are relative to the current configuration
+      if not os.path.exists(utils.get_folder('web/generated')):
+        return
       with open(f"{utils.get_folder('web/generated')}/{API_DOC}", 'w') as api:
         api.write(self._api_template.render(self.status))
     except Exception as e:
@@ -215,7 +214,12 @@ class Api:
       self._save_timer = threading.Timer(5.0, self.save)
       self._save_timer.start()
     else:
-      self.save()
+      if self._save_timer:
+        self._save_timer.cancel()
+        self._save_timer = None
+      # start can only be called once on a thread
+      self._save_timer = threading.Timer(0.3, self.save)
+      self._save_timer.start()
 
   @staticmethod
   def _is_digital(src_type: str) -> bool:
@@ -259,7 +263,7 @@ class Api:
     self.status.streams = streams
     return self.status
 
-  def _get_stream(self, src) -> Optional[amplipi.streams.AnyStream]:
+  def _get_stream(self, src: Union[int, models.Source]) -> Optional[amplipi.streams.AnyStream]:
     """Gets the stream from a source
 
     Args:
@@ -267,6 +271,10 @@ class Api:
     Returns
       a stream, or None if input does not specify a valid stream
     """
+    if type(src) is int:
+      _, src = utils.find(self.status.sources, src)
+      if src is None:
+        return None
     return self.streams.get(src.get_stream())
 
   @utils.save_on_success
@@ -295,6 +303,7 @@ class Api:
           if old_stream:
             old_stream.disconnect()
           # start new stream
+          src.input = input # reconfigure the input so get_stream knows which stream to get
           stream = self._get_stream(src)
           if stream:
             # update the streams last connected source to have no input, since we have stolen its input
@@ -498,7 +507,7 @@ class Api:
   def create_stream(self, stream: models.Stream):
     try:
       # Make a new stream and add it to streams
-      s = amplipi.streams.build_stream(args=stream.dict(exclude_none=True), mock=self._mock_streams)
+      s = amplipi.streams.build_stream(stream, mock=self._mock_streams)
       id = self._new_stream_id()
       self.streams[id] = s
       # Get the stream as a dictionary (we use get_state() to convert it from its stream type into a dict)
@@ -717,9 +726,9 @@ class Api:
       name = 'Restore last config',
       last_used = None, # this need to be in javascript time format
       state = models.PresetState(
-        sources = st.sources.copy(deep=True),
-        zones = st.zones.copy(deep=True),
-        groups = st.groups.copy(deep=True)
+        sources = deepcopy(st.sources),
+        zones = deepcopy(st.zones),
+        groups = deepcopy(st.groups)
       )
     )
     if lp is None:
