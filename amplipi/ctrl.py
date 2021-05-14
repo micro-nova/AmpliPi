@@ -655,7 +655,7 @@ class Api:
     try:
       # TODO: validate preset
       for field in changes.keys():
-        preset[field] = update[field]
+        preset.__dict__[field] = update.__dict__[field]
     except Exception as e:
       return utils.error('Unable to reconfigure preset {}: {}'.format(id, e))
 
