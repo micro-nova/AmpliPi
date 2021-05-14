@@ -265,7 +265,7 @@ def test_delete_connected_stream(client, sid):
   """ Delete a connected stream and make sure it gets disconnected from the source it is connected to"""
   rv = client.patch('/api/sources/0', json={'input': f'stream={sid}'})
   assert rv.status_code == HTTPStatus.OK
-  rv = client.delete('/api/streams/{}'.format(sid))
+  rv = client.delete(f'/api/streams/{sid}')
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json() # get the system state returned
   assert '' == jrv['sources'][0]['input']
