@@ -86,8 +86,9 @@ def use_tmpdir():
   os.chdir(test_dir)
   assert test_dir == os.getcwd()
 
-def prune_state(state: dict):
+def prune_state(state: amplipi.models.Status):
   """ Prune generated fields from system state to make comparable """
+  state = state.dict(exclude_none=True)
   for s in state['streams']:
     s.pop('info')
     s.pop('status')
