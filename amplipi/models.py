@@ -53,7 +53,9 @@ class Source(Base):
     try:
       if 'stream=' in self.input:
         return int(self.input.split('=')[1])
-    finally:
+      else:
+        return None
+    except:
       return None
 
   def as_update(self):
