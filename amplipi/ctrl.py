@@ -152,7 +152,13 @@ class Api:
     self._template_env = jinja2.Environment(loader=jinja2.PackageLoader('amplipi', '../docs/templates'))
     self._api_template = self._template_env.get_template('amplipi_api.yaml.j2')
 
-    self.status.info = {'config_file': self.config_file, 'version': utils.detect_version()}
+    self.status.info = models.Info(
+      mock_ctrl = self._mock_hw,
+      mock_streams = self._mock_streams,
+      config_file = self.config_file,
+      version = utils.detect_version()
+    )
+
     # configure all streams into a known state
     self.streams = {}
     for stream in self.status.streams:

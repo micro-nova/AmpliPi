@@ -282,7 +282,11 @@ def test_post_stream_cmd_live(clientnm, cmd):
   id = jrv['id']
   rv = clientnm.patch('/api/sources/0', json={'input': f'stream={id}'})
   assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert jrv['info']['mock_streams'] == False
   rv = clientnm.post('/api/streams/{}/{}'.format(id, cmd))
+  jrv = rv.json()
+  assert jrv['info']['mock_streams'] == False
   assert rv.status_code == HTTPStatus.OK
 
 # test presets
