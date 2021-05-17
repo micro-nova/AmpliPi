@@ -46,7 +46,58 @@ template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
 generated_dir = os.path.abspath('web/generated')
 
-app = FastAPI(title='Amplipi')
+# TODO: migrate this to a custom openapi generator
+app = FastAPI(
+  title = 'AmpliPi',
+  version = '1.0',
+  description = """
+    This is the AmpliPi home audio system's control server.
+
+    # Configuration
+
+    This web interface allows you to control and configure your AmpliPi device.
+    At the moment the API is the only way to configure the AmpliPi.
+
+    # OpenAPI
+
+    This API is documented using the OpenAPI specification
+  """,
+  openapi_tags = [
+    {
+      'name': 'status',
+      'description': 'The status and configuration of the entire system, including source, zones, groups, and streams.',
+    },
+    {
+      'name': 'source',
+      'description': 'Audio source. Can accept sudio input from a local (RCA) connection or any stream. Sources can be connected to one or multiple zones, or connected to nothing at all.',
+    },
+    {
+      'name': 'zone',
+      'description': 'Stereo output to a set of speakers, typically a room. Individually controllable with its own volume control. Can be connected to one of the 4 audio sources.',
+    },
+    {
+      'name': 'group',
+      'description': '''Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.,'''
+    },
+    {
+      'name': 'stream',
+      'description': 'Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify, Internet Radio, DLNA.',
+    },
+    {
+      'name': 'preset',
+      'description': '''A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.''',
+    }
+  ],
+  contact = {
+    'email': 'info@micro-nova.com',
+    'name':  'Micronova',
+    'url':   'http://micro-nova.com',
+  },
+  license = {
+    'name': 'GPL',
+    'url':  '/license',
+  },
+)
 templates = Jinja2Templates(template_dir)
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -122,7 +173,7 @@ class API:
   # embedded ctrl dependency used by every api route
   ctrl: Api = Depends(get_ctrl)
 
-  @api_router.get('/')
+  @api_router.get('/', tags=['status'])
   def get_status(self) -> models.Status:
     return self.ctrl.get_state()
 
@@ -138,27 +189,27 @@ class API:
 
   # sources
 
-  @api_router.get('/sources')
+  @api_router.get('/sources', tags=['source'])
   def get_sources(self) -> Dict[str, List[models.Source]]:
     return {'sources' : self.ctrl.get_state().sources}
 
-  @api_router.get('/sources/{sid}')
+  @api_router.get('/sources/{sid}', tags=['source'])
   def get_source(self, sid: int) -> models.Source:
     # TODO: add get_X capabilities to underlying API?
     sources = self.ctrl.get_state().sources
     return sources[sid]
 
-  @api_router.patch('/sources/{sid}')
+  @api_router.patch('/sources/{sid}', tags=['source'])
   def set_source(self, sid: int, update: models.SourceUpdate) -> models.Status:
     return self.code_response(self.ctrl.set_source(sid, update))
 
   # zones
 
-  @api_router.get('/zones')
+  @api_router.get('/zones', tags=['zone'])
   def get_zones(self) -> Dict[str, List[models.Zone]]:
     return {'zones': self.ctrl.get_state().zones}
 
-  @api_router.get('/zones/{zid}')
+  @api_router.get('/zones/{zid}', tags=['zone'])
   def get_zone(self, zid: int) -> models.Zone:
     zones = self.ctrl.get_state().zones
     if zid >= 0 and zid < len(zones):
@@ -166,21 +217,21 @@ class API:
     else:
       raise HTTPException(404, f'zone {zid} not found')
 
-  @api_router.patch('/zones/{zid}')
+  @api_router.patch('/zones/{zid}', tags=['zone'])
   def set_zone(self, zid: int, zone: models.ZoneUpdate):
     return self.code_response(self.ctrl.set_zone(zid, zone))
 
   # groups
 
-  @api_router.post('/group')
+  @api_router.post('/group', tags=['group'])
   def create_group(self, group: models.Group) -> models.Group:
     return self.code_response(self.ctrl.create_group(group))
 
-  @api_router.get('/groups')
+  @api_router.get('/groups', tags=['group'])
   def get_groups(self) -> Dict[str, List[models.Group]]:
     return {'groups' : self.ctrl.get_state().groups}
 
-  @api_router.get('/groups/{gid}')
+  @api_router.get('/groups/{gid}', tags=['group'])
   def get_group(self, gid: int) -> models.Group:
     _, grp = utils.find(self.ctrl.get_state().groups, gid)
     if grp is not None:
@@ -188,25 +239,25 @@ class API:
     else:
       raise HTTPException(404, f'group {gid} not found')
 
-  @api_router.patch('/groups/{gid}')
+  @api_router.patch('/groups/{gid}', tags=['group'])
   def set_group(self, gid: int, group: models.GroupUpdate) -> models.Status:
     return self.code_response(self.ctrl.set_group(gid, group)) # TODO: pass update directly
 
-  @api_router.delete('/groups/{gid}')
+  @api_router.delete('/groups/{gid}', tags=['group'])
   def delete_group(self, gid: int) -> models.Status:
     return self.code_response(self.ctrl.delete_group(id=gid))
 
   # streams
 
-  @api_router.post('/stream')
+  @api_router.post('/stream', tags=['stream'])
   def create_stream(self, stream: models.Stream) -> models.Stream:
     return self.code_response(self.ctrl.create_stream(stream))
 
-  @api_router.get('/streams')
+  @api_router.get('/streams', tags=['stream'])
   def get_streams(self) -> Dict[str, List[models.Stream]]:
     return {'streams' : self.ctrl.get_state().streams}
 
-  @api_router.get('/streams/{sid}')
+  @api_router.get('/streams/{sid}', tags=['stream'])
   def get_stream(self, sid: int) -> models.Stream:
     _, stream = utils.find(self.ctrl.get_state().streams, sid)
     if stream is not None:
@@ -214,29 +265,29 @@ class API:
     else:
       raise HTTPException(404, f'stream {sid} not found')
 
-  @api_router.patch('/streams/{sid}')
+  @api_router.patch('/streams/{sid}', tags=['stream'])
   def set_stream(self, sid: int, update: models.StreamUpdate) -> models.Status:
     return self.code_response(self.ctrl.set_stream(sid, update))
 
-  @api_router.delete('/streams/{sid}')
+  @api_router.delete('/streams/{sid}', tags=['stream'])
   def delete_stream(self, sid: int) -> models.Status:
     return self.code_response(self.ctrl.delete_stream(sid))
 
-  @api_router.post('/streams/{sid}/{cmd}')
+  @api_router.post('/streams/{sid}/{cmd}', tags=['stream'])
   def exec_command(self, sid: int, cmd: str) -> models.Status:
     return self.code_response(self.ctrl.exec_stream_command(sid, cmd=cmd))
 
   # presets
 
-  @api_router.post('/preset')
+  @api_router.post('/preset', tags=['preset'])
   def create_preset(self, preset: models.Preset) -> models.Preset:
     return self.code_response(self.ctrl.create_preset(preset))
 
-  @api_router.get('/presets')
+  @api_router.get('/presets', tags=['preset'])
   def get_presets(self) -> Dict[str, List[models.Preset]]:
     return {'presets' : self.ctrl.get_state().presets}
 
-  @api_router.get('/presets/{pid}')
+  @api_router.get('/presets/{pid}', tags=['preset'])
   def get_preset(self, pid: int) -> models.Preset:
     _, preset = utils.find(self.ctrl.get_state().presets, pid)
     if preset is not None:
@@ -244,21 +295,21 @@ class API:
     else:
       raise HTTPException(404, f'preset {pid} not found')
 
-  @api_router.patch('/presets/{pid}')
+  @api_router.patch('/presets/{pid}', tags=['preset'])
   async def set_preset(self, pid: int, update: models.PresetUpdate) -> models.Status:
     return self.code_response(self.ctrl.set_preset(pid, update))
 
-  @api_router.delete('/presets/{pid}')
+  @api_router.delete('/presets/{pid}', tags=['preset'])
   def delete_preset(self, pid: int) -> models.Status:
     return self.code_response(self.ctrl.delete_preset(pid))
 
-  @api_router.post('/presets/{pid}/load')
+  @api_router.post('/presets/{pid}/load', tags=['preset'])
   def load_preset(self, pid: int) -> models.Status:
     return self.code_response(self.ctrl.load_preset(pid))
 
   # Documentation
 
-  @api_router.get('/doc')
+  @api_router.get('/doc', include_in_schema=False)
   def doc(self):
     # TODO: add hosted python docs as well
     return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
@@ -266,14 +317,14 @@ class API:
 app.include_router(api_router, prefix='/api')
 
 # add the root of the API as well, since empty paths are invalid this needs to be handled outside of the router
-@app.get('/api', response_model_exclude_none=True)
+@app.get('/api', response_model_exclude_none=True, tags=['status'])
 def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
 
 # Website
 
-@app.get('/')
-@app.get('/{src}')
+@app.get('/', include_in_schema=False)
+@app.get('/{src}', include_in_schema=False)
 def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl)):
   ctrl = get_ctrl()
   s = ctrl.get_state()
