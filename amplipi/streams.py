@@ -183,7 +183,7 @@ class Shairport:
             d['album'] = data[2]
             d['paused'] = data[3]
             if int(data[4]):
-              d['img_url'] = '/generated/{}/{}'.format(self.src, data[5])
+              d['img_url'] = '/generated/shairport/srcs/{}/{}'.format(self.src, data[5])
     except Exception:
       pass
       # TODO: Log actual exception here?

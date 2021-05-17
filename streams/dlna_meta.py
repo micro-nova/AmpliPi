@@ -21,7 +21,7 @@ import os
 # print('Targeting {}'.format(loc))
 # cs_loc = loc + 'currentSong'
 parser = argparse.ArgumentParser(description="dlna metadata interpreter")
-parser.add_argument('dlna_config_dir', description='directory used for dlna song info generation')
+parser.add_argument('dlna_config_dir')#, description='directory used for dlna song info generation')
 args = parser.parse_args()
 
 # Check if the folder is valid and writeable
