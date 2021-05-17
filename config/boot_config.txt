@@ -68,6 +68,7 @@ gpio=5=op,dl # Preamp BOOT0 pin
 
 # enable i2s DAC
 dtoverlay=hifiberry-dac
+dtoverlay=i2s-gpio28-31
 
 # Enable SPI1 and SPI2 with two chip selects each
 dtoverlay=spi1-2cs
