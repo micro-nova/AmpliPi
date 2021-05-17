@@ -32,6 +32,8 @@ from fastapi_utils.inferring_router import InferringRouter
 # type handling, fastapi leverages type checking for performance and easy docs
 from typing import List, Optional, Dict, Union, Set
 from functools import lru_cache
+#docs
+from fastapi.openapi.utils import get_openapi
 # web server
 import uvicorn
 # amplipi
@@ -46,58 +48,7 @@ template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
 generated_dir = os.path.abspath('web/generated')
 
-# TODO: migrate this to a custom openapi generator
-app = FastAPI(
-  title = 'AmpliPi',
-  version = '1.0',
-  description = """
-    This is the AmpliPi home audio system's control server.
-
-    # Configuration
-
-    This web interface allows you to control and configure your AmpliPi device.
-    At the moment the API is the only way to configure the AmpliPi.
-
-    # OpenAPI
-
-    This API is documented using the OpenAPI specification
-  """,
-  openapi_tags = [
-    {
-      'name': 'status',
-      'description': 'The status and configuration of the entire system, including source, zones, groups, and streams.',
-    },
-    {
-      'name': 'source',
-      'description': 'Audio source. Can accept sudio input from a local (RCA) connection or any stream. Sources can be connected to one or multiple zones, or connected to nothing at all.',
-    },
-    {
-      'name': 'zone',
-      'description': 'Stereo output to a set of speakers, typically a room. Individually controllable with its own volume control. Can be connected to one of the 4 audio sources.',
-    },
-    {
-      'name': 'group',
-      'description': '''Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.,'''
-    },
-    {
-      'name': 'stream',
-      'description': 'Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify, Internet Radio, DLNA.',
-    },
-    {
-      'name': 'preset',
-      'description': '''A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.''',
-    }
-  ],
-  contact = {
-    'email': 'info@micro-nova.com',
-    'name':  'Micronova',
-    'url':   'http://micro-nova.com',
-  },
-  license = {
-    'name': 'GPL',
-    'url':  '/license',
-  },
-)
+app = FastAPI()
 templates = Jinja2Templates(template_dir)
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -320,6 +271,69 @@ app.include_router(api_router, prefix='/api')
 @app.get('/api', response_model_exclude_none=True, tags=['status'])
 def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
+
+# API Documentation
+def generate_openapi_spec():
+  if app.openapi_schema:
+    return app.openapi_schema
+  openapi_schema = get_openapi(
+    title = 'AmpliPi',
+    version = '1.0',
+    description = """This is the AmpliPi home audio system's control server.
+
+      # Configuration
+
+      This web interface allows you to control and configure your AmpliPi device.
+      At the moment the API is the only way to configure the AmpliPi.
+
+      # OpenAPI
+
+      This API is documented using the OpenAPI specification
+    """,
+    routes = app.routes,
+    tags = [
+      {
+        'name': 'status',
+        'description': 'The status and configuration of the entire system, including source, zones, groups, and streams.',
+      },
+      {
+        'name': 'source',
+        'description': 'Audio source. Can accept sudio input from a local (RCA) connection or any stream. Sources can be connected to one or multiple zones, or connected to nothing at all.',
+      },
+      {
+        'name': 'zone',
+        'description': 'Stereo output to a set of speakers, typically a room. Individually controllable with its own volume control. Can be connected to one of the 4 audio sources.',
+      },
+      {
+        'name': 'group',
+        'description': '''Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.,'''
+      },
+      {
+        'name': 'stream',
+        'description': 'Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify, Internet Radio, DLNA.',
+      },
+      {
+        'name': 'preset',
+        'description': '''A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.''',
+      }
+    ],
+    servers = [{
+      'url': '/api',
+      'description': 'AmpliPi Controller'
+    }],
+  )
+  openapi_schema['contact'] = {
+    'email': 'info@micro-nova.com',
+    'name':  'Micronova',
+    'url':   'http://micro-nova.com',
+  },
+  openapi_schema['license'] = {
+    'name': 'GPL',
+    'url':  '/license',
+  },
+  return openapi_schema
+
+app.openapi = generate_openapi_spec
 
 # Website
 
