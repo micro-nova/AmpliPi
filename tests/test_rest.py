@@ -274,6 +274,7 @@ def test_delete_connected_stream(client, sid):
 # _live tests will be excluded from GitHub testing
 @pytest.mark.parametrize('cmd', ['play', 'pause', 'stop', 'next', 'love', 'ban', 'shelve'])
 def test_post_stream_cmd_live(clientnm, cmd):
+  # TODO: this test is failing when executed with all of the other tests in parallel see below
   # Add a stream to send commands to
   m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
   rv = clientnm.post('/api/stream', json=m_and_k)
@@ -283,6 +284,7 @@ def test_post_stream_cmd_live(clientnm, cmd):
   rv = clientnm.patch('/api/sources/0', json={'input': f'stream={id}'})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
+  # the check below will fail when run in parallel with other tests, why is the configuration different than expected????
   assert jrv['info']['mock_streams'] == False
   rv = clientnm.post('/api/streams/{}/{}'.format(id, cmd))
   jrv = rv.json()
