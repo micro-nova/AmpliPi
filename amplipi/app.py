@@ -39,9 +39,6 @@ from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambigui
 import amplipi.rt as rt
 import amplipi.utils as utils
 import amplipi.models as models
-#helpers
-from json import dumps as jsonify
-DEBUG_API = False
 
 # start in the web directory (where everything is layed out for flask)
 import os
@@ -115,10 +112,9 @@ def song_info(src: int) -> Dict[str,str]:
 
 # Add our own router so we can bind/inject custom settings into our API routes
 api_router = SimplifyingRouter()
-settings = models.AppSettings()
 @lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
-  return Api(settings)
+  return Api(models.AppSettings())
 
 @cbv(api_router)
 class API:
@@ -271,7 +267,7 @@ app.include_router(api_router, prefix='/api')
 
 # add the root of the API as well, since empty paths are invalid this needs to be handled outside of the router
 @app.get('/api', response_model_exclude_none=True)
-def get_status(ctrl:Api=Depends(get_ctrl)) -> models.Status:
+def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
 
 # Website
@@ -295,7 +291,7 @@ def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl)):
     'unused_zones': [unused_zones(src) for src in range(4)],
     'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
     'song_info': [song_info(src) for src in range(4)],
-    'version': s.info['version'],
+    'version': s.info.version,
   }
   return templates.TemplateResponse("index.html.j2", context)
 
@@ -305,9 +301,10 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   if mock_streams: s.mock_streams = mock_streams
   if config_file: s.config_file = config_file
   if delay_saves: s.delay_saves = delay_saves
-  # modify settings
-  global settings
-  settings = s # set the settings class the api_router uses to instantiate a singleton of the API class
-  get_ctrl.cache_clear()
-  app.state.ctrl = get_ctrl()
+  # use a controller that has the specified configuration
+  @lru_cache(1)
+  def specific_ctrl():
+    return Api(s)
+  # replace the generic get_ctrl with the specific one we created above
+  app.dependency_overrides[get_ctrl] = specific_ctrl
   return app

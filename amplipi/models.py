@@ -169,6 +169,12 @@ class PresetUpdate(BaseUpdate):
   state: Optional[PresetState]
   commands: Optional[List[Command]]
 
+class Info(BaseModel):
+  config_file: str = 'Uknown'
+  version: str = 'Unknown'
+  mock_ctrl: bool = False
+  mock_streams: bool = False
+
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
@@ -176,7 +182,7 @@ class Status(BaseModel):
   groups: List[Group] = []
   streams: List[Stream] = []
   presets: List[Preset] = []
-  info: Dict[str, Union[str, int, bool]] = {}
+  info: Optional[Info]
 
 class AppSettings(BaseSettings):
   mock_ctrl: bool = False
