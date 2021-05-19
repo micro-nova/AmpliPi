@@ -11,5 +11,6 @@ uvicorn
 aiofiles
 pydantic
 python-multipart
+pyyaml
 flask_debugtoolbar
 wrapt
