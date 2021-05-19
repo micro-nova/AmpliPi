@@ -113,15 +113,15 @@ def song_info(src: int) -> Dict[str,str]:
       info[field] = ''
   return info
 
-
-# Add our own router so we can bind/inject custom settings into our API routes
-api_router = SimplifyingRouter()
+# add a default controller (this is overriden below in creat_app)
 @lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
   return Api(models.AppSettings())
 
+# Add our own router and class endpoints to reduce boilerplate for our api
+api_router = SimplifyingRouter()
 @cbv(api_router)
-class API:
+class ApiRoutes:
 
   # embedded ctrl dependency used by every api route
   ctrl: Api = Depends(get_ctrl)
