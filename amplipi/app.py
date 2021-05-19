@@ -23,7 +23,7 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 """
 
 # web framework
-from fastapi import FastAPI, Request, HTTPException, Depends, Body
+from fastapi import FastAPI, Request, Response, HTTPException, Depends, Body
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 from fastapi.templating import Jinja2Templates
@@ -34,6 +34,8 @@ from typing import List, Optional, Dict, Union, Set
 from functools import lru_cache
 #docs
 from fastapi.openapi.utils import get_openapi
+import yaml
+import io
 # web server
 import uvicorn
 # amplipi
@@ -48,7 +50,7 @@ template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
 generated_dir = os.path.abspath('web/generated')
 
-app = FastAPI()
+app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
 templates = Jinja2Templates(template_dir)
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -361,13 +363,13 @@ class API:
     # TODO: add hosted python docs as well
     return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
 
-app.include_router(api_router, prefix='/api')
-
 # add the root of the API as well, since empty paths are invalid this needs to be handled outside of the router
-@app.get('/api', response_model_exclude_none=True, tags=['status'])
+@api_router.get('/api', tags=['status'])
 def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Get the system status and configuration """
   return ctrl.get_state()
+
+app.include_router(api_router, prefix='/api')
 
 # API Documentation
 def generate_openapi_spec(add_test_docs=True):
@@ -476,6 +478,16 @@ def generate_openapi_spec(add_test_docs=True):
   # TODO: add relevant stream ids
   # TODO: add relevant preset ids
   return openapi_schema
+
+# additional yaml version of openapi.json
+# this is much more human readable
+@app.get('/openapi.yaml', include_in_schema=False)
+@lru_cache()
+def read_openapi_yaml() -> Response:
+    openapi_json= app.openapi()
+    yaml_s = io.StringIO()
+    yaml.dump(openapi_json, yaml_s, sort_keys=False, allow_unicode=True)
+    return Response(yaml_s.getvalue(), media_type='text/yaml')
 
 app.openapi = generate_openapi_spec
 
