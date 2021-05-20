@@ -25,10 +25,10 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 # web framework
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Body
 from fastapi.staticfiles import StaticFiles
+from fastapi.routing import APIRoute, APIRouter
 from starlette.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter
 # type handling, fastapi leverages type checking for performance and easy docs
 from typing import List, Optional, Dict, Union, Set
 from functools import lru_cache
@@ -36,6 +36,8 @@ from functools import lru_cache
 from fastapi.openapi.utils import get_openapi
 import yaml
 import io
+import json
+
 # web server
 import uvicorn
 # amplipi
@@ -217,9 +219,20 @@ class ApiRoutes:
 
   # streams
 
+  ExampleStream = Body(...,
+    example = {
+      'logo': 'http://www.beatlesradio.com/content/images/thumbs/0000587.gif',
+      'name': 'Beatles Radio',
+      'type': 'internetradio',
+      'url': 'http://www.beatlesradio.com:8000/stream/1/'
+    }
+  )
+
   ExampleStreams = Body(...,
     examples = {
       'Add Beatles Internet Radio Station': {
+        "summary": "11",
+        "description": "111",
         'value': {
           'logo': 'http://www.beatlesradio.com/content/images/thumbs/0000587.gif',
           'name': 'Beatles Radio',
@@ -228,62 +241,76 @@ class ApiRoutes:
         }
       },
       'Add Classical KING Internet Radio Station': {
+        "summary": "11",
+        "description": "111",
         'value': {
           'logo': 'https://i.iheart.com/v3/re/assets/images/7bcfd87a-de3e-47d0-b896-be0ed38c9d74.png',
           'name': 'Classical KING FM 98.1',
           'type': 'internetradio',
           'url': 'http://classicalking.streamguys1.com/king-fm-aac-iheart'
-          }
-        },
-        'Add Generic DLNA': {
-          'value': {
-            'name': 'Replace this text with a name you like!',
-            'type': 'dlna'
-            }
-        },
-        'Add Groove Salad Internet Radio Station': {
-          'value': {
-            'logo': 'https://somafm.com/img3/groovesalad-200.jpg',
-            'name': 'Groove Salad',
-            'type': 'internetradio',
-            'url': 'http://ice2.somafm.com/groovesalad-16-aac'
-          }
-        },
-        'Add KEXP Internet Radio Station': {
-          'value': {
-            'logo': 'https://i.iheart.com/v3/re/new_assets/cc4e0a17-5233-4e4b-9b6b-7799904f78ea',
-            'name': 'KEXP '
-            '90.3',
-            'type': 'internetradio',
-            'url': 'http://live-aacplus-64.kexp.org/kexp64.aac'
-          }
-        },
-        'Add Matt and Kim Pandora Station': {
-          'value': {
-            'name': 'Matt and Kim Radio',
-            'password': 's79sDDkjf',
-            'station': '4473713754798410236',
-            'type': 'pandora',
-            'user': 'test@micro-nova.com'
-          }
-        },
-        'Add MicroNova Spotify': {
-          'value': {
-            'name': 'MicroNova Spotify',
-            'type': 'spotify'
-          }
-        },
-        'Add Micronova Airplay': {
-          'value': {
-            'name': 'Micronova AP',
-            'type': 'shairport'
-          }
         }
+      },
+      'Add Generic DLNA': {
+        "summary": "22",
+        "description": "222",
+        'value': {
+          'name': 'Replace this text with a name you like!',
+          'type': 'dlna'
+          }
+      },
+      'Add Groove Salad Internet Radio Station': {
+        "summary": "33",
+        "description": "333",
+        'value': {
+          'logo': 'https://somafm.com/img3/groovesalad-200.jpg',
+          'name': 'Groove Salad',
+          'type': 'internetradio',
+          'url': 'http://ice2.somafm.com/groovesalad-16-aac'
+        }
+      },
+#      'Add KEXP Internet Radio Station': {
+#        "summary": "11",
+#        "description": "111",
+#        'value': {
+#          'logo': 'https://i.iheart.com/v3/re/new_assets/cc4e0a17-5233-4e4b-9b6b-7799904f78ea',
+#          'name': 'KEXP '
+#          '90.3',
+#          'type': 'internetradio',
+#          'url': 'http://live-aacplus-64.kexp.org/kexp64.aac'
+#        }
+#      },
+#      'Add Matt and Kim Pandora Station': {
+#        "summary": "11",
+#        "description": "111",
+#        'value': {
+#          'name': 'Matt and Kim Radio',
+#          'password': 's79sDDkjf',
+#          'station': '4473713754798410236',
+#          'type': 'pandora',
+#          'user': 'test@micro-nova.com'
+#        }
+#      },
+#      'Add MicroNova Spotify': {
+#        "summary": "11",
+#        "description": "111",
+#        'value': {
+#          'name': 'MicroNova Spotify',
+#          'type': 'spotify'
+#        }
+#      },
+#      'Add Micronova Airplay': {
+#        "summary": "11",
+#        "description": "111",
+#        'value': {
+#          'name': 'Micronova AP',
+#          'type': 'shairport'
+#        }
+#      }
     },
   )
 
   @api_router.post('/stream', tags=['stream'])
-  def create_stream(self, stream: models.Stream=ExampleStreams) -> models.Stream:
+  def create_stream(self, stream: models.Stream=ExampleStream) -> models.Stream:
     """ Create a new audio stream """
     # TODO: add an example stream for each type of stream
     return self.code_response(self.ctrl.create_stream(stream))
@@ -462,15 +489,36 @@ def generate_openapi_spec(add_test_docs=True):
       - [Preset](#tag--preset)
       """
 
-  openapi_schema['contact'] = {
+  openapi_schema['info']['contact'] = {
     'email': 'info@micro-nova.com',
     'name':  'Micronova',
     'url':   'http://micro-nova.com',
-  },
-  openapi_schema['license'] = {
+  }
+  openapi_schema['info']['license'] = {
     'name': 'GPL',
     'url':  '/license',
-  },
+  }
+
+  # Manually add examples present in pydancticModel.schema_extra into openAPI schema
+  for route in app.routes:
+    if isinstance(route, APIRoute):
+      model_schema_json = ''
+      try:
+        if route.body_field:
+          model_schema_json = route.body_field.type_.schema_json()
+      finally:
+        pass
+      if not model_schema_json:
+        continue
+      if model_schema_json:
+        model_schema = json.loads(model_schema_json)
+        if "examples" in model_schema:
+          examples = model_schema['examples']
+          for method in route.methods:
+            # Only for POST, PATCH, and PUT methods have a request body
+            if method in {"POST", "PATCH", "PUT"}:
+              openapi_schema['paths'][route.path][method.lower()]['requestBody'][
+              'content']['application/json']['examples'] = examples
 
   # TODO: add relevant source ids
   # TODO: add relevant zone ids

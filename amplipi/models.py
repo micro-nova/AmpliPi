@@ -86,7 +86,7 @@ class SourceUpdate(BaseUpdate):
 
 class SourceUpdate2(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
-  id : int = Field(ge=0,lt=4)
+  id : int = Field(ge=0,le=4)
 
   def as_update(self):
     update = self.dict()
@@ -95,9 +95,9 @@ class SourceUpdate2(SourceUpdate):
 
 class Zone(Base):
   """ Audio output to a stereo pair of speakers, typically belonging to a room """
-  source_id: int = Field(default=0, ge=0, lt=4, description='id of the connected source')
+  source_id: int = Field(default=0, ge=0, le=3, description='id of the connected source')
   mute: bool = Field(default=True, description='Set to true if output is muted')
-  vol: int = Field(default=-79, ge=-79, lte=0, description="Output volume in dB")
+  vol: int = Field(default=-79, ge=-79, le=0, description="Output volume in dB")
   disabled: bool = Field(default=False, description="Set to true if not connected to a speaker")
 
   def as_update(self):
@@ -107,22 +107,30 @@ class Zone(Base):
 
   class Config:
     schema_extra = {
-      'examples': [
-        {
-          'name': 'Living Room',
-          'source_id': 1,
-          'mute' : False,
-          'vol':-25,
-          'disabled': False,
+      'examples': {
+        'Living Room' : {
+          "summary": "11",
+          "description": "111",
+          'value': {
+            'name': 'Living Room',
+            'source_id': 1,
+            'mute' : False,
+            'vol':-25,
+            'disabled': False,
+          }
         },
-        {
-          'name': 'Dining Room',
-          'source_id': 2,
-          'mute' : True,
-          'vol':-65,
-          'disabled': False,
+        'Dining Room' : {
+          "summary": "22",
+          "description": "222",
+          'value': {
+            'name': 'Dining Room',
+            'source_id': 2,
+            'mute' : True,
+            'vol':-65,
+            'disabled': False,
+          }
         },
-      ]
+      }
     }
 
 class ZoneUpdate(BaseUpdate):
@@ -134,7 +142,7 @@ class ZoneUpdate(BaseUpdate):
 
 class ZoneUpdate2(ZoneUpdate):
   """ Reconfiguration of a specific Zone """
-  id: int = Field(ge=0,lt=36)
+  id: int = Field(ge=0,le=35)
 
   def as_update(self):
     update = self.dict()
@@ -145,10 +153,10 @@ class Group(Base):
   """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
 
   Volume, mute, and source_id fields are aggregates of the member zones."""
-  source_id: int =  Field(default=0, ge=0, lt=4, description='id of the connected source')
+  source_id: int =  Field(default=0, ge=0, le=3, description='id of the connected source')
   zones: Set[int] = Field(default=[], description='Set of zones that belong to group, a zone can belong to multiple groups.')
   mute: bool = Field(default=True, description='Set to true if all zones are muted')
-  vol_delta: int = Field(default=0, ge=-79, lte=0, description="Average output volume in dB")
+  vol_delta: int = Field(default=0, ge=-79, le=0, description="Average output volume in dB")
 
   def as_update(self):
     update = self.dict()
@@ -157,22 +165,20 @@ class Group(Base):
 
   class Config:
     schema_extra = {
-      'examples': [
-        {
-          'name': 'Living Room',
-          'source_id': 1,
-          'mute' : False,
-          'vol':-25,
-          'disabled': False,
+      'examples': {
+        'Add Upstairs Group': {
+          'value': {
+            'name': 'Upstairs',
+            'zones': [1, 2, 3, 4, 5]
+          }
         },
-        {
-          'name': 'Dining Room',
-          'source_id': 2,
-          'mute' : True,
-          'vol':-65,
-          'disabled': False,
-        },
-      ]
+        'Add Downstairs Group': {
+          'value': {
+            'name': 'Downstairs',
+            'zones': [6,7,8,9]
+          }
+        }
+      },
     }
 
 class GroupUpdate(BaseUpdate):
