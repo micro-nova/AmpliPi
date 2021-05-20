@@ -93,6 +93,11 @@ def test_base(client, path):
       assert path == '/api'
       assert '/api/' in rv.location
 
+def test_open_api_yamlfile(client):
+    """Start with a basic controller and just check if it gives a real response"""
+    rv = client.get('/openapi.yaml')
+    assert rv.status_code == HTTPStatus.OK
+
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
