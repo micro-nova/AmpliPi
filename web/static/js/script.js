@@ -505,3 +505,66 @@ function initVolControl(ctrl) {
    vols[ctrl.id].barStillDown = false;
   }, true);
 }
+
+async function plex_pin_req() {
+  let myuuid = uuidv4();
+  let response = await fetch('https://plex.tv/api/v2/pins', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: "strong=true&X-Plex-Product=AmpliPi&X-Plex-Client-Identifier=" + myuuid
+  });
+  response.json()
+  .then(function(response){
+    const PURL = `https://app.plex.tv/auth#?clientID=${response.clientIdentifier}&code=${response.code}&context%5Bdevice%5D%5Bproduct%5D=AmpliPi`;
+    console.log("Here's the ID " + response.id);
+    console.log("Here's the code " + response.code);
+    console.log("Here's the UUID " + response.clientIdentifier);
+    console.log(PURL);
+    this.id = response.id;
+    this.code = response.code;
+    this.clientIdentifier = response.clientIdentifier;
+    window.open(PURL, "_blank");
+  });
+}
+
+async function plex_token_ret() {
+  let response = await fetch('https://plex.tv/api/v2/pins/'+this.id, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'code': this.code,
+      'X-Plex-Client-Identifier': this.clientIdentifier
+    },
+  });
+  response.json().then(function(response){
+    console.log("Token: " + response.authToken);
+    this.authToken = response.authToken;
+    console.log("Time remaining: " + response.expiresIn);
+    this.expiresIn = response.expiresIn;
+  });
+  return response;
+}
+
+async function plex_stream() {
+  var req = {
+    "name": "AmpliPi Plexamp",
+    "identifier": this.clientIdentifier,
+    "token": this.authToken,
+    "type": "plexamp"
+  }
+  sendRequest('/stream', 'POST', req);
+  console.log("Creating stream with these parameters: " + req);
+  }
+
+// function plex_full() {
+//   var block = plex_pin_req();
+  // var pident = block.id;
+  // var pcode = block.code;
+  // var uu = block.clientIdentifier;
+  // url_gen(pcode, uu);
+  // var fullblock = plex_token_ret(pcode, uu, pident);
+// }

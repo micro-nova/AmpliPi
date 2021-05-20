@@ -103,6 +103,16 @@
             </div>
           </div>
         </div>
+        <div class="card settings">
+          <h6 class="card-header">Connect Plex Account</h6>
+          <div class="card-body">
+            <div class="text-left">
+              <c class="btn btn-success" onclick="plex_pin_req()">Go To Plex</c>
+              <b class="btn btn-success" onclick="plex_token_ret()">Request Token</b>
+              <a class="btn btn-success" onclick="plex_stream()">Create Stream</a>
+            </div>
+          </div>
+        </div>
       </div>
       {% for src in range(4) %}
       <div id="s{{ src }}-groups" class="tab-pane {% if src == cur_src %} active {% endif %}">
@@ -211,5 +221,13 @@
   <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.min.js"><\/script>')</script>
   <!-- Local application script -->
   <script src="static/js/script.js"></script>
+  <!-- UUID CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
+  <!-- UUID local fallback -->
+  <script>(window.uuidv4 === undefined) && document.write('<script src="static/js/libs/uuid/8.1.0/uuidv4.min.js"><\/script>')</script>
+  <!-- qs CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.10.1/qs.min.js"></script>
+  <!-- qs local fallback -->
+  <script>(window.uuidv4 === undefined) && document.write('<script src="static/js/libs/qs/6.10.1/qs.min.js"><\/script>')</script>
 </body>
 </html>
