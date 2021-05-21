@@ -317,17 +317,7 @@ def generate_openapi_spec(add_test_docs=True):
   openapi_schema = get_openapi(
     title = 'AmpliPi',
     version = '1.0',
-    description = """This is the AmpliPi home audio system's control server.
-
-    # Configuration
-
-    This web interface allows you to control and configure your AmpliPi device.
-    At the moment the API is the only way to configure the AmpliPi.
-
-    # OpenAPI
-
-    This API is documented using the OpenAPI specification
-    """,
+    description = "This is the AmpliPi home audio system's control server.",
     routes = app.routes,
     tags = [
       {
@@ -360,46 +350,6 @@ def generate_openapi_spec(add_test_docs=True):
       'description': 'AmpliPi Controller'
     }],
   )
-  if add_test_docs:
-    openapi_schema['info']['description'] += """
-    ## Try it out!
-
-    __Using this web interface to test API commands:__
-
-      1. Go to an API request
-      1. Pick one of the examples
-      2. Edit it
-      3. Press try button, it will send an API command/request to the AmpliPi
-
-    __Try using the get status:__
-
-      1. Go to [Status -> Get Status](#get-/)
-      2. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
-
-    __Try creating a new group:__
-
-      1. Go to [Group -> Create Group](#post-/group)
-      2. Click Example
-      3. Edit the zones and group name
-      4. Click the try button, you will see a response with the newly created group
-
-    __Here are some other things that you might want to change:__
-
-      - [Stream -> Create new stream](#post-/stream)
-      - [Zone -> Update Zone](#patch-/zones/-zoneId-) (to change the zone name)
-      - [Preset -> Create preset](#post-/preset) (Have a look at the model to see what can be added here)
-
-    # More Info
-
-    Check out all of the different things you can do with this API:
-
-      - [Status](#tag--status)
-      - [Source](#tag--source)
-      - [Zone](#tag--zone)
-      - [Group](#tag--group)
-      - [Stream](#tag--stream)
-      - [Preset](#tag--preset)
-      """
 
   openapi_schema['info']['contact'] = {
     'email': 'info@micro-nova.com',
@@ -439,30 +389,68 @@ def generate_openapi_spec(add_test_docs=True):
   # TODO: add relevant preset ids
   return openapi_schema
 
-def fix_descriptions(self, tag, value, style=None):
-    if '\n' in value:
-      style = '|'
-      value = value.replace('\\', '')
-    node = yaml.representer.ScalarNode(tag, value, style=style)
-    if self.alias_key is not None:
-        self.represented_objects[self.alias_key] = node
-    return node
+YAML_DESCRIPTION = """| # The links in the description below are tested to work with redoc and may not be portable
+    This is the AmpliPi home audio system's control server.
 
+    # Configuration
 
-yaml.representer.BaseRepresenter.represent_scalar = fix_descriptions
-#yaml.add_representer(str, str_presenter)
+    This web interface allows you to control and configure your AmpliPi device.
+    At the moment the API is the only way to configure the AmpliPi.
 
-# TODO: we should actually make a represeter and wrap every description with it
+    ## Try it out!
+
+    __Using this web interface to test API commands:__
+
+      1. Go to an API request
+      1. Pick one of the examples
+      2. Edit it
+      3. Press try button, it will send an API command/request to the AmpliPi
+
+    __Try using the get status:__
+
+      1. Go to [Status -> Get Status](#get-/api/)
+      2. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
+
+    __Try creating a new group:__
+
+      1. Go to [Group -> Create Group](#post-/api/group)
+      2. Click Example
+      3. Edit the zones and group name
+      4. Click the try button, you will see a response with the newly created group
+
+    __Here are some other things that you might want to change:__
+
+      - [Stream -> Create new stream](#post-/api/stream)
+      - [Zone -> Update Zone](#patch-/api/zones/-zid-) (to change the zone name)
+      - [Preset -> Create preset](#post-/api/preset) (Have a look at the model to see what can be added here)
+
+    # More Info
+
+    Check out all of the different things you can do with this API:
+
+      - [Status](#tag--status)
+      - [Source](#tag--source)
+      - [Zone](#tag--zone)
+      - [Group](#tag--group)
+      - [Stream](#tag--stream)
+      - [Preset](#tag--preset)
+
+    # OpenAPI
+
+    This API is documented using the OpenAPI specification
+"""
 
 # additional yaml version of openapi.json
 # this is much more human readable
 @app.get('/openapi.yaml', include_in_schema=False)
 @lru_cache()
 def read_openapi_yaml() -> Response:
-  openapi_json= app.openapi()
-  yaml_s = io.StringIO()
-  yaml.dump(openapi_json, yaml_s, sort_keys=False, allow_unicode=True, default_flow_style=False)
-  return Response(yaml_s.getvalue(), media_type='text/yaml')
+  openapi = app.openapi()
+  openapi['info']['description'] = 'REPLACE_ME'
+  yaml_s = yaml.safe_dump(openapi, sort_keys=False, allow_unicode=True)
+  # fix the long description (yaml or json dumpers had lots of trouble with it)
+  yaml_s = yaml_s.replace('REPLACE_ME', YAML_DESCRIPTION)
+  return Response(yaml_s, media_type='text/yaml')
 
 app.openapi = generate_openapi_spec
 
