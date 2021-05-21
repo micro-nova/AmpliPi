@@ -39,6 +39,10 @@ class BaseUpdate(BaseModel):
   """
   name: Optional[str] = Field(description="Friendly name")
 
+class SourceUpdate(BaseUpdate):
+  """ Partial reconfiguration of an audio Source """
+  input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
+
 class Source(Base):
   """ An audio source """
   input: str = Field('', description="""Connected audio source
@@ -64,25 +68,30 @@ class Source(Base):
 
   class Config:
     schema_extra = {
-      'examples': [
-        {
-          'name': '1',
-          'input': 'stream=1009',
+      'examples': {
+        'stream connected': {
+          'value': {
+            'id' : 1,
+            'name': '1',
+            'input': 'stream=1009',
+          }
         },
-        {
-          'name': '2',
-          'input': '',
+        'nothing connected': {
+          'value': {
+            'id' : 2,
+            'name': '2',
+            'input': '',
+          }
         },
-        {
-          'name': '3',
-          'input': 'local',
+        'rca connected': {
+          'value': {
+            'id' : 3,
+            'name': '3',
+            'input': 'local',
+          }
         },
-      ]
+      }
     }
-
-class SourceUpdate(BaseUpdate):
-  """ Partial reconfiguration of an audio Source """
-  input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
 
 class SourceUpdate2(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
@@ -109,8 +118,6 @@ class Zone(Base):
     schema_extra = {
       'examples': {
         'Living Room' : {
-          "summary": "11",
-          "description": "111",
           'value': {
             'name': 'Living Room',
             'source_id': 1,
@@ -120,8 +127,6 @@ class Zone(Base):
           }
         },
         'Dining Room' : {
-          "summary": "22",
-          "description": "222",
           'value': {
             'name': 'Dining Room',
             'source_id': 2,

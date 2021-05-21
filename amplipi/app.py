@@ -364,22 +364,36 @@ def generate_openapi_spec(add_test_docs=True):
   # Manually add examples present in pydancticModel.schema_extra into openAPI schema
   for route in app.routes:
     if isinstance(route, APIRoute):
-      model_schema_json = ''
       try:
         if route.body_field:
-          model_schema_json = route.body_field.type_.schema_json()
-      finally:
-        pass
-      if not model_schema_json:
-        continue
-      if model_schema_json:
-        model_schema = json.loads(model_schema_json)
-        if "examples" in model_schema:
-          examples = model_schema['examples']
+          req_model_json = route.body_field.type_.schema_json()
+        else:
+          req_model_json = ''
+      except:
+        req_model_json = ''
+      try:
+        if route.response_field:
+          resp_model_json = route.response_field.type_.schema_json()
+        else:
+          resp_model_json = ''
+      except:
+        resp_model_json = ''
+      if req_model_json:
+        req_model = json.loads(req_model_json)
+        if "examples" in req_model:
+          examples = req_model['examples']
+          # TODO: edit examples to remove id?
           for method in route.methods:
             # Only for POST, PATCH, and PUT methods have a request body
             if method in {"POST", "PATCH", "PUT"}:
               openapi_schema['paths'][route.path][method.lower()]['requestBody'][
+              'content']['application/json']['examples'] = examples
+      if resp_model_json:
+        resp_model = json.loads(resp_model_json)
+        if 'examples' in resp_model:
+          examples = resp_model['examples']
+          for method in route.methods:
+            openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
               'content']['application/json']['examples'] = examples
 
   # TODO: add relevant source ids
