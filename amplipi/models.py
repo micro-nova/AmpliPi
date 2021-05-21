@@ -23,6 +23,25 @@ Encourages reuse of datastructures across AmpliPi
 from typing import List, Set, Dict, Optional, Union
 from pydantic import BaseModel, BaseSettings, Field
 
+class fields(object):
+  """ AmpliPi's field types """
+  ID = Field(description='Unique identifier')
+  Name = Field(description="Friendly name")
+  SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
+  ZoneId = Field(ge=0, le=35)
+  Mute =  Field(default=True, description='Set to true if output is muted')
+  Volume = Field(default=-79, ge=-79, le=0, description="Output volume in dB")
+  GroupMute =  Field(default=True, description='Set to true if output is all zones muted')
+  GroupVolume = Field(default=-79, ge=-79, le=0, description="Average utput volume in dB")
+  Disabled = Field(default=False, description="Set to true if not connected to a speaker")
+  Zones = Field(description="Set of zones belonging to a group")
+  AudioInput = Field('', description="""Connected audio source
+
+  * Digital Stream ('stream=SID') where SID is the ID of the connected stream
+  * Analog RCA Input ('local') connects to the RCA inputs associated
+  * Nothing ('') behind the scenes this is muxed to a digital output
+  """)
+
 class Base(BaseModel):
   """ Base class for AmpliPi Models
   id: Per type unique id generated on instance creation
@@ -30,27 +49,37 @@ class Base(BaseModel):
     It is optional so this calls can be abstract enough to use for creation and returned state
   name: Associated name, not intended to be unique
   """
-  id: Optional[int] = Field(description='Unique identifier')
-  name: str = Field(description="Friendly name")
+  id: Optional[int] = fields.ID
+  name: str = fields.Name
 
 class BaseUpdate(BaseModel):
   """ Base class for updates to AmpliPi models
   name: Associated name, updated if necessary
   """
-  name: Optional[str] = Field(description="Friendly name")
+  name: Optional[str] = fields.Name
 
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
   input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
 
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Update Input to RCA input': {
+          'value': {'input': 'local'}
+        },
+        'Update name': {
+          'value': {'name': 'J2'}
+        },
+        'Update Input to Matt and Kim Radio': {
+          'value': {'input': 'stream=10001'}
+        },
+      }
+    }
+
 class Source(Base):
   """ An audio source """
-  input: str = Field('', description="""Connected audio source
-
-    * Digital Stream ('stream=SID') where SID is the ID of the connected stream
-    * Analog RCA Input ('local') connects to the RCA inputs associated
-    * Nothing ('') behind the scenes this is muxed to a digital output
-    """)
+  input: str = fields.AudioInput
 
   def get_stream(self) -> Optional[int]:
     try:
@@ -104,10 +133,10 @@ class SourceUpdate2(SourceUpdate):
 
 class Zone(Base):
   """ Audio output to a stereo pair of speakers, typically belonging to a room """
-  source_id: int = Field(default=0, ge=0, le=3, description='id of the connected source')
-  mute: bool = Field(default=True, description='Set to true if output is muted')
-  vol: int = Field(default=-79, ge=-79, le=0, description="Output volume in dB")
-  disabled: bool = Field(default=False, description="Set to true if not connected to a speaker")
+  source_id: int = fields.SourceId
+  mute: bool = fields.Mute
+  vol: int = fields.Volume
+  disabled: bool = fields.Disabled
 
   def as_update(self):
     update = self.dict()
@@ -140,14 +169,41 @@ class Zone(Base):
 
 class ZoneUpdate(BaseUpdate):
   """ Reconfiguration of a Zone """
-  source_id: Optional[int]
-  mute: Optional[bool]
-  vol: Optional[int]
-  disabled: Optional[bool]
+  source_id: Optional[int] = fields.SourceId
+  mute: Optional[bool] = fields.Mute
+  vol: Optional[int] = fields.Volume
+  disabled: Optional[bool] = fields.Disabled
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Change Name': {
+          'value': {
+            'name':
+            'Bedroom'
+          }
+        },
+        'Change audio source': {
+          'value': {
+            'source-id': 3
+          }
+        },
+        'Increase Volume': {
+          'value': {
+            'vol': -45
+          }
+        },
+        'Mute': {
+          'value': {
+            'mute': True
+          }
+        }
+      },
+    }
 
 class ZoneUpdate2(ZoneUpdate):
   """ Reconfiguration of a specific Zone """
-  id: int = Field(ge=0,le=35)
+  id: int = fields.ZoneId
 
   def as_update(self):
     update = self.dict()
@@ -158,10 +214,10 @@ class Group(Base):
   """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
 
   Volume, mute, and source_id fields are aggregates of the member zones."""
-  source_id: int =  Field(default=0, ge=0, le=3, description='id of the connected source')
-  zones: Set[int] = Field(default=[], description='Set of zones that belong to group, a zone can belong to multiple groups.')
-  mute: bool = Field(default=True, description='Set to true if all zones are muted')
-  vol_delta: int = Field(default=0, ge=-79, le=0, description="Average output volume in dB")
+  source_id: int = fields.SourceId
+  zones: Set[int] = fields.Zones
+  mute: bool = fields.GroupMute
+  vol_delta: int = fields.GroupVolume
 
   def as_update(self):
     update = self.dict()
@@ -170,17 +226,35 @@ class Group(Base):
 
   class Config:
     schema_extra = {
-      'examples': {
-        'Add Upstairs Group': {
+      'creation_examples': {
+        'Upstairs Group': {
           'value': {
             'name': 'Upstairs',
             'zones': [1, 2, 3, 4, 5]
           }
         },
-        'Add Downstairs Group': {
+        'Downstairs Group': {
           'value': {
             'name': 'Downstairs',
             'zones': [6,7,8,9]
+          }
+        }
+      },
+      'examples': {
+        'Upstairs Group': {
+          'value': {
+            'id': 101,
+            'name': 'Upstairs',
+            'zones': [1, 2, 3, 4, 5],
+            'vol_delta': -65
+          }
+        },
+        'Downstairs Group': {
+          'value': {
+            'id': 102,
+            'name': 'Downstairs',
+            'zones': [6,7,8,9],
+            'vol_delta': -30
           }
         }
       },
@@ -188,10 +262,37 @@ class Group(Base):
 
 class GroupUpdate(BaseUpdate):
   """ Reconfiguration of a Group """
-  source_id: Optional[int]
-  zones: Optional[List[int]]
-  mute: Optional[bool]
-  vol_delta: Optional[int]
+  source_id: Optional[int] = fields.SourceId
+  zones: Optional[List[int]] = fields.Zones
+  mute: Optional[bool] = fields.GroupMute
+  vol_delta: Optional[int] = fields.GroupVolume
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Change Name': {
+          'value': {
+            'name':
+            'Upstairs'
+          }
+        },
+        'Change audio source': {
+          'value': {
+            'source-id': 3
+          }
+        },
+        'Increase Volume': {
+          'value': {
+            'vol_delta': -45
+          }
+        },
+        'Mute': {
+          'value': {
+            'mute': True
+          }
+        }
+      },
+    }
 
 class GroupUpdate2(GroupUpdate):
   """ Reconfiguration of a specific Group """
@@ -226,7 +327,7 @@ class Stream(Base):
   # add examples for each type of stream
   class Config:
     schema_extra = {
-      'examples': {
+      'creation_examples': {
         'Add Beatles Internet Radio Station': {
           'value': {
             'logo': 'http://www.beatlesradio.com/content/images/thumbs/0000587.gif',
@@ -288,6 +389,57 @@ class Stream(Base):
           }
         },
       },
+      'examples': {
+        'Regina Spektor Radio (playing)': {
+          'value': {
+            'id': 90890,
+            'name': 'Regina Spektor Radio',
+            'password': '',
+            'station': '4473713754798410236',
+            'status': 'playing',
+            'type': 'pandora',
+            'user': 'example1@micro-nova.com',
+            'info': {
+              'album': 'Far (Deluxe Version)',
+              'artist': 'Regina Spektor',
+              'img_url': 'http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg',
+              'station': 'Regina Spektor Radio',
+              'track': 'Eet'
+            }
+          }
+        },
+        'Matt and Kim Radio (disconnected)': {
+          'value': {
+            'id': 90891,
+            'info': {'details': 'No info available'},
+            'name': 'Matt and Kim Radio',
+            'password': '',
+            'station': '4610303469018478727',
+            'status': 'disconnected',
+            'type': 'pandora',
+            'user': 'example2@micro-nova.com'
+          }
+        },
+        'Shairport (connected)': {
+          'value': {
+            'id': 44590,
+            'info': {'details': 'No info available'},
+            'name': "Jason's "
+                    'iPhone',
+            'status': 'connected',
+            'type': 'shairport'
+          }
+        },
+        'Shairport (disconnected)': {
+          'value': {
+            'id': 4894,
+            'info': {'details': 'No info available'},
+            'name': 'Rnay',
+            'status': 'disconnected',
+            'type': 'shairport'
+          }
+        },
+      }
     }
 
 class StreamUpdate(BaseUpdate):
@@ -298,6 +450,33 @@ class StreamUpdate(BaseUpdate):
   station: Optional[str]
   url: Optional[str]
   logo: Optional[str]
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Change account info': {
+          'value': {
+            'password': 'sd9sk3k30',
+            'user': 'test@micro-nova.com'
+          }
+        },
+        'Change name': {
+          'value': {
+            'name': 'Matt and Kim Radio'
+            }
+          },
+        'Change pandora radio station': {
+          'value': {
+            'station': '0982034049300'
+          }
+        },
+        'Upgrade groove salad stream quality': {
+          'value': {
+            'url': 'http://ice2.somafm.com/groovesalad-64-aac'
+          }
+        }
+      },
+    }
 
 class PresetState(BaseModel):
   """ A set of partial configuration changes to make to sources, zones, and groups """
@@ -318,6 +497,46 @@ class Preset(Base):
   commands: Optional[List[Command]] = []
   last_used: Union[int, None] = None
 
+
+  class Config:
+    schema_extra = {
+      'creation_examples': {
+        'Add Mute All': {
+          'value': {
+            'name': 'Mute All',
+            'state': {
+              'zones': [
+                {'id': 0, 'mute': True},
+                {'id': 1, 'mute': True},
+                {'id': 2, 'mute': True},
+                {'id': 3, 'mute': True},
+                {'id': 4, 'mute': True},
+                {'id': 5, 'mute': True}
+              ]
+            }
+          }
+        }
+      },
+      'examples': {
+        'Mute All': {
+          'value': {
+            'id': 10000,
+            'name': 'Mute All',
+            'state': {
+              'zones': [
+                {'id': 0, 'mute': True},
+                {'id': 1, 'mute': True},
+                {'id': 2, 'mute': True},
+                {'id': 3, 'mute': True},
+                {'id': 4, 'mute': True},
+                {'id': 5, 'mute': True}
+              ]
+            }
+          }
+        }
+      }
+    }
+
 class PresetUpdate(BaseUpdate):
   """ Changes to a current preset
 
@@ -326,6 +545,25 @@ class PresetUpdate(BaseUpdate):
   """
   state: Optional[PresetState]
   commands: Optional[List[Command]]
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Only mute some': {
+          'value': {
+            'name': 'Mute Some',
+            'state': {
+              'zones': [
+                {'id': 0, 'mute': True},
+                {'id': 1, 'mute': True},
+                {'id': 2, 'mute': True},
+                {'id': 5, 'mute': True}
+              ]
+            }
+          }
+        }
+      }
+    }
 
 class Info(BaseModel):
   """ Information about the settings used by the controller """
@@ -342,6 +580,117 @@ class Status(BaseModel):
   streams: List[Stream] = []
   presets: List[Preset] = []
   info: Optional[Info]
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        "Status of Jason's AmpliPi": {
+          'value': {
+            'groups': [
+              {
+                'id': 0,
+                'mute': False,
+                'name': 'Whole House',
+                'source_id': None,
+                'vol_delta': -44,
+                'zones': [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11]
+              },
+              {
+                'id': 1,
+                'mute': True,
+                'name': 'KitchLivDining',
+                'source_id': 0,
+                'vol_delta': -49,
+                'zones': [3, 9, 10, 11]
+              }
+            ],
+            'presets': [
+              {
+                'id': 10000,
+                'name': 'Mute All',
+                'state': {
+                  'zones': [
+                    {'id': 0, 'mute': True},
+                    {'id': 1, 'mute': True},
+                    {'id': 2, 'mute': True},
+                    {'id': 3, 'mute': True},
+                    {'id': 4, 'mute': True},
+                    {'id': 5, 'mute': True}
+                  ]
+                }
+              }
+            ],
+          'sources': [
+            {'id': 0, 'input': 'stream=90890', 'name': 'J1'},
+            {'id': 1, 'input': 'stream=44590', 'name': 'J2'},
+            {'id': 2, 'input': 'local', 'name': 'Marc'},
+            {'id': 3, 'input': 'local', 'name': 'Source 4'}],
+          'streams': [
+            {
+              'id': 90890,
+              'info': {'album': 'Far (Deluxe Version)',
+                        'artist': 'Regina Spektor',
+                        'img_url': 'http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg',
+                        'station': 'Regina Spektor Radio',
+                        'track': 'Eet'},
+              'name': 'Regina Spektor Radio',
+              'password': '',
+              'station': '4473713754798410236',
+              'status': 'playing',
+              'type': 'pandora',
+              'user': 'example1@micro-nova.com'
+            },
+            {
+              'id': 90891,
+              'info': {'details': 'No info available'},
+              'name': 'Matt and Kim Radio',
+              'password': '',
+              'station': '4610303469018478727',
+              'status': 'disconnected',
+              'type': 'pandora',
+              'user': 'example2@micro-nova.com'
+            },
+            {
+              'id': 90892,
+              'info': {'details': 'No info available'},
+              'name': 'Pink Radio',
+              'password': '',
+              'station': '4326539910057675260',
+              'status': 'disconnected',
+              'type': 'pandora',
+              'user': 'example3@micro-nova.com'
+            },
+            {
+              'id': 44590,
+              'info': {'details': 'No info available'},
+              'name': "Jason's "
+                      'iPhone',
+              'status': 'connected',
+              'type': 'shairport'
+            },
+            {
+              'id': 4894,
+              'info': {'details': 'No info available'},
+              'name': 'Rnay',
+              'status': 'disconnected',
+              'type': 'shairport'
+            }
+          ],
+          'info': { 'version': '0.0.1'},
+          'zones': [
+            {'disabled': False, 'id': 0,  'mute': False, 'name': 'Local', 'source_id': 1, 'vol': -35},
+            {'disabled': False, 'id': 1,  'mute': False, 'name': 'Office', 'source_id': 0, 'vol': -41},
+            {'disabled': False, 'id': 2,  'mute': True,  'name': 'Laundry Room', 'source_id': 0, 'vol': -48},
+            {'disabled': False, 'id': 3,  'mute': True,  'name': 'Dining Room', 'source_id': 0, 'vol': -44},
+            {'disabled': True,  'id': 4,  'mute': True,  'name': 'BROKEN', 'source_id': 0, 'vol': -50},
+            {'disabled': False, 'id': 5,  'mute': True,  'name': 'Guest Bedroom', 'source_id': 0, 'vol': -48},
+            {'disabled': False, 'id': 6,  'mute': True,  'name': 'Main Bedroom', 'source_id': 0, 'vol': -40},
+            {'disabled': False, 'id': 7,  'mute': True,  'name': 'Main Bathroom', 'source_id': 0, 'vol': -44},
+            {'disabled': False, 'id': 8,  'mute': True,  'name': 'Master Bathroom', 'source_id': 0, 'vol': -41},
+            {'disabled': False, 'id': 9,  'mute': True,  'name': 'Kitchen High', 'source_id': 0, 'vol': -53},
+            {'disabled': False, 'id': 10, 'mute': True,  'name': 'kitchen Low', 'source_id': 0, 'vol': -52},
+            {'disabled': False, 'id': 11, 'mute': True,  'name': 'Living Room', 'source_id': 0, 'vol': -46}]}}},
+          }
 
 class AppSettings(BaseSettings):
   """ Controller settings """
