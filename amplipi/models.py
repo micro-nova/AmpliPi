@@ -218,6 +218,73 @@ class Stream(Base):
   info: Optional[Dict] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
   status: Optional[str] = Field(description="State of the stream")
 
+  # add examples for each type of stream
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Add Beatles Internet Radio Station': {
+          'value': {
+            'logo': 'http://www.beatlesradio.com/content/images/thumbs/0000587.gif',
+            'name': 'Beatles Radio',
+            'type': 'internetradio',
+            'url': 'http://www.beatlesradio.com:8000/stream/1/'
+          }
+        },
+        'Add Classical KING Internet Radio Station': {
+          'value': {
+            'logo': 'https://i.iheart.com/v3/re/assets/images/7bcfd87a-de3e-47d0-b896-be0ed38c9d74.png',
+            'name': 'Classical KING FM 98.1',
+            'type': 'internetradio',
+            'url': 'http://classicalking.streamguys1.com/king-fm-aac-iheart'
+          }
+        },
+        'Add Generic DLNA': {
+          'value': {
+            'name': 'Replace this text with a name you like!',
+            'type': 'dlna'
+            }
+        },
+        'Add Groove Salad Internet Radio Station': {
+          'value': {
+            'logo': 'https://somafm.com/img3/groovesalad-200.jpg',
+            'name': 'Groove Salad',
+            'type': 'internetradio',
+            'url': 'http://ice2.somafm.com/groovesalad-16-aac'
+          }
+        },
+        'Add KEXP Internet Radio Station': {
+          'value': {
+            'logo': 'https://i.iheart.com/v3/re/new_assets/cc4e0a17-5233-4e4b-9b6b-7799904f78ea',
+            'name': 'KEXP '
+            '90.3',
+            'type': 'internetradio',
+            'url': 'http://live-aacplus-64.kexp.org/kexp64.aac'
+          }
+        },
+        'Add Matt and Kim Pandora Station': {
+          'value': {
+            'name': 'Matt and Kim Radio',
+            'password': 's79sDDkjf',
+            'station': '4473713754798410236',
+            'type': 'pandora',
+            'user': 'test@micro-nova.com'
+          }
+        },
+        'Add MicroNova Spotify': {
+          'value': {
+            'name': 'MicroNova Spotify',
+            'type': 'spotify'
+          }
+        },
+        'Add Micronova Airplay': {
+          'value': {
+            'name': 'Micronova AP',
+            'type': 'shairport'
+          }
+        },
+      },
+    }
+
 class StreamUpdate(BaseUpdate):
   """ Reconfiguration of a Stream """
   # TODO: how to support different stream types
