@@ -439,15 +439,30 @@ def generate_openapi_spec(add_test_docs=True):
   # TODO: add relevant preset ids
   return openapi_schema
 
+def fix_descriptions(self, tag, value, style=None):
+    if '\n' in value:
+      style = '|'
+      value = value.replace('\\', '')
+    node = yaml.representer.ScalarNode(tag, value, style=style)
+    if self.alias_key is not None:
+        self.represented_objects[self.alias_key] = node
+    return node
+
+
+yaml.representer.BaseRepresenter.represent_scalar = fix_descriptions
+#yaml.add_representer(str, str_presenter)
+
+# TODO: we should actually make a represeter and wrap every description with it
+
 # additional yaml version of openapi.json
 # this is much more human readable
 @app.get('/openapi.yaml', include_in_schema=False)
 @lru_cache()
 def read_openapi_yaml() -> Response:
-    openapi_json= app.openapi()
-    yaml_s = io.StringIO()
-    yaml.dump(openapi_json, yaml_s, sort_keys=False, allow_unicode=True)
-    return Response(yaml_s.getvalue(), media_type='text/yaml')
+  openapi_json= app.openapi()
+  yaml_s = io.StringIO()
+  yaml.dump(openapi_json, yaml_s, sort_keys=False, allow_unicode=True, default_flow_style=False)
+  return Response(yaml_s.getvalue(), media_type='text/yaml')
 
 app.openapi = generate_openapi_spec
 
