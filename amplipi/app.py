@@ -380,8 +380,11 @@ def generate_openapi_spec(add_test_docs=True):
         resp_model_json = ''
       if req_model_json:
         req_model = json.loads(req_model_json)
-        if "examples" in req_model:
-          examples = req_model['examples']
+        if "examples" in req_model or 'creation_examples' in req_model:
+          if 'creation_examples' in req_model: # prefer creation examples for POST request, this allows us to have different examples for get response and creation requests
+            examples = req_model['creation_examples']
+          else:
+            examples = req_model['examples']
           # TODO: edit examples to remove id?
           for method in route.methods:
             # Only for POST, PATCH, and PUT methods have a request body
