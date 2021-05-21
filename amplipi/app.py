@@ -122,6 +122,7 @@ def get_ctrl() -> Api:
 
 # Add our own router and class endpoints to reduce boilerplate for our api
 api_router = SimplifyingRouter()
+base_router = SimplifyingRouter()
 @cbv(api_router)
 class ApiRoutes:
 
@@ -391,11 +392,12 @@ class ApiRoutes:
     return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
 
 # add the root of the API as well, since empty paths are invalid this needs to be handled outside of the router
-@api_router.get('/api', tags=['status'])
+@base_router.get('/api', tags=['status'])
 def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Get the system status and configuration """
   return ctrl.get_state()
 
+app.include_router(base_router)
 app.include_router(api_router, prefix='/api')
 
 # API Documentation
@@ -444,7 +446,7 @@ def generate_openapi_spec(add_test_docs=True):
       }
     ],
     servers = [{
-      'url': '/api',
+      'url': '',
       'description': 'AmpliPi Controller'
     }],
   )
