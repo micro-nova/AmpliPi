@@ -23,6 +23,12 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 """
 
 import argparse
+from PIL import Image # For custom album art size
+import urllib.request # For custom album art size
+
+DEBUG_API = False
+
+# start in the web directory (where everythins is layed out for flask)
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
@@ -303,6 +309,53 @@ def exec_command(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, cmd:
 
   Currently only available with Pandora streams"""
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=cmd))
+
+@app.get('/api/streams/image/{sid}/{imgsize}')
+def get_stream_image(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, imgsize: str = params.ImageSize):
+  _, stream = utils.find(ctrl.get_state().streams, sid)
+  if imgsize is None:
+    width = 120
+    height = 120
+  else:
+    width = imgsize
+    height = imgsize
+
+  if stream is not None:
+    image_path = None
+    # TODO: stream image discovery should not be this hard, either simplify it or add a helper
+    if stream.logo is not None:
+      image_path = stream.logo
+    elif 'image_url' in  stream.info: # TODO: this is wrong
+      image_path = stream.info['image_url']
+
+    img_tmp = f'/tmp/{os.path.basename(image_path)}'
+    img_tmp_jpg = img_tmp + '-' + str(imgsize) + '.jpg'
+    if not os.path.exists(img_tmp_jpg):
+      urllib.request.urlretrieve(stream['logo'], img_tmp)
+      size = width, height
+      img = Image.open(img_tmp)
+      img.thumbnail(size)
+      img = img.convert(mode="RGB")
+      img.save(img_tmp_jpg)
+      os.remove(img_tmp)
+
+    try:
+      return send_file(img_tmp_jpg, mimetype='image/jpg', as_attachment=False)
+    except FileNotFoundError:
+      abort(404)
+
+  else:
+    local_img = '/home/pi/web/static/imgs/rca_inputs.jpg'
+    img_tmp_jpg = local_img + '-' + str(imgsize) + '.jpg'
+    try:
+      size = width, height
+      img = Image.open(local_img)
+      img.thumbnail(size)
+      img = img.convert(mode="RGB")
+      img.save(img_tmp_jpg)
+      return send_file(img_tmp_jpg, mimetype='image/jpg', as_attachment=False)
+    except FileNotFoundError:
+      abort(404)
 
 # presets
 
