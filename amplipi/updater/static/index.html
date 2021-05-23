@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>AmpliPi Updater</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+
+    <!-- Custom styles -->
+    <link href="static/css/jquery.dm-uploader.min.css" rel="stylesheet">
+    <link href="static/css/styles.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+    <main role="main" class="container">
+
+      <h1>AmpliPi Updater</h1>
+      <p class="lead mb-4">
+        Update your AmpliPi device
+      </p>
+
+      <div>
+        <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);"></input>
+        <a id="submit-update" role="button" class="btn btn-lg btn-warning disabled" onclick="upload_software_update();"><i class="fas fa-upload"></i> Upload software</a>
+      </div>
+
+      <div class="row">
+        <div class="col-12">
+           <div class="card">
+            <div class="card-header">
+              Update Log
+            </div>
+
+            <ul class="list-group list-group-flush" id="debug">
+              <li class="list-group-item text-muted empty"></li>
+            </ul>
+          </div>
+        </div>
+      </div> <!-- /debug -->
+
+    </main> <!-- /container -->
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
+
+    <script src="static/js/update-ui.js"></script>
+
+    <!-- File item template -->
+    <script type="text/html" id="files-template">
+      <li class="media">
+        <div class="media-body mb-1">
+          <p class="mb-2">
+            <strong>%%filename%%</strong> - Status: <span class="text-muted">Waiting</span>
+          </p>
+          <div class="progress mb-2">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+              role="progressbar"
+              style="width: 0%"
+              aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            </div>
+          </div>
+          <hr class="mt-1 mb-1" />
+        </div>
+      </li>
+    </script>
+
+    <!-- Debug item template -->
+    <script type="text/html" id="debug-template">
+      <li class="list-group-item text-%%color%%"><strong>%%date%%</strong>: %%message%%</li>
+    </script>
+  </body>
+</html>

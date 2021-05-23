@@ -23,14 +23,19 @@ zones, groups and streams.
 import json
 from copy import deepcopy
 import deepdiff
+import jinja2
 
 import pprint
 import os # files
 import time
 
+import threading
+
 import amplipi.rt as rt
 import amplipi.streams as streams
 import amplipi.utils as utils
+
+from typing import List
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -103,6 +108,7 @@ class Api:
     self._rt = _rt
     self._mock_hw = type(_rt) is rt.Mock
     self._mock_streams = mock_streams
+    self.save_timer = None
     """Intitializes the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -132,6 +138,12 @@ class Api:
       print('using default config')
       self.status = deepcopy(self._DEFAULT_CONFIG) # only make a copy of the default config so we can make changes to it
       self.save()
+
+    # load the template engine for the API documentation so the api can be updated based on the current configuration
+    self._template_env = jinja2.Environment(loader=jinja2.PackageLoader('amplipi', '../docs/templates'))
+    self._api_template = self._template_env.get_template('amplipi_api.yaml.j2')
+
+    self.status['version'] = utils.detect_version()
     # some configurations might not have presets or groups, add an empty list so we dont have to check for this elsewhere
     if not 'groups' in self.status:
       self.status['groups'] = [] # this needs to be done before _update_groups() is called (its called in set_zone() and at below)
@@ -154,6 +166,13 @@ class Api:
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
 
+  def __del__(self):
+    # stop save in the future so we can save right away
+    if self.save_timer:
+      self.save_timer.cancel()
+      self.save_timer = None
+    self.save()
+
   def save(self):
     """ Saves the system state to json"""
     try:
@@ -167,6 +186,26 @@ class Api:
       self.config_file_valid = True
     except Exception as e:
       print('Error saving config: {}'.format(e))
+    API_DOC = 'amplipi_api.yaml'
+    try:
+      # update the api documentation (TODO: only do this if theere is a significant change)
+      # this simplifies the interface to the user since each of the example id's are relative to the current configuration
+      with open(f"{utils.get_folder('web/generated')}/{API_DOC}", 'w') as api:
+        api.write(self._api_template.render(self.status))
+    except Exception as e:
+      print(f'Error updating API spec: {e}')
+
+  def postpone_save(self):
+    """ Saves the system state in the future
+
+    This attempts to avoid excessive saving and the resulting delays by only saving 60 seconds after the last change
+    """
+    if self.save_timer:
+      self.save_timer.cancel()
+      self.save_timer = None
+    # start can only be called once on a thread
+    self.save_timer = threading.Timer(5.0, self.save)
+    self.save_timer.start()
 
   def visualize_api(self, prev_status=None):
     """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
@@ -284,7 +323,10 @@ class Api:
     """
     if 'stream=' in input:
       stream_id = int(input.split('=')[1])
-      return self.streams[stream_id]
+      if stream_id in self.streams:
+        return self.streams[stream_id]
+      else:
+        return None
     else:
       return None
 
@@ -486,14 +528,14 @@ class Api:
 
   def _new_group_id(self):
     """ get next available group id """
-    g = max(self.status['groups'], key=lambda g: g['id'])
+    g = max(self.status['groups'], key=lambda g: g['id'], default=None)
     if g is not None:
       return g['id'] + 1
     else:
       return 100
 
   @utils.save_on_success
-  def create_group(self, name, zones):
+  def create_group(self, name: str, zones: List[int]):
     """Creates a new group with a list of zones
 
     Refer to the returned system state to obtain the id for the newly created group
@@ -522,12 +564,14 @@ class Api:
     return group
 
   @utils.save_on_success
-  def delete_group(self, id):
+  def delete_group(self, id: int):
     """Deletes an existing group"""
     try:
       i, _ = utils.find(self.status['groups'], id)
       if i is not None:
         del self.status['groups'][i]
+      else:
+        return utils.error('delete group failed: {} does not exist'.format(id))
     except KeyError:
       return utils.error('delete group failed: {} does not exist'.format(id))
 
@@ -572,6 +616,11 @@ class Api:
   def delete_stream(self, id):
     """Deletes an existing stream"""
     try:
+      # if input is connected to a source change that input to nothing
+      for src in self.status['sources']:
+        if 'stream=' in src['input'] and src['input'].split('=')[1] == str(id):
+          self.set_source(src['id'], input='')
+      # actually delete it
       del self.streams[id]
       i, _ = utils.find(self.status['streams'], id)
       if i is not None:
@@ -633,9 +682,9 @@ class Api:
       return utils.error('Stream id {} does not exist!'.format(id))
     # TODO: move the rest of this into streams
     if stream_index is not None:
-      root = '/home/pi/config/srcs/{}/'.format(stream_index)
+      root = '{}/srcs/{}/'.format(utils.get_folder('config'), stream_index)
     else:
-      root = '/home/pi/'
+      root = ''
     stat_dir = root + '.config/pianobar/stationList'
 
     try:

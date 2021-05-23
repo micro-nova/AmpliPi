@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <!-- This is black magic that makes the screen look good on mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AmpliPi - Home Audio</title>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='imgs/amplipi-small-logo.png') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css"
+                onerror="this.onerror=null;this.href='static/css/libs/normalize/5.0.0/normalize.min.css';">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'
+                onerror="this.onerror=null;this.href='static/css/libs/font-awesome/5.15.1/all.min.css';">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'
+                onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='imgs/amplipi-small-logo.png') }}">
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div class="container">
+  <div id="main-list">
+    <div id="preset-list" card="card">
+      <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#main-list" href="#preset-list .card-body" aria-expanded="false">
+        <!--h6 class="card-header"><i class="fas fa-chevron-down"></i> </h6-->
+        <div class="title"><span class="text-white">Ampli</span><span class="text-danger">Pi</span></div>
+        <div class="title-down"> <i class="fa fa-chevron-down"></i></div>
+      </a>
+      <div class="card-body collapse">
+        {% for pst in presets %}
+        <div id="pst-{{ pst.id }}" class="d-flex preset flex-row-reverse" data-id="{{ pst.id }}">
+          <div class="status align-self-center ml-2 mr-2"><i class="fas fa-check-circle" style="visibility: hidden;"></i></div>
+          <div class="apply"><button type="button" class="btn preset-btn" onclick="onLoadPreset(this);">Apply</button></div>
+          <div class="preset-header d-flex flex-items-baseline ml-2">
+            <div class="name mr-2 align-self-center">{{ pst['name'] }}</div>
+            <div class="last-used align-self-center"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card source">
+      <div class="card-header text-center">
+        <!-- TODO: how to left align the play-ing icon? -->
+        <!-- TODO: hide/show the play icon from status-->
+        <ol class="nav nav-tabs nav-fill card-header-tabs">
+          {% for src in sources %}
+          <li class="nav-item">
+            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['name'] }} <i class="fa fa-play text-success" ></i></a>
+          </li>
+          {% endfor %}
+          <li class="nav-item">
+            <a id="settings-nav" class="nav-link" data-toggle="tab" role="tab" href="#settings"><i class="fa fa-cog"></i></a>
+          </li>
+        </ol>
+      </div>
+      <div class="card-body source-body">
+        {% for src in sources %}
+        <select id="s{{ src['id'] }}-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);" data-src="{{ src['id'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
+          {% for input, name in inputs.items() %}
+          {% if src['input'] == input %}
+          <option selected="selected" value="{{ input }}">{{ name }}</option>
+          {% endif %}
+          {% endfor %}
+          {% for input, name in inputs.items() %}
+          {% if src['input'] != input %}
+          <option value="{{ input }}">{{ name }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+        {% endfor %}
+        <div class="player-wrapper">
+          {% for src in sources %}
+          <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
+            {% set info = song_info[src['id']] %}
+            {% set art_url = url_for('static', filename='imgs/rca_inputs.svg') if '' == info['img_url'] else info['img_url'] %}
+            <div class="cover"><img src="{{ art_url }}"/></div>
+            <div class="info-controls">
+              <div class="info">
+                <h6 class="artist">{{ info['artist'] }}</h6>
+                <h6 class="album">{{ info['album'] }}</h6>
+                <h6 class="song">{{ info['track'] }}</h6>
+              </div>
+              <div class="controls">
+                <i class="play-pause fas fa-play" onclick="onPlayPause(this)"></i>
+                <i class="step-forward fas fa-forward" onclick="onNext(this)"></i>
+                <i class="like fas fa-heart" onclick="onLike(this)"></i>
+                <i class="dislike fas fa-thumbs-down" onclick="onDislike(this)"></i>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      <div id="settings-header" class="text-center" style="display: none"><h3>Settings</h3></div>
+      </div>
+    </div>
+    <div class="tab-content">
+      <div id="settings" class="tab-pane">
+        <div class="card settings">
+          <h6 class="card-header">Updates</h6>
+          <div class="card-body">
+            <div class="text-center">
+              <a class="btn btn-success" onclick="javascript:event.target.port=5001" href="/update">Check for Updates</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% for src in range(4) %}
+      <div id="s{{ src }}-groups" class="tab-pane {% if src == cur_src %} active {% endif %}">
+        {% for group in groups if group['source_id'] == src %}
+        <div class="card group">
+          <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#s{{ src }}-groups" href="#g{{ group['id'] }}-zones" aria-expanded="false">
+            <h6 class="card-header"><i class="fas fa-chevron-down"></i> {{ group['name'] }}</h6>
+          </a>
+          <div class="card-body">
+            <div id="g{{ group['id'] }}-vol" class="volume {% if group['mute'] %} muted {% endif %}"  data-group="{{ group['id'] }}">
+              <input type="range" min="-79" max="0" value="{{ group['vol_delta'] }}" class="volume-range">
+              <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
+                <i class="fa {% if group['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
+              </div>
+              <div class="bar-hoverbox">
+                <div class="bar">
+                  <div class="bar-fill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="g{{ group['id'] }}-zones" class='card-description zones collapse' data-parent="#s{{ src }}-groups">
+            <div class="card-rows">
+              {% for zone in zones if zone['id'] in group['zones'] and not zone['disabled']%}
+              <div class="card zone">
+                <h6 class="card-header">{{ zone['name'] }}</h6>
+                <div class="card-body">
+                  <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}">
+                    <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
+                    <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
+                      <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
+                    </div>
+                    <div class="bar-hoverbox">
+                      <div class="bar">
+                        <div class="bar-fill"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% for zone in ungrouped_zones[src] %}
+        <div class="card ungrouped-zone">
+          <h6 class="card-header">{{ zone['name'] }}</h6>
+          <div class="card-body">
+            <div id="z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}">
+              <input type="range" min="-79" max="0" value="{{ zone['vol'] }}" class="volume-range">
+              <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
+                <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
+              </div>
+              <div class="bar-hoverbox">
+                <div class="bar">
+                  <div class="bar-fill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="card add-group">
+          <h6 class="card-header">Add</h6>
+          <div class="card-body">
+            <select id="s{{ src }}-add-input" class="custom-select source-input-sel" onchange="onSrcAdd(this);">
+              <option selected>Select Group or Zone</option>
+              {% for g, name in unused_groups[src].items() %}
+              <option value="g{{ g }}">G - {{ name }}</option>
+              {% endfor %}
+              {% for z, name in unused_zones[src].items() %}
+              <option value="z{{ z }}">Z - {{ name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div id="amplipi-info" class="text-center">
+    <div>
+      <span><a href="http://www.AmpliPi.com" target="_blank" rel="noopener noreferrer">AmpliPi</a>™ by <a href="http://www.micro-nova.com" target="_blank" rel="noopener noreferrer">MicroNova</a></span>
+    </div>
+    <div id="version">
+      v{{version}} © 2021
+    </div>
+    <div>
+      <span><a href="api/doc" target="_blank" rel="noopener noreferrer">API</a> | <a href="http://www.github.com/micro-nova/AmpliPi" target="_blank" rel="noopener noreferrer">GitHub</a> | <a href="https://github.com/micro-nova/AmpliPi/blob/master/COPYING" target="_blank" rel="noopener noreferrer">License</a></span>
+    </div>
+  </div>
+</div>
+<!-- partial -->
+  <!-- jQuery JS CDN -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+  <!-- jQuery JS local fallback -->
+  <script>window.jQuery || document.write('<script src="static/js/libs/jquery/3.5.1/jquery.min.js"><\/script>')</script>
+  <!-- jQuery UI JS CDN -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+  <!-- jQuery JS local fallback -->
+  <script>(window.jQuery.ui === undefined) && document.write('<script src="static/js/libs/jqueryui/1.12.1/jquery-ui.min.js"><\/script>')</script>
+  <!-- Bootstrap JS CDN -->
+  <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'></script>
+  <!-- Bootstrap JS local fallback -->
+  <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.min.js"><\/script>')</script>
+  <!-- Local application script -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

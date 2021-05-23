@@ -67,14 +67,21 @@ $(document).ready(function(){
   // Some things are not part of the automatic tab-content switching
   // hide things related to the old src and show things related to the new one
   $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
-    // switch the source input selector to the one connected to the current source
+    // switch the source input selector to the one connected to the current source (or the settings pane)
     const old_src = e.relatedTarget.id;
     const new_src = e.target.id;
-    $('#' + new_src + '-input')[0].style.display = "block";
-    $('#' + old_src + '-input')[0].style.display = "none";
-    // switch the player to the one connected to the current source
-    $('#' + new_src + '-player')[0].style.display = "block";
-    $('#' + old_src + '-player')[0].style.display = "none";
+    if (old_src != "settings-nav") {
+      $('#' + old_src + '-input')[0].style.display = "none";
+      $('#' + old_src + '-player')[0].style.display = "none";
+    } else {
+      $('#settings-header')[0].style.display = "none";
+    }
+    if (new_src != "settings-nav") {
+      $('#' + new_src + '-input')[0].style.display = "block";
+      $('#' + new_src + '-player')[0].style.display = "block";
+    } else {
+      $('#settings-header')[0].style.display = "block";
+    }
   });
   setInterval(refresh, 2000);
 });

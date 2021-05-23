@@ -55,6 +55,19 @@ def client(request):
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
+@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups()])
+def clientnm(request):# Non-mock systems should use this client - mock_ctrl and mock_streams are False here
+  cfg = request.param
+  config_dir = tempfile.mkdtemp()
+  config_file = os.path.join(config_dir, 'house.json')
+  with open(config_file, 'w') as cfg_file:
+    cfg_file.write(json.dumps(cfg))
+  app = amplipi.app.create_app(mock_ctrl=False, mock_streams=False, config_file=config_file)
+  app.testing = True
+  c = app.test_client()
+  c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
+  return c
+
 # TODO: the web view test should be added to its own testfile once we add more functionality to the site
 @pytest.mark.parametrize('path', [',' , '/'] + [ '/{}'.format(i) for i in range(4) ])
 def test_view(client, path):
@@ -73,6 +86,9 @@ def test_base(client, path):
       for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
         if t in og_config:
           assert len(jrv[t]) == len(og_config[t])
+      # make sure a real version is reported
+      assert 'version' in jrv
+      assert len(jrv['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
     else:
       assert path == '/api'
       assert '/api/' in rv.location
@@ -80,19 +96,106 @@ def test_base(client, path):
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
-# TODO: test sources
-# TODO: /sources/{sourceId} get-source
-# TODO: /sources/{sourceId} patch-source
+# Test Sources
+def base_source_ids():
+  return [ s['id'] for s in base_config()['sources']]
 
-# TODO: test zones
-# TODO: /zones/{zoneId} get-zone
-# TODO: /zones/{zoneId} patch-zone
+@pytest.mark.parametrize('ids', base_source_ids())
+def test_get_source(client, ids):
+  rv = client.get('/api/sources/{}'.format(ids))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(base_config()['sources'], ids)
+  assert s != None
+  assert s['name'] == jrv['name']
 
-# TODO: test groups
-# TODO: /group post-group
-# TODO: /groups/{groupId} get-group
-# TODO: /groups/{groupId} patch-group
-# TODO: /groups/{groupId} delete-group
+@pytest.mark.parametrize('ids', base_source_ids())
+def test_patch_source(client, ids):
+  rv = client.patch('/api/sources/{}'.format(ids), json={'name': 'patched-name'})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(jrv['sources'], ids)
+  assert s != None
+  assert s['name'] == 'patched-name'
+
+# Test Zones
+def base_zone_ids():
+  return [ s['id'] for s in base_config()['zones']]
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_get_zone(client, zid):
+  rv = client.get('/api/zones/{}'.format(zid))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(base_config()['zones'], zid)
+  assert s != None
+  assert s['name'] == jrv['name']
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_patch_zone(client, zid):
+  rv = client.patch('/api/zones/{}'.format(zid), json={'name': 'patched-name'})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  s = find(jrv['zones'], zid)
+  assert s != None
+  assert s['name'] == 'patched-name'
+
+# Test Groups
+def base_group_ids():
+  return [ s['id'] for s in base_config()['groups']]
+
+def test_post_group(client):
+  grp = {'name' : 'Whole House', 'zones' : [0, 1, 2, 3, 4, 5]}
+  rv = client.post('/api/group', json=grp)
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  assert 'id' in jrv
+  assert type(jrv['id']) == int
+  for k, v in grp.items():
+    assert jrv[k] == v
+
+@pytest.mark.parametrize('gid', base_group_ids())
+def test_get_group(client, gid):
+  last_state = status_copy(client)
+  rv = client.get('/api/groups/{}'.format(gid))
+  if find(last_state['groups'], gid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.get_json()
+  s = find(base_config()['groups'], gid)
+  assert s != None
+  assert s['name'] == jrv['name']
+
+@pytest.mark.parametrize('gid', base_group_ids())
+def test_patch_group(client, gid):
+  last_state = status_copy(client)
+  rv = client.patch('/api/groups/{}'.format(gid), json={'name': 'patched-name'})
+  if find(last_state['groups'], gid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.get_json()
+  s = find(jrv['groups'], gid)
+  assert s != None
+  assert s['name'] == 'patched-name'
+
+@pytest.mark.parametrize('gid', base_group_ids())
+def test_delete_group(client, gid):
+  rv = client.delete('/api/groups/{}'.format(gid))
+  if 'groups' in client.original_config and find(client.original_config['groups'], gid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.get_json()
+  s = find(jrv['groups'], gid)
+  assert s == None
+  for other_gid in base_group_ids():
+    if other_gid != gid:
+      assert find(jrv['groups'], other_gid) != None
 
 # test streams
 def base_stream_ids():
@@ -148,9 +251,30 @@ def test_delete_stream(client, sid):
     if other_sid != sid:
       assert find(jrv['streams'], other_sid) != None
 
-# TODO: /streams/{streamId}/{streamCmd} post-stream-command
-# TODO: mocked streams do not currently handle state changes from commands
-#       these tests will require either a real system with passwords and account info or a better mock
+@pytest.mark.parametrize('sid', base_stream_ids())
+def test_delete_connected_stream(client, sid):
+  """ Delete a connected stream and make sure it gets disconnected from the source it is connected to"""
+  rv = client.patch('/api/sources/0', json={'input': f'stream={sid}'})
+  assert rv.status_code == HTTPStatus.OK
+  rv = client.delete('/api/streams/{}'.format(sid))
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json() # get the system state returned
+  assert '' == jrv['sources'][0]['input']
+
+# Non-Mock client used - run this test on the Pi
+# _live tests will be excluded from GitHub testing
+@pytest.mark.parametrize('cmd', ['play', 'pause', 'stop', 'next', 'love', 'ban', 'shelve'])
+def test_post_stream_cmd_live(clientnm, cmd):
+  # Add a stream to send commands to
+  m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
+  rv = clientnm.post('/api/stream', json=m_and_k)
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.get_json()
+  id = jrv['id']
+  rv = clientnm.patch('/api/sources/0'.format(id), json={'input': 'stream={}'.format(id)})
+  assert rv.status_code == HTTPStatus.OK
+  rv = clientnm.post('/api/streams/{}/{}'.format(id, cmd))
+  assert rv.status_code == HTTPStatus.OK
 
 # test presets
 def base_preset_ids():
@@ -248,6 +372,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
     assert rv.status_code != HTTPStatus.OK
     return
   jrv = rv.get_json() # get the system state returned
+  jrv.pop('version')
   # TODO: check that the system state is valid
   # make sure the rest of the config got loaded
   for mod, configs in p['state'].items():
@@ -271,6 +396,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   rv = client.post('/api/presets/{}/load'.format(LAST_CONFIG_PRESET))
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.get_json() # get the system state returned
+  jrv.pop('version')
   for name, mod in jrv.items():
     prev_mod = last_state[name]
     for cfg in mod:
@@ -282,3 +408,23 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
         if 'last_used' in cfg:
           cfg.pop('last_used')
         assert cfg == prev_cfg
+
+def test_generate(client):
+  fullpath = os.path.abspath('web/generated')
+  fullerpath = '{}/shairport/srcs/t'.format(fullpath)
+  if os.path.exists(fullerpath) != True:
+    os.makedirs(fullerpath)
+  test_filenames = ['test.txt', 'shairport/srcs/t/IMG_A1', '../shairport/srcs/t/Trying-to-cheat-the-system']
+  for fn in test_filenames:
+    test_name = fn
+    fn = fn.replace('../', '') # Taken from app.py > generated
+    with open('{}/{}'.format(fullpath, fn), 'w') as f:
+      f.write('Test for {}'.format(fn))
+    rv = client.get('/generated/{}'.format(test_name))
+    assert rv.status_code == HTTPStatus.OK
+  # TODO: Figure out how to delete. The last file is being held hostage in python
+  # time.sleep(10)
+  # for fn in test_filenames:
+  #   fn = fn.replace('..\\', '') # Taken from app.py > generated
+  #   if os.path.exists('{}/{}'.format(fullpath, fn)):
+  #     os.remove('{}/{}'.format(fullpath, fn))

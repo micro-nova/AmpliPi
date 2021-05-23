@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+# Install AmpliPi from scratch on a new pi compute module
+# This script is mainly intended for MicroNova employees to bringup Pi's. Your AmpliPi device should already have this configuration.
+
+helptext="Usage: bootstrap_pi diskpath [hostname] [--debug] [-h|--help]
+Bootstrap a Raspberry Pi Compute Module for first-time AmpliPi setup.
+
+  diskpath:   The path to the mounted raspberry pi disk. Should be /dev/sdX
+  hostname:   The hostname to set on the pi, so once this script successfully completes
+              connect via {hostname}.local. Default is amplipi
+  --debug:    Will print all commands to be run and disable cleanup on exit
+  -h, --help: Print this help text.
+"
+
+hostname='amplipi'
+diskpath_set=false
+host_set=false
+debug=false
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --debug) debug=true ;;
+    -h|--help) printf "$helptext"; exit 0 ;;
+    *) if ! $diskpath_set; then
+        diskpath=$1
+        diskpath_set=true
+      elif ! $host_set; then
+        hostname=$1
+        host_set=true
+      else
+        echo "Unknown parameter passed: $1";
+        printf "$helptext";
+        exit 1
+      fi
+      ;;
+  esac
+  shift
+done
+
+$debug && set -x
+
+if ! $diskpath_set; then
+  printf "$helptext"
+  printf "\ndiskpath is required!\n"
+  printf "This script will exit after connecting to the pi and listing disks.\n"
+  printf "Re-run this script with the correct diskpath to bootstrap.\n"
+  read -p "Press any key to continue" -n 1
+  printf "\n"
+fi
+
+current_dir="$(dirname "$(realpath ${BASH_SOURCE[0]})")"
+amplipi_config_dir="$(realpath $current_dir/../config)"
+
+# do all of this stuff in a temporary directory so it will be lost/erased on reboot
+tmpdir=$(mktemp --directory)
+pushd $tmpdir
+
+# cleanup temp files on exit
+cleanup () {
+  # check if an arg was passed to cleanup, in which case we assume this script was successful (trap handler doesn't pass any args)
+  if [[ -z "$1" ]]; then
+    success=false
+  else
+    success=true
+  fi
+  if ! $success; then
+    printf "\nbootstrap_pi failed\n"
+    if ! $debug; then
+      printf "  Try running again with --debug for more details.\n"
+    fi
+  fi
+  if ! $debug || $success; then
+    sudo umount /mnt/pi-boot 2>/dev/null
+    sudo umount /mnt/pi-root 2>/dev/null
+    if [[ -d $tmpdir ]] ; then
+      rm -rf $tmpdir
+    fi
+  else
+    printf "\nExited while in debug mode.\n"
+    printf "Not unmounting: \n"
+    printf "  %s\n" /mnt/pi-boot /mnt/pi-root
+    printf "Not removing:\n"
+    printf "  %s\n" $tmpdir
+  fi
+  exit 0
+}
+
+# trap any errors and CTRL-C
+trap cleanup INT TERM ERR
+
+echo "Downloading Raspberry Pi boot"
+git clone --depth=1 https://github.com/raspberrypi/usbboot
+
+echo "Installing Raspberry Pi boot"
+pushd usbboot
+
+# install dependencies as necessary
+inst=false
+for dep in libusb-1.0-0-dev make gcc; do
+  dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
+done
+if $inst; then
+  sudo apt update
+  sudo apt install libusb-1.0-0-dev make gcc
+else
+  sudo echo "sudo permission granted"  # request sudo password now to avoid confusion later
+fi
+
+make
+
+echo -e "\nPlug in a usb cable from the service port to your computer. Keep AmpliPi Unplugged / Powered OFF for now."
+read -p "Press any key to continue" -n 1
+echo  # newline
+read -p "Press any key and then plug in the AmpliPi" -n 1
+sudo ./rpiboot
+popd # usbboot
+
+print_disks () {
+  printf "\nListing available disks sorted by time.\n"
+  printf "The pi should be the first /dev/sdX.\n\n"
+  for d in $(ls -t -1 /dev/sd?); do
+    lsblk -plndo name,size $d
+  done
+}
+
+
+sleep 2 # TODO: how to determine the disk has been attached?
+if ! [[ -e $diskpath ]]; then
+  printf "\n$diskpath is not available\n"
+  print_disks
+  cleanup
+fi
+
+release=2020-08-20-raspios-buster-armhf-lite
+echo "Downloading and extracting Raspberry Pi OS"
+if [[ -f $HOME/Downloads/$release.zip ]] ; then
+  zip_file=$HOME/Downloads/$release.zip
+else
+  wget http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+  cp $release.zip ~/Downloads # save for later
+  zip_file=$release.zip
+fi
+mkdir $release
+pushd $release
+unzip $zip_file
+
+if [[ -e $diskpath ]]; then
+  echo "Valid $diskpath device found"
+elif [[ ! -e $diskpath ]]; then
+  echo "ERROR: Expected device $diskpath not found"
+  print_disks
+  exit 1
+else
+  echo "ERROR: Can't handle the devices/partitions detected, maybe dd failed or other devices were detected"
+  print_disks
+  exit 1
+fi
+
+echo "Copying the image to the AmpliPi. This takes about 5 minutes. Go get a coffee or something :)"
+sudo dd if=$release.img of=$diskpath bs=4MiB
+popd # $release
+
+echo "Editing some configuration"
+sudo mkdir -p /mnt/pi-boot
+sudo mkdir -p /mnt/pi-root
+sudo mount ${diskpath}1 /mnt/pi-boot # boot partition
+sudo mount ${diskpath}2 /mnt/pi-root # root filesystem partition
+
+pushd /mnt/pi-boot
+
+# enable SSH access
+sudo touch ssh
+
+# extra config to make sure the USB serial tty is disabled (we use this to communicate with the AmpliPi preamp)
+CMDLINE=cmdline.txt
+sudo sed -i $CMDLINE -e "s/console=ttyAMA0,[0-9]\+ //"
+sudo sed -i $CMDLINE -e "s/console=serial0,[0-9]\+ //"
+
+popd # /mnt/pi-boot
+
+pushd /mnt/pi-root
+
+# set the hostname to amplipi
+echo $hostname | sudo tee etc/hostname
+sudo sed -i'' -e "s/raspberrypi/$hostname/" etc/hosts # need to change hostname reference too (if you don't it causes a message to be reported after every sudo)
+
+# add pi user manually to dialout group, avoiding an additional restart
+sudo sed -i'' -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' etc/group
+
+# copy the pi's boot configuration
+sudo cp $amplipi_config_dir/boot_config.txt /mnt/pi-boot/config.txt
+
+# extra config to enable i2c (from do-i2c in raspi-config bash script)
+BLACKLIST=etc/modprobe.d/raspi-blacklist.conf
+if ! [ -e $BLACKLIST ]; then
+  sudo touch $BLACKLIST
+fi
+sudo sed $BLACKLIST -i -e "s/^\(blacklist[[:space:]]*i2c[-_]bcm2708\)/#\1/"
+sudo sed etc/modules -i -e "s/^#[[:space:]]*\(i2c[-_]dev\)/\1/"
+if ! grep -q "^i2c[-_]dev" etc/modules; then
+  printf "i2c-dev\n" | sudo tee -a etc/modules
+fi
+
+# cleanup
+popd # /mnt/pi-root
+popd # /tmp/*
+
+echo "Bootstrapping successful. Please complete the following steps:
+  1. Disconnect the service USB cable.
+  2. Unplug the AmpliPi unit.
+  3. Plug it back in to power it on.
+  4. Run the deploy script to install the latest AmpliPi version.
+"
+cleanup "success"

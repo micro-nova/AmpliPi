@@ -22,6 +22,7 @@ a consistent interface.
 """
 
 import os
+import sys
 import subprocess
 import time
 
@@ -122,7 +123,7 @@ class Shairport:
       'metadata':{
         'enabled': 'yes',
         'include_cover_art': 'yes',
-        'pipe_name': '/home/pi/config/srcs/{}/shairport-sync-metadata'.format(src),
+        'pipe_name': '{}/srcs/{}/shairport-sync-metadata'.format(utils.get_folder('config'), src),
         'pipe_timeout': 5000,
       },
       'alsa': {
@@ -130,13 +131,16 @@ class Shairport:
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
-    config_folder = '/home/pi/config/srcs/{}'.format(src)
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
     # make all of the necessary dir(s)
-    os.system('mkdir -p {}'.format(config_folder))
-    config_file = '{}/shairport.conf'.format(config_folder)
+    os.system('mkdir -p {}'.format(src_config_folder)) # TODO: we need to delete all of the old cover art files!
+    config_file = '{}/shairport.conf'.format(src_config_folder)
     write_sp_config_file(config_file, config)
     shairport_args = 'shairport-sync -c {}'.format(config_file).split(' ')
-    meta_args = ['/home/pi/config/shairport_metadata.bash', '{}'.format(src)]
+    meta_args = [f"{utils.get_folder('streams')}/shairport_metadata.bash", src_config_folder, web_dir]
+    print(f'shairport_args: {shairport_args}')
+    print(f'meta_args: {meta_args}')
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -160,8 +164,9 @@ class Shairport:
     self.src = None
 
   def info(self):
-    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
-    sloc = '/home/pi/config/srcs/{}/sourceInfo'.format(self.src)
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
+    loc = '{}/currentSong'.format(src_config_folder)
+    sloc = '{}/sourceInfo'.format(src_config_folder)
     d = {}
     try:
       with open(loc, 'r') as file:
@@ -175,11 +180,11 @@ class Shairport:
             d['album'] = data[2]
             d['paused'] = data[3]
             if int(data[4]):
-              d['img_url'] = '/static/imgs/srcs/{}/{}'.format(self.src, data[5])
+              d['img_url'] = '/generated/shairport/srcs/{}/{}'.format(self.src, data[5])
         # return d
     except Exception:
       pass
-      # TODO: Put an actual exception here?
+      # TODO: Log actual exception here?
 
     try:
       with open(sloc, 'r') as file:
@@ -192,12 +197,10 @@ class Shairport:
             d['active_remote_token'] = info[1]
             d['DACP-ID'] = info[2]
             d['client_IP'] = info[3]
-        # return d
     except Exception:
       pass
 
     return d
-    # return {'details': 'No info available'}
 
   def status(self):
     return self.state
@@ -241,7 +244,7 @@ class Spotify:
       self.src = src
       return
     # TODO: Figure out the config for Spotify. Potentially need to get song info & play/pause ctrl
-    spotify_args = ['librespot', '-n', '{}'.format(self.name), '--device', 'ch{}'.format(src), '--initial-volume', '100']
+    spotify_args = ['librespot', '-n', '{}'.format(self.name), '--device', utils.output_device(src), '--initial-volume', '100']
     self.proc = subprocess.Popen(args=spotify_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print('{} connected to {}'.format(self.name, src))
     self.state = 'connected'
@@ -276,7 +279,7 @@ class Pandora:
 
   class Control:
     """ Controlling a running pianobar instance via its fifo control """
-    def __init__(self, pb_fifo='~/.config/pianobar/ctl'):
+    def __init__(self, pb_fifo='.config/pianobar/ctl'):
       # open the CTL fifo ('ctl' name specified in pianobar 'config' file)
       self.fifo = open(pb_fifo, 'w')
       print('Controlling pianobar with FIFO = {}'.format(pb_fifo))
@@ -358,8 +361,9 @@ class Pandora:
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
 
-    eventcmd_template = '/home/pi/config/eventcmd.sh'
-    pb_home = '/home/pi/config/srcs/{}'.format(src) # the simulated HOME for an instance of pianobar
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
+    eventcmd_template = '{}/eventcmd.sh'.format(utils.get_folder('streams'))
+    pb_home = src_config_folder
     pb_config_folder = '{}/.config/pianobar'.format(pb_home)
     pb_control_fifo = '{}/ctl'.format(pb_config_folder)
     pb_status_fifo = '{}/stat'.format(pb_config_folder)
@@ -370,7 +374,7 @@ class Pandora:
     pb_src_config_file = '{}/.libao'.format(pb_home)
     # make all of the necessary dir(s)
     os.system('mkdir -p {}'.format(pb_config_folder))
-    os.system('cp {} {}'.format(eventcmd_template, pb_eventcmd_file)) # Copy to retain executable status
+    os.system('cp {} {}'.format(eventcmd_template, pb_eventcmd_file)) # Copy to retains necessary executable status
     # write pianobar and libao config files
     write_config_file(pb_config_file, {
       'user': self.user,
@@ -380,13 +384,6 @@ class Pandora:
       'event_command': pb_eventcmd_file
     })
     write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': utils.output_device(src)})
-    try:
-      with open(pb_eventcmd_file) as ect:
-        template = ect.read().replace('source_id', str(src))
-      with open(pb_eventcmd_file, 'w') as ec:
-        ec.write(template)
-    except Exception as e:
-      print('error creating eventcmd: {}'.format(e))
     # create fifos if needed
     if not os.path.exists(pb_control_fifo):
       os.system('mkfifo {}'.format(pb_control_fifo))
@@ -420,7 +417,8 @@ class Pandora:
     self.src = None
 
   def info(self):
-    loc = '/home/pi/config/srcs/{}/.config/pianobar/currentSong'.format(self.src)
+    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
+    loc = '{}/.config/pianobar/currentSong'.format(src_config_folder)
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -485,7 +483,7 @@ class DLNA:
 
     meta_args = ['/home/pi/config/dlna_metadata.bash', '{}'.format(src)]
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
-                '--gstout-audiodevice', 'ch{}'.format(src), '--gstout-initial-volume-db',
+                '--gstout-audiodevice', utils.output_device(src), '--gstout-initial-volume-db',
                 '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
                 '-f', '{}'.format(self.name), '--logfile',
                 '/home/pi/config/dlna/{}/metafifo'.format(src)]
@@ -520,7 +518,7 @@ class DLNA:
           if line:
             d = eval(line)
         return(d)
-    except Exception as e:
+    except Exception:
       pass
     return {'details': 'No info available'}
 
@@ -545,9 +543,6 @@ class DLNA:
     connection = ' connected to src={}'.format(self.src) if self.src else ''
     mock = ' (mock)' if self.mock else ''
     return 'DLNA: {}{}{}'.format(self.name, connection, mock)
-
-
-
 
 class InternetRadio:
   """ An Internet Radio Stream """
@@ -582,24 +577,26 @@ class InternetRadio:
     """ Connect a VLC output to a given audio source
     This will create a VLC process based on the given name
     """
-    print('connecting {} to {}...'.format(self.name, src))
+    print(f'connecting {self.name} to {src}...')
 
     if self.mock:
-      print('{} connected to {}'.format(self.name, src))
+      print(f'{self.name} connected to {src}')
       self.state = 'connected'
       self.src = src
       return
 
     # Make all of the necessary dir(s)
-    config_folder = '/home/pi/config/srcs/{}'.format(src)
-    os.system('mkdir -p {}'.format(config_folder))
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
+    os.system('mkdir -p {}'.format(src_config_folder))
 
     # Start audio via runvlc.py
-    song_info_path = '/home/pi/config/srcs/{}/currentSong'.format(src)
-    inetradio_args = ['python3', '/home/pi/config/runvlc.py', '{}'.format(self.url), '{}'.format(utils.output_device(src)), '--song-info', song_info_path]
+    song_info_path = f'{src_config_folder}/currentSong'
+    log_file_path = f'{src_config_folder}/log'
+    inetradio_args = [sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
+    print(f'running: {inetradio_args}')
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
-    print('{} (stream: {}) connected to {} via {}'.format(self.name, self.url, src, utils.output_device(src)))
+    print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.output_device(src)}')
     self.state = 'connected'
     self.src = src
 
@@ -611,15 +608,16 @@ class InternetRadio:
   def disconnect(self):
     if self._is_running():
       self.proc.kill()
-      print('{} disconnected'.format(self.name))
+      print(f'{self.name} disconnected')
     else:
-      print('Warning: {} was not running'.format(self.name))
+      print(f'Warning: {self.name} was not running')
     self.state = 'disconnected'
     self.proc = None
     self.src = None
 
   def info(self):
-    loc = '/home/pi/config/srcs/{}/currentSong'.format(self.src)
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+    loc = f'{src_config_folder}/currentSong'
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -628,7 +626,7 @@ class InternetRadio:
         d['artist'] = data['artist']
         d['song'] = data['song']
         d['img_url'] = self.logo
-        d['album'] = ""
+        d['station'] = data['station']
 
         return(d)
     except Exception:
@@ -642,6 +640,6 @@ class InternetRadio:
     return self.state
 
   def __str__(self):
-    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    connection = f' connected to src={self.src}' if self.src else ''
     mock = ' (mock)' if self.mock else ''
-    return 'internetradio connect: {}{}{}'.format(self.name, connection, mock)
+    return 'internetradio connect: {self.name}{connection}{mock}'

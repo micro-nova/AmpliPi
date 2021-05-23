@@ -18,6 +18,7 @@
 """Runtimes to communicate with the AmpliPi hardware
 """
 
+# TODO: move constants like this to their own file
 DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 
@@ -63,8 +64,7 @@ class _Preamps:
       print('Mocking preamp connection')
     else:
       # Setup serial connection via UART pins - set I2C addresses for preamps
-      # ser = serial.Serial ("/dev/ttyS0") <--- for RPi4!
-      ser = Serial ("/dev/ttyAMA0")
+      ser = Serial("/dev/serial0")
       ser.baudrate = 9600
       addr = 0x41, 0x10, 0x0D, 0x0A
       ser.write(addr)
@@ -119,11 +119,11 @@ class _Preamps:
     self.preamps[preamp_addr][reg] = data
     # TODO: need to handle volume modifying mute state in mock
     if self.bus is not None:
-      time.sleep(0.01)
       try:
+        time.sleep(0.001) # space out sequential calls to avoid bus errors
         self.bus.write_byte_data(preamp_addr, reg, data)
       except Exception:
-        time.sleep(0.01)
+        time.sleep(0.001)
         self.bus = SMBus(1)
         self.bus.write_byte_data(preamp_addr, reg, data)
 

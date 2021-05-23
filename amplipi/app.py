@@ -23,6 +23,7 @@ Flask is used to simplify the web plumbing.
 """
 
 from flask import Flask, request, render_template, jsonify, make_response
+from flask.helpers import send_from_directory
 import amplipi.ctrl as ctrl
 import amplipi.rt as rt
 import amplipi.utils as utils
@@ -35,9 +36,15 @@ DEBUG_API = False
 import os
 template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
+generated_dir = os.path.abspath('web/generated')
 
 app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
 app.api = None # TODO: assign an unloaded API here to get auto completion / linting
+
+@app.route('/generated/<path:filename>')
+def generated(filename=''):
+  filename = filename.replace('../', '') # TODO: Get a fancier regex that checks for bad names
+  return send_from_directory(generated_dir, filename, conditional=True)
 
 # Helper functions
 def unused_groups(src):
@@ -98,6 +105,10 @@ def code_response(resp):
 
 # sources
 
+@app.route('/api/sources', methods=['GET'])
+def get_sources():
+  return {'sources' : app.api.get_state()['sources']}
+
 @app.route('/api/sources/<int:src>', methods=['GET'])
 def get_source(src):
   # TODO: add get_X capabilities to underlying API?
@@ -112,6 +123,10 @@ def set_source(src):
   return code_response(app.api.set_source(id=src, **request.get_json()))
 
 # zones
+
+@app.route('/api/zones', methods=['GET'])
+def get_zones():
+  return {'zones': app.api.get_state()['zones']}
 
 @app.route('/api/zones/<int:zone>', methods=['GET'])
 def get_zone(zone):
@@ -131,11 +146,15 @@ def set_zone(zone):
 def create_group():
   return code_response(app.api.create_group(**request.get_json()))
 
+@app.route('/api/groups', methods=['GET'])
+def get_groups():
+  return {'groups' : app.api.get_state()['groups']}
+
 @app.route('/api/groups/<int:group>', methods=['GET'])
 def get_group(group):
-  groups = app.api.get_state()['groups']
-  if group >= 0 and group < len(groups):
-    return groups[group]
+  _, grp = utils.find(app.api.get_state()['groups'], group)
+  if grp is not None:
+    return grp
   else:
     return {}, 404
 
@@ -153,6 +172,10 @@ def delete_group(group):
 def create_stream():
   print('creating stream from {}'.format(request.get_json()))
   return code_response(app.api.create_stream(**request.get_json()))
+
+@app.route('/api/streams', methods=['GET'])
+def get_streams():
+  return {'streams' : app.api.get_state()['streams']}
 
 @app.route('/api/streams/<int:sid>', methods=['GET'])
 def get_stream(sid):
@@ -180,6 +203,10 @@ def exec_command(sid, cmd):
 def create_preset():
   print('creating preset from {}'.format(request.get_json()))
   return code_response(app.api.create_preset(request.get_json()))
+
+@app.route('/api/presets', methods=['GET'])
+def get_presets():
+  return {'presets' : app.api.get_state()['presets']}
 
 @app.route('/api/presets/<int:pid>', methods=['GET'])
 def get_preset(pid):
@@ -214,13 +241,15 @@ def doc():
 @app.route('/<int:src>')
 def view(src=0):
   s = app.api.status
-  return render_template('index.html', cur_src=src, sources=s['sources'],
+  return render_template('index.html.j2', cur_src=src, sources=s['sources'],
     zones=s['zones'], groups=s['groups'], presets=s['presets'],
     inputs=app.api.get_inputs(),
     unused_groups=[unused_groups(src) for src in range(4)],
     unused_zones=[unused_zones(src) for src in range(4)],
     ungrouped_zones=[ungrouped_zones(src) for src in range(4)],
-    song_info=[song_info(src) for src in range(4)])
+    song_info=[song_info(src) for src in range(4)],
+    version=s['version'],
+    )
 
 def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.json'):
   if mock_ctrl:
@@ -228,6 +257,11 @@ def create_app(mock_ctrl=False, mock_streams=False, config_file='config/house.js
   else:
     app.api = ctrl.Api(rt.Rpi(), mock_streams=mock_streams, config_file=config_file)
   return app
+
+if DEBUG_API:
+  app.debug = True
+  from flask_debugtoolbar import DebugToolbarExtension
+  toolbar = DebugToolbarExtension(app)
 
 if __name__ == '__main__':
   app = create_app()

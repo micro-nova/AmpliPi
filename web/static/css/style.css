@@ -1,4 +1,4 @@
-@import url(https://fonts.googleapis.com/css?family=Raleway:500);
+@import url(/static/css/libs/google-fonts/fonts.css);
 
 /* TODO: copy comments from scss */
 body {
@@ -20,13 +20,18 @@ body {
 .title-down {
   text-align: center;
   color: #8a8a8a;
-  transform: scale(3, 1);
   margin-top: -5px;
+}
+.title-down i {
+  transform: scale(3, 1);
 }
 
 .source {
   background: #2a2a2a;
   margin-bottom: 10px;
+}
+.source .nav-item {
+  font-size: 0.9rem;
 }
 .source .card-header .nav .nav-item .active {
   background: #4a4a4a;
@@ -46,7 +51,7 @@ body {
   visibility: hidden;
 }
 
-.group, .preset-list {
+.group, .preset-list, .settings {
   background: #2a2a2a;
 }
 .group a, .preset-list a {
@@ -112,15 +117,25 @@ body {
   background: #3a3a3a;
 }
 
-.source, .group, .add-group, .ungrouped-zone, #preset-list {
+.source, .group, .add-group, .ungrouped-zone, #preset-list, .settings {
   margin-bottom: 12px;
   -webkit-box-shadow: 6px 7px 19px 6px #000000;
   box-shadow: 6px 7px 19px 6px #000000;
 }
 
+#settings-header {
+  color: lightgrey;
+  margin-top: -8px;
+  margin-bottom: -10px;
+}
+
 #micronova img {
   margin-top: 30px;
   width: 25%;
+}
+
+#amplipi-info {
+  color: grey
 }
 
 .volume {

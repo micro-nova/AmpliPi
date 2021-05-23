@@ -3,3 +3,11 @@ Flask
 smbus2
 pyserial
 python-vlc
+requests
+fastapi
+sse-starlette
+uvicorn
+aiofiles
+pydantic
+python-multipart
+flask_debugtoolbar

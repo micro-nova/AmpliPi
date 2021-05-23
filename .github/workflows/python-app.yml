@@ -34,13 +34,13 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test mock using pytest # rpi cannot be tested directly due to hardware...
       run: |
-        pytest tests/test_ctrl.py -vv
-        pytest tests/test_rest.py -vv
+        pytest tests/test_ctrl.py -vv -k 'not _live'
+        pytest tests/test_rest.py -vv -k 'not _live'
     - name: Generate coverage report
       run: |
         pip install pytest
         pip install pytest-cov
-        pytest --cov=./ --cov-report=xml -vv
+        pytest --cov=./ --cov-report=xml -vv -k 'not _live'
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
