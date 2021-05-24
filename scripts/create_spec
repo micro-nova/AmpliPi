@@ -1,0 +1,9 @@
+#!/bin/bash
+# get directory that the script exists in
+cd "$( dirname "$0" )/.."
+source venv/bin/activate
+
+rm docs/amplipi_api.yaml
+
+# Generate the simplified version of the api doc, current version spits out a couple of useless errors so hide them
+python3 -m amplipi.app docs/amplipi_api.yaml > /dev/null && echo "Generated open API spec to docs/amplipi_api.yaml" || echo "Failed, debug issue with 'python3 -m amplipi.app docs/amplipi_api.yaml'"
