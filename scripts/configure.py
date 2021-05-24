@@ -4,16 +4,18 @@
 
 This script is initially designed to support local git installs, pi installs, and amplipi installs
 """
+import dbus
 from os.path import split
 import platform
 import subprocess
 import os
+import pathlib
 import pwd # username
 import glob
 import requests
 import traceback
 import tempfile
-from typing import List, Union, Type
+from typing import List, Union, Type, Tuple
 import time
 
 _os_deps = {
@@ -156,8 +158,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
 
   # cleanup
   # shairport-sync install sets up a deamon we need to stop, remove it
-  tasks += p2(_stop_service('shairport-sync'))
-  tasks += p2(_disable_service('shairport-sync'))
+  tasks += p2(_stop_service('shairport-sync', system=True))
+  tasks += p2(_disable_service('shairport-sync', system=True))
 
   return tasks
 
@@ -170,104 +172,203 @@ def _install_python_deps(env: dict, deps: List[str]):
     os.chdir(last_dir)
   return tasks
 
-def _web_service(user: str, dir: str):
-  return f"""
-  [Unit]
-  Description=Amplipi Home Audio System
-  After=syslog.target network.target
+def _web_service(dir: str):
+  return f"""\
+[Unit]
+Description=Amplipi Home Audio System
+After=network.target
 
-  [Service]
-  Type=simple
-  User={user}
-  Group={user}
-  WorkingDirectory={dir}
-  ExecStart=/usr/bin/authbind --deep {dir}/venv/bin/python -m uvicorn --host 0.0.0.0 --port 80 --interface wsgi amplipi.wsgi:application
-  Restart=on-abort
+[Service]
+Type=simple
+WorkingDirectory={dir}
+ExecStart=/usr/bin/authbind --deep {dir}/venv/bin/python -m uvicorn --host 0.0.0.0 --port 80 --interface wsgi amplipi.wsgi:application
+Restart=on-abort
 
-  [Install]
-  WantedBy=multi-user.target
-  """
+[Install]
+WantedBy=default.target
+"""
 
-def _update_service(user: str, dir: str, port: int=5001):
-  return f"""
-  [Unit]
-  Description=Amplipi Software Updater
-  After=syslog.target network.target
+def _update_service(dir: str, port: int=5001):
+  return f"""\
+[Unit]
+Description=Amplipi Software Updater
+After=network.target
 
-  [Service]
-  Type=simple
-  User={user}
-  Group={user}
-  WorkingDirectory={dir}
-  ExecStart={dir}/venv/bin/python -m uvicorn amplipi.updater.asgi:app --host 0.0.0.0 --port {port}
-  Restart=on-abort
+[Service]
+Type=simple
+WorkingDirectory={dir}
+ExecStart={dir}/venv/bin/python -m uvicorn amplipi.updater.asgi:app --host 0.0.0.0 --port {port}
+Restart=on-abort
 
-  [Install]
-  WantedBy=multi-user.target
-  """
+[Install]
+WantedBy=default.target
+"""
 
-def _stop_service(name: str) -> List[Task]:
+def _get_service_manager(system: bool = False) -> dbus.Interface:
+  bus = dbus.SystemBus() if system else dbus.SessionBus()
+  systemd1 = bus.get_object('org.freedesktop.systemd1', '/org/freedesktop/systemd1')
+  return dbus.Interface(systemd1, 'org.freedesktop.systemd1.Manager')
+
+def _get_service_proxy(service: str, system: bool = False) -> dbus.proxies.ProxyObject:
+  bus = dbus.SystemBus() if system else dbus.SessionBus()
+  manager = _get_service_manager(system)
+  unit = manager.LoadUnit(service)
+  return bus.get_object('org.freedesktop.systemd1', str(unit))
+
+def _service_status(service: str, system: bool = False) -> Tuple[List[Task], bool]:
+  # Status can be: active, reloading, inactive, failed, activating, or deactivating
+  tasks = [Task(f'Check {service} status')]
+  try:
+    proxy = _get_service_proxy(service, system)
+    status = str(proxy.Get('org.freedesktop.systemd1.Unit', 'ActiveState', dbus_interface='org.freedesktop.DBus.Properties'))
+    tasks[0].success = True
+  except Exception as e:
+    tasks[0].output = str(e)
+    tasks[0].success = False
+  if 'active' in status and not 'inactive' in status:
+    tasks[0].output = f'{service} active'
+    return (tasks, True)
+  tasks[0].output = f'{service} inactive'
+  return (tasks, False)
+
+# Stop a systemd service. By default use the Session (user) session
+def _stop_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
-  tasks = [Task(f'Check {service} status', f'systemctl is-active {service}'.split()).run()]
-  tasks[0].success = True # when a task is failed the return code sets success=False
-  if 'active' == tasks[0].output:
-    tasks.append(Task(f'Stop {service}', f'sudo systemctl stop {service}'.split()).run())
+  tasks, running = _service_status(service, system)
+  if running:
+    if system:
+      tasks.append(Task(f'Stop {service}', f'sudo systemctl stop {service}'.split()).run())
+    else:
+      tasks.append(Task(f'Stop {service}'))
+      try:
+        _get_service_manager(system).StopUnit(service, 'replace')
+        tasks[-1].output = f'Stopped {service}'
+        tasks[-1].success = True
+      except Exception as e:
+        tasks[-1].output = str(e)
+        tasks[-1].success = False
   return tasks
 
 def _remove_service(name: str) -> List[Task]:
-  service = f'{name}.service'
-  tasks = [Task(f'Remove {service}', f'sudo rm -f /lib/systemd/system/{service}'.split()).run()]
+  filename = f'{name}.service'
+  directory = pathlib.Path.home().joinpath('.config/systemd/user')
+  tasks = [Task(f'Remove {filename}')]
+  try:
+    pathlib.Path(directory).joinpath(filename).unlink()
+    tasks[0].output = f'Removed {filename}'
+    tasks[0].success = True
+  except Exception as e:
+    tasks[0].output = str(e)
+    tasks[0].success = False
   return tasks
 
-def _disable_service(name: str) -> List[Task]:
+def _enable_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
-  tasks = [Task(f'Disable {service}', f'sudo systemctl disable {service}'.split()).run()]
+  tasks = [Task(f'Enable {service}')]
+  try:
+    # EnableUnitFiles(name, not_persistent, allow_overwrite)
+    _get_service_manager(system).EnableUnitFiles([service], False, True)
+    # Enabled status is retrieved via GetUnitFileState() and can be
+    # enabled, enabled-runtime, linked, linked-runtime, masked, masked-runtime, static, disabled, invalid
+    tasks[0].output = f'Enabled {service}'
+    tasks[0].success = True
+  except Exception as e:
+    tasks[0].output = str(e)
+    tasks[0].success = False
   return tasks
+
+def _disable_service(name: str, system: bool = False) -> List[Task]:
+  service = f'{name}.service'
+  if system:
+    return [Task(f'Disable {service}', f'sudo systemctl disable {service}'.split()).run()]
+  else:
+    tasks = [Task(f'Disable {service}')]
+    try:
+      # DisableUnitFiles(name, not_persistent)
+      _get_service_manager(system).DisableUnitFiles(service, False)
+      tasks[0].output = f'Disabled {service}'
+      tasks[0].success = True
+    except Exception as e:
+      tasks[0].output = str(e)
+      tasks[0].success = False
+    return tasks
 
 def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
   service = f'{name}.service'
   tasks = []
-  tasks.append(Task(f'Start {service}', multiargs=[
-    f'sudo systemctl restart {name}'.split(),
-    'sleep 5'.split(), # wait a bit, so initial failures are detected before is-active is called
-  ]).run())
+  tasks.append(Task(f'Start {service}'))
+  try:
+    _get_service_manager().RestartUnit(service, 'replace')
+    tasks[0].output = f'Started {service}'
+    tasks[0].success = True
+  except Exception as e:
+    tasks[0].output = str(e)
+    tasks[0].success = False
+
+  # wait a bit, so initial failures are detected before is-active is called
   if tasks[-1].success:
     # we need to check if the service is running
-    tasks.append(Task(f'Check {service} Status', f'systemctl is-active {service}'.split()).run())
-    tasks[-1].success = 'active' in tasks[-1].output and not 'inactive' in tasks[-1].output
-    if test_url and tasks[-1].success:
-      time.sleep(1) # give the server time to start
-      tasks.append(_check_url(test_url))
-      # We also need to enable the service so that it starts on startup
-      tasks.append(Task(f'Enable {service}', f'sudo systemctl enable {service}'.split()).run())
+    for i in range(25): # retry for 5 seconds, giving the service time to start
+      task_check, running = _service_status(service)
+      if running:
+        break
+      time.sleep(0.2)
+    tasks += task_check
+    if test_url and running:
+      task = None
+      for i in range(10): # retry for 5 seconds, giving the server time to start
+        task = _check_url(test_url)
+        if task.success:
+          break
+        time.sleep(0.5)
+      tasks.append(task)
+      # we also need to enable the service so that it starts on startup
+      tasks += _enable_service(name)
     elif 'amplipi' == name:
       tasks[-1].output += "\ntry checking this service failure using 'scripts/run_debug_webserver' on the system"
-      tasks.append(Task(f'Check {service} Status', f'systemctl status {service}'.split()).run())
+      tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
     elif 'amplipi-updater' in name:
       tasks[-1].output += "\ntry debugging this service failure using 'scripts/run_debug_updater' on the system"
-      tasks.append(Task(f'Check {service} Status', f'systemctl status {service}'.split()).run())
+      tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
   return tasks
 
 def _create_service(name: str, config: str) -> List[Task]:
-  service = f'{name}.service'
-  tasks = [Task(f'Create {service}')]
-  # create the service file
+  filename = f'{name}.service'
+  directory = pathlib.Path.home().joinpath('.config/systemd/user')
+  tasks = []
+
+  # create the systemd directory if it doesn't already exist
+  p = pathlib.Path(directory)
+  if not p.exists():
+    tasks.append(Task(f'Create user systemd directory'))
+    try:
+      p.mkdir(parents=True)
+      tasks[-1].success = True
+      tasks[-1].output = f'Created {directory}'
+    except:
+      tasks[-1].output = f'Failed to create {directory}'
+
+  # create the service file, overwriting any existing one
+  tasks.append(Task(f'Create {filename}'))
   try:
-    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+    with p.joinpath(filename).open('w+') as f:
       f.write(config)
-      file = f.name
-  except IOError as e:
-    tasks[0].output = ''.join(traceback.format_exception())
-    tasks[0].success = False
-  # copy the service file to the systemd service directory
-  tasks[0].margs = [f'sudo mv {file} /lib/systemd/system/{service}'.split()]
-  tasks[0].run()
-  if not tasks[0].success:
-    return tasks
-  tasks.append(Task(f'Load changes to {service}', multiargs=[
-    'sudo systemctl daemon-reload'.split(),
-    'sleep 0.5'.split(), # wait a bit so if start service is called after this it will be ready
-  ]).run())
+    tasks[-1].success = True
+    tasks[-1].output = f'Created {filename}'
+  except:
+    tasks[-1].output = f'Failed to create {filename}'
+
+  # recreate systemd's dependency tree
+  tasks.append(Task(f'Reload systemd config'))
+  try:
+    sesbus = dbus.SessionBus()
+    systemd1 = sesbus.get_object('org.freedesktop.systemd1', '/org/freedesktop/systemd1')
+    manager = dbus.Interface(systemd1, 'org.freedesktop.systemd1.Manager')
+    manager.Reload()
+    tasks[-1].success = True
+    tasks[-1].output = f'Reloaded systemd config'
+  except:
+    tasks[-1].output = f'Failed to reload systemd config'
   return tasks
 
 def _configure_authbind() -> List[Task]:
@@ -287,9 +388,12 @@ def _configure_authbind() -> List[Task]:
     tasks.append(Task('Setup autobind', f'sudo chmod 777 {PORT_FILE}'.split()).run())
   return tasks
 
+# Enable linger so that user manager is started at boot
+def _enable_linger(user: str) -> List[Task]:
+  return [Task(f'Enable linger for {user} user', f'sudo loginctl enable-linger {user}'.split()).run()]
+
 def _check_url(url) -> Task:
-  t = Task('Check url')
-  t.output = f'\ntesting: {url}'
+  t = Task(f'Check url {url}')
   try:
     r = requests.get(url)
     if r.ok:
@@ -323,22 +427,26 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   tasks += p2(_stop_service('amplipi'))
   # bringup amplipi and updater separately
   tasks += p2(_configure_authbind())
-  tasks += p2(_create_service('amplipi', _web_service(env['user'], env['base_dir'])))
+  tasks += p2(_create_service('amplipi', _web_service(env['base_dir'])))
   tasks += p2(_start_service('amplipi', test_url='http://0.0.0.0'))
   if not tasks[-1].success:
     return tasks
   tasks += p2([_check_version('http://0.0.0.0/api')])
-  tasks += p2(_create_service('amplipi-updater', _update_service(env['user'], env['base_dir'])))
+  tasks += p2(_create_service('amplipi-updater', _update_service(env['base_dir'])))
   if restart_updater:
     tasks += p2(_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
   else:
     # start a second updater service and check if it serves a url
     # this allow us to verify the update the updater probably works
-    tasks += p2(_create_service('amplipi-updater-test', _update_service(env['user'], env['base_dir'], port=5002)))
+    tasks += p2(_create_service('amplipi-updater-test', _update_service(env['base_dir'], port=5002)))
     tasks += p2(_start_service('amplipi-updater-test', test_url='http://0.0.0.0:5002/update'))
     # stop and disable the service so it doesn't start up on a reboot
     tasks += p2(_stop_service('amplipi-updater-test'))
     tasks += p2(_remove_service('amplipi-updater-test'))
+  if env['is_amplipi']:
+    # start the user manager at boot, instead of after first login
+    # this is needed so the user systemd services start at boot
+    tasks += p2(_enable_linger(env['user']))
   return tasks
 
 def print_task_results(tasks : List[Task]) -> None:
@@ -353,7 +461,7 @@ def fix_file_props(env, progress) -> List[Task]:
     make_exec = set()
     for d in needs_exec:
       make_exec.update(glob.glob(f"{env['base_dir']}/{d}"))
-    cmd = f"sudo chmod +x {' '.join(make_exec)}"
+    cmd = f"chmod +x {' '.join(make_exec)}"
     tasks += [Task('Make scripts executable', cmd.split()).run()]
   progress(tasks)
   return tasks
