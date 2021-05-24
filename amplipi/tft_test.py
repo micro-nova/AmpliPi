@@ -38,14 +38,19 @@ import psutil             # CPU, RAM, etc.
 
 profile = False
 update_period = 2.0       # Display update rate in seconds
+is_amplipi = True         # Set to false for PoE board test setup
 
 # Configuration for extra TFT pins:
-cs_pin = digitalio.DigitalInOut(board.CE0) #board.D43
-dc_pin = digitalio.DigitalInOut(board.D25) #board.D39
-led_pin = board.D18
+clk_pin = board.SCLK_2 if is_amplipi else board.SCLK
+mosi_pin = board.MOSI_2 if is_amplipi else board.MOSI
+miso_pin = board.MISO_2 if is_amplipi else board.MISO
+
+cs_pin = digitalio.DigitalInOut(board.D44) if is_amplipi else board.CE0
+dc_pin = digitalio.DigitalInOut(board.D39) if is_amplipi else board.D25
+led_pin = board.D12 if is_amplipi else board.D18
 rst_pin = None
-t_cs_pin = board.D5
-t_irq_pin = board.D6
+t_cs_pin = board.D45 if is_amplipi else board.D5
+t_irq_pin = board.D38 if is_amplipi else board.D6
 
 # Network interface name to get IP address of
 iface_name = "eth0"
@@ -67,10 +72,10 @@ iface_name = "eth0"
 #  4   50.0  38.6 ms
 #  3   66.7  32.5 ms
 #  2  100.0  26.3 ms Fails on breadboard setup
-spi_baud = 25 * 10**6
+spi_baud = 16 * 10**6
 
 parser = argparse.ArgumentParser(description='Display AmpliPi Information on a TFT Display')
-parser.add_argument('url', nargs='?', default="localhost:5000", help="The AmpliPi's URL to contact") #amplipi.local
+parser.add_argument('url', nargs='?', default="localhost", help="The AmpliPi's URL to contact")
 args = parser.parse_args()
 
 # Convert number range to color gradient (min=green, max=red)
@@ -188,7 +193,7 @@ def draw_volume_bars(draw, font, small_font, zones, x=0, y=0, width=320, height=
 
 
 # Setup SPI bus using hardware SPI:
-spi = busio.SPI(clock=board.SCLK, MOSI=board.MOSI, MISO=board.MISO)
+spi = busio.SPI(clock=clk_pin, MOSI=mosi_pin, MISO=miso_pin)
 
 # Create the ILI9341 display:
 display = ili9341.ILI9341(spi, cs=cs_pin, dc=dc_pin, rst=rst_pin, baudrate=spi_baud, rotation=270)
