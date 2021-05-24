@@ -507,7 +507,8 @@ function initVolControl(ctrl) {
 }
 
 async function plex_pin_req() {
-  let myuuid = uuidv4();
+  let myuuid = uuidv4(); // UUID used as the 'clientIdentifier' for Plexamp requests/devices
+  let details = { }
   let response = await fetch('https://plex.tv/api/v2/pins', {
     method: 'POST',
     headers: {
@@ -515,56 +516,64 @@ async function plex_pin_req() {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: "strong=true&X-Plex-Product=AmpliPi&X-Plex-Client-Identifier=" + myuuid
-  });
+  }); // The actual pin request is sent. response holds the pin, pin code, and our UUID.
   response.json()
-  .then(function(response){
-    const PURL = `https://app.plex.tv/auth#?clientID=${response.clientIdentifier}&code=${response.code}&context%5Bdevice%5D%5Bproduct%5D=AmpliPi`;
-    console.log("Here's the ID " + response.id);
-    console.log("Here's the code " + response.code);
-    console.log("Here's the UUID " + response.clientIdentifier);
-    console.log(PURL);
-    this.id = response.id;
-    this.code = response.code;
-    this.clientIdentifier = response.clientIdentifier;
-    window.open(PURL, "_blank");
+  .then(function(response){ // Make URL for the Plex Account Login
+    const purl = `https://app.plex.tv/auth#?clientID=${response.clientIdentifier}&code=${response.code}&context%5Bdevice%5D%5Bproduct%5D=AmpliPi`;
+    details.id = response.id; // The actual PIN
+    details.code = response.code; // A code associated with the PIN
+    details.uuid = response.clientIdentifier; // Our UUID associated with the PIN and authToken
+    details.authToken = null; // Will eventually hold a token from plex_token_ret on a successful sign-in
+    console.log(details);
+    window.open(purl, "_blank"); // Open 'purl' in a new tab in the current browser window
   });
+  return details; // Pin, code, UUID, and authToken are used in the other functions
 }
 
-async function plex_token_ret() {
-  let response = await fetch('https://plex.tv/api/v2/pins/'+this.id, {
+async function plex_token_ret(details) {
+  let response = await fetch('https://plex.tv/api/v2/pins/'+details.id, {
     method: 'GET',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
-      'code': this.code,
-      'X-Plex-Client-Identifier': this.clientIdentifier
+      'code': details.code,
+      'X-Plex-Client-Identifier': details.uuid
     },
-  });
+  }); // Information related to our PIN was requested. Parse that info to see if we've authenticated yet
   response.json().then(function(response){
     console.log("Token: " + response.authToken);
-    this.authToken = response.authToken;
+    details.authToken = response.authToken;
     console.log("Time remaining: " + response.expiresIn);
-    this.expiresIn = response.expiresIn;
+    details.expiresIn = response.expiresIn;
   });
-  return response;
+  return details;
 }
 
-async function plex_stream() {
+async function plex_stream(details) {
   var req = {
     "name": "AmpliPi Plexamp",
-    "identifier": this.clientIdentifier,
-    "token": this.authToken,
+    "identifier": details.uuid,
+    "token": details.authToken,
     "type": "plexamp"
-  }
+  } // POST a new stream to the AmpliPi API using the newly authenticated credentials
   sendRequest('/stream', 'POST', req);
-  console.log("Creating stream with these parameters: " + req);
+  console.log(`Creating stream with these parameters: name = ${req.name}, UUID = ${req.identifier}, and token = ${req.token}`);
   }
 
-// function plex_full() {
-//   var block = plex_pin_req();
-  // var pident = block.id;
-  // var pcode = block.code;
-  // var uu = block.clientIdentifier;
-  // url_gen(pcode, uu);
-  // var fullblock = plex_token_ret(pcode, uu, pident);
-// }
+function sleepjs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms)); // JavaScript sleep function
+}
+
+async function plexamp_wrapper() {
+  let details = await plex_pin_req(); // Request a pin
+  await sleepjs(2000); // Wait for info to propagate over
+  do {
+    let details2 = await plex_token_ret(details); // Retrieve our token
+    await sleepjs(2000); // Delay so the loop doesn't go insane
+    if (details2.expiresIn == null){
+      break; // Break when you run out of time (30 minutes, set by Plex)
+    }
+    details = details2; // Update authToken state and time until expiration
+  } while (details.authToken == null); // "== null" should also check for undefined
+  plex_stream(details); // Create a Plexamp stream using the API!
+}
