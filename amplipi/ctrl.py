@@ -722,8 +722,7 @@ class Api:
 
   @utils.save_on_success
   def load_preset(self, id: int) -> None:
-    """
-    To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration. Below is an idea of how a preset configuration could be loaded to avoid any weirdness. We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
+    """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration. Below is an idea of how a preset configuration could be loaded to avoid any weirdness. We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
 
     1. Grab system modification mutex to avoid accidental changes (requests during this time return some error)
     2. Save current configuration as "Last config" preset

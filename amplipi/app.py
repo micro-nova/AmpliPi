@@ -33,6 +33,7 @@ from fastapi_utils.cbv import cbv
 from typing import List, Optional, Dict, Union, Set
 from functools import lru_cache
 #docs
+import argparse
 from fastapi.openapi.utils import get_openapi
 import yaml
 import io
@@ -411,9 +412,8 @@ def generate_openapi_spec(add_test_docs=True):
             examples = req_model['creation_examples']
           else:
             examples = req_model['examples']
-          # TODO: edit examples to remove id?
           for method in route.methods:
-            # Only for POST, PATCH, and PUT methods have a request body
+            # Only POST, PATCH, and PUT methods have a request body
             if method in {"POST", "PATCH", "PUT"}:
               openapi_schema['paths'][route.path][method.lower()]['requestBody'][
               'content']['application/json']['examples'] = examples
@@ -424,6 +424,9 @@ def generate_openapi_spec(add_test_docs=True):
           for method in route.methods:
             openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
               'content']['application/json']['examples'] = examples
+
+  if not add_test_docs:
+    return
 
   # Manually add relevant example parameters based on the current configuration
   # (for paths that require parameters)
@@ -500,17 +503,21 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
     This API is documented using the OpenAPI specification
 """
 
+@lru_cache(2)
+def create_yaml_doc(add_test_docs=True) -> str:
+  openapi = app.openapi()
+  # use a placeholder for the description, multiline strings weren't using block formatting
+  openapi['info']['description'] = '$REPLACE_ME$'
+  yaml_s = yaml.safe_dump(openapi, sort_keys=False, allow_unicode=True)
+  # fix the long description
+  return yaml_s.replace('$REPLACE_ME$', YAML_DESCRIPTION)
+
+
 # additional yaml version of openapi.json
 # this is much more human readable
 @app.get('/openapi.yaml', include_in_schema=False)
-@lru_cache()
 def read_openapi_yaml() -> Response:
-  openapi = app.openapi()
-  openapi['info']['description'] = 'REPLACE_ME'
-  yaml_s = yaml.safe_dump(openapi, sort_keys=False, allow_unicode=True)
-  # fix the long description (yaml or json dumpers had lots of trouble with it)
-  yaml_s = yaml_s.replace('REPLACE_ME', YAML_DESCRIPTION)
-  return Response(yaml_s, media_type='text/yaml')
+  return Response(create_yaml_doc(), media_type='text/yaml')
 
 app.openapi = generate_openapi_spec
 
@@ -552,3 +559,10 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   # replace the generic get_ctrl with the specific one we created above
   app.dependency_overrides[get_ctrl] = specific_ctrl
   return app
+
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser(description='Create the openapi yaml file for AmpliPi')
+  parser.add_argument('file', type=argparse.FileType('w'))
+  args = parser.parse_args()
+  with args.file as file:
+    file.write(create_yaml_doc(add_test_docs=False))
