@@ -269,6 +269,21 @@ class Api:
     self.status.streams = streams
     return self.status
 
+  def _get_items(self, tag:str) -> Optional[List[models.Base]]:
+    """ Gets one of the lists of elements contained in status named by @t (or t's plural
+
+    This makes it easy to programmatically access zones using t='zones' or groups using t='groups'.
+    We use this to generate some documentation.
+    """
+    item_lists = ['streams', 'presets', 'sources', 'zones', 'groups']
+    plural_tag = tag + 's'
+    items = []
+    if tag in item_lists:
+      items = self.get_state().__dict__[tag]
+    elif plural_tag in item_lists:
+      items = self.get_state().__dict__[plural_tag]
+    return items
+
   def _get_stream(self, src: Union[int, models.Source]) -> Optional[amplipi.streams.AnyStream]:
     """Gets the stream from a source
 

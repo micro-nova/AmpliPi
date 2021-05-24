@@ -23,7 +23,7 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 """
 
 # web framework
-from fastapi import FastAPI, Request, Response, HTTPException, Depends, Body
+from fastapi import FastAPI, Request, Response, HTTPException, Depends, Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.routing import APIRoute, APIRouter
 from starlette.responses import FileResponse
@@ -120,6 +120,16 @@ def song_info(src: int) -> Dict[str,str]:
 def get_ctrl() -> Api:
   return Api(models.AppSettings())
 
+# standard path ID's for each type
+class params(object):
+  SourceID = Path(..., ge=0, le=3, description="Source ID")
+  ZoneID = Path(..., ge=0, le=35, description="Zone ID")
+  GroupID = Path(..., ge=0, description="Stream ID")
+  StreamID = Path(..., ge=0, description="Stream ID")
+  StreamCommand = Path(..., description="Stream Command")
+  PresetID = Path(..., ge=0, description="Preset ID")
+  StationID = Path(..., ge=0, title="Pandora Station ID", description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
+
 # Add our own router and class endpoints to reduce boilerplate for our api
 api_router = SimplifyingRouter()
 base_router = SimplifyingRouter()
@@ -152,14 +162,14 @@ class ApiRoutes:
     return {'sources' : self.ctrl.get_state().sources}
 
   @api_router.get('/sources/{sid}', tags=['source'])
-  def get_source(self, sid: int) -> models.Source:
+  def get_source(self, sid: int=params.SourceID) -> models.Source:
     """ Get Source with id=**sid** """
     # TODO: add get_X capabilities to underlying API?
     sources = self.ctrl.get_state().sources
     return sources[sid]
 
   @api_router.patch('/sources/{sid}', tags=['source'])
-  def set_source(self, sid: int, update: models.SourceUpdate) -> models.Status:
+  def set_source(self, sid: int = params.SourceID, update: models.SourceUpdate=None) -> models.Status:
     """ Update a source's configuration (source=**sid**) """
     return self.code_response(self.ctrl.set_source(sid, update))
 
@@ -171,7 +181,7 @@ class ApiRoutes:
     return {'zones': self.ctrl.get_state().zones}
 
   @api_router.get('/zones/{zid}', tags=['zone'])
-  def get_zone(self, zid: int) -> models.Zone:
+  def get_zone(self, zid: int=params.ZoneID) -> models.Zone:
     """ Get Zone with id=**zid** """
     zones = self.ctrl.get_state().zones
     if zid >= 0 and zid < len(zones):
@@ -180,7 +190,7 @@ class ApiRoutes:
       raise HTTPException(404, f'zone {zid} not found')
 
   @api_router.patch('/zones/{zid}', tags=['zone'])
-  def set_zone(self, zid: int, zone: models.ZoneUpdate) -> models.Status:
+  def set_zone(self, zid: int=params.ZoneID, zone: models.ZoneUpdate=None) -> models.Status:
     """ Update a zone's configuration (zone=**zid**) """
     return self.code_response(self.ctrl.set_zone(zid, zone))
 
@@ -200,7 +210,7 @@ class ApiRoutes:
     return {'groups' : self.ctrl.get_state().groups}
 
   @api_router.get('/groups/{gid}', tags=['group'])
-  def get_group(self, gid: int) -> models.Group:
+  def get_group(self, gid: int=params.GroupID) -> models.Group:
     """ Get Group with id=**gid** """
     _, grp = utils.find(self.ctrl.get_state().groups, gid)
     if grp is not None:
@@ -209,12 +219,12 @@ class ApiRoutes:
       raise HTTPException(404, f'group {gid} not found')
 
   @api_router.patch('/groups/{gid}', tags=['group'])
-  def set_group(self, gid: int, group: models.GroupUpdate) -> models.Status:
+  def set_group(self, gid: int=params.GroupID, group: models.GroupUpdate=None) -> models.Status:
     """ Update a groups's configuration (group=**gid**) """
     return self.code_response(self.ctrl.set_group(gid, group)) # TODO: pass update directly
 
   @api_router.delete('/groups/{gid}', tags=['group'])
-  def delete_group(self, gid: int) -> models.Status:
+  def delete_group(self, gid: int=params.GroupID) -> models.Status:
     """ Delete a group (group=**gid**) """
     return self.code_response(self.ctrl.delete_group(id=gid))
 
@@ -232,7 +242,7 @@ class ApiRoutes:
     return {'streams' : self.ctrl.get_state().streams}
 
   @api_router.get('/streams/{sid}', tags=['stream'])
-  def get_stream(self, sid: int) -> models.Stream:
+  def get_stream(self, sid: int=params.StreamID) -> models.Stream:
     """ Get Stream with id=**sid** """
     _, stream = utils.find(self.ctrl.get_state().streams, sid)
     if stream is not None:
@@ -241,18 +251,34 @@ class ApiRoutes:
       raise HTTPException(404, f'stream {sid} not found')
 
   @api_router.patch('/streams/{sid}', tags=['stream'])
-  def set_stream(self, sid: int, update: models.StreamUpdate) -> models.Status:
+  def set_stream(self, sid: int=params.StreamID, update: models.StreamUpdate=None) -> models.Status:
     """ Update a stream's configuration (stream=**sid**) """
     return self.code_response(self.ctrl.set_stream(sid, update))
 
   @api_router.delete('/streams/{sid}', tags=['stream'])
-  def delete_stream(self, sid: int) -> models.Status:
+  def delete_stream(self, sid: int=params.StreamID) -> models.Status:
     """ Delete a stream """
     return self.code_response(self.ctrl.delete_stream(sid))
 
+
+  @api_router.post('/streams/{sid}/station={station}', tags=['stream'])
+  def change_station(self, sid: int=params.StreamID, station: int=params.StationID) -> models.Status:
+    """ Change station on a pandora stream (stream=**sid**) """
+    # This is a specific version of exec command, it needs to be placed before the genertic version so the path is resolved properly
+    return self.code_response(self.ctrl.exec_stream_command(sid, cmd=f'station={station}'))
+
   @api_router.post('/streams/{sid}/{cmd}', tags=['stream'])
-  def exec_command(self, sid: int, cmd: str) -> models.Status:
+  def exec_command(self, sid: int=params.StreamID, cmd: models.StreamCommand=None) -> models.Status:
     """ Execute a comamnds on a stream (stream=**sid**).
+
+      Command options:
+      * Play Stream: **play**
+      * Pause Stream: **pause**
+      * Skip to next song: **next**
+      * Stop Stream: **stop**
+      * Like/Love Current Song: **like**
+      * Ban Current Song (pandora only): **ban**
+      * Shelve Current Song (pandora only): **shelve**
 
     Currently only available with Pandora streams"""
     return self.code_response(self.ctrl.exec_stream_command(sid, cmd=cmd))
@@ -271,7 +297,7 @@ class ApiRoutes:
     return {'presets' : self.ctrl.get_state().presets}
 
   @api_router.get('/presets/{pid}', tags=['preset'])
-  def get_preset(self, pid: int) -> models.Preset:
+  def get_preset(self, pid: int=params.PresetID) -> models.Preset:
     """ Get Preset with id=**pid** """
     _, preset = utils.find(self.ctrl.get_state().presets, pid)
     if preset is not None:
@@ -280,17 +306,17 @@ class ApiRoutes:
       raise HTTPException(404, f'preset {pid} not found')
 
   @api_router.patch('/presets/{pid}', tags=['preset'])
-  async def set_preset(self, pid: int, update: models.PresetUpdate) -> models.Status:
+  async def set_preset(self, pid: int=params.PresetID, update: models.PresetUpdate=None) -> models.Status:
     """ Update a preset's configuration (preset=**pid**) """
     return self.code_response(self.ctrl.set_preset(pid, update))
 
   @api_router.delete('/presets/{pid}', tags=['preset'])
-  def delete_preset(self, pid: int) -> models.Status:
+  def delete_preset(self, pid: int=params.PresetID) -> models.Status:
     """ Delete a preset """
     return self.code_response(self.ctrl.delete_preset(pid))
 
   @api_router.post('/presets/{pid}/load', tags=['preset'])
-  def load_preset(self, pid: int) -> models.Status:
+  def load_preset(self, pid: int=params.PresetID) -> models.Status:
     """ Load a preset configuration """
     return self.code_response(self.ctrl.load_preset(pid))
 
@@ -399,11 +425,28 @@ def generate_openapi_spec(add_test_docs=True):
             openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
               'content']['application/json']['examples'] = examples
 
-  # TODO: add relevant source ids
-  # TODO: add relevant zone ids
-  # TODO: add relevant group ids
-  # TODO: add relevant stream ids
-  # TODO: add relevant preset ids
+  # Manually add relevant example parameters based on the current configuration
+  # (for paths that require parameters)
+  for route in app.routes:
+    if isinstance(route, APIRoute):
+      for method in route.methods:
+        # check if path has id parameter
+        has_id_param = False
+        for param_name in route.param_convertors.keys():
+          if 'id' in param_name and len(param_name) == 3:
+            has_id_param = True
+        if has_id_param:
+          # generate examples for that id parameter
+          live_examples = {}
+          if len(route.tags) == 1:
+            tag = route.tags[0]
+            for i in  get_ctrl()._get_items(tag):
+              live_examples[i.name] = {'value': i.id, 'summary': i.name}
+          # find the matching parameter and add the examples to it
+          for p in openapi_schema['paths'][route.path][method.lower()]['parameters']:
+            if p['name'] == param_name:
+              p['examples'] = live_examples
+
   return openapi_schema
 
 YAML_DESCRIPTION = """| # The links in the description below are tested to work with redoc and may not be portable

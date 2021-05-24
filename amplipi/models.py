@@ -22,6 +22,7 @@ Encourages reuse of datastructures across AmpliPi
 # type handling, fastapi leverages type checking for performance and easy docs
 from typing import List, Set, Dict, Optional, Union
 from pydantic import BaseModel, BaseSettings, Field
+from enum import Enum
 
 class fields(object):
   """ AmpliPi's field types """
@@ -477,6 +478,16 @@ class StreamUpdate(BaseUpdate):
         }
       },
     }
+
+
+class StreamCommand(str, Enum):
+  play = 'play'
+  pause = 'pause'
+  next = 'next'
+  stop = 'stop'
+  like = 'like'
+  ban = 'ban'
+  shelve = 'shelve'
 
 class PresetState(BaseModel):
   """ A set of partial configuration changes to make to sources, zones, and groups """
