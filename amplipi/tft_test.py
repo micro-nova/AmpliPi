@@ -7,10 +7,9 @@
 # TODO:
 # Clear screen on early exit/failure or while running provide some other
 #   indication that the display is still being updated.
-# Handle connection lost
+# Handle connection lost better
 # Fix when play icons appear to match web
-# Handle 12 and 18 zones
-# Add pin config for real AmpliPi
+# Debounce touches
 
 import argparse
 import board
@@ -19,16 +18,12 @@ import cProfile
 import digitalio
 import pwmio
 import RPi.GPIO as GPIO
-import random
 import requests
 import socket
-import subprocess
 import time
 
 # Display
-from adafruit_rgb_display import color565
 import adafruit_rgb_display.ili9341 as ili9341
-from xpt2046 import Touch
 from PIL import Image, ImageDraw, ImageFont
 
 # To retrieve system info
@@ -55,23 +50,35 @@ t_irq_pin = board.D38 if is_amplipi else board.D6
 # Network interface name to get IP address of
 iface_name = "eth0"
 
-# The ILI9341 specifies a max write rate of 10 MHz,
-#   and a max read rate of 6.66 MHz.
-# It appears the Pi's base SPI clock is 200 MHz
-#   and can be divided by any integer below:
-# Div  ~MHz  fill(0) time
-# 13   15.4  93.9 ms Default is 16 MHz
-# 12   16.7  87.9 ms
-# 11   18.2  81.7 ms
-# 10   20.0  75.6 ms
-#  9   22.2  69.3 ms Adafruit's example sets 24 MHz
-#  8   25.0  63.1 ms
-#  7   28.6  56.9 ms Strong 'pulse' on every update at/above this speed
-#  6   33.3  50.7 ms
-#  5   40.0  44.7 ms
-#  4   50.0  38.6 ms
-#  3   66.7  32.5 ms
-#  2  100.0  26.3 ms Fails on breadboard setup
+# Number of screens to scroll through
+NUM_SCREENS = 1
+_active_screen = 0
+
+################################################################################
+# A note on Raspberry Pi (BCM2837B0) clocks
+################################################################################
+# The SPI frequency is based on the "core clock" of the BCM2837B0
+# See Section 2.3.1 of BCM2837B0-ARM-Peripherals.pdf, CLK Register CDIV field:
+#   SPIx_CLK = system_clock_freq / [2*(speed_field + 1)]
+# Best I can tell 'system_clock_freq' is the same as 'core_freq'
+# speed_field is 12 bits, so SPI freq is [core_freq/2^13, core_freq/2]
+# For a core_freq of 400 MHz: [48.8 kHz, 200 MHz]
+#
+# To lock the core clock to 400 MHz, in /boot/config.txt set:
+#   core_freq=400
+#   core_freq_min=400
+#
+# Also needed to enable SPI1:
+#   dtparam=spi=on
+#   dtoverlay=spi1-2cs
+#
+# ARM (CPU) clock frequency in Hz:  vcgencmd measure_clock arm
+# Core clock frequency in Hz:       vcgencmd measure_clock core
+#
+# Specify the max baud rate here. This will be used to find the 'speed_field'
+# such that 400*10^6 / [2*(speed_field + 1)] <= 'spi_baud'
+# The ILI9341 specifies a max write rate of 10 MHz, and a max read rate of
+# 6.66 MHz but much faster speeds seem to work okay.
 spi_baud = 16 * 10**6
 
 parser = argparse.ArgumentParser(description='Display AmpliPi Information on a TFT Display')
@@ -209,34 +216,88 @@ touch_cs = digitalio.DigitalInOut(t_cs_pin)
 touch_cs.direction = digitalio.Direction.OUTPUT
 touch_cs.value = True
 
-touch_irq = digitalio.DigitalInOut(t_irq_pin)
-touch_irq.direction = digitalio.Direction.INPUT
-
-# touch callback
-def touch_callback(pin_num):
-  GPIO.remove_event_detect(t_irq_pin.id)
-
-  print('Touch event!')
-
-  # try to access SPI, wait if someone else (i.e. screen) is busy
+# Start bit=1, A[2:0], 12-bit=0, differential=0, power down when done=00
+XPT2046_CMD_X = 0b11010000  # X=101
+XPT2046_CMD_Y = 0b10010000  # Y=001
+_cal = (300, 400, 3600, 3850) # Top-left and bottom-right coordinates as raw ADC output
+_max_dist = 0.05 * ((_cal[3] - _cal[1]) ** 2 + (_cal[2] - _cal[0]) ** 2) ** 0.5
+tx_buf = bytearray(5)
+rx_buf = bytearray(5)
+tx_buf[0] = XPT2046_CMD_X
+tx_buf[2] = XPT2046_CMD_Y
+def read_xy():
+  # Try to access SPI, wait if someone else (i.e. screen) is busy
   while not spi.try_lock():
     pass
-  spi.configure(baudrate=5000)
+  spi.configure(baudrate=int(2.5*10**6))
   touch_cs.value = False
-  spi.write(bytes([0b11010000]))
-  rx_buf = bytearray(3)
-  spi.readinto(rx_buf)
+  spi.write_readinto(tx_buf, rx_buf)
   touch_cs.value = True
   spi.configure(baudrate=spi_baud)
   spi.unlock()
 
-  print('RX = ', rx_buf)
+  x = (rx_buf[1] << 5) | (rx_buf[2] >> 3)
+  y = (rx_buf[3] << 5) | (rx_buf[4] >> 3)
+  return (x,y)
 
-  GPIO.add_event_detect(t_irq_pin.id, GPIO.RISING, callback=touch_callback)
+def touch_callback(pin_num):
+  global _active_screen
+
+  # Mask the interrupt since reading the position generates a false interrupt
+  GPIO.remove_event_detect(t_irq_pin.id)
+
+  # Average 16 values
+  x_raw_list = []
+  y_raw_list = []
+  for i in range(16):
+    x, y = read_xy()
+    #x_sum += x
+    #y_sum += y
+    if (x >= _cal[0] and y <= _cal[3]): # Valid touch
+      x_raw_list.append(x)
+      y_raw_list.append(y)
+    #print(f'Read point at x: {x}, y: {y}')
+  valid_count = len(x_raw_list)
+  if valid_count > 0:
+    x_raw_mean = round(sum(x_raw_list) / valid_count)
+    y_raw_mean = round(sum(y_raw_list) / valid_count)
+    x_raw_keep = []
+    y_raw_keep = []
+    for i in range(valid_count):
+      dist = ((x_raw_list[i] - x_raw_mean) ** 2 + (y_raw_list[i] - y_raw_mean) ** 2) ** 0.5
+      if dist < _max_dist:
+        x_raw_keep.append(x_raw_list[i])
+        y_raw_keep.append(y_raw_list[i])
+    inlier_count = len(x_raw_keep)
+    if inlier_count >= 4: # At least a quarter of the points were valid and inliers
+      x_raw = sorted(x_raw_keep)[inlier_count//2]
+      y_raw = sorted(y_raw_keep)[inlier_count//2]
+
+      # Use calibration to scale to the range [0,1]
+      x_cal = min(max((float(x_raw) - _cal[0]) / (_cal[2] - _cal[0]), 0), 1)
+      y_cal = min(max((float(y_raw) - _cal[1]) / (_cal[3] - _cal[1]), 0), 1)
+
+      # Swap x and y and reverse to account for screen rotation
+      y = round(height*(1 - x_cal))
+      x = round(width*(1 - y_cal))
+      #print(f'Touch at {x},{y} [Raw: {x_raw},{y_raw}]')
+      if x > (3*width/4):
+        _active_screen = (_active_screen + 1) % NUM_SCREENS
+      if x < (width/4):
+        _active_screen = (_active_screen - 1) % NUM_SCREENS
+  #  else:
+  #    print(f'Not enough inliers: {inlier_count} of 16')
+  #else:
+  #  print(f'No valid points')
+
+  try:
+    GPIO.add_event_detect(t_irq_pin.id, GPIO.FALLING, callback=touch_callback)
+  except RuntimeError as e:
+    print(e)
 
 # Get touch events
 GPIO.setup(t_irq_pin.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.add_event_detect(t_irq_pin.id, GPIO.RISING, callback=touch_callback)
+GPIO.add_event_detect(t_irq_pin.id, GPIO.FALLING, callback=touch_callback)
 
 # Load image and convert to RGB
 logo = Image.open('micronova-320x240.png').convert('RGB')
@@ -271,74 +332,81 @@ cpu_load = []
 while frame_num < 10:
   start = time.time()
 
-  # Get AmpliPi status
-  sources, zones = get_amplipi_data()
+  if _active_screen == 0:
+    # Get AmpliPi status
+    sources, zones = get_amplipi_data()
 
-  # Get stats
-  try:
-    ip_str = ni.ifaddresses(iface_name)[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
-  except:
-    ip_str = 'Disconnected'
+    # Get stats
+    try:
+      ip_str = ni.ifaddresses(iface_name)[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
+    except:
+      ip_str = 'Disconnected'
 
-  cpu_pcnt = psutil.cpu_percent()
-  cpu_temp = psutil.sensors_temperatures()['cpu_thermal'][0].current
-  cpu_str1 = f'{cpu_pcnt:4.1f}%'
-  cpu_str2 = f'{cpu_temp:4.1f}\xb0C'
-  cpu_load.append(cpu_pcnt)
+    cpu_pcnt = psutil.cpu_percent()
+    cpu_temp = psutil.sensors_temperatures()['cpu_thermal'][0].current
+    cpu_str1 = f'{cpu_pcnt:4.1f}%'
+    cpu_str2 = f'{cpu_temp:4.1f}\xb0C'
+    cpu_load.append(cpu_pcnt)
 
-  ram_total = int(psutil.virtual_memory().total / (1024*1024))
-  ram_used  = int(psutil.virtual_memory().used / (1024*1024))
-  ram_pcnt = 100 * ram_used / ram_total
-  ram_str1 = f'{ram_pcnt:4.1f}%'
-  ram_str2 = f'{ram_used}/{ram_total} MB'
+    ram_total = int(psutil.virtual_memory().total / (1024*1024))
+    ram_used  = int(psutil.virtual_memory().used / (1024*1024))
+    ram_pcnt = 100 * ram_used / ram_total
+    ram_str1 = f'{ram_pcnt:4.1f}%'
+    ram_str2 = f'{ram_used}/{ram_total} MB'
 
-  disk_usage  = psutil.disk_usage('/')
-  disk_pcnt = disk_usage.percent
-  disk_used = disk_usage.used / (1024**3)
-  disk_total = disk_usage.total / (1024**3)
-  disk_str1 = f'{disk_pcnt:4.1f}%'
-  disk_str2 = f'{disk_used:.2f}/{disk_total:.2f} GB'
+    disk_usage  = psutil.disk_usage('/')
+    disk_pcnt = disk_usage.percent
+    disk_used = disk_usage.used / (1024**3)
+    disk_total = disk_usage.total / (1024**3)
+    disk_str1 = f'{disk_pcnt:4.1f}%'
+    disk_str2 = f'{disk_used:.2f}/{disk_total:.2f} GB'
 
-  # Render text
-  cw = 8    # Character width
-  ch = 16   # Character height
-  draw.rectangle((0, 0, width, height), fill=0) # Clear image
-  draw.text((0*cw, 0*ch), 'IP:',      font=font, fill='#FFFFFF')
-  draw.text((0*cw, 1*ch), 'CPU:',     font=font, fill='#FFFFFF')
-  draw.text((0*cw, 2*ch), 'Mem:',     font=font, fill='#FFFFFF')
-  draw.text((0*cw, 3*ch), 'Disk:',    font=font, fill='#FFFFFF')
-  draw.text((0*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
-  draw.text((0*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
-  draw.text((0*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
-  draw.text((0*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
+    # Render text
+    cw = 8    # Character width
+    ch = 16   # Character height
+    draw.rectangle((0, 0, width-1, height-1), fill=0) # Clear image
+    draw.text((0*cw, 0*ch), 'IP:',      font=font, fill='#FFFFFF')
+    draw.text((0*cw, 1*ch), 'CPU:',     font=font, fill='#FFFFFF')
+    draw.text((0*cw, 2*ch), 'Mem:',     font=font, fill='#FFFFFF')
+    draw.text((0*cw, 3*ch), 'Disk:',    font=font, fill='#FFFFFF')
+    draw.text((0*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
+    draw.text((0*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
+    draw.text((0*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
+    draw.text((0*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
 
-  draw.text((6*cw, 0*ch), ip_str,     font=font, fill='#FFFFFF')
-  draw.text((6*cw, 1*ch), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
-  draw.text((6*cw, 2*ch), ram_str1,   font=font, fill=gradient(ram_pcnt))
-  draw.text((6*cw, 3*ch), disk_str1,  font=font, fill=gradient(disk_pcnt))
+    draw.text((6*cw, 0*ch), ip_str,     font=font, fill='#FFFFFF')
+    draw.text((6*cw, 1*ch), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
+    draw.text((6*cw, 2*ch), ram_str1,   font=font, fill=gradient(ram_pcnt))
+    draw.text((6*cw, 3*ch), disk_str1,  font=font, fill=gradient(disk_pcnt))
 
-  # BCM2837 is rated for [-40, 85] C
-  # For now show green for anything below room temp
-  draw.text((13*cw, 1*ch), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
-  draw.text((13*cw, 2*ch), ram_str2,  font=font, fill='#FFFFFF')
-  draw.text((13*cw, 3*ch), disk_str2, font=font, fill='#FFFFFF')
+    # BCM2837B0 is rated for [-40, 85] C
+    # For now show green for anything below room temp
+    draw.text((13*cw, 1*ch), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
+    draw.text((13*cw, 2*ch), ram_str2,  font=font, fill='#FFFFFF')
+    draw.text((13*cw, 3*ch), disk_str2, font=font, fill='#FFFFFF')
 
-  # Show source input names
-  xs = 10*cw
-  xp = xs - round(0.5*cw) # Shift playing arrow back a bit
-  ys = 4*ch + round(0.5*ch)
-  draw.line(((0, ys-3), (width-1, ys-3)), width=2, fill='#999999')
-  for i in range(4):
-    if sources[i]['playing']:
-      draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
-    draw.text((xs + 1*cw, ys + i*ch), sources[i]['name'], font=font, fill='#F0E68C')
-  draw.line(((0, ys+4*ch+2), (width-1, ys+4*ch+2)), width=2, fill='#999999')
+    # Show source input names
+    xs = 10*cw
+    xp = xs - round(0.5*cw) # Shift playing arrow back a bit
+    ys = 4*ch + round(0.5*ch)
+    draw.line(((0, ys-3), (width-1, ys-3)), width=2, fill='#999999')
+    for i in range(4):
+      if sources[i]['playing']:
+        draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
+      draw.text((xs + 1*cw, ys + i*ch), sources[i]['name'], font=font, fill='#F0E68C')
+    draw.line(((0, ys+4*ch+2), (width-1, ys+4*ch+2)), width=2, fill='#999999')
 
-  # Show volumes
-  draw_volume_bars(draw, font, small_font, zones, y=9*ch, height=height-9*ch)
+    # Show volumes
+    draw_volume_bars(draw, font, small_font, zones, y=9*ch, height=height-9*ch)
 
-  # Send the updated image to the display
-  display.image(image)
+    # Send the updated image to the display
+    display.image(image)
+  elif _active_screen == 1:
+    display.image(logo)
+  elif _active_screen == 2:
+    draw.rectangle((0, 0, width-1, height-1), fill='#FF0000')
+    display.image(image)
+
   end = time.time()
   frame_times.append(end - start)
   #print(f'frame time: {sum(frame_times)/len(frame_times):.3f}s, {sum(cpu_load)/len(cpu_load):.1f}%')
