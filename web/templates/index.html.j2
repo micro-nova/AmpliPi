@@ -107,11 +107,8 @@
           <h6 class="card-header">Connect Plex Account</h6>
           <div class="card-body">
             <div class="text-left">
-              <c class="btn btn-success" onclick="plex_pin_req()">Go To Plex</c>
-              <b class="btn btn-success" onclick="plex_token_ret()">Request Token</b>
-              <a class="btn btn-success" onclick="plex_stream()">Create Stream</a>
-              <d class="btn btn-success" onclick="plexamp_wrapper()">The Whole Thing</d>
-              <e class="btn btn-success" onclick="window.location.reload();">REEESET</e>
+              <button class="btn btn-success" onclick="plexamp_wrapper()" id="plexamp">Request Authentication</button>
+              <button class="btn btn-danger" onclick="window.location.reload();"style="visibility: hidden" id="resetti">Reset</button>
             </div>
           </div>
         </div>

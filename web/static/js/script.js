@@ -507,6 +507,7 @@ function initVolControl(ctrl) {
 }
 
 async function plex_pin_req() {
+  document.getElementById('plexamp').textContent = "Sending request...";
   let myuuid = uuidv4(); // UUID used as the 'clientIdentifier' for Plexamp requests/devices
   let details = { }
   let response = await fetch('https://plex.tv/api/v2/pins', {
@@ -531,6 +532,7 @@ async function plex_pin_req() {
 }
 
 async function plex_token_ret(details) {
+  document.getElementById('plexamp').textContent = "Awaiting Plex sign-in...";
   let response = await fetch('https://plex.tv/api/v2/pins/'+details.id, {
     method: 'GET',
     headers: {
@@ -565,15 +567,21 @@ function sleepjs(ms) {
 }
 
 async function plexamp_wrapper() {
+  document.getElementById('plexamp').disabled = true;
   let details = await plex_pin_req(); // Request a pin
   await sleepjs(2000); // Wait for info to propagate over
+  document.getElementById('resetti').style.visibility = "visible";
   do {
     let details2 = await plex_token_ret(details); // Retrieve our token
     await sleepjs(2000); // Delay so the loop doesn't go insane
     if (details2.expiresIn == null){
+      document.getElementById('plexamp').textContent = "Timeout";
       break; // Break when you run out of time (30 minutes, set by Plex)
     }
     details = details2; // Update authToken state and time until expiration
   } while (details.authToken == null); // "== null" should also check for undefined
-  plex_stream(details); // Create a Plexamp stream using the API!
+  if (details.authToken){
+    document.getElementById('plexamp').textContent = "Connection Successful!";
+    plex_stream(details); // Create a Plexamp stream using the API!
+  }
 }
