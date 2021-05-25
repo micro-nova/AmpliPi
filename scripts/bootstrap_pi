@@ -9,6 +9,7 @@ Bootstrap a Raspberry Pi Compute Module for first-time AmpliPi setup.
   hostname:   The hostname to set on the pi, so once this script successfully completes
               connect via {hostname}.local. Default is amplipi
   --debug:    Will print all commands to be run and disable cleanup on exit
+  --desktop:  Use the desktop version of Raspberry Pi OS instead of the lite version
   -h, --help: Print this help text.
 "
 
@@ -16,9 +17,11 @@ hostname='amplipi'
 diskpath_set=false
 host_set=false
 debug=false
+desktop=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --debug) debug=true ;;
+    --desktop) desktop=true ;;
     -h|--help) printf "$helptext"; exit 0 ;;
     *) if ! $diskpath_set; then
         diskpath=$1
@@ -130,17 +133,21 @@ if ! [[ -e $diskpath ]]; then
   cleanup
 fi
 
-release=2020-08-20-raspios-buster-armhf-lite
-echo "Downloading and extracting Raspberry Pi OS"
-if [[ -f $HOME/Downloads/$release.zip ]] ; then
-  zip_file=$HOME/Downloads/$release.zip
+if $desktop; then
+  release=2020-08-20-raspios-buster-armhf
+  url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2020-08-24/$release.zip
 else
-  wget http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
-  cp $release.zip ~/Downloads # save for later
-  zip_file=$release.zip
+  release=2020-08-20-raspios-buster-armhf-lite
+  url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+fi
+zip_file=$HOME/Downloads/$release.zip
+if [[ ! -f $zip_file ]]; then
+  echo "Downloading Raspberry Pi OS"
+  wget $url -O $zip_file # save for later
 fi
 mkdir $release
 pushd $release
+echo "Extracting Raspberry Pi OS"
 unzip $zip_file
 
 if [[ -e $diskpath ]]; then
