@@ -424,6 +424,12 @@ def generate_openapi_spec(add_test_docs=True):
           for method in route.methods:
             openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
               'content']['application/json']['examples'] = examples
+      if route.path in ['/api/zones', '/api/groups', '/api/sources', '/api/streams', '/api/presets']:
+        if 'get' in  openapi_schema['paths'][route.path]:
+          piece = route.path.replace('/api/', '')
+          example_status = list(models.Status.Config.schema_extra['examples'].values())[0]['value']
+          openapi_schema['paths'][route.path]['get']['responses']['200'][
+              'content']['application/json']['example'] = { piece: example_status[piece] }
 
   if not add_test_docs:
     return
@@ -512,12 +518,15 @@ def create_yaml_doc(add_test_docs=True) -> str:
   # fix the long description
   return yaml_s.replace('$REPLACE_ME$', YAML_DESCRIPTION)
 
-
 # additional yaml version of openapi.json
 # this is much more human readable
 @app.get('/openapi.yaml', include_in_schema=False)
 def read_openapi_yaml() -> Response:
   return Response(create_yaml_doc(), media_type='text/yaml')
+
+@app.get('/openapi.json', include_in_schema=False)
+def read_openapi_json():
+  return app.openapi()
 
 app.openapi = generate_openapi_spec
 
