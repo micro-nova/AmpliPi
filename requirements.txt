@@ -12,3 +12,4 @@ pydantic
 python-multipart
 pyyaml
 wrapt
+jinja2
