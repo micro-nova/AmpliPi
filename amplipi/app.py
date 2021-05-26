@@ -47,7 +47,7 @@ import amplipi.rt as rt
 import amplipi.utils as utils
 import amplipi.models as models
 
-# start in the web directory (where everything is layed out for flask)
+# start in the web directory
 import os
 template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')

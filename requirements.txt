@@ -1,5 +1,4 @@
 deepdiff
-Flask
 smbus2
 pyserial
 python-vlc
@@ -12,5 +11,4 @@ aiofiles
 pydantic
 python-multipart
 pyyaml
-flask_debugtoolbar
 wrapt

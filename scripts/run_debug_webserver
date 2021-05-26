@@ -44,7 +44,6 @@ source venv/bin/activate
 # pass environment variables
 MOCK_CTRL=$mock_ctrl
 MOCK_STREAMS=$mock_streams
-# old flask server
-# FLASK_ENV=development FLASK_DEBUG=1 FLASK_APP="amplipi.app:create_app(${mock_ctrl},${mock_streams})" flask run --host 0.0.0.0 --no-reload
+# run the uvicorn application server
 ./venv/bin/python -m uvicorn --host 0.0.0.0 --port 5000 amplipi.asgi:application
 deactivate
