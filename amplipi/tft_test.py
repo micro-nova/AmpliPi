@@ -5,10 +5,14 @@
 # apt: libatlas-base-dev
 #
 # TODO:
-# Clear screen on exit/failure or provide some other indication that the
-#   display is still being updated.
-# Why is touch always reading 0x000000
+# Clear screen on early exit/failure or while running provide some other
+#   indication that the display is still being updated.
+# Handle connection lost
+# Fix when play icons appear to match web
+# Handle 12 and 18 zones
+# Add pin config for real AmpliPi
 
+import argparse
 import board
 import busio
 import cProfile
@@ -16,6 +20,7 @@ import digitalio
 import pwmio
 import RPi.GPIO as GPIO
 import random
+import requests
 import socket
 import subprocess
 import time
@@ -32,7 +37,7 @@ import psutil             # CPU, RAM, etc.
 
 
 profile = False
-update_period = 0.5       # Display update rate in seconds
+update_period = 2.0       # Display update rate in seconds
 
 # Configuration for extra TFT pins:
 cs_pin = digitalio.DigitalInOut(board.CE0) #board.D43
@@ -56,22 +61,17 @@ iface_name = "eth0"
 # 10   20.0  75.6 ms
 #  9   22.2  69.3 ms Adafruit's example sets 24 MHz
 #  8   25.0  63.1 ms
-#  7   28.6  56.9 ms
+#  7   28.6  56.9 ms Strong 'pulse' on every update at/above this speed
 #  6   33.3  50.7 ms
 #  5   40.0  44.7 ms
 #  4   50.0  38.6 ms
 #  3   66.7  32.5 ms
 #  2  100.0  26.3 ms Fails on breadboard setup
-spi_baud = 50 * 10**6
+spi_baud = 25 * 10**6
 
-# Dummy info until AmpliPi integration
-sources = ('Michael\'s AmpliPi Spotify', 'Matt and Kim Radio', 'test', '123456789 123456789 123456789 1234567890')
-random.seed(0)
-volumes = [random.randint(-79,0) for i in range(36)]
-volumes[0] = 0
-volumes[-1] = -79
-volumes[4] = -40
-volumes[5] = -40
+parser = argparse.ArgumentParser(description='Display AmpliPi Information on a TFT Display')
+parser.add_argument('url', nargs='?', default="localhost:5000", help="The AmpliPi's URL to contact") #amplipi.local
+args = parser.parse_args()
 
 # Convert number range to color gradient (min=green, max=red)
 def gradient(num, min_val=0, max_val=100):
@@ -92,6 +92,99 @@ def gradient(num, min_val=0, max_val=100):
     red = 255
     grn = 255 - round(scale * (num - mid))
   return f'#{red:02X}{grn:02X}00'
+
+def get_amplipi_data():
+  sources = [{'name': '', 'playing': False} for i in range(4)]
+  zones = []
+  try:
+    # TODO: If the AmpliPi server isn't available at this url, there is a
+    # 5-second delay introduced by socket.getaddrinfo
+    r = requests.get('http://' + args.url + '/api/', timeout=0.1)
+    if r.status_code == 200:
+      j = r.json()
+      stream_ids = [s['id'] for s in j['streams']]
+      for i in range(len(j['sources'])):
+        inp = j['sources'][i]['input']
+        playing = False
+        if inp.startswith('stream='):
+          sid = int(inp.replace('stream=', ''))
+          if sid in stream_ids:
+            strm = j['streams'][stream_ids.index(sid)]
+            name = strm['name']
+            playing = strm['status'] == 'playing'
+          else:
+            name = "INVALID STREAM"
+        else:
+          name = inp
+        sources[i]['name'] = name
+        sources[i]['playing'] = playing
+      # For the crazies out there
+      #sources = [j['streams'][stream_ids.index(int(s['input'].replace('stream=', '')))]['name']
+      #           if s['input'].startswith('stream=') else s['input'] for s in j['sources']]
+      zones = j['zones']
+    else:
+      print('Error: bad status code returned from amplipi')
+  except requests.ConnectionError as e:
+    print("Error: couldn't connect to", args.url, e.args[0].reason)
+  except requests.Timeout:
+    print('Error: timeout requesting amplipi status')
+  except ValueError:
+    print('Error: invalid json in amplipi status response')
+
+  return sources, zones
+
+# Draw volumes on bars.
+# Draw is a PIL drawing surface
+# zones is a list of (names, volumes) of size [6, 12, 18, 24, 30, 36]
+# (x,y) is the top-left of the volume bar area
+def draw_volume_bars(draw, font, small_font, zones, x=0, y=0, width=320, height=240):
+  n = len(zones)
+  if n == 0: # No zone info from AmpliPi server
+    pass
+  elif n <= 6: # Draw horizonal bars
+    wb = int(width / 2)                   # Each bar's full width
+    hb = 12                               # Each bar's height
+    sp = int((height - n*hb) / (2*(n-1))) # Spacing between bars
+    xb = width - wb
+    vol2pix = wb / -78
+    for i in range(n):
+      yb = y + i*hb + 2*i*sp # Bar starting y-position
+
+      # Draw zone name as text
+      draw.text((x, yb), zones[i]['name'], font=font, fill='#FFFFFF')
+
+      # Draw background of volume bar
+      draw.rectangle(((xb, int(yb+2), xb+wb, int(yb+hb))), fill='#999999')
+
+      # Draw volume bar
+      if zones[i]['vol'] > -79:
+        color = '#666666' if zones[i]['mute'] else '#0080ff'
+        xv = xb + (wb - round(zones[i]['vol'] * vol2pix))
+        draw.rectangle(((xb, int(yb+2), xv, int(yb+hb))), fill=color)
+  elif n <= 18: # Draw vertical bars
+    # Get the pixel height of a character, and add vertical margins
+    ch = small_font.getbbox('0', anchor='lt')[3] + 4
+    wb = 12                               # Each bar's width
+    sp = int((width - n*wb) / (2*(n-1)))  # Spacing between bars
+    yt = y + height - ch                  # Text top y-position
+    vol2pix = (height - ch) / -78         # dB to pixels conversion factor
+    for i in range(n):
+      xb = x + i*wb + 2*i*sp # Bar starting x-position
+
+      # Draw zone number as centered text
+      draw.text((xb + round(wb/2), y + height - round(ch/2)), str(i+1),
+                anchor="mm", font=small_font, fill='#FFFFFF')
+
+      # Draw background of volume bar
+      draw.rectangle(((xb, y, xb+wb, yt)), fill='#999999')
+
+      # Draw volume bar
+      if zones[i]['vol'] > -79:
+        color = '#666666' if zones[i]['mute'] else '#0080ff'
+        yv = y + round(zones[i]['vol'] * vol2pix)
+        draw.rectangle(((xb, yv, xb+wb, yt)), fill=color)
+  else:
+    print("Error: can't display more than 18 volumes")
 
 
 # Setup SPI bus using hardware SPI:
@@ -145,12 +238,13 @@ logo = Image.open('micronova-320x240.png').convert('RGB')
 display.image(logo)
 
 # Turn on display backlight now that an image is loaded
-led.duty_cycle = 32000
+led.duty_cycle = 16000
 
 # Get fonts
 fontname = 'DejaVuSansMono'
 try:
   font = ImageFont.truetype(fontname, 14)
+  small_font = ImageFont.truetype(fontname, 10)
 except:
   print('Failed to load font')
 
@@ -161,7 +255,6 @@ height = display.width
 width = display.height
 image = Image.new('RGB', (width, height)) # Fill entire screen with drawing space
 draw = ImageDraw.Draw(image)
-draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0)) # Black background
 
 if profile:
   pr = cProfile.Profile()
@@ -172,6 +265,9 @@ frame_times = []
 cpu_load = []
 while frame_num < 10:
   start = time.time()
+
+  # Get AmpliPi status
+  sources, zones = get_amplipi_data()
 
   # Get stats
   try:
@@ -206,6 +302,10 @@ while frame_num < 10:
   draw.text((0*cw, 1*ch), 'CPU:',     font=font, fill='#FFFFFF')
   draw.text((0*cw, 2*ch), 'Mem:',     font=font, fill='#FFFFFF')
   draw.text((0*cw, 3*ch), 'Disk:',    font=font, fill='#FFFFFF')
+  draw.text((0*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
+  draw.text((0*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
+  draw.text((0*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
+  draw.text((0*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
 
   draw.text((6*cw, 0*ch), ip_str,     font=font, fill='#FFFFFF')
   draw.text((6*cw, 1*ch), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
@@ -219,26 +319,18 @@ while frame_num < 10:
   draw.text((13*cw, 3*ch), disk_str2, font=font, fill='#FFFFFF')
 
   # Show source input names
-  draw.text((0*cw, 4*ch), 'Source inputs:', font=font, fill='#FFFFFF')
-  draw.line(((0, 5*ch), (width-1, 5*ch)), fill='#FFFFFF')
-  draw.text((0*cw, 5*ch), sources[0], font=font, fill='#F0E68C')
-  draw.text((0*cw, 6*ch), sources[1], font=font, fill='#F0E68C')
-  draw.text((0*cw, 7*ch), sources[2], font=font, fill='#F0E68C')
-  draw.text((0*cw, 8*ch), sources[3], font=font, fill='#F0E68C')
+  xs = 10*cw
+  xp = xs - round(0.5*cw) # Shift playing arrow back a bit
+  ys = 4*ch + round(0.5*ch)
+  draw.line(((0, ys-3), (width-1, ys-3)), width=2, fill='#999999')
+  for i in range(4):
+    if sources[i]['playing']:
+      draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
+    draw.text((xs + 1*cw, ys + i*ch), sources[i]['name'], font=font, fill='#F0E68C')
+  draw.line(((0, ys+4*ch+2), (width-1, ys+4*ch+2)), width=2, fill='#999999')
 
-  # Volume bars: center line
-  # Spacing: 7 pixels per bar, 36 bars max = 252 pixels.
-  #          1 pixel between each bar (within groups of 6) = 30 pixels
-  #          6 pixels between each group of 6 = 30 pixels.
-  #          4 extra pixels on both sides = 8 pixels.
-  #
-  # First bar = 4+3-1 = 6
-  bar_h = 80  # Height of the volume bars
-  #bar_y = height - bar_h
-  for i in range(36):
-    x = 6 + 8*i + 5*int(i/6)
-    draw.line(((x, height-1), (x, height-bar_h)), fill='#999999')
-    draw.line(((x-3, height-bar_h-volumes[i]), (x+3, height-bar_h-volumes[i])), fill='#0096ff')
+  # Show volumes
+  draw_volume_bars(draw, font, small_font, zones, y=9*ch, height=height-9*ch)
 
   # Send the updated image to the display
   display.image(image)
