@@ -214,8 +214,8 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory={dir}/amplipi
-ExecStart={dir}/venv/bin/python {dir}/amplipi/tft_test.py
+WorkingDirectory={dir}/amplipi/display
+ExecStart={dir}/venv/bin/python {dir}/amplipi/display/display.py
 Restart=on-abort
 
 [Install]
@@ -423,6 +423,10 @@ def _update_display(env: dict, progress) -> List[Task]:
   tasks += p2(_create_service('amplipi-display', _display_service(env['base_dir'])))
   tasks += p2(_restart_service('amplipi-display'))
   tasks += p2(_enable_service('amplipi-display'))
+  if env['is_amplipi']:
+    # start the user manager at boot, instead of after first login
+    # this is needed so the user systemd services start at boot
+    tasks += p2(_enable_linger(env['user']))
   return tasks
 
 def print_task_results(tasks : List[Task]) -> None:
