@@ -136,7 +136,7 @@ class Source(Base):
       }
     }
 
-class SourceUpdate2(SourceUpdate):
+class SourceUpdateWithId(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
   id : int = Field(ge=0,le=4)
 
@@ -215,7 +215,7 @@ class ZoneUpdate(BaseUpdate):
       },
     }
 
-class ZoneUpdate2(ZoneUpdate):
+class ZoneUpdateWithId(ZoneUpdate):
   """ Reconfiguration of a specific Zone """
   id: int = fields.ZoneId
 
@@ -308,7 +308,7 @@ class GroupUpdate(BaseUpdate):
       },
     }
 
-class GroupUpdate2(GroupUpdate):
+class GroupUpdateWithId(GroupUpdate):
   """ Reconfiguration of a specific Group """
   id: int
 
@@ -498,15 +498,15 @@ class StreamCommand(str, Enum):
   pause = 'pause'
   next = 'next'
   stop = 'stop'
-  like = 'like'
+  love = 'love'
   ban = 'ban'
   shelve = 'shelve'
 
 class PresetState(BaseModel):
   """ A set of partial configuration changes to make to sources, zones, and groups """
-  sources: Optional[List[SourceUpdate2]]
-  zones: Optional[List[ZoneUpdate2]]
-  groups: Optional[List[GroupUpdate2]]
+  sources: Optional[List[SourceUpdateWithId]]
+  zones: Optional[List[ZoneUpdateWithId]]
+  groups: Optional[List[GroupUpdateWithId]]
 
 class Command(BaseModel):
   """ A command to execute on a stream """
