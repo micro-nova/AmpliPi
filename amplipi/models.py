@@ -644,77 +644,81 @@ class Status(BaseModel):
                 }
               }
             ],
-          'sources': [
-            {'id': 0, 'input': 'stream=90890', 'name': 'J1'},
-            {'id': 1, 'input': 'stream=44590', 'name': 'J2'},
-            {'id': 2, 'input': 'local', 'name': 'Marc'},
-            {'id': 3, 'input': 'local', 'name': 'Source 4'}],
-          'streams': [
-            {
-              'id': 90890,
-              'info': {'album': 'Far (Deluxe Version)',
-                        'artist': 'Regina Spektor',
-                        'img_url': 'http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg',
-                        'station': 'Regina Spektor Radio',
-                        'track': 'Eet'},
-              'name': 'Regina Spektor Radio',
-              'password': '',
-              'station': '4473713754798410236',
-              'status': 'playing',
-              'type': 'pandora',
-              'user': 'example1@micro-nova.com'
-            },
-            {
-              'id': 90891,
-              'info': {'details': 'No info available'},
-              'name': 'Matt and Kim Radio',
-              'password': '',
-              'station': '4610303469018478727',
-              'status': 'disconnected',
-              'type': 'pandora',
-              'user': 'example2@micro-nova.com'
-            },
-            {
-              'id': 90892,
-              'info': {'details': 'No info available'},
-              'name': 'Pink Radio',
-              'password': '',
-              'station': '4326539910057675260',
-              'status': 'disconnected',
-              'type': 'pandora',
-              'user': 'example3@micro-nova.com'
-            },
-            {
-              'id': 44590,
-              'info': {'details': 'No info available'},
-              'name': "Jason's "
-                      'iPhone',
-              'status': 'connected',
-              'type': 'shairport'
-            },
-            {
-              'id': 4894,
-              'info': {'details': 'No info available'},
-              'name': 'Rnay',
-              'status': 'disconnected',
-              'type': 'shairport'
-            }
-          ],
-          'info': { 'version': '0.0.1'},
-          'zones': [
-            {'disabled': False, 'id': 0,  'mute': False, 'name': 'Local', 'source_id': 1, 'vol': -35},
-            {'disabled': False, 'id': 1,  'mute': False, 'name': 'Office', 'source_id': 0, 'vol': -41},
-            {'disabled': False, 'id': 2,  'mute': True,  'name': 'Laundry Room', 'source_id': 0, 'vol': -48},
-            {'disabled': False, 'id': 3,  'mute': True,  'name': 'Dining Room', 'source_id': 0, 'vol': -44},
-            {'disabled': True,  'id': 4,  'mute': True,  'name': 'BROKEN', 'source_id': 0, 'vol': -50},
-            {'disabled': False, 'id': 5,  'mute': True,  'name': 'Guest Bedroom', 'source_id': 0, 'vol': -48},
-            {'disabled': False, 'id': 6,  'mute': True,  'name': 'Main Bedroom', 'source_id': 0, 'vol': -40},
-            {'disabled': False, 'id': 7,  'mute': True,  'name': 'Main Bathroom', 'source_id': 0, 'vol': -44},
-            {'disabled': False, 'id': 8,  'mute': True,  'name': 'Master Bathroom', 'source_id': 0, 'vol': -41},
-            {'disabled': False, 'id': 9,  'mute': True,  'name': 'Kitchen High', 'source_id': 0, 'vol': -53},
-            {'disabled': False, 'id': 10, 'mute': True,  'name': 'kitchen Low', 'source_id': 0, 'vol': -52},
-            {'disabled': False, 'id': 11, 'mute': True,  'name': 'Living Room', 'source_id': 0, 'vol': -46}]}}},
+            'sources': [
+              {'id': 0, 'input': 'stream=90890', 'name': 'J1'},
+              {'id': 1, 'input': 'stream=44590', 'name': 'J2'},
+              {'id': 2, 'input': 'local', 'name': 'Marc'},
+              {'id': 3, 'input': 'local', 'name': 'Source 4'}],
+            'streams': [
+              {
+                'id': 90890,
+                'info': {'album': 'Far (Deluxe Version)',
+                          'artist': 'Regina Spektor',
+                          'img_url': 'http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg',
+                          'station': 'Regina Spektor Radio',
+                          'track': 'Eet'},
+                'name': 'Regina Spektor Radio',
+                'password': '',
+                'station': '4473713754798410236',
+                'status': 'playing',
+                'type': 'pandora',
+                'user': 'example1@micro-nova.com'
+              },
+              {
+                'id': 90891,
+                'info': {'details': 'No info available'},
+                'name': 'Matt and Kim Radio',
+                'password': '',
+                'station': '4610303469018478727',
+                'status': 'disconnected',
+                'type': 'pandora',
+                'user': 'example2@micro-nova.com'
+              },
+              {
+                'id': 90892,
+                'info': {'details': 'No info available'},
+                'name': 'Pink Radio',
+                'password': '',
+                'station': '4326539910057675260',
+                'status': 'disconnected',
+                'type': 'pandora',
+                'user': 'example3@micro-nova.com'
+              },
+              {
+                'id': 44590,
+                'info': {'details': 'No info available'},
+                'name': "Jason's "
+                        'iPhone',
+                'status': 'connected',
+                'type': 'shairport'
+              },
+              {
+                'id': 4894,
+                'info': {'details': 'No info available'},
+                'name': 'Rnay',
+                'status': 'disconnected',
+                'type': 'shairport'
+              }
+            ],
+            'info': { 'version': '0.0.1'},
+            'zones': [
+              {'disabled': False, 'id': 0,  'mute': False, 'name': 'Local', 'source_id': 1, 'vol': -35},
+              {'disabled': False, 'id': 1,  'mute': False, 'name': 'Office', 'source_id': 0, 'vol': -41},
+              {'disabled': False, 'id': 2,  'mute': True,  'name': 'Laundry Room', 'source_id': 0, 'vol': -48},
+              {'disabled': False, 'id': 3,  'mute': True,  'name': 'Dining Room', 'source_id': 0, 'vol': -44},
+              {'disabled': True,  'id': 4,  'mute': True,  'name': 'BROKEN', 'source_id': 0, 'vol': -50},
+              {'disabled': False, 'id': 5,  'mute': True,  'name': 'Guest Bedroom', 'source_id': 0, 'vol': -48},
+              {'disabled': False, 'id': 6,  'mute': True,  'name': 'Main Bedroom', 'source_id': 0, 'vol': -40},
+              {'disabled': False, 'id': 7,  'mute': True,  'name': 'Main Bathroom', 'source_id': 0, 'vol': -44},
+              {'disabled': False, 'id': 8,  'mute': True,  'name': 'Master Bathroom', 'source_id': 0, 'vol': -41},
+              {'disabled': False, 'id': 9,  'mute': True,  'name': 'Kitchen High', 'source_id': 0, 'vol': -53},
+              {'disabled': False, 'id': 10, 'mute': True,  'name': 'kitchen Low', 'source_id': 0, 'vol': -52},
+              {'disabled': False, 'id': 11, 'mute': True,  'name': 'Living Room', 'source_id': 0, 'vol': -46}
+            ]
           }
+        }
+      },
+    }
 
 class AppSettings(BaseSettings):
   """ Controller settings """
