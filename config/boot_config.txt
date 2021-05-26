@@ -68,3 +68,12 @@ gpio=5=op,dl
 
 # enable i2s DAC
 dtoverlay=hifiberry-dac
+
+# Enable SPI1 and SPI2 with two chip selects each
+dtoverlay=spi1-2cs
+dtoverlay=spi2-2cs
+
+# Default core_freq for Pi3 is 400 MHz
+# Lock it so it doesn't scale down and lower SPI speed
+core_freq=400
+core_freq_min=400

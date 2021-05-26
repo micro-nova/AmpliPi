@@ -19,7 +19,9 @@ import requests
 
 _os_deps: Dict[str, Dict[str, Any]] = {
   'base' : {
-    'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind'],
+    'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
+             'python3-pil', 'libopenjp2-7' # Pillow dependencies
+            ],
     'copy' : [{'from': 'docs/amplipi_api.yaml', 'to': 'web/static/amplipi_api.yaml'}],
   },
   'web' : {

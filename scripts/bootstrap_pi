@@ -88,7 +88,7 @@ pushd usbboot
 
 # install dependencies as necessary
 inst=false
-deps="libusb-1.0-0-dev make gcc python3-dbus"
+deps="libusb-1.0-0-dev make gcc"
 for dep in $deps; do
   dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
 done
