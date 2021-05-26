@@ -206,6 +206,22 @@ Restart=on-abort
 WantedBy=default.target
 """
 
+def _display_service(dir: str):
+  return f"""\
+[Unit]
+Description=Amplipi Front Panel Display
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={dir}/amplipi
+ExecStart={dir}/venv/bin/python {dir}/amplipi/tft_test.py
+Restart=on-abort
+
+[Install]
+WantedBy=default.target
+"""
+
 def systemctl_cmd(system: bool) -> str:
   """ Get the relevant systemctl command based on @system {True: system, False: user} """
   if system:
@@ -258,7 +274,7 @@ def _disable_service(name: str, system: bool = False) -> List[Task]:
   tasks = [Task(f'Disable {service}', cmd.split()).run()]
   return tasks
 
-def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+def _restart_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
   service = f'{name}.service'
   tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
 
@@ -378,18 +394,18 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   # bringup amplipi and updater separately
   tasks += print_progress(_configure_authbind())
   tasks += print_progress(_create_service('amplipi', _web_service(env['base_dir'])))
-  tasks += print_progress(_start_service('amplipi', test_url='http://0.0.0.0'))
+  tasks += print_progress(_restart_service('amplipi', test_url='http://0.0.0.0'))
   if not tasks[-1].success:
     return tasks
   tasks += print_progress([_check_version('http://0.0.0.0/api')])
   tasks += print_progress(_create_service('amplipi-updater', _update_service(env['base_dir'])))
   if restart_updater:
-    tasks += print_progress(_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
+    tasks += print_progress(_restart_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
   else:
     # start a second updater service and check if it serves a url
     # this allow us to verify the update the updater probably works
     tasks += print_progress(_create_service('amplipi-updater-test', _update_service(env['base_dir'], port=5002)))
-    tasks += print_progress(_start_service('amplipi-updater-test', test_url='http://0.0.0.0:5002/update'))
+    tasks += print_progress(_restart_service('amplipi-updater-test', test_url='http://0.0.0.0:5002/update'))
     # stop and disable the service so it doesn't start up on a reboot
     tasks += print_progress(_stop_service('amplipi-updater-test'))
     tasks += print_progress(_remove_service('amplipi-updater-test'))
@@ -397,6 +413,16 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
     # start the user manager at boot, instead of after first login
     # this is needed so the user systemd services start at boot
     tasks += print_progress(_enable_linger(env['user']))
+  return tasks
+
+def _update_display(env: dict, progress) -> List[Task]:
+  def p2(tasks):
+    progress(tasks)
+    return tasks
+  tasks = []
+  tasks += p2(_create_service('amplipi-display', _display_service(env['base_dir'])))
+  tasks += p2(_restart_service('amplipi-display'))
+  tasks += p2(_enable_service('amplipi-display'))
   return tasks
 
 def print_task_results(tasks : List[Task]) -> None:
@@ -418,7 +444,8 @@ def fix_file_props(env, progress) -> List[Task]:
   progress(tasks)
   return tasks
 
-def install(os_deps=True, python_deps=True, web=True, restart_updater=False, progress=print_task_results) -> bool:
+def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
+            display=False, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -459,9 +486,13 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False, pro
       return False
   if not web and restart_updater: # if web and restart_updater are True this restart happens in the _update_web function
     # The update server needs to restart itself after everything else is successful
-    ssts =_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
+    ssts =_restart_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
     progress(ssts)
     tasks += ssts
+    if failed():
+      return False
+  if display:
+    tasks += _update_display(env, progress)
     if failed():
       return False
   return True
@@ -476,10 +507,15 @@ if __name__ == '__main__':
   parser.add_argument('--web','--webserver', action='store_true', default=False,
     help="Install and configure webserver")
   parser.add_argument('--restart-updater', action='store_true', default=False,
-    help="""Restart the updater. Only do this if you are running this from the command line. When this is set False system will need to be restarted to complete update""")
+    help="""Stop the updater if it is running and start the updated one. \
+      Only do this if you are running this from the command line. \
+      When this is set False system will need to be restarted to complete update""")
+  parser.add_argument('--display', action='store_true', default=False,
+    help="Install and run the front-panel display service")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
-  has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater
+  has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display
   if not has_args:
     print('  WARNING: expected some arguments, check --help for more information')
-  install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web, restart_updater=flags.restart_updater)
+  install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
+          display=flags.display, restart_updater=flags.restart_updater)
