@@ -33,15 +33,15 @@ import psutil             # CPU, RAM, etc.
 
 profile = False
 update_period = 2.0       # Display update rate in seconds
-is_amplipi = True         # Set to false for PoE board test setup
+is_amplipi = False         # Set to false for PoE board test setup
 
 # Configuration for extra TFT pins:
 clk_pin = board.SCLK_2 if is_amplipi else board.SCLK
 mosi_pin = board.MOSI_2 if is_amplipi else board.MOSI
 miso_pin = board.MISO_2 if is_amplipi else board.MISO
 
-cs_pin = digitalio.DigitalInOut(board.D44) if is_amplipi else board.CE0
-dc_pin = digitalio.DigitalInOut(board.D39) if is_amplipi else board.D25
+cs_pin = board.D44 if is_amplipi else board.CE0
+dc_pin = board.D39 if is_amplipi else board.D25
 led_pin = board.D12 if is_amplipi else board.D18
 rst_pin = None
 t_cs_pin = board.D45 if is_amplipi else board.D5
@@ -199,22 +199,23 @@ def draw_volume_bars(draw, font, small_font, zones, x=0, y=0, width=320, height=
     print("Error: can't display more than 18 volumes")
 
 
+# Pins
+disp_cs = digitalio.DigitalInOut(cs_pin)
+disp_dc = digitalio.DigitalInOut(dc_pin)
+touch_cs = digitalio.DigitalInOut(t_cs_pin)
+touch_cs.direction = digitalio.Direction.OUTPUT
+touch_cs.value = True
+
 # Setup SPI bus using hardware SPI:
 spi = busio.SPI(clock=clk_pin, MOSI=mosi_pin, MISO=miso_pin)
 
 # Create the ILI9341 display:
-display = ili9341.ILI9341(spi, cs=cs_pin, dc=dc_pin, rst=rst_pin, baudrate=spi_baud, rotation=270)
+display = ili9341.ILI9341(spi, cs=disp_cs, dc=disp_dc, rst=rst_pin, baudrate=spi_baud, rotation=270)
 
 # Set backlight brightness out of 65535
 # Turn off until first image is written to work around not having RST
 led = pwmio.PWMOut(led_pin, frequency=5000, duty_cycle=0)
 led.duty_cycle = 0
-
-
-# Create the touch controller:
-touch_cs = digitalio.DigitalInOut(t_cs_pin)
-touch_cs.direction = digitalio.Direction.OUTPUT
-touch_cs.value = True
 
 # Start bit=1, A[2:0], 12-bit=0, differential=0, power down when done=00
 XPT2046_CMD_X = 0b11010000  # X=101
