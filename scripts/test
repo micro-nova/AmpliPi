@@ -2,4 +2,5 @@
 # get directory that the script exists in
 cd "$( dirname "$0" )/.."
 source venv/bin/activate
-pytest
+pytest -k 'not _live'
+pytest -k '_live'
