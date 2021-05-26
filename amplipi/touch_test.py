@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-# Graph touch positions
+# Show touch positions
 
 import board
 import busio
 import digitalio
 import pwmio
 import RPi.GPIO as GPIO
-import subprocess
 import time
-import matplotlib
 
 # Display
 from adafruit_rgb_display import color565
@@ -32,6 +30,15 @@ spi = busio.SPI(clock=board.SCLK, MOSI=board.MOSI, MISO=board.MISO)
 # Create the ILI9341 display:
 display = ili9341.ILI9341(spi, cs=cs_pin, dc=dc_pin, rst=rst_pin, baudrate=spi_baud, rotation=270)
 
+# Swap height/width to rotate it to landscape
+height = display.width
+width = display.height
+
+# Create a blank image for drawing.
+image = Image.new('RGB', (width, height)) # Fill entire screen with drawing space
+draw = ImageDraw.Draw(image)
+draw.rectangle((0, 0, width-1, height-1), fill=0) # Clear image
+
 # Set backlight brightness out of 65535
 led = pwmio.PWMOut(led_pin, frequency=5000, duty_cycle=0)
 led.duty_cycle = 32000
@@ -41,40 +48,82 @@ touch_cs = digitalio.DigitalInOut(t_cs_pin)
 touch_cs.direction = digitalio.Direction.OUTPUT
 touch_cs.value = True
 
-touch_irq = digitalio.DigitalInOut(t_irq_pin)
-touch_irq.direction = digitalio.Direction.INPUT
-
-# touch callback
-def touch_callback(pin_num):
-  GPIO.remove_event_detect(t_irq_pin.id)
-
-  # try to access SPI, wait if someone else (i.e. screen) is busy
+# Start bit=1, A[2:0], 12-bit=0, differential=0, power down when done=00
+XPT2046_CMD_X = 0b11010000  # X=101
+XPT2046_CMD_Y = 0b10010000  # Y=001
+_cal = (300, 400, 3600, 3850) # Top-left and bottom-right coordinates as raw ADC output
+_max_dist = 0.05 * ((_cal[3] - _cal[1]) ** 2 + (_cal[2] - _cal[0]) ** 2) ** 0.5
+print(f'_max_dist={_max_dist}')
+tx_buf = bytearray(5)
+rx_buf = bytearray(5)
+tx_buf[0] = XPT2046_CMD_X
+tx_buf[2] = XPT2046_CMD_Y
+def read_xy():
+  # Try to access SPI, wait if someone else (i.e. screen) is busy
   while not spi.try_lock():
     pass
-  spi.configure(baudrate=2*10**6)
+  spi.configure(baudrate=int(2.5*10**6))
   touch_cs.value = False
-  spi.write(bytes([0b11011000]))
-  x_buf = bytearray(1)
-  spi.readinto(x_buf)
-  touch_cs.value = True
-  time.sleep(0.001)
-  touch_cs.value = False
-  spi.write(bytes([0b10010000]))
-  y_buf = bytearray(2)
-  spi.readinto(y_buf)
+  spi.write_readinto(tx_buf, rx_buf)
   touch_cs.value = True
   spi.configure(baudrate=spi_baud)
   spi.unlock()
 
-  # Swap x and y and invert y to account for screen rotation
-  y = (x_buf[0] << 1) #(rx_buf[0] << 1) | (rx_buf[1] >> 7)
-  x = (y_buf[0] << 1) | (y_buf[0] >> 7)
+  x = (rx_buf[1] << 5) | (rx_buf[2] >> 3)
+  y = (rx_buf[3] << 5) | (rx_buf[4] >> 3)
+  return (x,y)
 
-  if x > 0 and y > 0:
-    print(f'Touch at {x},{y}')
+def touch_callback(pin_num):
+  # Mask the interrupt since reading the position generates a false interrupt
+  GPIO.remove_event_detect(t_irq_pin.id)
 
+  # Average 16 values
+  x_raw_list = []
+  y_raw_list = []
+  for i in range(16):
+    x, y = read_xy()
+    #x_sum += x
+    #y_sum += y
+    if (x >= _cal[0] and y <= _cal[3]): # Valid touch
+      x_raw_list.append(x)
+      y_raw_list.append(y)
+      print(f'x: {x}, y: {y}')
+  valid_count = len(x_raw_list)
+  if valid_count > 0:
+    x_raw_mean = round(sum(x_raw_list) / valid_count)
+    y_raw_mean = round(sum(y_raw_list) / valid_count)
+    x_raw_keep = []
+    y_raw_keep = []
+    for i in range(valid_count):
+      dist = ((x_raw_list[i] - x_raw_mean) ** 2 + (y_raw_list[i] - y_raw_mean) ** 2) ** 0.5
+      if dist < _max_dist:
+        x_raw_keep.append(x_raw_list[i])
+        y_raw_keep.append(y_raw_list[i])
+    inlier_count = len(x_raw_keep)
+    if inlier_count >= 4: # At least a quarter of the points were valid and inliers
+      x_raw = sorted(x_raw_keep)[inlier_count//2]
+      y_raw = sorted(y_raw_keep)[inlier_count//2]
 
-  GPIO.add_event_detect(t_irq_pin.id, GPIO.FALLING, callback=touch_callback)
+      # Use calibration to scale to the range [0,1]
+      x_cal = min(max((float(x_raw) - _cal[0]) / (_cal[2] - _cal[0]), 0), 1)
+      y_cal = min(max((float(y_raw) - _cal[1]) / (_cal[3] - _cal[1]), 0), 1)
+
+      # Swap x and y and reverse to account for screen rotation
+      y = round(height*(1 - x_cal))
+      x = round(width*(1 - y_cal))
+
+      draw.rectangle((0, 0, width-1, height-1), fill=0) # Clear image
+      draw.rectangle((x, y, x, y), fill='#FF0000')
+      print(f'Touch at {x},{y} [Raw: {x_raw},{y_raw}]')
+    else:
+      print(f'Not enough inliers: {inlier_count} of 16')
+  else:
+    print(f'No valid points')
+
+  try:
+    GPIO.add_event_detect(t_irq_pin.id, GPIO.FALLING, callback=touch_callback)
+  except RuntimeError as e:
+    print(e)
 
 # Get touch events
 GPIO.setup(t_irq_pin.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -83,19 +132,9 @@ GPIO.add_event_detect(t_irq_pin.id, GPIO.FALLING, callback=touch_callback)
 # Create the XPT2046 touch controller
 #def touchscreen_press(x, y):
 #    print(f'Touch at ({x},{y})')
+#touch_irq = digitalio.DigitalInOut(t_irq_pin)
 #xpt = Touch(spi, cs=touch_cs, int_pin=touch_irq, int_handler=touchscreen_press)
 
-# Load image and convert to RGB
-logo = Image.open('micronova-320x240.png').convert('RGB')
-display.image(logo)
-
-# Create a blank image for drawing.
-# Swap height/width to rotate it to landscape
-height = display.width
-width = display.height
-image = Image.new('RGB', (width, height)) # Fill entire screen with drawing space
-draw = ImageDraw.Draw(image)
-
 while True:
-  #draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0)) # Black background
-  time.sleep(0.1)
+  display.image(image)
+  time.sleep(0.5)
