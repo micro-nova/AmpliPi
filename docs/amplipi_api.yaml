@@ -2751,7 +2751,7 @@ paths:
       description: "Execute a comamnds on a stream (stream=**sid**).\n\n  Command\
         \ options:\n  * Play Stream: **play**\n  * Pause Stream: **pause**\n  * Skip\
         \ to next song: **next**\n  * Stop Stream: **stop**\n  * Like/Love Current\
-        \ Song: **like**\n  * Ban Current Song (pandora only): **ban**\n  * Shelve\
+        \ Song: **love**\n  * Ban Current Song (pandora only): **ban**\n  * Shelve\
         \ Current Song (pandora only): **shelve**\n\nCurrently only available with\
         \ Pandora streams"
       operationId: exec_command_api_streams__sid___cmd__post
