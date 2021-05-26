@@ -78,7 +78,7 @@ def test_view(client, path):
 def test_base(client, path):
     """Start with a basic controller and just check if it gives a real response"""
     rv = client.get(path)
-    assert rv.status_code in [ HTTPStatus.OK, HTTPStatus.PERMANENT_REDIRECT] # flask inserts a redirect here for some reason
+    assert rv.status_code == HTTPStatus.OK
     if rv.status_code == HTTPStatus.OK:
       jrv = rv.json()
       assert jrv != None
