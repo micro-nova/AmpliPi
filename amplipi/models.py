@@ -28,13 +28,13 @@ class fields(object):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
   Name = Field(description="Friendly name")
-  SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
+  SourceId = Field(ge=0, le=3, description='id of the connected source')
   ZoneId = Field(ge=0, le=35)
-  Mute =  Field(default=True, description='Set to true if output is muted')
-  Volume = Field(default=-79, ge=-79, le=0, description="Output volume in dB")
-  GroupMute =  Field(default=True, description='Set to true if output is all zones muted')
-  GroupVolume = Field(default=-79, ge=-79, le=0, description="Average utput volume in dB")
-  Disabled = Field(default=False, description="Set to true if not connected to a speaker")
+  Mute =  Field(description='Set to true if output is muted')
+  Volume = Field(ge=-79, le=0, description="Output volume in dB")
+  GroupMute =  Field(description='Set to true if output is all zones muted')
+  GroupVolume = Field( ge=-79, le=0, description="Average utput volume in dB")
+  Disabled = Field(description="Set to true if not connected to a speaker")
   Zones = Field(description="Set of zones belonging to a group")
   AudioInput = Field('', description="""Connected audio source
 
@@ -42,6 +42,19 @@ class fields(object):
   * Analog RCA Input ('local') connects to the RCA inputs associated
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
+
+class fields_w_default(object):
+  """ AmpliPi's field types that need a default value
+
+  These are needed because there is ambiguity where and optional field has a default value
+  """
+  # TODO: less duplication
+  SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
+  Mute =  Field(default=True, description='Set to true if output is muted')
+  Volume = Field(default=-79, ge=-79, le=0, description="Output volume in dB")
+  GroupMute =  Field(default=True, description='Set to true if output is all zones muted')
+  GroupVolume = Field(default=-79, ge=-79, le=0, description="Average utput volume in dB")
+  Disabled = Field(default=False, description="Set to true if not connected to a speaker")
 
 class Base(BaseModel):
   """ Base class for AmpliPi Models
@@ -134,10 +147,10 @@ class SourceUpdate2(SourceUpdate):
 
 class Zone(Base):
   """ Audio output to a stereo pair of speakers, typically belonging to a room """
-  source_id: int = fields.SourceId
-  mute: bool = fields.Mute
-  vol: int = fields.Volume
-  disabled: bool = fields.Disabled
+  source_id: int = fields_w_default.SourceId
+  mute: bool = fields_w_default.Mute
+  vol: int = fields_w_default.Volume
+  disabled: bool = fields_w_default.Disabled
 
   def as_update(self):
     update = self.dict()
@@ -215,10 +228,10 @@ class Group(Base):
   """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
 
   Volume, mute, and source_id fields are aggregates of the member zones."""
-  source_id: int = fields.SourceId
+  source_id: Optional[int] = fields.SourceId
   zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
-  mute: bool = fields.GroupMute
-  vol_delta: int = fields.GroupVolume
+  mute: Optional[bool] = fields.GroupMute
+  vol_delta: Optional[int] = fields.GroupVolume
 
   def as_update(self):
     update = self.dict()
@@ -504,8 +517,8 @@ class Preset(Base):
   """ A partial controller configuration the can be loaded on demand.
   In addition to most of the configuration found in Status, this can contain commands as well that configure the state of different streaming services.
   """
-  state: PresetState # TODO: should state be optional for a preset?
-  commands: Optional[List[Command]] = []
+  state: Optional[PresetState]
+  commands: Optional[List[Command]]
   last_used: Union[int, None] = None
 
 
