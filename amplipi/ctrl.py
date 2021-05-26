@@ -20,9 +20,7 @@ This module provides complete control of the AmpliPi Audio System's sources,
 zones, groups and streams.
 """
 
-from inspect import indentsize
 from copy import deepcopy
-import jinja2
 import os # files
 import time
 
@@ -148,10 +146,6 @@ class Api:
       self.status = models.Status.parse_obj(self._DEFAULT_CONFIG)
       self.save()
 
-    # load the template engine for the API documentation so the api can be updated based on the current configuration
-    self._template_env = jinja2.Environment(loader=jinja2.PackageLoader('amplipi', '../docs/templates'))
-    self._api_template = self._template_env.get_template('amplipi_api.yaml.j2')
-
     self.status.info = models.Info(
       mock_ctrl = self._mock_hw,
       mock_streams = self._mock_streams,
@@ -197,15 +191,6 @@ class Api:
     except Exception as e:
       print('Error saving config: {}'.format(e))
     API_DOC = 'amplipi_api.yaml'
-    try:
-      # update the api documentation (TODO: only do this if theere is a significant change)
-      # this simplifies the interface to the user since each of the example id's are relative to the current configuration
-      if not os.path.exists(utils.get_folder('web/generated')):
-        return
-      with open(f"{utils.get_folder('web/generated')}/{API_DOC}", 'w') as api:
-        api.write(self._api_template.render(self.status))
-    except Exception as e:
-      print(f'Error updating API spec: {e}')
 
   def postpone_save(self):
     """ Saves the system state in the future
