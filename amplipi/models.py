@@ -216,7 +216,7 @@ class Group(Base):
 
   Volume, mute, and source_id fields are aggregates of the member zones."""
   source_id: int = fields.SourceId
-  zones: Set[int] = fields.Zones
+  zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
   mute: bool = fields.GroupMute
   vol_delta: int = fields.GroupVolume
 

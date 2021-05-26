@@ -405,13 +405,24 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
       for k, v in cfg.items():
         assert updated_cfg[k] == v
   # verify all of the zones mute levels remained the same (unless they were changed by the preset configuration)
-  preset_zones_changes = p['state'].get('zones', None) # TODO: this doesn't handle group changes
+  preset_zones_changes = p['state'].get('zones', None)
+  preset_groups_changes = p['state'].get('groups', None)
   for z in jrv['zones']:
     expected_mute = last_state['zones'][z['id']]['mute']
     if preset_zones_changes:
       pz = find(preset_zones_changes, z['id'])
       if pz and 'mute' in pz:
         expected_mute = pz['mute']
+    # check if the zone will be muted by a group (group updates are currently applied after zone updates)
+    # assuming here that if a zone belonging to multiple groups has its mute changed
+    # by multiple group updates, it is the last group update that takes effect on the zone
+    if preset_groups_changes:
+      for pg in preset_groups_changes:
+        if 'mute' in pg:
+          g = find(last_state['groups'], pg['id'])
+          assert g != None
+          if z['id'] in g['zones']:
+            expected_mute = pg['mute']
     assert z['mute'] == expected_mute
   # load the saved config and verify that the sources, zones, and groups are the same as initial state (before the preset was loaded)
   LAST_CONFIG_PRESET = 9999
