@@ -316,8 +316,13 @@ function updateSourceView(status) {
       let z = ctrl.dataset.zone;
       updateVol(ctrl, status.zones[z].mute, status.zones[z].vol);
     } else if (ctrl.dataset.hasOwnProperty('group')) {
-      let g = ctrl.dataset.group;
-      updateVol(ctrl, status.groups[g].mute, status.groups[g].vol_delta);
+      let gid = ctrl.dataset.group;
+      for (const g of status.groups) {
+        if (g.id == gid) {
+          updateVol(ctrl, g.mute, g.vol_delta);
+          break;
+        }
+      }
     } else {
       console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
     }
