@@ -461,4 +461,8 @@ if __name__ == '__main__':
   parser.add_argument('--restart-updater', action='store_true', default=False,
     help="""Restart the updater. Only do this if you are running this from the command line. When this is set False system will need to be restarted to complete update""")
   args = parser.parse_args()
+  print('Configuring AmpliPi installation')
+  has_args = args.python_deps or args.os_deps or args.web or args.restart_updater
+  if not has_args:
+    print('  WARNING: expected some arguments, check --help for more information')
   install(os_deps=args.os_deps, python_deps=args.python_deps, web=args.web, restart_updater=args.restart_updater)
