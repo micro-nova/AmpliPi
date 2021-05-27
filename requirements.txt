@@ -1,6 +1,5 @@
 adafruit-circuitpython-rgb-display
 aiofiles
-dbus-python
 deepdiff
 fastapi
 netifaces
