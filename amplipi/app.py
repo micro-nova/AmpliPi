@@ -116,13 +116,13 @@ def song_info(src: int) -> Dict[str,str]:
       info[field] = ''
   return info
 
-# add a default controller (this is overriden below in creat_app)
+# add a default controller (this is overriden below in create_app)
 @lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
   return Api(models.AppSettings())
 
-# standard path ID's for each type
 class params(object):
+  """ Describe standard path ID's for each api type """
   SourceID = Path(..., ge=0, le=3, description="Source ID")
   ZoneID = Path(..., ge=0, le=35, description="Zone ID")
   GroupID = Path(..., ge=0, description="Stream ID")
@@ -277,7 +277,7 @@ class ApiRoutes:
       * Pause Stream: **pause**
       * Skip to next song: **next**
       * Stop Stream: **stop**
-      * Like/Love Current Song: **like**
+      * Like/Love Current Song: **love**
       * Ban Current Song (pandora only): **ban**
       * Shelve Current Song (pandora only): **shelve**
 
@@ -289,7 +289,6 @@ class ApiRoutes:
   @api_router.post('/preset', tags=['preset'])
   def create_preset(self, preset: models.Preset) -> models.Preset:
     """ Create a new preset configuration """
-    # TODO: add several example presets
     return self.code_response(self.ctrl.create_preset(preset))
 
   @api_router.get('/presets', tags=['preset'])
@@ -511,6 +510,10 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
 
 @lru_cache(2)
 def create_yaml_doc(add_test_docs=True) -> str:
+  """ Create the openapi yaml schema intended for display by rapidaoc
+
+  We use yaml here for its human readability.
+  """
   openapi = app.openapi()
   # use a placeholder for the description, multiline strings weren't using block formatting
   openapi['info']['description'] = '$REPLACE_ME$'
@@ -556,6 +559,7 @@ def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl)):
   return templates.TemplateResponse("index.html.j2", context)
 
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, s:models.AppSettings=models.AppSettings()) -> FastAPI:
+  """ Create the AmpliPi web app with a specific configuration """
   # specify old parameters
   if mock_ctrl: s.mock_ctrl = mock_ctrl
   if mock_streams: s.mock_streams = mock_streams
@@ -570,7 +574,8 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   return app
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Create the openapi yaml file for AmpliPi')
+  """ Generate the openapi schema file in yamnl """
+  parser = argparse.ArgumentParser(description='Create the openapi yaml file describing the AmpliPi API')
   parser.add_argument('file', type=argparse.FileType('w'))
   args = parser.parse_args()
   with args.file as file:
