@@ -554,7 +554,7 @@ async function plex_token_ret(details) {
 async function plex_stream(details) {
   var req = {
     "name": "AmpliPi Plexamp",
-    "identifier": details.uuid,
+    "client_id": details.uuid,
     "token": details.authToken,
     "type": "plexamp"
   } // POST a new stream to the AmpliPi API using the newly authenticated credentials

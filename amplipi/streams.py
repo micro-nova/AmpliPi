@@ -651,9 +651,9 @@ class InternetRadio:
 class Plexamp:
   """ A Plexamp Stream """
 
-  def __init__(self, name, clientID, token, mock=False):
+  def __init__(self, name, client_id, token, mock=False):
     self.name = name
-    self.clientID = clientID
+    self.client_id = client_id
     self.token = token
     self.mock = mock
     self.proc = None  # underlying plexamp process
@@ -713,7 +713,7 @@ class Plexamp:
     json_config = {
       "player": {
         "name": "{}".format(self.name),
-        "identifier": "{}".format(self.clientID)
+        "identifier": "{}".format(self.client_id)
       },
       "user": {
         "token": self.token
@@ -786,6 +786,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'internetradio':
     return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
   elif stream.type == 'plexamp':
-    return Plexamp(args['name'], args['clientID'], args['token'], mock=mock)
+    return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
   raise NotImplementedError(stream.type)
 

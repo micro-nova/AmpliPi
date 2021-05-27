@@ -110,7 +110,7 @@ class Api:
       {"id": 1002, "name": "My Spotify", "type": "spotify"},
       {"id": 1003, "name": "My Internet Radio", "type": "internetradio", "url": "http://change.me", "logo": "http://change.me/image.png"},
       {"id": 1004, "name": "My DLNA Renderer", "type": "dlna"},
-      {"id": 1005, "name": "My Plexamp", "type": "plexamp", "clientID": "", "token": ""},
+      {"id": 1005, "name": "My Plexamp", "type": "plexamp", "client_id": "", "token": ""},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
@@ -291,7 +291,7 @@ class Api:
   def get_state(self) -> models.Status:
     """ get the system state (dict) """
     # update the state with the latest stream info and status
-    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'token', 'clientID'] # optional configuration fields
+    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'token', 'client_id'] # optional configuration fields
     streams = []
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
