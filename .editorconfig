@@ -18,3 +18,10 @@ insert_final_newline = true
 
 # Remove any extraneous whitespace
 trim_trailing_whitespace = true
+
+[scripts/*]
+end_of_line = lf
+[streams/*]
+end_of_line = lf
+[fw/*.sh]
+end_of_line = lf
