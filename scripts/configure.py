@@ -4,7 +4,6 @@
 
 This script is initially designed to support local git installs, pi installs, and amplipi installs
 """
-import dbus
 from os.path import split
 import platform
 import subprocess
@@ -14,8 +13,7 @@ import pwd # username
 import glob
 import requests
 import traceback
-import tempfile
-from typing import List, Union, Type, Tuple
+from typing import List, Union, Tuple
 import time
 
 _os_deps = {
@@ -204,49 +202,23 @@ Restart=on-abort
 WantedBy=default.target
 """
 
-def _get_service_manager(system: bool = False) -> dbus.Interface:
-  bus = dbus.SystemBus() if system else dbus.SessionBus()
-  systemd1 = bus.get_object('org.freedesktop.systemd1', '/org/freedesktop/systemd1')
-  return dbus.Interface(systemd1, 'org.freedesktop.systemd1.Manager')
-
-def _get_service_proxy(service: str, system: bool = False) -> dbus.proxies.ProxyObject:
-  bus = dbus.SystemBus() if system else dbus.SessionBus()
-  manager = _get_service_manager(system)
-  unit = manager.LoadUnit(service)
-  return bus.get_object('org.freedesktop.systemd1', str(unit))
-
 def _service_status(service: str, system: bool = False) -> Tuple[List[Task], bool]:
   # Status can be: active, reloading, inactive, failed, activating, or deactivating
-  tasks = [Task(f'Check {service} status')]
-  try:
-    proxy = _get_service_proxy(service, system)
-    status = str(proxy.Get('org.freedesktop.systemd1.Unit', 'ActiveState', dbus_interface='org.freedesktop.DBus.Properties'))
-    tasks[0].success = True
-  except Exception as e:
-    tasks[0].output = str(e)
-    tasks[0].success = False
-  if 'active' in status and not 'inactive' in status:
-    tasks[0].output = f'{service} active'
-    return (tasks, True)
-  tasks[0].output = f'{service} inactive'
-  return (tasks, False)
+  cmd = f'systemctl{"" if system else " --user"} is-active {service}'
+  tasks = [Task(f'Check {service} status', cmd.split()).run()]
+  # The exit code reflects the status of the service, not the command itself.
+  # Just assume the command was run successfully.
+  tasks[0].success = True
+  active = 'active' in tasks[0].output and not 'inactive' in tasks[0].output
+  return (tasks, active)
 
 # Stop a systemd service. By default use the Session (user) session
 def _stop_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
   tasks, running = _service_status(service, system)
   if running:
-    if system:
-      tasks.append(Task(f'Stop {service}', f'sudo systemctl stop {service}'.split()).run())
-    else:
-      tasks.append(Task(f'Stop {service}'))
-      try:
-        _get_service_manager(system).StopUnit(service, 'replace')
-        tasks[-1].output = f'Stopped {service}'
-        tasks[-1].success = True
-      except Exception as e:
-        tasks[-1].output = str(e)
-        tasks[-1].success = False
+    cmd = f'{"sudo systemctl" if system else "systemctl --user"} stop {service}'
+    tasks.append(Task(f'Stop {service}', cmd.split()).run())
   return tasks
 
 def _remove_service(name: str) -> List[Task]:
@@ -264,46 +236,19 @@ def _remove_service(name: str) -> List[Task]:
 
 def _enable_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
-  tasks = [Task(f'Enable {service}')]
-  try:
-    # EnableUnitFiles(name, not_persistent, allow_overwrite)
-    _get_service_manager(system).EnableUnitFiles([service], False, True)
-    # Enabled status is retrieved via GetUnitFileState() and can be
-    # enabled, enabled-runtime, linked, linked-runtime, masked, masked-runtime, static, disabled, invalid
-    tasks[0].output = f'Enabled {service}'
-    tasks[0].success = True
-  except Exception as e:
-    tasks[0].output = str(e)
-    tasks[0].success = False
+  cmd = f'{"sudo systemctl" if system else "systemctl --user"} enable {service}'
+  tasks = [Task(f'Enable {service}', cmd.split()).run()]
   return tasks
 
 def _disable_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
-  if system:
-    return [Task(f'Disable {service}', f'sudo systemctl disable {service}'.split()).run()]
-  else:
-    tasks = [Task(f'Disable {service}')]
-    try:
-      # DisableUnitFiles(name, not_persistent)
-      _get_service_manager(system).DisableUnitFiles(service, False)
-      tasks[0].output = f'Disabled {service}'
-      tasks[0].success = True
-    except Exception as e:
-      tasks[0].output = str(e)
-      tasks[0].success = False
-    return tasks
+  cmd = f'{"sudo systemctl" if system else "systemctl --user"} disable {service}'
+  tasks = [Task(f'Disable {service}', cmd.split()).run()]
+  return tasks
 
 def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
   service = f'{name}.service'
-  tasks = []
-  tasks.append(Task(f'Start {service}'))
-  try:
-    _get_service_manager().RestartUnit(service, 'replace')
-    tasks[0].output = f'Started {service}'
-    tasks[0].success = True
-  except Exception as e:
-    tasks[0].output = str(e)
-    tasks[0].success = False
+  tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
 
   # wait a bit, so initial failures are detected before is-active is called
   if tasks[-1].success:
@@ -359,16 +304,7 @@ def _create_service(name: str, config: str) -> List[Task]:
     tasks[-1].output = f'Failed to create {filename}'
 
   # recreate systemd's dependency tree
-  tasks.append(Task(f'Reload systemd config'))
-  try:
-    sesbus = dbus.SessionBus()
-    systemd1 = sesbus.get_object('org.freedesktop.systemd1', '/org/freedesktop/systemd1')
-    manager = dbus.Interface(systemd1, 'org.freedesktop.systemd1.Manager')
-    manager.Reload()
-    tasks[-1].success = True
-    tasks[-1].output = f'Reloaded systemd config'
-  except:
-    tasks[-1].output = f'Failed to reload systemd config'
+  tasks.append(Task(f'Reload systemd config', f'systemctl --user daemon-reload'.split()).run())
   return tasks
 
 def _configure_authbind() -> List[Task]:
