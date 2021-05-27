@@ -9,7 +9,7 @@ Thanks for considering developing for AmpliPi. We appreciate your support!
 1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
 1. Change directory to the development root `~/amplipi-dev` (this is where deploy put the software)
 1. To run the amplipi server in debug mode over an ssh connection, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
-1. Restart amplipi service (it was stopped by `./scripts/run_debug_webserver`) with `sudo systemctl restart amplipi`.
+1. Restart amplipi service (it was stopped by `./scripts/run_debug_webserver`) with `systemctl --user restart amplipi`.
 
 ## Developing on an AmpliPi Controller over SSH
 1. Make a git checkout at `~/amplipi-dev` using `git checkout https://github.com/micro-nova/AmpliPi ~/amplipi-dev` (you may need to delete `amplipi-dev` if it already exists)

@@ -202,9 +202,16 @@ Restart=on-abort
 WantedBy=default.target
 """
 
+def systemctl_cmd(system: bool) -> str:
+  """ Get the relevant systemctl command based on @system {True: system, False: user} """
+  if system:
+    return 'sudo systemctl'
+  else: # user
+    return  'systemctl --user'
+
 def _service_status(service: str, system: bool = False) -> Tuple[List[Task], bool]:
   # Status can be: active, reloading, inactive, failed, activating, or deactivating
-  cmd = f'systemctl{"" if system else " --user"} is-active {service}'
+  cmd = f'{systemctl_cmd(system)} is-active {service}'
   tasks = [Task(f'Check {service} status', cmd.split()).run()]
   # The exit code reflects the status of the service, not the command itself.
   # Just assume the command was run successfully.
@@ -217,7 +224,7 @@ def _stop_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
   tasks, running = _service_status(service, system)
   if running:
-    cmd = f'{"sudo systemctl" if system else "systemctl --user"} stop {service}'
+    cmd = f'{systemctl_cmd(system)} stop {service}'
     tasks.append(Task(f'Stop {service}', cmd.split()).run())
   return tasks
 
@@ -226,6 +233,7 @@ def _remove_service(name: str) -> List[Task]:
   directory = pathlib.Path.home().joinpath('.config/systemd/user')
   tasks = [Task(f'Remove {filename}')]
   try:
+    # Delete the service file
     pathlib.Path(directory).joinpath(filename).unlink()
     tasks[0].output = f'Removed {filename}'
     tasks[0].success = True
@@ -236,13 +244,13 @@ def _remove_service(name: str) -> List[Task]:
 
 def _enable_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
-  cmd = f'{"sudo systemctl" if system else "systemctl --user"} enable {service}'
+  cmd = f'{systemctl_cmd(system)} enable {service}'
   tasks = [Task(f'Enable {service}', cmd.split()).run()]
   return tasks
 
 def _disable_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
-  cmd = f'{"sudo systemctl" if system else "systemctl --user"} disable {service}'
+  cmd = f'{systemctl_cmd(system)} disable {service}'
   tasks = [Task(f'Disable {service}', cmd.split()).run()]
   return tasks
 
