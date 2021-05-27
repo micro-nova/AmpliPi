@@ -211,6 +211,7 @@ spi = busio.SPI(clock=clk_pin, MOSI=mosi_pin, MISO=miso_pin)
 
 # Create the ILI9341 display:
 display = ili9341.ILI9341(spi, cs=disp_cs, dc=disp_dc, rst=rst_pin, baudrate=spi_baud, rotation=270)
+print(display.read(command=0x04, count=4))
 
 # Set backlight brightness out of 65535
 # Turn off until first image is written to work around not having RST
