@@ -559,7 +559,7 @@ async function plex_stream(details) {
     "type": "plexamp"
   } // POST a new stream to the AmpliPi API using the newly authenticated credentials
   sendRequest('/stream', 'POST', req);
-  console.log(`Creating stream with these parameters: name = ${req.name}, UUID = ${req.identifier}, and token = ${req.token}`);
+  console.log(`Creating stream with these parameters: name = ${req.name}, UUID = ${req.client_id}, and token = ${req.token}`);
   }
 
 function sleepjs(ms) {
