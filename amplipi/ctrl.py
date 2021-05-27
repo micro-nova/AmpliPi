@@ -31,7 +31,7 @@ import amplipi.rt as rt
 import amplipi.streams
 import amplipi.utils as utils
 
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Set, Union, Optional
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -177,7 +177,7 @@ class Api:
       self._save_timer = None
     self.save()
 
-  def save(self):
+  def save(self) -> None:
     """ Saves the system state to json"""
     try:
       # save a backup copy of the config file (assuming its valid)
@@ -190,7 +190,6 @@ class Api:
       self.config_file_valid = True
     except Exception as e:
       print('Error saving config: {}'.format(e))
-    API_DOC = 'amplipi_api.yaml'
 
   def postpone_save(self):
     """ Saves the system state in the future
@@ -399,7 +398,7 @@ class Api:
     else:
         return utils.error('set zone: index {} out of bounds'.format(idx))
 
-  def _update_groups(self):
+  def _update_groups(self) -> None:
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
     for g in self.status.groups:
       zones = [ self.status.zones[z] for z in g.zones ]
@@ -509,7 +508,7 @@ class Api:
       return 1000
 
   @utils.save_on_success
-  def create_stream(self, stream: models.Stream):
+  def create_stream(self, stream: models.Stream) -> models.Stream:
     try:
       # Make a new stream and add it to streams
       s = amplipi.streams.build_stream(stream, mock=self._mock_streams)
@@ -668,7 +667,7 @@ class Api:
       return utils.error('Unable to reconfigure preset {}: {}'.format(id, e))
 
   @utils.save_on_success
-  def delete_preset(self, id: int):
+  def delete_preset(self, id: int) -> None:
     """Deletes an existing preset"""
     try:
       i, _ = utils.find(self.status.presets, id)
@@ -680,7 +679,7 @@ class Api:
       return utils.error('delete preset failed: {} does not exist'.format(id))
 
 
-  def _effected_zones(self, preset_id):
+  def _effected_zones(self, preset_id) -> Set[int]:
     """ Aggregate the zones that will be modified by changes """
     st = self.status
     _, preset = utils.find(st.presets, preset_id)
