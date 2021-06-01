@@ -537,7 +537,7 @@ app.openapi = generate_openapi_spec
 
 @app.get('/', include_in_schema=False)
 @app.get('/{src}', include_in_schema=False)
-def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl)):
+def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl, use_cache=False)):
   ctrl = get_ctrl()
   s = ctrl.get_state()
   context = {
@@ -556,7 +556,7 @@ def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl)):
     'song_info': [song_info(src) for src in range(4)],
     'version': s.info.version,
   }
-  return templates.TemplateResponse("index.html.j2", context)
+  return templates.TemplateResponse("index.html.j2", context, media_type='text/html')
 
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, s:models.AppSettings=models.AppSettings()) -> FastAPI:
   """ Create the AmpliPi web app with a specific configuration """
