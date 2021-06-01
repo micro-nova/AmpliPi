@@ -355,7 +355,7 @@ def _check_version(url) -> Task:
   try:
     r = requests.get(url)
     if r.ok:
-      reported_version = r.json()['version']
+      reported_version = r.json()['info']['version']
       t.success = True
       t.output += f'\nversion={reported_version}'
   except Exception:
