@@ -269,7 +269,7 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
     tasks += task_check
     if test_url and running:
       task = None
-      for i in range(10): # retry for 5 seconds, giving the server time to start
+      for i in range(20): # retry for 10 seconds, giving the server time to start
         task = _check_url(test_url)
         if task.success:
           break
