@@ -359,7 +359,7 @@ def _check_version(url) -> Task:
       t.success = True
       t.output += f'\nversion={reported_version}'
   except Exception:
-    t.output = ''.join(traceback.format_exception())
+    t.output = 'Failed checking version'
   return t
 
 def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
