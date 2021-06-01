@@ -133,14 +133,13 @@ class params(object):
 
 # Add our own router and class endpoints to reduce boilerplate for our api
 api_router = SimplifyingRouter()
-base_router = SimplifyingRouter()
 @cbv(api_router)
 class ApiRoutes:
 
   # embedded ctrl dependency used by every api route
   ctrl: Api = Depends(get_ctrl)
 
-  @api_router.get('/', tags=['status'])
+  @api_router.get('/api', tags=['status'])
   def get_status(self) -> models.Status:
     """ Get the system status and configuration """
     return self.ctrl.get_state()
@@ -157,31 +156,31 @@ class ApiRoutes:
 
   # sources
 
-  @api_router.get('/sources', tags=['source'])
+  @api_router.get('/api/sources', tags=['source'])
   def get_sources(self) -> Dict[str, List[models.Source]]:
     """ Get all sources """
     return {'sources' : self.ctrl.get_state().sources}
 
-  @api_router.get('/sources/{sid}', tags=['source'])
+  @api_router.get('/api/sources/{sid}', tags=['source'])
   def get_source(self, sid: int=params.SourceID) -> models.Source:
     """ Get Source with id=**sid** """
     # TODO: add get_X capabilities to underlying API?
     sources = self.ctrl.get_state().sources
     return sources[sid]
 
-  @api_router.patch('/sources/{sid}', tags=['source'])
+  @api_router.patch('/api/sources/{sid}', tags=['source'])
   def set_source(self, sid: int = params.SourceID, update: models.SourceUpdate=None) -> models.Status:
     """ Update a source's configuration (source=**sid**) """
     return self.code_response(self.ctrl.set_source(sid, update))
 
   # zones
 
-  @api_router.get('/zones', tags=['zone'])
+  @api_router.get('/api/zones', tags=['zone'])
   def get_zones(self) -> Dict[str, List[models.Zone]]:
     """ Get all zones """
     return {'zones': self.ctrl.get_state().zones}
 
-  @api_router.get('/zones/{zid}', tags=['zone'])
+  @api_router.get('/api/zones/{zid}', tags=['zone'])
   def get_zone(self, zid: int=params.ZoneID) -> models.Zone:
     """ Get Zone with id=**zid** """
     zones = self.ctrl.get_state().zones
@@ -190,7 +189,7 @@ class ApiRoutes:
     else:
       raise HTTPException(404, f'zone {zid} not found')
 
-  @api_router.patch('/zones/{zid}', tags=['zone'])
+  @api_router.patch('/api/zones/{zid}', tags=['zone'])
   def set_zone(self, zid: int=params.ZoneID, zone: models.ZoneUpdate=None) -> models.Status:
     """ Update a zone's configuration (zone=**zid**) """
     return self.code_response(self.ctrl.set_zone(zid, zone))
@@ -199,18 +198,18 @@ class ApiRoutes:
 
   # groups
 
-  @api_router.post('/group', tags=['group'])
+  @api_router.post('/api/group', tags=['group'])
   def create_group(self, group: models.Group) -> models.Group:
     """ Create a new grouping of zones """
     # TODO: add named example group
     return self.code_response(self.ctrl.create_group(group))
 
-  @api_router.get('/groups', tags=['group'])
+  @api_router.get('/api/groups', tags=['group'])
   def get_groups(self) -> Dict[str, List[models.Group]]:
     """ Get all groups """
     return {'groups' : self.ctrl.get_state().groups}
 
-  @api_router.get('/groups/{gid}', tags=['group'])
+  @api_router.get('/api/groups/{gid}', tags=['group'])
   def get_group(self, gid: int=params.GroupID) -> models.Group:
     """ Get Group with id=**gid** """
     _, grp = utils.find(self.ctrl.get_state().groups, gid)
@@ -219,30 +218,30 @@ class ApiRoutes:
     else:
       raise HTTPException(404, f'group {gid} not found')
 
-  @api_router.patch('/groups/{gid}', tags=['group'])
+  @api_router.patch('/api/groups/{gid}', tags=['group'])
   def set_group(self, gid: int=params.GroupID, group: models.GroupUpdate=None) -> models.Status:
     """ Update a groups's configuration (group=**gid**) """
     return self.code_response(self.ctrl.set_group(gid, group)) # TODO: pass update directly
 
-  @api_router.delete('/groups/{gid}', tags=['group'])
+  @api_router.delete('/api/groups/{gid}', tags=['group'])
   def delete_group(self, gid: int=params.GroupID) -> models.Status:
     """ Delete a group (group=**gid**) """
     return self.code_response(self.ctrl.delete_group(id=gid))
 
   # streams
 
-  @api_router.post('/stream', tags=['stream'])
+  @api_router.post('/api/stream', tags=['stream'])
   def create_stream(self, stream: models.Stream) -> models.Stream:
     """ Create a new audio stream """
     # TODO: add an example stream for each type of stream
     return self.code_response(self.ctrl.create_stream(stream))
 
-  @api_router.get('/streams', tags=['stream'])
+  @api_router.get('/api/streams', tags=['stream'])
   def get_streams(self) -> Dict[str, List[models.Stream]]:
     """ Get all streams """
     return {'streams' : self.ctrl.get_state().streams}
 
-  @api_router.get('/streams/{sid}', tags=['stream'])
+  @api_router.get('/api/streams/{sid}', tags=['stream'])
   def get_stream(self, sid: int=params.StreamID) -> models.Stream:
     """ Get Stream with id=**sid** """
     _, stream = utils.find(self.ctrl.get_state().streams, sid)
@@ -251,24 +250,24 @@ class ApiRoutes:
     else:
       raise HTTPException(404, f'stream {sid} not found')
 
-  @api_router.patch('/streams/{sid}', tags=['stream'])
+  @api_router.patch('/api/streams/{sid}', tags=['stream'])
   def set_stream(self, sid: int=params.StreamID, update: models.StreamUpdate=None) -> models.Status:
     """ Update a stream's configuration (stream=**sid**) """
     return self.code_response(self.ctrl.set_stream(sid, update))
 
-  @api_router.delete('/streams/{sid}', tags=['stream'])
+  @api_router.delete('/api/streams/{sid}', tags=['stream'])
   def delete_stream(self, sid: int=params.StreamID) -> models.Status:
     """ Delete a stream """
     return self.code_response(self.ctrl.delete_stream(sid))
 
 
-  @api_router.post('/streams/{sid}/station={station}', tags=['stream'])
+  @api_router.post('/api/streams/{sid}/station={station}', tags=['stream'])
   def change_station(self, sid: int=params.StreamID, station: int=params.StationID) -> models.Status:
     """ Change station on a pandora stream (stream=**sid**) """
     # This is a specific version of exec command, it needs to be placed before the genertic version so the path is resolved properly
     return self.code_response(self.ctrl.exec_stream_command(sid, cmd=f'station={station}'))
 
-  @api_router.post('/streams/{sid}/{cmd}', tags=['stream'])
+  @api_router.post('/api/streams/{sid}/{cmd}', tags=['stream'])
   def exec_command(self, sid: int=params.StreamID, cmd: models.StreamCommand=None) -> models.Status:
     """ Execute a comamnds on a stream (stream=**sid**).
 
@@ -286,17 +285,17 @@ class ApiRoutes:
 
   # presets
 
-  @api_router.post('/preset', tags=['preset'])
+  @api_router.post('/api/preset', tags=['preset'])
   def create_preset(self, preset: models.Preset) -> models.Preset:
     """ Create a new preset configuration """
     return self.code_response(self.ctrl.create_preset(preset))
 
-  @api_router.get('/presets', tags=['preset'])
+  @api_router.get('/api/presets', tags=['preset'])
   def get_presets(self) -> Dict[str, List[models.Preset]]:
     """ Get all presets """
     return {'presets' : self.ctrl.get_state().presets}
 
-  @api_router.get('/presets/{pid}', tags=['preset'])
+  @api_router.get('/api/presets/{pid}', tags=['preset'])
   def get_preset(self, pid: int=params.PresetID) -> models.Preset:
     """ Get Preset with id=**pid** """
     _, preset = utils.find(self.ctrl.get_state().presets, pid)
@@ -305,36 +304,53 @@ class ApiRoutes:
     else:
       raise HTTPException(404, f'preset {pid} not found')
 
-  @api_router.patch('/presets/{pid}', tags=['preset'])
+  @api_router.patch('/api/presets/{pid}', tags=['preset'])
   async def set_preset(self, pid: int=params.PresetID, update: models.PresetUpdate=None) -> models.Status:
     """ Update a preset's configuration (preset=**pid**) """
     return self.code_response(self.ctrl.set_preset(pid, update))
 
-  @api_router.delete('/presets/{pid}', tags=['preset'])
+  @api_router.delete('/api/presets/{pid}', tags=['preset'])
   def delete_preset(self, pid: int=params.PresetID) -> models.Status:
     """ Delete a preset """
     return self.code_response(self.ctrl.delete_preset(pid))
 
-  @api_router.post('/presets/{pid}/load', tags=['preset'])
+  @api_router.post('/api/presets/{pid}/load', tags=['preset'])
   def load_preset(self, pid: int=params.PresetID) -> models.Status:
     """ Load a preset configuration """
     return self.code_response(self.ctrl.load_preset(pid))
 
   # Documentation
 
-  @api_router.get('/doc', include_in_schema=False)
+  @api_router.get('/api/doc', include_in_schema=False)
   def doc(self):
     # TODO: add hosted python docs as well
     return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
 
-# add the root of the API as well, since empty paths are invalid this needs to be handled outside of the router
-@base_router.get('/api', tags=['status'])
-def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
-  """ Get the system status and configuration """
-  return ctrl.get_state()
+  # Website
 
-app.include_router(base_router)
-app.include_router(api_router, prefix='/api')
+  @api_router.get('/', include_in_schema=False)
+  @api_router.get('/{src}', include_in_schema=False)
+  def view(self, request: Request, src:int=0):
+    s = self.ctrl.get_state()
+    context = {
+      # needed for template to make response
+      'request': request,
+      # simplified amplipi state
+      'cur_src': src,
+      'sources': s.sources,
+      'zones': s.zones,
+      'groups': s.groups,
+      'presets': s.presets,
+      'inputs': self.ctrl.get_inputs(),
+      'unused_groups': [unused_groups(src) for src in range(4)],
+      'unused_zones': [unused_zones(src) for src in range(4)],
+      'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
+      'song_info': [song_info(src) for src in range(4)],
+      'version': s.info.version,
+    }
+    return templates.TemplateResponse("index.html.j2", context, media_type='text/html')
+
+app.include_router(api_router)
 
 # API Documentation
 def generate_openapi_spec(add_test_docs=True):
@@ -532,31 +548,6 @@ def read_openapi_json():
   return app.openapi()
 
 app.openapi = generate_openapi_spec
-
-# Website
-
-@app.get('/', include_in_schema=False)
-@app.get('/{src}', include_in_schema=False)
-def view(request: Request, src:int=0, ctrl:Api=Depends(get_ctrl, use_cache=False)):
-  ctrl = get_ctrl()
-  s = ctrl.get_state()
-  context = {
-    # needed for template to make response
-    'request': request,
-    # simplified amplipi state
-    'cur_src': src,
-    'sources': s.sources,
-    'zones': s.zones,
-    'groups': s.groups,
-    'presets': s.presets,
-    'inputs': ctrl.get_inputs(),
-    'unused_groups': [unused_groups(src) for src in range(4)],
-    'unused_zones': [unused_zones(src) for src in range(4)],
-    'ungrouped_zones': [ungrouped_zones(src) for src in range(4)],
-    'song_info': [song_info(src) for src in range(4)],
-    'version': s.info.version,
-  }
-  return templates.TemplateResponse("index.html.j2", context, media_type='text/html')
 
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, s:models.AppSettings=models.AppSettings()) -> FastAPI:
   """ Create the AmpliPi web app with a specific configuration """
