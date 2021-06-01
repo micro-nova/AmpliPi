@@ -464,6 +464,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
 def test_api_doc_has_examples(client):
   """Check if each api endpoint has example responses (and requests)"""
   rv = client.get('/openapi.json') # use json since it is easier to check
+  assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   for path, p in jrv['paths'].items():
     for method, m in p.items():
@@ -484,7 +485,6 @@ def test_api_doc_has_examples(client):
           assert len(resp_spec['examples']) > 0, f'{path_desc}: At least one exmaple response required'
       except KeyError:
         pass # reposnse could not be json
-  assert rv.status_code == HTTPStatus.OK
 
 # TODO: this test will fail until we come up with a good scheme for specifying folder locations in a global config
 # The test below fails since the test and the app are run in different directories
