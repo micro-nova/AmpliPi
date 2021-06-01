@@ -574,7 +574,7 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   return app
 
 if __name__ == "__main__":
-  """ Generate the openapi schema file in yamnl """
+  """ Generate the openapi schema file in yaml """
   parser = argparse.ArgumentParser(description='Create the openapi yaml file describing the AmpliPi API')
   parser.add_argument('file', type=argparse.FileType('w'))
   args = parser.parse_args()
