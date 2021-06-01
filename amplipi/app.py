@@ -28,19 +28,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.routing import APIRoute, APIRouter
 from starlette.responses import FileResponse
 from fastapi.templating import Jinja2Templates
-from fastapi_utils.cbv import cbv
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Optional, Dict, Union, Set
+from typing import List, Dict, Union, Set
 from functools import lru_cache
 #docs
 import argparse
 from fastapi.openapi.utils import get_openapi
 import yaml
-import io
 import json
 
-# web server
-import uvicorn
 # amplipi
 from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 import amplipi.rt as rt
