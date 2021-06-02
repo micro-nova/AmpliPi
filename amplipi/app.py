@@ -101,7 +101,7 @@ def song_info(ctrl: Api, src: int) -> Dict[str,str]:
   """ Get the song info for a source """
   song_fields = ['artist', 'album', 'track', 'img_url']
   stream = ctrl._get_stream(src)
-  info = stream.info if stream else {}
+  info = stream.info() if stream else {}
   # add empty strings for unpopulated fields
   for field in song_fields:
     if field not in info:
