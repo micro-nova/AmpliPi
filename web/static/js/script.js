@@ -351,7 +351,7 @@ function onResponse(resp) {
   updateSourceView(resp);
 }
 async function get() {
-  let response = await fetch('/api/');
+  let response = await fetch('/api');
   let result = await response.json();
   onResponse(result);
   return result;
