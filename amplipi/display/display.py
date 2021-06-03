@@ -15,6 +15,7 @@ import argparse
 import busio
 import cProfile
 import digitalio
+import logging as log
 import requests
 import socket
 import time
@@ -66,7 +67,6 @@ parser.add_argument('--test-board', action='store_true', default=False, help='us
 args = parser.parse_args()
 
 profile = False
-retry_time = 10.0 # seconds between retrying AmpliPi connection
 
 # Configuration for extra TFT pins:
 clk_pin = board.SCLK if args.test_board else board.SCLK_2
@@ -110,6 +110,9 @@ _active_screen = 0
 # The ILI9341 specifies a max write rate of 10 MHz, and a max read rate of
 # 6.66 MHz but much faster speeds seem to work okay.
 spi_baud = 16 * 10**6
+
+# Setup logging
+log.basicConfig(level=log.INFO)
 
 # Convert number range to color gradient (min=green, max=red)
 def gradient(num, min_val=0, max_val=100):
@@ -160,8 +163,7 @@ def get_amplipi_data():
     else:
       print('Error: bad status code returned from amplipi')
   except requests.ConnectionError as e:
-    print("Error: couldn't connect to", args.url, e.args[0].reason)
-    raise ConnectionError
+    raise ConnectionError(e.args[0].reason)
   except requests.Timeout:
     print('Error: timeout requesting amplipi status')
   except ValueError:
@@ -392,23 +394,35 @@ if profile:
   pr = cProfile.Profile()
   pr.enable()
 
+# AmpliPi connection
+connected = False
+connected_once = False
+max_connection_retries = 3
+connection_retries = 0
+
 frame_num = 0
 frame_times = []
 cpu_load = []
-connected = False
-last_connection_time = 0
 while frame_num < 10:
   frame_start_time = time.time()
 
   if _active_screen == 0:
     # Get AmpliPi status
-    if connected or frame_start_time > last_connection_time + retry_time:
-      last_connection_time = frame_start_time
-      try:
-        sources, zones = get_amplipi_data()
-        connected = True
-      except ConnectionError:
+    try:
+      sources, zones = get_amplipi_data()
+    except ConnectionError as e:
+      if connection_retries < max_connection_retries:
+        log.warning(f"Couldn't connect to {args.url}, {e}")
+      elif connection_retries == max_connection_retries:
         connected = False
+        log.error(f'Failure connecting to {args.url}, {e}')
+      connection_retries += 1
+    else:
+      if not connected:
+        log.info(f'Connected to AmpliPi at {args.url}')
+      connected = True
+      connected_once = True
+      connection_retries = 0
 
     # Get stats
     try:
@@ -473,6 +487,10 @@ while frame_num < 10:
 
       # Show volumes
       draw_volume_bars(draw, font, small_font, zones, y=9*ch, height=height-9*ch)
+    elif not connected_once and connection_retries <= max_connection_retries:
+      msg = 'Connecting to the AmpliPi controller' + '.'*connection_retries
+      x = round((width - font.getsize(msg)[0])/2) - 1
+      draw.text((x, 8*ch), msg, font=font, fill='#FFFFFF')
     else:
       # Show an error message on the display
       draw.text((0, 8*ch), 'Cannot connect to the AmpliPi controller', font=font, fill='#FF0000')
