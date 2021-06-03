@@ -25,25 +25,23 @@ import os
 import sys
 import subprocess
 import time
+from typing import Union
+
+# Used by InternetRadio
+import json
+import signal
 
 import amplipi.models as models
 import amplipi.utils as utils
 
-from typing import Union
-
-# Used by InternetRadio
-import urllib.request
-import json
-import signal
-
 # TODO: how to implement base stream class in Python?, there is a lot of duplication between shairport and pandora streams...
-class Stream(object):
+class Stream:
   def connect(self, src):
     """ Connect the stream's output to src """
-    pass
+    return None
   def disconnect(self):
     """ Disconnect the stream's output from any connected source """
-    pass
+    return None
   def status(self):
     return 'Status not available'
 
@@ -70,6 +68,7 @@ class Shairport:
   def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
+    self.proc2 = None
     self.mock = mock
     self.src = None
     self.state = 'disconnected'
@@ -436,9 +435,11 @@ class DLNA:
   def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
+    self.proc2 = None
     self.mock = mock
     self.src = None
     self.state = 'disconnected'
+    self.uuid = 0
 
   def reconfig(self, **kwargs):
     reconnect_needed = False

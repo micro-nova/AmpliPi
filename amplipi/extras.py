@@ -28,7 +28,7 @@ def _vol_string(vol, min_vol=-79, max_vol=0):
   VOL_STR_LEN = 20
   VOL_SCALE = VOL_RANGE / VOL_STR_LEN
   vol_level = int((vol - min_vol)  / VOL_SCALE)
-  assert vol_level >= 0 and vol_level < VOL_STR_LEN
+  assert 0 <= vol_level < VOL_STR_LEN
   vol_string = ['-'] * VOL_STR_LEN
   vol_string[vol_level] = '|' # place the volume slider bar at its current spot
   return ''.join(vol_string) # turn that char array into a string
@@ -91,4 +91,3 @@ def visualize_api(status : models.Status):
     zone_str = utils.compact_str(g.zones)
     viz += f'  {src}({src_type}) --> {g.name:{gname_len}} {zone_str:{gzone_len}} vol [{vol}] {muted}\n'
   return viz
-
