@@ -22,12 +22,14 @@ This module contains helper functions are used across the amplipi python library
 import json
 import os
 import functools
-import wrapt
 import subprocess
 import re
+from typing import List, Set, Dict, Union, Optional, Tuple, TypeVar, Iterable
+
+import wrapt
 import pkg_resources # version
 
-from typing import Collection, Optional, Tuple, TypeVar
+import amplipi.models as models
 
 # Helper functions
 def encode(pydata):
@@ -42,8 +44,7 @@ def parse_int(i, options):
   """ Parse an integer into one of the given options """
   if int(i) in options:
     return int(i)
-  else:
-    raise ValueError('{} is not in [{}]'.format(i, options))
+  raise ValueError('{} is not in [{}]'.format(i, options))
 
 def error(msg):
   """ wrap the error message specified by msg into an error """
@@ -56,22 +57,27 @@ def updated_val(update: Optional[VT], val: VT) -> Tuple[VT, bool]:
   """ get the potentially updated value, @update, defaulting to the current value, @val, if it is None """
   if update is None:
     return val, False
-  else:
-    return update, update != val
+  return update, update != val
 
-def find(items: Collection[VT], id, key='id') -> Tuple[Optional[int], Optional[VT]]:
-  return next(filter(lambda ie: ie[1].__dict__['id'] == id, enumerate(items)), (None, None))
+BT = TypeVar("BT", bound='models.Base', covariant=True)
 
-def clamp(x, xmin, xmax):
-    return max(xmin, min(x, xmax))
+def find(items: Iterable[BT], item_id: int, key='id') -> Union[Tuple[int, BT], Tuple[None, None]]:
+  """ Find an item by id """
+  for i, item in enumerate(items):
+    if item.__dict__[key] == item_id:
+      return i, item
+  return None, None
 
-def compact_str(l):
+def clamp(xval, xmin, xmax):
+  """ Clamp and value between min and max """
+  return max(xmin, min(xval, xmax))
+
+def compact_str(list_:List):
   """ stringify a compact list"""
-  assert type(l) == list
-  return str(l).replace(' ', '')
+  return str(list_).replace(' ', '')
 
 def max_len(items, len_determiner=len):
-  """ determine the item with the max len, based on the @len_determiner's definition of length
+  """ Determine the item with the max len, based on the @len_determiner's definition of length
 
   Args:
     items: iterable items
@@ -86,9 +92,14 @@ def max_len(items, len_determiner=len):
   return len_determiner(largest)
 
 def abbreviate_src(src_type):
+  """ Abbreviate source's type for pretty printing """
   return src_type[0].upper() if src_type else '_'
 
-cached_outputs = None
+def src_zones(status: models.Status) -> Dict[int, List[int]]:
+  """ Get a mapping from source ids to zones """
+  return { src.id : [ zone.id for zone in status.zones if zone.id is not None and zone.source_id == src.id] for src in status.sources if src.id is not None}
+
+@functools.lru_cache(1)
 def available_outputs():
   """ get the available alsa outputs (we are expecting ch0-ch3).
 
@@ -97,25 +108,25 @@ def available_outputs():
 
   This will cache the result since alsa outputs do not change dynamically (unless you edit a config file).
   """
-  global cached_outputs
-  if cached_outputs is None:
-    try:
-      cached_outputs = [ o for o in subprocess.check_output('aplay -L'.split()).decode().split('\n') if o and o[0] != ' ' ]
-    except:
-      cached_outputs = []
-    if 'ch0' not in cached_outputs:
-      print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
-  return cached_outputs
+  try:
+    outputs = [ o for o in subprocess.check_output('aplay -L'.split()).decode().split('\n') if o and o[0] != ' ' ]
+  except:
+    outputs = []
+  if 'ch0' not in outputs:
+    print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
+  return outputs
 
-def output_device(src):
-  dev = 'ch' + str(src)
+def output_device(sid: int) -> str:
+  """ Get a source's corresponding ALSA output device string """
+  dev = 'ch' + str(sid)
   if dev in available_outputs():
     return dev
-  else:
-    return 'default' # fallback to default
+  return 'default' # fallback to default
 
 @functools.lru_cache(maxsize=8)
 def get_folder(folder):
+  """ Get a directory
+  Abstracts the directory structure """
   if not os.path.exists(folder):
     try:
       os.mkdir(folder)
@@ -125,32 +136,29 @@ def get_folder(folder):
 
 @wrapt.decorator
 def save_on_success(wrapped, instance, args, kwargs):
+  """ Check if an amplipi.ctrl API call is successful and saves the state if so """
   result = wrapped(*args, **kwargs)
   if result is None:
     # call postpone_save instead of save to reduce the load/delay of a request
     instance.postpone_save()
-    pass
   return result
 
-def with_id(elements: Optional[Collection[VT]]) -> Optional[VT]:
-  if elements is None:
-    return []
-  return [ e for e in elements if 'id' in e ]
+TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
 
 def detect_version() -> str:
+  """ Get the AmpliPi software version from the project TOML file """
   version = 'unknown'
   try:
-    version = pkg_resources.get_distribution('amplipi').version()
+    version = pkg_resources.get_distribution('amplipi').version
   except:
     pass
   if 'unknown' in version:
     # assume the application is running in its base directory and check the pyproject.toml file to determine the version
     # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
-    TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
     script_folder = os.path.dirname(os.path.realpath(__file__))
     try:
-      with open(os.path.join(script_folder, '..', 'pyproject.toml')) as f:
-        for line in f.readlines():
+      with open(os.path.join(script_folder, '..', 'pyproject.toml')) as proj_file:
+        for line in proj_file.readlines():
           if 'version' in line:
             match = TOML_VERSION_STR.search(line)
             if match is not None:

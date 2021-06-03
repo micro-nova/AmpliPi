@@ -20,22 +20,27 @@ Encourages reuse of datastructures across AmpliPi
 """
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Set, Dict, Optional, Union
-from pydantic import BaseModel, BaseSettings, Field
+from typing import List, Dict, Optional, Union
+from types import SimpleNamespace
 from enum import Enum
+from pydantic import BaseSettings, BaseModel, Field
 
-class fields(object):
+# pylint: disable=invalid-name
+# pylint: disable=too-few-public-methods
+# pylint: disable=missing-class-docstring
+
+class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
-  Name = Field(description="Friendly name")
+  Name = Field(description='Friendly name')
   SourceId = Field(ge=0, le=3, description='id of the connected source')
   ZoneId = Field(ge=0, le=35)
   Mute =  Field(description='Set to true if output is muted')
-  Volume = Field(ge=-79, le=0, description="Output volume in dB")
+  Volume = Field(ge=-79, le=0, description='Output volume in dB')
   GroupMute =  Field(description='Set to true if output is all zones muted')
-  GroupVolume = Field( ge=-79, le=0, description="Average utput volume in dB")
-  Disabled = Field(description="Set to true if not connected to a speaker")
-  Zones = Field(description="Set of zones belonging to a group")
+  GroupVolume = Field( ge=-79, le=0, description='Average input volume in dB')
+  Disabled = Field(description='Set to true if not connected to a speaker')
+  Zones = Field(description='Set of zones belonging to a group')
   AudioInput = Field('', description="""Connected audio source
 
   * Digital Stream ('stream=SID') where SID is the ID of the connected stream
@@ -43,7 +48,7 @@ class fields(object):
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 
-class fields_w_default(object):
+class fields_w_default(SimpleNamespace):
   """ AmpliPi's field types that need a default value
 
   These are needed because there is ambiguity where and optional field has a default value
@@ -51,10 +56,10 @@ class fields_w_default(object):
   # TODO: less duplication
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
   Mute =  Field(default=True, description='Set to true if output is muted')
-  Volume = Field(default=-79, ge=-79, le=0, description="Output volume in dB")
+  Volume = Field(default=-79, ge=-79, le=0, description='Output volume in dB')
   GroupMute =  Field(default=True, description='Set to true if output is all zones muted')
-  GroupVolume = Field(default=-79, ge=-79, le=0, description="Average utput volume in dB")
-  Disabled = Field(default=False, description="Set to true if not connected to a speaker")
+  GroupVolume = Field(default=-79, ge=-79, le=0, description='Average utput volume in dB')
+  Disabled = Field(default=False, description='Set to true if not connected to a speaker')
 
 class Base(BaseModel):
   """ Base class for AmpliPi Models
@@ -96,11 +101,11 @@ class Source(Base):
   input: str = fields.AudioInput
 
   def get_stream(self) -> Optional[int]:
+    """ Get a sources conneted stream if any """
     try:
       if 'stream=' in self.input:
         return int(self.input.split('=')[1])
-      else:
-        return None
+      return None
     except:
       return None
 
@@ -328,15 +333,15 @@ class Stream(Base):
   * spotify
   """)
   # TODO: how to support different stream types
-  user: Optional[str] = Field(description="User login")
-  password: Optional[str] = Field(description="Password")
-  station: Optional[str] = Field(description="Radio station identifier")
-  url: Optional[str] = Field(description="Stream url, used for internetradio")
-  logo: Optional[str] = Field(description="Icon/Logo url, used for internetradio")
+  user: Optional[str] = Field(description='User login')
+  password: Optional[str] = Field(description='Password')
+  station: Optional[str] = Field(description='Radio station identifier')
+  url: Optional[str] = Field(description='Stream url, used for internetradio')
+  logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
   # generated fields
   # TODO: formalize stream info
   info: Optional[Dict] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
-  status: Optional[str] = Field(description="State of the stream")
+  status: Optional[str] = Field(description='State of the stream')
 
   # add examples for each type of stream
   class Config:
@@ -438,8 +443,7 @@ class Stream(Base):
           'value': {
             'id': 44590,
             'info': {'details': 'No info available'},
-            'name': "Jason's "
-                    'iPhone',
+            'name': "Jason's iPhone",
             'status': 'connected',
             'type': 'shairport'
           }
@@ -494,13 +498,13 @@ class StreamUpdate(BaseUpdate):
 
 
 class StreamCommand(str, Enum):
-  play = 'play'
-  pause = 'pause'
-  next = 'next'
-  stop = 'stop'
-  love = 'love'
-  ban = 'ban'
-  shelve = 'shelve'
+  PLAY = 'play'
+  PAUSE = 'pause'
+  NEXT = 'next'
+  STOP = 'stop'
+  LOVE = 'love'
+  BAN = 'ban'
+  SHELVE = 'shelve'
 
 class PresetState(BaseModel):
   """ A set of partial configuration changes to make to sources, zones, and groups """

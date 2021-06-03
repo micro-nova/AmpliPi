@@ -1,6 +1,6 @@
-import pytest
+""" Test the amplipi rest API """
 
-from fastapi.testclient import TestClient
+from typing import List
 
 # json utils
 import json
@@ -9,43 +9,54 @@ from http import HTTPStatus
 # temporary directory for each test config
 import tempfile
 import os
+from copy import deepcopy # copy test config
 
-# copy test config
-from copy import deepcopy
+import pytest
+from fastapi.testclient import TestClient
 
 # testing context
 from context import amplipi
 
+# pylint: disable=redefined-outer-name
+# pylint: disable=invalid-name
+
 def base_config():
+  """ Default Amplipi configuration """
   return amplipi.ctrl.Api._DEFAULT_CONFIG
 
 def base_config_copy():
+  """ Modify-able Amplipi configuration """
   return deepcopy(base_config())
 
 def base_config_no_presets():
+  """ AmpliPi configuration with presets field unpopulated """
   cfg = base_config_copy()
   del cfg['presets']
   return cfg
 
 def base_config_no_groups():
+  """ AmpliPi configuration with groups field unpopulated """
   cfg = base_config_copy()
   del cfg['groups']
   return cfg
 
 def status_copy(client):
+  """ Modify-able copy of AmpliPi's status """
   rv = client.get('/api/')
   jrv = rv.json()
   assert jrv != None
   return jrv # jrv was already serialized so it should be a copy
 
-def find(list, id):
-  for i in list:
-    if i['id'] == id:
+def find(elements:List, eid:int):
+  """ Find an element with id==eid """
+  for i in elements:
+    if i['id'] == eid:
       return i
   return None
 
 @pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups()])
 def client(request):
+  """ AmpliPi instance with mocked ctrl and streams """
   cfg = request.param
   config_dir = tempfile.mkdtemp()
   config_file = os.path.join(config_dir, 'house.json')
@@ -58,6 +69,7 @@ def client(request):
 
 @pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups()])
 def clientnm(request):# Non-mock systems should use this client - mock_ctrl and mock_streams are False here
+  """ AmpliPi instance connected to a real AmpliPi controller """
   cfg = request.param
   config_dir = tempfile.mkdtemp()
   config_file = os.path.join(config_dir, 'house.json')
@@ -71,6 +83,7 @@ def clientnm(request):# Non-mock systems should use this client - mock_ctrl and 
 # TODO: the web view test should be added to its own testfile once we add more functionality to the site
 @pytest.mark.parametrize('path', ['' , '/'] + [ '/{}'.format(i) for i in range(4) ])
 def test_view(client: TestClient, path):
+  """ Test the web app's main view """
   rv = client.get(path)
   assert rv.status_code == HTTPStatus.OK
 
@@ -115,12 +128,12 @@ def test_open_api_yamlfile(client):
     """Start with a basic controller and just check if it gives a real response"""
     rv = client.get('/openapi.yaml')
     assert rv.status_code == HTTPStatus.OK
-
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
 # Test Sources
 def base_source_ids():
+  """ Default Source ids """
   return [ s['id'] for s in base_config()['sources']]
 
 @pytest.mark.parametrize('sid', base_source_ids())
@@ -345,7 +358,7 @@ def test_get_preset(client, pid):
     return
   jrv = rv.json()
   s = find(base_config()['presets'], pid)
-  assert s != None
+  assert s is not None
   assert s['name'] == jrv['name']
 
 # /presets/{presetId} patch-preset
@@ -362,7 +375,7 @@ def test_patch_preset_name(client, pid):
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['presets'], pid)
-  assert s != None
+  assert s is not None
   assert s['name'] == 'patched-name'
 
 # /presets/{presetId} delete-preset

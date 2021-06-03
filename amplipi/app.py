@@ -22,29 +22,33 @@ This serves the amplipi webpp and underlying rest api, that it uses.
 The FastAPI/Starlette web framework is used to simplify the web plumbing.
 """
 
+import argparse
+import os
+
+# type handling, fastapi leverages type checking for performance and easy docs
+from typing import List, Dict, Set, Any, Optional, Callable, TYPE_CHECKING, get_type_hints
+from types import SimpleNamespace
+
+from functools import lru_cache
+
+import yaml
+
 # web framework
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.routing import APIRoute, APIRouter
-from starlette.responses import FileResponse
 from fastapi.templating import Jinja2Templates
-# type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Dict, Union, Set
-from functools import lru_cache
+from starlette.responses import FileResponse
+
 #docs
-import argparse
 from fastapi.openapi.utils import get_openapi
-import yaml
-import json
 
 # amplipi
 from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
-import amplipi.rt as rt
 import amplipi.utils as utils
 import amplipi.models as models
 
 # start in the web directory
-import os
 template_dir = os.path.abspath('web/templates')
 static_dir = os.path.abspath('web/static')
 generated_dir = os.path.abspath('web/generated')
@@ -55,8 +59,6 @@ templates = Jinja2Templates(template_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 app.mount("/generated", StaticFiles(directory=generated_dir), name="generated") # TODO: make this register as a dynamic folder???
 
-from typing import TYPE_CHECKING, Any, Callable, get_type_hints
-from fastapi import APIRouter
 
 class SimplifyingRouter(APIRouter):
   """
@@ -75,12 +77,12 @@ class SimplifyingRouter(APIRouter):
 def unused_groups(ctrl: Api, src: int) -> Dict[int,str]:
   """ Get groups that are not connected to src """
   groups = ctrl.status.groups
-  return { g.id : g.name for g in groups if g.source_id != src}
+  return { g.id : g.name for g in groups if g.source_id != src and g.id }
 
 def unused_zones(ctrl: Api, src: int) -> Dict[int,str]:
   """ Get zones that are not conencted to src """
   zones = ctrl.status.zones
-  return { z.id : z.name for z in zones if z.source_id != src }
+  return { z.id : z.name for z in zones if z.source_id != src and z.id }
 
 def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   """ Get zones that are connected to src, but don't belong to a full group """
@@ -92,15 +94,15 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
     if g.source_id == src:
       grouped_zones = grouped_zones.union(g.zones)
   # get all of the zones connected to this soource
-  source_zones = set([ z.id for z in zones if z.source_id == src ])
+  source_zones = { z.id for z in zones if z.source_id == src }
   # return all of the zones connected to this source that aren't in a group
   ungrouped_zones_ = source_zones.difference(grouped_zones)
   return [ zones[z] for z in ungrouped_zones_ if z and not zones[z].disabled]
 
-def song_info(ctrl: Api, src: int) -> Dict[str,str]:
+def song_info(ctrl: Api, sid: int) -> Dict[str,str]:
   """ Get the song info for a source """
   song_fields = ['artist', 'album', 'track', 'img_url']
-  stream = ctrl._get_stream(src)
+  stream = ctrl.get_stream(sid=sid)
   info = stream.info() if stream else {}
   # add empty strings for unpopulated fields
   for field in song_fields:
@@ -111,9 +113,12 @@ def song_info(ctrl: Api, src: int) -> Dict[str,str]:
 # add a default controller (this is overriden below in create_app)
 @lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
+  """ Get the controller
+  MAkes a single instance of the controller to avoid duplicates (Singleton pattern)
+  """
   return Api(models.AppSettings())
 
-class params(object):
+class params(SimpleNamespace):
   """ Describe standard path ID's for each api type """
   SourceID = Path(..., ge=0, le=3, description="Source ID")
   ZoneID = Path(..., ge=0, le=35, description="Zone ID")
@@ -131,14 +136,14 @@ def get_status(ctrl:Api=Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
 
 def code_response(ctrl: Api, resp):
+  """ Convert amplipi.ctrl.Api responses to json/http responses """
   if resp is None:
     # general commands return None to indicate success
     return ctrl.get_state()
-  elif 'error' in resp:
+  if 'error' in resp:
     # TODO: refine error codes based on error message
     raise HTTPException(404, resp['error'])
-  else:
-    return resp
+  return resp
 
 # sources
 
@@ -170,10 +175,9 @@ def get_zones(ctrl:Api=Depends(get_ctrl)) -> Dict[str, List[models.Zone]]:
 def get_zone(ctrl:Api=Depends(get_ctrl), zid: int=params.ZoneID) -> models.Zone:
   """ Get Zone with id=**zid** """
   zones = ctrl.get_state().zones
-  if zid >= 0 and zid < len(zones):
+  if 0 <= zid < len(zones):
     return zones[zid]
-  else:
-    raise HTTPException(404, f'zone {zid} not found')
+  raise HTTPException(404, f'zone {zid} not found')
 
 @api.patch('/api/zones/{zid}', tags=['zone'])
 def set_zone(zone: models.ZoneUpdate, ctrl:Api=Depends(get_ctrl), zid: int=params.ZoneID) -> models.Status:
@@ -201,8 +205,7 @@ def get_group(ctrl:Api=Depends(get_ctrl), gid: int=params.GroupID) -> models.Gro
   _, grp = utils.find(ctrl.get_state().groups, gid)
   if grp is not None:
     return grp
-  else:
-    raise HTTPException(404, f'group {gid} not found')
+  raise HTTPException(404, f'group {gid} not found')
 
 @api.patch('/api/groups/{gid}', tags=['group'])
 def set_group(group: models.GroupUpdate, ctrl:Api=Depends(get_ctrl), gid: int=params.GroupID) -> models.Status:
@@ -233,8 +236,7 @@ def get_stream(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID) -> models.S
   _, stream = utils.find(ctrl.get_state().streams, sid)
   if stream is not None:
     return stream
-  else:
-    raise HTTPException(404, f'stream {sid} not found')
+  raise HTTPException(404, f'stream {sid} not found')
 
 @api.patch('/api/streams/{sid}', tags=['stream'])
 def set_stream(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID, update: models.StreamUpdate=None) -> models.Status:
@@ -255,7 +257,7 @@ def change_station(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID, station
 
 @api.post('/api/streams/{sid}/{cmd}', tags=['stream'])
 def exec_command(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID, cmd: models.StreamCommand=None) -> models.Status:
-  """ Execute a comamnds on a stream (stream=**sid**).
+  """ Executes a comamnd on a stream (stream=**sid**).
 
     Command options:
     * Play Stream: **play**
@@ -287,8 +289,7 @@ def get_preset(ctrl:Api=Depends(get_ctrl), pid: int=params.PresetID) -> models.P
   _, preset = utils.find(ctrl.get_state().presets, pid)
   if preset is not None:
     return preset
-  else:
-    raise HTTPException(404, f'preset {pid} not found')
+  raise HTTPException(404, f'preset {pid} not found')
 
 @api.patch('/api/presets/{pid}', tags=['preset'])
 async def set_preset(ctrl:Api=Depends(get_ctrl), pid: int=params.PresetID, update: models.PresetUpdate=None) -> models.Status:
@@ -307,6 +308,22 @@ def load_preset(ctrl:Api=Depends(get_ctrl), pid: int=params.PresetID) -> models.
 
 app.include_router(api)
 
+def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
+  try:
+    if route.body_field:
+      return route.body_field.type_.schema_json()
+    return None
+  except:
+    return None
+
+def get_response_model(route: APIRoute) -> Optional[Dict[str, Any]]:
+  try:
+    if route.body_field:
+      return route.body_field.type_.schema_json()
+    return None
+  except:
+    return None
+
 # API Documentation
 def generate_openapi_spec(add_test_docs=True):
   if app.openapi_schema:
@@ -319,11 +336,11 @@ def generate_openapi_spec(add_test_docs=True):
     tags = [
       {
         'name': 'status',
-        'description': 'The status and configuration of the entire system, including source, zones, groups, and streams.',
+        'description': 'The status and configuration of the entire system, including sources, zones, groups, and streams.',
       },
       {
         'name': 'source',
-        'description': 'Audio source. Can accept sudio input from a local (RCA) connection or any stream. Sources can be connected to one or multiple zones, or connected to nothing at all.',
+        'description': 'Audio source. Can accept audio input from a local (RCA) connection or any stream. Sources can be connected to one or multiple zones, or connected to nothing at all.',
       },
       {
         'name': 'zone',
@@ -331,11 +348,11 @@ def generate_openapi_spec(add_test_docs=True):
       },
       {
         'name': 'group',
-        'description': '''Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, ie. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.,'''
+        'description': '''Group of zones. Grouping allows a set of zones to be controlled together. A zone can belong to multiple groups, allowing for different levels of abstraction, e.g. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.'''
       },
       {
         'name': 'stream',
-        'description': 'Digital stream that can be connected to a source, ie. Pandora, Airplay, Spotify, Internet Radio, DLNA.',
+        'description': 'Digital stream that can be connected to a source, e.g. Pandora, Airplay, Spotify, Internet Radio, DLNA.',
       },
       {
         'name': 'preset',
@@ -355,52 +372,37 @@ def generate_openapi_spec(add_test_docs=True):
   }
   openapi_schema['info']['license'] = {
     'name': 'GPL',
-    'url':  '/license',
+    'url':  'https://github.com/micro-nova/AmpliPi/blob/master/COPYING',
   }
 
   # Manually add examples present in pydancticModel.schema_extra into openAPI schema
   for route in app.routes:
     if isinstance(route, APIRoute):
-      try:
-        if route.body_field:
-          req_model_json = route.body_field.type_.schema_json()
+      req_model = get_body_model(route)
+      if 'examples' in req_model or 'creation_examples' in req_model:
+        if 'creation_examples' in req_model: # prefer creation examples for POST request, this allows us to have different examples for get response and creation requests
+          examples = req_model['creation_examples']
         else:
-          req_model_json = ''
-      except:
-        req_model_json = ''
-      try:
-        if route.response_field:
-          resp_model_json = route.response_field.type_.schema_json()
-        else:
-          resp_model_json = ''
-      except:
-        resp_model_json = ''
-      if req_model_json:
-        req_model = json.loads(req_model_json)
-        if "examples" in req_model or 'creation_examples' in req_model:
-          if 'creation_examples' in req_model: # prefer creation examples for POST request, this allows us to have different examples for get response and creation requests
-            examples = req_model['creation_examples']
-          else:
-            examples = req_model['examples']
-          for method in route.methods:
-            # Only POST, PATCH, and PUT methods have a request body
-            if method in {"POST", "PATCH", "PUT"}:
-              openapi_schema['paths'][route.path][method.lower()]['requestBody'][
-              'content']['application/json']['examples'] = examples
-      if resp_model_json:
-        resp_model = json.loads(resp_model_json)
-        if 'examples' in resp_model:
-          examples = resp_model['examples']
-          for method in route.methods:
-            openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
-              'content']['application/json']['examples'] = examples
+          examples = req_model['examples']
+        for method in route.methods:
+          # Only POST, PATCH, and PUT methods have a request body
+          if method in {"POST", "PATCH", "PUT"}:
+            openapi_schema['paths'][route.path][method.lower()]['requestBody'][
+            'content']['application/json']['examples'] = examples
+  for route in app.routes:
+    if isinstance(route, APIRoute):
+      resp_model = get_response_model(route)
+      if 'examples' in resp_model:
+        examples = resp_model['examples']
+        for method in route.methods:
+          openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
+            'content']['application/json']['examples'] = examples
       if route.path in ['/api/zones', '/api/groups', '/api/sources', '/api/streams', '/api/presets']:
         if 'get' in  openapi_schema['paths'][route.path]:
           piece = route.path.replace('/api/', '')
           example_status = list(models.Status.Config.schema_extra['examples'].values())[0]['value']
           openapi_schema['paths'][route.path]['get']['responses']['200'][
               'content']['application/json']['example'] = { piece: example_status[piece] }
-
   if not add_test_docs:
     return
 
@@ -419,12 +421,14 @@ def generate_openapi_spec(add_test_docs=True):
           live_examples = {}
           if len(route.tags) == 1:
             tag = route.tags[0]
-            for i in  get_ctrl()._get_items(tag):
+            for i in get_ctrl()._get_items(tag):
               live_examples[i.name] = {'value': i.id, 'summary': i.name}
           # find the matching parameter and add the examples to it
-          for p in openapi_schema['paths'][route.path][method.lower()]['parameters']:
-            if p['name'] == param_name:
-              p['examples'] = live_examples
+          path_method = openapi_schema['paths'][route.path][method.lower()]
+          if 'parameters' in path_method:
+            for p in path_method['parameters']:
+              if p['name'] == param_name:
+                p['examples'] = live_examples
 
   return openapi_schema
 
@@ -443,9 +447,9 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
       1. Go to an API request
       1. Pick one of the examples
       2. Edit it
-      3. Press try button, it will send an API command/request to the AmpliPi
+      3. Press the try button, it will send an API command/request to the AmpliPi
 
-    __Try using the get status:__
+    __Try getting the status:__
 
       1. Go to [Status -> Get Status](#get-/api/)
       2. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
@@ -453,10 +457,7 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
     __Try creating a new group:__
 
       1. Go to [Group -> Create Group](#post-/api/group)
-      2. Click Example
-      3. Edit the zones and group name
-      4. Click the try button, you will see a response with the newly created group
-
+      2. Click ExampleLooks like I need to
     __Here are some other things that you might want to change:__
 
       - [Stream -> Create new stream](#post-/api/stream)
@@ -502,12 +503,12 @@ def read_openapi_yaml() -> Response:
 def read_openapi_json():
   return app.openapi()
 
-app.openapi = generate_openapi_spec
+app.openapi = generate_openapi_spec # type: ignore
 
 # Documentation
 
-@app.get('/api/doc', include_in_schema=False)
-def doc(ctrl:Api=Depends(get_ctrl)):
+@app.get('/doc', include_in_schema=False)
+def doc():
   # TODO: add hosted python docs as well
   return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
 
@@ -516,38 +517,38 @@ def doc(ctrl:Api=Depends(get_ctrl)):
 @app.get('/', include_in_schema=False)
 @app.get('/{src}', include_in_schema=False)
 def view(request: Request, ctrl:Api=Depends(get_ctrl), src:int=0):
-  s = ctrl.get_state()
+  """ Webapp main view """
+  state = ctrl.get_state()
   context = {
     # needed for template to make response
     'request': request,
     # simplified amplipi state
     'cur_src': src,
-    'sources': s.sources,
-    'zones': s.zones,
-    'groups': s.groups,
-    'presets': s.presets,
+    'sources': state.sources,
+    'zones': state.zones,
+    'groups': state.groups,
+    'presets': state.presets,
     'inputs': ctrl.get_inputs(),
     'unused_groups': [unused_groups(ctrl, src) for src in range(4)],
     'unused_zones': [unused_zones(ctrl, src) for src in range(4)],
     'ungrouped_zones': [ungrouped_zones(ctrl, src) for src in range(4)],
     'song_info': [song_info(ctrl, src) for src in range(4)],
-    'version': s.info.version,
+    'version': state.info.version if state.info else 'unknown',
   }
-  return templates.TemplateResponse("index.html.j2", context, media_type='text/html')
+  return templates.TemplateResponse('index.html.j2', context, media_type='text/html')
 
-def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, s:models.AppSettings=models.AppSettings()) -> FastAPI:
+def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings:models.AppSettings=models.AppSettings()) -> FastAPI:
   """ Create the AmpliPi web app with a specific configuration """
   # specify old parameters
-  if mock_ctrl: s.mock_ctrl = mock_ctrl
-  if mock_streams: s.mock_streams = mock_streams
-  if config_file: s.config_file = config_file
-  if delay_saves: s.delay_saves = delay_saves
-  # use a controller that has the specified configuration
-  @lru_cache(1)
-  def specific_ctrl():
-    return Api(s)
-  # replace the generic get_ctrl with the specific one we created above
-  app.dependency_overrides[get_ctrl] = specific_ctrl
+  if mock_ctrl:
+    settings.mock_ctrl = mock_ctrl
+  if mock_streams:
+    settings.mock_streams = mock_streams
+  if config_file:
+    settings.config_file = config_file
+  if delay_saves:
+    settings.delay_saves = delay_saves
+  get_ctrl().reinit(settings)
   return app
 
 if __name__ == "__main__":

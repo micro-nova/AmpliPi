@@ -1,17 +1,17 @@
 #!/usr/bin/python3
-# this file is expected to be run using pytest, ie. pytest tests/test_ethaudio_mock.py
 
-import argparse
-from copy import deepcopy
-import deepdiff
+"""
+Test amplipi.ctrl
+this file is expected to be run using pytest, ie. pytest tests/test_ethaudio_mock.py
+"""
 
-# use the internal amplipi library
-from context import amplipi
-
-# modify json config files
 import json
 import os
 import tempfile
+from copy import deepcopy
+
+# use the internal amplipi library
+from context import amplipi
 
 # several starting configurations to load for testing including a corrupted configuration
 DEFAULT_STATUS = deepcopy(amplipi.ctrl.Api._DEFAULT_CONFIG)
@@ -26,13 +26,15 @@ CORRUPTED_CONFIG = GOOD_CONFIG[0:len(GOOD_CONFIG)//2]
 # an non-existant config file
 NO_CONFIG = None
 def delete_file(file_path):
+  """ Delete a config file """
   try:
     os.remove(file_path)
   except OSError:
     pass
-  assert False == os.path.exists(file_path)
+  assert not os.path.exists(file_path)
 
 def write_file(file_path, content):
+  """ Write a new config File """
   with open(file_path, 'w') as cfg:
     cfg.write(content)
   assert os.path.exists(file_path)
@@ -59,9 +61,10 @@ def setup_test_configs(config=None, backup_config=None):
     write_file(CONFIG_FILE_BACKUP, backup_config)
 
 def api_w_mock_rt(config=None, backup_config=None):
-  # copy in specfic config files (paths) to know config locations
-  #   this sets the initial configuration
-  #   (a None config file means that config file will be deleted before launch)
+  """ Copy in specfic config files (paths) to know config locations
+  this sets the initial configuration
+  (a None config file means that config file will be deleted before launch)
+  """
   setup_test_configs(config, backup_config)
   # start the api (we have a specfic config path we use for all tests)
   settings = amplipi.models.AppSettings()
@@ -70,9 +73,10 @@ def api_w_mock_rt(config=None, backup_config=None):
   return amplipi.ctrl.Api(settings)
 
 def api_w_rpi_rt(config=None, backup_config=None):
-  # copy in specfic config files (paths) to know config locations
-  #   this sets the initial configuration
-  #   (a None config file means that config file will be deleted before launch)
+  """ Copy in specfic config files (paths) to know config locations
+  this sets the initial configuration
+  (a None config file means that config file will be deleted before launch)
+  """
   setup_test_configs(config, backup_config)
   # start the api (we have a specfic config path we use for all tests)
   settings = amplipi.models.AppSettings()
@@ -81,21 +85,22 @@ def api_w_rpi_rt(config=None, backup_config=None):
   return amplipi.ctrl.Api(settings)
 
 def use_tmpdir():
-  # lets run these tests in a temporary directory so they dont mess with other tests config files
+  """ Use a temporary directory so we don't mess with other tests config files """
   test_dir = tempfile.mkdtemp()
   os.chdir(test_dir)
   assert test_dir == os.getcwd()
 
 def prune_state(state: amplipi.models.Status):
   """ Prune generated fields from system state to make comparable """
-  state = state.dict(exclude_none=True)
-  for s in state['streams']:
-    s.pop('info')
-    s.pop('status')
-  state.pop('info')
-  return state
+  dstate = state.dict(exclude_none=True)
+  for field in dstate['streams']:
+    field.pop('info')
+    field.pop('status')
+  dstate.pop('info')
+  return dstate
 
 def test_config_loading():
+  """ Test config file loading """
   use_tmpdir() # run from temp dir so we don't mess with current directory
   # test loading an empty config (should load default config)
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
