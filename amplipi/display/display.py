@@ -12,15 +12,23 @@
 # Debounce touches
 
 import argparse
-import board
 import busio
 import cProfile
 import digitalio
-import pwmio
-import RPi.GPIO as GPIO
 import requests
 import socket
 import time
+
+# If this is run on anything other than a Raspberry Pi,
+# it won't work. Just quit if not on a Pi.
+try:
+  import board
+  import pwmio
+  import RPi.GPIO as gpio
+except (NotImplementedError, RuntimeError) as e:
+  print('Error:', e)
+  print('Only Raspberry Pi is currently supported')
+  quit()
 
 # Display
 import adafruit_rgb_display.ili9341 as ili9341
@@ -246,7 +254,7 @@ def touch_callback(pin_num):
   global _active_screen
 
   # Mask the interrupt since reading the position generates a false interrupt
-  GPIO.remove_event_detect(t_irq_pin.id)
+  gpio.remove_event_detect(t_irq_pin.id)
 
   # Average 16 values
   x_raw_list = []
@@ -293,13 +301,13 @@ def touch_callback(pin_num):
   #  print(f'No valid points')
 
   try:
-    GPIO.add_event_detect(t_irq_pin.id, GPIO.FALLING, callback=touch_callback)
+    gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
   except RuntimeError as e:
     print(e)
 
 # Get touch events
-GPIO.setup(t_irq_pin.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.add_event_detect(t_irq_pin.id, GPIO.FALLING, callback=touch_callback)
+gpio.setup(t_irq_pin.id, gpio.IN, pull_up_down=gpio.PUD_UP)
+gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
 
 # Load image and convert to RGB
 logo = Image.open('micronova-320x240.png').convert('RGB')
