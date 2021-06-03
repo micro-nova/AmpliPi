@@ -28,6 +28,7 @@ import amplipi.utils as utils
 if not DISABLE_HW:
   from serial import Serial
   from smbus2 import SMBus
+  import RPi.GPIO as GPIO
 else:
   # dummy class
   class Serial:
@@ -63,6 +64,15 @@ class _Preamps:
       self.bus = None
       print('Mocking preamp connection')
     else:
+      # Reset preamp board before establishing a communication channel
+      GPIO.setmode(GPIO.BCM)
+      GPIO.setup(4, GPIO.OUT)
+      GPIO.output(4, 1)
+      time.sleep(0.1)
+      GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
+      time.sleep(0.1)
+      GPIO.output(4, 1)
+      time.sleep(5) # Wait a second for the resets to propagate down the line of boxes (should be about 1s, 5s for testing)
       # Setup serial connection via UART pins - set I2C addresses for preamps
       ser = Serial("/dev/serial0")
       ser.baudrate = 9600
