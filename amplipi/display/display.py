@@ -59,13 +59,14 @@ class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
 parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
                                  formatter_class=CustomFormatter)
 parser.add_argument('-u', '--url', default='localhost', help="the AmpliPi's URL to contact")
-parser.add_argument('-r', '--update-rate', metavar='HZ', type=float, default=2.0, help="the display's update rate in Hz")
+parser.add_argument('-r', '--update-rate', metavar='HZ', type=float, default=1.0, help="the display's update rate in Hz")
 parser.add_argument('-b', '--brightness', metavar='%', type=float, default=1.0, help='the brightness of the backlight, range=[0.0, 1.0]')
 parser.add_argument('-i', '--iface', default='eth0', help='the network interface to display the IP of')
 parser.add_argument('--test-board', action='store_true', default=False, help='use SPI0 and test board pins')
 args = parser.parse_args()
 
 profile = False
+retry_time = 10.0 # seconds between retrying AmpliPi connection
 
 # Configuration for extra TFT pins:
 clk_pin = board.SCLK if args.test_board else board.SCLK_2
@@ -155,14 +156,12 @@ def get_amplipi_data():
           name = inp
         sources[i]['name'] = name
         sources[i]['playing'] = playing
-      # For the crazies out there
-      #sources = [j['streams'][stream_ids.index(int(s['input'].replace('stream=', '')))]['name']
-      #           if s['input'].startswith('stream=') else s['input'] for s in j['sources']]
       zones = j['zones']
     else:
       print('Error: bad status code returned from amplipi')
   except requests.ConnectionError as e:
     print("Error: couldn't connect to", args.url, e.args[0].reason)
+    raise ConnectionError
   except requests.Timeout:
     print('Error: timeout requesting amplipi status')
   except ValueError:
@@ -396,12 +395,20 @@ if profile:
 frame_num = 0
 frame_times = []
 cpu_load = []
+connected = False
+last_connection_time = 0
 while frame_num < 10:
-  start = time.time()
+  frame_start_time = time.time()
 
   if _active_screen == 0:
     # Get AmpliPi status
-    sources, zones = get_amplipi_data()
+    if connected or frame_start_time > last_connection_time + retry_time:
+      last_connection_time = frame_start_time
+      try:
+        sources, zones = get_amplipi_data()
+        connected = True
+      except ConnectionError:
+        connected = False
 
     # Get stats
     try:
@@ -436,10 +443,6 @@ while frame_num < 10:
     draw.text((0*cw, 1*ch), 'CPU:',     font=font, fill='#FFFFFF')
     draw.text((0*cw, 2*ch), 'Mem:',     font=font, fill='#FFFFFF')
     draw.text((0*cw, 3*ch), 'Disk:',    font=font, fill='#FFFFFF')
-    draw.text((0*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
-    draw.text((0*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
-    draw.text((0*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
-    draw.text((0*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
 
     draw.text((6*cw, 0*ch), ip_str,     font=font, fill='#FFFFFF')
     draw.text((6*cw, 1*ch), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
@@ -452,19 +455,28 @@ while frame_num < 10:
     draw.text((13*cw, 2*ch), ram_str2,  font=font, fill='#FFFFFF')
     draw.text((13*cw, 3*ch), disk_str2, font=font, fill='#FFFFFF')
 
-    # Show source input names
-    xs = 10*cw
-    xp = xs - round(0.5*cw) # Shift playing arrow back a bit
-    ys = 4*ch + round(0.5*ch)
-    draw.line(((0, ys-3), (width-1, ys-3)), width=2, fill='#999999')
-    for i in range(4):
-      if sources[i]['playing']:
-        draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
-      draw.text((xs + 1*cw, ys + i*ch), sources[i]['name'], font=font, fill='#F0E68C')
-    draw.line(((0, ys+4*ch+2), (width-1, ys+4*ch+2)), width=2, fill='#999999')
+    if connected:
+      # Show source input names
+      draw.text((0*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
+      draw.text((0*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
+      draw.text((0*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
+      draw.text((0*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
+      xs = 10*cw
+      xp = xs - round(0.5*cw) # Shift playing arrow back a bit
+      ys = 4*ch + round(0.5*ch)
+      draw.line(((0, ys-3), (width-1, ys-3)), width=2, fill='#999999')
+      for i in range(4):
+        if sources[i]['playing']:
+          draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
+        draw.text((xs + 1*cw, ys + i*ch), sources[i]['name'], font=font, fill='#F0E68C')
+      draw.line(((0, ys+4*ch+2), (width-1, ys+4*ch+2)), width=2, fill='#999999')
 
-    # Show volumes
-    draw_volume_bars(draw, font, small_font, zones, y=9*ch, height=height-9*ch)
+      # Show volumes
+      draw_volume_bars(draw, font, small_font, zones, y=9*ch, height=height-9*ch)
+    else:
+      # Show an error message on the display
+      draw.text((0, 8*ch), 'Cannot connect to the AmpliPi controller', font=font, fill='#FF0000')
+      draw.text((0, 9*ch), f'at {args.url}', font=font, fill='#FF0000')
 
     # Send the updated image to the display
     display.image(image)
@@ -475,9 +487,9 @@ while frame_num < 10:
     display.image(image)
 
   end = time.time()
-  frame_times.append(end - start)
+  frame_times.append(end - frame_start_time)
   #print(f'frame time: {sum(frame_times)/len(frame_times):.3f}s, {sum(cpu_load)/len(cpu_load):.1f}%')
-  sleep_time = 1/args.update_rate - (end-start)
+  sleep_time = 1/args.update_rate - (end - frame_start_time)
   if sleep_time > 0:
     time.sleep(sleep_time)
   else:
