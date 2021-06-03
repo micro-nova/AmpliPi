@@ -15,21 +15,10 @@ import argparse
 import busio
 import cProfile
 import digitalio
-import logging as log
+import logging
 import requests
 import socket
 import time
-
-# If this is run on anything other than a Raspberry Pi,
-# it won't work. Just quit if not on a Pi.
-try:
-  import board
-  import pwmio
-  import RPi.GPIO as gpio
-except (NotImplementedError, RuntimeError) as e:
-  print('Error:', e)
-  print('Only Raspberry Pi is currently supported')
-  quit()
 
 # Display
 import adafruit_rgb_display.ili9341 as ili9341
@@ -41,7 +30,7 @@ import psutil             # CPU, RAM, etc.
 
 # Remove duplicate metavars
 # https://stackoverflow.com/a/23941599/8055271
-class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
+class AmpliPiHelpFormatter(argparse.HelpFormatter):
   def _format_action_invocation(self, action):
     if not action.option_strings:
       metavar, = self._metavar_formatter(action, action.dest)(1)
@@ -57,14 +46,51 @@ class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
         parts[-1] += ' %s' % args_string
       return ', '.join(parts)
 
+  def _get_help_string(self, action):
+    help = action.help
+    if '%(default)' not in action.help:
+      if action.default is not argparse.SUPPRESS and action.default is not None:
+        if action.dest is 'loglevel':
+          help += f' (default: {logging._levelToName[action.default]})'
+        else:
+          defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
+          if action.option_strings or action.nargs in defaulting_nargs:
+            help += ' (default: %(default)s)'
+    return help
+
 parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
-                                 formatter_class=CustomFormatter)
+                                 formatter_class=AmpliPiHelpFormatter)
 parser.add_argument('-u', '--url', default='localhost', help="the AmpliPi's URL to contact")
-parser.add_argument('-r', '--update-rate', metavar='HZ', type=float, default=1.0, help="the display's update rate in Hz")
-parser.add_argument('-b', '--brightness', metavar='%', type=float, default=1.0, help='the brightness of the backlight, range=[0.0, 1.0]')
-parser.add_argument('-i', '--iface', default='eth0', help='the network interface to display the IP of')
-parser.add_argument('--test-board', action='store_true', default=False, help='use SPI0 and test board pins')
+parser.add_argument('-r', '--update-rate', metavar='HZ', type=float, default=1.0,
+                    help="the display's update rate in Hz")
+parser.add_argument('-b', '--brightness', metavar='%', type=float, default=1.0,
+                    help='the brightness of the backlight, range=[0.0, 1.0]')
+parser.add_argument('-i', '--iface', default='eth0',
+                    help='the network interface to display the IP of')
+parser.add_argument('-t', '--test-board', action='store_true', default=False,
+                    help='use SPI0 and test board pins')
+parser.add_argument('-v', '--verbose', action='store_const', const=logging.INFO,
+                    default=logging.WARNING, dest='loglevel',
+                    help='enable extra informational messages')
+parser.add_argument('-d', '--debug', action='store_const', const=logging.DEBUG,
+                    dest='loglevel', help='enable debug messages')
 args = parser.parse_args()
+
+# Setup logging (systemd adds timestamp: %(asctime)s.%(msecs)d)
+logging.basicConfig(format='[%(levelname)-8s] [%(module)s:%(funcName)s] %(message)s',
+                    datefmt='%Y-%m-%d:%H:%M:%S', level=args.loglevel)
+log = logging.getLogger(__name__)
+
+# If this is run on anything other than a Raspberry Pi,
+# it won't work. Just quit if not on a Pi.
+try:
+  import board
+  import pwmio
+  import RPi.GPIO as gpio
+except (NotImplementedError, RuntimeError) as e:
+  log.critical(e)
+  log.critical('Only Raspberry Pi is currently supported')
+  quit()
 
 profile = False
 
@@ -110,9 +136,6 @@ _active_screen = 0
 # The ILI9341 specifies a max write rate of 10 MHz, and a max read rate of
 # 6.66 MHz but much faster speeds seem to work okay.
 spi_baud = 16 * 10**6
-
-# Setup logging
-log.basicConfig(level=log.INFO)
 
 # Convert number range to color gradient (min=green, max=red)
 def gradient(num, min_val=0, max_val=100):
@@ -161,13 +184,13 @@ def get_amplipi_data():
         sources[i]['playing'] = playing
       zones = j['zones']
     else:
-      print('Error: bad status code returned from amplipi')
+      log.error('Bad status code returned from amplipi')
   except requests.ConnectionError as e:
     raise ConnectionError(e.args[0].reason)
   except requests.Timeout:
-    print('Error: timeout requesting amplipi status')
+    log.error('Timeout requesting amplipi status')
   except ValueError:
-    print('Error: invalid json in amplipi status response')
+    log.error('Invalid json in amplipi status response')
 
   return sources, zones
 
@@ -222,7 +245,7 @@ def draw_volume_bars(draw, font, small_font, zones, x=0, y=0, width=320, height=
         yv = y + round(zones[i]['vol'] * vol2pix)
         draw.rectangle(((xb, yv, xb+wb, yt)), fill=color)
   else:
-    print("Error: can't display more than 18 volumes")
+    log.error("Can't display more than 18 volumes")
 
 
 # Pins
@@ -303,7 +326,7 @@ temp0, temp1 = read_temp_raw()
 if temp0 == 0 or temp1 == 0:
   # A touch screen doesn't seem to be present
   # TODO: Read ID from display itself as screen presence detection
-  print("Error: couldn't communicate with touch screen")
+  log.critical("Couldn't communicate with touch screen")
   quit()
 
 
@@ -352,15 +375,12 @@ def touch_callback(pin_num):
         _active_screen = (_active_screen + 1) % NUM_SCREENS
       if x < (width/4):
         _active_screen = (_active_screen - 1) % NUM_SCREENS
-  #  else:
-  #    print(f'Not enough inliers: {inlier_count} of 16')
-  #else:
-  #  print(f'No valid points')
+    else:
+      log.debug(f'Not enough inliers: {inlier_count} of 16')
+  else:
+    log.debug(f'No valid points')
 
-  try:
-    gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
-  except RuntimeError as e:
-    print(e)
+  gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
 
 # Get touch events
 gpio.setup(t_irq_pin.id, gpio.IN, pull_up_down=gpio.PUD_UP)
@@ -380,7 +400,8 @@ try:
   font = ImageFont.truetype(fontname, 14)
   small_font = ImageFont.truetype(fontname, 10)
 except:
-  print('Failed to load font')
+  log.critical('Failed to load font')
+  quit()
 
 # Create a blank image for drawing.
 # Swap height/width to rotate it to landscape
@@ -511,7 +532,7 @@ while frame_num < 10:
   if sleep_time > 0:
     time.sleep(sleep_time)
   else:
-    print('Warning: frame took too long')
+    log.warning('Frame took too long')
 
   if profile:
     frame_num = frame_num + 1
