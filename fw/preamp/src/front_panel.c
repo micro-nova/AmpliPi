@@ -36,19 +36,20 @@ void delay(int a) {
 
 // Enables/disables the 9V power supply along with the green LED
 void setAudioPower(bool on){
-	uint8_t msg = 0;
-	uint8_t ap_mask = 0x01;
+//	uint8_t msg = 0;
+//	uint8_t ap_mask = 0x01;
 
 	audio_power_on = on;
-	msg = readI2C2(pwr_temp_mntr_gpio);
-
-	if(on == 0){ // Set EN 9V to Audio Power ON/OFF
-		msg &= ~(ap_mask);
-	} else if(on == 1){
-		msg |= ap_mask;
-	}
-
-	writeI2C2(pwr_temp_mntr_olat, msg);
+	// This section is commented out since 9V power should always be on. Uncomment the surrounding lines if you want 9V functionality tied to standby
+//	msg = readI2C2(pwr_temp_mntr_gpio);
+//
+//	if(on == 0){ // Set EN 9V to Audio Power ON/OFF
+//		msg &= ~(ap_mask);
+//	} else if(on == 1){
+//		msg |= ap_mask;
+//	}
+//
+//	writeI2C2(pwr_temp_mntr_olat, msg);
 	updateFrontPanel(!on);
 	if(on == 1)
 	{

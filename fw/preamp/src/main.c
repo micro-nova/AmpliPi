@@ -29,7 +29,7 @@ void init_i2c1(int preamp_addr);
 void USART_PutString(USART_TypeDef* USARTx, volatile unsigned char * str);
 
 // uncomment the line below to use the debugger
-//#define DEBUG_OVER_UART2
+#define DEBUG_OVER_UART2
 
 void init_gpio()
 {
@@ -285,13 +285,17 @@ int main(void)
 	init_uart();		  // The preamp will receive its I2C network address via UART
 	init_i2c2();		  // Need I2C2 initialized for the front panel functionality during the address loop
 	enableFrontPanel();   // setup the I2C->GPIO chip
-	enablePowerBoard();   // setup the 9V/12V/fan power supply chip
-	enable12V();          // turn on the power supply for the fan
+	enablePowerBoard();   // setup the power supply chip
+	enablePSU();          // turn on 9V/12V power
 
 	Pin f0 = {'F',0};     // NRST_OUT
 	Pin f1 = {'F',1};     // BOOT0_OUT
 	setPin(f0);		      // Needs to be high so the subsequent preamp board is not held in 'Reset Mode'
 	clearPin(f1);	      // Needs to be low so the subsequent preamp board doesn't start in 'Boot Mode'
+	delay(500);
+	clearPin(f0);         // Low-pulse on NRST_OUT so expansion boards can be reset by the controller board
+	delay(500);
+	setPin(f0);
 
 	bool red_on = false;  // Used for switching the Standby/On LED
 

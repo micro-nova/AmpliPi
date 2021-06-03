@@ -29,15 +29,16 @@ void enablePowerBoard(){
 	writeI2C2(pwr_temp_mntr_dir, 0x3C); // Input or Output based on 0011 1100
 }
 
-void enable12V(){
+void enablePSU(){
 	// 12V supply controls the fans, so it should typically be on
+	// New controller board requires 9V supply - this should always be on
 	uint8_t msg = 0;
-	uint8_t fp_mask = 0x02;
+	uint8_t fp_mask = 0x03;
 
 	// Get current GPIO values from power board
 	msg = readI2C2(pwr_temp_mntr_gpio);
 
-	// Enable 12V power supply
+	// Enable 9V/12V power supply
 	msg |= fp_mask;
 	writeI2C2(pwr_temp_mntr_olat, msg);
 }

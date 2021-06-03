@@ -24,7 +24,7 @@
 #include "port_defs.h"
 
 void enablePowerBoard();
-void enable12V();
+void enablePSU();
 void write_ADC(uint8_t data);
 int read_ADC();
 
