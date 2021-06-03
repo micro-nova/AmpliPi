@@ -38,25 +38,46 @@ from PIL import Image, ImageDraw, ImageFont
 import netifaces as ni    # network interfaces
 import psutil             # CPU, RAM, etc.
 
+# Remove duplicate metavars
+# https://stackoverflow.com/a/23941599/8055271
+class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
+  def _format_action_invocation(self, action):
+    if not action.option_strings:
+      metavar, = self._metavar_formatter(action, action.dest)(1)
+      return metavar
+    else:
+      parts = []
+      if action.nargs == 0:                   # -s, --long
+        parts.extend(action.option_strings)
+      else:                                   # -s, --long ARGS
+        args_string = self._format_args(action, action.dest.upper())
+        for option_string in action.option_strings:
+          parts.append('%s' % option_string)
+        parts[-1] += ' %s' % args_string
+      return ', '.join(parts)
+
+parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
+                                 formatter_class=CustomFormatter)
+parser.add_argument('-u', '--url', default='localhost', help="the AmpliPi's URL to contact")
+parser.add_argument('-r', '--update-rate', metavar='HZ', type=float, default=2.0, help="the display's update rate in Hz")
+parser.add_argument('-b', '--brightness', metavar='%', type=float, default=1.0, help='the brightness of the backlight, range=[0.0, 1.0]')
+parser.add_argument('-i', '--iface', default='eth0', help='the network interface to display the IP of')
+parser.add_argument('--test-board', action='store_true', default=False, help='use SPI0 and test board pins')
+args = parser.parse_args()
 
 profile = False
-update_period = 2.0       # Display update rate in seconds
-is_amplipi = False         # Set to false for PoE board test setup
 
 # Configuration for extra TFT pins:
-clk_pin = board.SCLK_2 if is_amplipi else board.SCLK
-mosi_pin = board.MOSI_2 if is_amplipi else board.MOSI
-miso_pin = board.MISO_2 if is_amplipi else board.MISO
+clk_pin = board.SCLK if args.test_board else board.SCLK_2
+mosi_pin = board.MOSI if args.test_board else board.MOSI_2
+miso_pin = board.MISO if args.test_board else board.MISO_2
 
-cs_pin = board.D44 if is_amplipi else board.CE0
-dc_pin = board.D39 if is_amplipi else board.D25
-led_pin = board.D12 if is_amplipi else board.D18
+cs_pin = board.CE0 if args.test_board else board.D44
+dc_pin = board.D25 if args.test_board else board.D39
+led_pin = board.D18 if args.test_board else board.D12
 rst_pin = None
-t_cs_pin = board.D45 if is_amplipi else board.D5
-t_irq_pin = board.D38 if is_amplipi else board.D6
-
-# Network interface name to get IP address of
-iface_name = "eth0"
+t_cs_pin = board.D5 if args.test_board else board.D45
+t_irq_pin = board.D6 if args.test_board else board.D38
 
 # Number of screens to scroll through
 NUM_SCREENS = 1
@@ -88,10 +109,6 @@ _active_screen = 0
 # The ILI9341 specifies a max write rate of 10 MHz, and a max read rate of
 # 6.66 MHz but much faster speeds seem to work okay.
 spi_baud = 16 * 10**6
-
-parser = argparse.ArgumentParser(description='Display AmpliPi Information on a TFT Display')
-parser.add_argument('url', nargs='?', default="localhost", help="The AmpliPi's URL to contact")
-args = parser.parse_args()
 
 # Convert number range to color gradient (min=green, max=red)
 def gradient(num, min_val=0, max_val=100):
@@ -133,7 +150,7 @@ def get_amplipi_data():
             name = strm['name']
             playing = strm['status'] == 'playing'
           else:
-            name = "INVALID STREAM"
+            name = 'INVALID STREAM'
         else:
           name = inp
         sources[i]['name'] = name
@@ -193,7 +210,7 @@ def draw_volume_bars(draw, font, small_font, zones, x=0, y=0, width=320, height=
 
       # Draw zone number as centered text
       draw.text((xb + round(wb/2), y + height - round(ch/2)), str(i+1),
-                anchor="mm", font=small_font, fill='#FFFFFF')
+                anchor='mm', font=small_font, fill='#FFFFFF')
 
       # Draw background of volume bar
       draw.rectangle(((xb, y, xb+wb, yt)), fill='#999999')
@@ -219,7 +236,6 @@ spi = busio.SPI(clock=clk_pin, MOSI=mosi_pin, MISO=miso_pin)
 
 # Create the ILI9341 display:
 display = ili9341.ILI9341(spi, cs=disp_cs, dc=disp_dc, rst=rst_pin, baudrate=spi_baud, rotation=270)
-print(display.read(command=0x04, count=4))
 
 # Set backlight brightness out of 65535
 # Turn off until first image is written to work around not having RST
@@ -227,15 +243,14 @@ led = pwmio.PWMOut(led_pin, frequency=5000, duty_cycle=0)
 led.duty_cycle = 0
 
 # Start bit=1, A[2:0], 12-bit=0, differential=0, power down when done=00
-XPT2046_CMD_X = 0b11010000  # X=101
-XPT2046_CMD_Y = 0b10010000  # Y=001
+XPT2046_CMD_X   = 0b11010000  # X=101
+XPT2046_CMD_Y   = 0b10010000  # Y=001
+XPT2046_CMD_T0  = 0b10000100  # TEMP0=000, measured at 1x current
+XPT2046_CMD_T1  = 0b11110100  # TEMP1=111, measured at 91x current
 _cal = (300, 400, 3600, 3850) # Top-left and bottom-right coordinates as raw ADC output
 _max_dist = 0.05 * ((_cal[3] - _cal[1]) ** 2 + (_cal[2] - _cal[0]) ** 2) ** 0.5
-tx_buf = bytearray(5)
-rx_buf = bytearray(5)
-tx_buf[0] = XPT2046_CMD_X
-tx_buf[2] = XPT2046_CMD_Y
-def read_xy():
+
+def read_xpt2046(tx_buf: bytearray, rx_buf: bytearray):
   # Try to access SPI, wait if someone else (i.e. screen) is busy
   while not spi.try_lock():
     pass
@@ -245,10 +260,51 @@ def read_xy():
   touch_cs.value = True
   spi.configure(baudrate=spi_baud)
   spi.unlock()
+  return rx_buf
+
+def read_xy():
+  tx_buf = bytearray(5)
+  rx_buf = bytearray(5)
+  tx_buf[0] = XPT2046_CMD_X
+  tx_buf[2] = XPT2046_CMD_Y
+  rx_buf = read_xpt2046(tx_buf, rx_buf)
 
   x = (rx_buf[1] << 5) | (rx_buf[2] >> 3)
   y = (rx_buf[3] << 5) | (rx_buf[4] >> 3)
   return (x,y)
+
+def read_temp_raw():
+  tx_buf = bytearray(5)
+  rx_buf = bytearray(5)
+  tx_buf[0] = XPT2046_CMD_T0
+  tx_buf[2] = XPT2046_CMD_T1
+  rx_buf = read_xpt2046(tx_buf, rx_buf)
+
+  v0 = (rx_buf[1] << 5) | (rx_buf[2] >> 3)
+  v1 = (rx_buf[3] << 5) | (rx_buf[4] >> 3)
+  return v0, v1
+
+def read_temp():
+  #
+  # From XPT2046 datasheet:
+  # degK = dV*q/[k*ln(N)]
+  #   dV = V_t1 - V_t0
+  #   q = 1.602189*10^-19 C (electron charge)
+  #   k = 1.38054*10^-23 eV/degK (Boltzmann's constant)
+  #   N = 91 (the current ratio)
+  # Vref = 3.3V (Vdd) with 12-bit ADC
+  factor = 2.0728 # q/[k*ln(N)] * 3.3/2^12
+  v0, v1 = read_temp_raw()
+  t = (v1 - v0) * factor - 273.15
+  return t
+
+temp0, temp1 = read_temp_raw()
+if temp0 == 0 or temp1 == 0:
+  # A touch screen doesn't seem to be present
+  # TODO: Read ID from display itself as screen presence detection
+  print("Error: couldn't communicate with touch screen")
+  quit()
+
 
 def touch_callback(pin_num):
   global _active_screen
@@ -314,7 +370,8 @@ logo = Image.open('micronova-320x240.png').convert('RGB')
 display.image(logo)
 
 # Turn on display backlight now that an image is loaded
-led.duty_cycle = 16000
+# TODO: Anything duty cycle less than 100% causes flickering
+led.duty_cycle = int(args.brightness*(2**16-1))
 
 # Get fonts
 fontname = 'DejaVuSansMono'
@@ -348,7 +405,7 @@ while frame_num < 10:
 
     # Get stats
     try:
-      ip_str = ni.ifaddresses(iface_name)[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
+      ip_str = ni.ifaddresses(args.iface)[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
     except:
       ip_str = 'Disconnected'
 
@@ -420,7 +477,7 @@ while frame_num < 10:
   end = time.time()
   frame_times.append(end - start)
   #print(f'frame time: {sum(frame_times)/len(frame_times):.3f}s, {sum(cpu_load)/len(cpu_load):.1f}%')
-  sleep_time = update_period - (end-start)
+  sleep_time = 1/args.update_rate - (end-start)
   if sleep_time > 0:
     time.sleep(sleep_time)
   else:
