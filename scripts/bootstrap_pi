@@ -6,10 +6,11 @@ helptext="Usage: bootstrap_pi diskpath [hostname] [--debug] [-h|--help]
 Bootstrap a Raspberry Pi Compute Module for first-time AmpliPi setup.
 
   diskpath:   The path to the mounted raspberry pi disk. Should be /dev/sdX
-  hostname:   The hostname to set on the pi, so once this script successfully completes
-              connect via {hostname}.local. Default is amplipi
+  hostname:   The hostname to set on the pi, so once this script successfully
+              completes connect via {hostname}.local. Default is amplipi
+  --cli-only: Use the lite version of Raspberry Pi OS which does not have a
+              desktop environment
   --debug:    Will print all commands to be run and disable cleanup on exit
-  --desktop:  Use the desktop version of Raspberry Pi OS instead of the lite version
   -h, --help: Print this help text.
 "
 
@@ -17,11 +18,11 @@ hostname='amplipi'
 diskpath_set=false
 host_set=false
 debug=false
-desktop=false
+lite=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --debug) debug=true ;;
-    --desktop) desktop=true ;;
+    --cli-only) lite=true ;;
     -h|--help) printf "$helptext"; exit 0 ;;
     *) if ! $diskpath_set; then
         diskpath=$1
@@ -133,12 +134,12 @@ if ! [[ -e $diskpath ]]; then
   cleanup
 fi
 
-if $desktop; then
-  release=2020-08-20-raspios-buster-armhf
-  url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2020-08-24/$release.zip
-else
+if $lite; then
   release=2020-08-20-raspios-buster-armhf-lite
   url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+else
+  release=2020-08-20-raspios-buster-armhf
+  url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2020-08-24/$release.zip
 fi
 zip_file=$HOME/Downloads/$release.zip
 if [[ ! -f $zip_file ]]; then
