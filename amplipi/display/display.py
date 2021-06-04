@@ -2,14 +2,8 @@
 #
 # Requirements:
 # pip: adafruit-circuitpython-rgb-display pillow numpy
+#      loguru requests rpi.gpio netifaces psutil
 # apt: libatlas-base-dev
-#
-# TODO:
-# Clear screen on early exit/failure or while running provide some other
-#   indication that the display is still being updated.
-# Handle connection lost better
-# Fix when play icons appear to match web
-# Debounce touches
 
 import argparse
 import atexit
@@ -332,6 +326,7 @@ if temp0 == 0 or temp1 == 0:
 
 
 def touch_callback(pin_num):
+  # TODO: Debounce touches
   global _active_screen
 
   # Mask the interrupt since reading the position generates a false interrupt
@@ -413,7 +408,6 @@ except:
 
 # Create a blank image for drawing.
 # Swap height/width to rotate it to landscape
-# TODO: Reduce size if possible to save CPU time
 height = display.width
 width = display.height
 image = Image.new('RGB', (width, height)) # Fill entire screen with drawing space
