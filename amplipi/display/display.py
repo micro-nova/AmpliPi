@@ -137,6 +137,8 @@ _active_screen = 0
 # 6.66 MHz but much faster speeds seem to work okay.
 spi_baud = 16 * 10**6
 
+API_URL = 'http://' + args.url + '/api/'
+
 # Convert number range to color gradient (min=green, max=red)
 def gradient(num, min_val=0, max_val=100):
   #red = round(255*(val - min_val) / (max_val - min_val))
@@ -163,7 +165,7 @@ def get_amplipi_data():
   try:
     # TODO: If the AmpliPi server isn't available at this url, there is a
     # 5-second delay introduced by socket.getaddrinfo
-    r = requests.get('http://' + args.url + '/api/', timeout=0.1)
+    r = requests.get(API_URL, timeout=0.1)
     if r.status_code == 200:
       j = r.json()
       stream_ids = [s['id'] for s in j['streams']]
@@ -184,13 +186,13 @@ def get_amplipi_data():
         sources[i]['playing'] = playing
       zones = j['zones']
     else:
-      log.error('Bad status code returned from amplipi')
+      log.error('Bad status code returned from AmpliPi')
   except requests.ConnectionError as e:
     raise ConnectionError(e.args[0].reason)
   except requests.Timeout:
-    log.error('Timeout requesting amplipi status')
+    log.error('Timeout requesting AmpliPi status')
   except ValueError:
-    log.error('Invalid json in amplipi status response')
+    log.error('Invalid json in AmpliPi status response')
 
   return sources, zones
 
@@ -387,8 +389,9 @@ gpio.setup(t_irq_pin.id, gpio.IN, pull_up_down=gpio.PUD_UP)
 gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
 
 # Load image and convert to RGB
-logo = Image.open('micronova-320x240.png').convert('RGB')
-display.image(logo)
+mn_logo = Image.open('imgs/micronova_320x240.png').convert('RGB')
+ap_logo = Image.open('imgs/amplipi_320x126.png').convert('RGB')
+display.image(mn_logo)
 
 # Turn on display backlight now that an image is loaded
 # TODO: Anything duty cycle less than 100% causes flickering
@@ -400,7 +403,7 @@ try:
   font = ImageFont.truetype(fontname, 14)
   small_font = ImageFont.truetype(fontname, 10)
 except:
-  log.critical('Failed to load font')
+  log.critical(f'Failed to load font {fontname}')
   quit()
 
 # Create a blank image for drawing.
@@ -410,6 +413,9 @@ height = display.width
 width = display.height
 image = Image.new('RGB', (width, height)) # Fill entire screen with drawing space
 draw = ImageDraw.Draw(image)
+
+# Keep the splash screen displayed a bit
+time.sleep(1.0)
 
 if profile:
   pr = cProfile.Profile()
@@ -432,15 +438,23 @@ while frame_num < 10:
     try:
       sources, zones = get_amplipi_data()
     except ConnectionError as e:
-      if connection_retries < max_connection_retries:
-        log.warning(f"Couldn't connect to {args.url}, {e}")
-      elif connection_retries == max_connection_retries:
-        connected = False
-        log.error(f'Failure connecting to {args.url}, {e}')
+      log.debug(e)
       connection_retries += 1
+      if not connected_once:
+        if connection_retries == 1:
+          log.info(f"Waiting for REST API to start at {API_URL}")
+        elif connection_retries == max_connection_retries:
+          log.error(f"Couldn't connect to REST API at {API_URL}")
+      elif connection_retries < max_connection_retries:
+        log.error(f'Failure communicating with REST API at {API_URL}')
+      elif connection_retries == max_connection_retries:
+        log.error(f'Lost connection to REST API at {API_URL}')
+
+      if connection_retries >= max_connection_retries:
+        connected = False
     else:
       if not connected:
-        log.info(f'Connected to AmpliPi at {args.url}')
+        log.info(f'Connected to REST API at {API_URL}')
       connected = True
       connected_once = True
       connection_retries = 0
@@ -508,19 +522,22 @@ while frame_num < 10:
 
       # Show volumes
       draw_volume_bars(draw, font, small_font, zones, y=9*ch, height=height-9*ch)
-    elif not connected_once and connection_retries <= max_connection_retries:
-      msg = 'Connecting to the AmpliPi controller' + '.'*connection_retries
-      x = round((width - font.getsize(msg)[0])/2) - 1
-      draw.text((x, 8*ch), msg, font=font, fill='#FFFFFF')
     else:
-      # Show an error message on the display
-      draw.text((0, 8*ch), 'Cannot connect to the AmpliPi controller', font=font, fill='#FF0000')
-      draw.text((0, 9*ch), f'at {args.url}', font=font, fill='#FF0000')
+      # Show an error message on the display, and the AmpliPi logo below
+      if not connected_once and connection_retries <= max_connection_retries:
+        msg = 'Connecting to the REST API' + '.'*connection_retries
+        text_c = '#FFFFFF'
+      else:
+        msg = 'Cannot connect to the REST API at\n' + API_URL
+        text_c = '#FF0000'
+      text_y = (height - ap_logo.size[1] - 4*ch)//2 + 4*ch
+      draw.text((width/2 - 1, text_y), msg, anchor='mm', align='center', font=font, fill=text_c)
+      image.paste(ap_logo, box=(0, height - ap_logo.size[1]))
 
     # Send the updated image to the display
     display.image(image)
   elif _active_screen == 1:
-    display.image(logo)
+    display.image(mn_logo)
   elif _active_screen == 2:
     draw.rectangle((0, 0, width-1, height-1), fill='#FF0000')
     display.image(image)
