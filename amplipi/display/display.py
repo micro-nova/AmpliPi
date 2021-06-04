@@ -174,6 +174,9 @@ def get_amplipi_data():
             strm = j['streams'][stream_ids.index(sid)]
             name = strm['name']
             playing = strm['status'] == 'playing'
+            # TODO: fix special case in API
+            if strm['type'] == 'internetradio':
+              playing = strm['status'] == 'connected'
           else:
             name = 'INVALID STREAM'
         else:
