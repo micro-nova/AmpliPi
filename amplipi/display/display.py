@@ -12,6 +12,7 @@
 # Debounce touches
 
 import argparse
+import atexit
 import busio
 import cProfile
 import digitalio
@@ -382,6 +383,12 @@ def touch_callback(pin_num):
 # Get touch events
 gpio.setup(t_irq_pin.id, gpio.IN, pull_up_down=gpio.PUD_UP)
 gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
+
+# Clear the screen if this program is exited
+# TODO: Create a main() and handle KeyboardInterrupt
+def exit_handler():
+  display.image(Image.new('RGB', (display.height, display.width)))
+atexit.register(exit_handler)
 
 # Load image and convert to RGB
 mn_logo = Image.open('imgs/micronova_320x240.png').convert('RGB')
