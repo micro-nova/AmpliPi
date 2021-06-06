@@ -386,6 +386,7 @@ gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
 # TODO: Create a main() and handle KeyboardInterrupt
 def exit_handler():
   display.image(Image.new('RGB', (display.height, display.width)))
+  led.duty_cycle = 0
 atexit.register(exit_handler)
 
 # Load image and convert to RGB
