@@ -15,9 +15,10 @@ import argparse
 import busio
 import cProfile
 import digitalio
-import logging
+from loguru import logger as log
 import requests
 import socket
+import sys
 import time
 
 # Display
@@ -50,12 +51,9 @@ class AmpliPiHelpFormatter(argparse.HelpFormatter):
     help = action.help
     if '%(default)' not in action.help:
       if action.default is not argparse.SUPPRESS and action.default is not None:
-        if action.dest is 'loglevel':
-          help += f' (default: {logging._levelToName[action.default]})'
-        else:
-          defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
-          if action.option_strings or action.nargs in defaulting_nargs:
-            help += ' (default: %(default)s)'
+        defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
+        if action.option_strings or action.nargs in defaulting_nargs:
+          help += ' (default: %(default)s)'
     return help
 
 parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
@@ -69,17 +67,14 @@ parser.add_argument('-i', '--iface', default='eth0',
                     help='the network interface to display the IP of')
 parser.add_argument('-t', '--test-board', action='store_true', default=False,
                     help='use SPI0 and test board pins')
-parser.add_argument('-v', '--verbose', action='store_const', const=logging.INFO,
-                    default=logging.WARNING, dest='loglevel',
-                    help='enable extra informational messages')
-parser.add_argument('-d', '--debug', action='store_const', const=logging.DEBUG,
-                    dest='loglevel', help='enable debug messages')
+parser.add_argument('-l', '--log', metavar='LEVEL', default='WARNING',
+                    help='set logging level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
 args = parser.parse_args()
 
-# Setup logging (systemd adds timestamp: %(asctime)s.%(msecs)d)
-logging.basicConfig(format='[%(levelname)-8s] [%(module)s:%(funcName)s] %(message)s',
-                    datefmt='%Y-%m-%d:%H:%M:%S', level=args.loglevel)
-log = logging.getLogger(__name__)
+# Setup logging
+log_fmt = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> [<level>{level:8}</level>] [{module}:{function}] <level>{message}</level>'
+#{elapsed} is a time option as well
+log.configure(handlers=[{'sink': sys.stderr, 'format': log_fmt, 'level': args.log}])
 
 # If this is run on anything other than a Raspberry Pi,
 # it won't work. Just quit if not on a Pi.

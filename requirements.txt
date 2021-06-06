@@ -2,6 +2,7 @@ adafruit-circuitpython-rgb-display
 aiofiles
 deepdiff
 fastapi
+loguru
 netifaces
 numpy
 mypy
