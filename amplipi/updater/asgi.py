@@ -46,7 +46,7 @@ import pkg_resources
 from typing import List
 
 app = FastAPI()
-sse_messages = queue.Queue()
+sse_messages: queue.Queue = queue.Queue()
 
 # host all of the static files the client will look for
 # TODO: put static files somewhere else?
@@ -54,7 +54,7 @@ real_path = os.path.realpath(__file__)
 dir_path = os.path.dirname(real_path)
 app.mount("/static", StaticFiles(directory=f"{dir_path}/static"), name="static")
 
-home = os.environ.get('HOME') + '/amplipi-dev2' # placeholder
+home = f"{os.environ.get('HOME')}/amplipi-dev2" # placeholder
 
 @app.get('/update')
 def get_index():
@@ -78,7 +78,6 @@ async def start_update(file: UploadFile = File(...)):
     return 200
   except Exception as e:
     print(e)
-    app.last_error = str(e)
     return 500
 
 @app.get('/update/restart')
@@ -157,7 +156,7 @@ def install_thread():
 
   # use the configure script provided by the new install to configure the installation
   sys.path.insert(0, f'{home}/scripts')
-  import configure # we want the new configure! TODO: Make checkers ignore this import issue
+  import configure # we want the new configure! # pylint: disable=import-error,import-outside-toplevel
   def progress_sse(tl):
     for task in tl:
       sse_info(task.name)
