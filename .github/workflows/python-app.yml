@@ -34,7 +34,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Lint with mypy, static type checker
       run: |
-        mypy amplipi/
+        mypy amplipi/ --ignore-missing-imports
     - name: Test mock using pytest # rpi cannot be tested directly due to hardware...
       run: |
         pytest tests/test_rest.py -vvv -k 'not _live'
