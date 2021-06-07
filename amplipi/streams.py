@@ -35,15 +35,15 @@ import amplipi.models as models
 import amplipi.utils as utils
 
 # TODO: how to implement base stream class in Python?, there is a lot of duplication between shairport and pandora streams...
-class Stream:
-  def connect(self, src):
-    """ Connect the stream's output to src """
-    return None
-  def disconnect(self):
-    """ Disconnect the stream's output from any connected source """
-    return None
-  def status(self):
-    return 'Status not available'
+#class Stream:
+#  def connect(self, src):
+#    """ Connect the stream's output to src """
+#    return None
+#  def disconnect(self):
+#    """ Disconnect the stream's output from any connected source """
+#    return None
+#  def status(self):
+#    return 'Status not available'
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -651,5 +651,4 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return DLNA(args['name'], mock=mock)
   elif stream.type == 'internetradio':
     return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
-  else:
-    raise NotImplementedError(stream.type)
+  raise NotImplementedError(stream.type)

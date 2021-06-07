@@ -26,22 +26,21 @@ import argparse
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Dict, Set, Any, Optional, Callable, TYPE_CHECKING, get_type_hints
+from typing import List, Dict, Set,  Any, Optional, Callable, TYPE_CHECKING, get_type_hints
 from types import SimpleNamespace
 
 from functools import lru_cache
 
 import yaml
+import json
 
 # web framework
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Path
+from fastapi.openapi.utils import get_openapi # docs
 from fastapi.staticfiles import StaticFiles
 from fastapi.routing import APIRoute, APIRouter
 from fastapi.templating import Jinja2Templates
 from starlette.responses import FileResponse
-
-#docs
-from fastapi.openapi.utils import get_openapi
 
 # amplipi
 from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
@@ -77,12 +76,12 @@ class SimplifyingRouter(APIRouter):
 def unused_groups(ctrl: Api, src: int) -> Dict[int,str]:
   """ Get groups that are not connected to src """
   groups = ctrl.status.groups
-  return { g.id : g.name for g in groups if g.source_id != src and g.id }
+  return { g.id : g.name for g in groups if g.source_id != src and g.id  is not None }
 
 def unused_zones(ctrl: Api, src: int) -> Dict[int,str]:
   """ Get zones that are not conencted to src """
   zones = ctrl.status.zones
-  return { z.id : z.name for z in zones if z.source_id != src and z.id }
+  return { z.id : z.name for z in zones if z.source_id != src and z.id is not None }
 
 def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   """ Get zones that are connected to src, but don't belong to a full group """
@@ -90,14 +89,14 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   groups = ctrl.status.groups
   # get all of the zones that belong to this sources groups
   grouped_zones: Set[int] = set()
-  for g in groups:
-    if g.source_id == src:
-      grouped_zones = grouped_zones.union(g.zones)
+  for group in groups:
+    if group.source_id == src:
+      grouped_zones = grouped_zones.union(group.zones)
   # get all of the zones connected to this soource
   source_zones = { z.id for z in zones if z.source_id == src }
   # return all of the zones connected to this source that aren't in a group
   ungrouped_zones_ = source_zones.difference(grouped_zones)
-  return [ zones[z] for z in ungrouped_zones_ if z and not zones[z].disabled]
+  return [ zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
 
 def song_info(ctrl: Api, sid: int) -> Dict[str,str]:
   """ Get the song info for a source """
@@ -120,6 +119,8 @@ def get_ctrl() -> Api:
 
 class params(SimpleNamespace):
   """ Describe standard path ID's for each api type """
+  # pylint: disable=too-few-public-methods
+  # pylint: disable=invalid-name
   SourceID = Path(..., ge=0, le=3, description="Source ID")
   ZoneID = Path(..., ge=0, le=35, description="Zone ID")
   GroupID = Path(..., ge=0, description="Stream ID")
@@ -215,7 +216,7 @@ def set_group(group: models.GroupUpdate, ctrl:Api=Depends(get_ctrl), gid: int=pa
 @api.delete('/api/groups/{gid}', tags=['group'])
 def delete_group(ctrl:Api=Depends(get_ctrl), gid: int=params.GroupID) -> models.Status:
   """ Delete a group (group=**gid**) """
-  return code_response(ctrl, ctrl.delete_group(id=gid))
+  return code_response(ctrl, ctrl.delete_group(gid))
 
 # streams
 
@@ -311,21 +312,86 @@ app.include_router(api)
 def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   try:
     if route.body_field:
-      return route.body_field.type_.schema_json()
+      json_model =  route.body_field.type_.schema_json()
+      return json.loads(json_model)
     return None
   except:
     return None
 
 def get_response_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   try:
-    if route.body_field:
-      return route.body_field.type_.schema_json()
+    if route.response_field:
+      json_model = route.response_field.type_.schema_json()
+      return json.loads(json_model)
     return None
   except:
     return None
 
 # API Documentation
+
+def add_creation_examples(openapi_schema, route: APIRoute) -> None:
+  """ Add creation examples for a given route (for modifying request types) """
+  req_model = get_body_model(route)
+  if req_model and ('examples' in req_model or 'creation_examples' in req_model):
+    if 'creation_examples' in req_model: # prefer creation examples for POST request, this allows us to have different examples for get response and creation requests
+      examples = req_model['creation_examples']
+    else:
+      examples = req_model['examples']
+    for method in route.methods:
+      # Only POST, PATCH, and PUT methods have a request body
+      if method in {"POST", "PATCH", "PUT"}:
+        openapi_schema['paths'][route.path][method.lower()]['requestBody'][
+        'content']['application/json']['examples'] = examples
+
+def add_response_examples(openapi_schema, route: APIRoute) -> None:
+  """ Add response examples for a given route """
+  resp_model = get_response_model(route)
+  if resp_model and 'examples' in resp_model:
+    examples = resp_model['examples']
+    for method in route.methods:
+      openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
+        'content']['application/json']['examples'] = examples
+  if route.path in ['/api/zones', '/api/groups', '/api/sources', '/api/streams', '/api/presets']:
+    if 'get' in  openapi_schema['paths'][route.path]:
+      piece = route.path.replace('/api/', '')
+      example_status = list(models.Status.Config.schema_extra['examples'].values())[0]['value']
+      openapi_schema['paths'][route.path]['get']['responses']['200'][
+          'content']['application/json']['example'] = { piece: example_status[piece] }
+
+def get_live_examples(tags: List[str]) -> Dict[str, Dict[str, Any]]:
+  """ Create a list of examples using the live configuration """
+  live_examples = {}
+  for tag in tags:
+    for i in get_ctrl().get_items(tag) or []:
+      if isinstance(i.name, str):
+        live_examples[i.name] = {'value': i.id, 'summary': i.name}
+  return live_examples
+
+def get_xid_param(route):
+  """ Check if path has an Xid parameter """
+  id_param = None
+  for param_name in route.param_convertors.keys():
+    if 'id' in param_name and len(param_name) == 3:
+      id_param = param_name
+      break
+  return id_param
+
+def add_example_params(openapi_schema, route: APIRoute) -> None:
+  """ Manually add relevant example parameters based on the current configuration (for paths that require parameters) """
+  for method in route.methods:
+    xid_param = get_xid_param(route)
+    if xid_param:
+      # generate examples for that id parameter
+      live_examples = get_live_examples(route.tags)
+      # find the matching parameter and add the examples to it
+      path_method = openapi_schema['paths'][route.path][method.lower()]
+      if 'parameters' in path_method:
+        for param in path_method['parameters']:
+          if param['name'] == xid_param:
+            param['examples'] = live_examples
+
 def generate_openapi_spec(add_test_docs=True):
+  """ Generate the openapi spec using documentation embedded in the models and routes """
   if app.openapi_schema:
     return app.openapi_schema
   openapi_schema = get_openapi(
@@ -378,57 +444,15 @@ def generate_openapi_spec(add_test_docs=True):
   # Manually add examples present in pydancticModel.schema_extra into openAPI schema
   for route in app.routes:
     if isinstance(route, APIRoute):
-      req_model = get_body_model(route)
-      if 'examples' in req_model or 'creation_examples' in req_model:
-        if 'creation_examples' in req_model: # prefer creation examples for POST request, this allows us to have different examples for get response and creation requests
-          examples = req_model['creation_examples']
-        else:
-          examples = req_model['examples']
-        for method in route.methods:
-          # Only POST, PATCH, and PUT methods have a request body
-          if method in {"POST", "PATCH", "PUT"}:
-            openapi_schema['paths'][route.path][method.lower()]['requestBody'][
-            'content']['application/json']['examples'] = examples
-  for route in app.routes:
-    if isinstance(route, APIRoute):
-      resp_model = get_response_model(route)
-      if 'examples' in resp_model:
-        examples = resp_model['examples']
-        for method in route.methods:
-          openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
-            'content']['application/json']['examples'] = examples
-      if route.path in ['/api/zones', '/api/groups', '/api/sources', '/api/streams', '/api/presets']:
-        if 'get' in  openapi_schema['paths'][route.path]:
-          piece = route.path.replace('/api/', '')
-          example_status = list(models.Status.Config.schema_extra['examples'].values())[0]['value']
-          openapi_schema['paths'][route.path]['get']['responses']['200'][
-              'content']['application/json']['example'] = { piece: example_status[piece] }
-  if not add_test_docs:
-    return
+      add_creation_examples(openapi_schema, route)
+      add_response_examples(openapi_schema, route)
 
-  # Manually add relevant example parameters based on the current configuration
-  # (for paths that require parameters)
+  if not add_test_docs:
+    return openapi_schema
+
   for route in app.routes:
     if isinstance(route, APIRoute):
-      for method in route.methods:
-        # check if path has id parameter
-        has_id_param = False
-        for param_name in route.param_convertors.keys():
-          if 'id' in param_name and len(param_name) == 3:
-            has_id_param = True
-        if has_id_param:
-          # generate examples for that id parameter
-          live_examples = {}
-          if len(route.tags) == 1:
-            tag = route.tags[0]
-            for i in get_ctrl()._get_items(tag):
-              live_examples[i.name] = {'value': i.id, 'summary': i.name}
-          # find the matching parameter and add the examples to it
-          path_method = openapi_schema['paths'][route.path][method.lower()]
-          if 'parameters' in path_method:
-            for p in path_method['parameters']:
-              if p['name'] == param_name:
-                p['examples'] = live_examples
+      add_example_params(openapi_schema, route)
 
   return openapi_schema
 
@@ -497,10 +521,16 @@ def create_yaml_doc(add_test_docs=True) -> str:
 # this is much more human readable
 @app.get('/openapi.yaml', include_in_schema=False)
 def read_openapi_yaml() -> Response:
+  """ Read the openapi yaml file
+
+  This much more human readable than the json version """
   return Response(create_yaml_doc(), media_type='text/yaml')
 
 @app.get('/openapi.json', include_in_schema=False)
 def read_openapi_json():
+  """ Read the openapi json file
+
+  This is slightly easier to process by our test framework """
   return app.openapi()
 
 app.openapi = generate_openapi_spec # type: ignore
@@ -509,6 +539,7 @@ app.openapi = generate_openapi_spec # type: ignore
 
 @app.get('/doc', include_in_schema=False)
 def doc():
+  """ Get the API documentation """
   # TODO: add hosted python docs as well
   return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
 
@@ -552,7 +583,7 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   return app
 
 if __name__ == "__main__":
-  """ Generate the openapi schema file in yaml """
+  # Generate the openapi schema file in yaml
   parser = argparse.ArgumentParser(description='Create the openapi yaml file describing the AmpliPi API')
   parser.add_argument('file', type=argparse.FileType('w'))
   args = parser.parse_args()
