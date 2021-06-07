@@ -31,8 +31,8 @@ from types import SimpleNamespace
 
 from functools import lru_cache
 
-import yaml
 import json
+import yaml
 
 # web framework
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Path
