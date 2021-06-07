@@ -14,7 +14,7 @@ from copy import deepcopy
 from context import amplipi
 
 # several starting configurations to load for testing including a corrupted configuration
-DEFAULT_STATUS = deepcopy(amplipi.ctrl.Api._DEFAULT_CONFIG)
+DEFAULT_STATUS = deepcopy(amplipi.ctrl.Api.DEFAULT_CONFIG)
 # make a good config string, that has less groups than the default (so we can tell the difference)
 GOOD_STATUS = deepcopy(DEFAULT_STATUS)
 del GOOD_STATUS['groups'][2]

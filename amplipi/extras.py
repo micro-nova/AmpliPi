@@ -22,16 +22,16 @@ Additional AmpliPi methods
 from amplipi import models
 from amplipi import utils
 
-def _vol_string(vol, min_vol=-79, max_vol=0):
+def vol_string(vol, min_vol=-79, max_vol=0):
   """ Make a visual representation of a volume """
-  VOL_RANGE = max_vol - min_vol + 1
-  VOL_STR_LEN = 20
-  VOL_SCALE = VOL_RANGE / VOL_STR_LEN
-  vol_level = int((vol - min_vol)  / VOL_SCALE)
-  assert 0 <= vol_level < VOL_STR_LEN
-  vol_string = ['-'] * VOL_STR_LEN
-  vol_string[vol_level] = '|' # place the volume slider bar at its current spot
-  return ''.join(vol_string) # turn that char array into a string
+  vol_range = max_vol - min_vol + 1
+  vol_str_len = 20
+  vol_scale = vol_range / vol_str_len
+  vol_level = int((vol - min_vol)  / vol_scale)
+  assert 0 <= vol_level < vol_str_len
+  vol_str = ['-'] * vol_str_len
+  vol_str[vol_level] = '|' # place the volume slider bar at its current spot
+  return ''.join(vol_str) # turn that char array into a string
 
 def visualize_api(status : models.Status):
   """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
@@ -66,28 +66,28 @@ def visualize_api(status : models.Status):
   src_cfg = [s.input for s in status.sources]
   viz += f"  [{', '.join(src_cfg)}]\n"
   # visualize zone configuration
-  enabled_zones = [z for z in status.zones if not z.disabled]
+  enabled_zones = [zone for zone in status.zones if not zone.disabled]
   viz += 'zones:\n'
-  zone_len = utils.max_len(enabled_zones, lambda z: len(z.name))
-  for z in enabled_zones:
-    src = z.source_id
-    src_type = utils.abbreviate_src(src_cfg[src])
-    muted = 'muted' if z.mute else ''
-    viz += f'  {src}({src_type}) --> {z.name:{zone_len}} vol [{_vol_string(z.vol)}] {muted}\n'
+  zone_len = utils.max_len(enabled_zones, lambda zone: len(zone.name))
+  for zone in enabled_zones:
+    sid = zone.source_id
+    src_type = utils.abbreviate_src(src_cfg[sid])
+    muted = 'muted' if zone.mute else ''
+    viz += f'  {sid}({src_type}) --> {zone.name:{zone_len}} vol [{vol_string(zone.vol)}] {muted}\n'
   # print group configuration
   viz += 'groups:\n'
-  enabled_groups = status.groups
-  gzone_len = utils.max_len(enabled_groups, lambda g: len(utils.compact_str(g.zones)))
-  gname_len = utils.max_len(enabled_groups, lambda g: len(g.name))
-  for g in enabled_groups:
-    if g.source_id:
-      src = g.source_id
-      src_type = utils.abbreviate_src(src_cfg[src])
+  gzone_len = utils.max_len(status.groups, lambda group: len(utils.compact_str(group.zones)))
+  gname_len = utils.max_len(status.groups, lambda group: len(group.name))
+  for group in status.groups:
+    if group.source_id:
+      sid = group.source_id
+      src = str(sid)
+      src_type = utils.abbreviate_src(src_cfg[sid])
     else:
       src = ' '
       src_type = ' '
-    muted = 'muted' if g.mute else ''
-    vol = _vol_string(g.vol_delta)
-    zone_str = utils.compact_str(g.zones)
-    viz += f'  {src}({src_type}) --> {g.name:{gname_len}} {zone_str:{gzone_len}} vol [{vol}] {muted}\n'
+    muted = 'muted' if group.mute else ''
+    vol = vol_string(group.vol_delta)
+    zone_str = utils.compact_str(group.zones)
+    viz += f'  {src}({src_type}) --> {group.name:{gname_len}} {zone_str:{gzone_len}} vol [{vol}] {muted}\n'
   return viz

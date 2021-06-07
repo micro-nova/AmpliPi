@@ -21,8 +21,8 @@
 This initializes the webapplication found in app.py.
 """
 
-import amplipi.app
 import os
+import amplipi.app
 
 mock_ctrl = bool(os.environ.get('MOCK_CTRL', 'False'))
 mock_streams = bool(os.environ.get('MOCK_STREAMS', 'False'))

@@ -24,12 +24,14 @@ import os
 import functools
 import subprocess
 import re
-from typing import List, Set, Dict, Union, Optional, Tuple, TypeVar, Iterable
+from typing import List, Dict, Union, Optional, Tuple, TypeVar, Iterable
 
 import wrapt
 import pkg_resources # version
 
 import amplipi.models as models
+
+# pylint: disable=bare-except
 
 # Helper functions
 def encode(pydata):
@@ -67,6 +69,20 @@ def find(items: Iterable[BT], item_id: int, key='id') -> Union[Tuple[int, BT], T
     if item.__dict__[key] == item_id:
       return i, item
   return None, None
+
+def next_available_id(items: Iterable[BT], default: int=0) -> int:
+  """ Get a new unique id among @items """
+  # TODO; use `largest_item = max(items, key=lambda item: item.id, default=None)` to find max if models.Base changes id to be required
+  largest_id = None
+  for item in items:
+    if item.id is not None:
+      if largest_id is not None:
+        largest_id = max(largest_id, item.id)
+      else:
+        largest_id = item.id
+  if largest_id is not None:
+    return largest_id + 1
+  return default
 
 def clamp(xval, xmin, xmax):
   """ Clamp and value between min and max """

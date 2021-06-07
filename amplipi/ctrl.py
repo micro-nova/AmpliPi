@@ -39,6 +39,8 @@ _DEBUG_API = False # print out a graphical state of the api after each call
 
 class Api:
   """ Amplipi Controller API"""
+  # pylint: disable=too-many-instance-attributes
+  # pylint: disable=too-many-public-methods
 
   _mock_hw: bool
   _mock_streams: bool
@@ -52,7 +54,7 @@ class Api:
   streams: Dict[int, amplipi.streams.AnyStream]
 
   _LAST_PRESET_ID = 9999
-  _DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
+  DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
       { "id": 0, "name": "1", "input": "local" },
       { "id": 1, "name": "2", "input": "local" },
@@ -118,13 +120,14 @@ class Api:
     self.reinit(settings)
 
   def reinit(self, settings:models.AppSettings=models.AppSettings()):
-    """ Initialize or Reinitialized the controller """
+    """ Initialize or Reinitialized the controller
+
+    Intitializes the system to to base configuration """
     self._mock_hw = settings.mock_ctrl
     self._mock_streams = settings.mock_streams
     self._save_timer = None
     self._delay_saves = settings.delay_saves
     self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi()
-    """Intitializes the mock system to to base configuration """
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
@@ -149,7 +152,7 @@ class Api:
     if not loaded_config:
       print(errors[0])
       print('using default config')
-      self.status = models.Status.parse_obj(self._DEFAULT_CONFIG)
+      self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
 
     self.status.info = models.Info(
@@ -170,10 +173,10 @@ class Api:
       self.set_source(src.id, update, force_update=True)
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
-    for z in self.status.zones:
+    for zone in self.status.zones:
       # TODO: disable zones that are not found
-      z_update = models.ZoneUpdate(source_id=z.source_id, mute=True, vol=z.vol)
-      self.set_zone(z.id, z_update, force_update=True)
+      zone_update = models.ZoneUpdate(source_id=zone.source_id, mute=True, vol=zone.vol)
+      self.set_zone(zone.id, zone_update, force_update=True)
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
 
@@ -239,8 +242,8 @@ class Api:
         { None, '', 'local', 'Local', 'stream=9449' }
     """
     inputs = { None: '', 'local' : 'Local'}
-    for s in self.get_state().streams:
-      inputs['stream={}'.format(s.id)] = s.name
+    for stream in self.get_state().streams:
+      inputs['stream={}'.format(stream.id)] = stream.name
     return inputs
 
   def get_state(self) -> models.Status:
@@ -248,19 +251,19 @@ class Api:
     # update the state with the latest stream info and status
     optional_fields = ['station', 'user', 'password', 'url', 'logo'] # optional configuration fields
     streams = []
-    for sid, sc in self.streams.items():
+    for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
-      # convert the stream class info to a dict (serialize its current configuration and status information)
-      st_type = type(sc).__name__.lower()
-      s = models.Stream(id=sid, name=sc.name, type=st_type, info=sc.info(), status=sc.status())
-      for f in optional_fields:
-        if f in sc.__dict__:
-          s.__dict__[f] = sc.__dict__[f]
-      streams.append(s)
+      # convert the stream instance info to stream data (serialize its current configuration and status information)
+      st_type = type(stream_inst).__name__.lower()
+      stream = models.Stream(id=sid, name=stream_inst.name, type=st_type, info=stream_inst.info(), status=stream_inst.status())
+      for field in optional_fields:
+        if field in stream_inst.__dict__:
+          stream.__dict__[field] = stream_inst.__dict__[field]
+      streams.append(stream)
     self.status.streams = streams
     return self.status
 
-  def _get_items(self, tag:str) -> Optional[List[models.Base]]:
+  def get_items(self, tag:str) -> Optional[List[models.Base]]:
     """ Gets one of the lists of elements contained in status named by @t (or t's plural
 
     This makes it easy to programmatically access zones using t='zones' or groups using t='groups'.
@@ -340,10 +343,9 @@ class Api:
               # update the status
               src.input = input_
               return None
-            else:
-              return utils.error('failed to set source')
-          else:
-            src.input = input_
+            return utils.error('failed to set source')
+          src.input = input_
+        return None
       except Exception as exc:
         return utils.error('failed to set source: ' + str(exc))
     else:
@@ -411,18 +413,18 @@ class Api:
 
   def _update_groups(self) -> None:
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
-    for g in self.status.groups:
-      zones = [ self.status.zones[z] for z in g.zones ]
+    for group in self.status.groups:
+      zones = [ self.status.zones[z] for z in group.zones ]
       mutes = [ z.mute for z in zones ]
       sources  = { z.source_id for z in zones }
       vols = [ z.vol for z in zones ]
       vols.sort()
-      g.mute = False not in mutes # group is only considered muted if all zones are muted
+      group.mute = False not in mutes # group is only considered muted if all zones are muted
       if len(sources) == 1:
-        g.source_id = sources.pop() # TODO: how should we handle different sources in the group?
+        group.source_id = sources.pop() # TODO: how should we handle different sources in the group?
       else: # multiple sources
-        g.source_id = None
-      g.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
+        group.source_id = None
+      group.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
   @utils.save_on_success
   def set_group(self, gid, update:models.GroupUpdate) -> None:
@@ -446,7 +448,7 @@ class Api:
     name, _ = utils.updated_val(update.name, group.name)
     zones, _ = utils.updated_val(update.zones, group.zones)
     vol_delta, vol_updated = utils.updated_val(update.vol_delta, group.vol_delta)
-    if vol_updated:
+    if vol_updated and (group.vol_delta is not None and vol_delta is not None):
       vol_change = vol_delta - group.vol_delta
     else:
       vol_change = 0
@@ -455,12 +457,12 @@ class Api:
     group.zones = zones
 
     # update each of the member zones
-    z_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)
+    zone_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)
     if vol_change != 0:
       # TODO: make this use volume delta adjustment, for now its a fixed group volume
-      z_update.vol = vol_delta # vol = z.vol + vol_change
-    for z in [ self.status.zones[zone] for zone in zones ]:
-      self.set_zone(z.id, z_update)
+      zone_update.vol = vol_delta # vol = z.vol + vol_change
+    for zone in [ self.status.zones[zone] for zone in zones ]:
+      self.set_zone(zone.id, zone_update)
 
     # save the volume
     group.vol_delta = vol_delta
@@ -468,12 +470,11 @@ class Api:
     # update the group stats
     self._update_groups()
 
+    return None
+
   def _new_group_id(self):
     """ get next available group id """
-    group = max(self.status.groups, key=lambda group: group.id, default=None)
-    if group is not None:
-      return group.id + 1
-    return 100
+    return utils.next_available_id(self.status.groups, default=100)
 
   @utils.save_on_success
   def create_group(self, group:models.Group) -> models.Group:
@@ -549,20 +550,21 @@ class Api:
       return utils.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
 
   @utils.save_on_success
-  def delete_stream(self, id: int) -> None:
+  def delete_stream(self, sid: int) -> None:
     """Deletes an existing stream"""
     try:
       # if input is connected to a source change that input to nothing
       for src in self.status.sources:
-        if src.get_stream() == id:
+        if src.get_stream() == sid:
           self.set_source(src.id, models.SourceUpdate(input=''))
       # actually delete it
-      del self.streams[id]
-      i, _ = utils.find(self.status.streams, id)
+      del self.streams[sid]
+      i, _ = utils.find(self.status.streams, sid)
       if i is not None:
         del self.status.streams[i] # delete the cached stream state just in case
+      return None
     except KeyError:
-      return utils.error('delete stream failed: {} does not exist'.format(id))
+      return utils.error('delete stream failed: {} does not exist'.format(sid))
 
   @utils.save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> None:
@@ -613,6 +615,8 @@ class Api:
     except Exception as exc:
       return utils.error('Failed to execute stream command: {}: {}'.format(cmd, exc))
 
+    return None
+
   @utils.save_on_success
   def get_stations(self, sid, stream_index=None) -> Dict[str,str]:
     """Gets a pandora stream's station list"""
@@ -628,13 +632,13 @@ class Api:
 
     try:
       with open(stat_dir, 'r') as file:
-        d= {}
+        stations = {}
         for line in file.readlines():
           line = line.strip()
           if line:
-            data = line.split(':')
-            d[data[0]] = data[1]
-        return(d)
+            name_and_id = line.split(':')
+            stations[name_and_id[0]] = name_and_id[1]
+        return stations
     except Exception:
       # TODO: throw useful exceptions to next level
       pass
@@ -644,13 +648,11 @@ class Api:
 
   def _new_preset_id(self) -> int:
     """ get next available preset id """
-    preset = max(self.status.presets, key=lambda preset: preset.id, default=None)
-    if preset is not None and preset.id is not None:
-      return preset.id + 1
-    return 10000
+    return utils.next_available_id(self.status.presets, default=10000)
 
   @utils.save_on_success
   def create_preset(self, preset: models.Preset) -> models.Preset:
+    """ Create a new preset """
     try:
       # Make a new preset and add it to presets
       # TODO: validate preset
@@ -664,6 +666,7 @@ class Api:
 
   @utils.save_on_success
   def set_preset(self, pid: int, update: models.PresetUpdate) -> None:
+    """ Reconfigure a preset """
     i, preset = utils.find(self.status.presets, pid)
     changes = update.dict(exclude_none=True)
     if i is None:
@@ -673,53 +676,99 @@ class Api:
       # TODO: validate preset
       for field in changes.keys():
         preset.__dict__[field] = update.__dict__[field]
+      return None
     except Exception as exc:
       return utils.error('Unable to reconfigure preset {}: {}'.format(pid, exc))
 
   @utils.save_on_success
   def delete_preset(self, pid: int) -> None:
-    """Deletes an existing preset"""
+    """ Deletes an existing preset """
     try:
       idx, _ = utils.find(self.status.presets, pid)
       if idx is not None:
         del self.status.presets[idx] # delete the cached preset state just in case
         return None
-      else:
-        return utils.error('delete preset failed: {} does not exist'.format(pid))
+      return utils.error('delete preset failed: {} does not exist'.format(pid))
     except KeyError:
       return utils.error('delete preset failed: {} does not exist'.format(pid))
 
-  def _effected_zones(self, preset_id: int) -> Set[int]:
+  def _effected_zones(self, preset_state: models.PresetState) -> Set[int]:
     """ Aggregate the zones that will be modified by changes """
     status = self.status
-    preset:Optional[models.Preset] = None
-    for pst in status.presets:
-      if pst.id == preset_id:
-        preset = pst
     effected : Set[int] = set()
-    if preset is None:
-      return effected
     src_zones = utils.src_zones(status)
-    if preset.state:
-      if preset.state.sources:
-        for src_update in preset.state.sources:
-          if src_update.id in src_zones:
-            effected.update(src_zones[src_update.id])
-      if preset.state.groups:
-        for group_update in preset.state.groups:
-          if group_update.id:
-            _, group_found = utils.find(status.groups, group_update.id)
-            if group_found:
-              effected.update(group_found.zones)
-      if preset.state.zones:
-        for zone_update in preset.state.zones:
-          if zone_update.id:
-            effected.add(zone_update.id)
+    for src_update in preset_state.sources or []:
+      if src_update.id in src_zones:
+        effected.update(src_zones[src_update.id])
+    for group_update in preset_state.groups or []:
+      if group_update.id:
+        _, group_found = utils.find(status.groups, group_update.id)
+        if group_found:
+          effected.update(group_found.zones)
+    for zone_update in preset_state.zones or []:
+      if zone_update.id:
+        effected.add(zone_update.id)
     return effected
+
+  def _load_preset_state(self, preset_state: models.PresetState) -> None:
+    """ Load a preset configuration """
+
+    # determine which zones will be effected and mute them
+    # we do this just in case there is intermediate state that causes audio issues. TODO: test with and without this feature (it adds a lot of complexity to presets, lets make sure its worth it)
+    zones_effected = self._effected_zones(preset_state)
+    zones_temp_muted = [ zid for zid in zones_effected if not self.status.zones[zid].mute ]
+    zone_update = models.ZoneUpdate(mute=True)
+    for zid in zones_temp_muted:
+      self.set_zone(zid, zone_update)
+
+    # keep track of the zones muted by the preset configuration
+    zones_muted: Set[int] = set()
+
+    # execute changes source by source in increasing order
+    for src in preset_state.sources or []:
+      if src.id:
+        self.set_source(src.id, src.as_update())
+      else:
+        pass # TODO: support some id-less source concept that allows dynamic source allocation
+
+    # execute changes group by group in increasing order
+    for group in preset_state.groups or []:
+      _, groups_to_update = utils.find(self.status.groups, group.id)
+      if groups_to_update is None:
+        raise NameError('group {} does not exist'.format(group.id))
+      self.set_group(group.id, group.as_update())
+      if group.mute is not None:
+        # use the updated group's zones just in case the group's zones were just changed
+        _, g_updated = utils.find(self.status.groups, group.id)
+        if g_updated is not None:
+          zones_changed = g_updated.zones
+          if group.mute:
+            # keep track of the muted zones
+            zones_muted.update(zones_changed)
+          else:
+            # handle odd mute thrashing case where zone was muted by one group then unmuted by another
+            zones_muted.difference_update()
+
+    # execute change zone by zone in increasing order
+    for zone in preset_state.zones or []:
+      self.set_zone(zone.id, zone.as_update())
+      if zone.mute is not None:
+        if zone.mute:
+          zones_muted.add(zone.id)
+        elif zone.id in zones_muted:
+          zones_muted.remove(zone.id)
+
+    # unmute effected zones that were not muted by the preset configuration
+    zones_to_unmute = set(zones_temp_muted).difference(zones_muted)
+    zone_update = models.ZoneUpdate(mute=False)
+    for zid in zones_to_unmute:
+      self.set_zone(zid, zone_update)
 
   @utils.save_on_success
   def load_preset(self, pid: int) -> None:
-    """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration. Below is an idea of how a preset configuration could be loaded to avoid any weirdness. We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
+    """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration.
+    Below is an idea of how a preset configuration could be loaded to avoid any weirdness.
+    We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
 
     1. Grab system modification mutex to avoid accidental changes (requests during this time return some error)
     2. Save current configuration as "Last config" preset
@@ -755,61 +804,15 @@ class Api:
     else:
       self.status.presets[last_pid] = last_config
 
-    # keep track of the zones muted by the preset configuration
-    zones_muted: Set[int] = set()
-
-    # determine which zones will be effected and mute them
-    # we do this just in case there is intermediate state that causes audio issues. TODO: test with and without this feature (it adds a lot of complexity to presets, lets make sure its worth it)
-    zones_effected = self._effected_zones(pid)
-    zones_temp_muted = [ zid for zid in zones_effected if not self.status.zones[zid].mute ]
-    zone_update = models.ZoneUpdate(mute=True)
-    for zid in zones_temp_muted:
-      self.set_zone(zid, zone_update)
-
     if preset.state is not None:
-      # execute changes source by source in increasing order
-      for src in preset.state.sources or []:
-        if src.id:
-          self.set_source(src.id, src.as_update())
-        else:
-          pass # TODO: support some id-less source concept that allows dynamic source allocation
-
-      # execute changes group by group in increasing order
-      for group in preset.state.groups or []:
-        _, groups_to_update = utils.find(self.status.groups, group.id)
-        if groups_to_update is None:
-          return utils.error('group {} does not exist'.format(group.id))
-        self.set_group(group.id, group.as_update())
-        if group.mute is not None:
-          # use the updated group's zones just in case the group's zones were just changed
-          _, g_updated = utils.find(self.status.groups, group.id)
-          if g_updated is not None:
-            zones_changed = g_updated.zones
-            if group.mute:
-              # keep track of the muted zones
-              zones_muted.update(zones_changed)
-            else:
-              # handle odd mute thrashing case where zone was muted by one group then unmuted by another
-              zones_muted.difference_update()
-
-      # execute change zone by zone in increasing order
-      for z in preset.state.zones or []:
-        self.set_zone(z.id, z.as_update())
-        if z.mute is not None:
-          if z.mute:
-            zones_muted.add(z.id)
-          elif z.id in zones_muted:
-            zones_muted.remove(z.id)
-
-    # unmute effected zones that were not muted by the preset configuration
-    zones_to_unmute = set(zones_temp_muted).difference(zones_muted)
-    zone_update = models.ZoneUpdate(mute=False)
-    for zid in zones_to_unmute:
-      self.set_zone(zid, zone_update)
+      try:
+        self._load_preset_state(preset.state)
+      except Exception as exc:
+        return utils.error(str(exc))
 
     # TODO: execute stream commands
 
     preset.last_used = int(time.time())
 
     # TODO: release lock
-
+    return None

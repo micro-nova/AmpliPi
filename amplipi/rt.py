@@ -18,21 +18,15 @@
 """Runtimes to communicate with the AmpliPi hardware
 """
 
+import time
+import amplipi.extras as extras
+
 # TODO: move constants like this to their own file
 DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 
-import time
-import amplipi.utils as utils
-
-if not DISABLE_HW:
-  from serial import Serial
-  from smbus2 import SMBus
-else:
-  # dummy class
-  class Serial:
-    def write(self, x): pass
-    def close(self): pass
+from serial import Serial
+from smbus2 import SMBus
 
 # Preamp register addresses
 _REG_ADDRS = {
@@ -157,17 +151,17 @@ class _Preamps:
   def print_zone_state(self, zone):
     assert zone >= 0
     preamp = (int(zone / 6) + 1) * 8
-    z = zone % 6
+    zone = zone % 6
     regs = self.preamps[preamp]
     src_types = self.preamps[0x08][_REG_ADDRS['SRC_AD']]
-    src = ((regs[_REG_ADDRS['CH456_SRC']] << 8) | regs[_REG_ADDRS['CH123_SRC']] >> 2 * z) & 0b11
+    src = ((regs[_REG_ADDRS['CH456_SRC']] << 8) | regs[_REG_ADDRS['CH123_SRC']] >> 2 * zone) & 0b11
     src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
-    vol = -regs[_REG_ADDRS['CH1_ATTEN'] + z]
-    muted = (regs[_REG_ADDRS['MUTE']] & (1 << z)) > 0
+    vol = -regs[_REG_ADDRS['CH1_ATTEN'] + zone]
+    muted = (regs[_REG_ADDRS['MUTE']] & (1 << zone)) > 0
     state = []
     if muted:
       state += ['muted']
-    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, utils.vol_string(vol), ', '.join(state)))
+    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, extras.vol_string(vol), ', '.join(state)))
 
 class Mock:
   """ Mock of an Amplipi Runtime
@@ -189,8 +183,8 @@ class Mock:
         True on success, False on hw failure
     """
     assert len(digital) == 4
-    for d in digital:
-      assert type(d) == bool
+    for flag in digital:
+      assert isinstance(flag, bool)
     return True
 
   def update_zone_mutes(self, zone, mutes):
@@ -207,15 +201,15 @@ class Mock:
     num_preamps = int(len(mutes) / 6)
     assert len(mutes) == num_preamps * 6
     for preamp in range(num_preamps):
-      for zone in range(6):
-        assert type(mutes[preamp * 6 + zone]) == bool
+      for zid in range(6):
+        assert isinstance(mutes[preamp * 6 + zid], bool)
     return True
 
   def update_zone_sources(self, zone, sources):
     """ Update the sources to all of the zones
 
       Args:
-        zone int: zone to change source
+        zid int: zone to change source
         sources [int*zones]: array of source ids for zones (None in place of source id indicates disconnect)
 
       Returns:
@@ -225,9 +219,9 @@ class Mock:
     num_preamps = int(len(sources) / 6)
     assert len(sources) == num_preamps * 6
     for preamp in range(num_preamps):
-      for zone in range(6):
-        src = sources[preamp * 6 + zone]
-        assert type(src) == int or src == None
+      for zid in range(6):
+        src = sources[preamp * 6 + zid]
+        assert isinstance(src, int) or src is None
     return True
 
   def update_zone_vol(self, zone, vol):
@@ -242,8 +236,8 @@ class Mock:
     """
     preamp = zone // 6
     assert zone >= 0
-    assert preamp >= 0 and preamp <= 15
-    assert vol <= 0 and vol >= -79
+    assert 0 <= preamp <= 15
+    assert 0 >= vol >= -79
     return True
 
   def exists(self, zone):

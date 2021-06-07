@@ -22,7 +22,7 @@ from context import amplipi
 
 def base_config():
   """ Default Amplipi configuration """
-  return amplipi.ctrl.Api._DEFAULT_CONFIG
+  return amplipi.ctrl.Api.DEFAULT_CONFIG
 
 def base_config_copy():
   """ Modify-able Amplipi configuration """
@@ -44,7 +44,7 @@ def status_copy(client):
   """ Modify-able copy of AmpliPi's status """
   rv = client.get('/api/')
   jrv = rv.json()
-  assert jrv != None
+  assert jrv is not None
   return jrv # jrv was already serialized so it should be a copy
 
 def find(elements:List, eid:int):
@@ -93,12 +93,13 @@ def test_view_changes(client: TestClient):
   rv = client.get('/')
   assert rv.status_code == HTTPStatus.OK
   assert 'patched-name' not in rv.text
+
   # change the zones name
   rv = client.patch('/api/zones/0', json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   z = find(jrv['zones'], 0)
-  assert z != None
+  assert z is not None
   assert z['name'] == 'patched-name'
   # check it got changed
   rv = client.get('/')
@@ -107,12 +108,12 @@ def test_view_changes(client: TestClient):
 
 @pytest.mark.parametrize('path', ['/api', '/api/'])
 def test_base(client, path):
-    """Start with a basic controller and just check if it gives a real response"""
+    """ Start with a basic controller and just check if it gives a real response """
     rv = client.get(path)
     assert rv.status_code == HTTPStatus.OK
     if rv.status_code == HTTPStatus.OK:
       jrv = rv.json()
-      assert jrv != None
+      assert jrv is not None
       og_config = client.original_config
       for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
         if t in og_config:
@@ -125,7 +126,7 @@ def test_base(client, path):
       assert '/api/' in rv.location
 
 def test_open_api_yamlfile(client):
-    """Start with a basic controller and just check if it gives a real response"""
+    """ Check if the openapi yaml doc is available """
     rv = client.get('/openapi.yaml')
     assert rv.status_code == HTTPStatus.OK
 # To reduce the amount of boilerplate we use test parameters.
@@ -138,49 +139,56 @@ def base_source_ids():
 
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_get_source(client, sid):
+  """ Try getting each of the sources """
   rv = client.get(f'/api/sources/{sid}')
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   s = find(base_config()['sources'], sid)
-  assert s != None
+  assert s is not None
   assert s['name'] == jrv['name']
 
 @pytest.mark.parametrize('ids', base_source_ids())
 def test_patch_source(client, ids):
+  """ Try changing a source's name """
   rv = client.patch('/api/sources/{}'.format(ids), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   s = find(jrv['sources'], ids)
-  assert s != None
+  assert s is not None
   assert s['name'] == 'patched-name'
 
 # Test Zones
 def base_zone_ids():
+  """ Default zones """
   return [ s['id'] for s in base_config()['zones']]
 
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_get_zone(client, zid):
+  """ Try getting a zone """
   rv = client.get('/api/zones/{}'.format(zid))
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   s = find(base_config()['zones'], zid)
-  assert s != None
+  assert s is not None
   assert s['name'] == jrv['name']
 
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_patch_zone(client, zid):
+  """ Try changing a zones name """
   rv = client.patch('/api/zones/{}'.format(zid), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   s = find(jrv['zones'], zid)
-  assert s != None
+  assert s is not None
   assert s['name'] == 'patched-name'
 
 # Test Groups
 def base_group_ids():
+  """ Default groups """
   return [ s['id'] for s in base_config()['groups']]
 
 def test_post_group(client):
+  """ Try creating a new group """
   # check that the whole house group doesn't already exist
   rv = client.get('/api')
   assert rv.status_code == HTTPStatus.OK
@@ -195,12 +203,13 @@ def test_post_group(client):
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   assert 'id' in jrv
-  assert type(jrv['id']) == int
+  assert isinstance(jrv['id'], int)
   for k, v in grp.items():
     assert jrv[k] == v
 
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_get_group(client, gid):
+  """ Try getting a default group """
   last_state = status_copy(client)
   rv = client.get('/api/groups/{}'.format(gid))
   if find(last_state['groups'], gid):
@@ -210,11 +219,12 @@ def test_get_group(client, gid):
     return
   jrv = rv.json()
   s = find(base_config()['groups'], gid)
-  assert s != None
+  assert s is not None
   assert s['name'] == jrv['name']
 
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_patch_group(client, gid):
+  """ Try changing a group's name """
   last_state = status_copy(client)
   rv = client.patch('/api/groups/{}'.format(gid), json={'name': 'patched-name'})
   if find(last_state['groups'], gid):
@@ -224,11 +234,12 @@ def test_patch_group(client, gid):
     return
   jrv = rv.json()
   s = find(jrv['groups'], gid)
-  assert s != None
+  assert s is not None
   assert s['name'] == 'patched-name'
 
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_delete_group(client, gid):
+  """ Try deleting a group """
   rv = client.delete('/api/groups/{}'.format(gid))
   if 'groups' in client.original_config and find(client.original_config['groups'], gid):
     assert rv.status_code == HTTPStatus.OK
@@ -237,10 +248,10 @@ def test_delete_group(client, gid):
     return
   jrv = rv.json()
   s = find(jrv['groups'], gid)
-  assert s == None
+  assert s is None
   for other_gid in base_group_ids():
     if other_gid != gid:
-      assert find(jrv['groups'], other_gid) != None
+      assert find(jrv['groups'], other_gid) is not None
 
 # test streams
 def base_stream_ids():
@@ -249,52 +260,56 @@ def base_stream_ids():
 
 # /stream post-stream
 def test_create_pandora(client):
+  """ Try creating a Pandora stream """
   m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': ''}
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   assert 'id' in jrv
-  assert type(jrv['id']) == int
+  assert isinstance(jrv['id'], int)
   for k, v in m_and_k.items():
     assert jrv[k] == v
 
 # /streams/{streamId} get-stream
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_get_stream(client, sid):
+  """ Try getting a default stream """
   rv = client.get('/api/streams/{}'.format(sid))
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   s = find(base_config()['streams'], sid)
-  assert s != None
+  assert s is not None
   assert s['name'] == jrv['name']
 
 # /streams/{streamId} patch-stream
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_patch_stream_rename(client, sid):
+  """ Try renaming a stream """
   rv = client.patch('/api/streams/{}'.format(sid), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['streams'], sid)
-  assert s != None
+  assert s is not None
   assert s['name'] == 'patched-name'
 
 # /streams/{streamId} delete-stream
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_delete_stream(client, sid):
+  """ Try deleting a stream  """
   rv = client.delete('/api/streams/{}'.format(sid))
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was deleted
   s = find(jrv['streams'], sid)
-  assert s == None
+  assert s is None
   # make sure the rest of the streams are still there
   for other_sid in base_stream_ids():
     if other_sid != sid:
-      assert find(jrv['streams'], other_sid) != None
+      assert find(jrv['streams'], other_sid) is not None
 
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_delete_connected_stream(client, sid):
@@ -304,27 +319,28 @@ def test_delete_connected_stream(client, sid):
   rv = client.delete(f'/api/streams/{sid}')
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json() # get the system state returned
-  assert '' == jrv['sources'][0]['input']
+  assert jrv['sources'][0]['input'] == ''
 
 # Non-Mock client used - run this test on the Pi
 # _live tests will be excluded from GitHub testing
 @pytest.mark.parametrize('cmd', ['play', 'pause', 'stop', 'next', 'love', 'ban', 'shelve'])
 def test_post_stream_cmd_live(clientnm, cmd):
+  """ Try sending commands to a pandora stream on a live system """
   # TODO: this test is failing when executed with all of the other tests in parallel see below
   # Add a stream to send commands to
   m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
   rv = clientnm.post('/api/stream', json=m_and_k)
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
-  id = jrv['id']
-  rv = clientnm.patch('/api/sources/0', json={'input': f'stream={id}'})
+  sid = jrv['id']
+  rv = clientnm.patch('/api/sources/0', json={'input': f'stream={sid}'})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   # the check below will fail when run in parallel with other tests, why is the configuration different than expected????
-  assert jrv['info']['mock_streams'] == False
-  rv = clientnm.post('/api/streams/{}/{}'.format(id, cmd))
+  assert not jrv['info']['mock_streams']
+  rv = clientnm.post('/api/streams/{}/{}'.format(sid, cmd))
   jrv = rv.json()
-  assert jrv['info']['mock_streams'] == False
+  assert not jrv['info']['mock_streams']
   assert rv.status_code == HTTPStatus.OK
 
 # test presets
@@ -334,13 +350,14 @@ def base_preset_ids():
 
 # /preset post-preset
 def test_create_mute_all_preset(client):
+  """ Try creating the simplest preset, something that mutes all the zones """
   mute_some = { 'name' : 'Mute some', 'state': { 'zones' : [ { 'id' : 1, 'mute': True}, { 'id' : 4, 'mute': True} ]}}
   rv = client.post('/api/preset', json=mute_some)
   # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   assert 'id' in jrv
-  assert type(jrv['id']) == int
+  assert isinstance(jrv['id'], int)
   assert jrv['name'] == mute_some['name']
   for i, z in enumerate(mute_some['state']['zones']):
     for k,v in z.items():
@@ -349,6 +366,7 @@ def test_create_mute_all_preset(client):
 # /presets/{presetId} get-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_get_preset(client, pid):
+  """ Try to get one of the default presets """
   last_state = status_copy(client)
   rv = client.get('/api/presets/{}'.format(pid))
   if find(last_state['presets'], pid):
@@ -364,6 +382,7 @@ def test_get_preset(client, pid):
 # /presets/{presetId} patch-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_patch_preset_name(client, pid):
+  """ Try changing the presets name """
   last_state = status_copy(client)
   rv = client.patch('/api/presets/{}'.format(pid), json={'name': 'patched-name'})
   if find(last_state['presets'], pid):
@@ -381,6 +400,7 @@ def test_patch_preset_name(client, pid):
 # /presets/{presetId} delete-preset
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_delete_preset(client, pid):
+  """ Try to delete a preset """
   rv = client.delete('/api/presets/{}'.format(pid))
   if 'presets' in client.original_config and find(client.original_config['presets'], pid):
     assert rv.status_code == HTTPStatus.OK
@@ -391,16 +411,18 @@ def test_delete_preset(client, pid):
   # TODO: check that the system state is valid
   # make sure the preset was deleted
   s = find(jrv['presets'], pid)
-  assert s == None
+  assert s is None
   # make sure the rest of the presets are still there
   for other_pid in base_preset_ids():
     if other_pid != pid:
-      assert find(jrv['presets'], other_pid) != None
+      assert find(jrv['presets'], other_pid) is not None
 
 # /presets/{presetId}/load load-preset
-# TODO: use combinations of base_preset_ids and suggested
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_load_preset(client, pid, unmuted=[1,2,3]):
+  """ Load a preset configuration with some zones unmuted """
+  # TODO: cleanup test structure
+  # pylint: disable=dangerous-default-value,too-many-locals,too-many-branches
   # unmute some of the zones
   for zid in unmuted:
     client.patch('/api/zones/{}'.format(zid), json={'mute': False})
@@ -419,8 +441,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
     if missing:
       assert rv.status_code != HTTPStatus.OK
       return
-    else:
-      assert rv.status_code == HTTPStatus.OK
+    assert rv.status_code == HTTPStatus.OK
   else:
     assert rv.status_code != HTTPStatus.OK
     return
@@ -451,7 +472,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
       for pg in preset_groups_changes:
         if 'mute' in pg:
           g = find(last_state['groups'], pg['id'])
-          assert g != None
+          assert g is not None
           if z['id'] in g['zones']:
             expected_mute = pg['mute']
     assert z['mute'] == expected_mute
@@ -504,9 +525,10 @@ def test_api_doc_has_examples(client):
 # skipping it for now until #117
 @pytest.mark.skip
 def test_generate(client):
+  """ Test valid accesses to the generated folder structure """
   fullpath = os.path.abspath('web/generated')
   fullerpath = '{}/shairport/srcs/t'.format(fullpath)
-  if os.path.exists(fullerpath) != True:
+  if not os.path.exists(fullerpath):
     os.makedirs(fullerpath)
   test_filenames = ['test.txt', 'shairport/srcs/t/IMG_A1', '../shairport/srcs/t/Trying-to-cheat-the-system']
   for fn in test_filenames:
