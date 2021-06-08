@@ -281,6 +281,7 @@ int main(void)
 	uint8_t ch, src;      // variables holding zone and source information
 	uint8_t i2c_addr;     // I2C address received via UART
 
+	wdg_init();			  // Enable the watchdog timer
 	init_gpio();		  // UART and I2C require GPIO pins
 	init_uart();		  // The preamp will receive its I2C network address via UART
 	init_i2c2();		  // Need I2C2 initialized for the front panel functionality during the address loop
@@ -299,6 +300,7 @@ int main(void)
 
 	bool red_on = false;  // Used for switching the Standby/On LED
 
+	wdg_rst();
 	while(1){
 		if(UART_Preamp_RxBuffer.done == 1)
 		{
@@ -333,13 +335,17 @@ int main(void)
 
 	// main loop, awaiting I2C commands
 	while(1){
+		// TODO: this really should be a little state machine or something,
+		// what if an address match occurs but no more data is received before
+		// the next command? Bad things, that's what.
+		// Also just resetting the watchdog every loop isn't the best plan.
 
 		// wait for address match
-		while(I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR) == RESET);
+		while(I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR) == RESET) {wdg_rst();};
 		I2C_ClearFlag(I2C1,I2C_FLAG_ADDR);
 
 		// wait for reg address
-		while(I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) == RESET);
+		while(I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) == RESET) {wdg_rst();};
 		reg = I2C_ReceiveData(I2C1);
 
 		// Determine if the controller is trying to read/write from/to you
