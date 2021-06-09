@@ -605,13 +605,13 @@ def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings: models.AppSettings = models.AppSettings()) -> FastAPI:
   """ Create the AmpliPi web app with a specific configuration """
   # specify old parameters
-  if mock_ctrl:
+  if mock_ctrl is not None:
     settings.mock_ctrl = mock_ctrl
-  if mock_streams:
+  if mock_streams is not None:
     settings.mock_streams = mock_streams
-  if config_file:
+  if config_file is not None:
     settings.config_file = config_file
-  if delay_saves:
+  if delay_saves is not None:
     settings.delay_saves = delay_saves
   get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app

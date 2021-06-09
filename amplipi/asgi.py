@@ -27,4 +27,4 @@ import amplipi.app
 mock_ctrl = bool(os.environ.get('MOCK_CTRL', 'False'))
 mock_streams = bool(os.environ.get('MOCK_STREAMS', 'False'))
 
-application = amplipi.app.create_app(delay_saves=True)
+application = amplipi.app.create_app(delay_saves=True, mock_ctrl=mock_ctrl, mock_streams=mock_streams)
