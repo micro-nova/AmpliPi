@@ -20,7 +20,7 @@ Encourages reuse of datastructures across AmpliPi
 """
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Callable
 from types import SimpleNamespace
 from enum import Enum
 from pydantic import BaseSettings, BaseModel, Field
