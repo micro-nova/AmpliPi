@@ -4,6 +4,7 @@ pyserial
 python-vlc
 requests
 fastapi
+mypy
 sse-starlette
 fastapi_utils
 uvicorn
@@ -11,5 +12,7 @@ aiofiles
 pydantic
 python-multipart
 pyyaml
+types-pkg_resources
+types-pyyaml
 wrapt
 jinja2
