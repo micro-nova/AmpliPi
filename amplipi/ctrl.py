@@ -58,7 +58,7 @@ class Api:
   _mock_streams: bool
   _save_timer: Optional[threading.Timer] = None
   _delay_saves: bool
-  _change_notifier = None
+  _change_notifier: Optional[Callable[[models.Status], None]] = None
   _rt: Union[rt.Rpi, rt.Mock]
   config_file: str
   backup_config_file: str
@@ -129,10 +129,39 @@ class Api:
     ]
   }
 
-  def __init__(self, settings:models.AppSettings=models.AppSettings(), change_notifier=None):
+  class Code(Enum):
+    """ Response code """
+    OK = 1
+    ERROR = 2
+
+  class Response:
+    """ Response object """
+    def __init__(self, code: Api.Code, msg: str=''):
+      self.code = code
+      self.msg = msg
+
+    def __str__(self):
+      if self.code == Api.Code.OK:
+        return 'OK'
+      return f'ERROR: {self.msg}'
+
+    @staticmethod
+    def error(msg: str):
+      """ create an error response """
+      return Api.Response(Api.Code.ERROR, msg)
+
+    @staticmethod
+    def ok():
+      """ create a successful response """
+      return Api.Response(Api.Code.OK)
+
+    OK = Api.Code.OK
+    ERROR = Api.Code.ERROR
+
+  def __init__(self, settings:models.AppSettings=models.AppSettings(), change_notifier:Optional[Callable[[models.Status], None]]=None):
     self.reinit(settings, change_notifier)
 
-  def reinit(self, settings:models.AppSettings=models.AppSettings(), change_notifier=None):
+  def reinit(self, settings:models.AppSettings=models.AppSettings(), change_notifier:Optional[Callable[[models.Status], None]]=None):
     """ Initialize or Reinitialize the controller
 
     Intitializes the system to to base configuration """
