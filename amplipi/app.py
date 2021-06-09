@@ -221,7 +221,7 @@ def set_zone(zone: models.ZoneUpdate, ctrl:Api=Depends(get_ctrl), zid: int=param
 # groups
 
 @api.post('/api/group', tags=['group'])
-def create_group(ctrl:Api=Depends(get_ctrl), group: models.Group=None) -> models.Group:
+def create_group(group: models.Group, ctrl:Api=Depends(get_ctrl)) -> models.Group:
   """ Create a new grouping of zones """
   # TODO: add named example group
   return code_response(ctrl, ctrl.create_group(group))
@@ -611,7 +611,7 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
     settings.config_file = config_file
   if delay_saves:
     settings.delay_saves = delay_saves
-  get_ctrl().reinit(settings)
+  get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app
 
 if __name__ == "__main__":

@@ -20,7 +20,9 @@ This module provides complete control of the AmpliPi Audio System's sources,
 zones, groups and streams.
 """
 
-from typing import List, Dict, Set, Union, Optional
+from typing import List, Dict, Set, Union, Optional, Callable
+
+from enum import Enum
 
 from copy import deepcopy
 import os # files
@@ -46,6 +48,7 @@ class Api:
   _mock_streams: bool
   _save_timer: Optional[threading.Timer] = None
   _delay_saves: bool
+  _change_notifier: Optional[Callable[[models.Status], None]] = None
   _rt: Union[rt.Rpi, rt.Mock]
   config_file: str
   backup_config_file: str
@@ -116,13 +119,14 @@ class Api:
     ]
   }
 
-  def __init__(self, settings:models.AppSettings=models.AppSettings()):
-    self.reinit(settings)
+  def __init__(self, settings:models.AppSettings=models.AppSettings(), change_notifier:Optional[Callable[[models.Status], None]]=None):
+    self.reinit(settings, change_notifier)
 
-  def reinit(self, settings:models.AppSettings=models.AppSettings()):
+  def reinit(self, settings:models.AppSettings=models.AppSettings(), change_notifier:Optional[Callable[[models.Status], None]]=None):
     """ Initialize or Reinitialize the controller
 
-    Intitializes the system to the base configuration """
+    Intitializes the system to to base configuration """
+    self._change_notifier = change_notifier
     self._mock_hw = settings.mock_ctrl
     self._mock_streams = settings.mock_streams
     self._save_timer = None
@@ -202,11 +206,13 @@ class Api:
     except Exception as exc:
       print('Error saving config: {}'.format(exc))
 
-  def postpone_save(self):
-    """ Saves the system state in the future
+  def mark_changes(self):
+    """ Mark api changes to update listeners and save the system state in the future
 
-    This attempts to avoid excessive saving and the resulting delays by only saving after the last change
+    This attempts to avoid excessive saving and the resulting delays by only saving a small delay after the last change
     """
+    if self._change_notifier:
+      self._change_notifier(self.get_state())
     if self._delay_saves:
       if self._save_timer:
         self._save_timer.cancel()
@@ -215,12 +221,7 @@ class Api:
       self._save_timer = threading.Timer(5.0, self.save)
       self._save_timer.start()
     else:
-      if self._save_timer:
-        self._save_timer.cancel()
-        self._save_timer = None
-      # start can only be called once on a thread
-      self._save_timer = threading.Timer(0.3, self.save)
-      self._save_timer.start()
+      self.save()
 
   @staticmethod
   def _is_digital(src_type: str) -> bool:
@@ -339,14 +340,10 @@ class Api:
             src_cfg = [ self._is_digital(self.status.sources[s].input) for s in range(4) ]
             # update this source
             src_cfg[idx] = self._is_digital(input_)
-            if self._rt.update_sources(src_cfg):
-              # update the status
-              src.input = input_
-              return None
-            return utils.error('failed to set source')
-          src.input = input_
+            if not self._rt.update_sources(src_cfg):
+              return utils.error('failed to set source')
         if not internal:
-          self.postpone_save()
+          self.mark_changes()
         return None
       except Exception as exc:
         return utils.error('failed to set source: ' + str(exc))
@@ -403,7 +400,7 @@ class Api:
         if internal:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
           self._update_groups()
-          self.postpone_save()
+          self.mark_changes()
 
         return None
       except Exception as exc:
@@ -466,7 +463,7 @@ class Api:
     if not internal:
       # update the group stats
       self._update_groups()
-      self.postpone_save()
+      self.mark_changes()
 
     return None
 
@@ -494,7 +491,7 @@ class Api:
     # update the group stats and populate uninitialized fields of the group
     self._update_groups()
 
-    self.postpone_save()
+    self.mark_changes()
     return group
 
   @utils.save_on_success
@@ -525,7 +522,7 @@ class Api:
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
-        self.postpone_save()
+        self.mark_changes()
         return new_stream
       return utils.error('create stream failed: no stream created')
     except Exception as exc:
@@ -657,7 +654,7 @@ class Api:
       preset.id = pid
       preset.last_used = None # indicates this preset has never been used
       self.status.presets.append(preset)
-      self.postpone_save()
+      self.mark_changes()
       return preset
     except Exception as exc:
       return utils.error('create preset failed: {}'.format(exc))
