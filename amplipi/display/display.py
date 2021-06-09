@@ -5,6 +5,10 @@
 #      loguru requests rpi.gpio netifaces psutil
 # apt: libatlas-base-dev
 
+import sys
+if 'venv' not in sys.prefix:
+  print(f"Warning: Did you mean to run {__file__} from amplipi's venv?\n")
+
 import argparse
 import atexit
 import busio
@@ -13,7 +17,6 @@ import digitalio
 from loguru import logger as log
 import requests
 import socket
-import sys
 import time
 
 # Display
