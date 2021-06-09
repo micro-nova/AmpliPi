@@ -120,9 +120,9 @@ class Api:
     self.reinit(settings)
 
   def reinit(self, settings:models.AppSettings=models.AppSettings()):
-    """ Initialize or Reinitialized the controller
+    """ Initialize or Reinitialize the controller
 
-    Intitializes the system to to base configuration """
+    Intitializes the system to the base configuration """
     self._mock_hw = settings.mock_ctrl
     self._mock_streams = settings.mock_streams
     self._save_timer = None

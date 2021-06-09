@@ -113,7 +113,7 @@ def song_info(ctrl: Api, sid: int) -> Dict[str,str]:
 @lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
   """ Get the controller
-  MAkes a single instance of the controller to avoid duplicates (Singleton pattern)
+  Makes a single instance of the controller to avoid duplicates (Singleton pattern)
   """
   return Api(models.AppSettings())
 
