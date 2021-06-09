@@ -29,8 +29,9 @@ import os
 from typing import List, Dict, Set,  Any, Optional, Callable, TYPE_CHECKING, get_type_hints
 from types import SimpleNamespace
 
+from queue import Queue
 from functools import lru_cache
-
+import asyncio
 import json
 import yaml
 
@@ -41,6 +42,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.routing import APIRoute, APIRouter
 from fastapi.templating import Jinja2Templates
 from starlette.responses import FileResponse
+from sse_starlette.sse import EventSourceResponse
 
 # amplipi
 from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
@@ -135,6 +137,35 @@ api = SimplifyingRouter()
 def get_status(ctrl:Api=Depends(get_ctrl)) -> models.Status:
   """ Get the system status and configuration """
   return ctrl.get_state()
+
+subscribers:Dict[int, 'Queue[models.Status]'] = {}
+def notify_on_change(status: models.Status) -> None:
+  """ Notify subscribers that something has changed """
+  for msg_que in subscribers.values():
+    msg_que.put(status)
+
+@api.get('/api/subscribe')
+async def subscribe(req:Request):
+  """ Subscribe to SSE events """
+  msg_que:Queue = Queue(3)
+  next_sub = max(subscribers.keys(), default=0) + 1
+  subscribers[next_sub] = msg_que
+  async def stream():
+    try:
+      while True:
+        if await req.is_disconnected():
+          print('disconnected')
+          break
+        if not msg_que.empty():
+          msg = msg_que.get()
+          yield msg
+        await asyncio.sleep(0.2)
+      print(f"Disconnected from client {req.client}")
+    except asyncio.CancelledError as exc:
+      print(f"Disconnected from client (via refresh/close) {req.client}")
+      # Do any other cleanup, if any
+      raise exc
+  return EventSourceResponse(stream())
 
 def code_response(ctrl: Api, resp):
   """ Convert amplipi.ctrl.Api responses to json/http responses """
