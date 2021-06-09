@@ -169,14 +169,15 @@ class Api:
         self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams)
     # configure all sources so that they are in a known state
     for src in self.status.sources:
-      update = models.SourceUpdate(input=src.input)
-      self.set_source(src.id, update, force_update=True)
+      if src.id is not None:
+        update = models.SourceUpdate(input=src.input)
+        self.set_source(src.id, update, force_update=True, internal=True)
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for zone in self.status.zones:
       # TODO: disable zones that are not found
       zone_update = models.ZoneUpdate(source_id=zone.source_id, mute=True, vol=zone.vol)
-      self.set_zone(zone.id, zone_update, force_update=True)
+      self.set_zone(zone.id, zone_update, force_update=True, internal=True)
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
 
@@ -204,7 +205,7 @@ class Api:
   def postpone_save(self):
     """ Saves the system state in the future
 
-    This attempts to avoid excessive saving and the resulting delays by only saving 60 seconds after the last change
+    This attempts to avoid excessive saving and the resulting delays by only saving after the last change
     """
     if self._delay_saves:
       if self._save_timer:
@@ -296,15 +297,14 @@ class Api:
       return self.streams.get(idx, None)
     return None
 
-  @utils.save_on_success
-  def set_source(self, sid: int, update:models.SourceUpdate, force_update:bool=False) -> None:
+  def set_source(self, sid: int, update:models.SourceUpdate, force_update:bool=False, internal:bool=False) -> None:
     """Modifes the configuration of one of the 4 system sources
 
       Args:
         id (int): source id [0,3]
-        name (str): user friendly source name, ie. "cd player" or "stream 1"
-        input: method of audio input ('local', 'stream=ID')
+        update: changes to source
         force_update: bool, update source even if no changes have been made (for hw startup)
+        internal: called by a higher-level ctrl function) -> None:
 
       Returns:
         'None' on success, otherwise error (dict)
@@ -345,24 +345,22 @@ class Api:
               return None
             return utils.error('failed to set source')
           src.input = input_
+        if not internal:
+          self.postpone_save()
         return None
       except Exception as exc:
         return utils.error('failed to set source: ' + str(exc))
     else:
       return utils.error('failed to set source: index {} out of bounds'.format(idx))
 
-  @utils.save_on_success
-  def set_zone(self, zid, update:models.ZoneUpdate, force_update:bool=False) -> None:
+  def set_zone(self, zid, update:models.ZoneUpdate, force_update:bool=False, internal:bool=False) -> None:
     """Reconfigures a zone
 
       Args:
-        id (int): any valid zone [0,p*6-1] (6 zones per preamp)
-        name(str): friendly name for the zone, ie "bathroom" or "kitchen 1"
-        source_id (int): source to connect to [0,4]
-        mute (bool): mute the zone regardless of set volume
-        vol (int): attenuation [-79,0] 0 is max volume, -79 is min volume
-        disabled (bool): disable zone, for when the zone is not connected to any speakers and not in use
-        force_update: bool, update source even if no changes have been made (for hw startup)
+        id: any valid zone [0,p*6-1] (6 zones per preamp)
+        update: changes to zone
+        force_update: update source even if no changes have been made (for hw startup)
+        internal: called by a higher-level ctrl function
       Returns:
         'None' on success, otherwise error (dict)
     """
@@ -402,8 +400,10 @@ class Api:
           else:
             return utils.error('set zone failed: unable to update zone volume')
 
-        # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
-        self._update_groups()
+        if internal:
+          # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
+          self._update_groups()
+          self.postpone_save()
 
         return None
       except Exception as exc:
@@ -426,19 +426,15 @@ class Api:
         group.source_id = None
       group.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
-  @utils.save_on_success
-  def set_group(self, gid, update:models.GroupUpdate) -> None:
+  def set_group(self, gid, update:models.GroupUpdate, internal:bool=False) -> None:
     """Configures an existing group
         parameters will be used to configure each sone in the group's zones
         all parameters besides the group id, @id, are optional
 
         Args:
-          id: group id (a guid)
-          name: group name
-          source_id: group source
-          zones: zones that belong to the group
-          mute: group mute setting (muted=True)
-          vol_delta: volume adjustment to apply to each zone [-79,79]
+          gid: group id (a guid)
+          update: changes to group
+          internal: called by a higher-level ctrl function
         Returns:
           'None' on success, otherwise error (dict)
     """
@@ -462,13 +458,15 @@ class Api:
       # TODO: make this use volume delta adjustment, for now its a fixed group volume
       zone_update.vol = vol_delta # vol = z.vol + vol_change
     for zone in [ self.status.zones[zone] for zone in zones ]:
-      self.set_zone(zone.id, zone_update)
+      self.set_zone(zone.id, zone_update, internal=True)
 
     # save the volume
     group.vol_delta = vol_delta
 
-    # update the group stats
-    self._update_groups()
+    if not internal:
+      # update the group stats
+      self._update_groups()
+      self.postpone_save()
 
     return None
 
@@ -476,7 +474,6 @@ class Api:
     """ get next available group id """
     return utils.next_available_id(self.status.groups, default=100)
 
-  @utils.save_on_success
   def create_group(self, group:models.Group) -> models.Group:
     """Creates a new group with a list of zones
 
@@ -497,6 +494,7 @@ class Api:
     # update the group stats and populate uninitialized fields of the group
     self._update_groups()
 
+    self.postpone_save()
     return group
 
   @utils.save_on_success
@@ -517,7 +515,6 @@ class Api:
       return stream.id + 1
     return 1000
 
-  @utils.save_on_success
   def create_stream(self, data: models.Stream) -> models.Stream:
     """ Create a new stream """
     try:
@@ -528,6 +525,7 @@ class Api:
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
+        self.postpone_save()
         return new_stream
       return utils.error('create stream failed: no stream created')
     except Exception as exc:
@@ -555,8 +553,8 @@ class Api:
     try:
       # if input is connected to a source change that input to nothing
       for src in self.status.sources:
-        if src.get_stream() == sid:
-          self.set_source(src.id, models.SourceUpdate(input=''))
+        if src.get_stream() == sid and src.id is not None:
+          self.set_source(src.id, models.SourceUpdate(input=''), internal=True)
       # actually delete it
       del self.streams[sid]
       i, _ = utils.find(self.status.streams, sid)
@@ -650,7 +648,6 @@ class Api:
     """ get next available preset id """
     return utils.next_available_id(self.status.presets, default=10000)
 
-  @utils.save_on_success
   def create_preset(self, preset: models.Preset) -> models.Preset:
     """ Create a new preset """
     try:
@@ -660,6 +657,7 @@ class Api:
       preset.id = pid
       preset.last_used = None # indicates this preset has never been used
       self.status.presets.append(preset)
+      self.postpone_save()
       return preset
     except Exception as exc:
       return utils.error('create preset failed: {}'.format(exc))
@@ -719,7 +717,7 @@ class Api:
     zones_temp_muted = [ zid for zid in zones_effected if not self.status.zones[zid].mute ]
     zone_update = models.ZoneUpdate(mute=True)
     for zid in zones_temp_muted:
-      self.set_zone(zid, zone_update)
+      self.set_zone(zid, zone_update, internal=True)
 
     # keep track of the zones muted by the preset configuration
     zones_muted: Set[int] = set()
@@ -727,7 +725,7 @@ class Api:
     # execute changes source by source in increasing order
     for src in preset_state.sources or []:
       if src.id:
-        self.set_source(src.id, src.as_update())
+        self.set_source(src.id, src.as_update(), internal=True)
       else:
         pass # TODO: support some id-less source concept that allows dynamic source allocation
 
@@ -736,7 +734,7 @@ class Api:
       _, groups_to_update = utils.find(self.status.groups, group.id)
       if groups_to_update is None:
         raise NameError('group {} does not exist'.format(group.id))
-      self.set_group(group.id, group.as_update())
+      self.set_group(group.id, group.as_update(), internal=True)
       if group.mute is not None:
         # use the updated group's zones just in case the group's zones were just changed
         _, g_updated = utils.find(self.status.groups, group.id)
@@ -751,7 +749,7 @@ class Api:
 
     # execute change zone by zone in increasing order
     for zone in preset_state.zones or []:
-      self.set_zone(zone.id, zone.as_update())
+      self.set_zone(zone.id, zone.as_update(), internal=True)
       if zone.mute is not None:
         if zone.mute:
           zones_muted.add(zone.id)
@@ -762,7 +760,10 @@ class Api:
     zones_to_unmute = set(zones_temp_muted).difference(zones_muted)
     zone_update = models.ZoneUpdate(mute=False)
     for zid in zones_to_unmute:
-      self.set_zone(zid, zone_update)
+      self.set_zone(zid, zone_update, internal=True)
+
+    # update stats
+    self._update_groups()
 
   @utils.save_on_success
   def load_preset(self, pid: int) -> None:
