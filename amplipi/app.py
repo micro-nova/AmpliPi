@@ -222,8 +222,9 @@ def delete_group(ctrl:Api=Depends(get_ctrl), gid: int=params.GroupID) -> models.
 
 @api.post('/api/stream', tags=['stream'])
 def create_stream(stream: models.Stream, ctrl:Api=Depends(get_ctrl)) -> models.Stream:
-  """ Create a new audio stream """
-  # TODO: add an example stream for each type of stream
+  """ Create a new audio stream
+  - For Pandora the station is the number at the end of the Pandora URL for a 'station', e.g. 4610303469018478727 from https://www.pandora.com/station/play/4610303469018478727. 'user' and 'password' are the account username and password
+  """
   return code_response(ctrl, ctrl.create_stream(stream))
 
 @api.get('/api/streams', tags=['stream'])
