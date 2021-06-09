@@ -26,7 +26,7 @@ import argparse
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Dict, Set,  Any, Optional, Callable, TYPE_CHECKING, get_type_hints
+from typing import List, Dict, Set,  Any, Optional, Callable, Union, TYPE_CHECKING, get_type_hints
 from types import SimpleNamespace
 
 from queue import Queue
@@ -167,14 +167,14 @@ async def subscribe(req:Request):
       raise exc
   return EventSourceResponse(stream())
 
-def code_response(ctrl: Api, resp):
+def code_response(ctrl: Api, resp: Union[Api.Response, models.BaseModel]):
   """ Convert amplipi.ctrl.Api responses to json/http responses """
-  if resp is None:
-    # general commands return None to indicate success
-    return ctrl.get_state()
-  if 'error' in resp:
+  if isinstance(resp, Api.Response):
+    if resp.code == Api.Code.OK:
+      # general commands return None to indicate success
+      return ctrl.get_state()
     # TODO: refine error codes based on error message
-    raise HTTPException(404, resp['error'])
+    raise HTTPException(404, resp.msg)
   return resp
 
 # sources
