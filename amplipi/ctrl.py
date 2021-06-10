@@ -437,7 +437,7 @@ class Api:
           else:
             return ApiResponse.error('set zone failed: unable to update zone volume')
 
-        if internal:
+        if not internal:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
           self._update_groups()
           self.mark_changes()
