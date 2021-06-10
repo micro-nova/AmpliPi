@@ -67,62 +67,63 @@ class Api:
   streams: Dict[int, amplipi.streams.AnyStream]
 
   _LAST_PRESET_ID = 9999
+  # pylint: disable=bad-continuation
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      { "id": 0, "name": "1", "input": "local" },
-      { "id": 1, "name": "2", "input": "local" },
-      { "id": 2, "name": "3", "input": "local" },
-      { "id": 3, "name": "4", "input": "local" }
+      {"id": 0, "name": "1", "input": "local"},
+      {"id": 1, "name": "2", "input": "local"},
+      {"id": 2, "name": "3", "input": "local"},
+      {"id": 3, "name": "4", "input": "local"}
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
       # an example for each type of stream
-      { "id": 1000, "name": "My Airplay", "type": "shairport"},
-      { "id": 1001, "name": "My Pandora", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
-      { "id": 1002, "name": "My Spotify", "type": "spotify"},
-      { "id": 1003, "name": "My Internet Radio", "type": "internetradio", "url": "http://change.me", "logo": "http://change.me/image.png"},
-      { "id": 1004, "name": "My DLNA Renderer", "type": "dlna"},
+      {"id": 1000, "name": "My Airplay", "type": "shairport"},
+      {"id": 1001, "name": "My Pandora", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
+      {"id": 1002, "name": "My Spotify", "type": "spotify"},
+      {"id": 1003, "name": "My Internet Radio", "type": "internetradio", "url": "http://change.me", "logo": "http://change.me/image.png"},
+      {"id": 1004, "name": "My DLNA Renderer", "type": "dlna"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
-      { "id": 0,  "name": "Zone 1",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 1,  "name": "Zone 2",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 2,  "name": "Zone 3",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 3,  "name": "Zone 4",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 4,  "name": "Zone 5",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
-      { "id": 5,  "name": "Zone 6",  "source_id": 0, "mute": True, "disabled": False, "vol": -79 },
+      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
+      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
+      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
+      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
+      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
+      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
     ],
     # TODO: make groups a dictionary
     "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-      { "id": 100, "name": "Group 1", "zones": [0,1,2], "source_id": 0, "mute": True, "vol_delta": -79 },
-      { "id": 101, "name": "Group 2", "zones": [2,3,4], "source_id": 0, "mute": True, "vol_delta": -79 },
-      { "id": 102, "name": "Group 3", "zones": [5],     "source_id": 0, "mute": True, "vol_delta": -79 },
+      {"id": 100, "name": "Group 1", "zones": [0, 1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
+      {"id": 101, "name": "Group 2", "zones": [2, 3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
+      {"id": 102, "name": "Group 3", "zones": [5], "source_id": 0, "mute": True, "vol_delta": -79},
     ],
     "presets" : [
-      { "id": 10000,
+      {"id": 10000,
         # TODO: generate the mute all preset based on # of zones
         "name": "Mute All",
         "state" : {
           "zones" : [
-            { "id": 0, "mute": True },
-            { "id": 1, "mute": True },
-            { "id": 2, "mute": True },
-            { "id": 3, "mute": True },
-            { "id": 4, "mute": True },
-            { "id": 5, "mute": True },
+            {"id": 0, "mute": True},
+            {"id": 1, "mute": True},
+            {"id": 2, "mute": True},
+            {"id": 3, "mute": True},
+            {"id": 4, "mute": True},
+            {"id": 5, "mute": True},
           ]
         }
       },
       # We need this for testing
-      { "id": 10001,
+      {"id": 10001,
         "name": "Play Pandora",
         "state" : {
           "sources" : [
-            { "id": 1, "input": "stream=1001" },
+            {"id": 1, "input": "stream=1001"},
           ],
           "groups" : [
-            { "id": 100, "source_id": 1 },
-            { "id": 101, "source_id": 1 },
+            {"id": 100, "source_id": 1},
+            {"id": 101, "source_id": 1},
           ]
         }
       }
@@ -158,10 +159,10 @@ class Api:
     OK = Api.Code.OK
     ERROR = Api.Code.ERROR
 
-  def __init__(self, settings:models.AppSettings=models.AppSettings(), change_notifier:Optional[Callable[[models.Status], None]]=None):
+  def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     self.reinit(settings, change_notifier)
 
-  def reinit(self, settings:models.AppSettings=models.AppSettings(), change_notifier:Optional[Callable[[models.Status], None]]=None):
+  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     """ Initialize or Reinitialize the controller
 
     Intitializes the system to to base configuration """
@@ -199,10 +200,10 @@ class Api:
       self.save()
 
     self.status.info = models.Info(
-      mock_ctrl = self._mock_hw,
-      mock_streams = self._mock_streams,
-      config_file = self.config_file,
-      version = utils.detect_version()
+      mock_ctrl=self._mock_hw,
+      mock_streams=self._mock_streams,
+      config_file=self.config_file,
+      version=utils.detect_version()
     )
 
     # configure all streams into a known state
@@ -271,7 +272,7 @@ class Api:
     """
     return src_type != 'local'
 
-  def get_inputs(self) -> Dict[Union[str,None], str]:
+  def get_inputs(self) -> Dict[Union[str, None], str]:
     """Gets a dictionary of the possible inputs for a source
 
       Returns:
@@ -304,7 +305,7 @@ class Api:
     self.status.streams = streams
     return self.status
 
-  def get_items(self, tag:str) -> Optional[List[models.Base]]:
+  def get_items(self, tag: str) -> Optional[List[models.Base]]:
     """ Gets one of the lists of elements contained in status named by @t (or t's plural
 
     This makes it easy to programmatically access zones using t='zones' or groups using t='groups'.
@@ -319,7 +320,7 @@ class Api:
       items = self.get_state().__dict__[plural_tag]
     return items
 
-  def get_stream(self, src:models.Source=None, sid:int=None) -> Optional[amplipi.streams.AnyStream]:
+  def get_stream(self, src: models.Source = None, sid: int = None) -> Optional[amplipi.streams.AnyStream]:
     """Gets the stream from a source
 
     Args:
@@ -337,7 +338,7 @@ class Api:
       return self.streams.get(idx, None)
     return None
 
-  def set_source(self, sid: int, update:models.SourceUpdate, force_update:bool=False, internal:bool=False) -> None:
+  def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> None:
     """Modifes the configuration of one of the 4 system sources
 
       Args:
@@ -389,7 +390,7 @@ class Api:
     else:
       return utils.error('failed to set source: index {} out of bounds'.format(idx))
 
-  def set_zone(self, zid, update:models.ZoneUpdate, force_update:bool=False, internal:bool=False) -> None:
+  def set_zone(self, zid, update: models.ZoneUpdate, force_update: bool = False, internal: bool = False) -> None:
     """Reconfigures a zone
 
       Args:
@@ -450,10 +451,10 @@ class Api:
   def _update_groups(self) -> None:
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
     for group in self.status.groups:
-      zones = [ self.status.zones[z] for z in group.zones ]
-      mutes = [ z.mute for z in zones ]
-      sources  = { z.source_id for z in zones }
-      vols = [ z.vol for z in zones ]
+      zones = [self.status.zones[z] for z in group.zones]
+      mutes = [z.mute for z in zones]
+      sources  = {z.source_id for z in zones}
+      vols = [z.vol for z in zones]
       vols.sort()
       group.mute = False not in mutes # group is only considered muted if all zones are muted
       if len(sources) == 1:
@@ -462,7 +463,7 @@ class Api:
         group.source_id = None
       group.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
-  def set_group(self, gid, update:models.GroupUpdate, internal:bool=False) -> None:
+  def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> None:
     """Configures an existing group
         parameters will be used to configure each sone in the group's zones
         all parameters besides the group id, @id, are optional
@@ -493,7 +494,7 @@ class Api:
     if vol_change != 0:
       # TODO: make this use volume delta adjustment, for now its a fixed group volume
       zone_update.vol = vol_delta # vol = z.vol + vol_change
-    for zone in [ self.status.zones[zone] for zone in zones ]:
+    for zone in [self.status.zones[zone] for zone in zones]:
       self.set_zone(zone.id, zone_update, internal=True)
 
     # save the volume
@@ -546,7 +547,7 @@ class Api:
       return utils.error('delete group failed: {} does not exist'.format(gid))
 
   def _new_stream_id(self):
-    stream:Optional[models.Stream] = max(self.status.streams, key=lambda stream: stream.id)
+    stream: Optional[models.Stream] = max(self.status.streams, key = lambda stream: stream.id)
     if stream and stream.id:
       return stream.id + 1
     return 1000
@@ -652,7 +653,7 @@ class Api:
     return None
 
   @save_on_success
-  def get_stations(self, sid, stream_index=None) -> Dict[str,str]:
+  def get_stations(self, sid, stream_index=None) -> Dict[str, str]:
     """Gets a pandora stream's station list"""
     # TODO: this should be moved to be a command of the Pandora stream interface
     if sid not in self.streams:
@@ -827,13 +828,13 @@ class Api:
     last_pid, _ = utils.find(self.status.presets, self._LAST_PRESET_ID)
     status = self.status
     last_config = models.Preset(
-      id = 9999,
-      name = 'Restore last config',
-      last_used = None, # this need to be in javascript time format
-      state = models.PresetState(
-        sources = deepcopy(status.sources),
-        zones = deepcopy(status.zones),
-        groups = deepcopy(status.groups)
+      id=9999,
+      name='Restore last config',
+      last_used=None, # this need to be in javascript time format
+      state=models.PresetState(
+        sources=deepcopy(status.sources),
+        zones=deepcopy(status.zones),
+        groups=deepcopy(status.groups)
       )
     )
     if last_pid is None:
