@@ -83,12 +83,12 @@ class _Preamps:
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(4, GPIO.OUT)
     GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
-    time.sleep(0.01)
+    time.sleep(0.001)
     GPIO.output(4, 1)
     GPIO.cleanup()    # Done with GPIO
 
-    # Wait a second for the resets to propagate down the line of boxes (should be about 1s, 5s for testing)
-    time.sleep(5)
+    # Each box theoretically takes ~11ms to undergo a reset. Estimating for six boxes, including some padding, wait 100ms for the resets to propagate down the line
+    time.sleep(0.1)
 
     # Setup serial connection via UART pins - set I2C addresses for preamps
     addr = 0x41, 0x10, 0x0D, 0x0A
@@ -96,8 +96,8 @@ class _Preamps:
       ser.write(addr)
 
     # Delay to account for addresses being set
-    # Possibly unnecessary due to human delay
-    time.sleep(1)
+    # Each box theoretically takes ~5ms to receive its address. Again, estimate for six boxes and include some padding
+    time.sleep(0.1)
 
   def new_preamp(self, index):
     self.preamps[index] = [
