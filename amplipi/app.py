@@ -47,7 +47,7 @@ from sse_starlette.sse import EventSourceResponse
 # amplipi
 import amplipi.utils as utils
 import amplipi.models as models
-from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+from amplipi.ctrl import Api, ApiResponse, ApiCode # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 
 
 # pylint: disable=bad-continuation # TODO: make this a global config
@@ -170,10 +170,10 @@ async def subscribe(req: Request):
       raise exc
   return EventSourceResponse(stream())
 
-def code_response(ctrl: Api, resp: Union[Api.Response, models.BaseModel]):
+def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
   """ Convert amplipi.ctrl.Api responses to json/http responses """
-  if isinstance(resp, Api.Response):
-    if resp.code == Api.Code.OK:
+  if isinstance(resp, ApiResponse):
+    if resp.code == ApiCode.OK:
       # general commands return None to indicate success
       return ctrl.get_state()
     # TODO: refine error codes based on error message
