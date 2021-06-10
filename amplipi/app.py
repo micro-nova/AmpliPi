@@ -26,7 +26,7 @@ import argparse
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Dict, Set,  Any, Optional, Callable, Union, TYPE_CHECKING, get_type_hints
+from typing import List, Dict, Set, Any, Optional, Callable, Union, TYPE_CHECKING, get_type_hints
 from types import SimpleNamespace
 
 from queue import Queue
@@ -50,15 +50,15 @@ import amplipi.utils as utils
 import amplipi.models as models
 
 # start in the web directory
-template_dir = os.path.abspath('web/templates')
-static_dir = os.path.abspath('web/static')
-generated_dir = os.path.abspath('web/generated')
+TEMPLATE_DIR = os.path.abspath('web/templates')
+STATIC_DIR = os.path.abspath('web/static')
+GENERATED_DIR = os.path.abspath('web/generated')
 
 app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
-templates = Jinja2Templates(template_dir)
+templates = Jinja2Templates(TEMPLATE_DIR)
 
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
-app.mount("/generated", StaticFiles(directory=generated_dir), name="generated") # TODO: make this register as a dynamic folder???
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated") # TODO: make this register as a dynamic folder???
 
 
 class SimplifyingRouter(APIRouter):
@@ -134,11 +134,11 @@ class params(SimpleNamespace):
 api = SimplifyingRouter()
 
 @api.get('/api', tags=['status'])
-def get_status(ctrl:Api=Depends(get_ctrl)) -> models.Status:
+def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Get the system status and configuration """
   return ctrl.get_state()
 
-subscribers:Dict[int, 'Queue[models.Status]'] = {}
+subscribers: Dict[int, 'Queue[models.Status]'] = {}
 def notify_on_change(status: models.Status) -> None:
   """ Notify subscribers that something has changed """
   for msg_que in subscribers.values():
@@ -147,7 +147,7 @@ def notify_on_change(status: models.Status) -> None:
 @api.get('/api/subscribe')
 async def subscribe(req:Request):
   """ Subscribe to SSE events """
-  msg_que:Queue = Queue(3)
+  msg_que: Queue = Queue(3)
   next_sub = max(subscribers.keys(), default=0) + 1
   subscribers[next_sub] = msg_que
   async def stream():
@@ -180,31 +180,31 @@ def code_response(ctrl: Api, resp: Union[Api.Response, models.BaseModel]):
 # sources
 
 @api.get('/api/sources', tags=['source'])
-def get_sources(ctrl:Api=Depends(get_ctrl)) -> Dict[str, List[models.Source]]:
+def get_sources(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Source]]:
   """ Get all sources """
   return {'sources' : ctrl.get_state().sources}
 
 @api.get('/api/sources/{sid}', tags=['source'])
-def get_source(ctrl:Api=Depends(get_ctrl), sid: int=params.SourceID) -> models.Source:
+def get_source(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Source:
   """ Get Source with id=**sid** """
   # TODO: add get_X capabilities to underlying API?
   sources = ctrl.get_state().sources
   return sources[sid]
 
 @api.patch('/api/sources/{sid}', tags=['source'])
-def set_source(update: models.SourceUpdate, ctrl:Api=Depends(get_ctrl), sid: int = params.SourceID) -> models.Status:
+def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Status:
   """ Update a source's configuration (source=**sid**) """
   return code_response(ctrl, ctrl.set_source(sid, update))
 
 # zones
 
 @api.get('/api/zones', tags=['zone'])
-def get_zones(ctrl:Api=Depends(get_ctrl)) -> Dict[str, List[models.Zone]]:
+def get_zones(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Zone]]:
   """ Get all zones """
   return {'zones': ctrl.get_state().zones}
 
 @api.get('/api/zones/{zid}', tags=['zone'])
-def get_zone(ctrl:Api=Depends(get_ctrl), zid: int=params.ZoneID) -> models.Zone:
+def get_zone(ctrl: Api = Depends(get_ctrl), zid: int = params.ZoneID) -> models.Zone:
   """ Get Zone with id=**zid** """
   zones = ctrl.get_state().zones
   if 0 <= zid < len(zones):
@@ -212,27 +212,27 @@ def get_zone(ctrl:Api=Depends(get_ctrl), zid: int=params.ZoneID) -> models.Zone:
   raise HTTPException(404, f'zone {zid} not found')
 
 @api.patch('/api/zones/{zid}', tags=['zone'])
-def set_zone(zone: models.ZoneUpdate, ctrl:Api=Depends(get_ctrl), zid: int=params.ZoneID) -> models.Status:
+def set_zone(zone: models.ZoneUpdate, ctrl: Api = Depends(get_ctrl), zid: int = params.ZoneID) -> models.Status:
   """ Update a zone's configuration (zone=**zid**) """
   return code_response(ctrl, ctrl.set_zone(zid, zone))
 
-# TODO: add set_zones(ctrl:Api=Depends(get_ctrl), zones:List[int]=[], groups:List[int]=[], update:ZoneUpdate)
+# TODO: add set_zones(ctrl: Api = Depends(get_ctrl), zones:List[int]=[], groups:List[int]=[], update:ZoneUpdate)
 
 # groups
 
 @api.post('/api/group', tags=['group'])
-def create_group(group: models.Group, ctrl:Api=Depends(get_ctrl)) -> models.Group:
+def create_group(group: models.Group, ctrl: Api = Depends(get_ctrl)) -> models.Group:
   """ Create a new grouping of zones """
   # TODO: add named example group
   return code_response(ctrl, ctrl.create_group(group))
 
 @api.get('/api/groups', tags=['group'])
-def get_groups(ctrl:Api=Depends(get_ctrl)) -> Dict[str, List[models.Group]]:
+def get_groups(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Group]]:
   """ Get all groups """
   return {'groups' : ctrl.get_state().groups}
 
 @api.get('/api/groups/{gid}', tags=['group'])
-def get_group(ctrl:Api=Depends(get_ctrl), gid: int=params.GroupID) -> models.Group:
+def get_group(ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> models.Group:
   """ Get Group with id=**gid** """
   _, grp = utils.find(ctrl.get_state().groups, gid)
   if grp is not None:
@@ -240,31 +240,31 @@ def get_group(ctrl:Api=Depends(get_ctrl), gid: int=params.GroupID) -> models.Gro
   raise HTTPException(404, f'group {gid} not found')
 
 @api.patch('/api/groups/{gid}', tags=['group'])
-def set_group(group: models.GroupUpdate, ctrl:Api=Depends(get_ctrl), gid: int=params.GroupID) -> models.Status:
+def set_group(group: models.GroupUpdate, ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> models.Status:
   """ Update a groups's configuration (group=**gid**) """
   return code_response(ctrl, ctrl.set_group(gid, group)) # TODO: pass update directly
 
 @api.delete('/api/groups/{gid}', tags=['group'])
-def delete_group(ctrl:Api=Depends(get_ctrl), gid: int=params.GroupID) -> models.Status:
+def delete_group(ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> models.Status:
   """ Delete a group (group=**gid**) """
   return code_response(ctrl, ctrl.delete_group(gid))
 
 # streams
 
 @api.post('/api/stream', tags=['stream'])
-def create_stream(stream: models.Stream, ctrl:Api=Depends(get_ctrl)) -> models.Stream:
+def create_stream(stream: models.Stream, ctrl: Api = Depends(get_ctrl)) -> models.Stream:
   """ Create a new audio stream
   - For Pandora the station is the number at the end of the Pandora URL for a 'station', e.g. 4610303469018478727 from https://www.pandora.com/station/play/4610303469018478727. 'user' and 'password' are the account username and password
   """
   return code_response(ctrl, ctrl.create_stream(stream))
 
 @api.get('/api/streams', tags=['stream'])
-def get_streams(ctrl:Api=Depends(get_ctrl)) -> Dict[str, List[models.Stream]]:
+def get_streams(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Stream]]:
   """ Get all streams """
   return {'streams' : ctrl.get_state().streams}
 
 @api.get('/api/streams/{sid}', tags=['stream'])
-def get_stream(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID) -> models.Stream:
+def get_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Stream:
   """ Get Stream with id=**sid** """
   _, stream = utils.find(ctrl.get_state().streams, sid)
   if stream is not None:
@@ -272,24 +272,24 @@ def get_stream(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID) -> models.S
   raise HTTPException(404, f'stream {sid} not found')
 
 @api.patch('/api/streams/{sid}', tags=['stream'])
-def set_stream(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID, update: models.StreamUpdate=None) -> models.Status:
+def set_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, update: models.StreamUpdate = None) -> models.Status:
   """ Update a stream's configuration (stream=**sid**) """
   return code_response(ctrl, ctrl.set_stream(sid, update))
 
 @api.delete('/api/streams/{sid}', tags=['stream'])
-def delete_stream(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID) -> models.Status:
+def delete_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Status:
   """ Delete a stream """
   return code_response(ctrl, ctrl.delete_stream(sid))
 
 
 @api.post('/api/streams/{sid}/station={station}', tags=['stream'])
-def change_station(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID, station: int=params.StationID) -> models.Status:
+def change_station(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, station: int = params.StationID) -> models.Status:
   """ Change station on a pandora stream (stream=**sid**) """
   # This is a specific version of exec command, it needs to be placed before the genertic version so the path is resolved properly
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=f'station={station}'))
 
 @api.post('/api/streams/{sid}/{cmd}', tags=['stream'])
-def exec_command(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID, cmd: models.StreamCommand=None) -> models.Status:
+def exec_command(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, cmd: models.StreamCommand = None) -> models.Status:
   """ Executes a comamnd on a stream (stream=**sid**).
 
     Command options:
@@ -307,17 +307,17 @@ def exec_command(ctrl:Api=Depends(get_ctrl), sid: int=params.StreamID, cmd: mode
 # presets
 
 @api.post('/api/preset', tags=['preset'])
-def create_preset(preset: models.Preset, ctrl:Api=Depends(get_ctrl)) -> models.Preset:
+def create_preset(preset: models.Preset, ctrl: Api = Depends(get_ctrl)) -> models.Preset:
   """ Create a new preset configuration """
   return code_response(ctrl, ctrl.create_preset(preset))
 
 @api.get('/api/presets', tags=['preset'])
-def get_presets(ctrl:Api=Depends(get_ctrl)) -> Dict[str, List[models.Preset]]:
+def get_presets(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Preset]]:
   """ Get all presets """
   return {'presets' : ctrl.get_state().presets}
 
 @api.get('/api/presets/{pid}', tags=['preset'])
-def get_preset(ctrl:Api=Depends(get_ctrl), pid: int=params.PresetID) -> models.Preset:
+def get_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> models.Preset:
   """ Get Preset with id=**pid** """
   _, preset = utils.find(ctrl.get_state().presets, pid)
   if preset is not None:
@@ -325,17 +325,17 @@ def get_preset(ctrl:Api=Depends(get_ctrl), pid: int=params.PresetID) -> models.P
   raise HTTPException(404, f'preset {pid} not found')
 
 @api.patch('/api/presets/{pid}', tags=['preset'])
-async def set_preset(ctrl:Api=Depends(get_ctrl), pid: int=params.PresetID, update: models.PresetUpdate=None) -> models.Status:
+async def set_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID, update: models.PresetUpdate = None) -> models.Status:
   """ Update a preset's configuration (preset=**pid**) """
   return code_response(ctrl, ctrl.set_preset(pid, update))
 
 @api.delete('/api/presets/{pid}', tags=['preset'])
-def delete_preset(ctrl:Api=Depends(get_ctrl), pid: int=params.PresetID) -> models.Status:
+def delete_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> models.Status:
   """ Delete a preset """
   return code_response(ctrl, ctrl.delete_preset(pid))
 
 @api.post('/api/presets/{pid}/load', tags=['preset'])
-def load_preset(ctrl:Api=Depends(get_ctrl), pid: int=params.PresetID) -> models.Status:
+def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> models.Status:
   """ Load a preset configuration """
   return code_response(ctrl, ctrl.load_preset(pid))
 
@@ -579,7 +579,7 @@ def doc():
 
 @app.get('/', include_in_schema=False)
 @app.get('/{src}', include_in_schema=False)
-def view(request: Request, ctrl:Api=Depends(get_ctrl), src:int=0):
+def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
   """ Webapp main view """
   state = ctrl.get_state()
   context = {
@@ -600,7 +600,7 @@ def view(request: Request, ctrl:Api=Depends(get_ctrl), src:int=0):
   }
   return templates.TemplateResponse('index.html.j2', context, media_type='text/html')
 
-def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings:models.AppSettings=models.AppSettings()) -> FastAPI:
+def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings: models.AppSettings = models.AppSettings()) -> FastAPI:
   """ Create the AmpliPi web app with a specific configuration """
   # specify old parameters
   if mock_ctrl:
