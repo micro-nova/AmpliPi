@@ -103,8 +103,9 @@ class Source(Base):
   def get_stream(self) -> Optional[int]:
     """ Get a sources conneted stream if any """
     try:
-      if 'stream=' in self.input:
-        return int(self.input.split('=')[1])
+      sinput = str(self.input)
+      if 'stream=' in sinput:
+        return int(sinput.split('=')[1])
       return None
     except ValueError:
       return None

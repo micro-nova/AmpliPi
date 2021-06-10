@@ -45,9 +45,12 @@ from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
 # amplipi
-from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 import amplipi.utils as utils
 import amplipi.models as models
+from amplipi.ctrl import Api # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+
+
+# pylint: disable=bad-continuation # TODO: make this a global config
 
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
@@ -75,12 +78,12 @@ class SimplifyingRouter(APIRouter):
       return super().add_api_route(path, endpoint, **kwargs)
 
 # Helper functions
-def unused_groups(ctrl: Api, src: int) -> Dict[int,str]:
+def unused_groups(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get groups that are not connected to src """
   groups = ctrl.status.groups
   return { g.id : g.name for g in groups if g.source_id != src and g.id  is not None }
 
-def unused_zones(ctrl: Api, src: int) -> Dict[int,str]:
+def unused_zones(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get zones that are not conencted to src """
   zones = ctrl.status.zones
   return { z.id : z.name for z in zones if z.source_id != src and z.id is not None }
@@ -100,7 +103,7 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   ungrouped_zones_ = source_zones.difference(grouped_zones)
   return [ zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
 
-def song_info(ctrl: Api, sid: int) -> Dict[str,str]:
+def song_info(ctrl: Api, sid: int) -> Dict[str, str]:
   """ Get the song info for a source """
   song_fields = ['artist', 'album', 'track', 'img_url']
   stream = ctrl.get_stream(sid=sid)
@@ -145,7 +148,7 @@ def notify_on_change(status: models.Status) -> None:
     msg_que.put(status)
 
 @api.get('/api/subscribe')
-async def subscribe(req:Request):
+async def subscribe(req: Request):
   """ Subscribe to SSE events """
   msg_que: Queue = Queue(3)
   next_sub = max(subscribers.keys(), default=0) + 1
@@ -242,7 +245,7 @@ def get_group(ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> model
 @api.patch('/api/groups/{gid}', tags=['group'])
 def set_group(group: models.GroupUpdate, ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> models.Status:
   """ Update a groups's configuration (group=**gid**) """
-  return code_response(ctrl, ctrl.set_group(gid, group)) # TODO: pass update directly
+  return code_response(ctrl, ctrl.set_group(gid, group))
 
 @api.delete('/api/groups/{gid}', tags=['group'])
 def delete_group(ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> models.Status:
@@ -344,7 +347,7 @@ app.include_router(api)
 def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   try:
     if route.body_field:
-      json_model =  route.body_field.type_.schema_json()
+      json_model = route.body_field.type_.schema_json()
       return json.loads(json_model)
     return None
   except:
@@ -427,11 +430,11 @@ def generate_openapi_spec(add_test_docs=True):
   if app.openapi_schema:
     return app.openapi_schema
   openapi_schema = get_openapi(
-    title = 'AmpliPi',
-    version = '1.0',
-    description = "This is the AmpliPi home audio system's control server.",
-    routes = app.routes,
-    tags = [
+    title='AmpliPi',
+    version='1.0',
+    description="This is the AmpliPi home audio system's control server.",
+    routes=app.routes,
+    tags=[
       {
         'name': 'status',
         'description': 'The status and configuration of the entire system, including sources, zones, groups, and streams.',
@@ -457,7 +460,7 @@ def generate_openapi_spec(add_test_docs=True):
         'description': '''A partial system configuration. Used to load specific configurations, such as "Home Theater" mode where the living room speakers are connected to the TV's audio output.''',
       }
     ],
-    servers = [{
+    servers=[{
       'url': '',
       'description': 'AmpliPi Controller'
     }],
@@ -573,7 +576,7 @@ app.openapi = generate_openapi_spec # type: ignore
 def doc():
   """ Get the API documentation """
   # TODO: add hosted python docs as well
-  return FileResponse(f'{template_dir}/rest-api-doc.html') # TODO: this is not really a template
+  return FileResponse(f'{TEMPLATE_DIR}/rest-api-doc.html')
 
 # Website
 

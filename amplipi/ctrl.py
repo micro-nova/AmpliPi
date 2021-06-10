@@ -338,14 +338,14 @@ class Api:
       return self.streams.get(idx, None)
     return None
 
-  def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> None:
+  def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> Api.Response:
     """Modifes the configuration of one of the 4 system sources
 
       Args:
         id (int): source id [0,3]
         update: changes to source
         force_update: bool, update source even if no changes have been made (for hw startup)
-        internal: called by a higher-level ctrl function) -> None:
+        internal: called by a higher-level ctrl function:
 
       Returns:
         'None' on success, otherwise error (dict)
@@ -381,16 +381,16 @@ class Api:
             # update this source
             src_cfg[idx] = self._is_digital(input_)
             if not self._rt.update_sources(src_cfg):
-              return utils.error('failed to set source')
+              return Api.Response.error('failed to set source')
         if not internal:
           self.mark_changes()
-        return None
+        return Api.Response.ok()
       except Exception as exc:
-        return utils.error('failed to set source: ' + str(exc))
+        return Api.Response.error('failed to set source: ' + str(exc))
     else:
-      return utils.error('failed to set source: index {} out of bounds'.format(idx))
+      return Api.Response.error('failed to set source: index {} out of bounds'.format(idx))
 
-  def set_zone(self, zid, update: models.ZoneUpdate, force_update: bool = False, internal: bool = False) -> None:
+  def set_zone(self, zid, update: models.ZoneUpdate, force_update: bool = False, internal: bool = False) -> Api.Response:
     """Reconfigures a zone
 
       Args:
@@ -422,31 +422,31 @@ class Api:
           if self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
-            return utils.error('set zone failed: unable to update zone source')
+            return Api.Response.error('set zone failed: unable to update zone source')
         if update_mutes or force_update:
           mutes = [ zone.mute for zone in zones ]
           mutes[idx] = mute
           if self._rt.update_zone_mutes(idx, mutes):
             zone.mute = mute
           else:
-            return utils.error('set zone failed: unable to update zone mute')
+            return Api.Response.error('set zone failed: unable to update zone mute')
         if update_vol or force_update:
           real_vol = utils.clamp(vol, -79, 0)
           if self._rt.update_zone_vol(idx, real_vol):
             zone.vol = vol
           else:
-            return utils.error('set zone failed: unable to update zone volume')
+            return Api.Response.error('set zone failed: unable to update zone volume')
 
         if internal:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
           self._update_groups()
           self.mark_changes()
 
-        return None
+        return Api.Response.ok()
       except Exception as exc:
-        return utils.error('set zone: '  + str(exc))
+        return Api.Response.error('set zone: '  + str(exc))
     else:
-        return utils.error('set zone: index {} out of bounds'.format(idx))
+        return Api.Response.error('set zone: index {} out of bounds'.format(idx))
 
   def _update_groups(self) -> None:
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
@@ -463,7 +463,7 @@ class Api:
         group.source_id = None
       group.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
 
-  def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> None:
+  def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> Api.Response:
     """Configures an existing group
         parameters will be used to configure each sone in the group's zones
         all parameters besides the group id, @id, are optional
@@ -477,7 +477,7 @@ class Api:
     """
     _, group = utils.find(self.status.groups, gid)
     if group is None:
-      return utils.error('set group failed, group {} not found'.format(gid))
+      return Api.Response.error('set group failed, group {} not found'.format(gid))
     name, _ = utils.updated_val(update.name, group.name)
     zones, _ = utils.updated_val(update.zones, group.zones)
     vol_delta, vol_updated = utils.updated_val(update.vol_delta, group.vol_delta)
@@ -505,7 +505,7 @@ class Api:
       self._update_groups()
       self.mark_changes()
 
-    return None
+    return Api.Response.ok()
 
   def _new_group_id(self):
     """ get next available group id """
@@ -519,7 +519,7 @@ class Api:
     # verify new group's name is unique
     names = [ g.name for g in self.status.groups ]
     if group.name in names:
-      return utils.error('create group failed: {} already exists'.format(group.name))
+      return Api.Response.error('create group failed: {} already exists'.format(group.name))
 
     # get the new groug's id
     group.id = self._new_group_id()
@@ -535,16 +535,16 @@ class Api:
     return group
 
   @save_on_success
-  def delete_group(self, gid: int) -> None:
+  def delete_group(self, gid: int) -> Api.Response:
     """Deletes an existing group"""
     try:
       i, _ = utils.find(self.status.groups, gid)
       if i is not None:
         del self.status.groups[i]
-        return None
-      return utils.error('delete group failed: {} does not exist'.format(gid))
+        return Api.Response.ok()
+      return Api.Response.error('delete group failed: {} does not exist'.format(gid))
     except KeyError:
-      return utils.error('delete group failed: {} does not exist'.format(gid))
+      return Api.Response.error('delete group failed: {} does not exist'.format(gid))
 
   def _new_stream_id(self):
     stream: Optional[models.Stream] = max(self.status.streams, key = lambda stream: stream.id)
@@ -564,28 +564,28 @@ class Api:
       if new_stream:
         self.mark_changes()
         return new_stream
-      return utils.error('create stream failed: no stream created')
+      return Api.Response.error('create stream failed: no stream created')
     except Exception as exc:
-      return utils.error('create stream failed: {}'.format(exc))
+      return Api.Response.error('create stream failed: {}'.format(exc))
 
   @save_on_success
-  def set_stream(self, sid: int, update: models.StreamUpdate) -> None:
+  def set_stream(self, sid: int, update: models.StreamUpdate) -> Api.Response:
     """ Configure a stream """
     if sid not in self.streams:
-      return utils.error('Stream id {} does not exist'.format(sid))
+      return Api.Response.error('Stream id {} does not exist'.format(sid))
     try:
       stream = self.streams[sid]
     except Exception as exc:
-      return utils.error('Unable to get stream {}: {}'.format(sid, exc))
+      return Api.Response.error('Unable to get stream {}: {}'.format(sid, exc))
     try:
       changes = update.dict(exclude_none=True)
       stream.reconfig(**changes)
-      return None
+      return Api.Response.ok()
     except Exception as exc:
-      return utils.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
+      return Api.Response.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
 
   @save_on_success
-  def delete_stream(self, sid: int) -> None:
+  def delete_stream(self, sid: int) -> Api.Response:
     """Deletes an existing stream"""
     try:
       # if input is connected to a source change that input to nothing
@@ -597,24 +597,24 @@ class Api:
       i, _ = utils.find(self.status.streams, sid)
       if i is not None:
         del self.status.streams[i] # delete the cached stream state just in case
-      return None
+      return Api.Response.ok()
     except KeyError:
-      return utils.error('delete stream failed: {} does not exist'.format(sid))
+      return Api.Response.error('delete stream failed: {} does not exist'.format(sid))
 
   @save_on_success
-  def exec_stream_command(self, sid: int, cmd: str) -> None:
+  def exec_stream_command(self, sid: int, cmd: str) -> Api.Response:
     """Sets play/pause on a specific pandora source """
     # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     if int(sid) not in self.streams:
-      return utils.error('Stream id {} does not exist'.format(sid))
+      return Api.Response.error('Stream id {} does not exist'.format(sid))
 
     try:
       stream = self.streams[sid]
     except Exception as exc:
-      return utils.error('Unable to get stream {}: {}'.format(sid, exc))
+      return Api.Response.error('Unable to get stream {}: {}'.format(sid, exc))
 
     if not isinstance(stream, amplipi.streams.Pandora) or stream.mock:
-      return utils.error(f'Stream "{stream}" does not support commands yet')
+      return Api.Response.error(f'Stream "{stream}" does not support commands yet')
 
     try:
       if cmd is None:
@@ -644,20 +644,20 @@ class Api:
         if station_id is not None:
           stream.ctrl.station(station_id)
         else:
-          return utils.error('station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{}"'.format(cmd))
+          return Api.Response.error('station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{}"'.format(cmd))
       else:
-        return utils.error('Command "{}" not recognized.'.format(cmd))
+        return Api.Response.error('Command "{}" not recognized.'.format(cmd))
     except Exception as exc:
-      return utils.error('Failed to execute stream command: {}: {}'.format(cmd, exc))
+      return Api.Response.error('Failed to execute stream command: {}: {}'.format(cmd, exc))
 
-    return None
+    return Api.Response.ok()
 
   @save_on_success
-  def get_stations(self, sid, stream_index=None) -> Dict[str, str]:
+  def get_stations(self, sid, stream_index=None) -> Union[Api.Response, Dict[str, str]]:
     """Gets a pandora stream's station list"""
     # TODO: this should be moved to be a command of the Pandora stream interface
     if sid not in self.streams:
-      return utils.error('Stream id {} does not exist!'.format(sid))
+      return Api.Response.error('Stream id {} does not exist!'.format(sid))
     # TODO: move the rest of this into streams
     if stream_index is not None:
       root = '{}/srcs/{}/'.format(utils.get_folder('config'), stream_index)
@@ -685,7 +685,7 @@ class Api:
     """ get next available preset id """
     return utils.next_available_id(self.status.presets, default=10000)
 
-  def create_preset(self, preset: models.Preset) -> models.Preset:
+  def create_preset(self, preset: models.Preset) -> Union[Api.Response, models.Preset]:
     """ Create a new preset """
     try:
       # Make a new preset and add it to presets
@@ -697,35 +697,35 @@ class Api:
       self.mark_changes()
       return preset
     except Exception as exc:
-      return utils.error('create preset failed: {}'.format(exc))
+      return Api.Response.error('create preset failed: {}'.format(exc))
 
   @save_on_success
-  def set_preset(self, pid: int, update: models.PresetUpdate) -> None:
+  def set_preset(self, pid: int, update: models.PresetUpdate) -> Api.Response:
     """ Reconfigure a preset """
     i, preset = utils.find(self.status.presets, pid)
     changes = update.dict(exclude_none=True)
     if i is None:
-      return utils.error('Unable to find preset to redefine')
+      return Api.Response.error('Unable to find preset to redefine')
 
     try:
       # TODO: validate preset
       for field in changes.keys():
         preset.__dict__[field] = update.__dict__[field]
-      return None
+      return Api.Response.ok()
     except Exception as exc:
-      return utils.error('Unable to reconfigure preset {}: {}'.format(pid, exc))
+      return Api.Response.error('Unable to reconfigure preset {}: {}'.format(pid, exc))
 
   @save_on_success
-  def delete_preset(self, pid: int) -> None:
+  def delete_preset(self, pid: int) -> Api.Response:
     """ Deletes an existing preset """
     try:
       idx, _ = utils.find(self.status.presets, pid)
       if idx is not None:
         del self.status.presets[idx] # delete the cached preset state just in case
-        return None
-      return utils.error('delete preset failed: {} does not exist'.format(pid))
+        return Api.Response.ok()
+      return Api.Response.error('delete preset failed: {} does not exist'.format(pid))
     except KeyError:
-      return utils.error('delete preset failed: {} does not exist'.format(pid))
+      return Api.Response.error('delete preset failed: {} does not exist'.format(pid))
 
   def _effected_zones(self, preset_state: models.PresetState) -> Set[int]:
     """ Aggregate the zones that will be modified by changes """
@@ -803,7 +803,7 @@ class Api:
     self._update_groups()
 
   @save_on_success
-  def load_preset(self, pid: int) -> None:
+  def load_preset(self, pid: int) -> Api.Response:
     """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration.
     Below is an idea of how a preset configuration could be loaded to avoid any weirdness.
     We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
@@ -819,7 +819,7 @@ class Api:
     # Get the preset to load
     i, preset = utils.find(self.status.presets, pid)
     if i is None or preset is None:
-      return utils.error('load preset failed: {} does not exist'.format(pid))
+      return Api.Response.error('load preset failed: {} does not exist'.format(pid))
 
     # TODO: acquire lock (all api methods that change configuration will need this)
 
@@ -846,11 +846,11 @@ class Api:
       try:
         self._load_preset_state(preset.state)
       except Exception as exc:
-        return utils.error(str(exc))
+        return Api.Response.error(str(exc))
 
     # TODO: execute stream commands
 
     preset.last_used = int(time.time())
 
     # TODO: release lock
-    return None
+    return Api.Response.ok()
