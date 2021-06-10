@@ -493,12 +493,6 @@ function initVolControl(ctrl) {
     }
   });
 
-  barHoverBox.addEventListener("wheel", (e) => {
-    const j = (range.max - range.min) / 200.0;
-    const val = +range.value + e.deltaY * j;
-    setValue(val);
-  });
-
   document.addEventListener("mouseup", (e) => {
     vols[ctrl.id].barStillDown = false;
   }, true);
