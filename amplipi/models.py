@@ -20,7 +20,7 @@ Encourages reuse of datastructures across AmpliPi
 """
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Dict, Optional, Union, Callable
+from typing import List, Dict, Optional, Union
 from types import SimpleNamespace
 from enum import Enum
 from pydantic import BaseSettings, BaseModel, Field
@@ -28,6 +28,7 @@ from pydantic import BaseSettings, BaseModel, Field
 # pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
+# pylint: disable=bad-continuation
 
 class fields(SimpleNamespace):
   """ AmpliPi's field types """
@@ -35,10 +36,10 @@ class fields(SimpleNamespace):
   Name = Field(description='Friendly name')
   SourceId = Field(ge=0, le=3, description='id of the connected source')
   ZoneId = Field(ge=0, le=35)
-  Mute =  Field(description='Set to true if output is muted')
+  Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=-79, le=0, description='Output volume in dB')
-  GroupMute =  Field(description='Set to true if output is all zones muted')
-  GroupVolume = Field( ge=-79, le=0, description='Average input volume in dB')
+  GroupMute = Field(description='Set to true if output is all zones muted')
+  GroupVolume = Field(ge=-79, le=0, description='Average input volume in dB')
   Disabled = Field(description='Set to true if not connected to a speaker')
   Zones = Field(description='Set of zones belonging to a group')
   AudioInput = Field('', description="""Connected audio source
@@ -55,9 +56,9 @@ class fields_w_default(SimpleNamespace):
   """
   # TODO: less duplication
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
-  Mute =  Field(default=True, description='Set to true if output is muted')
+  Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=-79, ge=-79, le=0, description='Output volume in dB')
-  GroupMute =  Field(default=True, description='Set to true if output is all zones muted')
+  GroupMute = Field(default=True, description='Set to true if output is all zones muted')
   GroupVolume = Field(default=-79, ge=-79, le=0, description='Average utput volume in dB')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
 

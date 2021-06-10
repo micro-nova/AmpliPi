@@ -81,12 +81,12 @@ class SimplifyingRouter(APIRouter):
 def unused_groups(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get groups that are not connected to src """
   groups = ctrl.status.groups
-  return { g.id : g.name for g in groups if g.source_id != src and g.id  is not None }
+  return {g.id : g.name for g in groups if g.source_id != src and g.id  is not None}
 
 def unused_zones(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get zones that are not conencted to src """
   zones = ctrl.status.zones
-  return { z.id : z.name for z in zones if z.source_id != src and z.id is not None }
+  return {z.id : z.name for z in zones if z.source_id != src and z.id is not None}
 
 def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   """ Get zones that are connected to src, but don't belong to a full group """
@@ -98,10 +98,10 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
     if group.source_id == src:
       grouped_zones = grouped_zones.union(group.zones)
   # get all of the zones connected to this soource
-  source_zones = { z.id for z in zones if z.source_id == src }
+  source_zones = {z.id for z in zones if z.source_id == src}
   # return all of the zones connected to this source that aren't in a group
   ungrouped_zones_ = source_zones.difference(grouped_zones)
-  return [ zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
+  return [zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
 
 def song_info(ctrl: Api, sid: int) -> Dict[str, str]:
   """ Get the song info for a source """
@@ -345,6 +345,7 @@ def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mo
 app.include_router(api)
 
 def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
+  """ Get json model for the body of an api request """
   try:
     if route.body_field:
       json_model = route.body_field.type_.schema_json()
@@ -354,6 +355,7 @@ def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
     return None
 
 def get_response_model(route: APIRoute) -> Optional[Dict[str, Any]]:
+  """ Get json model for the response of an api request """
   try:
     if route.response_field:
       json_model = route.response_field.type_.schema_json()
@@ -391,7 +393,7 @@ def add_response_examples(openapi_schema, route: APIRoute) -> None:
       piece = route.path.replace('/api/', '')
       example_status = list(models.Status.Config.schema_extra['examples'].values())[0]['value']
       openapi_schema['paths'][route.path]['get']['responses']['200'][
-          'content']['application/json']['example'] = { piece: example_status[piece] }
+          'content']['application/json']['example'] = {piece: example_status[piece]}
 
 def get_live_examples(tags: List[str]) -> Dict[str, Dict[str, Any]]:
   """ Create a list of examples using the live configuration """
