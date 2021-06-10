@@ -18,6 +18,7 @@ import requests
 import signal
 import socket
 import time
+from typing import Any, Dict, List, Tuple
 
 # Display
 import adafruit_rgb_display.ili9341 as ili9341
@@ -130,7 +131,11 @@ _active_screen = 0
 # 6.66 MHz but much faster speeds seem to work okay.
 spi_baud = 16 * 10**6
 
-API_URL = 'http://' + args.url + '/api/'
+# Determine the full URL to contact, and if no specific port was specified
+# then use port 5000 as a fallback in case the debug webserver is running.
+API_URL = 'http://' + args.url + '/api'
+if ':' not in args.url:
+  API_URL_DEBUG = 'http://' + args.url + ':5000/api'
 
 # Convert number range to color gradient (min=green, max=red)
 def gradient(num, min_val=0, max_val=100):
@@ -152,13 +157,17 @@ def gradient(num, min_val=0, max_val=100):
     grn = 255 - round(scale * (num - mid))
   return f'#{red:02X}{grn:02X}00'
 
-def get_amplipi_data():
+def get_amplipi_data(url: str) -> Tuple[bool, List[Dict[str,object]], List[Any]]:
+  """ Get the AmpliPi's status via the REST API
+      Returns true/false on success/failure, as well as the sources and zones
+  """
   sources = [{'name': '', 'playing': False} for i in range(4)]
   zones = []
+  success = False
   try:
     # TODO: If the AmpliPi server isn't available at this url, there is a
     # 5-second delay introduced by socket.getaddrinfo
-    r = requests.get(API_URL, timeout=0.1)
+    r = requests.get(url, timeout=0.1)
     if r.status_code == 200:
       j = r.json()
       stream_ids = [s['id'] for s in j['streams']]
@@ -181,16 +190,17 @@ def get_amplipi_data():
         sources[i]['name'] = name
         sources[i]['playing'] = playing
       zones = j['zones']
+      success = True
     else:
       log.error('Bad status code returned from AmpliPi')
   except requests.ConnectionError as e:
-    raise ConnectionError(e.args[0].reason)
+    log.debug(e.args[0].reason)
   except requests.Timeout:
     log.error('Timeout requesting AmpliPi status')
   except ValueError:
     log.error('Invalid json in AmpliPi status response')
 
-  return sources, zones
+  return success, sources, zones
 
 # Draw volumes on bars.
 # Draw is a PIL drawing surface
@@ -436,31 +446,39 @@ connection_retries = 0
 frame_num = 0
 frame_times = []
 cpu_load = []
+use_debug_port = False
 while frame_num < 10 and run:
   frame_start_time = time.time()
 
   if _active_screen == 0:
     # Get AmpliPi status
-    try:
-      sources, zones = get_amplipi_data()
-    except ConnectionError as e:
-      log.debug(e)
+    primary_url = API_URL_DEBUG if use_debug_port else API_URL
+    secondary_url = API_URL if use_debug_port else API_URL_DEBUG
+    primary_success, sources, zones = get_amplipi_data(primary_url)
+    if not primary_success and API_URL_DEBUG is not None:
+      secondary_success, sources, zones = get_amplipi_data(secondary_url)
+      if secondary_success:
+        use_debug_port = not use_debug_port
+        log.warning(f"Couldn't connect at {primary_url} but got a connection at {secondary_url}, switching over")
+
+    if not primary_success and not secondary_success:
       connection_retries += 1
       if not connected_once:
         if connection_retries == 1:
-          log.info(f"Waiting for REST API to start at {API_URL}")
+          log.info(f"Waiting for REST API to start at {primary_url}")
         elif connection_retries == max_connection_retries:
-          log.error(f"Couldn't connect to REST API at {API_URL}")
+          log.error(f"Couldn't connect to REST API at {primary_url}")
       elif connection_retries < max_connection_retries:
-        log.error(f'Failure communicating with REST API at {API_URL}')
+        log.error(f'Failure communicating with REST API at {primary_url}')
       elif connection_retries == max_connection_retries:
-        log.error(f'Lost connection to REST API at {API_URL}')
+        log.error(f'Lost connection to REST API at {primary_url}')
 
       if connection_retries >= max_connection_retries:
         connected = False
     else:
       if not connected:
-        log.info(f'Connected to REST API at {API_URL}')
+        url = primary_url if primary_success else secondary_url
+        log.info(f'Connected to REST API at {url}')
       connected = True
       connected_once = True
       connection_retries = 0
