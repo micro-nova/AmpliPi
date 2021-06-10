@@ -29,6 +29,7 @@ import os # files
 import time
 
 import threading
+import wrapt
 
 import amplipi.models as models
 import amplipi.rt as rt
@@ -39,6 +40,15 @@ _DEBUG_API = False # print out a graphical state of the api after each call
 
 # pylint: disable=broad-except
 
+@wrapt.decorator
+def save_on_success(wrapped, instance: 'Api', args, kwargs):
+  """ Check if a ctrl API call is successful and saves the state if so """
+  result = wrapped(*args, **kwargs)
+  if result is None:
+    # call mark_changes instead of save to reduce the load/delay of a series of requests
+    instance.mark_changes()
+  return result
+
 class Api:
   """ Amplipi Controller API"""
   # pylint: disable=too-many-instance-attributes
@@ -48,7 +58,7 @@ class Api:
   _mock_streams: bool
   _save_timer: Optional[threading.Timer] = None
   _delay_saves: bool
-  _change_notifier: Optional[Callable[[models.Status], None]] = None
+  _change_notifier = None
   _rt: Union[rt.Rpi, rt.Mock]
   config_file: str
   backup_config_file: str
@@ -119,10 +129,10 @@ class Api:
     ]
   }
 
-  def __init__(self, settings:models.AppSettings=models.AppSettings(), change_notifier:Optional[Callable[[models.Status], None]]=None):
+  def __init__(self, settings:models.AppSettings=models.AppSettings(), change_notifier=None):
     self.reinit(settings, change_notifier)
 
-  def reinit(self, settings:models.AppSettings=models.AppSettings(), change_notifier:Optional[Callable[[models.Status], None]]=None):
+  def reinit(self, settings:models.AppSettings=models.AppSettings(), change_notifier=None):
     """ Initialize or Reinitialize the controller
 
     Intitializes the system to to base configuration """
@@ -494,7 +504,7 @@ class Api:
     self.mark_changes()
     return group
 
-  @utils.save_on_success
+  @save_on_success
   def delete_group(self, gid: int) -> None:
     """Deletes an existing group"""
     try:
@@ -528,7 +538,7 @@ class Api:
     except Exception as exc:
       return utils.error('create stream failed: {}'.format(exc))
 
-  @utils.save_on_success
+  @save_on_success
   def set_stream(self, sid: int, update: models.StreamUpdate) -> None:
     """ Configure a stream """
     if sid not in self.streams:
@@ -544,7 +554,7 @@ class Api:
     except Exception as exc:
       return utils.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
 
-  @utils.save_on_success
+  @save_on_success
   def delete_stream(self, sid: int) -> None:
     """Deletes an existing stream"""
     try:
@@ -561,7 +571,7 @@ class Api:
     except KeyError:
       return utils.error('delete stream failed: {} does not exist'.format(sid))
 
-  @utils.save_on_success
+  @save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> None:
     """Sets play/pause on a specific pandora source """
     # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
@@ -612,7 +622,7 @@ class Api:
 
     return None
 
-  @utils.save_on_success
+  @save_on_success
   def get_stations(self, sid, stream_index=None) -> Dict[str,str]:
     """Gets a pandora stream's station list"""
     # TODO: this should be moved to be a command of the Pandora stream interface
@@ -659,7 +669,7 @@ class Api:
     except Exception as exc:
       return utils.error('create preset failed: {}'.format(exc))
 
-  @utils.save_on_success
+  @save_on_success
   def set_preset(self, pid: int, update: models.PresetUpdate) -> None:
     """ Reconfigure a preset """
     i, preset = utils.find(self.status.presets, pid)
@@ -675,7 +685,7 @@ class Api:
     except Exception as exc:
       return utils.error('Unable to reconfigure preset {}: {}'.format(pid, exc))
 
-  @utils.save_on_success
+  @save_on_success
   def delete_preset(self, pid: int) -> None:
     """ Deletes an existing preset """
     try:
@@ -762,7 +772,7 @@ class Api:
     # update stats
     self._update_groups()
 
-  @utils.save_on_success
+  @save_on_success
   def load_preset(self, pid: int) -> None:
     """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration.
     Below is an idea of how a preset configuration could be loaded to avoid any weirdness.

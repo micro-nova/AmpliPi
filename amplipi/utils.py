@@ -26,10 +26,8 @@ import subprocess
 import re
 from typing import List, Dict, Union, Optional, Tuple, TypeVar, Iterable
 
-import wrapt
 import pkg_resources # version
 
-import amplipi.ctrl as ctrl
 import amplipi.models as models
 
 # pylint: disable=bare-except
@@ -150,15 +148,6 @@ def get_folder(folder):
     except:
       print(f'Error creating dir: {folder}')
   return os.path.abspath(folder)
-
-@wrapt.decorator
-def save_on_success(wrapped, instance: ctrl.Api, args, kwargs):
-  """ Check if an amplipi.ctrl API call is successful and saves the state if so """
-  result = wrapped(*args, **kwargs)
-  if result is None:
-    # call mark_changes instead of save to reduce the load/delay of a series of requests
-    instance.mark_changes()
-  return result
 
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
 
