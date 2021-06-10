@@ -10,12 +10,12 @@ if 'venv' not in sys.prefix:
   print(f"Warning: Did you mean to run {__file__} from amplipi's venv?\n")
 
 import argparse
-import atexit
 import busio
 import cProfile
 import digitalio
 from loguru import logger as log
 import requests
+import signal
 import socket
 import time
 
@@ -387,10 +387,13 @@ gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
 
 # Clear the screen if this program is exited
 # TODO: Create a main() and handle KeyboardInterrupt
-def exit_handler():
-  display.image(Image.new('RGB', (display.height, display.width)))
-  led.duty_cycle = 0
-atexit.register(exit_handler)
+run = True
+def exit_handler(signum, frame):
+  global run
+  run = False
+  print(f'Received signal {signal.Signals(signum).name}, shutting down')
+signal.signal(signal.SIGINT, exit_handler)
+signal.signal(signal.SIGTERM, exit_handler)
 
 # Load image and convert to RGB
 mn_logo = Image.open('imgs/micronova_320x240.png').convert('RGB')
@@ -433,7 +436,7 @@ connection_retries = 0
 frame_num = 0
 frame_times = []
 cpu_load = []
-while frame_num < 10:
+while frame_num < 10 and run:
   frame_start_time = time.time()
 
   if _active_screen == 0:
@@ -560,3 +563,10 @@ while frame_num < 10:
 if profile:
   pr.disable()
   pr.print_stats(sort='time')
+
+# Stop handling touch events
+gpio.remove_event_detect(t_irq_pin.id)
+
+# Clear display on exit
+display.image(Image.new('RGB', (width, height)))
+led.duty_cycle = 0
