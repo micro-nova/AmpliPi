@@ -77,25 +77,6 @@ class BaseUpdate(BaseModel):
   """
   name: Optional[str] = fields.Name
 
-class SourceUpdate(BaseUpdate):
-  """ Partial reconfiguration of an audio Source """
-  input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
-
-  class Config:
-    schema_extra = {
-      'examples': {
-        'Update Input to RCA input': {
-          'value': {'input': 'local'}
-        },
-        'Update name': {
-          'value': {'name': 'J2'}
-        },
-        'Update Input to Matt and Kim Radio': {
-          'value': {'input': 'stream=10001'}
-        },
-      }
-    }
-
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
@@ -110,7 +91,7 @@ class Source(Base):
     except ValueError:
       return None
 
-  def as_update(self) -> SourceUpdate:
+  def as_update(self) -> 'SourceUpdate':
     """ Convert to SourceUpdate """
     update = self.dict()
     update.pop('id')
@@ -143,6 +124,25 @@ class Source(Base):
       }
     }
 
+class SourceUpdate(BaseUpdate):
+  """ Partial reconfiguration of an audio Source """
+  input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Update Input to RCA input': {
+          'value': {'input': 'local'}
+        },
+        'Update name': {
+          'value': {'name': 'J2'}
+        },
+        'Update Input to Matt and Kim Radio': {
+          'value': {'input': 'stream=10001'}
+        },
+      }
+    }
+
 class SourceUpdateWithId(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
   id : int = Field(ge=0,le=4)
@@ -152,6 +152,43 @@ class SourceUpdateWithId(SourceUpdate):
     update = self.dict()
     update.pop('id')
     return SourceUpdate.parse_obj(update)
+
+class Zone(Base):
+  """ Audio output to a stereo pair of speakers, typically belonging to a room """
+  source_id: int = fields_w_default.SourceId
+  mute: bool = fields_w_default.Mute
+  vol: int = fields_w_default.Volume
+  disabled: bool = fields_w_default.Disabled
+
+  def as_update(self) -> 'ZoneUpdate':
+    """ Convert to ZoneUpdate """
+    update = self.dict()
+    update.pop('id')
+    return ZoneUpdate.parse_obj(update)
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Living Room' : {
+          'value': {
+            'name': 'Living Room',
+            'source_id': 1,
+            'mute' : False,
+            'vol':-25,
+            'disabled': False,
+          }
+        },
+        'Dining Room' : {
+          'value': {
+            'name': 'Dining Room',
+            'source_id': 2,
+            'mute' : True,
+            'vol':-65,
+            'disabled': False,
+          }
+        },
+      }
+    }
 
 class ZoneUpdate(BaseUpdate):
   """ Reconfiguration of a Zone """
@@ -197,41 +234,55 @@ class ZoneUpdateWithId(ZoneUpdate):
     update.pop('id')
     return ZoneUpdate.parse_obj(update)
 
-class Zone(Base):
-  """ Audio output to a stereo pair of speakers, typically belonging to a room """
-  source_id: int = fields_w_default.SourceId
-  mute: bool = fields_w_default.Mute
-  vol: int = fields_w_default.Volume
-  disabled: bool = fields_w_default.Disabled
+class Group(Base):
+  """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
 
-  def as_update(self) -> ZoneUpdate:
-    """ Convert to ZoneUpdate """
+  Volume, mute, and source_id fields are aggregates of the member zones."""
+  source_id: Optional[int] = fields.SourceId
+  zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
+  mute: Optional[bool] = fields.GroupMute
+  vol_delta: Optional[int] = fields.GroupVolume
+
+  def as_update(self) -> 'GroupUpdate':
+    """ Convert to GroupUpdate """
     update = self.dict()
     update.pop('id')
-    return ZoneUpdate.parse_obj(update)
+    return GroupUpdate.parse_obj(update)
 
   class Config:
     schema_extra = {
+      'creation_examples': {
+        'Upstairs Group': {
+          'value': {
+            'name': 'Upstairs',
+            'zones': [1, 2, 3, 4, 5]
+          }
+        },
+        'Downstairs Group': {
+          'value': {
+            'name': 'Downstairs',
+            'zones': [6,7,8,9]
+          }
+        }
+      },
       'examples': {
-        'Living Room' : {
+        'Upstairs Group': {
           'value': {
-            'name': 'Living Room',
-            'source_id': 1,
-            'mute' : False,
-            'vol':-25,
-            'disabled': False,
+            'id': 101,
+            'name': 'Upstairs',
+            'zones': [1, 2, 3, 4, 5],
+            'vol_delta': -65
           }
         },
-        'Dining Room' : {
+        'Downstairs Group': {
           'value': {
-            'name': 'Dining Room',
-            'source_id': 2,
-            'mute' : True,
-            'vol':-65,
-            'disabled': False,
+            'id': 102,
+            'name': 'Downstairs',
+            'zones': [6,7,8,9],
+            'vol_delta': -30
           }
-        },
-      }
+        }
+      },
     }
 
 class GroupUpdate(BaseUpdate):
@@ -277,57 +328,6 @@ class GroupUpdateWithId(GroupUpdate):
     update = self.dict()
     update.pop('id')
     return GroupUpdate.parse_obj(update)
-
-class Group(Base):
-  """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
-
-  Volume, mute, and source_id fields are aggregates of the member zones."""
-  source_id: Optional[int] = fields.SourceId
-  zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
-  mute: Optional[bool] = fields.GroupMute
-  vol_delta: Optional[int] = fields.GroupVolume
-
-  def as_update(self) -> GroupUpdate:
-    """ Convert to GroupUpdate """
-    update = self.dict()
-    update.pop('id')
-    return GroupUpdate.parse_obj(update)
-
-  class Config:
-    schema_extra = {
-      'creation_examples': {
-        'Upstairs Group': {
-          'value': {
-            'name': 'Upstairs',
-            'zones': [1, 2, 3, 4, 5]
-          }
-        },
-        'Downstairs Group': {
-          'value': {
-            'name': 'Downstairs',
-            'zones': [6,7,8,9]
-          }
-        }
-      },
-      'examples': {
-        'Upstairs Group': {
-          'value': {
-            'id': 101,
-            'name': 'Upstairs',
-            'zones': [1, 2, 3, 4, 5],
-            'vol_delta': -65
-          }
-        },
-        'Downstairs Group': {
-          'value': {
-            'id': 102,
-            'name': 'Downstairs',
-            'zones': [6,7,8,9],
-            'vol_delta': -30
-          }
-        }
-      },
-    }
 
 class Stream(Base):
   """ Digital stream such as Pandora, Airplay or Spotify """
