@@ -21,15 +21,16 @@
 #include <stdbool.h>
 #include "front_panel.h"
 #include "power_board.h"
+#include "systick.h"
 #include "channel.h"
 #include "port_defs.h"
 #include <stm32f0xx.h>
 
-void init_i2c1(int preamp_addr);
-void USART_PutString(USART_TypeDef* USARTx, volatile unsigned char * str);
+void init_i2c1(uint8_t preamp_addr);
+void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t * str);
 
 // uncomment the line below to use the debugger
-#define DEBUG_OVER_UART2
+//#define DEBUG_OVER_UART2
 
 void init_gpio()
 {
@@ -96,7 +97,7 @@ void init_gpio()
 	GPIO_Init(GPIOF, &GPIO_InitStructureF);
 }
 
-void init_i2c1(int preamp_addr)
+void init_i2c1(uint8_t preamp_addr)
 {
 	// I2C1 is from control board
 
@@ -124,7 +125,7 @@ void init_i2c1(int preamp_addr)
 	I2C_InitStructure1.I2C_OwnAddress1 = preamp_addr;
 	I2C_InitStructure1.I2C_Ack = I2C_Ack_Enable;
 	I2C_InitStructure1.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	//I2C_InitStructure1.I2C_Timing = 0x10805E89; // From 8-Mhz HSI clock with 100ns rise, 10ns fall -> 100 KHz
+	//I2C_InitStructure1.I2C_Timing = 0x10805E89; // TODO: Determine and document why this value is needed for I2C2 but not I2C1
 	I2C_Init(I2C1, &I2C_InitStructure1);
 	I2C_Cmd(I2C1, ENABLE);
 }
@@ -276,28 +277,30 @@ void RxBuf_Clear(volatile SerialBuffer *sb)
 
 int main(void)
 {
+	// VARIABLES
 	uint8_t reg;          // The register that AmpliPi is reading/writing to. See "preamp_i2c_regs.xlsx"
 	uint8_t data;         // The actual value being written to the register
 	uint8_t ch, src;      // variables holding zone and source information
 	uint8_t i2c_addr;     // I2C address received via UART
+	uint32_t blink;       // Counter for alternating the Standby/On LED
+	uint8_t red_on = 1;   // Used for switching the Standby/On LED
 
+	// INIT
 	init_gpio();		  // UART and I2C require GPIO pins
 	init_uart();		  // The preamp will receive its I2C network address via UART
 	init_i2c2();		  // Need I2C2 initialized for the front panel functionality during the address loop
 	enableFrontPanel();   // setup the I2C->GPIO chip
 	enablePowerBoard();   // setup the power supply chip
 	enablePSU();          // turn on 9V/12V power
+	systickInit();        // Initialize the clock ticks for delay_ms and other timing functionality
 
+	// RESET AND PIN SETUP
 	Pin f0 = {'F',0};     // NRST_OUT
 	Pin f1 = {'F',1};     // BOOT0_OUT
-	setPin(f0);		      // Needs to be high so the subsequent preamp board is not held in 'Reset Mode'
+	clearPin(f0);         // Low-pulse on NRST_OUT so expansion boards are reset by the controller board
 	clearPin(f1);	      // Needs to be low so the subsequent preamp board doesn't start in 'Boot Mode'
-	delay(500);
-	clearPin(f0);         // Low-pulse on NRST_OUT so expansion boards can be reset by the controller board
-	delay(500);
-	setPin(f0);
-
-	bool red_on = false;  // Used for switching the Standby/On LED
+	delay_ms(1);          // Hold low for 1 ms
+	setPin(f0);		      // Needs to be high so the subsequent preamp board is not held in 'Reset Mode'
 
 	while(1){
 		if(UART_Preamp_RxBuffer.done == 1)
@@ -312,22 +315,24 @@ int main(void)
 #endif
 				break;
 			}
-			delay(1000);  // allow time for any extra garbage data to shift in
+			delay_ms(2);  // allow time for any extra garbage data to shift in
 			RxBuf_Clear(&UART_Preamp_RxBuffer); // Only necessary for multiple runs without cycling power
 		} else if(UART_Preamp_RxBuffer.ovf == 1)
 		{
 			RxBuf_Clear(&UART_Preamp_RxBuffer); // Clear the buffers if they overflow
 			RxBuf_Clear(&UART_Preamp_TxBuffer);
 		}
-		delay(400000); // Blink delay time. UART runs on interrupts, so this shouldn't cause problems
-		updateFrontPanel(red_on); // Alternate between on/off states for the red LED
-		red_on = !red_on;
+		blink = millis() / 1000; // Alternate red light status once per second
+		if(red_on != (blink % 2)){
+			red_on = blink % 2;
+			updateFrontPanel(red_on);
+		}
 	}
 
-	updateFrontPanel(true); // Stabilize the blinking red LED
+	updateFrontPanel(true); // Stabilize the blinking red LED once an address is given
 	init_i2c1(i2c_addr);   // Initialize I2C with the new address
-	initChannels();       // initialize each channel's volume state (does not write to volume control ICs)
-	initSources();       // initialize each source's analog/digital state
+	initChannels();       // Initialize each channel's volume state (does not write to volume control ICs)
+	initSources();       // Initialize each source's analog/digital state
 
 	uint8_t msg = 0;    // Used as the pass through for various device data traveling to the Pi
 
@@ -535,20 +540,20 @@ int main(void)
  * Process: Sends out string character-by-character and then sends
  * carriage return and line feed when done if needed
  */
-void USART_PutString(USART_TypeDef* USARTx, volatile unsigned char * str)
+void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t * str)
 {
-	int dt = 1000; // delay time. Increase to send out message more slowly.
+	int dt = 2; // delay time in ms. Increase to send out message more slowly. At 9600 baud, UART sends roughly 1 char each millisecond
 	while(*str != 0)
 	{
 		USART_SendData(USARTx, *str);
 		str++;
-		delay(dt);
+		delay_ms(dt);
 	}
-	delay(dt);
+	delay_ms(dt);
 //	USART_SendData(USARTx, 0x0D); // Use these for terminal comms
-//	delay(dt);					  // The message from ctrl bd should
+//	delay_ms(dt);                 // The message from ctrl bd should
 //	USART_SendData(USARTx, 0x0A); // already have \r\n at the end
-//	delay(dt);
+//	delay_ms(dt);
 }
 
 // Handles the interrupt on UART data reception

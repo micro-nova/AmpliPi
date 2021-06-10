@@ -18,17 +18,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FRONT_PANEL_H_
-#define FRONT_PANEL_H_
+#ifndef SYSTICK_H_
+#define SYSTICK_H_
 
 #include "port_defs.h"
 
-#define ON (true)
-#define OFF (false)
+void systickInit ();
+void delay_ms (uint32_t t);
+uint32_t millis (void);
 
-void setAudioPower(bool on);
-
-void enableFrontPanel();
-void updateFrontPanel(bool on);
-
-#endif /* FRONT_PANEL_H_ */
+#endif /* SYSTICK_H_ */

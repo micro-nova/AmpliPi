@@ -27,6 +27,7 @@
 #include "channel.h"
 #include "ports.h"
 #include "front_panel.h"
+#include "systick.h"
 #include "port_defs.h"
 
 #define DEFAULT_VOL (79) // The minimum volume. Scale goes from 0-79 with 0 being maximum
@@ -42,10 +43,6 @@ bool isOn(int ch){
 	return readPin(ch_mute[ch]);
 }
 
-//static inline bool isMuted(int ch){
-//	return !isOn(ch);
-//}
-
 // returns true if any ch unmuted (HI)
 bool anyOn(){
 	bool on = false;
@@ -56,17 +53,13 @@ bool anyOn(){
 	return on;
 }
 
-//static inline bool allMuted(){
-//	return !anyOn();
-//}
-
 // pull all pins LOW to standby all amps
 void standby(){
 	uint8_t ch;
 	for(ch = 0; ch < NUM_CHANNELS; ch++){
 		clearPin(ch_standby[ch]);
 	}
-	delay(16000); // 8000 is the cutoff value at which the delay prevents speaker popping. 2x factor for safety.
+	delay_ms(32); // 16ms is the cutoff value at which the delay prevents speaker popping. 2x factor for safety.
 	setAudioPower(OFF);
 }
 
@@ -81,7 +74,7 @@ void unstandby(){
 	restoreVolumes();
 }
 
-bool instandby(){
+bool inStandby(){
 	// Checks if any of the channels are in standby
 	uint8_t ch;
 	bool in_stby = false;
@@ -113,7 +106,7 @@ void unmute(int ch){
 
 void writeVolume(int ch, uint8_t vol){
 	// Writes volume level to the volume ICs
-	if (!instandby()){ // we can't write to the volume registers if they are disabled
+	if (!inStandby()){ // we can't write to the volume registers if they are disabled
 		writeI2C2(ch_left[ch], vol);
 		writeI2C2(ch_right[ch], vol);
 	}
@@ -206,5 +199,4 @@ void connectChannel(int src, int ch){
 	if (was_unmuted) {
 		quick_unmute(ch);
 	}
-
 }

@@ -21,7 +21,6 @@
 
 #include "main.h"
 
-// Potentially obsolete before it was even useful
 #define VERSION_MAJOR 0x01 //            Major version, the 1 of 1.0
 #define VERSION_MINOR 0x01 //            Minor version, the 2 of 1.2
 #define GIT_HASH_27_20 0x02 //           Two leftmost hex digits of the commit hash string, 74 of 0x74568921

@@ -22,17 +22,9 @@
 #include <stdbool.h>
 #include "ports.h"
 #include "channel.h"
+#include "systick.h"
 
 bool audio_power_on = false;
-
-// Simple counter used for time-sensitive operations
-void delay(int a) {
-	volatile int i,j;
-	for (i=0 ; i < a ; i++){
-		j++;
-	}
-	return;
-}
 
 // Enables/disables the 9V power supply along with the green LED
 void setAudioPower(bool on){
@@ -53,7 +45,7 @@ void setAudioPower(bool on){
 	updateFrontPanel(!on);
 	if(on == 1)
 	{
-		delay(125000); // need time for volume IC to turn on
+		delay_ms(250); // need time for volume IC to turn on
 	}
 }
 
