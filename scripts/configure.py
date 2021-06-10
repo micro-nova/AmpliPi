@@ -17,7 +17,7 @@ import requests
 # pylint: disable=broad-except
 # pylint: disable=bare-except
 
-_os_deps : Dict[str, Dict[str, Any]] = {
+_os_deps: Dict[str, Dict[str, Any]] = {
   'base' : {
     'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind'],
     'copy' : [{'from': 'docs/amplipi_api.yaml', 'to': 'web/static/amplipi_api.yaml'}],
