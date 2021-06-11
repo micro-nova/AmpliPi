@@ -69,7 +69,7 @@ def find(items: Iterable[BT], item_id: int, key='id') -> Union[Tuple[int, BT], T
       return i, item
   return None, None
 
-def next_available_id(items: Iterable[BT], default: int=0) -> int:
+def next_available_id(items: Iterable[BT], default: int = 0) -> int:
   """ Get a new unique id among @items """
   # TODO; use `largest_item = max(items, key=lambda item: item.id, default=None)` to find max if models.Base changes id to be required
   largest_id = None
