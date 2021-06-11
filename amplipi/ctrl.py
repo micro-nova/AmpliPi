@@ -38,8 +38,6 @@ import amplipi.utils as utils
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
-# pylint: disable=broad-except
-
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
   """ Check if a ctrl API call is successful and saves the state if so """
@@ -96,7 +94,6 @@ class Api:
   streams: Dict[int, amplipi.streams.AnyStream]
 
   _LAST_PRESET_ID = 9999
-  # pylint: disable=bad-continuation
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
       {"id": 0, "name": "1", "input": "local"},

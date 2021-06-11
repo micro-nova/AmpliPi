@@ -49,9 +49,6 @@ import amplipi.utils as utils
 import amplipi.models as models
 from amplipi.ctrl import Api, ApiResponse, ApiCode # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 
-
-# pylint: disable=bad-continuation # TODO: make this a global config
-
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
 STATIC_DIR = os.path.abspath('web/static')

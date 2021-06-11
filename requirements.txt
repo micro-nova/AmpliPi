@@ -12,6 +12,7 @@ aiofiles
 pydantic
 python-multipart
 pyyaml
+types-requests
 types-pkg_resources
 types-pyyaml
 wrapt

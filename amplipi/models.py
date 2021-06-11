@@ -28,7 +28,6 @@ from pydantic import BaseSettings, BaseModel, Field
 # pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
-# pylint: disable=bad-continuation
 
 class fields(SimpleNamespace):
   """ AmpliPi's field types """
