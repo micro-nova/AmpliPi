@@ -147,7 +147,7 @@ def notify_on_change(status: models.Status) -> None:
   for msg_que in subscribers.values():
     msg_que.put(status)
 
-@api.get('/api/subscribe')
+# @api.get('/api/subscribe') # TODO: uncomment this to add SSE Support and properly document it
 async def subscribe(req: Request):
   """ Subscribe to SSE events """
   msg_que: Queue = Queue(3)
