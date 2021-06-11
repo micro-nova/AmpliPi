@@ -9,6 +9,7 @@ import sys
 if 'venv' not in sys.prefix:
   print(f"Warning: Did you mean to run {__file__} from amplipi's venv?\n")
 
+# pylint: disable=wrong-import-position
 import argparse
 import busio
 import cProfile
@@ -47,13 +48,13 @@ class AmpliPiHelpFormatter(argparse.HelpFormatter):
       return ', '.join(parts)
 
   def _get_help_string(self, action):
-    help = action.help
+    help_str = action.help
     if '%(default)' not in action.help:
       if action.default is not argparse.SUPPRESS and action.default is not None:
         defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
         if action.option_strings or action.nargs in defaulting_nargs:
-          help += ' (default: %(default)s)'
-    return help
+          help_str += ' (default: %(default)s)'
+    return help_str
 
 parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
                                  formatter_class=AmpliPiHelpFormatter)
@@ -81,10 +82,10 @@ try:
   import board
   import pwmio
   import RPi.GPIO as gpio
-except (NotImplementedError, RuntimeError) as e:
-  log.critical(e)
+except (NotImplementedError, RuntimeError) as err:
+  log.critical(err)
   log.critical('Only Raspberry Pi is currently supported')
-  quit()
+  sys.exit(1)
 
 profile = False
 
@@ -193,8 +194,8 @@ def get_amplipi_data(url: str) -> Tuple[bool, List[Dict[str,object]], List[Any]]
       success = True
     else:
       log.error('Bad status code returned from AmpliPi')
-  except requests.ConnectionError as e:
-    log.debug(e.args[0].reason)
+  except requests.ConnectionError as err:
+    log.debug(err.args[0].reason)
   except requests.Timeout:
     log.error('Timeout requesting AmpliPi status')
   except ValueError:
@@ -335,7 +336,7 @@ if temp0 == 0 or temp1 == 0:
   # A touch screen doesn't seem to be present
   # TODO: Read ID from display itself as screen presence detection
   log.critical("Couldn't communicate with touch screen")
-  quit()
+  sys.exit(2)
 
 
 def touch_callback(pin_num):
@@ -387,7 +388,7 @@ def touch_callback(pin_num):
     else:
       log.debug(f'Not enough inliers: {inlier_count} of 16')
   else:
-    log.debug(f'No valid points')
+    log.debug('No valid points')
 
   gpio.add_event_detect(t_irq_pin.id, gpio.FALLING, callback=touch_callback)
 
@@ -421,7 +422,7 @@ try:
   small_font = ImageFont.truetype(fontname, 10)
 except:
   log.critical(f'Failed to load font {fontname}')
-  quit()
+  sys.exit(3)
 
 # Create a blank image for drawing.
 # Swap height/width to rotate it to landscape
