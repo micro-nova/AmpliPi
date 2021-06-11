@@ -636,7 +636,7 @@ class InternetRadio:
 AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
-  """ Build a stream from the generic arguments given in stream, discriminated by strea.type
+  """ Build a stream from the generic arguments given in stream, discriminated by stream.type
 
   we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
   """
