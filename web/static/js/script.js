@@ -351,7 +351,7 @@ function onResponse(resp) {
   updateSourceView(resp);
 }
 async function get() {
-  let response = await fetch('/api/');
+  let response = await fetch('/api');
   let result = await response.json();
   onResponse(result);
   return result;
@@ -491,12 +491,6 @@ function initVolControl(ctrl) {
     if (vols[ctrl.id].barStillDown) {
       calculateFill(e);
     }
-  });
-
-  barHoverBox.addEventListener("wheel", (e) => {
-    const j = (range.max - range.min) / 200.0;
-    const val = +range.value + e.deltaY * j;
-    setValue(val);
   });
 
   document.addEventListener("mouseup", (e) => {

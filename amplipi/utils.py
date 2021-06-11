@@ -24,7 +24,13 @@ import os
 import functools
 import subprocess
 import re
+from typing import List, Dict, Union, Optional, Tuple, TypeVar, Iterable
+
 import pkg_resources # version
+
+import amplipi.models as models
+
+# pylint: disable=bare-except
 
 # Helper functions
 def encode(pydata):
@@ -39,34 +45,54 @@ def parse_int(i, options):
   """ Parse an integer into one of the given options """
   if int(i) in options:
     return int(i)
-  else:
-    raise ValueError('{} is not in [{}]'.format(i, options))
+  raise ValueError('{} is not in [{}]'.format(i, options))
 
 def error(msg):
   """ wrap the error message specified by msg into an error """
   print('Error: {}'.format(msg))
   return {'error': msg}
 
-def updated_val(update, val):
+VT = TypeVar("VT")
+
+def updated_val(update: Optional[VT], val: VT) -> Tuple[VT, bool]:
   """ get the potentially updated value, @update, defaulting to the current value, @val, if it is None """
   if update is None:
     return val, False
-  else:
-    return update, update != val
+  return update, update != val
 
-def find(items, id, key='id'):
-  return next(filter(lambda ie: ie[1][key] == id, enumerate(items)), (None, None))
+BT = TypeVar("BT", bound='models.Base', covariant=True)
 
-def clamp(x, xmin, xmax):
-    return max(xmin, min(x, xmax))
+def find(items: Iterable[BT], item_id: int, key='id') -> Union[Tuple[int, BT], Tuple[None, None]]:
+  """ Find an item by id """
+  for i, item in enumerate(items):
+    if item.__dict__[key] == item_id:
+      return i, item
+  return None, None
 
-def compact_str(l):
+def next_available_id(items: Iterable[BT], default: int = 0) -> int:
+  """ Get a new unique id among @items """
+  # TODO; use `largest_item = max(items, key=lambda item: item.id, default=None)` to find max if models.Base changes id to be required
+  largest_id = None
+  for item in items:
+    if item.id is not None:
+      if largest_id is not None:
+        largest_id = max(largest_id, item.id)
+      else:
+        largest_id = item.id
+  if largest_id is not None:
+    return largest_id + 1
+  return default
+
+def clamp(xval, xmin, xmax):
+  """ Clamp and value between min and max """
+  return max(xmin, min(xval, xmax))
+
+def compact_str(list_:List):
   """ stringify a compact list"""
-  assert type(l) == list
-  return str(l).replace(' ', '')
+  return str(list_).replace(' ', '')
 
 def max_len(items, len_determiner=len):
-  """ determine the item with the max len, based on the @len_determiner's definition of length
+  """ Determine the item with the max len, based on the @len_determiner's definition of length
 
   Args:
     items: iterable items
@@ -81,20 +107,14 @@ def max_len(items, len_determiner=len):
   return len_determiner(largest)
 
 def abbreviate_src(src_type):
+  """ Abbreviate source's type for pretty printing """
   return src_type[0].upper() if src_type else '_'
 
-def vol_string(vol, min_vol=-79, max_vol=0):
-  """ Make a visual representation of a volume """
-  VOL_RANGE = max_vol - min_vol + 1
-  VOL_STR_LEN = 20
-  VOL_SCALE = VOL_RANGE / VOL_STR_LEN
-  vol_level = int((vol - min_vol)  / VOL_SCALE)
-  assert vol_level >= 0 and vol_level < VOL_STR_LEN
-  vol_string = ['-'] * VOL_STR_LEN
-  vol_string[vol_level] = '|' # place the volume slider bar at its current spot
-  return ''.join(vol_string) # turn that char array into a string
+def src_zones(status: models.Status) -> Dict[int, List[int]]:
+  """ Get a mapping from source ids to zones """
+  return { src.id : [ zone.id for zone in status.zones if zone.id is not None and zone.source_id == src.id] for src in status.sources if src.id is not None}
 
-cached_outputs = None
+@functools.lru_cache(1)
 def available_outputs():
   """ get the available alsa outputs (we are expecting ch0-ch3).
 
@@ -103,60 +123,48 @@ def available_outputs():
 
   This will cache the result since alsa outputs do not change dynamically (unless you edit a config file).
   """
-  global cached_outputs
-  if cached_outputs is None:
-    try:
-      cached_outputs = [ o for o in subprocess.check_output('aplay -L'.split()).decode().split('\n') if o and o[0] != ' ' ]
-    except:
-      cached_outputs = []
-    if 'ch0' not in cached_outputs:
-      print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
-  return cached_outputs
+  try:
+    outputs = [ o for o in subprocess.check_output('aplay -L'.split()).decode().split('\n') if o and o[0] != ' ' ]
+  except:
+    outputs = []
+  if 'ch0' not in outputs:
+    print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
+  return outputs
 
-def output_device(src):
-  dev = 'ch' + str(src)
+def output_device(sid: int) -> str:
+  """ Get a source's corresponding ALSA output device string """
+  dev = 'ch' + str(sid)
   if dev in available_outputs():
     return dev
-  else:
-    return 'default' # fallback to default
+  return 'default' # fallback to default
 
 @functools.lru_cache(maxsize=8)
 def get_folder(folder):
+  """ Get a directory
+  Abstracts the directory structure """
+  if not os.path.exists(folder):
+    try:
+      os.mkdir(folder)
+    except:
+      print(f'Error creating dir: {folder}')
   return os.path.abspath(folder)
 
-def save_on_success(func):
-  """ A decorator that calls a class object's save method when successful
-        (in the case of our API None=Success)
-  """
-  @functools.wraps(func) # transfer func's documentation to decorated function to assist documentation generation
-  def inner(self, *args, **kwargs):
-    result = func(self, *args, **kwargs)
-    if result is None:
-      # call postpone_save instead of save to reduce the load/delay of a request
-      self.postpone_save()
-      pass
-    return result
-  return inner
+TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
 
-def with_id(elements):
-  if elements is None:
-    return []
-  return [ e for e in elements if 'id' in e ]
-
-def detect_version() -> None:
+def detect_version() -> str:
+  """ Get the AmpliPi software version from the project TOML file """
   version = 'unknown'
   try:
-    version = pkg_resources.get_distribution('amplipi').version()
+    version = pkg_resources.get_distribution('amplipi').version
   except:
     pass
   if 'unknown' in version:
     # assume the application is running in its base directory and check the pyproject.toml file to determine the version
     # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
-    TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
     script_folder = os.path.dirname(os.path.realpath(__file__))
     try:
-      with open(os.path.join(script_folder, '..', 'pyproject.toml')) as f:
-        for line in f.readlines():
+      with open(os.path.join(script_folder, '..', 'pyproject.toml')) as proj_file:
+        for line in proj_file.readlines():
           if 'version' in line:
             match = TOML_VERSION_STR.search(line)
             if match is not None:

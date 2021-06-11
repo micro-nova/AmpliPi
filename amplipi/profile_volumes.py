@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
-# use the internal amplipi library
-#from context import amplipi
-#import amplipi.ctrl, amplipi.rt
-
-import amplipi.ctrl, amplipi.rt
-
 # profiling
-import cProfile, pstats, io
+import cProfile
+import pstats
+import io
 from pstats import SortKey
 
 # directories
 import tempfile
 import os
+
+import amplipi.ctrl
+import amplipi.rt
+import amplipi.models
 
 def use_tmpdir():
   # lets run these tests in a temporary directory so they dont mess with other tests config files
@@ -21,13 +21,14 @@ def use_tmpdir():
   assert test_dir == os.getcwd()
 
 use_tmpdir()
-ap = amplipi.ctrl.Api(amplipi.rt.Rpi(), config_file='test.json')
-g = ap.create_group(name='all', zones=[0,1,2,3,4,5])
+ap = amplipi.ctrl.Api()
+g = ap.create_group(amplipi.models.Group(name='all', zones=[0,1,2,3,4,5]))
 
 def play_with_volumes():
-  for i in range(100):
-    ap.set_group(id=g['id'], mute=False, vol_delta=20)
-    ap.set_group(id=g['id'], mute=False, vol_delta=30)
+  """ Test a bare volume adjustment to evaluate best case performance """
+  for _ in range(100):
+    ap.set_group(g['id'], amplipi.models.GroupUpdate(mute=False, vol_delta=20))
+    ap.set_group(g['id'], amplipi.models.GroupUpdate(mute=False, vol_delta=30))
 
 pr = cProfile.Profile()
 pr.enable()

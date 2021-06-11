@@ -25,38 +25,25 @@ import os
 import sys
 import subprocess
 import time
-
-import amplipi.utils as utils
+from typing import Union
 
 # Used by InternetRadio
-import urllib.request
 import json
 import signal
 
-def build_stream(args, mock=False):
-  if args['type'] == 'pandora':
-    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
-  elif args['type'] == 'shairport':
-    return Shairport(args['name'], mock=mock)
-  elif args['type'] == 'spotify':
-    return Spotify(args['name'], mock=mock)
-  elif args['type'] == 'dlna':
-    return DLNA(args['name'], mock=mock)
-  elif args['type'] == 'internetradio':
-    return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
-  else:
-    raise NotImplementedError(args['type'])
+import amplipi.models as models
+import amplipi.utils as utils
 
 # TODO: how to implement base stream class in Python?, there is a lot of duplication between shairport and pandora streams...
-class Stream(object):
-  def connect(self, src):
-    """ Connect the stream's output to src """
-    pass
-  def disconnect(self):
-    """ Disconnect the stream's output from any connected source """
-    pass
-  def status(self):
-    return 'Status not available'
+#class Stream:
+#  def connect(self, src):
+#    """ Connect the stream's output to src """
+#    return None
+#  def disconnect(self):
+#    """ Disconnect the stream's output from any connected source """
+#    return None
+#  def status(self):
+#    return 'Status not available'
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -81,6 +68,7 @@ class Shairport:
   def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
+    self.proc2 = None
     self.mock = mock
     self.src = None
     self.state = 'disconnected'
@@ -447,9 +435,11 @@ class DLNA:
   def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
+    self.proc2 = None
     self.mock = mock
     self.src = None
     self.state = 'disconnected'
+    self.uuid = 0
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -609,8 +599,6 @@ class InternetRadio:
     if self._is_running():
       self.proc.kill()
       print(f'{self.name} disconnected')
-    else:
-      print(f'Warning: {self.name} was not running')
     self.state = 'disconnected'
     self.proc = None
     self.src = None
@@ -643,3 +631,24 @@ class InternetRadio:
     connection = f' connected to src={self.src}' if self.src else ''
     mock = ' (mock)' if self.mock else ''
     return 'internetradio connect: {self.name}{connection}{mock}'
+
+# Simple handling of stream types before we have a type heirarchy
+AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora]
+
+def build_stream(stream: models.Stream, mock=False) -> AnyStream:
+  """ Build a stream from the generic arguments given in stream, discriminated by stream.type
+
+  we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
+  """
+  args = stream.dict(exclude_none=True)
+  if stream.type == 'pandora':
+    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
+  elif stream.type == 'shairport':
+    return Shairport(args['name'], mock=mock)
+  elif stream.type == 'spotify':
+    return Spotify(args['name'], mock=mock)
+  elif stream.type == 'dlna':
+    return DLNA(args['name'], mock=mock)
+  elif stream.type == 'internetradio':
+    return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
+  raise NotImplementedError(stream.type)

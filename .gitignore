@@ -2,6 +2,7 @@
 house.json
 *.json.bak
 config/srcs/*
+test_config.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -140,7 +141,6 @@ dmypy.json
 
 # vscode
 *.code-workspace
-.vscode/
 
 # Poetry
 poetry.lock
