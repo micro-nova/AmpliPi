@@ -155,7 +155,9 @@ class Api:
       }
     ]
   }
-
+  # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
+  # with this reinit will be called connect and will attempt to load the configutation and connect to an AmpliPi (mocked or real)
+  # returning a boolean on whether or not it was successful
   def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     self.reinit(settings, change_notifier)
 
