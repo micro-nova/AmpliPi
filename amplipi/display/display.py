@@ -441,8 +441,10 @@ if profile:
 # AmpliPi connection
 connected = False
 connected_once = False
-max_connection_retries = 3
+max_connection_retries = 10
 connection_retries = 0
+sources = []
+zones = []
 
 frame_num = 0
 frame_times = []
@@ -455,10 +457,15 @@ while frame_num < 10 and run:
     # Get AmpliPi status
     primary_url = API_URL_DEBUG if use_debug_port else API_URL
     secondary_url = API_URL if use_debug_port else API_URL_DEBUG
-    primary_success, sources, zones = get_amplipi_data(primary_url)
-    if not primary_success and API_URL_DEBUG is not None:
-      secondary_success, sources, zones = get_amplipi_data(secondary_url)
+    primary_success, _sources, _zones = get_amplipi_data(primary_url)
+    if primary_success:
+      sources = _sources
+      zones = _zones
+    elif API_URL_DEBUG is not None:
+      secondary_success, _sources, _zones = get_amplipi_data(secondary_url)
       if secondary_success:
+        sources = _sources
+        zones = _zones
         use_debug_port = not use_debug_port
         log.warning(f"Couldn't connect at {primary_url} but got a connection at {secondary_url}, switching over")
 
@@ -539,7 +546,7 @@ while frame_num < 10 and run:
       xp = xs - round(0.5*cw) # Shift playing arrow back a bit
       ys = 4*ch + round(0.5*ch)
       draw.line(((0, ys-3), (width-1, ys-3)), width=2, fill='#999999')
-      for i in range(4):
+      for i in range(len(sources)):
         if sources[i]['playing']:
           draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
         draw.text((xs + 1*cw, ys + i*ch), sources[i]['name'], font=font, fill='#F0E68C')
