@@ -1,1 +1,1 @@
-# A standalone web application used to update AmplPi
+# A standalone web application used to update AmpliPi

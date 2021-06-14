@@ -88,12 +88,13 @@ pushd usbboot
 
 # install dependencies as necessary
 inst=false
-for dep in libusb-1.0-0-dev make gcc; do
+deps="libusb-1.0-0-dev make gcc"
+for dep in $deps; do
   dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
 done
 if $inst; then
   sudo apt update
-  sudo apt install libusb-1.0-0-dev make gcc
+  sudo apt install $deps
 else
   sudo echo "sudo permission granted"  # request sudo password now to avoid confusion later
 fi

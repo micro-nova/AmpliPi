@@ -19,7 +19,10 @@ import requests
 
 _os_deps: Dict[str, Dict[str, Any]] = {
   'base' : {
-    'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind'],
+    'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
+             'python3-pil', 'libopenjp2-7', # Pillow dependencies
+             'libatlas-base-dev'            # numpy dependencies
+            ],
     'copy' : [{'from': 'docs/amplipi_api.yaml', 'to': 'web/static/amplipi_api.yaml'}],
   },
   'web' : {
@@ -101,7 +104,7 @@ class Task:
       if line and not "WARNING: apt does not have a stable CLI interface." in line: # ignore apt warnings so user doesnt get confused
         desc += f'\n  {line}'
     if not self.success:
-       desc += '\n  Error: Task Failed'
+      desc += '\n  Error: Task Failed'
     return desc
 
   def run(self):
@@ -206,6 +209,22 @@ Restart=on-abort
 WantedBy=default.target
 """
 
+def _display_service(directory: str):
+  return f"""\
+[Unit]
+Description=Amplipi Front Panel Display
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={directory}/amplipi/display
+ExecStart={directory}/venv/bin/python {directory}/amplipi/display/display.py
+Restart=on-abort
+
+[Install]
+WantedBy=default.target
+"""
+
 def systemctl_cmd(system: bool) -> str:
   """ Get the relevant systemctl command based on @system {True: system, False: user} """
   if system:
@@ -287,6 +306,12 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
     elif 'amplipi-updater' in name:
       tasks[-1].output += "\ntry debugging this service failure using 'scripts/run_debug_updater' on the system"
       tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
+  return tasks
+
+def _restart_service(name: str, system: bool = False) -> List[Task]:
+  service = f'{name}.service'
+  cmd = f'{systemctl_cmd(system)} restart {service}'
+  tasks = [Task(f'Restart {service}', cmd.split()).run()]
   return tasks
 
 def _create_service(name: str, config: str) -> List[Task]:
@@ -399,6 +424,20 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+def _update_display(env: dict, progress) -> List[Task]:
+  def print_progress(tasks):
+    progress(tasks)
+    return tasks
+  tasks = []
+  tasks += print_progress(_create_service('amplipi-display', _display_service(env['base_dir'])))
+  tasks += print_progress(_restart_service('amplipi-display'))
+  tasks += print_progress(_enable_service('amplipi-display'))
+  if env['is_amplipi']:
+    # start the user manager at boot, instead of after first login
+    # this is needed so the user systemd services start at boot
+    tasks += print_progress(_enable_linger(env['user']))
+  return tasks
+
 def print_task_results(tasks : List[Task]) -> None:
   """ Print out all of the task results """
   for task in tasks:
@@ -418,7 +457,8 @@ def fix_file_props(env, progress) -> List[Task]:
   progress(tasks)
   return tasks
 
-def install(os_deps=True, python_deps=True, web=True, restart_updater=False, progress=print_task_results) -> bool:
+def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
+            display=True, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -464,6 +504,10 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False, pro
     tasks += ssts
     if failed():
       return False
+  if display:
+    tasks += _update_display(env, progress)
+    if failed():
+      return False
   return True
 
 if __name__ == '__main__':
@@ -476,10 +520,15 @@ if __name__ == '__main__':
   parser.add_argument('--web','--webserver', action='store_true', default=False,
     help="Install and configure webserver")
   parser.add_argument('--restart-updater', action='store_true', default=False,
-    help="""Restart the updater. Only do this if you are running this from the command line. When this is set False system will need to be restarted to complete update""")
+    help="""Stop the updater if it is running and start the updated one. \
+      Only do this if you are running this from the command line. \
+      When this is set False system will need to be restarted to complete update""")
+  parser.add_argument('--display', action='store_true', default=False,
+    help="Install and run the front-panel display service")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
-  has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater
+  has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display
   if not has_args:
     print('  WARNING: expected some arguments, check --help for more information')
-  install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web, restart_updater=flags.restart_updater)
+  install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
+          display=flags.display, restart_updater=flags.restart_updater)
