@@ -568,7 +568,7 @@ class Api:
       return stream.id + 1
     return 1000
 
-  def create_stream(self, data: models.Stream) -> models.Stream:
+  def create_stream(self, data: models.Stream, internal=False) -> models.Stream:
     """ Create a new stream """
     try:
       # Make a new stream and add it to streams
@@ -578,7 +578,8 @@ class Api:
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
-        self.mark_changes()
+        if not internal:
+          self.mark_changes()
         return new_stream
       return ApiResponse.error('create stream failed: no stream created')
     except Exception as exc:
@@ -669,7 +670,7 @@ class Api:
     """ get next available preset id """
     return utils.next_available_id(self.status.presets, default=10000)
 
-  def create_preset(self, preset: models.Preset) -> Union[ApiResponse, models.Preset]:
+  def create_preset(self, preset: models.Preset, internal=False) -> Union[ApiResponse, models.Preset]:
     """ Create a new preset """
     try:
       # Make a new preset and add it to presets
@@ -678,7 +679,8 @@ class Api:
       preset.id = pid
       preset.last_used = None # indicates this preset has never been used
       self.status.presets.append(preset)
-      self.mark_changes()
+      if not internal:
+        self.mark_changes()
       return preset
     except Exception as exc:
       return ApiResponse.error('create preset failed: {}'.format(exc))
@@ -786,8 +788,7 @@ class Api:
     # update stats
     self._update_groups()
 
-  @save_on_success
-  def load_preset(self, pid: int) -> ApiResponse:
+  def load_preset(self, pid: int, internal=False) -> ApiResponse:
     """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration.
     Below is an idea of how a preset configuration could be loaded to avoid any weirdness.
     We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
@@ -838,3 +839,37 @@ class Api:
 
     # TODO: release lock
     return ApiResponse.ok()
+
+  @save_on_success
+  def announce(self, announcement: models.Announcement) -> ApiResponse:
+    """ Create and play an announcement """
+    # create a temporary announcement stream using Streams.File
+    resp0 = self.create_stream(models.Stream(type='file', name='Announcement', url=announcement.media), internal=True)
+    if isinstance(resp0, ApiResponse):
+      return resp0
+    stream = resp0
+    # create a temporary preset with all zones connected to the announcement stream and load it
+    pa_src = models.SourceUpdateWithId(id=3, input=f'stream={stream.id}') # for now we just use the last source
+    pa_zones = [models.ZoneUpdateWithId(id=z.id, mute=False, vol=-40) for z in self.status.zones if not z.disabled]
+    resp1 = self.create_preset(models.Preset(name='PA - announcement', state=models.PresetState(sources=[pa_src], zones=pa_zones)))
+    if isinstance(resp1, ApiResponse):
+      return resp1
+    pa_preset = resp1
+    if pa_preset.id is None or stream.id is None:
+      return ApiResponse.error('ID expected to be provided')
+    resp2 = self.load_preset(pa_preset.id)
+    if resp2.code != ApiCode.OK:
+      return resp2
+    resp3 = self.delete_preset(pa_preset.id)
+    if resp3.code != ApiCode.OK:
+      return resp3
+    # wait for the announcement to be done and switch back to the previous state
+    # TODO: what is the longest announcement we should accept?
+    stream_inst = self.streams[stream.id]
+    while True:
+      time.sleep(0.1)
+      if stream_inst.status() == 'stopped':
+        break
+    resp4 = self.load_preset(self._LAST_PRESET_ID)
+    self.delete_stream(stream.id) # remember to delete the temporary stream
+    return resp4

@@ -509,6 +509,12 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
             cfg.pop(ignored_field)
         assert cfg == prev_cfg
 
+def test_pa(client):
+  """Check if a PA Announcement works """
+  # TODO: verify that the state before and after an announcement is the same? This piggybacks on presets so that should work...
+  rv = client.post('/api/announce', json={'media': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3'})
+  assert rv.status_code == HTTPStatus.OK, print(rv.json())
+
 def test_api_doc_has_examples(client):
   """Check if each api endpoint has example responses (and requests)"""
   rv = client.get('/openapi.json') # use json since it is easier to check

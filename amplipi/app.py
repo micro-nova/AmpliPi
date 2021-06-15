@@ -374,7 +374,7 @@ def get_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mod
   raise HTTPException(404, f'preset {pid} not found')
 
 @api.patch('/api/presets/{pid}', tags=['preset'])
-async def set_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID, update: models.PresetUpdate = None) -> models.Status:
+def set_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID, update: models.PresetUpdate = None) -> models.Status:
   """ Update a preset's configuration (preset=**pid**) """
   return code_response(ctrl, ctrl.set_preset(pid, update))
 
@@ -388,7 +388,18 @@ def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mo
   """ Load a preset configuration """
   return code_response(ctrl, ctrl.load_preset(pid))
 
+# PA
+
+@api.post('/api/announce', tags=['announce'])
+def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -> models.Status:
+  """ Make an announcement """
+  return code_response(ctrl, ctrl.announce(announcement))
+
+# include all routes above
+
 app.include_router(api)
+
+# API Documentation
 
 def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   """ Get json model for the body of an api request """
@@ -409,8 +420,6 @@ def get_response_model(route: APIRoute) -> Optional[Dict[str, Any]]:
     return None
   except:
     return None
-
-# API Documentation
 
 def add_creation_examples(openapi_schema, route: APIRoute) -> None:
   """ Add creation examples for a given route (for modifying request types) """

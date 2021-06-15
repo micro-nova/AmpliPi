@@ -26,6 +26,7 @@ import sys
 import subprocess
 import time
 from typing import Union
+import threading
 
 # Used by InternetRadio and Spotify
 import json
@@ -785,8 +786,80 @@ class Plexamp(BaseStream):
   def status(self):
     return self.state
 
+class FilePlayer(BaseStream):
+  """ An Single one shot file player - initially intended for use as a part of the PA Announcements """
+  def __init__(self, name, url:str, mock=False):
+    super().__init__('file player', name, mock)
+    self.url = url
+    self.proc = None
+    self.bkg_thread = None
+
+  def __del__(self):
+    self.disconnect()
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs:
+      self.name = kwargs['name']
+    if 'url' in kwargs:
+      self.url = kwargs['url']
+      reconnect_needed = True
+    if reconnect_needed:
+      last_src = self.src
+      self.disconnect()
+      time.sleep(0.1) # delay a bit, is this needed?
+      self.connect(last_src)
+
+  def connect(self, src):
+    """ Connect a short run VLC process with audio output to a given audio source """
+    print(f'connecting {self.name} to {src}...')
+
+    if self.mock:
+      self._connect(src)
+      # make a thread that waits for a couple of secends and returns after setting info to stopped
+      self.bkg_thread = threading.Thread(target=self.wait_on_proc)
+      self.bkg_thread.start()
+      return
+
+    # Start audio via runvlc.py
+    vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.output_device(src)} {self.url} vlc://quit'
+    print(f'running: {vlc_args}')
+    self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self._connect(src)
+    # make a thread that waits for a couple of secends and returns after setting info to stopped
+    self.bkg_thread = threading.Thread(target=self.wait_on_proc)
+    self.bkg_thread.start()
+    return
+
+  def wait_on_proc(self):
+    """ Wait for the vlc process to finish """
+    if self.proc is not None:
+      self.proc.wait() # TODO: add a time here
+    else:
+      time.sleep(0.3) # handles mock case
+    self.state = 'stopped' # notify that the audio is done playing
+
+  def _is_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_running():
+      self.proc.kill()
+      if self.bkg_thread:
+        self.bkg_thread.join()
+    self.proc = None
+    self._disconnect()
+
+  def info(self):
+    return {}
+
+  def status(self):
+    return self.state
+
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp]
+AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -806,4 +879,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
   elif stream.type == 'plexamp':
     return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
+  elif stream.type == 'file':
+    return FilePlayer(args['name'], args['url'], mock=mock)
   raise NotImplementedError(stream.type)
