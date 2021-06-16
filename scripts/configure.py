@@ -146,7 +146,9 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
     tasks += print_progress([Task(f"copy {_from} to {_to}", f"cp {_from} {_to}".split()).run()])
-
+    if 'shairport-sync-metadata-reader' in _to:
+      # windows messes up permissions
+      tasks += print_progress([Task(f"make {_to} executable", f"chmod +x {_to}".split()).run()])
   if env['is_amplipi']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"
