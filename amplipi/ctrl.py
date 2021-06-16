@@ -843,7 +843,7 @@ class Api:
 
   def announce(self, announcement: models.Announcement) -> ApiResponse:
     """ Create and play an announcement """
-    # create a temporary announcement stream using Streams.File
+    # create a temporary announcement stream using fileplayer
     resp0 = self.create_stream(models.Stream(type='fileplayer', name='Announcement', url=announcement.media), internal=True)
     if isinstance(resp0, ApiResponse):
       return resp0
