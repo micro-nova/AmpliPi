@@ -25,4 +25,4 @@ else
   echo "stm32flash already installed"
 fi
 
-sudo stm32flash -b 38400 -w preamp_bd.bin -v -R -i 5,-4,4 /dev/ttyAMA0
+sudo stm32flash -b 38400 -w preamp_bd* -v -R -i 5,-4,4 /dev/ttyAMA0

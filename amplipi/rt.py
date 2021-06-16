@@ -57,16 +57,7 @@ class _Preamps:
       self.bus = None
       print('Mocking preamp connection')
     else:
-      # Setup serial connection via UART pins - set I2C addresses for preamps
-      ser = Serial("/dev/serial0")
-      ser.baudrate = 9600
-      addr = 0x41, 0x10, 0x0D, 0x0A
-      ser.write(addr)
-      ser.close()
-
-      # Delay to account for addresses being set
-      # Possibly unnecessary due to human delay
-      time.sleep(1)
+      self.reset_preamps()
 
       # Setup self._bus as I2C1 from the RPi
       self.bus = SMBus(1)
@@ -80,6 +71,33 @@ class _Preamps:
           if p == _DEV_ADDRS[0]:
             print('Error: no preamps found')
           break
+
+  def reset_preamps(self):
+    """ Resets the preamp board.
+        Any slave preamps will be reset one-by-one by the previous preamp.
+        After resetting, an I2C address is assigned.
+    """
+    import RPi.GPIO as GPIO
+
+    # Reset preamp board before establishing a communication channel
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(4, GPIO.OUT)
+    GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
+    time.sleep(0.001)
+    GPIO.output(4, 1)
+    GPIO.cleanup()    # Done with GPIO
+
+    # Each box theoretically takes ~11ms to undergo a reset. Estimating for six boxes, including some padding, wait 100ms for the resets to propagate down the line
+    time.sleep(0.1)
+
+    # Setup serial connection via UART pins - set I2C addresses for preamps
+    addr = 0x41, 0x10, 0x0D, 0x0A
+    with Serial('/dev/serial0', baudrate=9600) as ser:
+      ser.write(addr)
+
+    # Delay to account for addresses being set
+    # Each box theoretically takes ~5ms to receive its address. Again, estimate for six boxes and include some padding
+    time.sleep(0.1)
 
   def new_preamp(self, index):
     self.preamps[index] = [

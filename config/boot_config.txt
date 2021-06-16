@@ -63,8 +63,8 @@ max_framebuffers=2
 
 [all]
 enable_uart=1
-gpio=4=op,dh
-gpio=5=op,dl
+gpio=4=op,dh # Preamp RESET pin
+gpio=5=op,dl # Preamp BOOT0 pin
 
 # enable i2s DAC
 dtoverlay=hifiberry-dac
