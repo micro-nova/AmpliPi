@@ -601,8 +601,7 @@ class Api:
     except Exception as exc:
       return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
 
-  @save_on_success
-  def delete_stream(self, sid: int) -> ApiResponse:
+  def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
     try:
       # if input is connected to a source change that input to nothing
@@ -614,6 +613,8 @@ class Api:
       i, _ = utils.find(self.status.streams, sid)
       if i is not None:
         del self.status.streams[i] # delete the cached stream state just in case
+      if not internal:
+        self.mark_changes()
       return ApiResponse.ok()
     except KeyError:
       return ApiResponse.error('delete stream failed: {} does not exist'.format(sid))
@@ -840,24 +841,23 @@ class Api:
     # TODO: release lock
     return ApiResponse.ok()
 
-  @save_on_success
   def announce(self, announcement: models.Announcement) -> ApiResponse:
     """ Create and play an announcement """
     # create a temporary announcement stream using Streams.File
-    resp0 = self.create_stream(models.Stream(type='file', name='Announcement', url=announcement.media), internal=True)
+    resp0 = self.create_stream(models.Stream(type='fileplayer', name='Announcement', url=announcement.media), internal=True)
     if isinstance(resp0, ApiResponse):
       return resp0
     stream = resp0
     # create a temporary preset with all zones connected to the announcement stream and load it
     pa_src = models.SourceUpdateWithId(id=3, input=f'stream={stream.id}') # for now we just use the last source
-    pa_zones = [models.ZoneUpdateWithId(id=z.id, mute=False, vol=-40) for z in self.status.zones if not z.disabled]
+    pa_zones = [models.ZoneUpdateWithId(id=z.id, source_id=3, mute=False, vol=-40) for z in self.status.zones if not z.disabled]
     resp1 = self.create_preset(models.Preset(name='PA - announcement', state=models.PresetState(sources=[pa_src], zones=pa_zones)))
     if isinstance(resp1, ApiResponse):
       return resp1
     pa_preset = resp1
     if pa_preset.id is None or stream.id is None:
       return ApiResponse.error('ID expected to be provided')
-    resp2 = self.load_preset(pa_preset.id)
+    resp2 = self.load_preset(pa_preset.id, internal=True)
     if resp2.code != ApiCode.OK:
       return resp2
     resp3 = self.delete_preset(pa_preset.id)
@@ -868,8 +868,11 @@ class Api:
     stream_inst = self.streams[stream.id]
     while True:
       time.sleep(0.1)
-      if stream_inst.status() == 'stopped':
+      if stream_inst.status() in ['stopped', 'disconnected']:
         break
-    resp4 = self.load_preset(self._LAST_PRESET_ID)
-    self.delete_stream(stream.id) # remember to delete the temporary stream
+    resp4 = self.load_preset(self._LAST_PRESET_ID, internal=True)
+    resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
+    if resp5.code != ApiCode.OK:
+      return resp5
+    self.mark_changes()
     return resp4

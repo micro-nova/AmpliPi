@@ -852,8 +852,9 @@ class FilePlayer(BaseStream):
     self.proc = None
     self._disconnect()
 
-  def info(self):
-    return {}
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    return source
 
   def status(self):
     return self.state
@@ -879,6 +880,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
   elif stream.type == 'plexamp':
     return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
-  elif stream.type == 'file':
+  elif stream.type == 'fileplayer':
     return FilePlayer(args['name'], args['url'], mock=mock)
   raise NotImplementedError(stream.type)
