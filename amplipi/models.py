@@ -733,7 +733,7 @@ class Status(BaseModel):
 
 class AppSettings(BaseSettings):
   """ Controller settings """
-  mock_ctrl: bool = False
-  mock_streams: bool = False
+  mock_ctrl: bool = True
+  mock_streams: bool = True
   config_file: str = 'house.json'
   delay_saves: bool = True

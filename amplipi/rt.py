@@ -18,11 +18,12 @@
 """Runtimes to communicate with the AmpliPi hardware
 """
 
+import io
+import os
 import time
 import amplipi.extras as extras
 
 # TODO: move constants like this to their own file
-DISABLE_HW = True # disable hardware based packages (smbus2 is not installable on Windows)
 DEBUG_PREAMPS = False # print out preamp state after register write
 
 from serial import Serial
@@ -48,14 +49,51 @@ _SRC_TYPES = {
 }
 _DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78]
 
+def is_amplipi():
+  """ Check if the current hardware is an AmpliPi
+
+    Checks if the system is a Raspberry Pi Compute Module 3 Plus
+    with the proper serial port and I2C bus
+
+    Returns:
+      True if current hardware is an AmpliPi, False otherwise
+  """
+  is_amplipi = True
+
+  # Check for Raspberry Pi
+  try:
+    # Also available in /proc/device-tree/model, and in /proc/cpuinfo's "Model" field
+    with io.open('/sys/firmware/devicetree/base/model', 'r') as m:
+      desired_model = 'Raspberry Pi Compute Module 3 Plus'
+      current_model = m.read()
+      if desired_model.lower() not in current_model.lower():
+        print(f"Device model '{current_model}'' doesn't match '{desired_model}*'")
+        is_amplipi = False
+  except Exception:
+    print(f'Not running on a Raspberry Pi')
+    is_amplipi = False
+
+  # Check for the serial port
+  if not os.path.exists('/dev/serial0'):
+    print('Serial port /dev/serial0 not found')
+    is_amplipi = False
+
+  # Check for the i2c bus
+  if not os.path.exists('/dev/i2c-1'):
+    print('I2C bus /dev/i2c-1 not found')
+    is_amplipi = False
+
+  return is_amplipi
+
+
 class _Preamps:
   """ Low level discovery and communication for the AmpliPi firmware
   """
-  def __init__(self, mock=False):
+  def __init__(self):
     self.preamps = dict()
-    if DISABLE_HW or mock:
-      self.bus = None
-      print('Mocking preamp connection')
+    if not is_amplipi():
+      self.bus = None # TODO: Use i2c-stub
+      print('Not running on AmpliPi hardware, mocking preamp connection')
     else:
       self.reset_preamps()
 
@@ -267,8 +305,8 @@ class Rpi:
       This acts as an Amplipi Runtime, expected to be executed on a raspberrypi
   """
 
-  def __init__(self, mock=False):
-    self._bus = _Preamps(mock)
+  def __init__(self):
+    self._bus = _Preamps()
     self._all_muted = True # preamps start up in muted/standby state
 
   def update_zone_mutes(self, zone, mutes):
