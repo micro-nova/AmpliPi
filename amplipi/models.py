@@ -77,9 +77,18 @@ class BaseUpdate(BaseModel):
   """
   name: Optional[str] = fields.Name
 
+class SourceInfo(BaseModel):
+  artist: Optional[str]
+  track: Optional[str]
+  album: Optional[str]
+  station: Optional[str] # name of radio station
+  state: Optional[str] # paused, playing, stopped, unknown, loading ???
+  img_url: Optional[str]
+
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
+  info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
 
   def get_stream(self) -> Optional[int]:
     """ Get a sources conneted stream if any """
@@ -105,6 +114,14 @@ class Source(Base):
             'id' : 1,
             'name': '1',
             'input': 'stream=1009',
+            'info': {
+              'album': 'Far (Deluxe Version)',
+              'artist': 'Regina Spektor',
+              'img_url': 'http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg',
+              'station': 'Regina Spektor Radio',
+              'track': 'Eet',
+              'state': 'playing',
+            }
           }
         },
         'nothing connected': {
@@ -112,6 +129,10 @@ class Source(Base):
             'id' : 2,
             'name': '2',
             'input': '',
+            'info': {
+              'img_url': 'static/imgs/disconnected.png',
+              'state': 'stopped',
+            }
           }
         },
         'rca connected': {
@@ -119,6 +140,10 @@ class Source(Base):
             'id' : 3,
             'name': '3',
             'input': 'local',
+            'info': {
+              'img_url': 'static/imgs/rca_inputs.svg',
+              'state': 'unknown',
+            }
           }
         },
       }
@@ -353,10 +378,6 @@ class Stream(Base):
   logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
-  # generated fields
-  # TODO: formalize stream info
-  info: Optional[Dict] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
-  status: Optional[str] = Field(description='State of the stream')
 
   # add examples for each type of stream
   class Config:
@@ -424,22 +445,15 @@ class Stream(Base):
         },
       },
       'examples': {
-        'Regina Spektor Radio (playing)': {
+        'Regina Spektor Radio': {
           'value': {
             'id': 90890,
             'name': 'Regina Spektor Radio',
             'password': '',
             'station': '4473713754798410236',
-            'status': 'playing',
+            'status': 'connected',
             'type': 'pandora',
-            'user': 'example1@micro-nova.com',
-            'info': {
-              'album': 'Far (Deluxe Version)',
-              'artist': 'Regina Spektor',
-              'img_url': 'http://mediaserver-cont-dc6-1-v4v6.pandora.com/images/public/int/2/1/5/4/093624974512_500W_500H.jpg',
-              'station': 'Regina Spektor Radio',
-              'track': 'Eet'
-            }
+            'user': 'example1@micro-nova.com'
           }
         },
         'Matt and Kim Radio (disconnected)': {
@@ -745,3 +759,7 @@ class AppSettings(BaseSettings):
   mock_streams: bool = True
   config_file: str = 'house.json'
   delay_saves: bool = True
+
+class ImageSpec(BaseSettings):
+  height: int = Field(120, ge=40, le=300, description="Image height (and width)")
+  uri: str = Field(description="url for image beginning with 'http://', 'https://', or 'file://'")

@@ -288,20 +288,34 @@ class Api:
     return inputs
 
   def get_state(self) -> models.Status:
-    """ get the system state (dict) """
-    # update the state with the latest stream info and status
+    """ get the system state """
+    # update the state with the latest stream info
+    # TODO: figure out how to cache stream info
     optional_fields = ['station', 'user', 'password', 'url', 'logo', 'token', 'client_id'] # optional configuration fields
     streams = []
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
-      # convert the stream instance info to stream data (serialize its current configuration and status information)
+      # convert the stream instance info to stream data (serialize its current configuration
       st_type = type(stream_inst).__name__.lower()
-      stream = models.Stream(id=sid, name=stream_inst.name, type=st_type, info=stream_inst.info(), status=stream_inst.status())
+      stream = models.Stream(id=sid, name=stream_inst.name, type=st_type)
       for field in optional_fields:
         if field in stream_inst.__dict__:
           stream.__dict__[field] = stream_inst.__dict__[field]
       streams.append(stream)
     self.status.streams = streams
+    # update source's info
+    # TODO: stream/source info should be updated in a background thread
+    for src in self.status.sources:
+      stream_inst2 = self.get_stream(src)
+      if stream_inst2 is not None:
+        src.info = stream_inst2.info()
+      elif src.input is None or src.input == '':
+        src.info = models.SourceInfo(img_url=f"{utils.get_folder('web/static')}/imgs/disconnected.png")
+      elif src.input == 'local' and src.id is not None:
+        # RCA
+        src.info = models.SourceInfo(img_url=f"{utils.get_folder('web/static')}/imgs/rca_inputs.svg", track=f'Input {src.id + 1}')
+      else:
+        src.info = models.SourceInfo()
     return self.status
 
   def get_items(self, tag: str) -> Optional[List[models.Base]]:
