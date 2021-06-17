@@ -31,17 +31,31 @@ from smbus2 import SMBus
 
 # Preamp register addresses
 _REG_ADDRS = {
-  'SRC_AD'    : 0x00,
-  'CH123_SRC' : 0x01,
-  'CH456_SRC' : 0x02,
-  'MUTE'      : 0x03,
-  'STANDBY'   : 0x04,
-  'CH1_ATTEN' : 0x05,
-  'CH2_ATTEN' : 0x06,
-  'CH3_ATTEN' : 0x07,
-  'CH4_ATTEN' : 0x08,
-  'CH5_ATTEN' : 0x09,
-  'CH6_ATTEN' : 0x0A
+  'SRC_AD'          : 0x00,
+  'CH123_SRC'       : 0x01,
+  'CH456_SRC'       : 0x02,
+  'MUTE'            : 0x03,
+  'STANDBY'         : 0x04,
+  'CH1_ATTEN'       : 0x05,
+  'CH2_ATTEN'       : 0x06,
+  'CH3_ATTEN'       : 0x07,
+  'CH4_ATTEN'       : 0x08,
+  'CH5_ATTEN'       : 0x09,
+  'CH6_ATTEN'       : 0x0A,
+  'POWER_GOOD'      : 0x0B,
+  'FAN_STATUS'      : 0x0C,
+  'EXTERNAL_GPIO'   : 0x0D,
+  'LED_OVERRIDE'    : 0x0E,
+  'HV1_VOLTAGE'     : 0x10,
+  'HV2_VOLTAGE'     : 0x11,
+  'HV1_TEMP'        : 0x12,
+  'HV2_TEMP'        : 0x13,
+  'VERSION_MAJOR'   : 0xFA,
+  'VERSION_MINOR'   : 0xFB,
+  'GIT_HASH_27_20'  : 0xFC,
+  'GIT_HASH_19_12'  : 0xFD,
+  'GIT_HASH_11_04'  : 0xFE,
+  'GIT_HASH_STATUS' : 0xFF,
 }
 _SRC_TYPES = {
   1 : 'Digital',
@@ -137,8 +151,9 @@ class _Preamps:
     # Each box theoretically takes ~5ms to receive its address. Again, estimate for six boxes and include some padding
     time.sleep(0.1)
 
-  def new_preamp(self, index):
-    self.preamps[index] = [
+  def new_preamp(self, addr: int):
+    """ Populate initial register values """
+    self.preamps[addr] = [
                             0x0F,
                             0x00,
                             0x00,
@@ -177,19 +192,50 @@ class _Preamps:
         self.bus = SMBus(1)
         self.bus.write_byte_data(preamp_addr, reg, data)
 
-  def probe_preamp(self, index):
+  def probe_preamp(self, addr: int):
     # Scan for preamps, and set source registers to be completely digital
     try:
-      self.bus.write_byte_data(index, _REG_ADDRS['SRC_AD'], 0x0F)
+      self.bus.write_byte_data(addr, _REG_ADDRS['SRC_AD'], 0x0F)
       return True
     except Exception:
       return False
 
   def print_regs(self):
-    for preamp, regs in self.preamps.items():
-      print('preamp {}:'.format(preamp / 8))
-      for reg, val in enumerate(regs):
-        print('  {} - {:02b}'.format(reg, val))
+    """ Read all registers of every preamp and print """
+    if self.bus is not None:
+      for preamp in self.preamps:
+        print(f'Preamp {preamp // 8}:')
+        for reg, addr in _REG_ADDRS.items():
+          val = self.bus.read_byte_data(preamp, addr)
+          print(f'  0x{addr:02X}:{reg:<15} = 0x{val:02X}')
+
+  def read_fan_status(self, preamp: int = 1):
+    """ Read the fan status of a single preamp
+
+      Args:
+        preamp: preamp number from 1 to 15
+
+      Returns:
+        fan_on:   True if the fan is on, False otherwise
+        ovr_tmp:  True if the AmpliPi is over temp, False otherwise
+        fan_fail: True if the fan has failed, False otherwise
+    """
+    assert 1 <= preamp <= 15
+    fan_on = False
+    ovr_tmp = False
+    fan_fail = False
+    if self.bus is not None:
+      val = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FAN_STATUS'])
+      fan_on = (val & 0x8) != 0
+      ovr_tmp = (val & 0x2) != 0x2 # Active-low
+      fan_fail = (val & 0x1) != 0x1 # Active-low
+    return fan_on, ovr_tmp, fan_fail
+
+  def force_fans(self, preamp: int = 1, force: bool = True):
+    assert 1 <= preamp <= 15
+    if self.bus is not None:
+      self.bus.write_byte_data(preamp*8, _REG_ADDRS['FAN_STATUS'],
+                               1 if force is True else 0)
 
   def print(self):
     for preamp_addr in self.preamps.keys():
