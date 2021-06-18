@@ -41,7 +41,8 @@ class fields(SimpleNamespace):
   GroupMute = Field(description='Set to true if output is all zones muted')
   GroupVolume = Field(ge=-79, le=0, description='Average input volume in dB')
   Disabled = Field(description='Set to true if not connected to a speaker')
-  Zones = Field(description='Set of zones belonging to a group')
+  Zones = Field(description='Set of zone ids belonging to a group')
+  Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
 
   * Digital Stream ('stream=SID') where SID is the ID of the connected stream
@@ -633,8 +634,13 @@ class PresetUpdate(BaseUpdate):
     }
 
 class Announcement(BaseModel):
-  """ A PA-like Announcement """
+  """ A PA-like Announcement
+  IF no zones or groups are specified, all available zones are used
+  """
   media : str = Field(description="URL to media to play as the announcement")
+  vol: int = Field(default=-40, ge=-79, le=0, description='Output volume in dB')
+  zones: Optional[List[int]] = fields.Zones
+  groups: Optional[List[int]] = fields.Groups
 
   class Config:
     schema_extra = {

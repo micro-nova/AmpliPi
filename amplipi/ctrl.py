@@ -850,7 +850,12 @@ class Api:
     stream = resp0
     # create a temporary preset with all zones connected to the announcement stream and load it
     pa_src = models.SourceUpdateWithId(id=3, input=f'stream={stream.id}') # for now we just use the last source
-    pa_zones = [models.ZoneUpdateWithId(id=z.id, source_id=3, mute=False, vol=-40) for z in self.status.zones if not z.disabled]
+    if announcement.zones is None and announcement.groups is None:
+      zones_to_use = {z.id for z in self.status.zones if z.id is not None and not z.disabled}
+    else:
+      unique_zones = utils.zones_from_all(self.status, announcement.zones, announcement.groups)
+      zones_to_use = utils.enabled_zones(self.status, unique_zones)
+    pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=3, mute=False, vol=announcement.vol) for zid in zones_to_use]
     resp1 = self.create_preset(models.Preset(name='PA - announcement', state=models.PresetState(sources=[pa_src], zones=pa_zones)))
     if isinstance(resp1, ApiResponse):
       return resp1
