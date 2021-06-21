@@ -106,9 +106,13 @@
         <div class="card settings">
           <h6 class="card-header">Connect Plex Account</h6>
           <div class="card-body">
-            <div class="text-left">
-              <button class="btn btn-success" onclick="plexamp_wrapper()" id="plexamp">Request Authentication</button>
-              <button class="btn btn-danger" onclick="window.location.reload();"style="visibility: hidden" id="resetti">Reset</button>
+            <div class="text-center">
+              <button class="btn btn-success" onclick="plexamp_connect()" id="plexamp-connect">Request Authentication</button>
+              <button class="btn btn-danger" onclick="window.location.reload();"style="visibility: hidden" id="plexamp-reset">Reset</button>
+              <button class="btn" onclick="window.location.reload();" style="visibility: hidden" id="plexamp-done"></button>
+            </div>
+            <div id="plexamp-msg" class="text-center" style="visibility: hidden">
+              Some hidden text
             </div>
           </div>
         </div>

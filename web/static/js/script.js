@@ -570,23 +570,38 @@ function sleepjs(ms) {
   return new Promise(resolve => setTimeout(resolve, ms)); // JavaScript sleep function
 }
 
-async function plexamp_wrapper() {
+async function plexamp_create_stream() {
   // Connect to Plex's API and add a Plexamp stream to AmpliPi
-  document.getElementById('plexamp').disabled = true;
+  var connect_button = document.getElementById('plexamp-connect')
+  var reset_button = document.getElementById('plexamp-reset')
+  var done_button = document.getElementById('plexamp-done')
+  var msg_box = document.getElementById('plexamp-msg')
+  connect_button.disabled = true
   let details = await plex_pin_req(); // Request a pin
   await sleepjs(2000); // Wait for info to propagate over
-  document.getElementById('resetti').style.visibility = "visible";
+  reset_button.style.visibility = "visible"
+  done_button.style.visibility = "hidden"
+  msg_box.style.visibility = "hidden"
+
   do {
     let details2 = await plex_token_ret(details); // Retrieve our token
-    await sleepjs(2000); // Delay so the loop doesn't go insane
+    await sleepjs(2000); // poll the plex servers slowly
     if (details2.expiresIn == null){
-      document.getElementById('plexamp').textContent = "Timeout";
+      msg_box.textContent = "Timed out while waiting for response from Plex"
+      msg_box.style.color = 'yellow'
+      msg_box.style.visibility = 'visible'
       break; // Break when you run out of time (30 minutes, set by Plex)
     }
     details = details2; // Update authToken state and time until expiration
   } while (details.authToken == null); // "== null" should also check for undefined
   if (details.authToken){
-    document.getElementById('plexamp').textContent = "Connection Successful!";
+    connect_button.style.visibility = "hidden"
+    reset_button.style.visibility = "hidden"
+    msg_box.textContent = "'AmpliPi Plexamp' stream added"
+    msg_box.style.color = 'white'
+    msg_box.style.visibility = 'visible'
+    done_button.style.visibility = "visible"
+    done_button.textContent = "Done - click to continue";
     plex_stream(details); // Create a Plexamp stream using the API!
   }
 }
