@@ -475,7 +475,7 @@ class DLNA:
     This creates a DLNA streaming option based on the configuration
     """
     if self.mock:
-      print('{} connected to {}'.format(self.name, src))
+      print(f'{self.name} connected to {src}')
       self.state = 'connected'
       self.src = src
       return
@@ -485,16 +485,16 @@ class DLNA:
     self.uuid = uuid_gen()
     portnum = 49494 + int(src)
 
-    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
-    meta_args = ['{}/dlna_metadata.bash'.format(utils.get_folder('streams')), '{}'.format(src_config_folder)]
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    meta_args = [f'{utils.get_folder("streams")}/dlna_metadata.bash', f'{src_config_folder}']
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
                 '--gstout-audiodevice', utils.output_device(src), '--gstout-initial-volume-db',
-                '0.0', '-p', '{}'.format(portnum), '-u', '{}'.format(self.uuid),
-                '-f', '{}'.format(self.name), '--logfile',
-                '{}/metafifo'.format(src_config_folder)]
+                '0.0', '-p', f'{portnum}', '-u', f'{self.uuid}',
+                '-f', f'{self.name}', '--logfile',
+                f'{src_config_folder}/metafifo']
     self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print('{} connected to {}'.format(self.name, src))
+    print(f'{self.name} connected to {src}')
     self.state = 'connected'
     self.src = src
 
@@ -507,15 +507,15 @@ class DLNA:
     if self._is_dlna_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
       self.proc2.kill()
-      print('{} disconnected'.format(self.name))
+      print(f'{self.name} disconnected')
     self.state = 'disconnected'
     self.proc = None
     self.proc2 = None
     self.src = None
 
   def info(self):
-    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
-    loc = '{}/currentSong'.format(src_config_folder)
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
+    loc = f'{src_config_folder}/currentSong'
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -528,27 +528,13 @@ class DLNA:
       pass
     return {'details': 'No info available'}
 
-  # def uuid_gen(self):
-  #   # Get new UUID for the DLNA endpoint
-  #   u_args = 'uuidgen'
-  #   uuid_proc = subprocess.run(args=u_args, capture_output=True)
-  #   uuid_str = str(uuid_proc).split(',')
-  #   c_check = uuid_str[0]
-  #   val = uuid_str[2]
-
-  #   if c_check[0:16] == 'CompletedProcess':
-  #     self.uuid = val[10:46]
-  #   else:
-  #     self.uuid = '39ae35cc-b4c1-444d-b13a-294898d771fa' # Generic UUID in case of failure
-  #   return
-
   def status(self):
     return self.state
 
   def __str__(self):
-    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    connection = f' connected to src={self.src}' if self.src else ''
     mock = ' (mock)' if self.mock else ''
-    return 'DLNA: {}{}{}'.format(self.name, connection, mock)
+    return f'DLNA: {self.name}{connection}{mock}'
 
 class InternetRadio:
   """ An Internet Radio Stream """
@@ -676,31 +662,31 @@ class Plexamp:
     self.disconnect()
 
   def __str__(self):
-    connection = ' connected to src={}'.format(self.src) if self.src else ''
+    connection = f' connected to src={self.src}' if self.src else ''
     mock = ' (mock)' if self.mock else ''
-    return 'plexamp: {}{}{}'.format(self.name, connection, mock )
+    return f'plexamp: {self.name}{connection}{mock}'
 
   def connect(self, src):
     """ Connect plexamp output to a given audio source
     This will start up plexamp with a configuration specific to @src
     """
     if self.mock:
-      print('{} connected to {}'.format(self.name, src))
+      print(f'{self.name} connected to {src}')
       self.state = 'connected'
       self.src = src
       return
 
-    src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), src)
-    mpd_template = '{}/mpd.conf'.format(utils.get_folder('streams'))
-    plexamp_template = '{}/server.json'.format(utils.get_folder('streams'))
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    mpd_template = f'{utils.get_folder("streams")}/mpd.conf'
+    plexamp_template = f'{utils.get_folder("streams")}/server.json'
     plexamp_home = src_config_folder
-    plexamp_config_folder = '{}/.config/Plexamp'.format(plexamp_home)
-    mpd_conf_file = '{}/mpd.conf'.format(plexamp_home)
-    server_json_file = '{}/server.json'.format(plexamp_config_folder)
+    plexamp_config_folder = f'{plexamp_home}/.config/Plexamp'
+    mpd_conf_file = f'{plexamp_home}/mpd.conf'
+    server_json_file = f'{plexamp_config_folder}/server.json'
     # make all of the necessary dir(s)
-    os.system('mkdir -p {}'.format(plexamp_config_folder))
-    os.system('cp {} {}'.format(mpd_template, mpd_conf_file))
-    os.system('cp {} {}'.format(plexamp_template, server_json_file))
+    os.system(f'mkdir -p {plexamp_config_folder}')
+    os.system(f'cp {mpd_template} {mpd_conf_file}')
+    os.system(f'cp {plexamp_template} {server_json_file}')
     self.uuid = uuid_gen()
     # server.json config (Proper server.json file must be copied over for this to work)
     with open(server_json_file) as json_file:
@@ -712,8 +698,8 @@ class Plexamp:
     # Double quotes required for Python -> JSON translation
     json_config = {
       "player": {
-        "name": "{}".format(self.name),
-        "identifier": "{}".format(self.client_id)
+        "name": f"{self.name}",
+        "identifier": f"{self.client_id}"
       },
       "user": {
         "token": self.token
@@ -723,7 +709,7 @@ class Plexamp:
       "audio": {
         "normalize": "false",
         "crossfade": "false",
-        "mpd_path": "{}".format(mpd_conf_file)
+        "mpd_path": f"{mpd_conf_file}"
       }
     }
 
@@ -733,8 +719,8 @@ class Plexamp:
     # mpd.conf creation
     with open(mpd_conf_file, 'r') as MPD:
       data = MPD.read()
-      data = data.replace('ch', 'ch{}'.format(src))
-      data = data.replace('GENERIC_LOGFILE_LOCATION', '{}/mpd.log'.format(plexamp_config_folder))
+      data = data.replace('ch', f'ch{src}')
+      data = data.replace('GENERIC_LOGFILE_LOCATION', f'{plexamp_config_folder}/mpd.log')
     with open(mpd_conf_file, 'w') as MPD:
       MPD.write(data)
     # PROCESS
@@ -743,9 +729,9 @@ class Plexamp:
       self.proc = subprocess.Popen(args=plexamp_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : plexamp_home})
       time.sleep(0.1) # Delay a bit
       self.src = src
-      print('{} connected to {}'.format(self.name, src))
+      print(f'{self.name} connected to {src}')
     except Exception as e:
-      print('error starting plexamp: {}'.format(e))
+      print(f'error starting plexamp: {e}')
 
   def _is_plexamp_running(self):
     if self.proc:
@@ -755,7 +741,7 @@ class Plexamp:
   def disconnect(self):
     if self._is_plexamp_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
-      print('{} disconnected'.format(self.name))
+      print(f'{self.name} disconnected')
     self.state = 'disconnected'
     self.proc = None
     self.src = None

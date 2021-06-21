@@ -10,16 +10,6 @@ import os
 # TODO: dlna generates state update events to subscribers, in the future we should use this method instead
 # Check out https://github.com/hzeller/upnp-display/blob/master/controller-state.cc for details
 
-# args = sys.argv[1:]
-# print('Input Arguments: {}'.format(args[0]))
-# try:
-#     src = int(args[0])
-#     loc = '/home/pi/config/dlna/{}/'.format(src)
-# except:
-#     print('Error: Invalid source choice. Sources range from 0 to 3. Please try again.')
-#     sys.exit('Failure.')
-# print('Targeting {}'.format(loc))
-# cs_loc = loc + 'currentSong'
 parser = argparse.ArgumentParser(description="dlna metadata interpreter")
 parser.add_argument('dlna_config_dir')#, description='directory used for dlna song info generation')
 args = parser.parse_args()
