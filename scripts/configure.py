@@ -39,6 +39,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'internet_radio' : {
     'apt' : [ 'vlc' ]
   },
+  'dlna' : {
+    'apt' : [ 'uuid-runtime' ] # TODO: Need gmrender-resurrect binary
+  },
+  # 'plexamp' : {
+  #   'apt' : [ 'nodejs=9.11.2-1nodesource1' ] #TODO: Need plexamplipi tarball install
+  # },
   # TODO: test spocon! it looks awesome
   # 'spotify' : {
   #   'script' :  [
