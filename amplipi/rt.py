@@ -18,6 +18,7 @@
 """Runtimes to communicate with the AmpliPi hardware
 """
 
+import math
 import io
 import os
 import time
@@ -194,6 +195,7 @@ class _Preamps:
 
   def probe_preamp(self, addr: int):
     # Scan for preamps, and set source registers to be completely digital
+    # TODO: This should read version instead, but I haven't checked what relies on this yet.
     try:
       self.bus.write_byte_data(addr, _REG_ADDRS['SRC_AD'], 0x0F)
       return True
@@ -208,6 +210,43 @@ class _Preamps:
         for reg, addr in _REG_ADDRS.items():
           val = self.bus.read_byte_data(preamp, addr)
           print(f'  0x{addr:02X}:{reg:<15} = 0x{val:02X}')
+
+  def read_version(self, preamp: int = 1):
+    """ Read the version of the first preamp if present
+
+      Returns:
+        major:    The major revision number
+        minor:    The minor revision number
+        git_hash: The git hash of the build (7-digit abbreviation)
+        dirty:    False if the git hash is valid, True otherwise
+    """
+    assert 1 <= preamp <= 15
+    if self.bus is not None:
+      major = self.bus.read_byte_data(preamp*8, _REG_ADDRS['VERSION_MAJOR'])
+      minor = self.bus.read_byte_data(preamp*8, _REG_ADDRS['VERSION_MINOR'])
+      git_hash = self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_27_20']) << 20
+      git_hash |= (self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_19_12']) << 12)
+      git_hash |= (self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_11_04']) << 4)
+      git_hash4_stat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_STATUS'])
+      git_hash |= (git_hash4_stat >> 4)
+      dirty = (git_hash4_stat & 0x01) != 0
+      return major, minor, git_hash, dirty
+    return None
+
+  def read_power_good(self, preamp: int = 1):
+    """ Read the 'power good' signals of the first preamp if present
+
+      Returns:
+        pg_12v: True if the 12V rail is good
+        pg_9v:  True if the 9V rail is good
+    """
+    assert 1 <= preamp <= 15
+    if self.bus is not None:
+      pgood = self.bus.read_byte_data(preamp*8, _REG_ADDRS['POWER_GOOD'])
+      pg_12v = (pgood & 0x02) != 0
+      pg_9v = (pgood & 0x01) != 0
+      return pg_12v, pg_9v
+    return None
 
   def read_fan_status(self, preamp: int = 1):
     """ Read the fan status of a single preamp
@@ -229,13 +268,70 @@ class _Preamps:
       fan_on = (val & 0x8) != 0
       ovr_tmp = (val & 0x2) != 0x2 # Active-low
       fan_fail = (val & 0x1) != 0x1 # Active-low
-    return fan_on, ovr_tmp, fan_fail
+      return fan_on, ovr_tmp, fan_fail
+    return None
+
+  def read_hv(self, preamp: int = 1):
+    """ Read the high-voltage voltages and temps of the first preamp if present
+
+      Args:
+        preamp: preamp number from 1 to 15
+
+      Returns:
+        hv1:  Voltage of the HV1 rail
+        hv2:  Voltage of the HV2 rail
+        tmp1: Temperature of HV1 in degC
+        tmp2: Temperature of HV2 in degC
+    """
+    assert 1 <= preamp <= 15
+    if self.bus is not None:
+      adc_to_volts = (100 + 4.7) / 4.7 * 3.3 / 255
+      hv1_adc = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV1_VOLTAGE'])
+      hv2_adc = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV2_VOLTAGE'])
+      hv1 = hv1_adc * adc_to_volts
+      hv2 = hv2_adc * adc_to_volts
+
+      # Nominal B-Constant of 3900K, R0 resistance is 10 kOhm at 25dC (T0)
+      # Thermocouple resistance = R0*e^[B*(1/T - 1/T0)] = Rt
+      # ADC_VAL = 3.3V * 4.7kOhm / (4.7kOhm + Rt kOhm) / 3.3V * 255
+      # Rt = 4.7 * (255 / ADC_VAL - 1)
+      # T = 1/(ln(Rt/R0)/B + 1/T0)
+      # T = 1/(ln(Rt/10)/3900 + 1/(25+273.5)) - 273.15
+      def read_temp(reg: str):
+        temp_adc = self.bus.read_byte_data(preamp*8, _REG_ADDRS[reg])
+        if temp_adc == 0: # 0 causes divide-by-zero
+          temp = -math.inf
+        elif temp_adc == 255: # 255 causes Rt=0 which leads to ln(0)
+          temp = math.inf
+        else:
+          rt = 4.7 * (255 / temp_adc - 1)
+          temp = 1/(math.log(rt/10, math.e)/3900 + 1/(25+273.5)) - 273.15
+        return temp
+      tmp1 = read_temp('HV1_TEMP')
+      tmp2 = read_temp('HV2_TEMP')
+      return hv1, hv2, tmp1, tmp2
+    return None
 
   def force_fans(self, preamp: int = 1, force: bool = True):
     assert 1 <= preamp <= 15
     if self.bus is not None:
       self.bus.write_byte_data(preamp*8, _REG_ADDRS['FAN_STATUS'],
                                1 if force is True else 0)
+
+  def led_override(self, preamp: int = 1, leds: int = 0xFF):
+    """ Override the LED board's LEDs
+
+      Args:
+        preamp: preamp number from 1 to 15
+        leds:   A 1-byte number with each bit corresponding to an LED
+                Green => Bit 0
+                Red => Bit 1
+                Zone[1-6] => Bit[2-7]
+    """
+    assert 1 <= preamp <= 15
+    assert 0 <= leds <= 255
+    if self.bus is not None:
+      self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_OVERRIDE'], leds)
 
   def print(self):
     for preamp_addr in self.preamps.keys():
