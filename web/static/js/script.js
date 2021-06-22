@@ -507,6 +507,7 @@ function initVolControl(ctrl) {
 }
 
 async function plex_pin_req() {
+  // Request a Plex pin to use for interacting with the Plex API
   document.getElementById('plexamp').textContent = "Sending request...";
   let myuuid = uuidv4(); // UUID used as the 'clientIdentifier' for Plexamp requests/devices
   let details = { }
@@ -532,6 +533,8 @@ async function plex_pin_req() {
 }
 
 async function plex_token_ret(details) {
+  // Attempt to retrieve the plex token (this will return 'null' until the user enters their Plex account details)
+  // NOTE: this token will only work for plexamp if the user has a Plex Pass subscription
   document.getElementById('plexamp').textContent = "Awaiting Plex sign-in...";
   let response = await fetch('https://plex.tv/api/v2/pins/'+details.id, {
     method: 'GET',
@@ -552,6 +555,7 @@ async function plex_token_ret(details) {
 }
 
 async function plex_stream(details) {
+  // Create Plexamp stream using AmpliPi's API
   var req = {
     "name": "AmpliPi Plexamp",
     "client_id": details.uuid,
@@ -567,6 +571,7 @@ function sleepjs(ms) {
 }
 
 async function plexamp_wrapper() {
+  // Connect to Plex's API and add a Plexamp stream to AmpliPi
   document.getElementById('plexamp').disabled = true;
   let details = await plex_pin_req(); // Request a pin
   await sleepjs(2000); // Wait for info to propagate over
