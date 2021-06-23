@@ -589,7 +589,8 @@ async function plexamp_create_stream() {
     if (details2.expiresIn == null){
       msg_box.textContent = "Timed out while waiting for response from Plex";
       msg_box.style.color = "yellow";
-      msg_box.style.display = "inline-block";
+      msg_box.style.display = "block";
+      msg_box.style.alignSelf = "center";
       break; // Break when you run out of time (30 minutes, set by Plex)
     }
     details = details2; // Update authToken state and time until expiration
