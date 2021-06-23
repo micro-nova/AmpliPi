@@ -508,7 +508,7 @@ function initVolControl(ctrl) {
 
 async function plex_pin_req() {
   // Request a Plex pin to use for interacting with the Plex API
-  document.getElementById('plexamp').textContent = "Sending request...";
+  document.getElementById('plexamp-connect').textContent = "Sending request...";
   let myuuid = uuidv4(); // UUID used as the 'clientIdentifier' for Plexamp requests/devices
   let details = { }
   let response = await fetch('https://plex.tv/api/v2/pins', {
@@ -535,7 +535,7 @@ async function plex_pin_req() {
 async function plex_token_ret(details) {
   // Attempt to retrieve the plex token (this will return 'null' until the user enters their Plex account details)
   // NOTE: this token will only work for plexamp if the user has a Plex Pass subscription
-  document.getElementById('plexamp').textContent = "Awaiting Plex sign-in...";
+  document.getElementById('plexamp-connect').textContent = "Awaiting Plex sign-in...";
   let response = await fetch('https://plex.tv/api/v2/pins/'+details.id, {
     method: 'GET',
     headers: {
@@ -564,7 +564,7 @@ async function plex_stream(details) {
   } // POST a new stream to the AmpliPi API using the newly authenticated credentials
   sendRequest('/stream', 'POST', req);
   console.log(`Creating stream with these parameters: name = ${req.name}, UUID = ${req.client_id}, and token = ${req.token}`);
-  }
+}
 
 function sleepjs(ms) {
   return new Promise(resolve => setTimeout(resolve, ms)); // JavaScript sleep function
@@ -572,36 +572,37 @@ function sleepjs(ms) {
 
 async function plexamp_create_stream() {
   // Connect to Plex's API and add a Plexamp stream to AmpliPi
-  var connect_button = document.getElementById('plexamp-connect')
-  var reset_button = document.getElementById('plexamp-reset')
-  var done_button = document.getElementById('plexamp-done')
-  var msg_box = document.getElementById('plexamp-msg')
-  connect_button.disabled = true
+  var connect_button = document.getElementById('plexamp-connect');
+  var reset_button = document.getElementById('plexamp-reset');
+  var done_button = document.getElementById('plexamp-done');
+  var msg_box = document.getElementById('plexamp-msg');
+  connect_button.disabled = true;
   let details = await plex_pin_req(); // Request a pin
   await sleepjs(2000); // Wait for info to propagate over
-  reset_button.style.visibility = "visible"
-  done_button.style.visibility = "hidden"
-  msg_box.style.visibility = "hidden"
+  reset_button.style.display = "inline-block";
+  done_button.style.display = "none";
+  msg_box.style.display = "none";
 
   do {
     let details2 = await plex_token_ret(details); // Retrieve our token
     await sleepjs(2000); // poll the plex servers slowly
     if (details2.expiresIn == null){
-      msg_box.textContent = "Timed out while waiting for response from Plex"
-      msg_box.style.color = 'yellow'
-      msg_box.style.visibility = 'visible'
+      msg_box.textContent = "Timed out while waiting for response from Plex";
+      msg_box.style.color = "yellow";
+      msg_box.style.display = "inline-block";
       break; // Break when you run out of time (30 minutes, set by Plex)
     }
     details = details2; // Update authToken state and time until expiration
   } while (details.authToken == null); // "== null" should also check for undefined
   if (details.authToken){
-    connect_button.style.visibility = "hidden"
-    reset_button.style.visibility = "hidden"
-    msg_box.textContent = "'AmpliPi Plexamp' stream added"
-    msg_box.style.color = 'white'
-    msg_box.style.visibility = 'visible'
-    done_button.style.visibility = "visible"
+    connect_button.style.display = "none";
+    reset_button.style.display = "none";
     done_button.textContent = "Done - click to continue";
+    done_button.style.display = "inline-block";
+    msg_box.textContent = "'AmpliPi Plexamp' stream added";
+    msg_box.style.color = "white";
+    msg_box.style.display = "block";
+    msg_box.style.alignSelf = "center";
     plex_stream(details); // Create a Plexamp stream using the API!
   }
 }
