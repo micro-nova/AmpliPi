@@ -11,28 +11,28 @@ Check us out on [Kickstarter](https://www.kickstarter.com/projects/micro-nova/am
 
 ## Features
 
-AmpliPi can interface to many different types of digital streaming inputs and we are working on new type. Below is the current status of our streams.
+AmpliPi can interface with many different types of digital streaming inputs and we are working on new ones all of the time. Most of the streams support can be played independently on 4 separate sources at once, check out the **Multiple?** heading. Below is the current status of our streams.
 
 |Streaming Service|Supported|Multiple?|Metadata|Notes|
 |--|--:|--:|--:|--|
 |Pandora|Yes|Yes|Yes||
 |Airplay|Yes|Yes|Yes|Metadata only available from itunes|
-|Spotify|Yes|Yes|No. see #|Requires Spotify Premium, one account per stream|
+|Spotify|Yes|Yes|No see [#37](github.com/micro-nova/AmpliPi/issues/37)|Requires Spotify Premium, one account per stream|
 |DLNA|Yes|Yes|Yes||
 |Internet Radio|Yes|Yes|Yes||
 |PlexAmp|Yes|No|No||
 |Google Cast|No|||Need to investigate|
-|Offline Music|No|||See #66|
-|TIDAL|No|||See #87|
+|Offline Music|No|||See [#66](github.com/micro-nova/AmpliPi/issues/66)|
+|TIDAL|No|||See [#87](github.com/micro-nova/AmpliPi/issues/87)|
 
 In the future we plan to integrate with several home automation systems. Below is their current status.
 
 |Integrations|Supported|Notes|
 |--|--:|--|
 |Home Assistant|No|Future integration planned|
-|Open HAB|No|See #54|
-|Alexa|No|See #25|
-|Google Assistant|No|See #69|
+|Open HAB|No|See [#54](github.com/micro-nova/AmpliPi/issues/54)|
+|Alexa|No|See [#25](github.com/micro-nova/AmpliPi/issues/25)|
+|Google Assistant|No|See [#69](github.com/micro-nova/AmpliPi/issues/69)|
 
 ## Quick Start Guide
 
