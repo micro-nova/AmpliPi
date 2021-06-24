@@ -7,13 +7,45 @@ The AmpliPi design is entirely open source, from the software, to the firmware, 
 
 The system is self-hosted on the Raspberry Pi and is privacy-centric. By design, AmpiPi doesn’t listen to you or spy on you — it just plays your audio! The way it should be. An internet connection is only needed for some external streaming sources, such as Pandora. The Python application running on the Pi hosts a mobile-friendly website and REST API used to control the system. The website is built on top of the REST API.
 
-## TODO: Update documentation for kickstarter backers receiving units
-- Add Stream/Feature List
-- Add Quick Start guide, intended for recipients of initial units
-- Add Ceiling speaker install guide
-- Include developing guide
-
 Check us out on [Kickstarter](https://www.kickstarter.com/projects/micro-nova/amplipi-home-audio-system)!
+
+## Features
+
+AmpliPi can interface to many different types of digital streaming inputs and we are working on new type. Below is the current status of our streams.
+
+|Streaming Service|Supported|Multiple?|Metadata|Notes|
+|--|--:|--:|--:|--|
+|Pandora|Yes|Yes|Yes||
+|Airplay|Yes|Yes|Yes|Metadata only available from itunes|
+|Spotify|Yes|Yes|No. see #|Requires Spotify Premium, one account per stream|
+|DLNA|Yes|Yes|Yes||
+|Internet Radio|Yes|Yes|Yes||
+|PlexAmp|Yes|No|No||
+|Google Cast|No|||Need to investigate|
+|Offline Music|No|||See #66|
+|TIDAL|No|||See #87|
+
+In the future we plan to integrate with several home automation systems. Below is their current status.
+
+|Integrations|Supported|Notes|
+|--|--:|--|
+|Home Assistant|No|Future integration planned|
+|Open HAB|No|See #54|
+|Alexa|No|See #25|
+|Google Assistant|No|See #69|
+
+## Quick Start Guide
+
+If you are one of the lucky few to have a pre-release version of the AmpliPi.
+See [docs/QUICK_START.md](docs/QUICK_START.md) to get started.
+
+## Speakers
+
+Notes on picking and installing speakers for whole house audio can be found [here](docs/SPEAKERS.md).
+
+## Developing
+
+For details on how to help out with new features and bug fixes, check out [docs/DEVELOPING.md](docs/DEVELOPING.md)
 
 ## Web interface
 AmpliPi hosts a mobile first web app that can control the system from any PC or mobile phone on the local network. It was designed around the idea that each of the 4 audio sources could be controlled individually by separate people in the house. Each of the audio sources’ controls are in their own tab at the top of the app.
@@ -66,9 +98,6 @@ AmpliPi has a REST API that can be used to control volumes, switch and control a
 With the REST API you can easily add automation to your home audio system. Use the API to trigger your AmpliPi system to play music based on smart home events. For example, only play music in zones of your house where motion has been detected, or start playing Pandora when the front door is unlocked.
 
 Not quite sure how to accomplish this? No problem - The AmpliPi controller hosts it's API documentation as well. Using a web browser pointed at your local AmpliPi box, you can view the API documentation, and also test sending and receiving API commands to and from the AmpliPi.
-
-## Development
-See [DEVELOPING.md](DEVELOPING.md) for how to get started working on AmpliPi
 
 [workflow-badge]:  https://github.com/micro-nova/AmpliPi/actions/workflows/python-app.yml/badge.svg
 [workflow-link]:   https://github.com/micro-nova/AmpliPi/actions?query=workflow%3Apython-app.yml
