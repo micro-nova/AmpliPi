@@ -338,6 +338,7 @@ class Stream(Base):
   * dlna
   * internetradio
   * spotify
+  * plexamp
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
@@ -345,6 +346,8 @@ class Stream(Base):
   station: Optional[str] = Field(description='Radio station identifier')
   url: Optional[str] = Field(description='Stream url, used for internetradio')
   logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
+  client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
+  token: Optional[str] = Field(description='Plexamp token for server.json')
   # generated fields
   # TODO: formalize stream info
   info: Optional[Dict] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
