@@ -25,4 +25,8 @@ else
   echo "stm32flash already installed"
 fi
 
-sudo stm32flash -b 38400 -w preamp_bd* -v -R -i 5,-4,4 /dev/ttyAMA0
+if [ -n "$1" ]; then
+  sudo stm32flash -b 38400 -w $1 -v -R -i 5,-4,4 /dev/ttyAMA0
+else
+  echo "Firmware binary not specified. Please try again using './preamp_flash.sh FW_BINARY_NAME'"
+fi
