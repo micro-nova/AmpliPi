@@ -12,8 +12,8 @@
 
 import os
 
-web_directory = '/home/pi/web/generated'
-src_directory = '/home/pi/config/srcs'
+web_directory = '/home/pi/amplipi-dev/web/generated'
+src_directory = '/home/pi/amplipi-dev/config/srcs'
 
 os.system('mkdir -p {}'.format(web_directory))
 os.system('sudo mount -osize=100m tmpfs -t tmpfs {}'.format(web_directory))
