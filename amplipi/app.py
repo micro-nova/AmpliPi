@@ -504,22 +504,41 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
 
       1. Go to an API request
       1. Pick one of the examples
-      2. Edit it
-      3. Press the try button, it will send an API command/request to the AmpliPi
+      1. Edit it
+      1. Press the try button, it will send an API command/request to the AmpliPi
 
     __Try getting the status:__
 
-      1. Go to [Status -> Get Status](#get-/api/)
-      2. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
+      1. Go to [Status -> Get Status](#get-/api)
+      1. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
+
+    __Try changing a zones name:__
+
+      1. Go to [Zone -> Update Zone](#patch-/api/zones/-zid-)
+      1. Next to **PATH PARAMETERS** click Zone 2 to fill in Zone 2's id
+      1. Under **REQUEST BODY** click Example and select "Change Name"
+      1. Edit the name to what you want to call the zone
+      1. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
+
+    __Try changing a groups name and zones:__
+
+      1. Go to [Group -> Update Group](#patch-/api/groups/-gid-)
+      1. Next to **PATH PARAMETERS** click Group 1 to fill in Group 1's id
+      1. Under **REQUEST BODY** click Example and select "Rezone Group"
+      1. Edit the name to what you want to call the group
+      1. Edit the zones that belong to the group
+      1. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
 
     __Try creating a new group:__
 
       1. Go to [Group -> Create Group](#post-/api/group)
-      2. Click ExampleLooks like I need to
+      1. Under **REQUEST BODY** click Example and select "Upstairs Group"
+      1. Edit the group name or zones array
+      1. Click the Try button, you will see a response below with the new group
+
     __Here are some other things that you might want to change:__
 
       - [Stream -> Create new stream](#post-/api/stream)
-      - [Zone -> Update Zone](#patch-/api/zones/-zid-) (to change the zone name)
       - [Preset -> Create preset](#post-/api/preset) (Have a look at the model to see what can be added here)
 
     # More Info
