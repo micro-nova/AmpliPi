@@ -1,7 +1,7 @@
 # AmpliPi Home Audio System
 [![Build Status][workflow-badge]][workflow-link] [![Coverage][coverage-badge]][coverage-link] [![GPL License][license-badge]](COPYING)
 
-AmpliPi™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio sources, each of which can be selected from either its analog RCA input or any supported digital stream (Pandora, Spotify, AirPlay, etc). Each source can be routed to one or many zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPi Zone Expanders.
+AmpliPi™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio sources, each of which can be selected from either its analog RCA input or any supported digital stream (Pandora, Spotify, AirPlay, etc). Each source can be routed to one or more zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPi Zone Expanders.
 
 The AmpliPi design is entirely open source, from the software, to the firmware, to the schematics. The REST API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (avaiable in this repo).
 
@@ -13,7 +13,7 @@ Check us out on [Kickstarter](https://www.kickstarter.com/projects/micro-nova/am
 
 ## Features
 
-AmpliPi can interface with many different types of digital streaming inputs and we are working on new ones all of the time. Most of the streams support can be played independently on 4 separate sources at once, check out the **Multiple?** heading. Below is the current status of our streams.
+AmpliPi can play many different types of digital streaming inputs. Most of the streaming services supported can be played as independent digital streams on all four sources at once, check out the **Multiple?** heading. Below is the current status of our digital stream integrations.
 
 |Streaming Service|Supported|Multiple?|Metadata|Notes|
 |--|--:|--:|--:|--|
