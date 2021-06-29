@@ -14,7 +14,7 @@ We suggest making the speaker connections before connecting AmpliPi to power.
 
 Each of AmpliPi's 6 zones can drive a 4-8 Ohm speaker pair, using the provided Pheonix connectors. Here is what the basic wiring diagram for a zone looks like:
 
-![Speaker-Zone Diagram](imgs/zone_speaker_connection.png)
+![Speaker-Zone Diagram](imgs/zone_speaker_connection.svg)
 
 AmpliPi's amplifiers are capable of driving 4-8 Ohm speaker loads, in a stereo configuration. Here is what a typical speaker connection, using CL2 rated 14-AWG speaker wire and the Pheonix connectors, looks like:
 
@@ -28,15 +28,17 @@ Connect the AmpliPi to your local network using a CAT5 or better cable. The Ampl
 
 ### Power
 
-Plug the unit into an 115v outlet using the supplied power cable. Customers with a 230v connection will need to supply their own cable. Once plugged in the AmpliPi will start booting, the display will not be driven until the Pi has fully booted and the AmpliPi server has started, this takes about 20 seconds.
+Plug the unit into an 110v/220v outlet using the supplied power cable. Based on your location we have attempted to configure the AmpliPi into the correct power mode and supply the appropriate cable. Please contact amplipi@micro-nova.com if we have made a mistake.
+
+ Once plugged in the AmpliPi will start booting, the display will not be driven until the Pi has fully booted and the AmpliPi server has started, this takes about 20 seconds.
 
 ## Try it out!
 
 Now that the AmpliPi unit is powered on, its time to play with it. Let's see what it can do:
 
 1. Go to [amplipi.local](http://amplipi.local/0) (Android and Windows 7 users will need to specify the ip address found on the unit's display). You should now be connected to AmpliPi's mobile friendly website.
-1. Pick a source, using the selector. The `internet radio` comes preconfigured with a radio station (needs an internet connection).
-1. Change the volume on the zone you would like to output music on
+1. Pick a source, using the selector. The `Beatles Radio - internetradio` comes preconfigured (needs an internet connection).
+1. Change the volume on the zone you would like to output music on. Many of the zones will be hidden inside a group. Click on the different groups to see which zones belong to them.
 
 ## Configuration
 
