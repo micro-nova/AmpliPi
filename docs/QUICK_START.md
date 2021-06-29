@@ -8,7 +8,7 @@ We suggest making the speaker connections before connecting AmpliPi to power.
 
 ### Back Panel
 
-![Backpanel](imgs/backpanel.jpg)
+![Backpanel](imgs/backpanel.png)
 
 ### Speakers
 
