@@ -121,8 +121,8 @@ class Api:
     ],
     # TODO: make groups a dictionary
     "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-      {"id": 100, "name": "Group 1", "zones": [0, 1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
-      {"id": 101, "name": "Group 2", "zones": [2, 3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
+      {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
+      {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
       {"id": 102, "name": "Group 3", "zones": [5], "source_id": 0, "mute": True, "vol_delta": -79},
     ],
     "presets" : [
