@@ -34,11 +34,11 @@ Plug the unit into an 115v outlet using the supplied power cable. Customers with
 
 Now that the AmpliPi unit is powered on, its time to play with it. Let's see what it can do:
 
-1. Go to [amplipi.local](amplipi.local) (Android and Windows 7 users will need to specify the ip address found on the unit's display). You should now be connected to AmpliPi's mobile friendly website.
+1. Go to [amplipi.local](http://amplipi.local) (Android and Windows 7 users will need to specify the ip address found on the unit's display). You should now be connected to AmpliPi's mobile friendly website.
 1. Pick a source, using the selector. The `internet radio` comes preconfigured with a radio station.
 1. Change the volume on the zone you would like to output music on
 
 ## Configuration
-You will probably want to change the default group and zone names and add different streaming sources. We are planning on having a simple interface for configuring all of this, for now we use the interactive [API](amplipi.local/api/doc) to change these configurations.
+You will probably want to change the default group and zone names and add different streaming sources. We are planning on having a simple interface for configuring all of this, for now we use the interactive [API](http://amplipi.local/api/doc) to change these configurations.
 
-Try is out at [amplipi.local/api/doc](amplipi.local/api/doc). This is available via the API link at the bottom of the main page.
+Try is out at [amplipi.local/api/doc](http://amplipi.local/api/doc). This is available via the API link at the bottom of the main page.
