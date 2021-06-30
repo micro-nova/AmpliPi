@@ -15,9 +15,6 @@
 
 set -e
 
-# get directory that the script exists in
-cd "$( dirname "$0" )"
-
 if ! which stm32flash; then
   echo "installing stm32flash"
   sudo apt update && sudo apt install -y stm32flash
@@ -25,8 +22,8 @@ else
   echo "stm32flash already installed"
 fi
 
-if [ -n "$1" ]; then
+if [ -n "$1" ] && [[ $1 == *.bin ]]; then
   sudo stm32flash -b 38400 -w $1 -v -R -i 5,-4,4 /dev/ttyAMA0
 else
-  echo "Firmware binary not specified. Please try again using './preamp_flash.sh FW_BINARY_NAME'"
+  echo "Firmware binary not specified. Please try again using './preamp_flash.sh preamp_X.Y.bin'"
 fi
