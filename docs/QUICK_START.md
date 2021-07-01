@@ -9,17 +9,17 @@ We suggest making the speaker connections before connecting AmpliPi to power. Pl
 ### Back Panel
 
 All of the connections will be made to the back panel. Here's a quick reference for all of the different connections:
-- **POWER**: 110v or 220v connection, 120/220 switch is set on internal power supply and marked
+- **POWER**: 110v or 220v connection, 120/220 switch is set on internal power supply and marked, see [Power](#power)
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller
   - **SERVICE**: USB mini connection for reimaging the Pi's EMMC
   - **USB**:  USB A ports for connecting peripherals such as additional storage devices
   - **OPTICAL IN**: SPDIF audio input, planned to be used for extra inputs
   - **AUX IN**: Additional stereo input, planned to be used for announcements
   - **HDMI OUT**: Pi's HMDI output, can be used for visualizations or development
-  - **ETHERNET**: Network connection
-- **INPUTS**: 4 Stereo RCA inputs
+  - **ETHERNET**: Network connection, see [Networking](#networking)
+- **INPUTS**: 4 Stereo RCA inputs, see [RCA Inputs](#rca-inputs)
 - **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers
-- **ZONE X**: Amplified stereo outputs for Zone X
+- **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin Pheonix connectors see [Speakers](#speakers)
 - **EXPANSION**: Connection to additional expansion unit (multiple units can be daisy chained)
 
 ![Backpanel](imgs/backpanel.png)
