@@ -331,6 +331,7 @@ def read_temp():
   t = (v1 - v0) * factor - 273.15
   return t
 
+read_temp_raw() # Dummy read
 temp0, temp1 = read_temp_raw()
 if temp0 == 0 or temp1 == 0:
   # A touch screen doesn't seem to be present
@@ -520,40 +521,40 @@ while frame_num < 10 and run:
     cw = 8    # Character width
     ch = 16   # Character height
     draw.rectangle((0, 0, width-1, height-1), fill=0) # Clear image
-    draw.text((0*cw, 0*ch), 'IP:',      font=font, fill='#FFFFFF')
-    draw.text((0*cw, 1*ch), 'CPU:',     font=font, fill='#FFFFFF')
-    draw.text((0*cw, 2*ch), 'Mem:',     font=font, fill='#FFFFFF')
-    draw.text((0*cw, 3*ch), 'Disk:',    font=font, fill='#FFFFFF')
+    draw.text((1*cw, 0*ch + 2), 'CPU:',     font=font, fill='#FFFFFF')
+    draw.text((1*cw, 1*ch + 2), 'Mem:',     font=font, fill='#FFFFFF')
+    draw.text((1*cw, 2*ch + 2), 'Disk:',    font=font, fill='#FFFFFF')
+    draw.text((1*cw, 3*ch + 2), 'IP:',      font=font, fill='#FFFFFF')
 
-    draw.text((6*cw, 0*ch), ip_str,     font=font, fill='#FFFFFF')
-    draw.text((6*cw, 1*ch), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
-    draw.text((6*cw, 2*ch), ram_str1,   font=font, fill=gradient(ram_pcnt))
-    draw.text((6*cw, 3*ch), disk_str1,  font=font, fill=gradient(disk_pcnt))
+    draw.text((7*cw, 0*ch + 2), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
+    draw.text((7*cw, 1*ch + 2), ram_str1,   font=font, fill=gradient(ram_pcnt))
+    draw.text((7*cw, 2*ch + 2), disk_str1,  font=font, fill=gradient(disk_pcnt))
+    draw.text((7*cw, 3*ch + 2), ip_str,     font=font, fill='#FFFFFF')
 
     # BCM2837B0 is rated for [-40, 85] C
     # For now show green for anything below room temp
-    draw.text((13*cw, 1*ch), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
-    draw.text((13*cw, 2*ch), ram_str2,  font=font, fill='#FFFFFF')
-    draw.text((13*cw, 3*ch), disk_str2, font=font, fill='#FFFFFF')
+    draw.text((14*cw, 0*ch + 2), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
+    draw.text((14*cw, 1*ch + 2), ram_str2,  font=font, fill='#FFFFFF')
+    draw.text((14*cw, 2*ch + 2), disk_str2, font=font, fill='#FFFFFF')
 
     if connected:
       # Show source input names
-      draw.text((0*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
-      draw.text((0*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
-      draw.text((0*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
-      draw.text((0*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
-      xs = 10*cw
+      draw.text((1*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
+      draw.text((1*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
+      draw.text((1*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
+      draw.text((1*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
+      xs = 11*cw
       xp = xs - round(0.5*cw) # Shift playing arrow back a bit
       ys = 4*ch + round(0.5*ch)
-      draw.line(((0, ys-3), (width-1, ys-3)), width=2, fill='#999999')
+      draw.line(((cw, ys-3), (width-2*cw, ys-3)), width=2, fill='#999999')
       for i in range(len(sources)):
         if sources[i]['playing']:
           draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
         draw.text((xs + 1*cw, ys + i*ch), sources[i]['name'], font=font, fill='#F0E68C')
-      draw.line(((0, ys+4*ch+2), (width-1, ys+4*ch+2)), width=2, fill='#999999')
+      draw.line(((cw, ys+4*ch+2), (width-2*cw, ys+4*ch+2)), width=2, fill='#999999')
 
       # Show volumes
-      draw_volume_bars(draw, font, small_font, zones, y=9*ch, height=height-9*ch)
+      draw_volume_bars(draw, font, small_font, zones, x=cw, y=9*ch-2, height=height-9*ch, width=width - 2*cw)
     else:
       # Show an error message on the display, and the AmpliPi logo below
       if not connected_once and connection_retries <= max_connection_retries:
