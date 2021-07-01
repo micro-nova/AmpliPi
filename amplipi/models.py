@@ -295,10 +295,15 @@ class GroupUpdate(BaseUpdate):
   class Config:
     schema_extra = {
       'examples': {
+        'Rezone Group': {
+          'value': {
+            'name': 'Upstairs',
+            'zones': [3,4,5]
+          }
+        },
         'Change Name': {
           'value': {
-            'name':
-            'Upstairs'
+            'name': 'Upstairs'
           }
         },
         'Change audio source': {

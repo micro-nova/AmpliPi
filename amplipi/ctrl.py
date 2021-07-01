@@ -105,12 +105,11 @@ class Api:
     #       this does not make sense because JSON only allows string based keys
     "streams": [
       # an example for each type of stream
-      {"id": 1000, "name": "My Airplay", "type": "shairport"},
-      {"id": 1001, "name": "My Pandora", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
-      {"id": 1002, "name": "My Spotify", "type": "spotify"},
-      {"id": 1003, "name": "My Internet Radio", "type": "internetradio", "url": "http://change.me", "logo": "http://change.me/image.png"},
-      {"id": 1004, "name": "My DLNA Renderer", "type": "dlna"},
-      {"id": 1005, "name": "My Plexamp", "type": "plexamp", "client_id": "", "token": ""},
+      {"id": 1000, "name": "AmpliPi", "type": "shairport"},
+      {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
+      {"id": 1002, "name": "AmpliPi", "type": "spotify"},
+      {"id": 1003, "name": "Beatles Radio", "type": "internetradio", "url": "http://www.beatlesradio.com:8000/stream/1/", "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"},
+      {"id": 1004, "name": "AmpliPi", "type": "dlna"}
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
@@ -122,8 +121,8 @@ class Api:
     ],
     # TODO: make groups a dictionary
     "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-      {"id": 100, "name": "Group 1", "zones": [0, 1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
-      {"id": 101, "name": "Group 2", "zones": [2, 3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
+      {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
+      {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
       {"id": 102, "name": "Group 3", "zones": [5], "source_id": 0, "mute": True, "vol_delta": -79},
     ],
     "presets" : [
@@ -283,9 +282,9 @@ class Api:
         >>> my_amplipi.get_inputs()
         { None, '', 'local', 'Local', 'stream=9449' }
     """
-    inputs = {None: '', 'local' : 'Local'}
+    inputs = {None: '', 'local' : 'Local - RCA'}
     for stream in self.get_state().streams:
-      inputs['stream={}'.format(stream.id)] = stream.name
+      inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
     return inputs
 
   def get_state(self) -> models.Status:
