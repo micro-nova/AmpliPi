@@ -4,9 +4,23 @@ Thanks for supporting AmpliPi, we hope you love your new unit!
 
 ## Installation
 
-We suggest making the speaker connections before connecting AmpliPi to power.
+We suggest making the speaker connections before connecting AmpliPi to power. Please check out the steps below for more information on how to install your AmpliPi unit.
 
 ### Back Panel
+
+All of the connections will be made to the back panel. Here's a quick reference for all of the different connections:
+- **POWER**: 110v or 220v connection, 120/220 switch is set on internal power supply and marked
+- **CONTROLLER**: Connections to the embedded Raspberry Pi Controller
+  - **SERVICE**: USB mini connection for reimaging the Pi's EMMC
+  - **USB**:  USB A ports for connecting peripherals such as additional storage devices
+  - **OPTICAL IN**: SPDIF audio input, planned to be used for extra inputs
+  - **AUX IN**: Additional stereo input, planned to be used for announcements
+  - **HDMI OUT**: Pi's HMDI output, can be used for visualizations or development
+  - **ETHERNET**: Network connection
+- **INPUTS**: 4 Stereo RCA inputs
+- **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers
+- **ZONE X**: Amplified stereo outputs for Zone X
+- **EXPANSION**: Connection to additional expansion unit (multiple units can be daisy chained)
 
 ![Backpanel](imgs/backpanel.png)
 
@@ -16,15 +30,20 @@ Each of AmpliPi's 6 zones can drive a 4-8 Ohm speaker pair, using the provided P
 
 ![Speaker-Zone Diagram](imgs/zone_speaker_connection.svg)
 
-AmpliPi's amplifiers are capable of driving 4-8 Ohm speaker loads, in a stereo configuration. Here is what a typical speaker connection, using CL2 rated 14-AWG speaker wire and the Pheonix connectors, looks like:
+AmpliPi's amplifiers are capable of driving 4-8 Ohm speaker loads, in a stereo configuration. Here is what a typical stereo speaker connection, using CL2 rated 14-AWG speaker wire and the Pheonix connectors, looks like:
 
 ![Speaker Wire to Pheonix](imgs/speaker_wire_to_pheonix.jpg)
 
-To connect the speaker wire, strip 3-4 inches of the cable jacket, and then strip 1/4 inch of insulation from the end of each wire. Twist each wire to keep things nice and neat. Unscrew each set screw to open each of the contacts and then insert and tighten down each wire one by one. To avoid any shorts, make sure that there aren't any stray strands.
+To connect a sterao speaker pair, using speaker wire:
+1. Strip 3-4 inches of the cable jacket, and then strip 1/4 inch of insulation from the end of each wire.
+1. Twist each wire to keep things nice and neat.
+1. Unscrew each set screw to open each of the contacts and then insert and tighten down each wire one by one.
+1. To avoid any shorts, make sure that there aren't any stray strands.
+1. The speaker set can now be connected to one of the 6 zones.
 
-### Networking
+### RCA inputs
 
-Connect the AmpliPi to your local network using a CAT5 or better cable. The AmpliPi controller expects to be connected to a DHCP capable network. Once AmpliPi has booted, its display will show the network connection status, including its ip-address.
+Each of the stereo RCA inputs can be connected to a different audio source such as the output of a TV or a record player.
 
 ### Power
 
@@ -32,11 +51,15 @@ Plug the unit into an 110v/220v outlet using the supplied power cable. Based on 
 
  Once plugged in the AmpliPi will start booting, the display will not be driven until the Pi has fully booted and the AmpliPi server has started, this takes about 20 seconds.
 
+### Networking
+
+Connect the AmpliPi to your local network using a CAT5 or better cable. The AmpliPi controller expects to be connected to a DHCP capable network. Once AmpliPi has booted, its display will show the network connection status, including its ip-address.
+
 ## Try it out!
 
 Now that the AmpliPi unit is powered on, its time to play with it. Let's see what it can do:
 
-1. Go to [amplipi.local](http://amplipi.local/0) (Android and Windows 7 users will need to specify the ip address found on the unit's display). You should now be connected to AmpliPi's mobile friendly website.
+1. Go to [amplipi.local](http://amplipi.local/0) (Android and Windows 7 users will need to specify the ip address found on the unit's display). You should now be connected to AmpliPi's mobile friendly website. Please note that an https connection to the AmpliPi is not currently available since certificates have to be managed on a per-unit basis.
 1. Pick a source, using the selector. The `Beatles Radio - internetradio` comes preconfigured (needs an internet connection).
 1. Change the volume on the zone you would like to output music on. Many of the zones will be hidden inside a group. Click on the different groups to see which zones belong to them.
 
