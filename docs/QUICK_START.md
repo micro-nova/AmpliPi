@@ -49,7 +49,7 @@ Each of the stereo RCA inputs can be connected to a different audio source such 
 
 Plug the unit into an 110v/220v outlet using the supplied power cable. Based on your location we have attempted to configure the AmpliPi into the correct power mode and supply the appropriate cable. Please contact amplipi@micro-nova.com if we have made a mistake.
 
- Once plugged in the AmpliPi will start booting, the display will not be driven until the Pi has fully booted and the AmpliPi server has started, this takes about 20 seconds.
+Once plugged in the AmpliPi will start booting. The display will not be driven until the Pi has fully booted and the AmpliPi server has started; this takes about 20 seconds.
 
 ### Networking
 
@@ -57,7 +57,7 @@ Connect the AmpliPi to your local network using a CAT5 or better cable. The Ampl
 
 ## Try it out!
 
-Now that the AmpliPi unit is powered on, its time to play with it. Let's see what it can do:
+Now that the AmpliPi unit is powered on, it is time to play with it. Let's see what it can do:
 
 1. Go to [amplipi.local](http://amplipi.local/0) (Android and Windows 7 users will need to specify the ip address found on the unit's display). You should now be connected to AmpliPi's mobile friendly website. Please note that an https connection to the AmpliPi is not currently available since certificates have to be managed on a per-unit basis.
 1. Pick a source, using the selector. The `Beatles Radio - internetradio` comes preconfigured (needs an internet connection).
@@ -65,6 +65,6 @@ Now that the AmpliPi unit is powered on, its time to play with it. Let's see wha
 
 ## Configuration
 
-You will probably want to change the default group and zone names and add different streaming sources. We are planning on having a simple interface for configuring all of this, for now we use the interactive [API](http://amplipi.local/doc) to change these configurations. Follow the "Try it out" guide at the top of the API page to walk through some initial changes.
+You will probably want to change the default group and zone names and add different streaming sources. We are planning on having a simple interface for configuring all of this. For now we use the interactive [API](http://amplipi.local/doc) to change these configurations. Follow the "Try it out" guide at the top of the API page to walk through some initial changes.
 
 The API is also available via the API link at the bottom of the [main page](http://amplipi.local/0).
