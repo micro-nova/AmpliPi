@@ -68,3 +68,11 @@ Now that the AmpliPi unit is powered on, it is time to play with it. Let's see w
 You will probably want to change the default group and zone names and add different streaming sources. We are planning on having a simple interface for configuring all of this. For now, we use the interactive [API](http://amplipi.local/doc) to change these configurations. Follow the "Try it out" guide at the top of the API page to walk through some initial changes.
 
 The API is also available via the API link at the bottom of the [main page](http://amplipi.local/0).
+
+## Feedback
+
+We would love to hear your feedback about AmpliPi.
+
+- Feature requests and bug reports please [Create an issue](https://github.com/micro-nova/AmpliPi/issues/new).
+- Feedback on webapp: [Add comments to Webapp Feedback](https://github.com/micro-nova/AmpliPi/issues/34)
+- Other feedback: [Add or Comment on a discussion](https://github.com/micro-nova/AmpliPi/discussions)
