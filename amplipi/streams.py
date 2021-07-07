@@ -170,7 +170,7 @@ class Shairport:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
     loc = '{}/currentSong'.format(src_config_folder)
     source = models.SourceInfo()
-    source.img_url = f"{utils.get_folder('web/static')}/imgs/shairport.png"
+    source.img_url = 'static/imgs/shairport.png'
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -249,7 +249,7 @@ class Spotify:
     self.src = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(img_url=f"{utils.get_folder('web/static')}/imgs/spotify.png")
+    source = models.SourceInfo(img_url='static/imgs/spotify.png')
     return source
 
   def status(self):
@@ -409,7 +409,7 @@ class Pandora:
   def info(self) -> models.SourceInfo:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
     loc = '{}/.config/pianobar/currentSong'.format(src_config_folder)
-    source = models.SourceInfo(img_url=f"{utils.get_folder('web/static')}/imgs/pandora.png")
+    source = models.SourceInfo(img_url='static/imgs/pandora.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -507,7 +507,7 @@ class DLNA:
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(img_url=f"{utils.get_folder('web/static')}/imgs/dlna.png")
+    source = models.SourceInfo(img_url='static/imgs/dlna.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -736,7 +736,7 @@ class Plexamp:
     self.src = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(img_url=f"{utils.get_folder('web/static')}/imgs/plexamp.png")
+    source = models.SourceInfo(img_url='static/imgs/plexamp.png')
     return source
 
   def status(self):

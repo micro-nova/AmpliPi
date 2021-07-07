@@ -26,7 +26,6 @@ import argparse
 
 DEBUG_API = False
 
-# start in the web directory (where everythins is layed out for flask)
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
@@ -333,6 +332,8 @@ async def get_image(img_spec: models.ImageSpec):
   uri = uri.replace('../','')
   # TODO: uri downloading needs a more sophisticated protection, it should only download uri's from current stream info
 
+
+  # TODO: pandora seems to use 500x500 as a default, use 200x200 or 100x100 instead?
   img_tmp = f'/tmp/{os.path.basename(uri)}'
   img_tmp_jpg = f'{img_tmp}-{img_spec.height}x{img_spec.height}.jpg'
   #

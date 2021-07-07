@@ -310,10 +310,10 @@ class Api:
       if stream_inst2 is not None:
         src.info = stream_inst2.info()
       elif src.input is None or src.input == '':
-        src.info = models.SourceInfo(img_url=f"{utils.get_folder('web/static')}/imgs/disconnected.png")
+        src.info = models.SourceInfo(img_url='static/imgs/disconnected.png')
       elif src.input == 'local' and src.id is not None:
         # RCA
-        src.info = models.SourceInfo(img_url=f"{utils.get_folder('web/static')}/imgs/rca_inputs.svg", track=f'Input {src.id + 1}')
+        src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', track=f'Input {src.id + 1}')
       else:
         src.info = models.SourceInfo()
     return self.status
