@@ -147,13 +147,13 @@ def test_get_source(client, sid):
   assert s is not None
   assert s['name'] == jrv['name']
 
-@pytest.mark.parametrize('ids', base_source_ids())
-def test_patch_source(client, ids):
+@pytest.mark.parametrize('sid', base_source_ids())
+def test_patch_source(client, sid):
   """ Try changing a source's name """
-  rv = client.patch('/api/sources/{}'.format(ids), json={'name': 'patched-name'})
+  rv = client.patch('/api/sources/{}'.format(sid), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
-  s = find(jrv['sources'], ids)
+  s = find(jrv['sources'], sid)
   assert s is not None
   assert s['name'] == 'patched-name'
 
