@@ -215,6 +215,7 @@ async def get_image(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, h
   if uri.startswith('static/'):
     # for files we need to convert from webserver url to internal file url
     uri = uri.replace('static/', STATIC_DIR + '/')
+    uri = uri.replace('rca_inputs.svg', 'rca_inputs.jpg')  # pillow can't handle svg files for our use case
 
   img_tmp = f'/tmp/{os.path.basename(uri)}'
   img_tmp_jpg = f'{img_tmp}-{height}x{width}.jpg'
