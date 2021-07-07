@@ -157,6 +157,20 @@ def test_patch_source(client, sid):
   assert s is not None
   assert s['name'] == 'patched-name'
 
+@pytest.mark.parametrize('sid', base_source_ids())
+def test_get_source_image(client, sid):
+  """ Try getting an image for a source """
+  rv = client.get('/api')
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['sources'], sid)
+  expected_file = os.path.basename(s['info']['img_url']).replace('.svg', '.jpg')
+  rv = client.get(f'/api/sources/{sid}/image/100')
+  assert rv.status_code == HTTPStatus.OK
+  assert rv.headers['content-type'] == 'image/jpg'
+  assert int(rv.headers['content-length']) > 100
+  assert rv.headers['content-disposition'] == f'attachment; filename="{expected_file}.jpg"'
+
 # Test Zones
 def base_zone_ids():
   """ Default zones """
