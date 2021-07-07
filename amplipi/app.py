@@ -235,8 +235,9 @@ async def get_image(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, h
       # remove temporary downloads
       os.remove(img_tmp)
 
-  # TODO: how to encode the uri of the image for client side caching/verification
-  return FileResponse(img_tmp_jpg, media_type='image/jpg')
+  # encode the filename of the image for client side caching/verification
+  name = os.path.basename(uri) + '.jpg'
+  return FileResponse(img_tmp_jpg, media_type='image/jpg', filename=name)
 
 # zones
 
