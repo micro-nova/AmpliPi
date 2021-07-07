@@ -125,6 +125,7 @@ class params(SimpleNamespace):
   StreamCommand = Path(..., description="Stream Command")
   PresetID = Path(..., ge=0, description="Preset ID")
   StationID = Path(..., ge=0, title="Pandora Station ID", description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
+  ImageHeight = Path(..., ge=40, le=500, description="Image Height in pixels")
 
 api = SimplifyingRouter()
 
@@ -190,6 +191,51 @@ def get_source(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> mod
 def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Status:
   """ Update a source's configuration (source=**sid**) """
   return code_response(ctrl, ctrl.set_source(sid, update))
+
+@api.get('/api/sources/{sid}/image/{height}', tags=['source'],
+  # Manually specify a possible response
+  # see https://github.com/tiangolo/fastapi/issues/3258
+  response_class=Response,
+  responses = {
+      200: {
+          "content": {"image/jpg": {}}
+      }
+  },
+)
+async def get_image(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, height: int = params.ImageHeight):
+  """ Get a square jpeg image representing the current media playing on source @sid
+
+  This was added to support low power touch panels """
+  width = height # square image
+  source_info = ctrl.status.sources[sid].info
+  if source_info is None or source_info.img_url is None:
+    uri = 'static/imgs/disconnected.png'
+  else:
+    uri = source_info.img_url
+  if uri.startswith('static/'):
+    # for files we need to convert from webserver url to internal file url
+    uri = uri.replace('static/', STATIC_DIR + '/')
+
+  img_tmp = f'/tmp/{os.path.basename(uri)}'
+  img_tmp_jpg = f'{img_tmp}-{height}x{width}.jpg'
+
+  if not os.path.exists(img_tmp_jpg):
+    is_file = os.path.exists(uri)
+    if is_file:
+      img_tmp = uri
+    else:
+      img_tmp, _ = urllib.request.urlretrieve(uri, img_tmp)
+    size = height, width
+    img = Image.open(img_tmp)
+    img.thumbnail(size)
+    img = img.convert(mode="RGB")
+    img.save(img_tmp_jpg)
+    if not is_file:
+      # remove temporary downloads
+      os.remove(img_tmp)
+
+  # TODO: how to encode the uri of the image for client side caching/verification
+  return FileResponse(img_tmp_jpg, media_type='image/jpg')
 
 # zones
 
@@ -276,7 +322,6 @@ def delete_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> 
   """ Delete a stream """
   return code_response(ctrl, ctrl.delete_stream(sid))
 
-
 @api.post('/api/streams/{sid}/station={station}', tags=['stream'])
 def change_station(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, station: int = params.StationID) -> models.Status:
   """ Change station on a pandora stream (stream=**sid**) """
@@ -298,56 +343,6 @@ def exec_command(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, cmd:
 
   Currently only available with Pandora streams"""
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=cmd))
-
-# TODO: determine the api request type expected here
-"""
-The external keypad needs a way to fetch a jpg representation a source's input at a specific size
-There are a couple of possibilities for the interface:
-1. '/api/{stream_id}/{height}', this requires a way of supporting the 2 other no-stream cases (disconnected, rca_inputs)
-2. '/api/{source_id}/{height}', this doesn't need nearly as much knowledge of the system but you need to introspect the stream to detect changes
-3.'/api/image' with json encoded image_url and height parameters in the request, this requires introspection of the reported url to detect changes.
-
-I have started to implement option 3 since it simplifies the following expected workflow:
-- new song / change in input or metadata on source X
-- amplipi sends update with new art uri
-- touchpanel receives update, downloads jpeg using api
-
-After checking the external keypad code this seems to be a pretty easy change to `void getStream(String sourceID)`,
-additionally we would need to add a json payload to `downloadAlbumart(String streamID)`
-using some C code like the following:
-
-```
-http.addHeader("Content-Type", "application/json");
-int httpCode = http.GET(payload);
-```
-"""
-@app.get('/api/image')
-async def get_image(img_spec: models.ImageSpec):
-  """Get a square jpeg image from the specs in img_spec"""
-  uri: str = img_spec.uri
-  if uri.startswith('file://'):
-    uri.replace('file://', STATIC_DIR)
-
-  # Don't allow parent directory access
-  uri = uri.replace('../','')
-  # TODO: uri downloading needs a more sophisticated protection, it should only download uri's from current stream info
-
-
-  # TODO: pandora seems to use 500x500 as a default, use 200x200 or 100x100 instead?
-  img_tmp = f'/tmp/{os.path.basename(uri)}'
-  img_tmp_jpg = f'{img_tmp}-{img_spec.height}x{img_spec.height}.jpg'
-  #
-  if not os.path.exists(img_tmp_jpg):
-    if not os.path.exists(uri):
-      img_tmp, _ = urllib.request.urlretrieve(uri, img_tmp)
-    size = img_spec.height, img_spec.height
-    img = Image.open(img_tmp)
-    img.thumbnail(size)
-    img = img.convert(mode="RGB")
-    img.save(img_tmp_jpg)
-    os.remove(img_tmp)
-
-  return FileResponse(img_tmp_jpg, media_type='image/jpg')
 
 # presets
 

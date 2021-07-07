@@ -753,13 +753,15 @@ class Status(BaseModel):
       },
     }
 
+
+class ImageSpec(BaseModel):
+  """ Convert image found at @uri to a square image with @height """
+  height: int = Field(120, ge=40, le=300, description="Image height (and width)")
+  uri: str = Field(description="url for image beginning with 'http://', 'https://', or 'file://'")
+
 class AppSettings(BaseSettings):
   """ Controller settings """
   mock_ctrl: bool = True
   mock_streams: bool = True
   config_file: str = 'house.json'
   delay_saves: bool = True
-
-class ImageSpec(BaseSettings):
-  height: int = Field(120, ge=40, le=300, description="Image height (and width)")
-  uri: str = Field(description="url for image beginning with 'http://', 'https://', or 'file://'")
