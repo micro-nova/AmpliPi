@@ -231,9 +231,9 @@ function updateSourceView(status) {
     next.style.visibility = "hidden";
     artist.innerHTML = src.info.artist ? src.info.artist : artist.innerHTML;
     album.innerHTML = src.info.album ? src.info.album : album.innerHTML;
-    song.innerHTML = src.info.title ? src.info.title : song.innerHTML;
+    song.innerHTML = src.info.track ? src.info.track : song.innerHTML;
     cover.src = src.info.img_url ? src.info.img_url : icons['none'];
-    const playing = src.status == "playing";
+    const playing = src.info.state == "playing";
     playing_indicator.style.visibility = playing ? "visible" : "hidden";
     if (stream_id) {
       // find the right stream
