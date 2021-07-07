@@ -398,7 +398,10 @@ def get_live_examples(tags: List[str]) -> Dict[str, Dict[str, Any]]:
   for tag in tags:
     for i in get_ctrl().get_items(tag) or []:
       if isinstance(i.name, str):
-        live_examples[i.name] = {'value': i.id, 'summary': i.name}
+        if isinstance(i, models.Stream):
+          live_examples[i.name] = {'value': i.id, 'summary': f'{i.name} - {i.type}'}
+        else:
+          live_examples[i.name] = {'value': i.id, 'summary': i.name}
   return live_examples
 
 def get_xid_param(route):
