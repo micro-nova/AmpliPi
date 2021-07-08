@@ -10,5 +10,10 @@
     "python.pythonPath": "venv/bin/python",
     "python.linting.pylintArgs": [
       "--generated-members", "signal.Signals,GPIO.*"
-    ]
+    ],
+    "files.watcherExclude": {
+      "**/.git/objects/**": true,
+      "**/.git/subtree-cache/**": true,
+      "**/venv/lib/**": true
+    }
 }
