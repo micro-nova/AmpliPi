@@ -12,7 +12,7 @@ make
 ```
 
 Now remove power from the AmpliPi, plug a USB cable into the service port,
-and then power up the AmpliPi. Finally run
+and then power up the AmpliPi. Finally, run
 ```sh
 sudo ./rpiboot
 ```
@@ -27,7 +27,7 @@ The final part of the disk id is unique to each Pi but will remain the same
 every time it is added by `rpiboot`.
 
 ## Option 1: Copy Full 32 GiB Image
-Unfortunately this will take upwards of an hour to copy,
+Unfortunately, this will take upwards of an hour to copy,
 but it requires no file system changes.
 ```sh
 sudo dd if=/dev/sdX of=amplipi.img bs=4MiB status=progress
@@ -74,7 +74,7 @@ sudo partprobe $loopdev
 ```
 
 ## Mounting
-Now the image will be accessible as `/dev/loopX`, the full path is stored in `$loopdev`.
+Now the image will be accessible as `/dev/loopX`; the full path is stored in `$loopdev`.
 To mount the boot partition use
 ```sh
 sudo mount ${loopdev}p1 /mnt/pi-boot
@@ -83,7 +83,7 @@ and to mount the root partition use
 ```sh
 sudo mount ${loopdev}p2 /mnt/pi-root
 ```
-The partitions can be mounted to any directoy but the above commands assume
+The partitions can be mounted to any directory, but the above commands assume
 `/mnt/pi-boot` and `/mnt/pi-root` exist.
 
 ## Modifying Partitions
