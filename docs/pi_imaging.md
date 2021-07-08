@@ -123,7 +123,7 @@ ssh pi@amplipi.local
 sudo raspi-config --expand-rootfs
 cat /dev/null > ~/.bash_history && history -c && exit
 ```
-TODO: Utilize the expand-once feature or the Raspberry Pi OS images.
+TODO: Utilize the expand-once feature on the Raspberry Pi OS images.
 
 ### Hide your traces
 To keep the clean state of the image, remove any SSH keys
