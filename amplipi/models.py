@@ -91,7 +91,7 @@ class Source(Base):
   info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
 
   def get_stream(self) -> Optional[int]:
-    """ Get a sources conneted stream if any """
+    """ Get a source's conneted stream if any """
     try:
       sinput = str(self.input)
       if 'stream=' in sinput:
@@ -752,12 +752,6 @@ class Status(BaseModel):
         }
       },
     }
-
-
-class ImageSpec(BaseModel):
-  """ Convert image found at @uri to a square image with @height """
-  height: int = Field(120, ge=40, le=300, description="Image height (and width)")
-  uri: str = Field(description="url for image beginning with 'http://', 'https://', or 'file://'")
 
 class AppSettings(BaseSettings):
   """ Controller settings """

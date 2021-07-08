@@ -291,11 +291,11 @@ class Api:
     """ get the system state """
     # update the state with the latest stream info
     # TODO: figure out how to cache stream info
-    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'token', 'client_id'] # optional configuration fields
+    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'token', 'client_id', 'state'] # optional configuration fields
     streams = []
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
-      # convert the stream instance info to stream data (serialize its current configuration
+      # convert the stream instance info to stream data (serialize its current configuration)
       st_type = type(stream_inst).__name__.lower()
       stream = models.Stream(id=sid, name=stream_inst.name, type=st_type)
       for field in optional_fields:
@@ -310,10 +310,10 @@ class Api:
       if stream_inst2 is not None:
         src.info = stream_inst2.info()
       elif src.input is None or src.input == '':
-        src.info = models.SourceInfo(img_url='static/imgs/disconnected.png')
+        src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', state='stopped')
       elif src.input == 'local' and src.id is not None:
         # RCA
-        src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', track=f'Input {src.id + 1}')
+        src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', track=f'Input: {src.name}', state='unknown')
       else:
         src.info = models.SourceInfo()
     return self.status

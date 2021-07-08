@@ -125,7 +125,7 @@ class params(SimpleNamespace):
   StreamCommand = Path(..., description="Stream Command")
   PresetID = Path(..., ge=0, description="Preset ID")
   StationID = Path(..., ge=0, title="Pandora Station ID", description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
-  ImageHeight = Path(..., ge=40, le=500, description="Image Height in pixels")
+  ImageHeight = Path(..., ge=1, le=500, description="Image Height in pixels")
 
 api = SimplifyingRouter()
 
