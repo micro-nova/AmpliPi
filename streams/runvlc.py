@@ -87,7 +87,7 @@ time.sleep(2)
 # Keep track of the current state so we only update on change
 cur_url = ''
 cur_info = {
-  'song':'',
+  'track':'',
   'artist':'',
   'station': '',
   'state': 'stopped',
@@ -99,7 +99,7 @@ while True:
     if str(player.get_state()) == 'State.Playing':
 
       latest_info = {
-        'song':'',
+        'track':'',
         'artist':'',
         'station': '',
         'state': 'playing',
@@ -125,19 +125,19 @@ while True:
         if '-' in nowplaying:
           parts = nowplaying.split(' - ', 1)
           latest_info['artist'] = parts[0]
-          latest_info['song'] = parts[1]
+          latest_info['track'] = parts[1]
         else:
           latest_info['artist'] = None
-          latest_info['song'] = nowplaying
+          latest_info['track'] = nowplaying
       else:
         latest_info['artist'] = media.get_meta(vlc.Meta.Artist)
-        latest_info['song'] = media.get_meta(vlc.Meta.Title)
+        latest_info['track'] = media.get_meta(vlc.Meta.Title)
 
       # Update currently_playing file if the track has changed
       if cur_info != latest_info or cur_url != vlc.bytes_to_str(media.get_mrl()):
         cur_info = latest_info
         cur_url = vlc.bytes_to_str(media.get_mrl())
-        log(f"Current track: {latest_info['song']}{latest_info['artist']}")
+        log(f"Current track: {latest_info['track']} - {latest_info['artist']}")
 
         if args.test:
           log('success')
