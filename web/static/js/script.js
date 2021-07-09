@@ -215,23 +215,21 @@ function updateSourceView(status) {
     let cover = $('#s' + src.id + '-player .cover img')[0];
     let artist = $('#s' + src.id + '-player .info .artist')[0];
     let album = $('#s' + src.id + '-player .info .album')[0];
-    let song = $('#s' + src.id + '-player .info .song')[0];
+    let track = $('#s' + src.id + '-player .info .song')[0];
     let next = $('#s' + src.id + '-player .step-forward')[0];
     let play_pause = $('#s' + src.id + '-player .play-pause')[0];
     let like = $('#s' + src.id + '-player .like')[0];
     let dislike = $('#s' + src.id + '-player .dislike')[0];
     let playing_indicator = $('#s' + src.id + ' i')[0];
     // defaults
-    artist.innerHTML = 'No artist';
-    album.innerHTML = 'No album';
-    song.innerHTML = 'No song';
     like.style.visibility = "hidden";
     dislike.style.visibility = "hidden";
     play_pause.style.visibility = "hidden";
     next.style.visibility = "hidden";
-    artist.innerHTML = src.info.artist ? src.info.artist : artist.innerHTML;
-    album.innerHTML = src.info.album ? src.info.album : album.innerHTML;
-    song.innerHTML = src.info.track ? src.info.track : song.innerHTML;
+
+    track.innerHTML = src.info.track ? src.info.track : src.info.name;
+    artist.innerHTML = src.info.artist ? src.info.artist : '';
+    album.innerHTML = src.info.album ? src.info.album : '';
     cover.src = src.info.img_url ? src.info.img_url : icons['none'];
     const playing = src.info.state == "playing";
     playing_indicator.style.visibility = playing ? "visible" : "hidden";
