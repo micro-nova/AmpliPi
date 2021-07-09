@@ -21,7 +21,7 @@ import socket
 import time
 from typing import Any, Dict, List, Tuple, Optional
 
-from amplipi import models
+import amplipi.models as models
 
 # Display
 import adafruit_rgb_display.ili9341 as ili9341
@@ -172,7 +172,7 @@ def get_amplipi_data(url: str) -> Tuple[bool, List[models.Source], List[models.Z
     # 5-second delay introduced by socket.getaddrinfo
     r = requests.get(url, timeout=0.1)
     if r.status_code == 200:
-      s = models.Status(*r.json())
+      s = models.Status(**r.json())
       zones = s.zones
       sources = s.sources
       success = True
@@ -185,9 +185,6 @@ def get_amplipi_data(url: str) -> Tuple[bool, List[models.Source], List[models.Z
   except ValueError:
     log.error('Invalid json in AmpliPi status response')
 
-  if not success:
-    # add the standard 4 sources with info populated
-    sources = [models.Source(id=i, name=str(i), info=models.SourceInfo(state='')) for i in range(4)]
   return success, sources, zones
 
 # Draw volumes on bars.
@@ -395,8 +392,8 @@ signal.signal(signal.SIGINT, exit_handler)
 signal.signal(signal.SIGTERM, exit_handler)
 
 # Load image and convert to RGB
-mn_logo = Image.open('imgs/micronova_320x240.png').convert('RGB')
-ap_logo = Image.open('imgs/amplipi_320x126.png').convert('RGB')
+mn_logo = Image.open('amplipi/display/imgs/micronova_320x240.png').convert('RGB')
+ap_logo = Image.open('amplipi/display/imgs/amplipi_320x126.png').convert('RGB')
 display.image(mn_logo)
 
 # Turn on display backlight now that an image is loaded

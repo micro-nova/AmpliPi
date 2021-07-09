@@ -226,7 +226,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory={directory}/amplipi/display
-ExecStart={directory}/venv/bin/python {directory}/amplipi/display/display.py
+ExecStart={directory}/venv/bin/python -m amplipi.display.display
 Restart=on-abort
 
 [Install]
