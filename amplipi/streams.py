@@ -177,7 +177,7 @@ class Shairport:
   def info(self) -> models.SourceInfo:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
     loc = '{}/currentSong'.format(src_config_folder)
-    source = models.SourceInfo(name=_stream_name(self.name, 'airplay'))
+    source = models.SourceInfo(name=_stream_name(self.name, 'airplay'), state=self.state)
     source.img_url = 'static/imgs/shairport.png'
     try:
       with open(loc, 'r') as file:
@@ -417,7 +417,7 @@ class Pandora:
   def info(self) -> models.SourceInfo:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
     loc = '{}/.config/pianobar/currentSong'.format(src_config_folder)
-    source = models.SourceInfo(name=_stream_name(self.name, 'pandora'), img_url='static/imgs/pandora.png')
+    source = models.SourceInfo(name=_stream_name(self.name, 'pandora'), state=self.state, img_url='static/imgs/pandora.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -515,7 +515,7 @@ class DLNA:
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=_stream_name(self.name, 'dlna'), img_url='static/imgs/dlna.png')
+    source = models.SourceInfo(name=_stream_name(self.name, 'dlna'), state=self.state, img_url='static/imgs/dlna.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -608,7 +608,7 @@ class InternetRadio:
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=_stream_name(self.name, 'internet radio'), img_url=self.logo)
+    source = models.SourceInfo(name=_stream_name(self.name, 'internet radio'), state=self.state, img_url=self.logo)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
@@ -744,7 +744,7 @@ class Plexamp:
     self.src = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(name=_stream_name(self.name, 'plexamp'), img_url='static/imgs/plexamp.png')
+    source = models.SourceInfo(name=_stream_name(self.name, 'plexamp'), state=self.state, img_url='static/imgs/plexamp.png')
     return source
 
   def status(self):
