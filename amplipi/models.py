@@ -78,11 +78,12 @@ class BaseUpdate(BaseModel):
   name: Optional[str] = fields.Name
 
 class SourceInfo(BaseModel):
+  name: str
+  state: str # paused, playing, stopped, unknown, loading ???
   artist: Optional[str]
   track: Optional[str]
   album: Optional[str]
   station: Optional[str] # name of radio station
-  state: Optional[str] # paused, playing, stopped, unknown, loading ???
   img_url: Optional[str]
 
 class Source(Base):

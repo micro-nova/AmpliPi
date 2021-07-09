@@ -76,6 +76,14 @@ def uuid_gen():
   else:
     return '39ae35cc-b4c1-444d-b13a-294898d771fa' # Generic UUID in case of failure
 
+def _stream_name(sname, stype) -> str:
+  """ Combine name and type of a stream to make a stream easy to identify.
+
+  Many streams will simply be named something like AmpliPi or John, so embedding the '- stype' into the name makes
+  the name easier to identify.
+  """
+  return f'{sname} - {stype}'
+
 class Shairport:
   """ An Airplay Stream """
   def __init__(self, name, mock=False):
@@ -169,7 +177,7 @@ class Shairport:
   def info(self) -> models.SourceInfo:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
     loc = '{}/currentSong'.format(src_config_folder)
-    source = models.SourceInfo()
+    source = models.SourceInfo(name=_stream_name(self.name, 'airplay'))
     source.img_url = 'static/imgs/shairport.png'
     try:
       with open(loc, 'r') as file:
@@ -249,7 +257,7 @@ class Spotify:
     self.src = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(img_url='static/imgs/spotify.png')
+    source = models.SourceInfo(name=_stream_name(self.name, 'spotify'), img_url='static/imgs/spotify.png')
     return source
 
   def status(self):
@@ -409,7 +417,7 @@ class Pandora:
   def info(self) -> models.SourceInfo:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
     loc = '{}/.config/pianobar/currentSong'.format(src_config_folder)
-    source = models.SourceInfo(img_url='static/imgs/pandora.png')
+    source = models.SourceInfo(name=_stream_name(self.name, 'pandora'), img_url='static/imgs/pandora.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -507,7 +515,7 @@ class DLNA:
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(img_url='static/imgs/dlna.png')
+    source = models.SourceInfo(name=_stream_name(self.name, 'dlna'), img_url='static/imgs/dlna.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -565,7 +573,7 @@ class InternetRadio:
 
     if self.mock:
       print(f'{self.name} connected to {src}')
-      self.state = 'connected'
+      self.state = 'playing'
       self.src = src
       return
 
@@ -581,7 +589,7 @@ class InternetRadio:
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
     print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.output_device(src)}')
-    self.state = 'connected'
+    self.state = 'playing'
     self.src = src
 
   def _is_running(self):
@@ -600,7 +608,7 @@ class InternetRadio:
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(img_url=self.logo)
+    source = models.SourceInfo(name=_stream_name(self.name, 'internet radio'), img_url=self.logo)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
@@ -736,7 +744,7 @@ class Plexamp:
     self.src = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(img_url='static/imgs/plexamp.png')
+    source = models.SourceInfo(name=_stream_name(self.name, 'plexamp'), img_url='static/imgs/plexamp.png')
     return source
 
   def status(self):

@@ -56,12 +56,12 @@
       <div class="card-body source-body">
         {% for src in sources %}
         <select id="s{{ src['id'] }}-input" class="custom-select source-input-sel" onchange="onSrcInputChange(this);" data-src="{{ src['id'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
-          {% for input, name in inputs.items() %}
+          {% for input, name in inputs[src['id']].items() %}
           {% if src['input'] == input %}
           <option selected="selected" value="{{ input }}">{{ name }}</option>
           {% endif %}
           {% endfor %}
-          {% for input, name in inputs.items() %}
+          {% for input, name in inputs[src['id']].items() %}
           {% if src['input'] != input %}
           <option value="{{ input }}">{{ name }}</option>
           {% endif %}

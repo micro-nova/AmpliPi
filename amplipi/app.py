@@ -657,10 +657,10 @@ def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
     'zones': state.zones,
     'groups': state.groups,
     'presets': state.presets,
-    'inputs': ctrl.get_inputs(),
-    'unused_groups': [unused_groups(ctrl, src) for src in range(4)],
-    'unused_zones': [unused_zones(ctrl, src) for src in range(4)],
-    'ungrouped_zones': [ungrouped_zones(ctrl, src) for src in range(4)],
+    'inputs': [ctrl.get_inputs(src) for src in state.sources],
+    'unused_groups': [unused_groups(ctrl, src.id) for src in state.sources if src.id is not None],
+    'unused_zones': [unused_zones(ctrl, src.id) for src in state.sources if src.id is not None],
+    'ungrouped_zones': [ungrouped_zones(ctrl, src.id) for src in state.sources if src.id is not None],
     'song_info': [src.info for src in state.sources if src.info is not None], # src.info should never be None
     'version': state.info.version if state.info else 'unknown',
   }

@@ -271,7 +271,7 @@ class Api:
     """
     return src_type != 'local'
 
-  def get_inputs(self) -> Dict[Union[str, None], str]:
+  def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
     """Gets a dictionary of the possible inputs for a source
 
       Returns:
@@ -282,7 +282,7 @@ class Api:
         >>> my_amplipi.get_inputs()
         { None, '', 'local', 'Local', 'stream=9449' }
     """
-    inputs = {None: '', 'local' : 'Local - RCA'}
+    inputs = {None: '', 'local' : f'{src.name} - rca'}
     for stream in self.get_state().streams:
       inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
     return inputs
@@ -309,13 +309,11 @@ class Api:
       stream_inst2 = self.get_stream(src)
       if stream_inst2 is not None:
         src.info = stream_inst2.info()
-      elif src.input is None or src.input == '':
-        src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', state='stopped')
       elif src.input == 'local' and src.id is not None:
         # RCA
-        src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', track=f'Input: {src.name}', state='unknown')
+        src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='unknown')
       else:
-        src.info = models.SourceInfo()
+        src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
     return self.status
 
   def get_items(self, tag: str) -> Optional[List[models.Base]]:
