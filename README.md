@@ -32,7 +32,7 @@ In the future we plan to integrate with several home automation systems. Below i
 |Integrations|Supported|Notes|
 |--|--:|--|
 |Home Assistant|No|Future integration planned|
-|Open HAB|No|See [#54](http://github.com/micro-nova/AmpliPi/issues/54)|
+|openHAB|No|See [#54](http://github.com/micro-nova/AmpliPi/issues/54)|
 |Alexa|No|See [#25](http://github.com/micro-nova/AmpliPi/issues/25)|
 |Google Assistant|No|See [#69](http://github.com/micro-nova/AmpliPi/issues/69)|
 
