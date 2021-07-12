@@ -257,7 +257,7 @@ class Spotify:
     self.src = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(name=_stream_name(self.name, 'spotify'), img_url='static/imgs/spotify.png')
+    source = models.SourceInfo(name=_stream_name(self.name, 'spotify'), state=self.state, img_url='static/imgs/spotify.png')
     return source
 
   def status(self):
