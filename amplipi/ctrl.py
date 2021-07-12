@@ -306,14 +306,7 @@ class Api:
     # update source's info
     # TODO: stream/source info should be updated in a background thread
     for src in self.status.sources:
-      stream_inst2 = self.get_stream(src)
-      if stream_inst2 is not None:
-        src.info = stream_inst2.info()
-      elif src.input == 'local' and src.id is not None:
-        # RCA
-        src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='unknown')
-      else:
-        src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
+      self._update_src_info(src)
     return self.status
 
   def get_items(self, tag: str) -> Optional[List[models.Base]]:
@@ -348,6 +341,17 @@ class Api:
     if idx is not None:
       return self.streams.get(idx, None)
     return None
+
+  def _update_src_info(self, src):
+    """ Update a source's status and song metadata """
+    stream_inst = self.get_stream(src)
+    if stream_inst is not None:
+      src.info = stream_inst.info()
+    elif src.input == 'local' and src.id is not None:
+      # RCA, name mimics the steam's formatting
+      src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='unknown')
+    else:
+      src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
@@ -393,6 +397,7 @@ class Api:
             src_cfg[idx] = self._is_digital(input_)
             if not self._rt.update_sources(src_cfg):
               return ApiResponse.error('failed to set source')
+          self._update_src_info(src) # synchronize the source's info
         if not internal:
           self.mark_changes()
         return ApiResponse.ok()
