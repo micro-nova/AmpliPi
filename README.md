@@ -15,17 +15,19 @@ Check us out on [Kickstarter](https://www.kickstarter.com/projects/micro-nova/am
 
 AmpliPi can play many different types of digital streaming inputs. Most of the streaming services supported can be played as independent digital streams on all four sources at once; check out the **Multiple?** heading. Below is the current status of our digital stream integrations.
 
-|Streaming Service|Supported|Multiple?|Metadata|Notes|
-|--|--:|--:|--:|--|
-|Pandora|Yes|Yes|Yes||
-|Airplay|Yes|Yes|Yes|Metadata only available from iTunes|
-|Spotify|Yes|Yes|No see [#37](http://github.com/micro-nova/AmpliPi/issues/37)|Requires Spotify Premium, one account per stream|
-|DLNA|Yes|Yes|Yes||
-|Internet Radio|Yes|Yes|Yes||
-|PlexAmp|Yes|No|No||
-|Google Cast|No|||Need to investigate|
-|Offline Music|No|||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|
-|TIDAL|No|||See [#87](http://github.com/micro-nova/AmpliPi/issues/87)|
+Most of these digital streaming services are provided by other open-source projects; check out the **Provided By** heading.
+
+|Streaming Service|Supported|Multiple?|Metadata|Provided By|Notes|
+|--|--:|--:|--:|--|--|
+|Pandora|Yes|Yes|Yes|[Pianobar](https://github.com/PromyLOPh/pianobar)||
+|Airplay|Yes|Yes|Yes|[Shairport-sync](https://github.com/mikebrady/shairport-sync)|Metadata only available from iTunes|
+|Spotify|Yes|Yes|No see [#37](http://github.com/micro-nova/AmpliPi/issues/37)|[Librespot](https://github.com/librespot-org/librespot)|Requires Spotify Premium, one account per stream. See [disclaimer](https://github.com/librespot-org/librespot#disclaimer)|
+|DLNA|Yes|Yes|Yes|[gmrender-resurrect](https://github.com/hzeller/gmrender-resurrect)||
+|Internet Radio|Yes|Yes|Yes|[VLC](https://github.com/videolan/vlc)||
+|Plexamp|Yes|No|No|[Plexamp](https://plexamp.com/)||
+|Google Cast|No||||Need to investigate|
+|Offline Music|No||||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|
+|TIDAL|No||||See [#87](http://github.com/micro-nova/AmpliPi/issues/87)|
 
 In the future we plan to integrate with several home automation systems. Below is their current status.
 
