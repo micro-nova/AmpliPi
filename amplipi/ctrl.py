@@ -96,10 +96,10 @@ class Api:
   _LAST_PRESET_ID = 9999
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "1", "input": "local"},
-      {"id": 1, "name": "2", "input": "local"},
-      {"id": 2, "name": "3", "input": "local"},
-      {"id": 3, "name": "4", "input": "local"}
+      {"id": 0, "name": "Input 1", "input": "local"},
+      {"id": 1, "name": "Input 2", "input": "local"},
+      {"id": 2, "name": "Input 3", "input": "local"},
+      {"id": 3, "name": "Input 4", "input": "local"}
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys

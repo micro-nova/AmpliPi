@@ -557,7 +557,7 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
       1. Go to [Status -> Get Status](#get-/api)
       1. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
 
-    __Try changing a zones name:__
+    __Try changing a zone's name:__
 
       1. Go to [Zone -> Update Zone](#patch-/api/zones/-zid-)
       1. Next to **PATH PARAMETERS** click Zone 2 to fill in Zone 2's id
@@ -565,7 +565,7 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
       1. Edit the name to what you want to call the zone
       1. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
 
-    __Try changing a groups name and zones:__
+    __Try changing a group's name and zones:__
 
       1. Go to [Group -> Update Group](#patch-/api/groups/-gid-)
       1. Next to **PATH PARAMETERS** click Group 1 to fill in Group 1's id
@@ -585,6 +585,7 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
 
       - [Stream -> Create new stream](#post-/api/stream)
       - [Preset -> Create preset](#post-/api/preset) (Have a look at the model to see what can be added here)
+      - [Source -> Set source](#patch-/api/sources/-sid-) (Try updating Source 1's name to "TV")
 
     # More Info
 
