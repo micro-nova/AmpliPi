@@ -225,7 +225,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory={directory}/amplipi/display
+WorkingDirectory={directory}
 ExecStart={directory}/venv/bin/python -m amplipi.display.display
 Restart=on-abort
 
