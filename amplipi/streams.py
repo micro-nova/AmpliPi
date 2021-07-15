@@ -208,6 +208,7 @@ class Spotify:
   def __init__(self, name, mock=False):
     self.name = name
     self.proc = None
+    self.proc2 = None
     self.mock = mock
     self.src = None
     self.state = 'disconnected'
@@ -227,21 +228,51 @@ class Spotify:
   def __del__(self):
     self.disconnect()
 
+  def __str__(self):
+    connection = f' connected to src={self.src}' if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return f'spotify connect: {self.name}{connection}{mock}'
+
   def connect(self, src):
     """ Connect a Spotify output to a given audio source
     This will create a Spotify Connect device based on the given name
     """
     if self.mock:
-      print('{} connected to {}'.format(self.name, src))
+      print(f'{self.name} connected to {src}')
       self.state = 'connected'
       self.src = src
       return
-    # TODO: Figure out the config for Spotify. Potentially need to get song info & play/pause ctrl
-    spotify_args = ['librespot', '-n', '{}'.format(self.name), '--device', utils.output_device(src), '--initial-volume', '100']
-    self.proc = subprocess.Popen(args=spotify_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print('{} connected to {}'.format(self.name, src))
-    self.state = 'connected'
-    self.src = src
+
+    # TODO: Figure out a control scheme based on the pianobar one
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    toml_template = f'{utils.get_folder("streams")}/config.toml'
+    toml_useful = f'{src_config_folder}/config.toml'
+    meta_fifo = f'{src_config_folder}/spotipipe'
+    # Copy the config template
+    os.system(f'cp {toml_template} {toml_useful}')
+
+    # Input the proper values
+    metaport = 5030 + 2*src
+    with open(toml_useful, 'r') as TOML:
+      data = TOML.read()
+      data = data.replace('AmpliPi_TEMPLATE', f'{self.name}')
+      data = data.replace("device = 'ch'", f"device = 'ch{src}'")
+      data = data.replace('5030', f'{metaport}')
+    with open(toml_useful, 'w') as TOML:
+      TOML.write(data)
+
+    # PROCESS
+    # TODO: process that runs the python script for metadata!!!
+    spotify_args = [f'./{utils.get_folder("streams")}/vollibrespot']
+    os.system(f'cd {src_config_folder}') # Need to call from the same folder as config.toml
+    try:
+      self.proc2 = subprocess.Popen(args=spotify_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      time.sleep(0.1) # Delay a bit
+      self.src = src
+      self.state = 'connected'
+      print(f'{self.name} connected to {src}')
+    except Exception as e:
+      print(f'error starting spotify: {e}')
 
   def _is_spot_running(self):
     if self.proc:
@@ -251,7 +282,7 @@ class Spotify:
   def disconnect(self):
     if self._is_spot_running():
       self.proc.kill()
-      print('{} disconnected'.format(self.name))
+      print(f'{self.name} disconnected')
     self.state = 'disconnected'
     self.proc = None
     self.src = None
@@ -262,11 +293,6 @@ class Spotify:
 
   def status(self):
     return self.state
-
-  def __str__(self):
-    connection = ' connected to src={}'.format(self.src) if self.src else ''
-    mock = ' (mock)' if self.mock else ''
-    return 'spotify connect: {}{}{}'.format(self.name, connection, mock)
 
 class Pandora:
   """ A Pandora Stream """
