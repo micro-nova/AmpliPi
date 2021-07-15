@@ -20,11 +20,11 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# kill debug webserver
-kill -KILL $(ps ax | grep 'python' | grep 'uvicorn' | awk '{print $1}') > /dev/null
-
 # stop the production server
 test 'active' = $(systemctl --user is-active amplipi.service) && systemctl --user stop amplipi.service
+
+# kill debug webserver
+kill -KILL $(ps ax | grep 'python' | grep 'uvicorn' | awk '{print $1}') > /dev/null
 
 if [[ "$mock_streams" != "True" ]] ; then
   # kill streaming services TODO: uvicorn should close the amplipi app cleaner, why doesnt it? wsgi?

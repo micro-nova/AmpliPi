@@ -137,6 +137,7 @@ spi_baud = 16 * 10**6
 # Determine the full URL to contact, and if no specific port was specified
 # then use port 5000 as a fallback in case the debug webserver is running.
 API_URL = 'http://' + args.url + '/api'
+API_URL_DEBUG = None
 if ':' not in args.url:
   API_URL_DEBUG = 'http://' + args.url + ':5000/api'
 
