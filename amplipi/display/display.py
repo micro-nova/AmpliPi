@@ -161,21 +161,23 @@ def gradient(num, min_val=0, max_val=100):
     grn = 255 - round(scale * (num - mid))
   return f'#{red:02X}{grn:02X}00'
 
-def get_amplipi_data(url: str) -> Tuple[bool, List[models.Source], List[models.Zone]]:
+def get_amplipi_data(base_url: Optional[str]) -> Tuple[bool, List[models.Source], List[models.Zone]]:
   """ Get the AmpliPi's status via the REST API
       Returns true/false on success/failure, as well as the sources and zones
   """
-  zones = []
-  sources = []
+  _zones: List[models.Zone] = []
+  _sources: List[models.Source] = []
   success = False
+  if base_url is None:
+    return False, _sources, _zones
   try:
-    # TODO: If the AmpliPi server isn't available at this url, there is a
-    # 5-second delay introduced by socket.getaddrinfo
-    r = requests.get(url, timeout=0.1)
-    if r.status_code == 200:
-      s = models.Status(**r.json())
-      zones = s.zones
-      sources = s.sources
+    """ TODO: If the AmpliPi server isn't available at this url, there is a
+    5-second delay introduced by socket.getaddrinfo """
+    req = requests.get(base_url, timeout=0.1)
+    if req.status_code == 200:
+      status = models.Status(**req.json())
+      _zones = status.zones
+      _sources = status.sources
       success = True
     else:
       log.error('Bad status code returned from AmpliPi')
@@ -186,7 +188,7 @@ def get_amplipi_data(url: str) -> Tuple[bool, List[models.Source], List[models.Z
   except ValueError:
     log.error('Invalid json in AmpliPi status response')
 
-  return success, sources, zones
+  return success, _sources, _zones
 
 # Draw volumes on bars.
 # Draw is a PIL drawing surface
@@ -441,8 +443,10 @@ while frame_num < 10 and run:
 
   if _active_screen == 0:
     # Get AmpliPi status
-    primary_url = API_URL_DEBUG if use_debug_port else API_URL
-    secondary_url = API_URL if use_debug_port else API_URL_DEBUG
+    if use_debug_port:
+      primary_url, secondary_url = API_URL_DEBUG, API_URL
+    else:
+      primary_url, secondary_url = API_URL, API_URL_DEBUG
     primary_success, _sources, _zones = get_amplipi_data(primary_url)
     if primary_success:
       sources = _sources
