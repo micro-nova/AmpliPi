@@ -1,30 +1,47 @@
 #!/usr/bin/python3
 import socket
 import json
+import re
+import argparse
+
+parser = argparse.ArgumentParser(description="spotify metadata interpreter")
+parser.add_argument('metaport', help='port to read metadata from (see config.toml)')
+parser.add_argument('cs_loc', help='Folder to write currentSong')
+args = parser.parse_args()
 
 info = {
 'state': 'stopped',
 'artist': '',
 'album': '',
 'track': '',
-'cover_art': ''
+'img_url': ''
 }
 
 metasocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-metasocket.bind(('', 5040))
+metasocket.bind(('', int(args.metaport)))
 while True: # Need to check how to kill the script, look at processing load, etc. NEED TO VERIFY
   message, address = metasocket.recvfrom(1024)
   if message:
     decoded = message.decode('utf-8', 'replace')
-    if decoded[0:2] != 'kSp':
-      data = json.loads(decoded) # May need try/catch here for the case where a dictionary isn't given
-      if 'state' in data:
-        info['state'] = data['state']
-      elif 'metadata' in data:
-        info['artist'] = data['metadata']['artist_name']
-        info['album'] = data['metadata']['album_name']
-        info['track'] = data['metadata']['track_name'] # Try out get instead - this will freak out if no track name present
-        info['cover_art'] = data['metadata'].get('albumartId', None) # Figure out how to make the URL out of this. URL should go in$
-    with open('./currentSong', 'a') as CS:
-      CS.write(decoded)
+    print(decoded)
+    parsed = re.split('\n|\r', decoded)
+    if 'kSp' not in decoded:
+      data = {}
+      for item in parsed:
+        try:
+          data = json.loads(item)
+        except:
+          pass
+        if 'state' in data:
+          simplestate = str(data['state'])
+          ss = simplestate[11:].strip("'}")
+          info['state'] = ss
+        elif 'metadata' in data:
+          info['artist'] = data['metadata'].get('artist_name') # .get defaults to 'None'
+          info['album'] = data['metadata'].get('album_name') # if nothing found
+          info['track'] = data['metadata'].get('track_name')
+          al = data['metadata'].get('albumartId')
+          info['img_url'] = 'https://i.scdn.co/image/' + al[0]
+    with open(f'{args.cs_loc}/currentSong', 'w') as CS:
+      CS.write(str(info))
     message = None

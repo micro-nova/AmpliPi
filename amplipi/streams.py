@@ -30,6 +30,7 @@ from typing import Union
 # Used by InternetRadio
 import json
 import signal
+import ast
 
 import amplipi.models as models
 import amplipi.utils as utils
@@ -247,7 +248,6 @@ class Spotify:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
     toml_template = f'{utils.get_folder("streams")}/config.toml'
     toml_useful = f'{src_config_folder}/config.toml'
-    meta_fifo = f'{src_config_folder}/spotipipe'
     # Copy the config template
     os.system(f'cp {toml_template} {toml_useful}')
 
@@ -262,11 +262,12 @@ class Spotify:
       TOML.write(data)
 
     # PROCESS
-    # TODO: process that runs the python script for metadata!!!
-    spotify_args = [f'./{utils.get_folder("streams")}/vollibrespot']
-    os.system(f'cd {src_config_folder}') # Need to call from the same folder as config.toml
+    meta_args = [f'python3', f'{utils.get_folder("streams")}/spot_meta.py', f'{metaport}', f'{src_config_folder}']
+    spotify_args = [f'{utils.get_folder("streams")}/vollibrespot']
+
     try:
-      self.proc2 = subprocess.Popen(args=spotify_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      self.proc2 = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       time.sleep(0.1) # Delay a bit
       self.src = src
       self.state = 'connected'
@@ -281,14 +282,33 @@ class Spotify:
 
   def disconnect(self):
     if self._is_spot_running():
-      self.proc.kill()
+      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      self.proc2.kill()
       print(f'{self.name} disconnected')
     self.state = 'disconnected'
     self.proc = None
+    self.proc2 = None
     self.src = None
 
   def info(self) -> models.SourceInfo:
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
+    loc = f'{src_config_folder}/currentSong'
     source = models.SourceInfo(name=_stream_name(self.name, 'spotify'), state=self.state, img_url='static/imgs/spotify.png')
+    try:
+      with open(loc, 'r') as file:
+        d = {}
+        for line in file.readlines():
+          try:
+            d = ast.literal_eval(line)
+          except Exception as e:
+            print("Error parsing currentSong: " + e)
+        source.state = d['state']
+        source.artist = ', '.join(d['artist'])
+        source.track = d['track']
+        source.album = d['album']
+        source.img_url = d['img_url']
+    except Exception:
+      pass
     return source
 
   def status(self):
