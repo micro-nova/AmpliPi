@@ -23,7 +23,6 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'python3-pil', 'libopenjp2-7', # Pillow dependencies
              'libatlas-base-dev'            # numpy dependencies
             ],
-    'copy' : [{'from': 'docs/amplipi_api.yaml', 'to': 'web/static/amplipi_api.yaml'}],
   },
   'web' : {
   },
@@ -225,8 +224,8 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory={directory}/amplipi/display
-ExecStart={directory}/venv/bin/python {directory}/amplipi/display/display.py
+WorkingDirectory={directory}
+ExecStart={directory}/venv/bin/python -m amplipi.display.display
 Restart=on-abort
 
 [Install]

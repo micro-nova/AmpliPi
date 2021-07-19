@@ -19,7 +19,9 @@ import requests
 import signal
 import socket
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
+
+import amplipi.models as models
 
 # Display
 import adafruit_rgb_display.ili9341 as ili9341
@@ -135,6 +137,7 @@ spi_baud = 16 * 10**6
 # Determine the full URL to contact, and if no specific port was specified
 # then use port 5000 as a fallback in case the debug webserver is running.
 API_URL = 'http://' + args.url + '/api'
+API_URL_DEBUG = None
 if ':' not in args.url:
   API_URL_DEBUG = 'http://' + args.url + ':5000/api'
 
@@ -158,56 +161,40 @@ def gradient(num, min_val=0, max_val=100):
     grn = 255 - round(scale * (num - mid))
   return f'#{red:02X}{grn:02X}00'
 
-def get_amplipi_data(url: str) -> Tuple[bool, List[Dict[str,object]], List[Any]]:
+def get_amplipi_data(base_url: Optional[str]) -> Tuple[bool, List[models.Source], List[models.Zone]]:
   """ Get the AmpliPi's status via the REST API
       Returns true/false on success/failure, as well as the sources and zones
   """
-  sources = [{'name': '', 'playing': False} for i in range(4)]
-  zones = []
+  _zones: List[models.Zone] = []
+  _sources: List[models.Source] = []
   success = False
+  if base_url is None:
+    return False, _sources, _zones
   try:
-    # TODO: If the AmpliPi server isn't available at this url, there is a
-    # 5-second delay introduced by socket.getaddrinfo
-    r = requests.get(url, timeout=0.1)
-    if r.status_code == 200:
-      j = r.json()
-      stream_ids = [s['id'] for s in j['streams']]
-      for i in range(len(j['sources'])):
-        inp = j['sources'][i]['input']
-        playing = False
-        if inp.startswith('stream='):
-          sid = int(inp.replace('stream=', ''))
-          if sid in stream_ids:
-            strm = j['streams'][stream_ids.index(sid)]
-            name = strm['name']
-            playing = strm['status'] == 'playing'
-            # TODO: fix special case in API
-            if strm['type'] == 'internetradio':
-              playing = strm['status'] == 'connected'
-          else:
-            name = 'INVALID STREAM'
-        else:
-          name = inp
-        sources[i]['name'] = name
-        sources[i]['playing'] = playing
-      zones = j['zones']
+    """ TODO: If the AmpliPi server isn't available at this url, there is a
+    5-second delay introduced by socket.getaddrinfo """
+    req = requests.get(base_url, timeout=0.1)
+    if req.status_code == 200:
+      status = models.Status(**req.json())
+      _zones = status.zones
+      _sources = status.sources
       success = True
     else:
       log.error('Bad status code returned from AmpliPi')
   except requests.ConnectionError as err:
-    log.debug(err.args[0].reason)
+    log.debug(err.args[0])
   except requests.Timeout:
     log.error('Timeout requesting AmpliPi status')
   except ValueError:
     log.error('Invalid json in AmpliPi status response')
 
-  return success, sources, zones
+  return success, _sources, _zones
 
 # Draw volumes on bars.
 # Draw is a PIL drawing surface
 # zones is a list of (names, volumes) of size [6, 12, 18, 24, 30, 36]
 # (x,y) is the top-left of the volume bar area
-def draw_volume_bars(draw, font, small_font, zones, x=0, y=0, width=320, height=240):
+def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0, width=320, height=240):
   n = len(zones)
   if n == 0: # No zone info from AmpliPi server
     pass
@@ -221,15 +208,15 @@ def draw_volume_bars(draw, font, small_font, zones, x=0, y=0, width=320, height=
       yb = y + i*hb + 2*i*sp # Bar starting y-position
 
       # Draw zone name as text
-      draw.text((x, yb), zones[i]['name'], font=font, fill='#FFFFFF')
+      draw.text((x, yb), zones[i].name, font=font, fill='#FFFFFF')
 
       # Draw background of volume bar
       draw.rectangle(((xb, int(yb+2), xb+wb, int(yb+hb))), fill='#999999')
 
       # Draw volume bar
-      if zones[i]['vol'] > -79:
-        color = '#666666' if zones[i]['mute'] else '#0080ff'
-        xv = xb + (wb - round(zones[i]['vol'] * vol2pix))
+      if zones[i].vol > -79:
+        color = '#666666' if zones[i].mute else '#0080ff'
+        xv = xb + (wb - round(zones[i].vol * vol2pix))
         draw.rectangle(((xb, int(yb+2), xv, int(yb+hb))), fill=color)
   elif n <= 18: # Draw vertical bars
     # Get the pixel height of a character, and add vertical margins
@@ -249,9 +236,9 @@ def draw_volume_bars(draw, font, small_font, zones, x=0, y=0, width=320, height=
       draw.rectangle(((xb, y, xb+wb, yt)), fill='#999999')
 
       # Draw volume bar
-      if zones[i]['vol'] > -79:
-        color = '#666666' if zones[i]['mute'] else '#0080ff'
-        yv = y + round(zones[i]['vol'] * vol2pix)
+      if zones[i].vol > -79:
+        color = '#666666' if zones[i].mute else '#0080ff'
+        yv = y + round(zones[i].vol * vol2pix)
         draw.rectangle(((xb, yv, xb+wb, yt)), fill=color)
   else:
     log.error("Can't display more than 18 volumes")
@@ -408,8 +395,8 @@ signal.signal(signal.SIGINT, exit_handler)
 signal.signal(signal.SIGTERM, exit_handler)
 
 # Load image and convert to RGB
-mn_logo = Image.open('imgs/micronova_320x240.png').convert('RGB')
-ap_logo = Image.open('imgs/amplipi_320x126.png').convert('RGB')
+mn_logo = Image.open('amplipi/display/imgs/micronova_320x240.png').convert('RGB')
+ap_logo = Image.open('amplipi/display/imgs/amplipi_320x126.png').convert('RGB')
 display.image(mn_logo)
 
 # Turn on display backlight now that an image is loaded
@@ -444,8 +431,8 @@ connected = False
 connected_once = False
 max_connection_retries = 10
 connection_retries = 0
-sources = []
-zones = []
+sources: List[models.Source] = []
+zones: List[models.Zone] = []
 
 frame_num = 0
 frame_times = []
@@ -456,8 +443,10 @@ while frame_num < 10 and run:
 
   if _active_screen == 0:
     # Get AmpliPi status
-    primary_url = API_URL_DEBUG if use_debug_port else API_URL
-    secondary_url = API_URL if use_debug_port else API_URL_DEBUG
+    if use_debug_port:
+      primary_url, secondary_url = API_URL_DEBUG, API_URL
+    else:
+      primary_url, secondary_url = API_URL, API_URL_DEBUG
     primary_success, _sources, _zones = get_amplipi_data(primary_url)
     if primary_success:
       sources = _sources
@@ -547,10 +536,12 @@ while frame_num < 10 and run:
       xp = xs - round(0.5*cw) # Shift playing arrow back a bit
       ys = 4*ch + round(0.5*ch)
       draw.line(((cw, ys-3), (width-2*cw, ys-3)), width=2, fill='#999999')
-      for i in range(len(sources)):
-        if sources[i]['playing']:
-          draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
-        draw.text((xs + 1*cw, ys + i*ch), sources[i]['name'], font=font, fill='#F0E68C')
+      for i, src in enumerate(sources):
+        sinfo = sources[i].info
+        if sinfo is not None:
+          if sinfo.state == 'playing':
+            draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
+          draw.text((xs + 1*cw, ys + i*ch), sinfo.name, font=font, fill='#F0E68C')
       draw.line(((cw, ys+4*ch+2), (width-2*cw, ys+4*ch+2)), width=2, fill='#999999')
 
       # Show volumes

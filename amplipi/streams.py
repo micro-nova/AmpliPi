@@ -76,6 +76,14 @@ def uuid_gen():
   else:
     return '39ae35cc-b4c1-444d-b13a-294898d771fa' # Generic UUID in case of failure
 
+def _stream_name(sname, stype) -> str:
+  """ Combine name and type of a stream to make a stream easy to identify.
+
+  Many streams will simply be named something like AmpliPi or John, so embedding the '- stype' into the name makes
+  the name easier to identify.
+  """
+  return f'{sname} - {stype}'
+
 class Shairport:
   """ An Airplay Stream """
   def __init__(self, name, mock=False):
@@ -166,43 +174,26 @@ class Shairport:
     self.proc = None
     self.src = None
 
-  def info(self):
+  def info(self) -> models.SourceInfo:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
     loc = '{}/currentSong'.format(src_config_folder)
-    sloc = '{}/sourceInfo'.format(src_config_folder)
-    d = {}
+    source = models.SourceInfo(name=_stream_name(self.name, 'airplay'), state=self.state)
+    source.img_url = 'static/imgs/shairport.png'
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
           if line:
-            data = line.split(',,,')
-            for i in range(len(data)):
-              data[i] = data[i].strip('".')
-            d['artist'] = data[0]
-            d['track'] = data[1]
-            d['album'] = data[2]
-            d['paused'] = data[3]
+            data = line.strip('".').split(',,,')
+            source.artist = data[0]
+            source.track = data[1]
+            source.album = data[2]
+            source.state = data[3]
             if int(data[4]):
-              d['img_url'] = '/generated/shairport/srcs/{}/{}'.format(self.src, data[5])
+              source.img_url = f"{utils.get_folder('web/generated')}/shairport/srcs/{self.src}/{data[5]}"
     except Exception:
       pass
       # TODO: Log actual exception here?
-
-    try:
-      with open(sloc, 'r') as file:
-        for line in file.readlines():
-          if line:
-            info = line.split(',,,')
-            for i in range(len(info)):
-              info[i] = info[i].strip('".')
-            d['source_info'] = info[0]
-            d['active_remote_token'] = info[1]
-            d['DACP-ID'] = info[2]
-            d['client_IP'] = info[3]
-    except Exception:
-      pass
-
-    return d
+    return source
 
   def status(self):
     return self.state
@@ -265,8 +256,9 @@ class Spotify:
     self.proc = None
     self.src = None
 
-  def info(self):
-    return {'details': 'No info available'}
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(name=_stream_name(self.name, 'spotify'), state=self.state, img_url='static/imgs/spotify.png')
+    return source
 
   def status(self):
     return self.state
@@ -285,18 +277,22 @@ class Pandora:
       # open the CTL fifo ('ctl' name specified in pianobar 'config' file)
       self.fifo = open(pb_fifo, 'w')
       print('Controlling pianobar with FIFO = {}'.format(pb_fifo))
+      self.state = 'unknown'
     def __del__(self):
       if self.fifo:
         self.fifo.close()
     def play(self):
       self.fifo.write('P\n') # Exclusive 'play' instead of 'p'
       self.fifo.flush()
+      self.state = 'playing'
     def pause(self):
       self.fifo.write('S\n') # Exclusive 'pause'
       self.fifo.flush()
+      self.state = 'paused'
     def stop(self):
       self.fifo.write('q\n')
       self.fifo.flush()
+      self.state = 'stopped'
     def next(self):
       self.fifo.write('n\n')
       self.fifo.flush()
@@ -357,8 +353,8 @@ class Pandora:
     """
     if self.mock:
       print('{} connected to {}'.format(self.name, src))
-      self.state = 'playing' # TODO: only play station based streams
       self.src = src
+      self.state = 'connected'
       return
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
     # make a special home, with specific config to launch pianobar in (this allows us to have multiple pianobars)
@@ -398,7 +394,7 @@ class Pandora:
       time.sleep(0.1) # Delay a bit before creating a control pipe to pianobar
       self.ctrl = Pandora.Control(pb_control_fifo)
       self.src = src
-      self.state = 'playing'
+      self.state = 'connected'
       print('{} connected to {}'.format(self.name, src))
     except Exception as e:
       print('error starting pianobar: {}'.format(e))
@@ -418,28 +414,31 @@ class Pandora:
     self.ctrl = None
     self.src = None
 
-  def info(self):
+  def info(self) -> models.SourceInfo:
     src_config_folder = '{}/srcs/{}'.format(utils.get_folder('config'), self.src)
     loc = '{}/.config/pianobar/currentSong'.format(src_config_folder)
+    source = models.SourceInfo(name=_stream_name(self.name, 'pandora'), state=self.state, img_url='static/imgs/pandora.png')
     try:
       with open(loc, 'r') as file:
-        d = {}
         for line in file.readlines():
           line = line.strip()
           if line:
             data = line.split(',,,')
-            d['artist'] = data[0]
-            d['track'] = data[1]
-            d['album'] = data[2]
-            d['img_url'] = data[3]
-            d['station'] = data[5]
-        return d
+            if self.ctrl is not None and self.ctrl.state == 'unknown':
+              self.ctrl.state = 'playing' # guess that the song is playing
+            source.state = self.ctrl.state
+            source.artist = data[0]
+            source.track = data[1]
+            source.album = data[2]
+            source.img_url = data[3]
+            source.station = data[5]
+        return source
     except Exception:
       pass
       #print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-    return {'details': 'No info available'}
+    return source
 
   def status(self):
     return self.state
@@ -513,20 +512,21 @@ class DLNA:
     self.proc2 = None
     self.src = None
 
-  def info(self):
+  def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
+    source = models.SourceInfo(name=_stream_name(self.name, 'dlna'), state=self.state, img_url='static/imgs/dlna.png')
     try:
       with open(loc, 'r') as file:
-        d = {}
         for line in file.readlines():
           line = line.strip()
           if line:
             d = eval(line)
-        return d
+            # TODO: what fields are populated by gmrenderer?
+        return source
     except Exception:
       pass
-    return {'details': 'No info available'}
+    return source
 
   def status(self):
     return self.state
@@ -573,7 +573,7 @@ class InternetRadio:
 
     if self.mock:
       print(f'{self.name} connected to {src}')
-      self.state = 'connected'
+      self.state = 'playing'
       self.src = src
       return
 
@@ -589,7 +589,7 @@ class InternetRadio:
     self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
     print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.output_device(src)}')
-    self.state = 'connected'
+    self.state = 'playing'
     self.src = src
 
   def _is_running(self):
@@ -605,26 +605,23 @@ class InternetRadio:
     self.proc = None
     self.src = None
 
-  def info(self):
+  def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
+    source = models.SourceInfo(name=_stream_name(self.name, 'internet radio'), state=self.state, img_url=self.logo)
     try:
       with open(loc, 'r') as file:
-        d = {}
         data = json.loads(file.read())
-
-        d['artist'] = data['artist']
-        d['song'] = data['song']
-        d['img_url'] = self.logo
-        d['station'] = data['station']
-
-        return d
+        source.artist = data['artist']
+        source.track = data['track']
+        source.station = data['station']
+        return source
     except Exception:
       pass
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-    return {'details': 'No info available'}
+    return source
 
   def status(self):
     return self.state
@@ -746,8 +743,9 @@ class Plexamp:
     self.proc = None
     self.src = None
 
-  def info(self):
-    return {'details': 'No info available'}
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(name=_stream_name(self.name, 'plexamp'), state=self.state, img_url='static/imgs/plexamp.png')
+    return source
 
   def status(self):
     return self.state

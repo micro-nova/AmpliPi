@@ -96,10 +96,10 @@ class Api:
   _LAST_PRESET_ID = 9999
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "1", "input": "local"},
-      {"id": 1, "name": "2", "input": "local"},
-      {"id": 2, "name": "3", "input": "local"},
-      {"id": 3, "name": "4", "input": "local"}
+      {"id": 0, "name": "Input 1", "input": "local"},
+      {"id": 1, "name": "Input 2", "input": "local"},
+      {"id": 2, "name": "Input 3", "input": "local"},
+      {"id": 3, "name": "Input 4", "input": "local"}
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -271,7 +271,7 @@ class Api:
     """
     return src_type != 'local'
 
-  def get_inputs(self) -> Dict[Union[str, None], str]:
+  def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
     """Gets a dictionary of the possible inputs for a source
 
       Returns:
@@ -282,26 +282,31 @@ class Api:
         >>> my_amplipi.get_inputs()
         { None, '', 'local', 'Local', 'stream=9449' }
     """
-    inputs = {None: '', 'local' : 'Local - RCA'}
+    inputs = {None: '', 'local' : f'{src.name} - rca'}
     for stream in self.get_state().streams:
       inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
     return inputs
 
   def get_state(self) -> models.Status:
-    """ get the system state (dict) """
-    # update the state with the latest stream info and status
+    """ get the system state """
+    # update the state with the latest stream info
+    # TODO: figure out how to cache stream info
     optional_fields = ['station', 'user', 'password', 'url', 'logo', 'token', 'client_id'] # optional configuration fields
     streams = []
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
-      # convert the stream instance info to stream data (serialize its current configuration and status information)
+      # convert the stream instance info to stream data (serialize its current configuration)
       st_type = type(stream_inst).__name__.lower()
-      stream = models.Stream(id=sid, name=stream_inst.name, type=st_type, info=stream_inst.info(), status=stream_inst.status())
+      stream = models.Stream(id=sid, name=stream_inst.name, type=st_type)
       for field in optional_fields:
         if field in stream_inst.__dict__:
           stream.__dict__[field] = stream_inst.__dict__[field]
       streams.append(stream)
     self.status.streams = streams
+    # update source's info
+    # TODO: stream/source info should be updated in a background thread
+    for src in self.status.sources:
+      self._update_src_info(src)
     return self.status
 
   def get_items(self, tag: str) -> Optional[List[models.Base]]:
@@ -336,6 +341,17 @@ class Api:
     if idx is not None:
       return self.streams.get(idx, None)
     return None
+
+  def _update_src_info(self, src):
+    """ Update a source's status and song metadata """
+    stream_inst = self.get_stream(src)
+    if stream_inst is not None:
+      src.info = stream_inst.info()
+    elif src.input == 'local' and src.id is not None:
+      # RCA, name mimics the steam's formatting
+      src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='unknown')
+    else:
+      src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
@@ -381,6 +397,7 @@ class Api:
             src_cfg[idx] = self._is_digital(input_)
             if not self._rt.update_sources(src_cfg):
               return ApiResponse.error('failed to set source')
+          self._update_src_info(src) # synchronize the source's info
         if not internal:
           self.mark_changes()
         return ApiResponse.ok()

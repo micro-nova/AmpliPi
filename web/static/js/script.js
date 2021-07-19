@@ -1,11 +1,5 @@
 
 const icons = {
-  'shairport' : '/static/imgs/shairport.png',
-  'local'     : '/static/imgs/rca_inputs.svg',
-  'pandora'   : '/static/imgs/pandora.png',
-  'spotify'   : '/static/imgs/spotify.png',
-  'dlna'      : '/static/imgs/dlna.png',
-  'plexamp'   : '/static/imgs/plexamp.png',
   'none'      : '/static/imgs/disconnected.png'
 }
 
@@ -221,21 +215,24 @@ function updateSourceView(status) {
     let cover = $('#s' + src.id + '-player .cover img')[0];
     let artist = $('#s' + src.id + '-player .info .artist')[0];
     let album = $('#s' + src.id + '-player .info .album')[0];
-    let song = $('#s' + src.id + '-player .info .song')[0];
+    let track = $('#s' + src.id + '-player .info .song')[0];
     let next = $('#s' + src.id + '-player .step-forward')[0];
     let play_pause = $('#s' + src.id + '-player .play-pause')[0];
     let like = $('#s' + src.id + '-player .like')[0];
     let dislike = $('#s' + src.id + '-player .dislike')[0];
     let playing_indicator = $('#s' + src.id + ' i')[0];
     // defaults
-    artist.innerHTML = 'No artist';
-    album.innerHTML = 'No album';
-    song.innerHTML = 'No song';
-    playing_indicator.style.visibility = "hidden"; // TODO: add audio playing detection to rca inputs
     like.style.visibility = "hidden";
     dislike.style.visibility = "hidden";
     play_pause.style.visibility = "hidden";
     next.style.visibility = "hidden";
+
+    track.innerHTML = src.info.track ? src.info.track : src.info.name;
+    artist.innerHTML = src.info.artist ? src.info.artist : '';
+    album.innerHTML = src.info.album ? src.info.album : '';
+    cover.src = src.info.img_url ? src.info.img_url : icons['none'];
+    const playing = src.info.state == "playing";
+    playing_indicator.style.visibility = playing ? "visible" : "hidden";
     if (stream_id) {
       // find the right stream
       let stream = undefined;
@@ -248,64 +245,14 @@ function updateSourceView(status) {
       if (stream) {
         // update the player's song info
         if (stream.type == 'pandora') {
-          const playing = stream.status == "playing";
           next.style.visibility = "visible";
           like.style.visibility = "visible";
           dislike.style.visibility = "visible";
-          playing_indicator.style.visibility = playing ? "visible" : "hidden";
           play_pause.style.visibility = "visible";
           play_pause.classList.toggle('fa-play', !playing);
           play_pause.classList.toggle('fa-pause', playing);
-          try {
-            // update album art and track info
-            cover.src = stream.info.img_url ? stream.info.img_url : icons['pandora'];
-            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
-            album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
-            song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
-          } catch (err) {}
-        } else if (stream.type == 'shairport') {
-          try {
-            // update album art and track info
-            cover.src = stream.info.img_url ? stream.info.img_url : icons['shairport'];
-            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
-            album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
-            song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
-          } catch (err) {}
-        } else if (stream.type == 'spotify') {
-          // TODO: populate spotify album info
-          cover.src = icons['spotify'];
-        } else if (stream.type == 'dlna') {
-          // update dlna album info
-          cover.src = icons['dlna'];
-          artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
-          album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
-          song.innerHTML = stream.info.title ? stream.info.title : song.innerHTML;
-        } else if (stream.type == 'internetradio') {
-          const playing = stream.status == "connected";
-          album.style.display = "none";
-          next.style.visibility = "hidden";
-          like.style.visibility = "hidden";
-          dislike.style.visibility = "hidden";
-          playing_indicator.style.visibility = playing ? "visible" : "hidden";
-          play_pause.style.visibility = "hidden";
-          play_pause.classList.toggle('fa-play', !playing);
-          play_pause.classList.toggle('fa-pause', playing);
-          try {
-            // update album art and track info
-            cover.src = stream.info.img_url ? stream.info.img_url : icons['none'];
-            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
-            song.innerHTML = stream.info.song ? stream.info.song : song.innerHTML;
-          } catch (err) {}
-        } else if (stream.type == 'plexamp') {
-          // TODO: populate plexamp album info
-          cover.src = icons['plexamp'];
         }
       }
-    } else if (src.input == 'local') {
-      cover.src = icons['local'];
-      artist.innerHTML = src.name;
-    } else {
-      cover.src = icons['none'];
     }
     // update each source's input
     player = $("#s" + src.id + "-player")[0];

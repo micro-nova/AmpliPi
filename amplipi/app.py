@@ -23,17 +23,23 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 """
 
 import argparse
+
+DEBUG_API = False
+
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
 from typing import List, Dict, Set, Any, Optional, Callable, Union, TYPE_CHECKING, get_type_hints
 from types import SimpleNamespace
 
+import urllib.request # For custom album art size
 from queue import Queue
 from functools import lru_cache
 import asyncio
 import json
 import yaml
+
+from PIL import Image # For custom album art size
 
 # web framework
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Path
@@ -100,17 +106,6 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   ungrouped_zones_ = source_zones.difference(grouped_zones)
   return [zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
 
-def song_info(ctrl: Api, sid: int) -> Dict[str, str]:
-  """ Get the song info for a source """
-  song_fields = ['artist', 'album', 'track', 'img_url']
-  stream = ctrl.get_stream(sid=sid)
-  info = stream.info() if stream else {}
-  # add empty strings for unpopulated fields
-  for field in song_fields:
-    if field not in info:
-      info[field] = ''
-  return info
-
 # add a default controller (this is overriden below in create_app)
 @lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
@@ -130,6 +125,7 @@ class params(SimpleNamespace):
   StreamCommand = Path(..., description="Stream Command")
   PresetID = Path(..., ge=0, description="Preset ID")
   StationID = Path(..., ge=0, title="Pandora Station ID", description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
+  ImageHeight = Path(..., ge=1, le=500, description="Image Height in pixels")
 
 api = SimplifyingRouter()
 
@@ -195,6 +191,53 @@ def get_source(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> mod
 def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Status:
   """ Update a source's configuration (source=**sid**) """
   return code_response(ctrl, ctrl.set_source(sid, update))
+
+@api.get('/api/sources/{sid}/image/{height}', tags=['source'],
+  # Manually specify a possible response
+  # see https://github.com/tiangolo/fastapi/issues/3258
+  response_class=Response,
+  responses = {
+      200: {
+          "content": {"image/jpg": {}}
+      }
+  },
+)
+async def get_image(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, height: int = params.ImageHeight):
+  """ Get a square jpeg image representing the current media playing on source @sid
+
+  This was added to support low power touch panels """
+  width = height # square image
+  source_info = ctrl.status.sources[sid].info
+  if source_info is None or source_info.img_url is None:
+    uri = 'static/imgs/disconnected.png'
+  else:
+    uri = source_info.img_url
+  if uri.startswith('static/'):
+    # for files we need to convert from webserver url to internal file url
+    uri = uri.replace('static/', STATIC_DIR + '/')
+    uri = uri.replace('rca_inputs.svg', 'rca_inputs.jpg')  # pillow can't handle svg files for our use case
+
+  img_tmp = f'/tmp/{os.path.basename(uri)}'
+  img_tmp_jpg = f'{img_tmp}-{height}x{width}.jpg'
+
+  if not os.path.exists(img_tmp_jpg):
+    is_file = os.path.exists(uri)
+    if is_file:
+      img_tmp = uri
+    else:
+      img_tmp, _ = urllib.request.urlretrieve(uri, img_tmp)
+    size = height, width
+    img = Image.open(img_tmp)
+    img.thumbnail(size)
+    img = img.convert(mode="RGB")
+    img.save(img_tmp_jpg)
+    if not is_file:
+      # remove temporary downloads
+      os.remove(img_tmp)
+
+  # encode the filename of the image for client side caching/verification
+  name = os.path.basename(uri) + '.jpg'
+  return FileResponse(img_tmp_jpg, media_type='image/jpg', filename=name)
 
 # zones
 
@@ -280,7 +323,6 @@ def set_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, update
 def delete_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Status:
   """ Delete a stream """
   return code_response(ctrl, ctrl.delete_stream(sid))
-
 
 @api.post('/api/streams/{sid}/station={station}', tags=['stream'])
 def change_station(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, station: int = params.StationID) -> models.Status:
@@ -515,7 +557,7 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
       1. Go to [Status -> Get Status](#get-/api)
       1. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
 
-    __Try changing a zones name:__
+    __Try changing a zone's name:__
 
       1. Go to [Zone -> Update Zone](#patch-/api/zones/-zid-)
       1. Next to **PATH PARAMETERS** click Zone 2 to fill in Zone 2's id
@@ -523,7 +565,7 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
       1. Edit the name to what you want to call the zone
       1. Click the Try button, you will see a response below with the full status/config of the AmpliPi controller
 
-    __Try changing a groups name and zones:__
+    __Try changing a group's name and zones:__
 
       1. Go to [Group -> Update Group](#patch-/api/groups/-gid-)
       1. Next to **PATH PARAMETERS** click Group 1 to fill in Group 1's id
@@ -543,6 +585,7 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
 
       - [Stream -> Create new stream](#post-/api/stream)
       - [Preset -> Create preset](#post-/api/preset) (Have a look at the model to see what can be added here)
+      - [Source -> Set source](#patch-/api/sources/-sid-) (Try updating Source 1's name to "TV")
 
     # More Info
 
@@ -615,11 +658,11 @@ def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
     'zones': state.zones,
     'groups': state.groups,
     'presets': state.presets,
-    'inputs': ctrl.get_inputs(),
-    'unused_groups': [unused_groups(ctrl, src) for src in range(4)],
-    'unused_zones': [unused_zones(ctrl, src) for src in range(4)],
-    'ungrouped_zones': [ungrouped_zones(ctrl, src) for src in range(4)],
-    'song_info': [song_info(ctrl, src) for src in range(4)],
+    'inputs': [ctrl.get_inputs(src) for src in state.sources],
+    'unused_groups': [unused_groups(ctrl, src.id) for src in state.sources if src.id is not None],
+    'unused_zones': [unused_zones(ctrl, src.id) for src in state.sources if src.id is not None],
+    'ungrouped_zones': [ungrouped_zones(ctrl, src.id) for src in state.sources if src.id is not None],
+    'song_info': [src.info for src in state.sources if src.info is not None], # src.info should never be None
     'version': state.info.version if state.info else 'unknown',
   }
   return templates.TemplateResponse('index.html.j2', context, media_type='text/html')

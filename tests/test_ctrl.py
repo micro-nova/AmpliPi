@@ -93,9 +93,8 @@ def use_tmpdir():
 def prune_state(state: amplipi.models.Status):
   """ Prune generated fields from system state to make comparable """
   dstate = state.dict(exclude_none=True)
-  for field in dstate['streams']:
+  for field in dstate['sources']:
     field.pop('info')
-    field.pop('status')
   dstate.pop('info')
   return dstate
 
