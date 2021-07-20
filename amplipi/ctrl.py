@@ -629,42 +629,42 @@ class Api:
     except Exception as exc:
       return ApiResponse.error('Unable to get stream {}: {}'.format(sid, exc))
 
-    if not isinstance(stream, amplipi.streams.Pandora) or stream.mock:
-      return ApiResponse.error(f'Stream "{stream}" does not support commands yet')
-
     try:
       if cmd is None:
         pass
       elif cmd == 'play':
         print('playing')
         stream.state = 'playing'
-        stream.ctrl.play()
+        stream.send_cmd(cmd)
       elif cmd == 'pause':
         print('paused')
         stream.state = 'paused'
-        stream.ctrl.pause()
+        stream.send_cmd(cmd)
       elif cmd == 'stop':
         stream.state = "stopped"
-        stream.ctrl.stop()
+        stream.send_cmd(cmd)
       elif cmd == 'next':
         print('next')
-        stream.ctrl.next()
+        stream.send_cmd(cmd)
+      elif cmd == 'prev':
+        print('prev')
+        stream.send_cmd(cmd)
       elif cmd == 'love':
-        stream.ctrl.love()
+        stream.send_cmd(cmd)
       elif cmd == 'ban':
-        stream.ctrl.ban()
+        stream.send_cmd(cmd)
       elif cmd == 'shelve':
-        stream.ctrl.shelve()
-      elif 'station' in cmd:
-        station_id = int(cmd.replace('station=', ''))
-        if station_id is not None:
-          stream.ctrl.station(station_id)
-        else:
-          return ApiResponse.error('station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{}"'.format(cmd))
+        stream.send_cmd(cmd)
+      # elif 'station' in cmd:#TODO: Change this based on pandora implementation
+      #   station_id = int(cmd.replace('station=', ''))
+      #   if station_id is not None:
+      #     stream.send_cmd.station(station_id)
+      #   else:
+      #     return ApiResponse.error(f'station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{cmd}"')
       else:
-        return ApiResponse.error('Command "{}" not recognized.'.format(cmd))
+        return ApiResponse.error(f'Command "{cmd}" not recognized.')
     except Exception as exc:
-      return ApiResponse.error('Failed to execute stream command: {}: {}'.format(cmd, exc))
+      return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
 
     return ApiResponse.ok()
 

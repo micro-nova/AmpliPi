@@ -17,6 +17,10 @@ info = {
 'img_url': ''
 }
 
+# Write to currentSong so you clear previous metadata from i.e. shairport or old Spotify instances
+with open(f'{args.cs_loc}/currentSong', 'w') as CS:
+  CS.write(str(info))
+
 metasocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 metasocket.bind(('', int(args.metaport)))
 while True: # Need to check how to kill the script, look at processing load, etc. NEED TO VERIFY
@@ -35,7 +39,10 @@ while True: # Need to check how to kill the script, look at processing load, etc
         if 'state' in data:
           simplestate = str(data['state'])
           ss = simplestate[11:].strip("'}")
-          info['state'] = ss
+          if 'play' in ss:
+            info['state'] = 'playing' # JavaScript looks for 'playing', not 'play'
+          else:
+            info['state'] = ss
         elif 'metadata' in data:
           info['artist'] = data['metadata'].get('artist_name') # .get defaults to 'None'
           info['album'] = data['metadata'].get('album_name') # if nothing found

@@ -200,6 +200,10 @@ function onNext(ctrl) {
   sendStreamCommand(ctrl, 'next');
 }
 
+function onPrev(ctrl) {
+  sendStreamCommand(ctrl, 'prev')
+}
+
 function onLike(ctrl) {
   sendStreamCommand(ctrl, 'love');
 }
@@ -217,6 +221,7 @@ function updateSourceView(status) {
     let album = $('#s' + src.id + '-player .info .album')[0];
     let track = $('#s' + src.id + '-player .info .song')[0];
     let next = $('#s' + src.id + '-player .step-forward')[0];
+    let prev = $('#s' + src.id + '-player .step-backward')[0];
     let play_pause = $('#s' + src.id + '-player .play-pause')[0];
     let like = $('#s' + src.id + '-player .like')[0];
     let dislike = $('#s' + src.id + '-player .dislike')[0];
@@ -226,6 +231,7 @@ function updateSourceView(status) {
     dislike.style.visibility = "hidden";
     play_pause.style.visibility = "hidden";
     next.style.visibility = "hidden";
+    prev.style.display = "none";
 
     track.innerHTML = src.info.track ? src.info.track : src.info.name;
     artist.innerHTML = src.info.artist ? src.info.artist : '';
@@ -248,6 +254,12 @@ function updateSourceView(status) {
           next.style.visibility = "visible";
           like.style.visibility = "visible";
           dislike.style.visibility = "visible";
+          play_pause.style.visibility = "visible";
+          play_pause.classList.toggle('fa-play', !playing);
+          play_pause.classList.toggle('fa-pause', playing);
+        } else if (stream.type == 'spotify') {
+          next.style.visibility = "visible";
+          prev.style.display = "inline-block";
           play_pause.style.visibility = "visible";
           play_pause.classList.toggle('fa-play', !playing);
           play_pause.classList.toggle('fa-pause', playing);

@@ -27,10 +27,11 @@ import subprocess
 import time
 from typing import Union
 
-# Used by InternetRadio
+# Used by InternetRadio and Spotify
 import json
 import signal
 import ast
+import socket
 
 import amplipi.models as models
 import amplipi.utils as utils
@@ -213,6 +214,8 @@ class Spotify:
     self.mock = mock
     self.src = None
     self.state = 'disconnected'
+    self.metaport = None
+    self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -252,17 +255,17 @@ class Spotify:
     os.system(f'cp {toml_template} {toml_useful}')
 
     # Input the proper values
-    metaport = 5030 + 2*src
+    self.metaport = 5030 + 2*src
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
       data = data.replace('AmpliPi_TEMPLATE', f'{self.name}')
       data = data.replace("device = 'ch'", f"device = 'ch{src}'")
-      data = data.replace('5030', f'{metaport}')
+      data = data.replace('5030', f'{self.metaport}')
     with open(toml_useful, 'w') as TOML:
       TOML.write(data)
 
     # PROCESS
-    meta_args = [f'python3', f'{utils.get_folder("streams")}/spot_meta.py', f'{metaport}', f'{src_config_folder}']
+    meta_args = [f'python3', f'{utils.get_folder("streams")}/spot_meta.py', f'{self.metaport}', f'{src_config_folder}']
     spotify_args = [f'{utils.get_folder("streams")}/vollibrespot']
 
     try:
@@ -313,6 +316,26 @@ class Spotify:
 
   def status(self):
     return self.state
+
+  def send_cmd(self, cmd):
+    """ Control of Spotify via commands sent over sockets
+    Commands include play, pause, next, and previous
+    Takes src as an input so that it knows which UDP port to send on
+    """
+    supported_cmds = {
+      'play': [0x05],
+      'pause': [0x04],
+      'next': [0x07],
+      'prev': [0x08]
+    }
+    udp_ip = "127.0.0.1" # AmpliPi's IP
+    udp_port = self.metaport + 1 # Adding 1 to the 'metaport' variable used in connect()
+
+    try:
+      if cmd in supported_cmds:
+        self.socket.sendto(bytes(supported_cmds[cmd]), (udp_ip, udp_port))
+    except Exception as exc:
+      return(f'Command {cmd} failed to send. See error message: {exc}')
 
 class Pandora:
   """ A Pandora Stream """
