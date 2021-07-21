@@ -104,12 +104,8 @@ class BaseStream:
 class Shairport(BaseStream):
   """ An Airplay Stream """
   def __init__(self, name, mock=False):
-    self.name = name
-    self.proc = None
+    super().__init__(name, mock)
     self.proc2 = None
-    self.mock = mock
-    self.src = None
-    self.state = 'disconnected'
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
 
@@ -223,12 +219,8 @@ class Shairport(BaseStream):
 class Spotify(BaseStream):
   """ A Spotify Stream """
   def __init__(self, name, mock=False):
-    self.name = name
-    self.proc = None
+    super().__init__(name, mock)
     self.proc2 = None
-    self.mock = mock
-    self.src = None
-    self.state = 'disconnected'
     self.metaport = None
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -280,7 +272,7 @@ class Spotify(BaseStream):
       TOML.write(data)
 
     # PROCESS
-    meta_args = [f'python3', f'{utils.get_folder("streams")}/spot_meta.py', f'{self.metaport}', f'{src_config_folder}']
+    meta_args = ['python3', f'{utils.get_folder("streams")}/spot_meta.py', f'{self.metaport}', f'{src_config_folder}']
     spotify_args = [f'{utils.get_folder("streams")}/vollibrespot']
 
     try:
@@ -354,59 +346,14 @@ class Spotify(BaseStream):
 
 class Pandora(BaseStream):
   """ A Pandora Stream """
-
-  class Control:
-    """ Controlling a running pianobar instance via its fifo control """
-    def __init__(self, pb_fifo='.config/pianobar/ctl'):
-      # open the CTL fifo ('ctl' name specified in pianobar 'config' file)
-      self.fifo = open(pb_fifo, 'w')
-      print('Controlling pianobar with FIFO = {}'.format(pb_fifo))
-      self.state = 'unknown'
-    def __del__(self):
-      if self.fifo:
-        self.fifo.close()
-    def play(self):
-      self.fifo.write('P\n') # Exclusive 'play' instead of 'p'
-      self.fifo.flush()
-      self.state = 'playing'
-    def pause(self):
-      self.fifo.write('S\n') # Exclusive 'pause'
-      self.fifo.flush()
-      self.state = 'paused'
-    def stop(self):
-      self.fifo.write('q\n')
-      self.fifo.flush()
-      self.state = 'stopped'
-    def next(self):
-      self.fifo.write('n\n')
-      self.fifo.flush()
-    def love(self):
-      self.fifo.write('+\n')
-      self.fifo.flush()
-    def ban(self):
-      self.fifo.write('-\n')
-      self.fifo.flush()
-    def shelve(self):
-      self.fifo.write('t\n')
-      self.fifo.flush()
-    def station(self, index):
-      self.fifo.write('s')
-      self.fifo.flush()
-      self.fifo.write('{}\n'.format(index))
-      self.fifo.flush()
-
   def __init__(self, name, user, password, station, mock=False):
-    self.name = name
+    super().__init__(name, mock)
     self.user = user
-    self.mock = mock
     self.password = password
     self.station = station
     #if station is None:
     #  raise ValueError("station must be specified") # TODO: handle getting station list (it looks like you have to play a song before the station list gets updated through eventcmd)
-    self.proc = None  # underlying pianobar process
-    self.ctrl = None # control fifo to pianobar
-    self.state = 'disconnected'
-    self.src = None # source_id pianobar is connecting to
+    self.ctrl = '' # control fifo location
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -476,7 +423,7 @@ class Pandora(BaseStream):
     try:
       self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
       time.sleep(0.1) # Delay a bit before creating a control pipe to pianobar
-      self.ctrl = Pandora.Control(pb_control_fifo)
+      self.ctrl = pb_control_fifo
       self.src = src
       self.state = 'connected'
       print('{} connected to {}'.format(self.name, src))
@@ -490,12 +437,11 @@ class Pandora(BaseStream):
 
   def disconnect(self):
     if self._is_pb_running():
-      self.ctrl.stop()
       self.proc.kill()
       print('{} disconnected'.format(self.name))
     self.state = 'disconnected'
     self.proc = None
-    self.ctrl = None
+    self.ctrl = ''
     self.src = None
 
   def info(self) -> models.SourceInfo:
@@ -508,9 +454,7 @@ class Pandora(BaseStream):
           line = line.strip()
           if line:
             data = line.split(',,,')
-            if self.ctrl is not None and self.ctrl.state == 'unknown':
-              self.ctrl.state = 'playing' # guess that the song is playing
-            source.state = self.ctrl.state
+            source.state = self.state
             source.artist = data[0]
             source.track = data[1]
             source.album = data[2]
@@ -527,15 +471,52 @@ class Pandora(BaseStream):
   def status(self):
     return self.state
 
+  def send_cmd(self, cmd):
+    """ See look up table below for accepted commands
+    These will be sent to the control fifo for pianobar
+    """
+    supported_cmds = {
+      'play': 'P\n',
+      'pause': 'S\n',
+      'stop': 'q\n',
+      'next': 'n\n',
+      'love': '+\n',
+      'ban': '-\n',
+      'shelve': 't\n'
+    }
+    cmd_states = {
+      'play': 'playing',
+      'pause': 'paused',
+      'stop': 'stopped'
+    }
+
+    try:
+      if cmd in supported_cmds:
+        if cmd in cmd_states:
+          self.state = cmd_states[cmd]
+        with open(self.ctrl, 'w') as file:
+          file.write(supported_cmds[cmd])
+          file.flush()
+      elif 'station' in cmd:
+        station_id = int(cmd.replace('station=', ''))
+        if station_id is not None:
+          with open(self.ctrl, 'w') as file:
+            file.write('s')
+            file.flush()
+            file.write(f'{station_id}\n')
+            file.flush()
+        else:
+          print(f'station=<int> expected where <int> is a valid integer, ie. station=23432423; received "{cmd}"')
+      else:
+        print(f'Command not recognized: {cmd}')
+    except Exception as exc:
+      print(f'Command {cmd} failed: {exc}')
+
 class DLNA(BaseStream):
   """ A DLNA Stream """
   def __init__(self, name, mock=False):
-    self.name = name
-    self.proc = None
+    super().__init__(name, mock)
     self.proc2 = None
-    self.mock = mock
-    self.src = None
-    self.state = 'disconnected'
     self.uuid = 0
 
   def reconfig(self, **kwargs):
@@ -623,13 +604,9 @@ class DLNA(BaseStream):
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
   def __init__(self, name, url, logo, mock=False):
-    self.name = name
+    super().__init__(name, mock)
     self.url = url
     self.logo = logo
-    self.proc = None
-    self.mock = mock
-    self.src = None
-    self.state = 'disconnected'
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -717,15 +694,10 @@ class InternetRadio(BaseStream):
 
 class Plexamp(BaseStream):
   """ A Plexamp Stream """
-
   def __init__(self, name, client_id, token, mock=False):
-    self.name = name
+    super().__init__(name, mock)
     self.client_id = client_id
     self.token = token
-    self.mock = mock
-    self.proc = None  # underlying plexamp process
-    self.state = 'disconnected'
-    self.src = None # source_id plexamp is connecting to
 
   def reconfig(self, **kwargs):
     reconnect_needed = False

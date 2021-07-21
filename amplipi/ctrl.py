@@ -655,12 +655,12 @@ class Api:
         stream.send_cmd(cmd)
       elif cmd == 'shelve':
         stream.send_cmd(cmd)
-      # elif 'station' in cmd:#TODO: Change this based on pandora implementation
-      #   station_id = int(cmd.replace('station=', ''))
-      #   if station_id is not None:
-      #     stream.send_cmd.station(station_id)
-      #   else:
-      #     return ApiResponse.error(f'station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{cmd}"')
+      elif 'station' in cmd:
+        station_id = int(cmd.replace('station=', ''))
+        if station_id is not None:
+          stream.send_cmd(cmd)
+        else:
+          return ApiResponse.error(f'station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{cmd}"')
       else:
         return ApiResponse.error(f'Command "{cmd}" not recognized.')
     except Exception as exc:
