@@ -318,8 +318,8 @@ class Spotify(BaseStream):
         for line in file.readlines():
           try:
             d = ast.literal_eval(line)
-          except Exception as e:
-            print("Error parsing currentSong: " + e)
+          except Exception as exc:
+            print(f'Error parsing currentSong: {exc}')
         source.state = d['state']
         source.artist = ', '.join(d['artist'])
         source.track = d['track']
