@@ -86,7 +86,22 @@ def _stream_name(sname, stype) -> str:
   """
   return f'{sname} - {stype}'
 
-class Shairport:
+class BaseStream:
+  """ BaseStream class containing methods that all other streams inherit """
+  def __init__(self, name, mock=False):
+    self.name = name
+    self.proc = None
+    self.mock = mock
+    self.src = None
+    self.state = 'disconnected'
+
+  def send_cmd(self, cmd: str) -> None:
+    """ Generic send_cmd function. If not implemented in a stream,
+    and a command is sent, this error will be raised.
+    """
+    raise NotImplementedError()
+
+class Shairport(BaseStream):
   """ An Airplay Stream """
   def __init__(self, name, mock=False):
     self.name = name
@@ -205,7 +220,7 @@ class Shairport:
     mock = ' (mock)' if self.mock else ''
     return 'airplay: {}{}{}'.format(self.name, connection, mock)
 
-class Spotify:
+class Spotify(BaseStream):
   """ A Spotify Stream """
   def __init__(self, name, mock=False):
     self.name = name
@@ -337,7 +352,7 @@ class Spotify:
     except Exception as exc:
       return(f'Command {cmd} failed to send. See error message: {exc}')
 
-class Pandora:
+class Pandora(BaseStream):
   """ A Pandora Stream """
 
   class Control:
@@ -512,7 +527,7 @@ class Pandora:
   def status(self):
     return self.state
 
-class DLNA:
+class DLNA(BaseStream):
   """ A DLNA Stream """
   def __init__(self, name, mock=False):
     self.name = name
@@ -605,7 +620,7 @@ class DLNA:
     mock = ' (mock)' if self.mock else ''
     return f'DLNA: {self.name}{connection}{mock}'
 
-class InternetRadio:
+class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
   def __init__(self, name, url, logo, mock=False):
     self.name = name
@@ -700,7 +715,7 @@ class InternetRadio:
     mock = ' (mock)' if self.mock else ''
     return 'internetradio connect: {self.name}{connection}{mock}'
 
-class Plexamp:
+class Plexamp(BaseStream):
   """ A Plexamp Stream """
 
   def __init__(self, name, client_id, token, mock=False):
@@ -841,4 +856,3 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'plexamp':
     return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
   raise NotImplementedError(stream.type)
-
