@@ -16,6 +16,7 @@ Thanks for considering developing for AmpliPi. We appreciate your support!
 1. Change directory to amplipi-dev `cd ~/amplipi-dev`
 1. Make changes using your favorite editor
 1. To run the amplipi server in debug mode, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
+1. Once you are comfortable with your changes, run `./scripts/configure.py --python-deps --os-deps --display --web`. This will install any required dependencies and reconfigure the amplipi web and display services.
 
 ## Developing on an AmpliPi Controller remotely using vscode
 
