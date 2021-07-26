@@ -151,24 +151,25 @@ def get_folder(folder):
 
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
 
+@functools.lru_cache(1)
 def detect_version() -> str:
   """ Get the AmpliPi software version from the project TOML file """
+  # assume the application is running in its base directory and check the pyproject.toml file to determine the version
+  # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
   version = 'unknown'
+  script_folder = os.path.dirname(os.path.realpath(__file__))
   try:
-    version = pkg_resources.get_distribution('amplipi').version
+    with open(os.path.join(script_folder, '..', 'pyproject.toml')) as proj_file:
+      for line in proj_file.readlines():
+        if 'version' in line:
+          match = TOML_VERSION_STR.search(line)
+          if match is not None:
+            version = match.group(1)
   except:
     pass
-  if 'unknown' in version:
-    # assume the application is running in its base directory and check the pyproject.toml file to determine the version
-    # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
-    script_folder = os.path.dirname(os.path.realpath(__file__))
+  if version == 'unknown':
     try:
-      with open(os.path.join(script_folder, '..', 'pyproject.toml')) as proj_file:
-        for line in proj_file.readlines():
-          if 'version' in line:
-            match = TOML_VERSION_STR.search(line)
-            if match is not None:
-              version = match.group(1)
+      version = pkg_resources.get_distribution('amplipi').version
     except:
       pass
   return version

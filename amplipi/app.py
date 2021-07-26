@@ -50,6 +50,10 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
+# mdns service advertisement
+from socket import gethostname, inet_aton
+from zeroconf import IPVersion, ServiceInfo, Zeroconf
+
 # amplipi
 import amplipi.utils as utils
 import amplipi.models as models
@@ -680,6 +684,35 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
     settings.delay_saves = delay_saves
   get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app
+
+def advertise_service(port):
+  """ Advertise the AmpliPi api via zerconf, can be verified with 'avahi-browse -ar' """
+  hostname = f'{gethostname()}.local'
+  url = f'http://{hostname}'
+  if port != 80:
+    url += f':{port}'
+  info = ServiceInfo(
+    "_http._tcp.local.",
+    "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    addresses=[inet_aton("127.0.0.1")],
+    port=port,
+    properties={
+      # standard info
+      'path': '/api/',
+      # extra info - for interfacing
+      'name': 'AmpliPi',
+      "vendor": 'MicroNova',
+      'version': utils.detect_version(),
+      # extra info - for user
+      'web_app': url,
+      'documentation': f'{url}/doc'
+    },
+    server=f'{hostname}.', # Every other service has a trailing '.' here. If it is missing Zeroconf's example/browser.py fails to process this.
+  )
+  print(f'AmpliPi zeroconf - registering service: {info}')
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
+  zeroconf.register_service(info)
+  print('AmpliPi zeroconf - finished registering service')
 
 if __name__ == "__main__":
   # Generate the openapi schema file in yaml
