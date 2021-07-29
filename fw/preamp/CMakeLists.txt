@@ -110,3 +110,17 @@ add_custom_target(program
   COMMENT "Programming preamp"
   DEPENDS ${PROJECT_NAME}.elf
 )
+
+# TODO: program more than 1 expander
+add_custom_target(program-expander
+  COMMAND i2cset -y 1 0x08 0x0F 0x02 &&
+          sleep 0.01 &&
+          i2cset -y 1 0x08 0x0F 0x0F &&
+          sudo stm32flash -vb 9600 -w ${PROJECT_NAME}.bin /dev/serial0 &&
+          i2cset -y 1 0x08 0x0F 0x00 &&
+          sleep 0.01 &&
+          i2cset -y 1 0x08 0x0F 0x01
+          # TODO: The I2C address won't be set, need a way to do that
+  COMMENT "Programming expander preamp"
+  DEPENDS ${PROJECT_NAME}.elf
+)
