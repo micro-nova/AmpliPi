@@ -28,13 +28,13 @@
      inkscape:pageshadow="2"
      inkscape:zoom="8"
      inkscape:cx="50.745418"
-     inkscape:cy="68.366486"
+     inkscape:cy="51.616486"
      inkscape:document-units="px"
-     inkscape:current-layer="layer4"
+     inkscape:current-layer="layer3"
      showgrid="false"
-     inkscape:window-width="1276"
-     inkscape:window-height="2108"
-     inkscape:window-x="1280"
+     inkscape:window-width="3836"
+     inkscape:window-height="2109"
+     inkscape:window-x="0"
      inkscape:window-y="24"
      inkscape:window-maximized="0"
      inkscape:grid-bbox="true"
@@ -49,7 +49,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -58,12 +58,13 @@
      id="layer4"
      inkscape:label="Layer 4">
     <rect
-       style="fill:#333333;stroke:#333333;stroke-width:16.48610687;stroke-linejoin:round;stroke-miterlimit:1.20000005;stroke-dasharray:none;stroke-opacity:1;opacity:1"
+       style="opacity:1;fill:#333333;stroke:#333333;stroke-width:16.48610687;stroke-linejoin:round;stroke-miterlimit:1.20000005;stroke-dasharray:none;stroke-opacity:1"
        id="rect3762"
        width="105.03885"
        height="39.013893"
-       x="11.793056"
-       y="41.693058" />
+       x="-115.71942"
+       y="44.805534"
+       transform="rotate(-90)" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -72,27 +73,31 @@
     <circle
        style="fill:#999999;stroke-width:0.46857145"
        id="path3736"
-       cx="36.25"
-       cy="61.25"
-       r="20.5" />
+       cx="-94"
+       cy="64.312485"
+       r="20.5"
+       transform="rotate(-90)" />
     <circle
        style="fill:#999999;stroke-width:0.46857145"
        id="path3736-3"
-       cx="90.5"
-       cy="61.5"
-       r="20.5" />
+       cx="-32.375"
+       cy="64.312485"
+       r="20.5"
+       transform="rotate(-90)" />
     <circle
        style="fill:#f9f9f9;stroke-width:0.43386245"
        id="path3731-6"
-       cx="90.5"
-       cy="61.5"
-       r="18.005291" />
+       cx="-32.375"
+       cy="64.312485"
+       r="18.005291"
+       transform="rotate(-90)" />
     <circle
        id="path3729-7"
-       cx="90.5"
-       cy="61.5"
+       cx="-32.375"
+       cy="64.312485"
        r="6.9417992"
-       style="stroke-width:0.43386245" />
+       style="stroke-width:0.43386245"
+       transform="rotate(-90)" />
   </g>
   <g
      id="layer1"
@@ -101,9 +106,10 @@
     <circle
        style="fill:#ff2a2a;stroke-width:0.43386245"
        id="path3731"
-       cx="36.25"
-       cy="61.25"
-       r="18.005291" />
+       cx="-94"
+       cy="64.312485"
+       r="18.005291"
+       transform="rotate(-90)" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -111,9 +117,10 @@
      inkscape:label="Layer 2">
     <circle
        id="path3729"
-       cx="36.25"
-       cy="61.25"
+       cx="-94"
+       cy="64.312485"
        r="6.9417992"
-       style="stroke-width:0.43386245" />
+       style="stroke-width:0.43386245"
+       transform="rotate(-90)" />
   </g>
 </svg>

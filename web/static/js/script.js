@@ -1,10 +1,5 @@
 
 const icons = {
-  'shairport' : '/static/imgs/shairport.png',
-  'local'     : '/static/imgs/rca_inputs.svg',
-  'pandora'   : '/static/imgs/pandora.png',
-  'spotify'   : '/static/imgs/spotify.png',
-  'dlna'      : '/static/imgs/dlna.png',
   'none'      : '/static/imgs/disconnected.png'
 }
 
@@ -220,21 +215,24 @@ function updateSourceView(status) {
     let cover = $('#s' + src.id + '-player .cover img')[0];
     let artist = $('#s' + src.id + '-player .info .artist')[0];
     let album = $('#s' + src.id + '-player .info .album')[0];
-    let song = $('#s' + src.id + '-player .info .song')[0];
+    let track = $('#s' + src.id + '-player .info .song')[0];
     let next = $('#s' + src.id + '-player .step-forward')[0];
     let play_pause = $('#s' + src.id + '-player .play-pause')[0];
     let like = $('#s' + src.id + '-player .like')[0];
     let dislike = $('#s' + src.id + '-player .dislike')[0];
     let playing_indicator = $('#s' + src.id + ' i')[0];
     // defaults
-    artist.innerHTML = 'No artist';
-    album.innerHTML = 'No album';
-    song.innerHTML = 'No song';
-    playing_indicator.style.visibility = "hidden"; // TODO: add audio playing detection to rca inputs
     like.style.visibility = "hidden";
     dislike.style.visibility = "hidden";
     play_pause.style.visibility = "hidden";
     next.style.visibility = "hidden";
+
+    track.innerHTML = src.info.track ? src.info.track : src.info.name;
+    artist.innerHTML = src.info.artist ? src.info.artist : '';
+    album.innerHTML = src.info.album ? src.info.album : '';
+    cover.src = src.info.img_url ? src.info.img_url : icons['none'];
+    const playing = src.info.state == "playing";
+    playing_indicator.style.visibility = playing ? "visible" : "hidden";
     if (stream_id) {
       // find the right stream
       let stream = undefined;
@@ -247,61 +245,14 @@ function updateSourceView(status) {
       if (stream) {
         // update the player's song info
         if (stream.type == 'pandora') {
-          const playing = stream.status == "playing";
           next.style.visibility = "visible";
           like.style.visibility = "visible";
           dislike.style.visibility = "visible";
-          playing_indicator.style.visibility = playing ? "visible" : "hidden";
           play_pause.style.visibility = "visible";
           play_pause.classList.toggle('fa-play', !playing);
           play_pause.classList.toggle('fa-pause', playing);
-          try {
-            // update album art and track info
-            cover.src = stream.info.img_url ? stream.info.img_url : icons['pandora'];
-            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
-            album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
-            song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
-          } catch (err) {}
-        } else if (stream.type == 'shairport') {
-          try {
-            // update album art and track info
-            cover.src = stream.info.img_url ? stream.info.img_url : icons['shairport'];
-            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
-            album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
-            song.innerHTML = stream.info.track ? stream.info.track : song.innerHTML;
-          } catch (err) {}
-        } else if (stream.type == 'spotify') {
-          // TODO: populate spotify album info
-          cover.src = icons['spotify'];
-        } else if (stream.type == 'dlna') {
-          // update dlna album info
-          cover.src = icons['dlna'];
-          artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
-          album.innerHTML = stream.info.album ? stream.info.album : album.innerHTML;
-          song.innerHTML = stream.info.title ? stream.info.title : song.innerHTML;
-        } else if (stream.type == 'internetradio') {
-          const playing = stream.status == "connected";
-          album.style.display = "none";
-          next.style.visibility = "hidden";
-          like.style.visibility = "hidden";
-          dislike.style.visibility = "hidden";
-          playing_indicator.style.visibility = playing ? "visible" : "hidden";
-          play_pause.style.visibility = "hidden";
-          play_pause.classList.toggle('fa-play', !playing);
-          play_pause.classList.toggle('fa-pause', playing);
-          try {
-            // update album art and track info
-            cover.src = stream.info.img_url ? stream.info.img_url : icons['none'];
-            artist.innerHTML = stream.info.artist ? stream.info.artist : artist.innerHTML;
-            song.innerHTML = stream.info.song ? stream.info.song : song.innerHTML;
-          } catch (err) {}
         }
       }
-    } else if (src.input == 'local') {
-      cover.src = icons['local'];
-      artist.innerHTML = src.name;
-    } else {
-      cover.src = icons['none'];
     }
     // update each source's input
     player = $("#s" + src.id + "-player")[0];
@@ -316,8 +267,13 @@ function updateSourceView(status) {
       let z = ctrl.dataset.zone;
       updateVol(ctrl, status.zones[z].mute, status.zones[z].vol);
     } else if (ctrl.dataset.hasOwnProperty('group')) {
-      let g = ctrl.dataset.group;
-      updateVol(ctrl, status.groups[g].mute, status.groups[g].vol_delta);
+      let gid = ctrl.dataset.group;
+      for (const g of status.groups) {
+        if (g.id == gid) {
+          updateVol(ctrl, g.mute, g.vol_delta);
+          break;
+        }
+      }
     } else {
       console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
     }
@@ -346,7 +302,7 @@ function onResponse(resp) {
   updateSourceView(resp);
 }
 async function get() {
-  let response = await fetch('/api/');
+  let response = await fetch('/api');
   let result = await response.json();
   onResponse(result);
   return result;
@@ -488,12 +444,6 @@ function initVolControl(ctrl) {
     }
   });
 
-  barHoverBox.addEventListener("wheel", (e) => {
-    const j = (range.max - range.min) / 200.0;
-    const val = +range.value + e.deltaY * j;
-    setValue(val);
-  });
-
   document.addEventListener("mouseup", (e) => {
     vols[ctrl.id].barStillDown = false;
   }, true);
@@ -501,4 +451,106 @@ function initVolControl(ctrl) {
   document.addEventListener("touchend", (e) => {
    vols[ctrl.id].barStillDown = false;
   }, true);
+}
+
+async function plex_pin_req() {
+  // Request a Plex pin to use for interacting with the Plex API
+  document.getElementById('plexamp-connect').textContent = "Sending request...";
+  let myuuid = uuidv4(); // UUID used as the 'clientIdentifier' for Plexamp requests/devices
+  let details = { }
+  let response = await fetch('https://plex.tv/api/v2/pins', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: "strong=true&X-Plex-Product=AmpliPi&X-Plex-Client-Identifier=" + myuuid
+  }); // The actual pin request is sent. response holds the pin, pin code, and our UUID.
+  response.json()
+  .then(function(response){ // Make URL for the Plex Account Login
+    const purl = `https://app.plex.tv/auth#?clientID=${response.clientIdentifier}&code=${response.code}&context%5Bdevice%5D%5Bproduct%5D=AmpliPi`;
+    details.id = response.id; // The actual PIN
+    details.code = response.code; // A code associated with the PIN
+    details.uuid = response.clientIdentifier; // Our UUID associated with the PIN and authToken
+    details.authToken = null; // Will eventually hold a token from plex_token_ret on a successful sign-in
+    console.log(details);
+    window.open(purl, "_blank"); // Open 'purl' in a new tab in the current browser window
+  });
+  return details; // Pin, code, UUID, and authToken are used in the other functions
+}
+
+async function plex_token_ret(details) {
+  // Attempt to retrieve the plex token (this will return 'null' until the user enters their Plex account details)
+  // NOTE: this token will only work for plexamp if the user has a Plex Pass subscription
+  document.getElementById('plexamp-connect').textContent = "Awaiting Plex sign-in...";
+  let response = await fetch('https://plex.tv/api/v2/pins/'+details.id, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'code': details.code,
+      'X-Plex-Client-Identifier': details.uuid
+    },
+  }); // Information related to our PIN was requested. Parse that info to see if we've authenticated yet
+  response.json().then(function(response){
+    console.log("Token: " + response.authToken);
+    details.authToken = response.authToken;
+    console.log("Time remaining: " + response.expiresIn);
+    details.expiresIn = response.expiresIn;
+  });
+  return details;
+}
+
+async function plex_stream(details) {
+  // Create Plexamp stream using AmpliPi's API
+  var req = {
+    "name": "AmpliPi Plexamp",
+    "client_id": details.uuid,
+    "token": details.authToken,
+    "type": "plexamp"
+  } // POST a new stream to the AmpliPi API using the newly authenticated credentials
+  sendRequest('/stream', 'POST', req);
+  console.log(`Creating stream with these parameters: name = ${req.name}, UUID = ${req.client_id}, and token = ${req.token}`);
+}
+
+function sleepjs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms)); // JavaScript sleep function
+}
+
+async function plexamp_create_stream() {
+  // Connect to Plex's API and add a Plexamp stream to AmpliPi
+  var connect_button = document.getElementById('plexamp-connect');
+  var reset_button = document.getElementById('plexamp-reset');
+  var done_button = document.getElementById('plexamp-done');
+  var msg_box = document.getElementById('plexamp-msg');
+  connect_button.disabled = true;
+  let details = await plex_pin_req(); // Request a pin
+  await sleepjs(2000); // Wait for info to propagate over
+  reset_button.style.display = "inline-block";
+  done_button.style.display = "none";
+  msg_box.style.display = "none";
+
+  do {
+    let details2 = await plex_token_ret(details); // Retrieve our token
+    await sleepjs(2000); // poll the plex servers slowly
+    if (details2.expiresIn == null){
+      msg_box.textContent = "Timed out while waiting for response from Plex";
+      msg_box.style.color = "yellow";
+      msg_box.style.display = "block";
+      msg_box.style.alignSelf = "center";
+      break; // Break when you run out of time (30 minutes, set by Plex)
+    }
+    details = details2; // Update authToken state and time until expiration
+  } while (details.authToken == null); // "== null" should also check for undefined
+  if (details.authToken){
+    connect_button.style.display = "none";
+    reset_button.style.display = "none";
+    done_button.textContent = "Done - click to continue";
+    done_button.style.display = "inline-block";
+    msg_box.textContent = "'AmpliPi Plexamp' stream added";
+    msg_box.style.color = "white";
+    msg_box.style.display = "block";
+    msg_box.style.alignSelf = "center";
+    plex_stream(details); // Create a Plexamp stream using the API!
+  }
 }

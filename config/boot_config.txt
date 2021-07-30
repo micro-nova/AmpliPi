@@ -63,8 +63,18 @@ max_framebuffers=2
 
 [all]
 enable_uart=1
-gpio=4=op,dh
-gpio=5=op,dl
+gpio=4=op,dh # Preamp RESET pin
+gpio=5=op,dl # Preamp BOOT0 pin
 
 # enable i2s DAC
 dtoverlay=hifiberry-dac
+dtoverlay=i2s-gpio28-31
+
+# Enable SPI1 and SPI2 with two chip selects each
+dtoverlay=spi1-2cs
+dtoverlay=spi2-2cs
+
+# Default core_freq for Pi3 is 400 MHz
+# Lock it so it doesn't scale down and lower SPI speed
+core_freq=400
+core_freq_min=400

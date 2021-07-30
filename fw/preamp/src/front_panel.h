@@ -26,10 +26,9 @@
 #define ON (true)
 #define OFF (false)
 
-void delay(int a);
 void setAudioPower(bool on);
 
 void enableFrontPanel();
-void updateFrontPanel();
+void updateFrontPanel(bool on);
 
 #endif /* FRONT_PANEL_H_ */

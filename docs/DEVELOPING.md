@@ -7,15 +7,16 @@ Thanks for considering developing for AmpliPi. We appreciate your support!
 1. Use `scripts/deploy` to deploy the latest software.
    The pi must have access to the internet to successfully run this script.
 1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
-1. Change directory to the development root `~/amplipi-dev` (this is where deploy put the software)
+1. Change directory to the development root `~/amplipi-dev` (this is where `deploy` put the software)
 1. To run the amplipi server in debug mode over an ssh connection, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
-1. Restart amplipi service (it was stopped by `./scripts/run_debug_webserver`) with `sudo systemctl restart amplipi`.
+1. Restart amplipi service (it was stopped by `./scripts/run_debug_webserver`) with `systemctl --user restart amplipi`.
 
 ## Developing on an AmpliPi Controller over SSH
 1. Make a git checkout at `~/amplipi-dev` using `git checkout https://github.com/micro-nova/AmpliPi ~/amplipi-dev` (you may need to delete `amplipi-dev` if it already exists)
 1. Change directory to amplipi-dev `cd ~/amplipi-dev`
 1. Make changes using your favorite editor
 1. To run the amplipi server in debug mode, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
+1. Once you are comfortable with your changes, run `./scripts/configure.py --python-deps --os-deps --display --web`. This will install any required dependencies and reconfigure the amplipi web and display services.
 
 ## Developing on an AmpliPi Controller remotely using vscode
 
@@ -62,7 +63,7 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
 
 ## Developing with a mocked out audio and mocked out controller on a debian based os
 1. Checkout this repo
-1. Install python dependencies
+1. Install python dependencies with `scripts/configure.py --python-deps`
 1. Use ```scripts/run_debug_webserver --mock-ctrl --mock-streams``` to start the mock server
 
 ## Developing with a mocked out controller (with 4 stereo channel audio) on something running Raspberry Pi OS
