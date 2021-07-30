@@ -570,13 +570,14 @@ def test_zeroconf():
         info = zeroconf.get_service_info(service_type, name)
         services_advertised[name] = info
 
-  # start listener that adds services as they are advertised
+  # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
+  amplipi.app.advertise_service(9898)
+  sleep(0.5)
+
+  # start listener that adds services
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
   services = ["_http._tcp.local.", "_hap._tcp.local."]
   _ = ServiceBrowser(zeroconf, services, handlers=[on_service_state_change])
-
-  # advertise amplipi-api service
-  amplipi.app.advertise_service(9898)
 
   sleep(0.5)
   zeroconf.close()
