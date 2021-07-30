@@ -776,8 +776,87 @@ class FilePlayer(BaseStream):
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
 
+class FMRadio:
+  """ An FMRadio Stream using RTLSDR """
+  def __init__(self, name, freq, logo, mock=False):
+    self.name = name
+    self.freq = freq
+    self.logo = logo
+    self.proc = None
+    self.proc2 = None
+    self.mock = mock
+    self.src = None
+    self.state = 'disconnected'
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    ir_fields = ['freq', 'logo']
+    fields = list(ir_fields) + ['name']
+    for k,v in kwargs.items():
+      if k in fields and self.__dict__[k] != v:
+        self.__dict__[k] = v
+        if k in ir_fields:
+          reconnect_needed = True
+    if reconnect_needed and self._is_running():
+      last_src = self.src
+      self.disconnect()
+      time.sleep(0.1) # delay a bit, is this needed?
+      self.connect(last_src)
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, src):
+    """ Connect a fmradio.py output to a given audio source """
+    print(f'connecting {self.name} to {src}...')
+
+    if self.mock:
+      print(f'{self.name} connected to {src}')
+      self.state = 'connected'
+      self.src = src
+      return
+
+    rtlfm_args = ['rtl_fm', '-M', 'fm', '-f', '{}M'.format(self.freq), '-s', '171k', '-A', 'fast', '-p', '0', '-l', '0', '-E', 'deemp']
+    aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', utils.output_device(src)]
+    print(f'running: {rtlfm_args} | {aplay_args}')
+    self.proc = subprocess.Popen(args=rtlfm_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.proc2 = subprocess.Popen(args=aplay_args, stdin=self.proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    print(f'{self.name} (stream: {self.freq}) connected to {src} via {utils.output_device(src)}')
+
+    self.state = 'connected'
+    self.src = src
+
+  def _is_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_running():
+      self.proc2.kill()
+      self.proc.kill()
+      #os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      print(f'{self.name} disconnected')
+    self.state = 'disconnected'
+    self.proc = None
+    self.proc2 = None
+    self.src = None
+
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(name=_stream_name(self.name, 'fm radio'), state=self.state, img_url=self.logo)
+    return source
+
+  def status(self):
+    return self.state
+
+  def __str__(self):
+    connection = f' connected to src={self.src}' if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return 'fmradio connect: {self.name}{connection}{mock}'
+
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer]
+AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -799,4 +878,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
   elif stream.type == 'fileplayer':
     return FilePlayer(args['name'], args['url'], mock=mock)
+  elif stream.type == 'fmradio':
+    return FMRadio(args['name'], args['freq'], args['logo'], mock=mock)
   raise NotImplementedError(stream.type)

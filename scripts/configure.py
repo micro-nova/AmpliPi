@@ -38,6 +38,9 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'internet_radio' : {
     'apt' : [ 'vlc' ]
   },
+  'fmradio' : {
+    'apt' : [ 'rtl-sdr' ]
+  },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
               'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',

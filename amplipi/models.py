@@ -392,6 +392,7 @@ class Stream(Base):
   * spotify
   * plexamp
   * file
+  * fmradio
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
@@ -399,6 +400,7 @@ class Stream(Base):
   station: Optional[str] = Field(description='Radio station identifier')
   url: Optional[str] = Field(description='Stream url, used for internetradio and file')
   logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
+  freq: Optional[str] = Field(description='FM Frequency, used for fmradio')
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
 
@@ -471,7 +473,15 @@ class Stream(Base):
             'name': 'Play NASA Announcement',
             'url': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3'
           }
-        }
+        },
+        'Add FM Radio Station': {
+          'value': {
+            'name': 'WXYZ',
+            'type': 'fmradio',
+            'freq': '100.1',
+            'logo': 'static/imgs/fmradio.png'
+          }
+        },
       },
       'examples': {
         'Regina Spektor Radio': {
@@ -526,6 +536,7 @@ class StreamUpdate(BaseUpdate):
   station: Optional[str]
   url: Optional[str]
   logo: Optional[str]
+  freq: Optional[str]
 
   class Config:
     schema_extra = {
