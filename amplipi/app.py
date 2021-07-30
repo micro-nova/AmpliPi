@@ -694,7 +694,7 @@ def advertise_service(port):
   info = ServiceInfo(
     "_http._tcp.local.",
     "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
-    addresses=[inet_aton("127.0.0.1")],
+    addresses=[inet_aton("127.0.0.1"), inet_aton("0.0.0.0")],
     port=port,
     properties={
       # standard info
@@ -707,7 +707,7 @@ def advertise_service(port):
       'web_app': url,
       'documentation': f'{url}/doc'
     },
-    server=f'{hostname}.', # Every other service has a trailing '.' here. If it is missing Zeroconf's example/browser.py fails to process this.
+    server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
   )
   print(f'AmpliPi zeroconf - registering service: {info}')
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
