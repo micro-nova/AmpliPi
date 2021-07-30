@@ -686,7 +686,7 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   return app
 
 def advertise_service(port):
-  """ Advertise the AmpliPi api via zerconf, can be verified with 'avahi-browse -ar' """
+  """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar' """
   hostname = f'{gethostname()}.local'
   url = f'http://{hostname}'
   if port != 80:
