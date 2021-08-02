@@ -564,6 +564,7 @@ def test_zeroconf():
   # TODO: migrate this test into its own module
   from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
   from time import sleep
+  from multiprocessing import Process
   services_advertised = {}
   def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
     if state_change is ServiceStateChange.Added:
@@ -571,8 +572,9 @@ def test_zeroconf():
         services_advertised[name] = info
 
   # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
-  amplipi.app.advertise_service(9898)
-  sleep(0.5)
+  zc_reg = Process(target=amplipi.app.advertise_service, args=(9898,))
+  zc_reg.start()
+  sleep(4) # wait for a bit to make sure the service is started
 
   # start listener that adds services
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
@@ -583,3 +585,5 @@ def test_zeroconf():
   zeroconf.close()
   assert 'amplipi-api._http._tcp.local.' in services_advertised
   assert services_advertised['amplipi-api._http._tcp.local.'].port == 9898
+
+  zc_reg.terminate()
