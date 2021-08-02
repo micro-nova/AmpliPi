@@ -694,7 +694,7 @@ def advertise_service(port):
   info = ServiceInfo(
     "_http._tcp.local.",
     "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
-    addresses=[inet_aton("127.0.0.1"), inet_aton("0.0.0.0")],
+    addresses=[inet_aton("0.0.0.0")], # TODO: insert correct address for AmpliPi or figure out how to do this per interface for atleast wifi, enet, and loopback
     port=port,
     properties={
       # standard info
