@@ -845,6 +845,8 @@ class FMRadio:
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(name=_stream_name(self.name, 'fm radio'), state=self.state, img_url=self.logo)
+    source.track = self.name
+    source.artist = self.freq + " FM"
     return source
 
   def status(self):
