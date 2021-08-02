@@ -714,12 +714,15 @@ def advertise_service(port):
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   from time import sleep
-  while not zeroconf.done:
-    try:
+  try:
+    while not zeroconf.done:
       sleep(0.1)
-    except:
-      break
-
+  except:
+    pass
+  finally:
+    print("AmpliPi zeroconf - unregistering service")
+    zeroconf.unregister_service(info)
+    zeroconf.close()
 if __name__ == "__main__":
   # Generate the openapi schema file in yaml
   parser = argparse.ArgumentParser(description='Create the openapi yaml file describing the AmpliPi API')
