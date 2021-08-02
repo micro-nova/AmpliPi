@@ -713,6 +713,12 @@ def advertise_service(port):
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
+  from time import sleep
+  while not zeroconf.done:
+    try:
+      sleep(0.1)
+    except:
+      break
 
 if __name__ == "__main__":
   # Generate the openapi schema file in yaml
