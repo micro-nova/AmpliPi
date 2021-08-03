@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import sys
-import time
 # args validation
 import argparse
 import os
@@ -22,51 +21,51 @@ si_loc = '{}/sourceInfo'.format(args.sp_config_dir)
 p_status = ''
 
 def read_field():
-    line = sys.stdin.readline()
-    line = line.strip(' \n')
-    if line[-6:] == 'bytes.': # Works with Mike Brady version of shairport-sync-metadata-reader
-        line = '"Picture: ' + line + '".'
-    if line:
-        while line[-2:] != '".':
-            line2 = sys.stdin.readline()
-            line2 = line2.strip(' \n')
-            line = line + '\n' + line2
-        data = line.split(': ')
-        if len(data) > 2:
-            for i in range(2, len(data), 1):
-                data[1] += ': '
-                data[1] += data[i]
-        return data[0], data[1]
-    else:
-        return None, None
+  line = sys.stdin.readline()
+  line = line.strip(' \n')
+  if line[-6:] == 'bytes.': # Works with Mike Brady version of shairport-sync-metadata-reader
+    line = '"Picture: ' + line + '".'
+  if line:
+    while line[-2:] != '".':
+      line2 = sys.stdin.readline()
+      line2 = line2.strip(' \n')
+      line = line + '\n' + line2
+    data = line.split(': ')
+    if len(data) > 2:
+      for i in range(2, len(data), 1):
+        data[1] += ': '
+        data[1] += data[i]
+    return data[0], data[1]
+  else:
+    return None, None
 
 def info():
-    u = {}
-    v = {}
-    field = ''
-    while field != '"ssnc" "mden"':
-        field, data = read_field()
-        # print(field, ':', data)
-        if field:
-            u[field] = data
-    v = u['Artist'] + ',,,' + u['Title'] + ',,,' + u['Album Name']
-    return v
+  u = {}
+  v = {}
+  field = ''
+  while field != '"ssnc" "mden"':
+    field, data = read_field()
+    # print(field, ':', data)
+    if field:
+      u[field] = data
+  v = u['Artist'] + ',,,' + u['Title'] + ',,,' + u['Album Name']
+  return v
 
 def s_info(inp):
-    u = {}
-    v = {}
-    field = ''
-    u['"ssnc" "snua"'] = inp
-    try:
-      while field != '"ssnc" "pbeg"':
-          field, data = read_field()
-          # print(field, ':', data)
-          if field:
-              u[field] = data
-      v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
-    except:
-      pass
-    return v
+  u = {}
+  v = {}
+  field = ''
+  u['"ssnc" "snua"'] = inp
+  try:
+    while field != '"ssnc" "pbeg"':
+      field, data = read_field()
+      # print(field, ':', data)
+      if field:
+        u[field] = data
+    v = u['"ssnc" "snua"'] + ',,,' + u['"ssnc" "acre"'] + ',,,' + u['"ssnc" "daid"'] + ',,,' + u["Client's IP"]
+  except:
+    pass
+  return v
 
 f = open(cs_loc, 'w')
 f.write("")
@@ -75,38 +74,38 @@ f = open(si_loc, 'w')
 f.write("")
 f.close()
 while True:
-    field, data = read_field()
-    # print(field, ':', data)
-    p_status = ',,,PAUSED=False'
-    if field == '"ssnc" "mdst"':
-        q = info() + p_status
-        print(q)
-        f = open(cs_loc, 'w')
-        f.write(str(q))
-        f.close()
-    elif field == '"ssnc" "snua"':
-        q = s_info(data)
-        print(q)
-        f = open(si_loc, 'w')
-        f.write(str(q))
-        f.close()
-    elif field == '"ssnc" "pend"':
-        f = open(cs_loc, 'r')
-        data = f.read()
-        data = data.replace('=False', '=True')
-        f.close()
-        f = open(cs_loc, 'w')
-        f.write(data)
-        f.close()
-    elif field == 'Image length': # 'Image length' and 'Image name' are new outputs from the MicroNova fork of shairport-sync-metadata-reader: https://github.com/micronova-jb/shairport-sync-metadata-reader
-        lin = ',,,' + data
-        f = open(cs_loc, 'a')
-        f.write(lin)
-        f.close()
-    elif field == 'Image name':
-        pic = ',,,' + data
-        f = open(cs_loc, 'a')
-        f.write(pic)
-        f.close()
-    elif field == '"End of file"':
-        break
+  field, data = read_field()
+  # print(field, ':', data)
+  p_status = ',,,PAUSED=False'
+  if field == '"ssnc" "mdst"':
+    q = info() + p_status
+    print(q)
+    f = open(cs_loc, 'w')
+    f.write(str(q))
+    f.close()
+  elif field == '"ssnc" "snua"':
+    q = s_info(data)
+    print(q)
+    f = open(si_loc, 'w')
+    f.write(str(q))
+    f.close()
+  elif field == '"ssnc" "pend"':
+    f = open(cs_loc, 'r')
+    data = f.read()
+    data = data.replace('=False', '=True')
+    f.close()
+    f = open(cs_loc, 'w')
+    f.write(data)
+    f.close()
+  elif field == 'Image length': # 'Image length' and 'Image name' are new outputs from the MicroNova fork of shairport-sync-metadata-reader: https://github.com/micronova-jb/shairport-sync-metadata-reader
+    lin = ',,,' + data
+    f = open(cs_loc, 'a')
+    f.write(lin)
+    f.close()
+  elif field == 'Image name':
+    pic = ',,,' + data
+    f = open(cs_loc, 'a')
+    f.write(pic)
+    f.close()
+  elif field == '"End of file"':
+    break

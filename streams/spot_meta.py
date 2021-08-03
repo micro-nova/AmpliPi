@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+""" Spotify Metadata Translator
+    This file reads/translates the metadata coming from vollibrespot and
+    writes the useful information to currentSong
+"""
 import socket
 import json
 import re
