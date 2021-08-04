@@ -687,7 +687,7 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app
 
-def get_ip_addr(iface='eth0'):
+def get_ip_addr(iface: str = 'eth0') -> Optional[str]:
   """ Get the IP address of interface @iface """
   try:
     return ni.ifaddresses(iface)[ni.AF_INET][0]['addr']
@@ -728,7 +728,7 @@ def advertise_service(port):
     server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
   )
   print(f'AmpliPi zeroconf - registering service: {info}')
-  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr]) # right now the AmpliPi webserver is ipv4 only
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr, '127.0.0.1']) # right now the AmpliPi webserver is ipv4 only
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
