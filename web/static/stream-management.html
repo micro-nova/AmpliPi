@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <!-- This is black magic that makes the screen look good on mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AmpliPi - Home Audio | Stream Management</title>
+  <link rel="shortcut icon" href="static/imgs/amplipi-small-logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css"
+                onerror="this.onerror=null;this.href='static/css/libs/normalize/5.0.0/normalize.min.css';">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'
+                onerror="this.onerror=null;this.href='static/css/libs/font-awesome/5.15.1/all.min.css';">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'
+                onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
+  <link rel="stylesheet" href="static/css/style.css">
+  <link rel="apple-touch-icon" href="static/imgs/amplipi-small-logo.png">
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div class="container">
+  <div id="main-list">
+    <div id="preset-list" card="card">
+      <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#main-list" href="#preset-list .card-body" aria-expanded="false">
+        <!--h6 class="card-header"><i class="fas fa-chevron-down"></i> </h6-->
+        <div class="title"><span class="text-white">Ampli</span><span class="text-danger">Pi</span></div>
+      </a>
+    </div>
+    
+    <div class="card add-group">
+      <h6 class="card-header">Stream Management</h6>
+      <div class="card-body">
+      <div class="row">
+        <div class="col-sm-4">
+          <div class="selection">
+            <ul class="list-group" style="cursor: pointer;">
+              <li class="list-group-item list-group-item-action list-group-item-success" id="newStream">
+                Add New Stream
+              </li>
+            </ul>
+            <hr />
+            <ul class="list-group" id="streamSelection" style="cursor: pointer;">
+            </ul>
+            
+          </div>
+        </div>
+        <div class="col-sm-8">
+          <h6 class="card-header">Stream Settings: <span id="streamTitle"></span></h6>
+          <div id="settings" style="padding: .75rem 1.25rem;">
+            
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+  </div>
+  <div id="amplipi-info" class="text-center">
+    <div>
+      <span><a href="http://www.AmpliPi.com" target="_blank" rel="noopener noreferrer">AmpliPi</a>™ by <a href="http://www.micro-nova.com" target="_blank" rel="noopener noreferrer">MicroNova</a></span>
+    </div>
+    <div id="version">
+      v0.1.4 © 2021
+    </div>
+    <div>
+      <span><a href="/doc" target="_blank" rel="noopener noreferrer">API</a> | <a href="http://www.github.com/micro-nova/AmpliPi" target="_blank" rel="noopener noreferrer">GitHub</a> | <a href="https://github.com/micro-nova/AmpliPi/blob/master/COPYING" target="_blank" rel="noopener noreferrer">License</a></span>
+    </div>
+  </div>
+</div>
+<!-- partial -->
+  <!-- jQuery JS CDN -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+  <!-- jQuery JS local fallback -->
+  <script>window.jQuery || document.write('<script src="static/js/libs/jquery/3.5.1/jquery.min.js"><\/script>')</script>
+  <!-- jQuery UI JS CDN -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+  <!-- jQuery JS local fallback -->
+  <script>(window.jQuery.ui === undefined) && document.write('<script src="static/js/libs/jqueryui/1.12.1/jquery-ui.min.js"><\/script>')</script>
+  <!-- Bootstrap JS CDN -->
+  <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'></script>
+  <!-- Bootstrap JS local fallback -->
+  <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.min.js"><\/script>')</script>
+  <!-- Simple Admin -->
+  <script src='static/js/stream-management.js'></script>
+</body>
+</html>
