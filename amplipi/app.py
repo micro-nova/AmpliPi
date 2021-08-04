@@ -38,6 +38,7 @@ from functools import lru_cache
 import asyncio
 import json
 import yaml
+from time import sleep
 
 from PIL import Image # For custom album art size
 
@@ -49,6 +50,11 @@ from fastapi.routing import APIRoute, APIRouter
 from fastapi.templating import Jinja2Templates
 from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
+
+# mdns service advertisement
+import netifaces as ni
+from socket import gethostname, inet_aton
+from zeroconf import IPVersion, ServiceInfo, Zeroconf
 
 # amplipi
 import amplipi.utils as utils
@@ -680,6 +686,60 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
     settings.delay_saves = delay_saves
   get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app
+
+def get_ip_addr(iface: str = 'eth0') -> Optional[str]:
+  """ Get the IP address of interface @iface """
+  try:
+    return ni.ifaddresses(iface)[ni.AF_INET][0]['addr']
+  except:
+    return None
+
+def advertise_service(port):
+  """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar' """
+  hostname = f'{gethostname()}.local'
+  url = f'http://{hostname}'
+  iface = 'eth0' # TODO: support usb wifi mdns advertisement if needed
+  ip_addr = get_ip_addr(iface)
+  if not ip_addr:
+    print(f'AmpliPi zeroconf - unable to register service on {iface}, it is either not available or has no IP address.')
+    print(f'AmpliPi zeroconf - is this running on AmpliPi?')
+    ip_addr = '0.0.0.0' # Any hosted ip on this device
+  if port != 80:
+    url += f':{port}'
+  # TODO: upgrade to mdns multiinterface support with DCHP address change edge case support similar to one of the following:
+  # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/avahi_publisher.py
+  # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/zeroconf_publisher.py
+  info = ServiceInfo(
+    "_http._tcp.local.",
+    "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    addresses=[inet_aton(ip_addr)],
+    port=port,
+    properties={
+      # standard info
+      'path': '/api/',
+      # extra info - for interfacing
+      'name': 'AmpliPi',
+      "vendor": 'MicroNova',
+      'version': utils.detect_version(),
+      # extra info - for user
+      'web_app': url,
+      'documentation': f'{url}/doc'
+    },
+    server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
+  )
+  print(f'AmpliPi zeroconf - registering service: {info}')
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr, '127.0.0.1']) # right now the AmpliPi webserver is ipv4 only
+  zeroconf.register_service(info)
+  print('AmpliPi zeroconf - finished registering service')
+  try:
+    while not zeroconf.done:
+      sleep(0.1)
+  except:
+    pass
+  finally:
+    print("AmpliPi zeroconf - unregistering service")
+    zeroconf.unregister_service(info)
+    zeroconf.close()
 
 if __name__ == "__main__":
   # Generate the openapi schema file in yaml

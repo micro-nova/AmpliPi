@@ -558,3 +558,32 @@ def test_generate(client):
   #   fn = fn.replace('..\\', '') # Taken from app.py > generated
   #   if os.path.exists('{}/{}'.format(fullpath, fn)):
   #     os.remove('{}/{}'.format(fullpath, fn))
+
+def test_zeroconf():
+  """ Unit test for zeroconf advertisement """
+  # TODO: migrate this test into its own module
+  from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
+  from time import sleep
+  from multiprocessing import Process
+  services_advertised = {}
+  def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
+    if state_change is ServiceStateChange.Added:
+        info = zeroconf.get_service_info(service_type, name)
+        services_advertised[name] = info
+
+  # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
+  zc_reg = Process(target=amplipi.app.advertise_service, args=(9898,))
+  zc_reg.start()
+  sleep(4) # wait for a bit to make sure the service is started
+
+  # start listener that adds services
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
+  services = ["_http._tcp.local.", "_hap._tcp.local."]
+  _ = ServiceBrowser(zeroconf, services, handlers=[on_service_state_change])
+
+  sleep(0.5)
+  zeroconf.close()
+  assert 'amplipi-api._http._tcp.local.' in services_advertised
+  assert services_advertised['amplipi-api._http._tcp.local.'].port == 9898
+
+  zc_reg.terminate()
