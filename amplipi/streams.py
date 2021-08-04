@@ -783,7 +783,6 @@ class FMRadio:
     self.freq = freq
     self.logo = logo
     self.proc = None
-    self.proc2 = None
     self.mock = mock
     self.src = None
     self.state = 'disconnected'
@@ -819,8 +818,10 @@ class FMRadio:
     # Make all of the necessary dir(s)
     src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
     os.system('mkdir -p {}'.format(src_config_folder))
+    song_info_path = f'{src_config_folder}/currentSong'
+    log_file_path = f'{src_config_folder}/log'
 
-    fmradio_args = ['rtl_fm', '-M', 'fm', '-f', '{}'.format(freq), '-s', '171k', '-A', 'std', '-p', '0', '-l', '0', '-E', 'deemp', '|', 'aplay', '-r', '171000', '-f', 'S16_LE', '--device', 'plughw:0,0']
+    fmradio_args = [sys.executable, f"{utils.get_folder('streams')}/fmradio.py", self.freq, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
     print(f'running: {fmradio_args}')
     self.proc = subprocess.Popen(args=fmradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
@@ -854,12 +855,12 @@ class FMRadio:
         if data['prog_type']:
           source.artist = data['prog_type']
         else:
-          source.artist = ""
+          source.artist = self.freq + " FM"
 
         if data['radiotext']:
           source.track = data['radiotext']
         else:
-          source.track = ""
+          source.track = self.name
 
         if data['station']:
           source.station = data['station']

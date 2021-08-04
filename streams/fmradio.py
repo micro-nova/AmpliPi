@@ -22,13 +22,6 @@ parser.add_argument('--test', action='store_true', help='verify the frequency is
 parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
 
-freq = ""
-if args.freq:
-  freq = args.freq + 'M'
-else:
-  log('Missing or invalid frequency.')
-  sys.exit(1)
-
 def log(info):
   if args.log:
     try:
@@ -39,6 +32,13 @@ def log(info):
       print(info)
   else:
     print(info)
+
+freq = ""
+if args.freq:
+  freq = args.freq + 'M'
+else:
+  log('Missing or invalid frequency.')
+  sys.exit(1)
 
 if args.song_info:
   try:
