@@ -816,14 +816,15 @@ class FMRadio:
       self.src = src
       return
 
-    rtlfm_args = ['rtl_fm', '-M', 'fm', '-f', '{}M'.format(self.freq), '-s', '171k', '-A', 'fast', '-p', '0', '-l', '0', '-E', 'deemp']
-    aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', utils.output_device(src)]
-    print(f'running: {rtlfm_args} | {aplay_args}')
-    self.proc = subprocess.Popen(args=rtlfm_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    self.proc2 = subprocess.Popen(args=aplay_args, stdin=self.proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # Make all of the necessary dir(s)
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
+    os.system('mkdir -p {}'.format(src_config_folder))
+
+    fmradio_args = ['rtl_fm', '-M', 'fm', '-f', '{}'.format(freq), '-s', '171k', '-A', 'std', '-p', '0', '-l', '0', '-E', 'deemp', '|', 'aplay', '-r', '171000', '-f', 'S16_LE', '--device', 'plughw:0,0']
+    print(f'running: {fmradio_args}')
+    self.proc = subprocess.Popen(args=fmradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
     print(f'{self.name} (stream: {self.freq}) connected to {src} via {utils.output_device(src)}')
-
     self.state = 'connected'
     self.src = src
 
@@ -834,9 +835,7 @@ class FMRadio:
 
   def disconnect(self):
     if self._is_running():
-      self.proc2.kill()
-      self.proc.kill()
-      #os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
       print(f'{self.name} disconnected')
     self.state = 'disconnected'
     self.proc = None
@@ -844,9 +843,35 @@ class FMRadio:
     self.src = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(name=_stream_name(self.name, 'fm radio'), state=self.state, img_url=self.logo)
-    source.track = self.name
-    source.artist = self.freq + " FM"
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+    loc = f'{src_config_folder}/currentSong'
+    source = models.SourceInfo(img_url=self.logo)
+    try:
+      with open(loc, 'r') as file:
+        data = json.loads(file.read())
+        # Example JSON: "station": "Mixx96.1", "callsign": "KXXO", "prog_type": "Soft rock", "radiotext": "        x96.1"
+        print(json.dumps(data))
+        if data['prog_type']:
+          source.artist = data['prog_type']
+        else:
+          source.artist = ""
+
+        if data['radiotext']:
+          source.track = data['radiotext']
+        else:
+          source.track = ""
+
+        if data['station']:
+          source.station = data['station']
+        elif data['callsign']:
+          source.station = data['callsign']
+        else:
+          source.station = ""
+
+        return source
+    except Exception:
+      pass
+      #print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
 
   def status(self):

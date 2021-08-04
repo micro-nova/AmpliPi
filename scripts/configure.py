@@ -39,7 +39,14 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'vlc' ]
   },
   'fmradio' : {
-    'apt' : [ 'rtl-sdr' ]
+    'apt' : [ 'rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev' ],
+    'script' : [
+      'cd /tmp',
+      'git clone https://github.com/windytan/redsea.git',
+      'cd redsea',
+      './autogen.sh && ./configure && make',
+      'sudo make install'
+    ]
   },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
