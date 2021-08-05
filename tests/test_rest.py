@@ -583,7 +583,7 @@ def test_zeroconf():
   _ = ServiceBrowser(zeroconf, services, handlers=[on_service_state_change])
 
   # wait enough time for a response from the serice
-  sleep(0.5)
+  sleep(2)
 
   # stop the advertiser
   q.put('done')
