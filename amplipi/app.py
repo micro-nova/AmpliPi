@@ -695,7 +695,8 @@ def get_ip_addr(iface: str = 'eth0') -> Optional[str]:
     return None
 
 def advertise_service(port):
-  """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar' """
+  """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar'
+      Expected to be run as a seperate processo """
   hostname = f'{gethostname()}.local'
   url = f'http://{hostname}'
   iface = 'eth0' # TODO: support usb wifi mdns advertisement if needed
@@ -728,7 +729,7 @@ def advertise_service(port):
     server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
   )
   print(f'AmpliPi zeroconf - registering service: {info}')
-  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr, '127.0.0.1']) # right now the AmpliPi webserver is ipv4 only
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr]) # right now the AmpliPi webserver is ipv4 only
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
