@@ -630,39 +630,7 @@ class Api:
       return ApiResponse.error('Unable to get stream {}: {}'.format(sid, exc))
 
     try:
-      if cmd is None:
-        pass
-      elif cmd == 'play':
-        print('playing')
-        stream.state = 'playing'
-        stream.send_cmd(cmd)
-      elif cmd == 'pause':
-        print('paused')
-        stream.state = 'paused'
-        stream.send_cmd(cmd)
-      elif cmd == 'stop':
-        stream.state = "stopped"
-        stream.send_cmd(cmd)
-      elif cmd == 'next':
-        print('next')
-        stream.send_cmd(cmd)
-      elif cmd == 'prev':
-        print('prev')
-        stream.send_cmd(cmd)
-      elif cmd == 'love':
-        stream.send_cmd(cmd)
-      elif cmd == 'ban':
-        stream.send_cmd(cmd)
-      elif cmd == 'shelve':
-        stream.send_cmd(cmd)
-      elif 'station' in cmd:
-        station_id = int(cmd.replace('station=', ''))
-        if station_id is not None:
-          stream.send_cmd(cmd)
-        else:
-          return ApiResponse.error(f'station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{cmd}"')
-      else:
-        return ApiResponse.error(f'Command "{cmd}" not recognized.')
+      stream.send_cmd(cmd)
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
 
