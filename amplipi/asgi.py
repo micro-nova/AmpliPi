@@ -22,7 +22,7 @@ This initializes the webapplication found in app.py.
 """
 
 import os
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import amplipi.app
 
 MOCK_CTRL = os.environ.get('MOCK_CTRL', 'False').lower() == 'true'
@@ -35,5 +35,5 @@ application = amplipi.app.create_app(delay_saves=True, mock_ctrl=MOCK_CTRL, mock
 
 # advertise the service here, to avoid adding bloat to underlying app, especially for test startup
 # this needs to be done as a separate process to avoid interfering with webserver (ZeroConf makes its own event loop)
-zc_reg = Process(target=amplipi.app.advertise_service, args=(PORT,)) # TODO: unregister zeroconf on shutdown?
+zc_reg = Process(target=amplipi.app.advertise_service, args=(PORT, Queue())) # TODO: unregister zeroconf on shutdown?
 zc_reg.start()

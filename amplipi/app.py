@@ -55,6 +55,7 @@ from sse_starlette.sse import EventSourceResponse
 import netifaces as ni
 from socket import gethostname, inet_aton
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
+from multiprocessing import Queue
 
 # amplipi
 import amplipi.utils as utils
@@ -694,9 +695,17 @@ def get_ip_addr(iface: str = 'eth0') -> Optional[str]:
   except:
     return None
 
-def advertise_service(port):
+def advertise_service(port, q: Queue):
   """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar'
-      Expected to be run as a seperate processo """
+      Expected to be run as a seperate process, eg:
+
+          q = Queue()
+          ad = Process(target=amplipi.app.advertise_service, args=(5000, q))
+          ad.start()
+          ...
+          q.put('done')
+          ad.join()
+  """
   hostname = f'{gethostname()}.local'
   url = f'http://{hostname}'
   iface = 'eth0' # TODO: support usb wifi mdns advertisement if needed
@@ -733,7 +742,7 @@ def advertise_service(port):
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
-    while not zeroconf.done:
+    while q.empty():
       sleep(0.1)
   except:
     pass
