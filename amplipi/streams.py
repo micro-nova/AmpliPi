@@ -581,6 +581,9 @@ class DLNA(BaseStream):
           if line:
             d = eval(line)
             # TODO: what fields are populated by gmrenderer?
+        source.album = d['album']
+        source.artist = d['artist']
+        source.track = d['track']##### NOT SURE IF THIS IS EVEN RIGHT. NEED TO FIGURE OUT CONNECTION ISSUES TO BE SURE
         return source
     except Exception:
       pass
