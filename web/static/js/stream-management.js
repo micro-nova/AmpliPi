@@ -5,7 +5,11 @@ $(function() {
   $.get("/api/streams", function(data) {
     $.each(data.streams, function(k, v) {
       streams[v.id] = v;
-      $("#streamSelection").append('<li class="list-group-item list-group-item-action list-group-item-dark stream" data-id="' + v.id + '">' + v.name + ' (' + v.type + ')');
+      $("#streamSelection").append(
+        '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' + 
+        v.name + 
+        ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
+      );
     });
   });
   
@@ -179,7 +183,11 @@ $(function() {
         $.get("/api/streams", function(data) {
           $.each(data.streams, function(k, v) {
             streams[v.id] = v;
-            $("#streamSelection").append('<li class="list-group-item list-group-item-action list-group-item-dark stream" data-id="' + v.id + '">' + v.name + ' (' + v.type + ')');
+            $("#streamSelection").append(
+              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' + 
+              v.name + 
+              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
+            );
           });
         });
       }
@@ -209,7 +217,11 @@ $(function() {
 
         $.each(data.streams, function(k, v) {
           streams[v.id] = v;
-          $("#streamSelection").append('<li class="list-group-item list-group-item-action list-group-item-dark stream" data-id="' + v.id + '">' + v.name + ' (' + v.type + ')');
+          $("#streamSelection").append(
+            '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' + 
+            v.name + 
+            ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
+          );
         });
       }
     });  
@@ -229,7 +241,11 @@ $(function() {
 
         $.each(data.streams, function(k, v) {
           streams[v.id] = v;
-          $("#streamSelection").append('<li class="list-group-item list-group-item-action list-group-item-dark stream" data-id="' + v.id + '">' + v.name + ' (' + v.type + ')');
+          $("#streamSelection").append(
+            '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' + 
+            v.name + 
+            ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
+          );
         });
       }
     });
