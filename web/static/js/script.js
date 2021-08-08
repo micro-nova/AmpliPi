@@ -69,13 +69,13 @@ $(document).ready(function(){
       $('#' + old_src + '-input')[0].style.display = "none";
       $('#' + old_src + '-player')[0].style.display = "none";
     } else {
-      $('#settings-header')[0].style.display = "none";
+      $('#settings-sel')[0].style.display = "none";
     }
     if (new_src != "settings-nav") {
       $('#' + new_src + '-input')[0].style.display = "block";
       $('#' + new_src + '-player')[0].style.display = "block";
     } else {
-      $('#settings-header')[0].style.display = "block";
+      $('#settings-sel')[0].style.display = "block";
     }
   });
   setInterval(refresh, 2000);

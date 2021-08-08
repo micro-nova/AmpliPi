@@ -91,29 +91,54 @@
           </div>
           {% endfor %}
         </div>
-      <div id="settings-header" class="text-center" style="display: none"><h3>Settings</h3></div>
+        <select id="settings-sel" class="custom-select" onchange="$(this.value).siblings('div').removeClass('active');
+        $(this.value).addClass('active');" style="display: none">
+          <option value="#settings-tab-inputs"> Settings - Inputs</option>
+          <option value="#settings-tab-zones"> Settings - Zones</option>
+          <option value="#settings-tab-groups"> Settings - Groups</option>
+          <option value="#settings-tab-updates"> Settings - Updates</option>
+        </select>
       </div>
     </div>
     <div class="tab-content">
       <div id="settings" class="tab-pane">
-        <div class="card settings">
-          <h6 class="card-header">Updates</h6>
-          <div class="card-body">
-            <div class="text-center">
-              <a class="btn btn-success" onclick="javascript:event.target.port=5001" href="/update">Check for Updates</a>
+        <div class="tab-content">
+          <div id="settings-tab-inputs" class="tab-pane active">
+            <div class="card settings">
+              <h6 class="card-header">Inputs</h6>
             </div>
           </div>
-        </div>
-        <div class="card settings">
-          <h6 class="card-header">Connect Plex Account</h6>
-          <div class="card-body">
-            <div class="text-center">
-              <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
-              <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
-              <button class="btn btn-primary" onclick="window.location.reload();" style="display: none" id="plexamp-done"></button>
+          <div id="settings-tab-zones" class="tab-pane">
+            <div class="card settings">
+              <h6 class="card-header">Zones</h6>
             </div>
-            <div id="plexamp-msg" class="text-center" style="display: none; color: #2a2a2a; align-self: center; border-top: 20px solid #2a2a2a">
-              Some hidden text
+          </div>
+          <div id="settings-tab-groups" class="tab-pane">
+            <div class="card settings">
+              <h6 class="card-header">Groups</h6>
+            </div>
+          </div>
+          <div id="settings-tab-updates" class="tab-pane">
+            <div class="card settings">
+              <h6 class="card-header">Updates</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <a class="btn btn-success" onclick="javascript:event.target.port=5001" href="/update">Check for Updates</a>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Connect Plex Account</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
+                  <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
+                  <button class="btn btn-primary" onclick="window.location.reload();" style="display: none" id="plexamp-done"></button>
+                </div>
+                <div id="plexamp-msg" class="text-center" style="display: none; color: #2a2a2a; align-self: center; border-top: 20px solid #2a2a2a">
+                  Some hidden text
+                </div>
+              </div>
             </div>
           </div>
         </div>
