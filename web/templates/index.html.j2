@@ -105,7 +105,28 @@
         <div class="tab-content">
           <div id="settings-tab-inputs" class="tab-pane active">
             <div class="card settings">
-              <h6 class="card-header">Inputs</h6>
+              <h6 class="card-header">Stream Management</h6>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-sm-4">
+                    <div class="selection">
+                      <ul class="list-group" style="cursor: pointer;">
+                        <li class="list-group-item list-group-item-action list-group-item-success" id="newStream">
+                          Add New Stream
+                        </li>
+                      </ul>
+                      <hr />
+                      <ul class="list-group" id="streamSelection" style="cursor: pointer;">
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-sm-8">
+                    <h6 class="card-header">Stream Settings: <span id="streamTitle"></span></h6>
+                    <div id="settings" style="padding: .75rem 1.25rem;">
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div id="settings-tab-zones" class="tab-pane">
