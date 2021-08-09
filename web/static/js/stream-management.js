@@ -5,21 +5,21 @@ $(function() {
   $.get("/api/streams", function(data) {
     $.each(data.streams, function(k, v) {
       streams[v.id] = v;
-      $("#streamSelection").append(
-        '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' + 
-        v.name + 
+      $("#settings-tab-inputs-stream-selection").append(
+        '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+        v.name +
         ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
       );
     });
   });
-  
+
   /* Show new stream options */
-  $("#newStream").click(function(){
-    $("#streamSelection li").removeClass('active'); // De-select "active" stream on the left menu if had been selected
+  $("#settings-tab-inputs-new-stream").click(function(){
+    $("#settings-tab-inputs-stream-selection li").removeClass('active'); // De-select "active" stream on the left menu if had been selected
     $(this).addClass('active');
-    $("#streamTitle").text("Add a new stream to AmpliPi");
+    $("#settings-tab-inputs-stream-title").text("Add a new stream to AmpliPi");
     var html = `
-      <form id="newStreamForm">
+      <form id="settings-tab-inputs-new-stream-form">
         <div class="form-group">
           <label for="type">Stream Type</label>
           <select class="form-control" name="type" id="new_type" data-required="true">
@@ -77,21 +77,21 @@ $(function() {
             <small id="logoHelp" class="form-text text-muted">Default built-in logo is: static/imgs/fmradio.png</small>
           </div>
         </div>
-        
+
         <button type="submit" class="btn btn-secondary">Add Stream</button>
       </form>
       `;
-    $("#settings").html(html);
+    $("#settings-tab-inputs-config").html(html);
   });
 
   /* Show selected stream settings */
-  $("#streamSelection").on("click", ".stream", function() {
-    $('#streamSelection li').removeClass('active');
-    $("#newStream").removeClass('active');
+  $("#settings-tab-inputs-stream-selection").on("click", ".stream", function() {
+    $('#settings-tab-inputs-stream-selection li').removeClass('active');
+    $("#settings-tab-inputs-new-stream").removeClass('active');
     $(this).addClass('active');
     var s = streams[$(this).data("id")];
 
-    $("#streamTitle").text(s.name + " (" + s.type + ")");
+    $("#settings-tab-inputs-stream-title").text(s.name + " (" + s.type + ")");
     var html = `
       <input type="hidden" id="edit-sid" name="id" value="${s.id}">
       <form id="editStreamForm">
@@ -140,7 +140,7 @@ $(function() {
           <small id="freqHelp" class="form-text text-muted">Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.</small>
         </div>
         <div class="form-group">
-          <label for="user">Station Logo</label>
+          <label for="user">Station Logo</label>XS
           <input type="text" class="form-control" name="logo" value="${s.logo}" aria-describedby="logoHelp">
           <small id="logoHelp" class="form-text text-muted">Default built-in logo is: static/imgs/fmradio.png</small>
         </div>
@@ -152,51 +152,51 @@ $(function() {
         <button type="button" class="btn btn-danger" style="float:right" id="delete" data-id="${s.id}">Delete Stream</button>
       </form>
       `;
-    $("#settings").html(html);
+    $("#settings-tab-inputs-config").html(html);
   });
-  
+
   /* Show selected stream settings */
-  $("#settings").on("click", "#new_type", function() {
+  $("#settings-tab-inputs-config").on("click", "#new_type", function() {
     $(".addl_settings").hide(); // Hide all additional settings
     if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
     else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
     else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); }
-    
+
   });
-    
+
   /* Add New Stream and Reload Page */
-  $("#settings").on("submit", "#newStreamForm", function(e) {
+  $("#settings-tab-inputs-config").on("submit", "#settings-tab-inputs-new-stream-form", function(e) {
     e.preventDefault(); // avoid to execute the actual submit of the form.
 
-    var $form = $("#newStreamForm");
+    var $form = $("#settings-tab-inputs-new-stream-form");
     var formData = getFormData($form);
-    
+
     $.ajax({
       type: "POST",
       url: '/api/stream',
       data: JSON.stringify(formData),
       contentType: "application/json",
       success: function(result) {
-        $("#streamTitle").text("Select a stream");
-        $("#streamSelection").empty();
-        $("#settings").html("");
+        $("#settings-tab-inputs-stream-title").text("Select a stream");
+        $("#settings-tab-inputs-stream-selection").empty();
+        $("#settings-tab-inputs-config").html("");
         $.get("/api/streams", function(data) {
           $.each(data.streams, function(k, v) {
             streams[v.id] = v;
-            $("#streamSelection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' + 
-              v.name + 
+            $("#settings-tab-inputs-stream-selection").append(
+              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+              v.name +
               ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
             );
           });
         });
       }
-    });  
+    });
   });
-  
-  
+
+
   /* Save stream changes and reload page */
-  $("#settings").on("submit", "#editStreamForm", function(e) {
+  $("#settings-tab-inputs-config").on("submit", "#editStreamForm", function(e) {
     e.preventDefault(); // avoid to execute the actual submit of the form.
 
     var $form = $("#editStreamForm");
@@ -204,46 +204,46 @@ $(function() {
     if (!validation) { return; }
 
     var formData = getFormData($form);
-    
+
     $.ajax({
       type: "PATCH",
       url: '/api/streams/' + $("#edit-sid").val(),
       data: JSON.stringify(formData),
       contentType: "application/json",
       success: function(data) {
-        $("#streamTitle").text("Select a stream");
-        $("#streamSelection").empty();
-        $("#settings").html("");
+        $("#settings-tab-inputs-stream-title").text("Select a stream");
+        $("#settings-tab-inputs-stream-selection").empty();
+        $("#settings-tab-inputs-config").html("");
 
         $.each(data.streams, function(k, v) {
           streams[v.id] = v;
-          $("#streamSelection").append(
-            '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' + 
-            v.name + 
+          $("#settings-tab-inputs-stream-selection").append(
+            '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+            v.name +
             ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
           );
         });
       }
-    });  
+    });
   });
 
 
   /* Delete stream and reload stream list and settings */
-  $("#settings").on("click", "#delete", function() {
+  $("#settings-tab-inputs-config").on("click", "#delete", function() {
     $.ajax({
       url: '/api/streams/' + $(this).data("id"),
       type: 'DELETE',
       success: function(data) {
         // Reload stream list and settings
-        $("#streamTitle").text("Select a stream");
-        $("#streamSelection").empty();
-        $("#settings").html("");
+        $("#settings-tab-inputs-stream-title").text("Select a stream");
+        $("#settings-tab-inputs-stream-selection").empty();
+        $("#settings-tab-inputs-config").html("");
 
         $.each(data.streams, function(k, v) {
           streams[v.id] = v;
-          $("#streamSelection").append(
-            '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' + 
-            v.name + 
+          $("#settings-tab-inputs-stream-selection").append(
+            '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+            v.name +
             ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
           );
         });

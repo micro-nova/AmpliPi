@@ -111,18 +111,18 @@
                   <div class="col-sm-4">
                     <div class="selection">
                       <ul class="list-group" style="cursor: pointer;">
-                        <li class="list-group-item list-group-item-action list-group-item-success" id="newStream">
+                        <li class="list-group-item list-group-item-action list-group-item-success" id="settings-tab-inputs-new-stream">
                           Add New Stream
                         </li>
                       </ul>
                       <hr />
-                      <ul class="list-group" id="streamSelection" style="cursor: pointer;">
+                      <ul class="list-group" id="settings-tab-inputs-stream-selection" style="cursor: pointer;">
                       </ul>
                     </div>
                   </div>
                   <div class="col-sm-8">
-                    <h6 class="card-header">Stream Settings: <span id="streamTitle"></span></h6>
-                    <div id="settings" style="padding: .75rem 1.25rem;">
+                    <h6 class="card-header">Stream Settings: <span id="settings-tab-inputs-stream-title"></span></h6>
+                    <div id="settings-tab-inputs-config" style="padding: .75rem 1.25rem;">
                     </div>
                   </div>
                 </div>
@@ -271,6 +271,8 @@
   <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.min.js"><\/script>')</script>
   <!-- Local application script -->
   <script src="static/js/script.js"></script>
+  <!-- Additional local script - Stream Admin TODO: merge into script.js? -->
+  <script src='static/js/stream-management.js'></script>
   <!-- UUID CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
   <!-- UUID local fallback -->
