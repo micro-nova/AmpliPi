@@ -52,7 +52,10 @@ while True: # Need to check how to kill the script, look at processing load, etc
           info['album'] = data['metadata'].get('album_name') # if nothing found
           info['track'] = data['metadata'].get('track_name')
           al = data['metadata'].get('albumartId')
-          info['img_url'] = 'https://i.scdn.co/image/' + al[0]
+          if al[0] is not None:
+            info['img_url'] = 'https://i.scdn.co/image/' + al[0]
+          else:
+            info['img_url'] = None
     with open(f'{args.cs_loc}/currentSong', 'w') as CS:
       CS.write(str(info))
     message = None

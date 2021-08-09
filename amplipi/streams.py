@@ -67,33 +67,39 @@ def uuid_gen():
   # Generic UUID in case of failure
   return '39ae35cc-b4c1-444d-b13a-294898d771fa'
 
-def _stream_name(sname, stype) -> str:
-  """ Combine name and type of a stream to make a stream easy to identify.
-
-  Many streams will simply be named something like AmpliPi or John, so embedding the '- stype'
-  into the name makes the name easier to identify.
-  """
-  return f'{sname} - {stype}'
-
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
-  def __init__(self, name, mock=False):
+  def __init__(self, stype, name, mock=False):
     self.name = name
     self.proc = None
     self.mock = mock
     self.src = None
     self.state = 'disconnected'
+    self.stype = stype
+
+  def __str__(self):
+    connection = f' connected to src={self.src}' if self.src else ''
+    mock = ' (mock)' if self.mock else ''
+    return f'{self.full_name()}{connection}{mock}'
+
+  def full_name(self):
+    """ Combine name and type of a stream to make a stream easy to identify.
+
+    Many streams will simply be named something like AmpliPi or John, so embedding the '- stype'
+    into the name makes the name easier to identify.
+    """
+    return f'{self.name} - {self.stype}'
 
   def send_cmd(self, cmd: str) -> None:
     """ Generic send_cmd function. If not implemented in a stream,
     and a command is sent, this error will be raised.
     """
-    raise NotImplementedError()
+    raise NotImplementedError(f'{self.name} does not support commands')
 
 class Shairport(BaseStream):
   """ An Airplay Stream """
-  def __init__(self, name, mock=False):
-    super().__init__(name, mock)
+  def __init__(self, stype, name, mock=False):
+    super().__init__(stype, name, mock)
     self.proc2 = None
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
@@ -179,7 +185,7 @@ class Shairport(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=_stream_name(self.name, 'airplay'), state=self.state)
+    source = models.SourceInfo(name=super().full_name(), state=self.state)
     source.img_url = 'static/imgs/shairport.png'
     try:
       with open(loc, 'r') as file:
@@ -197,9 +203,8 @@ class Shairport(BaseStream):
               source.state = 'paused'
             if int(data[4]):
               source.img_url = f"/generated/shairport/srcs/{self.src}/{data[5]}"
-    except Exception:
-      pass
-      # TODO: Log actual exception here?
+    except Exception as exc:
+      print(f'Failed to get currentSong - it may not exist: {exc}')
     return source
 
   def status(self):
@@ -212,8 +217,8 @@ class Shairport(BaseStream):
 
 class Spotify(BaseStream):
   """ A Spotify Stream """
-  def __init__(self, name, mock=False):
-    super().__init__(name, mock)
+  def __init__(self, stype, name, mock=False):
+    super().__init__(stype, name, mock)
     self.proc2 = None
     self.metaport = None
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -296,7 +301,7 @@ class Spotify(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=_stream_name(self.name, 'spotify'), state=self.state, img_url='static/imgs/spotify.png')
+    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url='static/imgs/spotify.png')
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -334,13 +339,15 @@ class Spotify(BaseStream):
     try:
       if cmd in supported_cmds:
         self.socket.sendto(bytes(supported_cmds[cmd]), (udp_ip, udp_port))
+      else:
+        raise NotImplementedError(f'Error: "{cmd}" is either incorrect or not currently supported')
     except Exception as exc:
       return f'Command {cmd} failed to send. See error message: {exc}'
 
 class Pandora(BaseStream):
   """ A Pandora Stream """
-  def __init__(self, name, user, password, station, mock=False):
-    super().__init__(name, mock)
+  def __init__(self, stype, name, user, password, station, mock=False):
+    super().__init__(stype, name, mock)
     self.user = user
     self.password = password
     self.station = station
@@ -440,7 +447,7 @@ class Pandora(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/.config/pianobar/currentSong'
-    source = models.SourceInfo(name=_stream_name(self.name, 'pandora'), state=self.state, img_url='static/imgs/pandora.png')
+    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url='static/imgs/pandora.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -507,8 +514,8 @@ class Pandora(BaseStream):
 
 class DLNA(BaseStream):
   """ A DLNA Stream """
-  def __init__(self, name, mock=False):
-    super().__init__(name, mock)
+  def __init__(self, stype, name, mock=False):
+    super().__init__(stype, name, mock)
     self.proc2 = None
     self.uuid = 0
 
@@ -573,7 +580,7 @@ class DLNA(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=_stream_name(self.name, 'dlna'), state=self.state, img_url='static/imgs/dlna.png')
+    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url='static/imgs/dlna.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -599,8 +606,8 @@ class DLNA(BaseStream):
 
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
-  def __init__(self, name, url, logo, mock=False):
-    super().__init__(name, mock)
+  def __init__(self, stype, name, url, logo, mock=False):
+    super().__init__(stype, name, mock)
     self.url = url
     self.logo = logo
 
@@ -665,7 +672,7 @@ class InternetRadio(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=_stream_name(self.name, 'internet radio'), state=self.state, img_url=self.logo)
+    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url=self.logo)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
@@ -687,8 +694,8 @@ class InternetRadio(BaseStream):
 
 class Plexamp(BaseStream):
   """ A Plexamp Stream """
-  def __init__(self, name, client_id, token, mock=False):
-    super().__init__(name, mock)
+  def __init__(self, stype, name, client_id, token, mock=False):
+    super().__init__(stype, name, mock)
     self.client_id = client_id
     self.token = token
 
@@ -793,7 +800,7 @@ class Plexamp(BaseStream):
     self.src = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(name=_stream_name(self.name, 'plexamp'), state=self.state, img_url='static/imgs/plexamp.png')
+    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
 
   def status(self):
