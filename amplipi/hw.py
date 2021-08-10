@@ -82,7 +82,7 @@ class Preamp:
     return True
 
 
-  def read_version(self, preamp: int = 1):
+  def read_version(self):
     """ Read the firmware version of the preamp
 
       Returns:
@@ -91,18 +91,15 @@ class Preamp:
         git_hash: The git hash of the build (7-digit abbreviation)
         dirty:    False if the git hash is valid, True otherwise
     """
-    assert 1 <= preamp <= 15
-    if self.bus is not None:
-      major = self.bus.read_byte_data(preamp*8, self.Reg.VERSION_MAJOR.value)
-      minor = self.bus.read_byte_data(preamp*8, self.Reg.VERSION_MINOR.value)
-      git_hash = self.bus.read_byte_data(preamp*8, self.Reg.GIT_HASH_27_20.value) << 20
-      git_hash |= (self.bus.read_byte_data(preamp*8, self.Reg.GIT_HASH_19_12.value) << 12)
-      git_hash |= (self.bus.read_byte_data(preamp*8, self.Reg.GIT_HASH_11_04.value) << 4)
-      git_hash4_stat = self.bus.read_byte_data(preamp*8, self.Reg.GIT_HASH_STATUS.value)
-      git_hash |= (git_hash4_stat >> 4)
-      dirty = (git_hash4_stat & 0x01) != 0
-      return major, minor, git_hash, dirty
-    return None
+    major = self.bus.read_byte_data(self.addr, self.Reg.VERSION_MAJOR.value)
+    minor = self.bus.read_byte_data(self.addr, self.Reg.VERSION_MINOR.value)
+    git_hash = self.bus.read_byte_data(self.addr, self.Reg.GIT_HASH_27_20.value) << 20
+    git_hash |= (self.bus.read_byte_data(self.addr, self.Reg.GIT_HASH_19_12.value) << 12)
+    git_hash |= (self.bus.read_byte_data(self.addr, self.Reg.GIT_HASH_11_04.value) << 4)
+    git_hash4_stat = self.bus.read_byte_data(self.addr, self.Reg.GIT_HASH_STATUS.value)
+    git_hash |= (git_hash4_stat >> 4)
+    dirty = (git_hash4_stat & 0x01) != 0
+    return major, minor, git_hash, dirty
 
 
 class Preamps:
@@ -121,10 +118,18 @@ class Preamps:
     self.preamps = []
     if reset:
       self.reset(unit = 0, bootloader = False)
+    else:
+      self.enumerate()
     if update:
       self.flash('') # TODO: add filepath to arg
 
     print(f'Preamps found: {len(self.preamps)}')
+
+  def __getitem__(self, key: int) -> Preamp:
+    return self.preamps[key]
+
+  def __setitem__(self, key: int, value: Preamp):
+    self.preamps[key] = value
 
   def reset(self, unit: int = 0, bootloader: bool = False):
     """ Resets the master unit's preamp board.
@@ -138,15 +143,20 @@ class Preamps:
 
     # TODO: If unit=1,2,3,4, or 5, only reset those units and onward
 
-    # Reset, then send I2C address over UART
+    # Reset and return if bringing up in bootloader mode
     self._reset_master(bootloader)
+    if bootloader:
+      time.sleep(0.01)
+      return
+
+    # Send I2C address over UART
     with Serial('/dev/serial0', baudrate=115200) as ser:
       ser.write((0x41, 0x10, 0x0D, 0x0A))
     if not Preamp(0, self.bus).available():
       print('Falling back to 9600 baud, is firmware version >=1.2?')
       # The failed attempt at 115200 baud seems to put v1.1 firmware in a bad
       # state, so reset and try again at 9600 baud.
-      self._reset_master(bootloader)
+      self._reset_master(bootloader = False)
       with Serial('/dev/serial0', baudrate=9600) as ser:
         ser.write((0x41, 0x10, 0x0D, 0x0A))
 
@@ -187,8 +197,11 @@ class Preamps:
 
   def flash(self, filepath: str):
     """ Flash all available preamps with a given file """
-    self.reset(unit = 0)
-    flash = subprocess.run([f'stm32flash -vb 115200 -w {filepath} /dev/serial0'])
+    self.reset(unit = 0, bootloader = True)
+    subprocess.run([f'stm32flash -vb 115200 -w {filepath} /dev/serial0'], shell=True, check=True)
+    # TODO: Error handling
+    self.reset(unit = 0, bootloader = False)
+
 
 #class PeakDetect:
   #""" """
