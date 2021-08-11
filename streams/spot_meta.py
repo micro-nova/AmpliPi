@@ -9,8 +9,9 @@ import re
 import argparse
 
 parser = argparse.ArgumentParser(description="spotify metadata interpreter")
-parser.add_argument('metaport', help='port to read metadata from (see config.toml)')
-parser.add_argument('cs_loc', help='Folder to write currentSong')
+parser.add_argument('metaport', help='port to read from (see metadata-port in config.toml)')
+parser.add_argument('cs_loc', help='Folder to write/create the currentSong file')
+parser.add_argument('--verbose', '-v', action='count', default=None, help='Prints full metadata')
 args = parser.parse_args()
 
 info = {
@@ -22,16 +23,16 @@ info = {
 }
 
 # Write to currentSong so you clear previous metadata from i.e. shairport or old Spotify instances
-with open(f'{args.cs_loc}/currentSong', 'w') as CS:
-  CS.write(str(info))
+with open(f'{args.cs_loc}/currentSong', 'w') as csi:
+  csi.write(str(info))
 
 metasocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 metasocket.bind(('', int(args.metaport)))
+prev_state = ''
 while True: # Need to check how to kill the script, look at processing load, etc. NEED TO VERIFY
   message, address = metasocket.recvfrom(1024)
   if message:
     decoded = message.decode('utf-8', 'replace')
-    print(decoded)
     parsed = re.split('\n|\r', decoded)
     if 'kSp' not in decoded:
       data = {}
@@ -56,6 +57,11 @@ while True: # Need to check how to kill the script, look at processing load, etc
             info['img_url'] = 'https://i.scdn.co/image/' + al[0]
           else:
             info['img_url'] = None
-    with open(f'{args.cs_loc}/currentSong', 'w') as CS:
-      CS.write(str(info))
+    if args.verbose:
+      print(decoded)
+    elif info['state'] != prev_state:
+      print(f"{info['state']}: {info['track']}")
+      prev_state = info['state']
+    with open(f'{args.cs_loc}/currentSong', 'w') as csi:
+      csi.write(str(info))
     message = None

@@ -134,7 +134,7 @@ class Shairport(BaseStream):
     This creates an Airplay streaming option based on the configuration
     """
     if self.mock:
-      super()._connect(src)
+      self._connect(src)
       return
     config = {
       'general': {
@@ -171,7 +171,7 @@ class Shairport(BaseStream):
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    super()._connect(src)
+    self._connect(src)
 
   def _is_sp_running(self):
     if self.proc:
@@ -182,14 +182,14 @@ class Shairport(BaseStream):
     if self._is_sp_running():
       os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
       self.proc.kill()
-    super()._disconnect()
+    self._disconnect()
     self.proc2 = None
     self.proc = None
 
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=super().full_name(), state=self.state)
+    source = models.SourceInfo(name=self.full_name(), state=self.state)
     source.img_url = 'static/imgs/shairport.png'
     try:
       with open(loc, 'r') as file:
@@ -252,7 +252,7 @@ class Spotify(BaseStream):
     This will create a Spotify Connect device based on the given name
     """
     if self.mock:
-      super()._connect(src)
+      self._connect(src)
       return
 
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
@@ -279,7 +279,7 @@ class Spotify(BaseStream):
       self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       self.proc2 = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       time.sleep(0.1) # Delay a bit
-      super()._connect(src)
+      self._connect(src)
     except Exception as exc:
       print(f'error starting spotify: {exc}')
 
@@ -292,14 +292,14 @@ class Spotify(BaseStream):
     if self._is_spot_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
       self.proc2.kill()
-    super()._disconnect()
+    self._disconnect()
     self.proc = None
     self.proc2 = None
 
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url='static/imgs/spotify.png')
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/spotify.png')
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -340,7 +340,7 @@ class Spotify(BaseStream):
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as exc:
-      return f'Command {cmd} failed to send. See error message: {exc}'
+      raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
 class Pandora(BaseStream):
   """ A Pandora Stream """
@@ -381,7 +381,7 @@ class Pandora(BaseStream):
     This will start up pianobar with a configuration specific to @src
     """
     if self.mock:
-      super()._connect(src)
+      self._connect(src)
       return
     # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
 
@@ -420,7 +420,7 @@ class Pandora(BaseStream):
       self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
       time.sleep(0.1) # Delay a bit before creating a control pipe to pianobar
       self.ctrl = pb_control_fifo
-      super()._connect(src)
+      self._connect(src)
     except Exception as exc:
       print(f'error starting pianobar: {exc}')
 
@@ -432,14 +432,14 @@ class Pandora(BaseStream):
   def disconnect(self):
     if self._is_pb_running():
       self.proc.kill()
-    super()._disconnect()
+    self._disconnect()
     self.proc = None
     self.ctrl = ''
 
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/.config/pianobar/currentSong'
-    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url='static/imgs/pandora.png')
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/pandora.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -498,11 +498,11 @@ class Pandora(BaseStream):
             file.write(f'{station_id}\n')
             file.flush()
         else:
-          print(f'station=<int> expected where <int> is a valid integer, ie. station=23432423; received "{cmd}"')
+          raise ValueError(f'station=<int> expected, ie. station=23432423; received "{cmd}"')
       else:
-        print(f'Command not recognized: {cmd}')
+        raise NotImplementedError(f'Command not recognized: {cmd}')
     except Exception as exc:
-      print(f'Command {cmd} failed: {exc}')
+      raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
 class DLNA(BaseStream):
   """ A DLNA Stream """
@@ -531,7 +531,7 @@ class DLNA(BaseStream):
     This creates a DLNA streaming option based on the configuration
     """
     if self.mock:
-      super()._connect(src)
+      self._connect(src)
       return
 
     # Generate some of the DLNA_Args
@@ -548,7 +548,7 @@ class DLNA(BaseStream):
                 f'{src_config_folder}/metafifo']
     self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    super()._connect(src)
+    self._connect(src)
 
   def _is_dlna_running(self):
     if self.proc:
@@ -559,14 +559,14 @@ class DLNA(BaseStream):
     if self._is_dlna_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
       self.proc2.kill()
-    super()._disconnect()
+    self._disconnect()
     self.proc = None
     self.proc2 = None
 
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url='static/imgs/dlna.png')
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/dlna.png')
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -650,13 +650,13 @@ class InternetRadio(BaseStream):
   def disconnect(self):
     if self._is_running():
       self.proc.kill()
-    super()._disconnect()
+    self._disconnect()
     self.proc = None
 
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url=self.logo)
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url=self.logo)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
@@ -708,7 +708,7 @@ class Plexamp(BaseStream):
     This will start up plexamp with a configuration specific to @src
     """
     if self.mock:
-      super()._connect(src)
+      self._connect(src)
       return
 
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
@@ -763,7 +763,7 @@ class Plexamp(BaseStream):
     try:
       self.proc = subprocess.Popen(args=plexamp_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : plexamp_home})
       time.sleep(0.1) # Delay a bit
-      super()._connect(src)
+      self._connect(src)
     except Exception as exc:
       print(f'error starting plexamp: {exc}')
 
@@ -775,11 +775,11 @@ class Plexamp(BaseStream):
   def disconnect(self):
     if self._is_plexamp_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
-    super()._disconnect()
+    self._disconnect()
     self.proc = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(name=super().full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
 
   def status(self):
