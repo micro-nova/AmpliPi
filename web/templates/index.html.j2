@@ -91,6 +91,7 @@
           </div>
           {% endfor %}
         </div>
+        <!-- TODO: can this be a nav dropdown with the same styling as the custom-select? This would probably  simplify the integration and allow individual tabs to hook into a tab shown event-->
         <select id="settings-sel" class="custom-select" onchange="$(this.value).siblings('div').removeClass('active');
         $(this.value).addClass('active');" style="display: none">
           <option value="#settings-tab-inputs"> Settings - Inputs</option>
