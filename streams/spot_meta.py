@@ -57,11 +57,12 @@ while True: # Need to check how to kill the script, look at processing load, etc
             info['img_url'] = 'https://i.scdn.co/image/' + al[0]
           else:
             info['img_url'] = None
+    full_info = f"{info['state']}: {info['track']}"
     if args.verbose:
       print(decoded)
-    elif info['state'] != prev_state:
-      print(f"{info['state']}: {info['track']}")
-      prev_state = info['state']
+    elif full_info != prev_state:
+      prev_state = full_info
+      print(prev_state)
     with open(f'{args.cs_loc}/currentSong', 'w') as csi:
       csi.write(str(info))
     message = None
