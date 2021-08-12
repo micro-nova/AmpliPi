@@ -39,11 +39,23 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'vlc' ]
   },
   'dlna' : {
-    'apt' : [ 'uuid-runtime' ] # TODO: Need gmrender-resurrect binary
+    'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
+              'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
+              'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
+              'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git' ],
+    'script' : [
+      'git clone https://github.com/hzeller/gmrender-resurrect.git'.split(),
+    ],
+    'dlna_script' : [
+      './autogen.sh',
+      './configure',
+      'make',
+      'sudo make install'.split(),
+    ],
   },
-  # 'plexamp' : {
-  #   'apt' : [ 'nodejs=9.11.2-1nodesource1' ] #TODO: Need plexamplipi tarball install
-  # },
+  'plexamp' : {
+    'script' : [ './streams/plexamp_nodeinstall.bash' ]
+  },
   'spotify' : {
     'script' :  [
       'curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz'.split(),
@@ -135,6 +147,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   packages = set()
   files = []
   scripts = []
+  dlna_scripts = []
   for dep in deps:
     if 'copy' in _os_deps[dep]:
       files += _os_deps[dep]['copy']
@@ -142,6 +155,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       packages.update(_os_deps[dep]['apt'])
     if 'script' in _os_deps[dep]:
       scripts.append(_os_deps[dep]['script'])
+    if 'dlna_script' in _os_deps[dep]:
+      dlna_scripts.append(_os_deps[dep]['dlna_script'])
 
   # copy files
   for file in files:
@@ -173,6 +188,9 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # Run scripts
   for script in scripts:
     tasks += print_progress([Task('run install script', multiargs=script, wd=env['base_dir']).run()])
+
+  for dlna_script in dlna_scripts:
+    tasks += print_progress([Task('installing DLNA/UPnP', multiargs=dlna_script, wd=f"{env['base_dir']}/gmrender-resurrect").run()])
 
   # cleanup
   # shairport-sync install sets up a deamon we need to stop, remove it
