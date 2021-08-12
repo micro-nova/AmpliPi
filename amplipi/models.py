@@ -531,6 +531,7 @@ class StreamCommand(str, Enum):
   PLAY = 'play'
   PAUSE = 'pause'
   NEXT = 'next'
+  PREV = 'prev'
   STOP = 'stop'
   LOVE = 'love'
   BAN = 'ban'

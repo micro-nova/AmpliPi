@@ -258,7 +258,11 @@ body {
   font-size: 20pt;
   margin-left: 15pt;
 }
-.pandora-player .play-pause:hover, .pandora-player .step-forward:hover, .pandora-player .like:hover, .pandora-player .dislike:hover {
+.pandora-player .step-backward {
+  font-size: 20pt;
+  margin-right: 15pt;
+}
+.pandora-player .play-pause:hover, .pandora-player .step-forward:hover, .pandora-player .step-backward:hover, .pandora-player .like:hover, .pandora-player .dislike:hover {
   cursor: pointer;
   color: #dc3545;
 }

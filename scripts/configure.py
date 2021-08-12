@@ -39,19 +39,29 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'vlc' ]
   },
   'dlna' : {
-    'apt' : [ 'uuid-runtime' ] # TODO: Need gmrender-resurrect binary
+    'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
+              'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
+              'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
+              'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git' ],
+    'script' : [
+      'git clone https://github.com/hzeller/gmrender-resurrect.git'.split(),
+    ],
+    'dlna_script' : [
+      './autogen.sh',
+      './configure',
+      'make',
+      'sudo make install'.split(),
+    ],
   },
-  # 'plexamp' : {
-  #   'apt' : [ 'nodejs=9.11.2-1nodesource1' ] #TODO: Need plexamplipi tarball install
-  # },
-  # TODO: test spocon! it looks awesome
-  # 'spotify' : {
-  #   'script' :  [
-  #     '$(curl -sL https://spocon.github.io/spocon/install.sh | sh)',
-  #     'sudo systemctl stop spocon.service',
-  #     'sudo systemctl disable spocon.service'
-  #   ]
-  # }
+  'plexamp' : {
+    'script' : [ './streams/plexamp_nodeinstall.bash' ]
+  },
+  'spotify' : {
+    'script' :  [
+      'curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz'.split(),
+      'tar --directory streams -xvf streams/vollibrespot.tar.xz'.split(),
+    ]
+  }
 }
 
 def _check_and_setup_platform():
@@ -90,7 +100,7 @@ def _check_and_setup_platform():
 
 class Task:
   """ Task runner for scripted installation tasks """
-  def __init__(self, name: str, args:Optional[List[str]]=None, multiargs=None, output='', success=False):
+  def __init__(self, name: str, args:Optional[List[str]]=None, multiargs=None, output='', success=False, wd=None):
     # pylint: disable=too-many-arguments
     self.name = name
     if multiargs:
@@ -102,6 +112,7 @@ class Task:
       self.margs = [[]]
     self.output = output
     self.success = success
+    self.wd = wd
 
   def __str__(self):
     desc = f"{self.name} : {self.margs}" if len(self.margs) > 0 else f"{self.name} :"
@@ -115,7 +126,7 @@ class Task:
   def run(self):
     """ Run the command line task or tasks sequentially and keep track of failures, stops at the first failure"""
     for args in self.margs:
-      out = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+      out = subprocess.run(args, cwd=self.wd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
       self.output += out.stdout.decode()
       self.success = out.returncode == 0
       if not self.success:
@@ -135,11 +146,17 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # organize stuff to install
   packages = set()
   files = []
+  scripts = []
+  dlna_scripts = []
   for dep in deps:
     if 'copy' in _os_deps[dep]:
       files += _os_deps[dep]['copy']
     if 'apt' in _os_deps[dep]:
       packages.update(_os_deps[dep]['apt'])
+    if 'script' in _os_deps[dep]:
+      scripts.append(_os_deps[dep]['script'])
+    if 'dlna_script' in _os_deps[dep]:
+      dlna_scripts.append(_os_deps[dep]['dlna_script'])
 
   # copy files
   for file in files:
@@ -167,6 +184,13 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       return tasks
   # install debian packages
   tasks += print_progress([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
+
+  # Run scripts
+  for script in scripts:
+    tasks += print_progress([Task('run install script', multiargs=script, wd=env['base_dir']).run()])
+
+  for dlna_script in dlna_scripts:
+    tasks += print_progress([Task('installing DLNA/UPnP', multiargs=dlna_script, wd=f"{env['base_dir']}/gmrender-resurrect").run()])
 
   # cleanup
   # shairport-sync install sets up a deamon we need to stop, remove it
