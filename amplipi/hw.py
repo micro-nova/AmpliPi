@@ -16,20 +16,59 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""AmpliPi hardware interface
-"""
+"""AmpliPi hardware interface """
 
 import argparse
 from enum import Enum
-import RPi.GPIO as GPIO
+import io
+import os
+from RPi import GPIO
 from serial import Serial
 from smbus2 import SMBus
 import subprocess
+import sys
 import time
+from typing import Tuple
+
+def is_amplipi():
+  """ Check if the current hardware is an AmpliPi
+
+    Checks if the system is a Raspberry Pi Compute Module 3 Plus
+    with the proper serial port and I2C bus
+
+    Returns:
+      True if current hardware is an AmpliPi, False otherwise
+  """
+  amplipi = True
+
+  # Check for Raspberry Pi
+  try:
+    # Also available in /proc/device-tree/model, and in /proc/cpuinfo's "Model" field
+    with io.open('/sys/firmware/devicetree/base/model', 'r') as m:
+      desired_model = 'Raspberry Pi Compute Module 3 Plus'
+      current_model = m.read()
+      if desired_model.lower() not in current_model.lower():
+        print(f"Device model '{current_model}'' doesn't match '{desired_model}*'")
+        amplipi = False
+  except Exception:
+    print('Not running on a Raspberry Pi')
+    amplipi = False
+
+  # Check for the serial port
+  if not os.path.exists('/dev/serial0'):
+    print('Serial port /dev/serial0 not found')
+    amplipi = False
+
+  # Check for the i2c bus
+  if not os.path.exists('/dev/i2c-1'):
+    print('I2C bus /dev/i2c-1 not found')
+    amplipi = False
+
+  return amplipi
+
 
 class Preamp:
-  """ Low level discovery and communication for the AmpliPi Preamp's firmware
-  """
+  """ Low level discovery and communication for the AmpliPi Preamp's firmware """
 
   # Preamp register addresses
   class Reg(Enum):
@@ -48,6 +87,7 @@ class Preamp:
     FAN_STATUS      = 0x0C
     EXTERNAL_GPIO   = 0x0D
     LED_OVERRIDE    = 0x0E
+    EXPANSION       = 0x0F
     HV1_VOLTAGE     = 0x10
     HV2_VOLTAGE     = 0x11
     HV1_TEMP        = 0x12
@@ -81,8 +121,30 @@ class Preamp:
       return False
     return True
 
+  def read_leds(self) -> int:
+    """ Read the LED board's status
 
-  def read_version(self):
+      Returns:
+        leds:   A 1-byte number with each bit corresponding to an LED
+                Bit 0 => Green,
+                Bit 1 => Red,
+                Bit[2-7] => Zone[1-6]
+    """
+    return self.bus.read_byte_data(self.addr, self.Reg.LED_OVERRIDE.value)
+
+  def write_leds(self, leds: int = 0xFF) -> None:
+    """ Override the LED board's LEDs
+
+      Args:
+        leds:   A 1-byte number with each bit corresponding to an LED
+                Bit 0 => Green,
+                Bit 1 => Red,
+                Bit[2-7] => Zone[1-6]
+    """
+    assert 0 <= leds <= 255
+    self.bus.write_byte_data(self.addr, self.Reg.LED_OVERRIDE.value, leds)
+
+  def read_version(self) -> Tuple[int, int, int, bool]:
     """ Read the firmware version of the preamp
 
       Returns:
@@ -101,6 +163,32 @@ class Preamp:
     dirty = (git_hash4_stat & 0x01) != 0
     return major, minor, git_hash, dirty
 
+  def reset_expander(self, bootloader: bool = False) -> None:
+    """ Resets expansion unit connected to this preamp, if any """
+    # Enter reset state
+    reg_val = 2 if bootloader else 0
+    self.bus.write_byte_data(self.addr, self.Reg.EXPANSION.value, reg_val)
+    #i2cset -y 1 0x08 0x0F 0x02 &&
+    #sleep 0.01 &&
+    #i2cset -y 1 0x08 0x0F 0x0F &&
+
+    # Hold the reset line low >300 ns, then set high
+    time.sleep(0.01)
+    reg_val |= 1
+    self.bus.write_byte_data(self.addr, self.Reg.EXPANSION.value, reg_val)
+
+    # Each preamps' microcontroller takes ~3ms to startup after releasing
+    # NRST. Just to be sure wait 5 ms before sending an I2C address.
+    time.sleep(0.005)
+
+  def uart_passthrough(self, passthrough: bool) -> None:
+    reg_val = self.bus.read_byte_data(self.addr, self.Reg.EXPANSION.value)
+    if passthrough: # TODO: only 4 once single bit
+      reg_val |= 12
+    else:
+      reg_val &= 3
+    self.bus.write_byte_data(self.addr, self.Reg.EXPANSION.value, reg_val)
+
 
 class Preamps:
   """ AmpliPi Preamp Board manager """
@@ -108,30 +196,35 @@ class Preamps:
   """ The maximum number of AmpliPi units, including the master """
   MAX_UNITS = 6
 
+  """ Valid UART baud rates """
+  BAUD_RATES = (  1200,   1800,   2400,   4800,    9600,  19200,
+                 38400,  57600, 115200, 128000,  230400, 256000,
+                460800, 500000, 576000, 921600, 1000000)
+
   class Pin(Enum):
     """ Pi GPIO pins to control the master unit's preamp """
     NRST  = 4
     BOOT0 = 5
 
-  def __init__(self, reset: bool = False, update: bool = False):
+  def __init__(self, reset: bool = False):
     self.bus = SMBus(1)
     self.preamps = []
     if reset:
+      print('Resetting all preamps...')
       self.reset(unit = 0, bootloader = False)
     else:
       self.enumerate()
-    if update:
-      self.flash('') # TODO: add filepath to arg
-
-    print(f'Preamps found: {len(self.preamps)}')
 
   def __getitem__(self, key: int) -> Preamp:
     return self.preamps[key]
 
-  def __setitem__(self, key: int, value: Preamp):
+  def __setitem__(self, key: int, value: Preamp) -> None:
     self.preamps[key] = value
 
-  def reset(self, unit: int = 0, bootloader: bool = False):
+  def __len__(self) -> int:
+    return len(self.preamps)
+
+  def reset(self, unit: int = 0, bootloader: bool = False) -> None:
     """ Resets the master unit's preamp board.
         Any expansion preamps will be reset one-by-one by the previous preamp.
         After resetting, an I2C address is assigned.
@@ -143,30 +236,35 @@ class Preamps:
 
     # TODO: If unit=1,2,3,4, or 5, only reset those units and onward
 
-    # Reset and return if bringing up in bootloader mode
-    self._reset_master(bootloader)
-    if bootloader:
-      time.sleep(0.01)
-      return
+    if unit == 0:
+      # Reset and return if bringing up in bootloader mode
+      self._reset_master(bootloader)
+      if bootloader:
+        time.sleep(0.01)
+        return
 
-    # Send I2C address over UART
-    with Serial('/dev/serial0', baudrate=115200) as ser:
-      ser.write((0x41, 0x10, 0x0D, 0x0A))
-    if not Preamp(0, self.bus).available():
-      print('Falling back to 9600 baud, is firmware version >=1.2?')
-      # The failed attempt at 115200 baud seems to put v1.1 firmware in a bad
-      # state, so reset and try again at 9600 baud.
-      self._reset_master(bootloader = False)
-      with Serial('/dev/serial0', baudrate=9600) as ser:
+      # Send I2C address over UART
+      with Serial('/dev/serial0', baudrate=115200) as ser:
         ser.write((0x41, 0x10, 0x0D, 0x0A))
+      if not Preamp(0, self.bus).available():
+        print('Falling back to 9600 baud, is firmware version >=1.2?')
+        # The failed attempt at 115200 baud seems to put v1.1 firmware in a bad
+        # state, so reset and try again at 9600 baud.
+        self._reset_master(bootloader = False)
+        with Serial('/dev/serial0', baudrate=9600) as ser:
+          ser.write((0x41, 0x10, 0x0D, 0x0A))
+    else:
+      self.preamps[unit - 1].reset_expander(bootloader)
 
     # Delay to account for address being set
-    # Each box theoretically takes ~5ms to receive its address. Again, estimate for six boxes and include some padding
-    time.sleep(0.01 * self.MAX_UNITS)
+    # Each box theoretically takes ~5ms to receive its address. Again, estimate for max boxes and include some padding
+    time.sleep(0.01 * (self.MAX_UNITS - unit))
 
-    self.enumerate()
+    # If resetting the master and not entering bootloader mode, re-enumerate
+    if not bootloader and unit == 0:
+      self.enumerate()
 
-  def _reset_master(self, bootloader: bool):
+  def _reset_master(self, bootloader: bool) -> None:
     # Reset the master (and by extension any expansion units)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(self.Pin.NRST.value, GPIO.OUT)
@@ -186,7 +284,7 @@ class Preamps:
     time.sleep(0.005)
     GPIO.cleanup()
 
-  def enumerate(self):
+  def enumerate(self) -> None:
     """ Re-enumerate preamp connections """
     self.preamps = []
     for i in range(self.MAX_UNITS):
@@ -194,13 +292,35 @@ class Preamps:
       if not p.available():
         break
       self.preamps.append(p)
+    print(f'Found {len(self.preamps)} preamp(s)')
 
-  def flash(self, filepath: str):
+  def flash(self, filepath: str, baud: int = 115200) -> None:
     """ Flash all available preamps with a given file """
-    self.reset(unit = 0, bootloader = True)
-    subprocess.run([f'stm32flash -vb 115200 -w {filepath} /dev/serial0'], shell=True, check=True)
-    # TODO: Error handling
-    self.reset(unit = 0, bootloader = False)
+
+    if baud not in self.BAUD_RATES:
+      raise ValueError(f'Baud rate must be one of {self.BAUD_RATES}')
+
+    # Flash all units found, but if nothing shows up
+    # attempt flashing the master preamp at least
+    num_units = len(self.preamps)
+    if num_units == 0:
+      num_units = 1
+
+    for unit in range(num_units):
+      #i2cset -y 1 0x08 0x0F 0x02 &&
+      #sleep 0.01 &&
+      #i2cset -y 1 0x08 0x0F 0x0F &&
+      print(f"Resetting unit {unit}'s preamp and starting execution in bootloader ROM")
+      self.reset(unit = unit, bootloader = True)
+      for p in range(unit): # Set UART passthrough on any previous units
+        print(f'Setting unit {p} as passthrough')
+        self.preamps[p].uart_passthrough(True)
+      subprocess.run([f'stm32flash -vb {baud} -w {filepath} /dev/serial0'], shell=True, check=True)
+      # TODO: Error handling
+      print('Resetting all preamps and starting execution in user flash')
+      self.reset()
+      major, minor, git_hash, dirty = self.preamps[unit].read_version()
+      print(f'Unit {unit} version: {major}, {minor}')
 
 
 #class PeakDetect:
@@ -239,10 +359,25 @@ if __name__ == '__main__':
                                  formatter_class=AmpliPiHelpFormatter)
   parser.add_argument('-r', '--reset', action='store_true', default=False,
                       help='reset the preamp(s) before communicating over I2C')
-  parser.add_argument('-u', '--update', action='store_true', default=False,
-                      help='update the preamp(s) with the latest released firmware')
+  parser.add_argument('--flash', metavar='FW.bin',
+                      help='update the preamp(s) with the firmware in a .bin file')
+  parser.add_argument('-b', '--baud', type=int, default=115200,
+                      help='baud rate to use for UART communication')
+  parser.add_argument('-v', '--version', action='store_true', default=False,
+                      help='print preamp firmware version(s)')
   parser.add_argument('-l', '--log', metavar='LEVEL', default='WARNING',
                       help='set logging level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
   args = parser.parse_args()
 
-  preamps = Preamps(args.reset, args.update)
+  preamps = Preamps(args.reset)
+
+  if args.flash is not None:
+    preamps.flash(filepath = args.flash, baud = args.baud)
+
+  if len(preamps) == 0:
+    print('No preamps found, exiting')
+    sys.exit(1)
+
+  if args.version:
+    major, minor, git_hash, dirty = preamps[0].read_version()
+    print(f'Master preamp firmware version: {major}.{minor}-{git_hash:07X}, {"dirty" if dirty else "clean"}')
