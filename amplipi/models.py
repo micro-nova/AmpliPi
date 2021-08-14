@@ -400,7 +400,7 @@ class Stream(Base):
   station: Optional[str] = Field(description='Radio station identifier')
   url: Optional[str] = Field(description='Stream url, used for internetradio and file')
   logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
-  freq: Optional[str] = Field(description='FM Frequency, used for fmradio')
+  freq: Optional[str] = Field(description='FM Frequency (MHz), used for fmradio')
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
 
