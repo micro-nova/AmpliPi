@@ -339,7 +339,7 @@ class Api:
     Args:
       src: An audio source that may have a stream connected
       sid: ID of an audio source
-    Returns
+    Returns:
       a stream, or None if input does not specify a valid stream
     """
     if sid is not None:
