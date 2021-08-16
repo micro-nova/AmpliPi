@@ -161,7 +161,7 @@ class Api:
   def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     self.reinit(settings, change_notifier)
 
-  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
+  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None, config: Optional[models.Status] = None):
     """ Initialize or Reinitialize the controller
 
     Intitializes the system to to base configuration """
@@ -177,20 +177,24 @@ class Api:
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
     self.config_file_valid = True # initially we assume the config file is valid
-    # try to load the config file or its backup
-    config_paths = [self.config_file, self.backup_config_file]
     errors = []
-    loaded_config = False
-    for cfg_path in config_paths:
-      try:
-        if os.path.exists(cfg_path):
-          self.status = models.Status.parse_file(cfg_path)
-          loaded_config = True
-          break
-        errors.append('config file "{}" does not exist'.format(cfg_path))
-      except Exception as exc:
-        self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
-        errors.append('error loading config file: {}'.format(exc))
+    if config:
+      self.status = config
+      loaded_config = True
+    else:
+      # try to load the config file or its backup
+      config_paths = [self.config_file, self.backup_config_file]
+      loaded_config = False
+      for cfg_path in config_paths:
+        try:
+          if os.path.exists(cfg_path):
+            self.status = models.Status.parse_file(cfg_path)
+            loaded_config = True
+            break
+          errors.append('config file "{}" does not exist'.format(cfg_path))
+        except Exception as exc:
+          self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
+          errors.append('error loading config file: {}'.format(exc))
 
     if not loaded_config:
       print(errors[0])
