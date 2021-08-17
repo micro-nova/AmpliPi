@@ -1,0 +1,8 @@
+[submodule "fw/sam/arduinosam"]
+  path = fw/sam/arduinosam
+  url = https://github.com/arduino/ArduinoCore-sam.git
+  branch = master
+[submodule "fw/sam/bossa"]
+  path = fw/sam/bossa
+  url = https://github.com/mike-kfed/BOSSA.git
+  branch = eefc_wait
