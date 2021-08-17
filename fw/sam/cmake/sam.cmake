@@ -26,7 +26,6 @@ set(ARM_FLAGS
   -ffunction-sections
   -fdata-sections
   --param max-inline-insns-single=500
-  -MMD
 )
 
 set(CXX_FLAGS
