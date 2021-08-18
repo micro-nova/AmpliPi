@@ -136,12 +136,18 @@ class _Preamps:
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(4, GPIO.OUT)
     GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
+    GPIO.setup(5, GPIO.OUT)
+    GPIO.output(5, 0) # Ensure BOOT0 is low (GPIO5)
     time.sleep(0.001)
     GPIO.output(4, 1)
-    GPIO.cleanup()    # Done with GPIO
 
-    # Each box theoretically takes ~11ms to undergo a reset. Estimating for six boxes, including some padding, wait 100ms for the resets to propagate down the line
+    # Each box theoretically takes ~11ms to undergo a reset.
+    # Estimating for six boxes, including some padding,
+    # wait 100ms for the resets to propagate down the line
     time.sleep(0.1)
+
+    # Done with GPIO, they will default back to inputs with pullups
+    GPIO.cleanup()
 
     # Setup serial connection via UART pins - set I2C addresses for preamps
     addr = 0x41, 0x10, 0x0D, 0x0A
