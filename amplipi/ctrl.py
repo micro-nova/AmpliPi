@@ -170,6 +170,11 @@ class Api:
     self._mock_streams = settings.mock_streams
     self._save_timer = None
     self._delay_saves = settings.delay_saves
+    self._settings = settings
+    try:
+      del self._rt # remove the low level hardware connection
+    except AttributeError:
+      pass
     self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi()
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file

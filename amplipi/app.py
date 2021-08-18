@@ -144,13 +144,13 @@ def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
 @api.post('/api/load', tags=['status'])
 def load_config(config: models.Status, ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Load a new configuration (and return the configuration loaded). This will overwrite the current configuration so it is advised to save the previous config from. """
-  ctrl.reinit(change_notifier=notify_on_change, config=config)
+  ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change, config=config)
   return ctrl.get_state()
 
 @api.post('/api/reset', tags=['status'])
 def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Reload the currenty configuration, resetting the hardware in the process. """
-  ctrl.reinit(change_notifier=notify_on_change)
+  ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change)
   return ctrl.get_state()
 
 subscribers: Dict[int, 'Queue[models.Status]'] = {}

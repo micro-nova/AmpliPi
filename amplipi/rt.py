@@ -531,6 +531,10 @@ class Rpi:
     self._bus = _Preamps()
     self._all_muted = True # preamps start up in muted/standby state
 
+
+  def __del__(self):
+    del self._bus
+
   def update_zone_mutes(self, zone, mutes):
     """ Update the mute level to all of the zones
 
