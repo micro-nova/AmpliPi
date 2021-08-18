@@ -14,6 +14,9 @@ sam_add_executable(
 
   # Hardware
   src/main.cpp
+
+  # I2C Library
+  ${SAM_PATH}/arduinosam/libraries/Wire/src/Wire.cpp
 )
 
 #sam_target_include_directories(${PROJECT_NAME}

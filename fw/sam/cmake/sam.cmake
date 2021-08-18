@@ -17,6 +17,9 @@ set(SAM_INCLUDE_DIRS
   ${SAM_PATH}/arduinosam/system/CMSIS/Device/ATMEL
   ${SAM_PATH}/arduinosam/system/CMSIS/Device/ATMEL/sam3xa/include
   ${SAM_PATH}/arduinosam/variants/arduino_due_x
+  ${SAM_PATH}/arduinosam/libraries/HID/src
+  ${SAM_PATH}/arduinosam/libraries/SPI/src
+  ${SAM_PATH}/arduinosam/libraries/Wire/src
 )
 
 set(ARM_FLAGS

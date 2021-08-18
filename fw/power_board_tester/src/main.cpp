@@ -46,32 +46,47 @@
  *        +-> Power Board J1 Pin 1 and 3
  *
  *    Arduino Due | Power Board
- *  +-------------+---------------------+ Power
+ *  +-------------+------------------------+ Power
  *    GND         | GND/AGND*
  *    A0          | J4 pin 1: +5VA
  *    A1          | J4 pin 3: +5VD
  *    A2          | J5 pin 1: +9VA
  *    A3          | J5 pin 3: +5VA
  *    A4          | J8 pin 1: +9VA
- *  +-------------+---------------------+ I2C
+ *  +-------------+------------------------+ I2C
  *    +3.3V       | J3 pin 1: +3.3VA
  *    SCL         | J3 pin 2: SCL
  *    SDA         | J3 pin 3: SDA
  *    GND         | J3 pin 4: AGND
  *    +3.3V       | J2 pin 1: +3.3VA
- *    SCL1        | J2 pin 2: SCL
- *    SDA1        | J2 pin 3: SDA
+ *    SCL1        | J2 pin 2: SCL     (out)
+ *    SDA1        | J2 pin 3: SDA     (out)
  *    GND         | J2 pin 4: AGND
- *  +-------------+---------------------+ IO
+ *  +-------------+------------------------+ IO
  *    2     (out) | J6 pin 1: NTC1
  *    DAC0  (out) | J9 pin 2: DXP1
  *    DAC1  (out) | J9 pin 7: DXP2
- *    A5    (in)  | J9 pin 1: +3.3VA (out)
- *    A6    (in)  | J9 pin 5: +12VD  (out)
+ *    A5    (in)  | J9 pin 1: +3.3VA  (out)
+ *    A6    (in)  | J9 pin 5: +12VD   (out)
  *    5     (out) | J9 pin 3: TACH1
  *    6     (out) | J9 pin 6: TACH2
- *    A5          | J9 pin 4: FAN_PWM
- *  +---------------------+---------------------+
+ *    A7    (in)  | J9 pin 4: FAN_PWM (out)
+ *  +-------------+------------------------+ Status LEDs
+ *    23    (out) | LED (+3.3VA_J2)
+ *    25    (out) | LED (+3.3VA_J9)
+ *    27    (out) | LED (+5VA_J4)
+ *    29    (out) | LED (+5VA_J5)
+ *    31    (out) | LED (+9VA_J5)
+ *    33    (out) | LED (+9VA_J8)
+ *    35    (out) | LED (+5VD)
+ *    37    (out) | LED (+12VD)
+ *    39    (out) | LED (+24V)
+ *    41    (out) | LED (Therm1)
+ *    43    (out) | LED (Therm2)
+ *    45    (out) | LED (Therm3)
+ *    47    (out) | LED (FAN_PWM)
+ *    49    (out) | LED (I2C Loopback)
+ *  +-------------+------------------------+
  *    * This doesn't independently test all GND connections.
  *      Possibly differential measurements would solve that?
  *
@@ -99,22 +114,69 @@
  */
 
 #include <Arduino.h>
+#include <Wire.h>
+
+static constexpr uint8_t MAX_DPOT_VAL = 63;
+static constexpr uint8_t I2C_TEST_VAL = 0xA4;
+
+enum SlaveAddr : uint8_t {
+  due  = 0x0F,
+  gpio = 0x21,
+  dpot = 0x2F,
+  adc  = 0x64
+};
+
+enum StatusLed : uint32_t {
+  v3_3A_J2 = 23,
+  v3_3A_J9 = 25,
+  v5A_J4   = 27,
+  v5A_J5   = 29,
+  v9A_J5   = 31,
+  v9A_J8   = 33,
+  v5D      = 35,
+  v12D     = 37,
+  v24      = 39,
+  therm1   = 41,
+  therm2   = 43,
+  therm3   = 45,
+  fan      = 47,
+  i2c      = 49
+};
+
+// I2C1 slave RX callback
+void i2cSlaveRx(int rxBufLen)
+{
+  uint8_t rx = Wire1.read();
+  uint32_t led = rx == I2C_TEST_VAL ? HIGH : LOW;
+  digitalWrite(StatusLed::i2c, led);
+  SerialUSB.print("Got I2C byte 0x");
+  SerialUSB.println(rx, HEX);
+}
 
 void setup() {
-  // Initialize digital pin LED_BUILTIN as an output.
+  // Setup onboard LED
   pinMode(LED_BUILTIN, OUTPUT);
+
+  // Setup I2C master
+  Wire.begin();
+
+  // Setup I2C slave
+  Wire1.begin(SlaveAddr::due); // Set I2C1 as slave with the given address
+  Wire1.onReceive(i2cSlaveRx); // Register event in I2C1
+
+  // Setup emulated UART output
   SerialUSB.begin(0);
   SerialUSB.println("Welcome to the Power Board Tester");
 }
 
 void loop() {
-  // Blink LED
+  // Blink LED, 100 ms on, 1000 ms off
   static uint32_t led_timer = 0;
   static uint32_t led_state = LOW;
   if (millis() > led_timer) {
     led_state = led_state == HIGH ? LOW : HIGH;
     digitalWrite(LED_BUILTIN, led_state);
-    led_timer += 1000;
+    led_timer += led_state == HIGH ? 100 : 900;
   }
 
   // Measure ADCs
@@ -124,6 +186,26 @@ void loop() {
   // Toggle FAN_ON
 
   // Adjust DPOT to control +12V
+  static uint32_t dpot_timer = 0;
+  static uint8_t dpot_val = 0;
+  if (millis() > dpot_timer) {
+    Wire.beginTransmission(SlaveAddr::dpot);
+    Wire.write((uint8_t)0x00);  // Instruction byte
+    Wire.write(dpot_val);       // Value
+    Wire.endTransmission();
+    dpot_val++;
+    if (dpot_val > MAX_DPOT_VAL) {
+      dpot_val = 0;
+    }
+    dpot_timer += 1000;
+  }
 
   // Check I2C loopback
+  static uint32_t i2c_loopback_timer = 0;
+  if (millis() > i2c_loopback_timer) {
+    Wire.beginTransmission(SlaveAddr::due);
+    Wire.write((uint8_t)I2C_TEST_VAL);
+    Wire.endTransmission();
+    i2c_loopback_timer += 1000;
+  }
 }
