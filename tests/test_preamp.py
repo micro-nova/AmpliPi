@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='Display AmpliPi preamp status.')
 parser.add_argument('--led', type=auto_int, metavar='0xXX', help="override the LEDs")
 args = parser.parse_args()
 
-preamp = amplipi.rt._Preamps()
+preamp = amplipi.rt._Preamps(reset = False)
 
 # Version
 major, minor, git_hash, dirty = preamp.read_version()

@@ -104,13 +104,14 @@ def is_amplipi():
 class _Preamps:
   """ Low level discovery and communication for the AmpliPi firmware
   """
-  def __init__(self):
+  def __init__(self, reset: bool = True):
     self.preamps = dict()
     if not is_amplipi():
       self.bus = None # TODO: Use i2c-stub
       print('Not running on AmpliPi hardware, mocking preamp connection')
     else:
-      self.reset_preamps()
+      if reset:
+        self.reset_preamps()
 
       # Setup self._bus as I2C1 from the RPi
       self.bus = SMBus(1)
@@ -118,7 +119,7 @@ class _Preamps:
       # Discover connected preamp boards
       for p in _DEV_ADDRS:
         if self.probe_preamp(p):
-          print('Preamp found at address {}'.format(p))
+          print(f'Preamp found at address {p}')
           self.new_preamp(p)
         else:
           if p == _DEV_ADDRS[0]:
@@ -203,7 +204,7 @@ class _Preamps:
     # Scan for preamps, and set source registers to be completely digital
     # TODO: This should read version instead, but I haven't checked what relies on this yet.
     try:
-      self.bus.write_byte_data(addr, _REG_ADDRS['SRC_AD'], 0x0F)
+      self.bus.read_byte_data(addr, _REG_ADDRS['VERSION_MAJOR'])
       return True
     except Exception:
       return False
