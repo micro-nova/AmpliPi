@@ -32,7 +32,7 @@ include = [
   "config/*.conf",
   "debs/**/*",
   "fw/preamp_*", # no need to add full source tree
-  "scripts/run_debug_webserver", "scripts/run_debug_updater", "scripts/configure.py", "scripts/install_python_deps.bash", # other scripts only support development
+  "scripts/run_debug_webserver", "scripts/run_debug_updater", "scripts/configure.py", "scripts/install_python_deps.bash", "scripts/built_in_test", # other scripts only support development
   "streams/**/*",
   "web/**/*",
   "bin/**",

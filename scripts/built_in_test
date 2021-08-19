@@ -1,0 +1,11 @@
+#!/bin/bash
+# call the built in tests python script, passing all of the args
+
+set -e
+
+# get directory that the script exists in
+cd "$( dirname "$0" )/.."
+
+# use our virtual environment
+source venv/bin/activate
+./venv/bin/python -m amplipi.tests $@ # pass through all of the args

@@ -17,6 +17,7 @@ Preamp
 from enum import Enum
 from time import sleep
 from typing import Optional
+import argparse
 import requests
 
 from amplipi import models
@@ -29,6 +30,10 @@ class Client:
 
   def __init__(self):
     self.url = 'http://localhost/api'
+
+  def reset(self) -> bool:
+    """ Rest HW """
+    return requests.post(f'{self.url}/reset').ok
 
   def load_config(self, cfg: models.Status) -> Optional[models.Status]:
     """ Load a configuration """
@@ -124,18 +129,29 @@ def loop_test(client: Client, test_name: str):
   if status is None:
     return
   stages = [pst for pst in status.presets if pst.name.startswith(test_name) and pst.id is not None]
+  if len(stages) == 0:
+    print(f"test '{test_name}' not found")
+    return
+  print(f"Running test '{test_name}'. Press Ctrl-C to stop.")
   try:
     while True:
       for stage in stages:
         if stage.id is not None: # placate the typechecker
           client.load_preset(stage.id)
-          sleep(1)
-      sleep(3)
+      sleep(1)
+      if test_name == 'led':
+        client.reset() # reset amplipi since fw can lock up during unplugging/plugging in led board
   except:
     pass
 
 
 if __name__ == '__main__':
+
+  parser = argparse.ArgumentParser('Test audio functionality')
+  parser.add_argument('test', help='Test to run (led,zones)')
+  args = parser.parse_args()
+
+  print('configuring amplipi for testing (TODO: unconfigure it when done!)')
   ap = Client()
   setup(ap)
-  loop_test(ap, 'led')
+  loop_test(ap, args.test)
