@@ -78,6 +78,23 @@ $(function() {
           </div>
         </div>
 
+        <div id="plexamp_settings" class="addl_settings" style="display:none;">
+          <div class="form-group">
+            <label for="user">UUID</label>
+            <input type="text" class="form-control" name="uuid" aria-describedby="uuidHelp" value="No UUID, generate by clicking the link below" data-required="true" readonly>
+            <small id="uuidHelp" class="form-text text-muted">Click Authentication btn to handshake Plex credentials</small>
+          </div>
+          <div class="form-group">
+            <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
+            <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
+            <button class="btn btn-primary" onclick="window.location.reload();" style="display: none" id="plexamp-done"></button>
+          </div>
+          <div class="form-group">
+            <label for="user">Authentication Token</label>
+            <input type="text" class="form-control" name="auth" aria-describedby="authHelp" value="No authToken" readonly>
+          </div>
+        </div>
+
         <button type="submit" class="btn btn-secondary">Add Stream</button>
       </form>
       `;
@@ -161,6 +178,7 @@ $(function() {
     if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
     else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
     else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); }
+    else if ($(this).val() == "plexamp") { $("#plexamp_settings").show(); }
 
   });
 
