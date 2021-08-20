@@ -173,3 +173,7 @@ endmacro()
 macro(sam_target_include_directories target)
   target_include_directories(${target}.elf PRIVATE ${ARGN})
 endmacro()
+
+macro(sam_target_compile_options target)
+  target_compile_options(${target}.elf PRIVATE ${ARGN})
+endmacro()

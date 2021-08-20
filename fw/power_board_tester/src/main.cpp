@@ -115,6 +115,12 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <Adafruit_ILI9341.h>
+
+#define TFT_CS        10
+#define TFT_DC        11
+#define TFT_SPI_FREQ (50*1000000) // Default = 24 MHz
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 static constexpr uint8_t MAX_DPOT_VAL = 63;
 static constexpr uint8_t I2C_TEST_VAL = 0xA4;
@@ -167,9 +173,16 @@ void setup() {
   // Setup emulated UART output
   SerialUSB.begin(0);
   SerialUSB.println("Welcome to the Power Board Tester");
+
+  // Setup display
+  tft.begin(TFT_SPI_FREQ);
+  tft.setRotation(1);
+  tft.fillScreen(ILI9341_BLACK);
 }
 
 void loop() {
+  uint32_t loopStartTime = millis();
+
   // Blink LED, 100 ms on, 1000 ms off
   static uint32_t led_timer = 0;
   static uint32_t led_state = LOW;
@@ -208,4 +221,16 @@ void loop() {
     Wire.endTransmission();
     i2c_loopback_timer += 1000;
   }
+
+  // Update display
+  static bool blank = true;
+  if (blank) {
+    tft.fillScreen(ILI9341_WHITE);
+  } else {
+    tft.fillScreen(ILI9341_BLACK);
+  }
+  blank = !blank;
+  //tft.drawPixel(x, y, (n * 29)<<8 | (n * 67)); // takes 500ms with individual pixel writes
+  uint32_t elapsedTime = millis() - loopStartTime;
+  SerialUSB.print("Loop took "); SerialUSB.print(elapsedTime); SerialUSB.println(" ms");
 }
