@@ -795,7 +795,7 @@ class Api:
 
     # execute changes source by source in increasing order
     for src in preset_state.sources or []:
-      if src.id:
+      if src.id is not None:
         self.set_source(src.id, src.as_update(), internal=True)
       else:
         pass # TODO: support some id-less source concept that allows dynamic source allocation
