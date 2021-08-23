@@ -1,64 +1,84 @@
 #!/usr/bin/env python3
 
-import board
-import busio
+"""
+Peak-detect test script.
+This file is not meant to be used with pytest, since it currently requires
+human interaction to play/pause inputs before checking the output of this script.
+"""
+
 from pathlib import Path
 import time
 
+import board
+import busio
+
 # Config
-cs_pin = 17           # GPIO pin number
-baud = 1000000        # MHz, MCP3008 max is 3.6 MHz, min 10 kHz
-sample_rate = 100.0   # Hz, rate at which to sample all channels
+CS_PIN = 17           # GPIO pin number
+SPI_BAUD = 1000000    # MHz, MCP3008 max is 3.6 MHz, min 10 kHz
+SAMPLE_RATE = 100.0   # Hz, rate at which to sample all channels
 
-# Setup SPI bus using hardware SPI:
-spi = busio.SPI(clock=board.SCLK_1, MOSI=board.MOSI_1, MISO=board.MISO_1)
-while not spi.try_lock():
-  pass
-spi.configure(baudrate=baud)
+def cs_setup() -> None:
+  """ CS pin setup. Leaves CS inactive. """
+  if not Path('/sys/class/gpio/gpio17').exists():
+    with open('/sys/class/gpio/export', 'w') as file:
+      file.write(f'{CS_PIN}')
+    time.sleep(0.1)
+    with open('/sys/class/gpio/gpio17/direction', 'w') as file:
+      file.write('out')
 
-# CS pin setup - TODO: This is still kinda slow, investigate Python's 'spidev'
-# library or https://iosoft.blog/2020/06/11/fast-data-capture-raspberry-pi/
-if not Path('/sys/class/gpio/gpio17').exists():
-  with open('/sys/class/gpio/export', 'w') as f:
-    f.write(f'{cs_pin}')
-  time.sleep(0.1)
-  with open('/sys/class/gpio/gpio17/direction', 'w') as f:
-    f.write('out')
+  with open(f'/sys/class/gpio/gpio{CS_PIN}/value', 'w') as cs_file:
+    cs_file.write('1')
 
-with open(f'/sys/class/gpio/gpio{cs_pin}/value', 'w') as cs_file:
-  cs_file.write('1')
-sample_period = 1/sample_rate
-rx_buf = bytearray(3)
-tx_buf = bytearray(3)
-tx_buf[0] = 0x01
-tx_buf[2] = 0x00
-i = 0
-max_val = [0]*8
-next_time = time.time()
-while True:
-  for ch in range(8):
-    tx_buf[1] = 0x80 | (ch << 4)
-    with open(f'/sys/class/gpio/gpio{cs_pin}/value', 'w') as cs_file:
-      cs_file.write('0')
-    spi.write_readinto(tx_buf, rx_buf)
-    with open(f'/sys/class/gpio/gpio{cs_pin}/value', 'w') as cs_file:
-      cs_file.write('1')
+def read_adc(spi: busio.SPI, channel: int) -> int:
+  """ Read a single ADC channel of the MCP3008  """
+  # TODO: This is still kinda slow, investigate Python's 'spidev'
+  # library or https://iosoft.blog/2020/06/11/fast-data-capture-raspberry-pi/
+  rx_buf = bytearray(3)
+  tx_buf = bytearray((0x01, 0x80 | (channel << 4), 0x00))
+  with open(f'/sys/class/gpio/gpio{CS_PIN}/value', 'w') as cs_file:
+    cs_file.write('0')
+  spi.write_readinto(tx_buf, rx_buf)
+  with open(f'/sys/class/gpio/gpio{CS_PIN}/value', 'w') as cs_file:
+    cs_file.write('1')
+  raw_val = ((rx_buf[1] & 0x3) << 8) | rx_buf[2]
+  return raw_val
 
-    raw_val = ((rx_buf[1] & 0x3) << 8) | rx_buf[2]
-    adc_val = raw_val * 100.0 / 1023.0
-    if adc_val > max_val[ch]:
-      max_val[ch] = adc_val
-      #filt_val = alpha*adc_val + (1-alpha)*filt_val
+def read_vals():
+  """ Read all 8 peak-detect channels forever. Every second, prints the max
+      value read for each channel over the preceding second.
+  """
+  # Setup SPI bus using hardware SPI:
+  peak_spi = busio.SPI(clock=board.SCLK_1, MOSI=board.MOSI_1, MISO=board.MISO_1)
+  while not peak_spi.try_lock():
+    pass
+  peak_spi.configure(baudrate=SPI_BAUD)
 
-  if i > int(sample_rate):
-    print(*(f'{val:5.1f}%' for val in max_val))
-    max_val = [0]*8
-    i = 0
-  i += 1
+  cs_setup()
 
-  next_time = next_time + sample_period
-  sleep_time = next_time - time.time()
-  if sleep_time > 0:
-    time.sleep(sleep_time)
-  else:
-    print(f'Warning: ADC sampling took {sleep_time}s too long!')
+  sample_period = 1/SAMPLE_RATE
+  i = 0
+  max_val = [0]*8
+  next_time = time.time()
+  while True:
+    for chan in range(8):
+      raw_val = read_adc(peak_spi, chan)
+      adc_val = raw_val * 100.0 / 1023.0
+      if adc_val > max_val[chan]:
+        max_val[chan] = adc_val
+        #filt_val = alpha*adc_val + (1-alpha)*filt_val
+
+    if i > int(SAMPLE_RATE):
+      print(*(f'{val:5.1f}%' for val in max_val))
+      max_val = [0]*8
+      i = 0
+    i += 1
+
+    next_time = next_time + sample_period
+    sleep_time = next_time - time.time()
+    if sleep_time > 0:
+      time.sleep(sleep_time)
+    else:
+      print(f'Warning: ADC sampling took {sleep_time}s too long!')
+
+if __name__ == "__main__":
+  read_vals()
