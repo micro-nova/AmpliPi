@@ -873,7 +873,7 @@ class Api:
     stream_inst = self.streams[stream.id]
     while True:
       time.sleep(0.1)
-      if stream_inst.status() in ['stopped', 'disconnected']:
+      if stream_inst.state in ['stopped', 'disconnected']:
         break
     resp4 = self.load_preset(self._LAST_PRESET_ID, internal=True)
     resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
