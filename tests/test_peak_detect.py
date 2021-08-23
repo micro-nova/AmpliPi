@@ -2,34 +2,13 @@
 
 import board
 import busio
-import digitalio
+from pathlib import Path
 import time
 
 # Config
-cs_pin = digitalio.DigitalInOut(board.D17)
-baud = 1000000      # MHz, MCP3008 max is 3.6 MHz, min 10 kHz
-sample_rate = 1.0   # Hz
-
-################################################################################
-# A note on Raspberry Pi (BCM2835) clocks
-################################################################################
-# The SPI frequency is based on the "core clock" of the BCM2835
-# See Section 2.3.1 of BCM2835-ARM-Peripherals.pdf, CLK Register CDIV field:
-#   SPIx_CLK = system_clock_freq / [2*(speed_field + 1)]
-# Best I can tell 'system_clock_freq' is the same as 'core_freq'
-# speed_field is 12 bits, so SPI freq is [core_freq/2^13, core_freq/2]
-# For a core_freq of 400 MHz: [48.8 kHz, 200 MHz]
-#
-# To lock the core clock to 400 MHz, in /boot/config.txt set:
-#   core_freq=400
-#   core_freq_min=400
-#
-# Also needed to enable SPI1:
-#   dtparam=spi=on
-#   dtoverlay=spi1-2cs
-#
-# ARM (CPU) clock frequency in Hz:  vcgencmd measure_clock arm
-# Core clock frequency in Hz:       vcgencmd measure_clock core
+cs_pin = 17           # GPIO pin number
+baud = 1000000        # MHz, MCP3008 max is 3.6 MHz, min 10 kHz
+sample_rate = 100.0   # Hz, rate at which to sample all channels
 
 # Setup SPI bus using hardware SPI:
 spi = busio.SPI(clock=board.SCLK_1, MOSI=board.MOSI_1, MISO=board.MISO_1)
@@ -37,30 +16,48 @@ while not spi.try_lock():
   pass
 spi.configure(baudrate=baud)
 
+# CS pin setup - TODO: This is still kinda slow, investigate Python's 'spidev'
+# library or https://iosoft.blog/2020/06/11/fast-data-capture-raspberry-pi/
+if not Path('/sys/class/gpio/gpio17').exists():
+  with open('/sys/class/gpio/export', 'w') as f:
+    f.write(f'{cs_pin}')
+  time.sleep(0.1)
+  with open('/sys/class/gpio/gpio17/direction', 'w') as f:
+    f.write('out')
+
+with open(f'/sys/class/gpio/gpio{cs_pin}/value', 'w') as cs_file:
+  cs_file.write('1')
 sample_period = 1/sample_rate
-cs_pin.direction = digitalio.Direction.OUTPUT
-cs_pin.value = True
 rx_buf = bytearray(3)
 tx_buf = bytearray(3)
 tx_buf[0] = 0x01
 tx_buf[2] = 0x00
+i = 0
+max_val = [0]*8
+next_time = time.time()
 while True:
-  start = time.time()
-
-  adc_vals = []
   for ch in range(8):
     tx_buf[1] = 0x80 | (ch << 4)
-    cs_pin.value = False
+    with open(f'/sys/class/gpio/gpio{cs_pin}/value', 'w') as cs_file:
+      cs_file.write('0')
     spi.write_readinto(tx_buf, rx_buf)
-    cs_pin.value = True
+    with open(f'/sys/class/gpio/gpio{cs_pin}/value', 'w') as cs_file:
+      cs_file.write('1')
 
     raw_val = ((rx_buf[1] & 0x3) << 8) | rx_buf[2]
-    adc_vals.append(raw_val * 100.0 / 1023.0)
-  print(*(f'{val:5.1f}%' for val in adc_vals))
+    adc_val = raw_val * 100.0 / 1023.0
+    if adc_val > max_val[ch]:
+      max_val[ch] = adc_val
+      #filt_val = alpha*adc_val + (1-alpha)*filt_val
 
-  end = time.time()
-  #print('Took ', 1000*(end - start), ' ms')
-  sleep_time = sample_period - (end-start)
+  if i > int(sample_rate):
+    print(*(f'{val:5.1f}%' for val in max_val))
+    max_val = [0]*8
+    i = 0
+  i += 1
+
+  next_time = next_time + sample_period
+  sleep_time = next_time - time.time()
   if sleep_time > 0:
     time.sleep(sleep_time)
   else:
