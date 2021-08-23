@@ -639,6 +639,7 @@ class Announcement(BaseModel):
   """
   media : str = Field(description="URL to media to play as the announcement")
   vol: int = Field(default=-40, ge=-79, le=0, description='Output volume in dB')
+  src_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
 
