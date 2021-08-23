@@ -44,13 +44,17 @@ _os_deps: Dict[str, Dict[str, Any]] = {
               'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
               'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git' ],
     'script' : [
-      'git clone https://github.com/hzeller/gmrender-resurrect.git'.split(),
-    ],
-    'dlna_script' : [
+      'if [ ! -d "gmrender-resurrect" ] ; then',
+      '  git clone https://github.com/hzeller/gmrender-resurrect.git gmrender-resurrect',
+      '  cd gmrender-resurrect',
+      'else',
+      '  cd gmrender-resurrect',
+      '  git pull https://github.com/hzeller/gmrender-resurrect.git',
+      'fi',
       './autogen.sh',
       './configure',
       'make',
-      'sudo make install'.split(),
+      'sudo make install',
     ],
   },
   'plexamp' : {
@@ -58,8 +62,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'spotify' : {
     'script' :  [
-      'curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz'.split(),
-      'tar --directory streams -xvf streams/vollibrespot.tar.xz'.split(),
+      'curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
+      'tar --directory streams -xvf streams/vollibrespot.tar.xz',
     ]
   }
 }
@@ -148,7 +152,6 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   packages = set()
   files = []
   scripts = []
-  dlna_scripts = []
   for dep in deps:
     if 'copy' in _os_deps[dep]:
       files += _os_deps[dep]['copy']
@@ -156,8 +159,6 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       packages.update(_os_deps[dep]['apt'])
     if 'script' in _os_deps[dep]:
       scripts.append(_os_deps[dep]['script'])
-    if 'dlna_script' in _os_deps[dep]:
-      dlna_scripts.append(_os_deps[dep]['dlna_script'])
 
   # copy files
   for file in files:
@@ -188,13 +189,17 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
 
   # Run scripts
   for script in scripts:
-    tasks += print_progress([Task('run install script', multiargs=script, wd=env['base_dir']).run()])
-
-  for dlna_script in dlna_scripts:
-    tasks += print_progress([Task('installing DLNA/UPnP', multiargs=dlna_script, wd=f"{env['base_dir']}/gmrender-resurrect").run()])
+    sh_loc = f'{env["base_dir"]}/install{scripts.index(script)}.sh'
+    with open(sh_loc, 'a') as sh:
+      for scrap in script:
+        sh.write(scrap + '\n')
+    shargs = f'sh {sh_loc}'.split()
+    clean = f'rm {sh_loc}'.split()
+    tasks += print_progress([Task('run install script', args=shargs, wd=env['base_dir']).run()])
+    tasks += print_progress([Task('rm generic script', args=clean, wd=env['base_dir']).run()])
 
   # cleanup
-  # shairport-sync install sets up a deamon we need to stop, remove it
+  # shairport-sync install sets up a daemon we need to stop, remove it
   tasks += print_progress(_stop_service('shairport-sync', system=True))
   tasks += print_progress(_disable_service('shairport-sync', system=True))
 

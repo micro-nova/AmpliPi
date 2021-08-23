@@ -101,6 +101,11 @@ class BaseStream:
     self.state = 'connected'
     self.src = src
 
+  def _is_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
   def send_cmd(self, cmd: str) -> None:
     """ Generic send_cmd function. If not implemented in a stream,
     and a command is sent, this error will be raised.
@@ -121,7 +126,7 @@ class Shairport(BaseStream):
       self.name = kwargs['name']
       reconnect_needed = True
     if reconnect_needed:
-      if self._is_sp_running():
+      if self._is_running():
         last_src = self.src
         self.disconnect()
         time.sleep(0.1) # delay a bit, is this needed?
@@ -174,13 +179,8 @@ class Shairport(BaseStream):
     self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
 
-  def _is_sp_running(self):
-    if self.proc:
-      return self.proc.poll() is None
-    return False
-
   def disconnect(self):
-    if self._is_sp_running():
+    if self._is_running():
       os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
       self.proc.kill()
     self._disconnect()
@@ -212,14 +212,6 @@ class Shairport(BaseStream):
       print(f'Failed to get currentSong - it may not exist: {exc}')
     return source
 
-  def status(self):
-    return self.state
-
-  def __str__(self):
-    connection = f' connected to src={self.src}' if self.src else ''
-    mock = ' (mock)' if self.mock else ''
-    return f'airplay: {self.name}{connection}{mock}'
-
 class Spotify(BaseStream):
   """ A Spotify Stream """
   def __init__(self, name, mock=False):
@@ -234,7 +226,7 @@ class Spotify(BaseStream):
       self.name = kwargs['name']
       reconnect_needed = True
     if reconnect_needed:
-      if self._is_spot_running():
+      if self._is_running():
         last_src = self.src
         self.disconnect()
         time.sleep(0.1) # delay a bit, is this needed?
@@ -242,11 +234,6 @@ class Spotify(BaseStream):
 
   def __del__(self):
     self.disconnect()
-
-  def __str__(self):
-    connection = f' connected to src={self.src}' if self.src else ''
-    mock = ' (mock)' if self.mock else ''
-    return f'spotify connect: {self.name}{connection}{mock}'
 
   def connect(self, src):
     """ Connect a Spotify output to a given audio source
@@ -284,13 +271,8 @@ class Spotify(BaseStream):
     except Exception as exc:
       print(f'error starting spotify: {exc}')
 
-  def _is_spot_running(self):
-    if self.proc:
-      return self.proc.poll() is None
-    return False
-
   def disconnect(self):
-    if self._is_spot_running():
+    if self._is_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
       self.proc2.kill()
     self._disconnect()
@@ -317,9 +299,6 @@ class Spotify(BaseStream):
     except Exception:
       pass
     return source
-
-  def status(self):
-    return self.state
 
   def send_cmd(self, cmd):
     """ Control of Spotify via commands sent over sockets
@@ -363,7 +342,7 @@ class Pandora(BaseStream):
         self.__dict__[k] = v
         if k in pb_fields:
           reconnect_needed = True
-    if reconnect_needed and self._is_pb_running():
+    if reconnect_needed and self._is_running():
       last_src = self.src
       self.disconnect()
       time.sleep(0.1) # delay a bit, is this needed?
@@ -371,11 +350,6 @@ class Pandora(BaseStream):
 
   def __del__(self):
     self.disconnect()
-
-  def __str__(self):
-    connection = f' connected to src={self.src}' if self.src else ''
-    mock = ' (mock)' if self.mock else ''
-    return f'pandora: {self.name}{connection}{mock}'
 
   def connect(self, src):
     """ Connect pandora output to a given audio source
@@ -425,13 +399,8 @@ class Pandora(BaseStream):
     except Exception as exc:
       print(f'error starting pianobar: {exc}')
 
-  def _is_pb_running(self):
-    if self.proc:
-      return self.proc.poll() is None
-    return False
-
   def disconnect(self):
-    if self._is_pb_running():
+    if self._is_running():
       self.proc.kill()
     self._disconnect()
     self.proc = None
@@ -460,9 +429,6 @@ class Pandora(BaseStream):
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
     return source
-
-  def status(self):
-    return self.state
 
   def send_cmd(self, cmd):
     """ See look up table below for accepted commands
@@ -518,7 +484,7 @@ class DLNA(BaseStream):
       self.name = kwargs['name']
       reconnect_needed = True
     if reconnect_needed:
-      if self._is_dlna_running():
+      if self._is_running():
         last_src = self.src
         self.disconnect()
         time.sleep(0.1) # delay a bit, is this needed?
@@ -551,13 +517,8 @@ class DLNA(BaseStream):
     self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
 
-  def _is_dlna_running(self):
-    if self.proc:
-      return self.proc.poll() is None
-    return False
-
   def disconnect(self):
-    if self._is_dlna_running():
+    if self._is_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
       self.proc2.kill()
     self._disconnect()
@@ -582,14 +543,6 @@ class DLNA(BaseStream):
     except Exception:
       pass
     return source
-
-  def status(self):
-    return self.state
-
-  def __str__(self):
-    connection = f' connected to src={self.src}' if self.src else ''
-    mock = ' (mock)' if self.mock else ''
-    return f'DLNA: {self.name}{connection}{mock}'
 
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
@@ -643,11 +596,6 @@ class InternetRadio(BaseStream):
     self.state = 'playing'
     self.src = src
 
-  def _is_running(self):
-    if self.proc:
-      return self.proc.poll() is None
-    return False
-
   def disconnect(self):
     if self._is_running():
       self.proc.kill()
@@ -669,14 +617,6 @@ class InternetRadio(BaseStream):
       pass
     return source
 
-  def status(self):
-    return self.state
-
-  def __str__(self):
-    connection = f' connected to src={self.src}' if self.src else ''
-    mock = ' (mock)' if self.mock else ''
-    return f'internetradio connect: {self.name}{connection}{mock}'
-
 class Plexamp(BaseStream):
   """ A Plexamp Stream """
   def __init__(self, name, client_id, token, mock=False):
@@ -690,7 +630,7 @@ class Plexamp(BaseStream):
       self.name = kwargs['name']
       reconnect_needed = True
     if reconnect_needed:
-      if self._is_plexamp_running():
+      if self._is_running():
         last_src = self.src
         self.disconnect()
         time.sleep(0.1) # delay a bit, is this needed?
@@ -698,11 +638,6 @@ class Plexamp(BaseStream):
 
   def __del__(self):
     self.disconnect()
-
-  def __str__(self):
-    connection = f' connected to src={self.src}' if self.src else ''
-    mock = ' (mock)' if self.mock else ''
-    return f'plexamp: {self.name}{connection}{mock}'
 
   def connect(self, src):
     """ Connect plexamp output to a given audio source
@@ -768,13 +703,8 @@ class Plexamp(BaseStream):
     except Exception as exc:
       print(f'error starting plexamp: {exc}')
 
-  def _is_plexamp_running(self):
-    if self.proc:
-      return self.proc.poll() is None
-    return False
-
   def disconnect(self):
-    if self._is_plexamp_running():
+    if self._is_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
     self._disconnect()
     self.proc = None
@@ -783,15 +713,11 @@ class Plexamp(BaseStream):
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
 
-  def status(self):
-    return self.state
-
 class FilePlayer(BaseStream):
   """ An Single one shot file player - initially intended for use as a part of the PA Announcements """
   def __init__(self, name, url:str, mock=False):
     super().__init__('file player', name, mock)
     self.url = url
-    self.proc = None
     self.bkg_thread = None
 
   def __del__(self):
@@ -839,11 +765,6 @@ class FilePlayer(BaseStream):
       time.sleep(0.3) # handles mock case
     self.state = 'stopped' # notify that the audio is done playing
 
-  def _is_running(self):
-    if self.proc:
-      return self.proc.poll() is None
-    return False
-
   def disconnect(self):
     if self._is_running():
       self.proc.kill()
@@ -855,9 +776,6 @@ class FilePlayer(BaseStream):
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
-
-  def status(self):
-    return self.state
 
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer]
