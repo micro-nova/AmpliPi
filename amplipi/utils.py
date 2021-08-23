@@ -24,7 +24,7 @@ import os
 import functools
 import subprocess
 import re
-from typing import List, Dict, Union, Optional, Tuple, TypeVar, Iterable
+from typing import List, Dict, Set, Union, Optional, Tuple, TypeVar, Iterable
 
 import pkg_resources # version
 
@@ -137,6 +137,29 @@ def output_device(sid: int) -> str:
   if dev in available_outputs():
     return dev
   return 'default' # fallback to default
+
+def zones_from_groups(status: models.Status, groups: List[int]) -> Set[int]:
+  """ Get the set of zones from some groups """
+  zones = set()
+  for gid in groups:
+    # add all of the groups zones
+    _, match = find(status.groups, gid)
+    if match is not None:
+      zones.update(match.zones)
+  return zones
+
+def zones_from_all(status: models.Status, zones: Optional[List[int]], groups: Optional[List[int]]) -> Set[int]:
+  """ Find the unique set of enabled zones given some zones and some groups of zones """
+  # add all of the zones given
+  z_unique = set(zones or [])
+  # add all of the zones in the groups given
+  z_unique.update(zones_from_groups(status, groups or []))
+  return z_unique
+
+def enabled_zones(status: models.Status, zones: Set[int]) -> Set[int]:
+  """ Get only enabled zones """
+  z_disabled = {z.id for z in status.zones if z.id is not None and z.disabled}
+  return zones.difference(z_disabled)
 
 @functools.lru_cache(maxsize=8)
 def get_folder(folder):
