@@ -18,10 +18,13 @@
 """Runtimes to communicate with the AmpliPi hardware
 """
 
+import math
 import io
 import os
 import time
 import amplipi.extras as extras
+
+from typing import Dict, List, Tuple, Union
 
 # TODO: move constants like this to their own file
 DEBUG_PREAMPS = False # print out preamp state after register write
@@ -31,17 +34,31 @@ from smbus2 import SMBus
 
 # Preamp register addresses
 _REG_ADDRS = {
-  'SRC_AD'    : 0x00,
-  'CH123_SRC' : 0x01,
-  'CH456_SRC' : 0x02,
-  'MUTE'      : 0x03,
-  'STANDBY'   : 0x04,
-  'CH1_ATTEN' : 0x05,
-  'CH2_ATTEN' : 0x06,
-  'CH3_ATTEN' : 0x07,
-  'CH4_ATTEN' : 0x08,
-  'CH5_ATTEN' : 0x09,
-  'CH6_ATTEN' : 0x0A
+  'SRC_AD'          : 0x00,
+  'CH123_SRC'       : 0x01,
+  'CH456_SRC'       : 0x02,
+  'MUTE'            : 0x03,
+  'STANDBY'         : 0x04,
+  'CH1_ATTEN'       : 0x05,
+  'CH2_ATTEN'       : 0x06,
+  'CH3_ATTEN'       : 0x07,
+  'CH4_ATTEN'       : 0x08,
+  'CH5_ATTEN'       : 0x09,
+  'CH6_ATTEN'       : 0x0A,
+  'POWER_GOOD'      : 0x0B,
+  'FAN_STATUS'      : 0x0C,
+  'EXTERNAL_GPIO'   : 0x0D,
+  'LED_OVERRIDE'    : 0x0E,
+  'HV1_VOLTAGE'     : 0x10,
+  'HV2_VOLTAGE'     : 0x11,
+  'HV1_TEMP'        : 0x12,
+  'HV2_TEMP'        : 0x13,
+  'VERSION_MAJOR'   : 0xFA,
+  'VERSION_MINOR'   : 0xFB,
+  'GIT_HASH_27_20'  : 0xFC,
+  'GIT_HASH_19_12'  : 0xFD,
+  'GIT_HASH_11_04'  : 0xFE,
+  'GIT_HASH_STATUS' : 0xFF,
 }
 _SRC_TYPES = {
   1 : 'Digital',
@@ -89,13 +106,19 @@ def is_amplipi():
 class _Preamps:
   """ Low level discovery and communication for the AmpliPi firmware
   """
-  def __init__(self):
+
+  preamps: Dict[int, List[int]] # Key: i2c address, Val: register values
+
+  def __init__(self, reset: bool = True, set_addr: bool = True, bootloader: bool = False):
     self.preamps = dict()
     if not is_amplipi():
       self.bus = None # TODO: Use i2c-stub
       print('Not running on AmpliPi hardware, mocking preamp connection')
     else:
-      self.reset_preamps()
+      if reset:
+        self.reset_preamps(bootloader)
+      if set_addr:
+        self.set_i2c_addr()
 
       # Setup self._bus as I2C1 from the RPi
       self.bus = SMBus(1)
@@ -103,42 +126,68 @@ class _Preamps:
       # Discover connected preamp boards
       for p in _DEV_ADDRS:
         if self.probe_preamp(p):
-          print('Preamp found at address {}'.format(p))
+          print(f'Preamp found at address {p}')
           self.new_preamp(p)
         else:
           if p == _DEV_ADDRS[0]:
             print('Error: no preamps found')
           break
 
-  def reset_preamps(self):
+  def reset_preamps(self, bootloader: bool = False):
     """ Resets the preamp board.
         Any slave preamps will be reset one-by-one by the previous preamp.
         After resetting, an I2C address is assigned.
+
+      Args:
+        bootloader: if True set BOOT0 pin
     """
     import RPi.GPIO as GPIO
+    boot0 = 1 if bootloader else 0
 
     # Reset preamp board before establishing a communication channel
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(4, GPIO.OUT)
     GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
+    GPIO.setup(5, GPIO.OUT)
+    GPIO.output(5, boot0) # Ensure BOOT0 is set (GPIO5)
     time.sleep(0.001)
     GPIO.output(4, 1)
-    GPIO.cleanup()    # Done with GPIO
 
-    # Each box theoretically takes ~11ms to undergo a reset. Estimating for six boxes, including some padding, wait 100ms for the resets to propagate down the line
+    # Each box theoretically takes ~11ms to undergo a reset.
+    # Estimating for six boxes, including some padding,
+    # wait 100ms for the resets to propagate down the line
     time.sleep(0.1)
 
-    # Setup serial connection via UART pins - set I2C addresses for preamps
-    addr = 0x41, 0x10, 0x0D, 0x0A
+    # Done with GPIO, they will default back to inputs with pullups
+    GPIO.cleanup()
+
+  def set_i2c_addr(self):
+    """ Sends the first preamp's I2C address via UART
+        The master preamp will set any expansion unit addresses
+    """
+    # Setup serial connection via UART pins
     with Serial('/dev/serial0', baudrate=9600) as ser:
-      ser.write(addr)
+      ser.write((0x41, 0x10, 0x0D, 0x0A))
 
     # Delay to account for addresses being set
     # Each box theoretically takes ~5ms to receive its address. Again, estimate for six boxes and include some padding
     time.sleep(0.1)
 
-  def new_preamp(self, index):
-    self.preamps[index] = [
+  def reset_expander(self, preamp: int, bootload: bool = False):
+    """ Resets an expansion unit's preamp board.
+        Any slave preamps will be reset one-by-one by the previous preamp.
+        After resetting, an I2C address is assigned.
+
+      Args:
+        preamp:     preamp unit number [2,6]
+        bootloader: if True set BOOT0 pin
+    """
+    assert 2 <= preamp <= 6
+    # TODO: release firmware and add support here
+
+  def new_preamp(self, addr: int):
+    """ Populate initial register values """
+    self.preamps[addr] = [
                             0x0F,
                             0x00,
                             0x00,
@@ -177,19 +226,192 @@ class _Preamps:
         self.bus = SMBus(1)
         self.bus.write_byte_data(preamp_addr, reg, data)
 
-  def probe_preamp(self, index):
+  def probe_preamp(self, addr: int):
     # Scan for preamps, and set source registers to be completely digital
-    try:
-      self.bus.write_byte_data(index, _REG_ADDRS['SRC_AD'], 0x0F)
-      return True
-    except Exception:
+    # TODO: This should read version instead, but I haven't checked what relies on this yet.
+    if self.bus is not None:
+      try:
+        self.bus.read_byte_data(addr, _REG_ADDRS['VERSION_MAJOR'])
+        return True
+      except Exception:
+        return False
+    else:
       return False
 
   def print_regs(self):
-    for preamp, regs in self.preamps.items():
-      print('preamp {}:'.format(preamp / 8))
-      for reg, val in enumerate(regs):
-        print('  {} - {:02b}'.format(reg, val))
+    """ Read all registers of every preamp and print """
+    if self.bus is not None:
+      for preamp in self.preamps:
+        print(f'Preamp {preamp // 8}:')
+        for reg, addr in _REG_ADDRS.items():
+          val = self.bus.read_byte_data(preamp, addr)
+          print(f'  0x{addr:02X}:{reg:<15} = 0x{val:02X}')
+
+  def read_version(self, preamp: int = 1):
+    """ Read the version of the first preamp if present
+
+      Returns:
+        major:    The major revision number
+        minor:    The minor revision number
+        git_hash: The git hash of the build (7-digit abbreviation)
+        dirty:    False if the git hash is valid, True otherwise
+    """
+    assert 1 <= preamp <= 6
+    if self.bus is not None:
+      major = self.bus.read_byte_data(preamp*8, _REG_ADDRS['VERSION_MAJOR'])
+      minor = self.bus.read_byte_data(preamp*8, _REG_ADDRS['VERSION_MINOR'])
+      git_hash = self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_27_20']) << 20
+      git_hash |= (self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_19_12']) << 12)
+      git_hash |= (self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_11_04']) << 4)
+      git_hash4_stat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_STATUS'])
+      git_hash |= (git_hash4_stat >> 4)
+      dirty = (git_hash4_stat & 0x01) != 0
+      return major, minor, git_hash, dirty
+    return None, None, None, None
+
+  def read_power_good(self, preamp: int = 1):
+    """ Read the 'power good' signals of the first preamp if present
+
+      Returns:
+        pg_12v: True if the 12V rail is good
+        pg_9v:  True if the 9V rail is good
+    """
+    assert 1 <= preamp <= 6
+    if self.bus is not None:
+      pgood = self.bus.read_byte_data(preamp*8, _REG_ADDRS['POWER_GOOD'])
+      pg_12v = (pgood & 0x02) != 0
+      pg_9v = (pgood & 0x01) != 0
+      return pg_12v, pg_9v
+    return None, None
+
+  def read_fan_status(self, preamp: int = 1):
+    """ Read the fan status of a single preamp
+
+      Args:
+        preamp: preamp number from 1 to 6
+
+      Returns:
+        fan_on:   True if the fan is on, False otherwise
+        ovr_tmp:  True if the AmpliPi is over temp, False otherwise
+        fan_fail: True if the fan has failed, False otherwise
+    """
+    assert 1 <= preamp <= 6
+    fan_on = False
+    ovr_tmp = False
+    fan_fail = False
+    if self.bus is not None:
+      val = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FAN_STATUS'])
+      fan_on = (val & 0x8) != 0
+      ovr_tmp = (val & 0x2) != 0x2 # Active-low
+      fan_fail = (val & 0x1) != 0x1 # Active-low
+      return fan_on, ovr_tmp, fan_fail
+    return None, None, None
+
+  @staticmethod
+  def _adc2temp(adc_val: int) -> float:
+    """ Nominal B-Constant of 3900K, R0 resistance is 10 kOhm at 25dC (T0)
+        Thermocouple resistance = R0*e^[B*(1/T - 1/T0)] = Rt
+        ADC_VAL = 3.3V * 4.7kOhm / (4.7kOhm + Rt kOhm) / 3.3V * 255
+        Rt = 4.7 * (255 / ADC_VAL - 1)
+        T = 1/(ln(Rt/R0)/B + 1/T0)
+        T = 1/(ln(Rt/10)/3900 + 1/(25+273.5)) - 273.15
+    """
+    if adc_val == 0: # 0 causes divide-by-zero
+      temp = -math.inf
+    elif adc_val == 255: # 255 causes Rt=0 which leads to ln(0)
+      temp = math.inf
+    else:
+      rt = 4.7 * (255 / adc_val - 1)
+      temp = 1/(math.log(rt/10, math.e)/3900 + 1/(25+273.5)) - 273.15
+    return temp
+
+  def read_temps(self, preamp: int = 1) -> Tuple[Union[float, None], Union[float, None]]:
+    if self.bus is not None:
+      temp_adc1 = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV1_TEMP'])
+      temp_adc2 = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV2_TEMP'])
+      temp1 = self._adc2temp(temp_adc1)
+      temp2 = self._adc2temp(temp_adc2)
+      return temp1, temp2
+    return None, None
+
+  def read_hv(self, preamp: int = 1) -> Tuple[Union[float, None], Union[float, None]]:
+    """ Read the high-voltage voltages and temps of the first preamp if present
+
+      Args:
+        preamp: preamp number from 1 to 6
+
+      Returns:
+        hv1:  Voltage of the HV1 rail
+        hv2:  Voltage of the HV2 rail
+        tmp1: Temperature of HV1 in degC
+        tmp2: Temperature of HV2 in degC
+    """
+    assert 1 <= preamp <= 6
+    if self.bus is not None:
+      adc_to_volts = (100 + 4.7) / 4.7 * 3.3 / 255
+      hv1_adc = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV1_VOLTAGE'])
+      hv2_adc = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV2_VOLTAGE'])
+      hv1 = hv1_adc * adc_to_volts
+      hv2 = hv2_adc * adc_to_volts
+      return hv1, hv2
+    return None, None
+
+  def force_fans(self, preamp: int = 1, force: bool = True):
+    assert 1 <= preamp <= 6
+    if self.bus is not None:
+      self.bus.write_byte_data(preamp*8, _REG_ADDRS['FAN_STATUS'],
+                               1 if force is True else 0)
+
+  def read_leds(self, preamp: int = 1):
+    """ Read the state of the front-panel LEDs
+
+      Args:
+        preamp: preamp number from 1 to 6
+
+      Returns:
+        leds:   A 1-byte number with each bit corresponding to an LED
+                Green => Bit 0
+                Red => Bit 1
+                Zone[1-6] => Bit[2-7]
+    """
+    assert 1 <= preamp <= 6
+    if self.bus is not None:
+      leds = self.bus.read_byte_data(preamp*8, _REG_ADDRS['LED_OVERRIDE'])
+      return leds
+    return None
+
+  def print_led_state(self, preamp: int = 1):
+    """ Print the state of the front-panel LEDs
+
+      Args:
+        preamp: preamp number from 1 to 6
+    """
+    assert 1 <= preamp <= 6
+    led = self.read_leds(preamp)
+    if led is not None:
+      green = led & 0x01
+      red = (led >> 1) & 0x01
+      zones = [(led >> i) & 0x01 for i in range(2,8)]
+      rg = 'YELLOW' if red and green else 'RED' if red else 'GREEN'
+      print('LEDS:        |         ZONES')
+      print('  ON/STANDBY | 1 | 2 | 3 | 4 | 5 | 6')
+      print('------------------------------------')
+      print(f'  {rg:^10} | {zones[0]} | {zones[1]} | {zones[2]} | {zones[3]} | {zones[4]} | {zones[5]}')
+
+  def led_override(self, preamp: int = 1, leds: int = 0xFF):
+    """ Override the LED board's LEDs
+
+      Args:
+        preamp: preamp number from 1 to 6
+        leds:   A 1-byte number with each bit corresponding to an LED
+                Green => Bit 0
+                Red => Bit 1
+                Zone[1-6] => Bit[2-7]
+    """
+    assert 1 <= preamp <= 6
+    assert 0 <= leds <= 255
+    if self.bus is not None:
+      self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_OVERRIDE'], leds)
 
   def print(self):
     for preamp_addr in self.preamps.keys():
@@ -292,7 +514,7 @@ class Mock:
     """
     preamp = zone // 6
     assert zone >= 0
-    assert 0 <= preamp <= 15
+    assert 0 <= preamp <= 5
     assert 0 >= vol >= -79
     return True
 

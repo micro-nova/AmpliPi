@@ -28,8 +28,8 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with pylint
       run: |
-        pylint --exit-zero amplipi
-        pylint -E amplipi
+        pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
+        pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
     - name: Lint with mypy, static type checker
       run: |
         mypy amplipi/ --ignore-missing-imports

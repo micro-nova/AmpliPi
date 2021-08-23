@@ -23,9 +23,10 @@ Encourages reuse of datastructures across AmpliPi
 from typing import List, Dict, Optional, Union
 from types import SimpleNamespace
 from enum import Enum
+
+# pylint: disable=no-name-in-module
 from pydantic import BaseSettings, BaseModel, Field
 
-# pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
 

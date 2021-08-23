@@ -140,8 +140,9 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     return tasks
   tasks = []
   # TODO: add extra apt repos
-  # find latest apt packages
-  tasks += print_progress([Task('get latest debian packages', 'sudo apt update'.split()).run()])
+  # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
+  # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
+  tasks += print_progress([Task('get latest debian packages', 'sudo apt update --allow-releaseinfo-change'.split()).run()])
 
   # organize stuff to install
   packages = set()
@@ -514,6 +515,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if os_deps:
     tasks += _install_os_deps(env, progress, _os_deps)
     if failed():
+      print('OS dependency install step failed, exiting...')
       return False
   if python_deps:
     with open(os.path.join(env['base_dir'], 'requirements.txt')) as req:
@@ -523,6 +525,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       progress(py_tasks)
       tasks += py_tasks
     if failed():
+      print('Python dependency install step failed, exiting...')
       return False
   if web:
     tasks += _update_web(env, restart_updater, progress)
