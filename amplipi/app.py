@@ -739,7 +739,7 @@ def advertise_service(port, q: Queue):
   )
   print(f'AmpliPi zeroconf - registering service: {info}')
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr]) # right now the AmpliPi webserver is ipv4 only
-  zeroconf.register_service(info)
+  zeroconf.register_service(info, cooperating_responders=True)
   print('AmpliPi zeroconf - finished registering service')
   try:
     while q.empty():

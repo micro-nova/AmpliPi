@@ -565,10 +565,14 @@ def test_zeroconf():
   from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
   from time import sleep
   from multiprocessing import Process, Queue
+
+  AMPLIPI_ZC_NAME = 'amplipi-api._http._tcp.local.'
+
   services_advertised = {}
   def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
     if state_change is ServiceStateChange.Added:
-        info = zeroconf.get_service_info(service_type, name)
+      info = zeroconf.get_service_info(service_type, name)
+      if info and info.port != 80: # ignore the actual amplipi service on your network
         services_advertised[name] = info
 
   # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
@@ -593,6 +597,6 @@ def test_zeroconf():
   zeroconf.close()
 
   # check advertisememts
-  assert 'amplipi-api._http._tcp.local.' in services_advertised
-  assert services_advertised['amplipi-api._http._tcp.local.'].port == 9898
+  assert AMPLIPI_ZC_NAME in services_advertised
+  assert services_advertised[AMPLIPI_ZC_NAME].port == 9898
 
