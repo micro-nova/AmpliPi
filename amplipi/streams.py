@@ -78,7 +78,7 @@ class BaseStream:
     self.state = 'disconnected'
     self.stype = stype
 
-  def _str_(self):
+  def __str__(self):
     connection = f' connected to src={self.src}' if self.src else ''
     mock = ' (mock)' if self.mock else ''
     return f'{self.full_name()}{connection}{mock}'
@@ -212,9 +212,6 @@ class Shairport(BaseStream):
       print(f'Failed to get currentSong - it may not exist: {exc}')
     return source
 
-  def __str__(self):
-    return self._str_()
-
 class Spotify(BaseStream):
   """ A Spotify Stream """
   def __init__(self, name, mock=False):
@@ -237,9 +234,6 @@ class Spotify(BaseStream):
 
   def __del__(self):
     self.disconnect()
-
-  def __str__(self):
-    return self._str_()
 
   def connect(self, src):
     """ Connect a Spotify output to a given audio source
@@ -356,9 +350,6 @@ class Pandora(BaseStream):
 
   def __del__(self):
     self.disconnect()
-
-  def __str__(self):
-    return self._str_()
 
   def connect(self, src):
     """ Connect pandora output to a given audio source
@@ -553,9 +544,6 @@ class DLNA(BaseStream):
       pass
     return source
 
-  def __str__(self):
-    return self._str_()
-
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
   def __init__(self, name, url, logo, mock=False):
@@ -629,9 +617,6 @@ class InternetRadio(BaseStream):
       pass
     return source
 
-  def __str__(self):
-    return self._str_()
-
 class Plexamp(BaseStream):
   """ A Plexamp Stream """
   def __init__(self, name, client_id, token, mock=False):
@@ -653,9 +638,6 @@ class Plexamp(BaseStream):
 
   def __del__(self):
     self.disconnect()
-
-  def __str__(self):
-    return self._str_()
 
   def connect(self, src):
     """ Connect plexamp output to a given audio source
