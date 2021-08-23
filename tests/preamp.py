@@ -32,7 +32,8 @@ def print_status(p: amplipi.rt._Preamps, u: int):
   print(f'Fans: overridden={fan_on}, overtemp={ovr_tmp}, failed={fan_fail}')
 
   # 24V and temp
-  hv1, hv2, tmp1, tmp2 = p.read_hv(u)
+  hv1, hv2 = p.read_hv(u)
+  tmp1, tmp2 = p.read_temps(u)
   def temp2str(tmp: int):
     if tmp == -math.inf:
       tmp_str = 'Thermistor disconnected'
