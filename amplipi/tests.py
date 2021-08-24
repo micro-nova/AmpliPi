@@ -2,14 +2,14 @@
 # Built-in tests
 
 LED Board
-- [ ] All on/scroll
+- [x] All on/scroll
 
 Preout or Amplifier Board
-- [ ] 6 Zone 50% volume/mute toggle
+- [x] 6 Zone 50% volume/mute toggle
 
 Preamp
 - [ ] Program preamp and connected expansion board
-- [ ] 4x2 sources on zone 1 (also zone 7 on expansion)
+- [x] 4x2 sources on zone 1 (also zone 7 on expansion)
 - [ ] 4 sources on all zones, toggle volume between 45 and 60%
 - [ ] Poll/display 24V ADC + thermistors
 """
@@ -17,6 +17,7 @@ Preamp
 from enum import Enum
 from time import sleep
 from typing import Optional
+import sys
 import argparse
 import requests
 
@@ -28,8 +29,8 @@ class Client:
   TODO: create full fledged client for full AmpliPi API
   """
 
-  def __init__(self):
-    self.url = 'http://localhost/api'
+  def __init__(self, url='http://localhost/api'):
+    self.url = url
 
   def reset(self) -> bool:
     """ Rest HW """
@@ -58,6 +59,17 @@ class Client:
     if resp.ok:
       return models.Status(**resp.json())
     return None
+
+  def announce(self, announcement: models.Announcement) -> bool:
+    """ Announce something """
+    return requests.post(f'{self.url}/announce', json=announcement.dict()).ok
+
+  def available(self) -> bool:
+    """ Check connection """
+    try:
+      return self.get_status() is not None
+    except:
+      return False
 
 # TODO: use these when we have processes
 class Instruction(Enum):
@@ -148,10 +160,30 @@ def loop_test(client: Client, test_name: str):
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser('Test audio functionality')
-  parser.add_argument('test', help='Test to run (led,zones)')
+  parser.add_argument('test', help='Test to run (led,zones,preamp)')
   args = parser.parse_args()
 
   print('configuring amplipi for testing (TODO: unconfigure it when done!)')
-  ap = Client()
+  ap = Client('http://localhost/api')
+  if not ap.available():
+    ap = Client('http://localhost:5000/api')
+    if not ap.available():
+      print('Unable to connect to local AmpliPi production (port 80) or development (port 5000) servers. Please check if AmpliPi is running and try again.')
+      sys.exit(1)
+  apt = Client('http://aptestanalog.local/api')
+
   setup(ap)
-  loop_test(ap, args.test)
+  if args.test == 'preamp':
+    analog_tester_avail = apt.available()
+    if not analog_tester_avail:
+      print('No analog tester available, only able to test digital inputs')
+    announcements = [models.Announcement(src_id=src, media=f'web/static/audio/{t}{src+1}.{side}.wav') for t in ['analog', 'digital'] for src in range(4) for side in ['left', 'right']]
+    while True:
+      for a in announcements:
+        if 'analog' in a.media:
+          if analog_tester_avail:
+            apt.announce(a)
+        else:
+          ap.announce(a)
+  else:
+    loop_test(ap, args.test)
