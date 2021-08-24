@@ -122,7 +122,7 @@
 #define TFT_SPI_FREQ (50 * 1000000)  // Default = 24 MHz
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
-static constexpr uint8_t MAX_DPOT_VAL = 63;
+static constexpr uint8_t MAX_DPOT_VAL = 0x7F;
 static constexpr uint8_t I2C_TEST_VAL = 0xA4;
 
 enum SlaveAddr : uint8_t
@@ -130,25 +130,7 @@ enum SlaveAddr : uint8_t
   due  = 0x0F,
   gpio = 0x21,
   dpot = 0x2F,
-  adc  = 0x64
-};
-
-enum StatusLed : uint32_t
-{
-  v3_3A_J2 = 23,
-  v3_3A_J9 = 25,
-  v5A_J4   = 27,
-  v5A_J5   = 29,
-  v9A_J5   = 31,
-  v9A_J8   = 33,
-  v5D      = 35,
-  v12D     = 37,
-  v24      = 39,
-  therm1   = 41,
-  therm2   = 43,
-  therm3   = 45,
-  fan      = 47,
-  i2c      = 49
+  adc  = 0x64,
 };
 
 // I2C1 slave RX callback
@@ -158,7 +140,6 @@ void i2cSlaveRx(int rxBufLen) {
 
   // Verify the received byte is the test byte that was sent
   uint32_t led = rx == I2C_TEST_VAL ? HIGH : LOW;
-  digitalWrite(StatusLed::i2c, led);
   // Update test status
   // TODO
 
@@ -183,7 +164,7 @@ void setup() {
 
   // Setup display
   tft.begin(TFT_SPI_FREQ);
-  tft.setRotation(1);
+  tft.setRotation(3);
   tft.fillScreen(ILI9341_BLACK);
 }
 
@@ -231,11 +212,14 @@ void loop() {
 
   // Update display
   static bool blank = true;
-  if (blank) {
+  /*if (blank) {
     tft.fillScreen(ILI9341_WHITE);
   } else {
     tft.fillScreen(ILI9341_BLACK);
-  }
+  }*/
+  tft.setCursor(0, 0);
+  tft.fillScreen(ILI9341_BLACK);
+  tft.println("Hello World!");
   blank = !blank;
   // takes 500ms with individual pixel writes
   // tft.drawPixel(x, y, (n * 29)<<8 | (n * 67));
