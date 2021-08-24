@@ -84,6 +84,17 @@ BEATLES_RADIO = {
   "url": "http://www.beatlesradio.com:8000/stream/1/",
   "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"
 }
+
+def pst_all_zones_to_src(name: str, src: int, input: str, vol=-50):
+  return {
+    'name': name,
+    'state': {
+      'sources': [{'id': src, 'input': input}],
+      'zones': [{'id': zid, 'src_id': src, 'vol': vol, 'mute': False} for zid in range(6)],
+    }
+  }
+
+
 PRESETS = [
   {
     'name': 'led-0 mute all',
@@ -128,6 +139,8 @@ PRESETS = [
     }
   },
 ]
+
+PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -35) for src in range(4)]
 
 def setup(client: Client):
   """ Configure AmpliPi for testing by loading a simple known configuration """
@@ -175,6 +188,11 @@ if __name__ == '__main__':
   setup(ap)
   if args.test == 'preamp':
     analog_tester_avail = apt.available()
+    status = ap.get_status()
+    if status is None:
+      print('failed to get AmpliPi status')
+      sys.exit(1)
+    presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
     if not analog_tester_avail:
       print('No analog tester available, only able to test digital inputs')
     announcements = [models.Announcement(src_id=src, media=f'web/static/audio/{t}{src+1}.{side}.wav') for t in ['analog', 'digital'] for src in range(4) for side in ['left', 'right']]
@@ -182,7 +200,10 @@ if __name__ == '__main__':
       for a in announcements:
         if 'analog' in a.media:
           if analog_tester_avail:
-            apt.announce(a)
+            pst = presets[a.src_id]
+            if pst.id is not None:
+              ap.load_preset(pst.id)
+              apt.announce(a)
         else:
           ap.announce(a)
   else:
