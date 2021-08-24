@@ -165,7 +165,12 @@ macro(sam_add_executable target)
   add_custom_target(program
     COMMENT "Programming flash"
     DEPENDS ${SAM_PATH}/bossa/bin/bossac
-    COMMAND ${SAM_PATH}/bossa/bin/bossac -a -w -v -R -b ${target}.bin
+    COMMAND ${SAM_PATH}/bossa/bin/bossac -a -w -v -R -b ${target}.bin ||
+            groups | grep -q dialout || echo
+            "$$USER is not a member of group dialout. Try \\\'sudo adduser $$USER dialout\\\' then logout/in to program without sudo."
+
+    # Auto-add $USER to dialout if necessary:
+    #groups | grep -q dialout || { echo "Adding $USER to group dialout. Logout/in to program without sudo." && sudo adduser $USER dialout; }
   )
   add_dependencies(program ${target}.elf)
 endmacro()
