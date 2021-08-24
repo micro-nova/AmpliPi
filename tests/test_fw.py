@@ -6,9 +6,11 @@ This file is expected to be run using pytest, ie. pytest tests/test_fw.py
 This file is expected to be run on the controller board Pi, connected to a preamp board.
 """
 
-import pytest
+# Standard imports
 import subprocess
-import tempfile
+
+import pytest
+#import tempfile
 
 # Use the internal amplipi library
 from context import amplipi
@@ -30,6 +32,12 @@ def build_preamp_fw(amplipi_dir) -> str:
   if exists.returncode == 0:
     return BIN_FILE
   return None
+
+# TODO: test firmware building
+
+# Only run the following tests on AmpliPi
+if not amplipi.utils.is_amplipi():
+  pytest.skip("Not running on AmpliPi hardware, skipping firmware tests", allow_module_level = True)
 
 @pytest.mark.dependency()
 def test_flash_master(request):

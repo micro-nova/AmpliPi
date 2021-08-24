@@ -18,60 +18,29 @@
 
 """AmpliPi hardware interface """
 
+# Standard imports
 import argparse
 from enum import Enum
-import io
-import os
-from RPi import GPIO
-from serial import Serial
-from smbus2 import SMBus
 import subprocess
 import sys
 import time
-from typing import Tuple
+from typing import List, Tuple
 
-def is_amplipi():
-  """ Check if the current hardware is an AmpliPi
+# Third-party imports
+from serial import Serial
+from smbus2 import SMBus
 
-    Checks if the system is a Raspberry Pi Compute Module 3 Plus
-    with the proper serial port and I2C bus
+from amplipi import utils
 
-    Returns:
-      True if current hardware is an AmpliPi, False otherwise
-  """
-  amplipi = True
-
-  # Check for Raspberry Pi
-  try:
-    # Also available in /proc/device-tree/model, and in /proc/cpuinfo's "Model" field
-    with io.open('/sys/firmware/devicetree/base/model', 'r') as m:
-      desired_model = 'Raspberry Pi Compute Module 3 Plus'
-      current_model = m.read()
-      if desired_model.lower() not in current_model.lower():
-        print(f"Device model '{current_model}'' doesn't match '{desired_model}*'")
-        amplipi = False
-  except Exception:
-    print('Not running on a Raspberry Pi')
-    amplipi = False
-
-  # Check for the serial port
-  if not os.path.exists('/dev/serial0'):
-    print('Serial port /dev/serial0 not found')
-    amplipi = False
-
-  # Check for the i2c bus
-  if not os.path.exists('/dev/i2c-1'):
-    print('I2C bus /dev/i2c-1 not found')
-    amplipi = False
-
-  return amplipi
+if utils.is_amplipi():
+  from RPi import GPIO
 
 
 class Preamp:
   """ Low level discovery and communication for the AmpliPi Preamp's firmware """
 
-  # Preamp register addresses
   class Reg(Enum):
+    """ Preamp register addresses """
     SRC_AD          = 0x00
     CH123_SRC       = 0x01
     CH456_SRC       = 0x02
@@ -116,8 +85,8 @@ class Preamp:
     """
     try:
       self.bus.write_byte_data(self.addr, self.Reg.VERSION_MAJOR.value, 0)
-    except OSError as e:
-      #print(e)
+    except OSError as err:
+      #print(err)
       return False
     return True
 
@@ -182,6 +151,7 @@ class Preamp:
     time.sleep(0.005)
 
   def uart_passthrough(self, passthrough: bool) -> None:
+    """ Configures this preamp to passthrough UART1 <-> UART2 """
     reg_val = self.bus.read_byte_data(self.addr, self.Reg.EXPANSION.value)
     if passthrough: # TODO: only 4 once single bit
       reg_val |= 12
@@ -193,18 +163,20 @@ class Preamp:
 class Preamps:
   """ AmpliPi Preamp Board manager """
 
-  """ The maximum number of AmpliPi units, including the master """
   MAX_UNITS = 6
+  """ The maximum number of AmpliPi units, including the master """
 
-  """ Valid UART baud rates """
   BAUD_RATES = (  1200,   1800,   2400,   4800,    9600,  19200,
                  38400,  57600, 115200, 128000,  230400, 256000,
                 460800, 500000, 576000, 921600, 1000000)
+  """ Valid UART baud rates """
 
   class Pin(Enum):
     """ Pi GPIO pins to control the master unit's preamp """
     NRST  = 4
     BOOT0 = 5
+
+  preamps: List[Preamp]
 
   def __init__(self, reset: bool = False):
     self.bus = SMBus(1)
@@ -257,7 +229,8 @@ class Preamps:
       self.preamps[unit - 1].reset_expander(bootloader)
 
     # Delay to account for address being set
-    # Each box theoretically takes ~5ms to receive its address. Again, estimate for max boxes and include some padding
+    # Each box theoretically takes ~5ms to receive its address.
+    # Again, estimate for max boxes and include some padding
     time.sleep(0.01 * (self.MAX_UNITS - unit))
 
     # If resetting the master and not entering bootloader mode, re-enumerate
@@ -327,9 +300,11 @@ class Preamps:
   #""" """
 
 
-# Remove duplicate metavars
-# https://stackoverflow.com/a/23941599/8055271
 class AmpliPiHelpFormatter(argparse.HelpFormatter):
+  """ Custom help formatter that shows default values
+      and doesn't show duplicate metavars.
+  """
+  # https://stackoverflow.com/a/23941599/8055271
   def _format_action_invocation(self, action):
     if not action.option_strings:
       metavar, = self._metavar_formatter(action, action.dest)(1)
@@ -380,4 +355,5 @@ if __name__ == '__main__':
 
   if args.version:
     major, minor, git_hash, dirty = preamps[0].read_version()
-    print(f'Master preamp firmware version: {major}.{minor}-{git_hash:07X}, {"dirty" if dirty else "clean"}')
+    print(f'Master preamp firmware version: {major}.{minor}-{git_hash:07X},'
+          f'{"dirty" if dirty else "clean"}')
