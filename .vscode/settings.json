@@ -11,6 +11,8 @@
     "python.linting.pylintArgs": [
       "--generated-members", "signal.Signals,GPIO.*"
     ],
+    "cmake.sourceDirectory": "${workspaceFolder}/fw/preamp",
+    "cmake.buildDirectory": "${workspaceFolder}/fw/preamp/build",
     "files.watcherExclude": {
       "**/.git/objects/**": true,
       "**/.git/subtree-cache/**": true,
