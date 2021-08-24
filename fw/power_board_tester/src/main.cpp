@@ -113,26 +113,28 @@
  *       |_______________________|                        |___________________|
  */
 
+#include <Adafruit_ILI9341.h>
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_ILI9341.h>
 
-#define TFT_CS        10
-#define TFT_DC        11
-#define TFT_SPI_FREQ (50*1000000) // Default = 24 MHz
+#define TFT_CS       10
+#define TFT_DC       11
+#define TFT_SPI_FREQ (50 * 1000000)  // Default = 24 MHz
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 static constexpr uint8_t MAX_DPOT_VAL = 63;
 static constexpr uint8_t I2C_TEST_VAL = 0xA4;
 
-enum SlaveAddr : uint8_t {
+enum SlaveAddr : uint8_t
+{
   due  = 0x0F,
   gpio = 0x21,
   dpot = 0x2F,
   adc  = 0x64
 };
 
-enum StatusLed : uint32_t {
+enum StatusLed : uint32_t
+{
   v3_3A_J2 = 23,
   v3_3A_J9 = 25,
   v5A_J4   = 27,
@@ -150,11 +152,16 @@ enum StatusLed : uint32_t {
 };
 
 // I2C1 slave RX callback
-void i2cSlaveRx(int rxBufLen)
-{
+void i2cSlaveRx(int rxBufLen) {
+  // Assume rxBufLen > 0 and read a received byte
   uint8_t rx = Wire1.read();
+
+  // Verify the received byte is the test byte that was sent
   uint32_t led = rx == I2C_TEST_VAL ? HIGH : LOW;
   digitalWrite(StatusLed::i2c, led);
+  // Update test status
+  // TODO
+
   SerialUSB.print("Got I2C byte 0x");
   SerialUSB.println(rx, HEX);
 }
@@ -167,8 +174,8 @@ void setup() {
   Wire.begin();
 
   // Setup I2C slave
-  Wire1.begin(SlaveAddr::due); // Set I2C1 as slave with the given address
-  Wire1.onReceive(i2cSlaveRx); // Register event in I2C1
+  Wire1.begin(SlaveAddr::due);  // Set I2C1 as slave with the given address
+  Wire1.onReceive(i2cSlaveRx);  // Register event in I2C1
 
   // Setup emulated UART output
   SerialUSB.begin(0);
@@ -200,7 +207,7 @@ void loop() {
 
   // Adjust DPOT to control +12V
   static uint32_t dpot_timer = 0;
-  static uint8_t dpot_val = 0;
+  static uint8_t  dpot_val   = 0;
   if (millis() > dpot_timer) {
     Wire.beginTransmission(SlaveAddr::dpot);
     Wire.write((uint8_t)0x00);  // Instruction byte
@@ -230,7 +237,10 @@ void loop() {
     tft.fillScreen(ILI9341_BLACK);
   }
   blank = !blank;
-  //tft.drawPixel(x, y, (n * 29)<<8 | (n * 67)); // takes 500ms with individual pixel writes
+  // takes 500ms with individual pixel writes
+  // tft.drawPixel(x, y, (n * 29)<<8 | (n * 67));
   uint32_t elapsedTime = millis() - loopStartTime;
-  SerialUSB.print("Loop took "); SerialUSB.print(elapsedTime); SerialUSB.println(" ms");
+  SerialUSB.print("Loop took ");
+  SerialUSB.print(elapsedTime);
+  SerialUSB.println(" ms");
 }
