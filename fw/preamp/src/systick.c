@@ -24,9 +24,8 @@
 // Initialize the system ticks. Change CPU_FREQ according to the frequency being used. (E.g. 8 MHz, 48 MHz, etc)
 void systickInit ()
 {
-#define CPU_FREQ 8000000
 #define SYSTICK_FREQ 1000 // 1000 Hz = 1 ms ticks
-   SysTick_Config (CPU_FREQ / SYSTICK_FREQ);
+   SysTick_Config (HSI_VALUE / SYSTICK_FREQ);
 }
 
 // The actual tick counter

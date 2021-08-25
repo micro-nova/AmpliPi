@@ -62,12 +62,8 @@ target_compile_options(${PROJECT_NAME}.elf PRIVATE
   #-fno-exceptions
   -Wall
   -Wextra
+  -Werror
 )
-
-# WERROR set in continuous integration
-if(WERROR)
-  target_compile_options(${PROJECT_NAME}.elf PRIVATE -Werror )
-endif()
 
 set(DEBUG_FLAGS -Og -g)
 set(RELEASE_FLAGS -O3)
