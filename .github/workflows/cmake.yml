@@ -1,0 +1,22 @@
+name: CMake
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install gcc-arm-none-eabi
+
+    - name: Build Preamp
+      run: |
+        cmake -S ${{github.workspace}}/fw/preamp -B ${{github.workspace}}/fw/preamp/build
+        cmake --build ${{github.workspace}}/fw/preamp/build -j $(nproc)
