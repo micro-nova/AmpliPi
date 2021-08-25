@@ -147,6 +147,8 @@ def setup(client: Client):
   client.load_config(models.Status(streams=[BEATLES_RADIO]))
   for pst in PRESETS:
     client.create_preset(models.Preset(**pst))
+  print('waiting for config file to be written')
+  sleep(6)
 
 def loop_test(client: Client, test_name: str):
   """ Loop a test over and over """
