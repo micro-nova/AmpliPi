@@ -35,7 +35,7 @@ $(function() {
         </div>
         <div class="form-group">
           <label for="name">Stream Name</label>
-          <input type="text" class="form-control" name="name" data-required="true">
+          <input type="text" class="form-control" name="name" id="str_name" data-required="true">
         </div>
 
         <div id="pandora_settings" class="addl_settings" style="display:none;">
@@ -81,8 +81,8 @@ $(function() {
         <div id="plexamp_settings" class="addl_settings" style="display:none;">
           <div class="form-group">
             <label for="user">UUID</label>
-            <input type="text" class="form-control" name="uuid" aria-describedby="uuidHelp" value="No UUID, generate by clicking the link below" data-required="true" readonly>
-            <small id="uuidHelp" class="form-text text-muted">Click Authentication btn to handshake Plex credentials</small>
+            <input type="text" class="form-control" name="client_id" id="client_id" aria-describedby="uuidHelp" value="" data-required="true" readonly>
+            <small id="uuidHelp" class="form-text text-muted">Click the 'Request Authentication' button to input your Plex credentials, generating a UUID and Token</small>
           </div>
           <div class="form-group">
             <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
@@ -91,11 +91,13 @@ $(function() {
           </div>
           <div class="form-group">
             <label for="user">Authentication Token</label>
-            <input type="text" class="form-control" name="auth" aria-describedby="authHelp" value="No authToken" readonly>
+            <input type="text" class="form-control" name="token" id="token" aria-describedby="authHelp" value="" data-required="true" readonly>
+            <small id="authHelp" class="form-text text-muted">UUID and authToken will be provided after signing into your Plex account</small>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-secondary">Add Stream</button>
+        <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Stream</button>
+        <small id="submitHelp" class="form-text text-muted"></small>
       </form>
       `;
     $("#settings-tab-inputs-config").html(html);
@@ -164,9 +166,30 @@ $(function() {
         `;
       }
 
+      if (s.type == "plexamp") {
+        html += `
+        <div class="form-group">
+          <label for="user">UUID</label>
+          <input type="text" class="form-control" name="client_id" id="client_id" aria-describedby="uuidHelp" value="${s.client_id}" data-required="true" readonly>
+          <small id="uuidHelp" class="form-text text-muted">Click the 'Request Authentication' button to input your Plex credentials, generating a UUID and Token</small>
+        </div>
+        <div class="form-group">
+          <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
+          <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
+          <button class="btn btn-primary" onclick="window.location.reload();" style="display: none" id="plexamp-done"></button>
+        </div>
+        <div class="form-group">
+          <label for="user">Authentication Token</label>
+          <input type="text" class="form-control" name="token" id="token" aria-describedby="authHelp" value="${s.token}" data-required="true" readonly>
+          <small id="authHelp" class="form-text text-muted">UUID and authToken will be provided after signing into your Plex account</small>
+        </div>
+        `;
+      }
+
       html += `
-        <button type="submit" class="btn btn-secondary">Save Changes</button>
+        <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Save Changes</button>
         <button type="button" class="btn btn-danger" style="float:right" id="delete" data-id="${s.id}">Delete Stream</button>
+        <small id="submitHelp" class="form-text text-muted"></small>
       </form>
       `;
     $("#settings-tab-inputs-config").html(html);
@@ -187,6 +210,10 @@ $(function() {
     e.preventDefault(); // avoid to execute the actual submit of the form.
 
     var $form = $("#settings-tab-inputs-new-stream-form");
+    var validation = checkFormData($("#settings-tab-inputs-new-stream-form :input"))
+    console.log(validation);
+    if (!validation) { return; }
+
     var formData = getFormData($form);
 
     $.ajax({
@@ -272,9 +299,12 @@ $(function() {
   /* Make sure all required field are filled */
   function checkFormData($form) {
     var isValid = true;
+    var sub_text = document.getElementById('submitHelp');
+    sub_text.textContent = "";
     $form.each(function() {console.log($(this).data("required"));
-      if ($(this).data("required") == true && $(this).val() === '') {
+      if ($(this).data("required") == true && $(this).val() === '' && $(this).is(':visible')) {
         isValid = false;
+        sub_text.textContent = "Please fill out all required fields.";
         $(this).addClass('is-invalid');
       }
     });
@@ -291,5 +321,109 @@ $(function() {
     });
 
     return indexed_array;
-}
+  }
 });
+
+async function plex_pin_req() {
+  // Request a Plex pin to use for interacting with the Plex API
+  document.getElementById('plexamp-connect').textContent = "Sending request...";
+  let myuuid = uuidv4(); // UUID used as the 'clientIdentifier' for Plexamp requests/devices
+  let details = { }
+  let response = await fetch('https://plex.tv/api/v2/pins', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: "strong=true&X-Plex-Product=AmpliPi&X-Plex-Client-Identifier=" + myuuid
+  }); // The actual pin request is sent. response holds the pin, pin code, and our UUID.
+  response.json()
+  .then(function(response){ // Make URL for the Plex Account Login
+    const purl = `https://app.plex.tv/auth#?clientID=${response.clientIdentifier}&code=${response.code}&context%5Bdevice%5D%5Bproduct%5D=AmpliPi`;
+    details.id = response.id; // The actual PIN
+    details.code = response.code; // A code associated with the PIN
+    details.uuid = response.clientIdentifier; // Our UUID associated with the PIN and authToken
+    details.authToken = null; // Will eventually hold a token from plex_token_ret on a successful sign-in
+    console.log(details);
+    window.open(purl, "_blank"); // Open 'purl' in a new tab in the current browser window
+  });
+  return details; // Pin, code, UUID, and authToken are used in the other functions
+}
+
+async function plex_token_ret(details) {
+  // Attempt to retrieve the plex token (this will return 'null' until the user enters their Plex account details)
+  // NOTE: this token will only work for plexamp if the user has a Plex Pass subscription
+  document.getElementById('plexamp-connect').textContent = "Awaiting Plex sign-in...";
+  let response = await fetch('https://plex.tv/api/v2/pins/'+details.id, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'code': details.code,
+      'X-Plex-Client-Identifier': details.uuid
+    },
+  }); // Information related to our PIN was requested. Parse that info to see if we've authenticated yet
+  response.json().then(function(response){
+    console.log("Token: " + response.authToken);
+    details.authToken = response.authToken;
+    console.log("Time remaining: " + response.expiresIn);
+    details.expiresIn = response.expiresIn;
+  });
+  return details;
+}
+
+async function plex_stream(details) {
+  // Create Plexamp stream using AmpliPi's API
+  var req = {
+    "name": details.name,
+    "client_id": details.uuid,
+    "token": details.authToken,
+    "type": "plexamp"
+  } // POST a new stream to the AmpliPi API using the newly authenticated credentials
+  sendRequest('/stream', 'POST', req);
+  console.log(`Creating stream with these parameters: name = ${req.name}, UUID = ${req.client_id}, and token = ${req.token}`);
+}
+
+function sleepjs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms)); // JavaScript sleep function
+}
+
+async function plexamp_create_stream() {
+  // Connect to Plex's API and add a Plexamp stream to AmpliPi
+  var connect_button = document.getElementById('plexamp-connect');
+  var reset_button = document.getElementById('plexamp-reset');
+  var done_button = document.getElementById('plexamp-done');
+  var msg_box1 = document.getElementById('uuidHelp');
+  var msg_box2 = document.getElementById('authHelp');
+  var uuid_text = document.getElementById('client_id');
+  var auth_text = document.getElementById('token');
+  connect_button.disabled = true;
+  let details = await plex_pin_req(); // Request a pin
+  await sleepjs(2000); // Wait for info to propagate over
+  reset_button.style.display = "inline-block";
+  done_button.style.display = "none";
+  msg_box1.style.display = "none";
+
+  do {
+    let details2 = await plex_token_ret(details); // Retrieve our token
+    await sleepjs(2000); // poll the plex servers slowly
+    if (details2.expiresIn == null){
+      msg_box1.textContent = "Timed out while waiting for response from Plex";
+      msg_box1.style.color = "yellow";
+      msg_box1.style.display = "block";
+      msg_box1.style.alignSelf = "left";
+      break; // Break when you run out of time (30 minutes, set by Plex)
+    }
+    details = details2; // Update authToken state and time until expiration
+  } while (details.authToken == null); // "== null" should also check for undefined
+  if (details.authToken){
+    connect_button.style.display = "none";
+    reset_button.style.display = "none";
+    // done_button.textContent = "Done - click to continue";
+    // done_button.style.display = "inline-block";
+    auth_text.value = `${details.authToken}`;
+    uuid_text.value = `${details.uuid}`;
+    msg_box2.textContent = `Client_id and Token successfully generated!`;
+    // plex_stream(details); // Create a Plexamp stream using the API!
+  }
+}
