@@ -90,7 +90,7 @@ def pst_all_zones_to_src(name: str, src: int, input: str, vol=-50):
     'name': name,
     'state': {
       'sources': [{'id': src, 'input': input}],
-      'zones': [{'id': zid, 'src_id': src, 'vol': vol, 'mute': False} for zid in range(6)],
+      'zones': [{'id': zid, 'source_id': src, 'vol': vol, 'mute': False} for zid in range(6)],
     }
   }
 
@@ -195,7 +195,7 @@ if __name__ == '__main__':
     presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
     if not analog_tester_avail:
       print('No analog tester available, only able to test digital inputs')
-    announcements = [models.Announcement(src_id=src, media=f'web/static/audio/{t}{src+1}.{side}.wav') for t in ['analog', 'digital'] for src in range(4) for side in ['left', 'right']]
+    announcements = [models.Announcement(source_id=src, media=f'web/static/audio/{t}{src+1}.{side}.wav', vol=-25) for t in ['analog', 'digital'] for src in range(4) for side in ['left', 'right']]
     while True:
       for a in announcements:
         if 'analog' in a.media:
