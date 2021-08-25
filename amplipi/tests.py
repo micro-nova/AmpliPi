@@ -135,12 +135,12 @@ PRESETS = [
     'name': 'zones-1 play',
     'state': {
       'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-      'zones': [{'id': zid, 'mute': False, 'vol': -50} for zid in range(6)]
+      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(6)]
     }
   },
 ]
 
-PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -35) for src in range(4)]
+PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -20) for src in range(4)]
 
 def setup(client: Client):
   """ Configure AmpliPi for testing by loading a simple known configuration """
