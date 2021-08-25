@@ -122,6 +122,16 @@
 #define TFT_SPI_FREQ (50 * 1000000)  // Default = 24 MHz
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
+#define TFT_WIDTH       320
+#define TFT_HEIGHT      240
+#define TFT_FONT_WIDTH  6
+#define TFT_FONT_HEIGHT 8
+
+#define ADC_REF_VOLTS     3.3
+#define ADC_PULLDOWN_OHMS 33
+#define ADC_SERIES_OHMS   100
+#define ADC_MAX_VAL       4095
+
 static constexpr uint8_t MAX_DPOT_VAL = 0x7F;
 static constexpr uint8_t I2C_TEST_VAL = 0xA4;
 
@@ -132,6 +142,12 @@ enum SlaveAddr : uint8_t
   dpot = 0x2F,
   adc  = 0x64,
 };
+
+float ctrl5va;
+float ctrl5vd;
+float preamp9v;
+float preamp5v;
+float preout9v;
 
 // I2C1 slave RX callback
 void i2cSlaveRx(int rxBufLen) {
@@ -147,9 +163,68 @@ void i2cSlaveRx(int rxBufLen) {
   SerialUSB.println(rx, HEX);
 }
 
+float adcToVolts(uint32_t adc_val) {
+  return adc_val * (ADC_PULLDOWN_OHMS + ADC_SERIES_OHMS) * ADC_REF_VOLTS /
+         ADC_PULLDOWN_OHMS / ADC_MAX_VAL;
+}
+
+void drawVoltages() {
+  static bool init = true;
+
+  if (init) {
+    tft.fillRect(0, 0, TFT_WIDTH, 7 * TFT_FONT_HEIGHT, ILI9341_BLACK);
+    tft.setCursor(0, 0);
+
+    // Draw all static test
+    tft.println("Ctrl Board   | +5VA (pin 1):");
+    tft.println("Power (J4)   | +5VD (pin 3):");
+    tft.println();
+    tft.println("Preamp Board | +9VA (pin 1):");
+    tft.println("Power (J5)   | +5VA (pin 3):");
+    tft.println();
+    tft.println("Preout Board Pwr (J8)  +9VA:");
+
+    // Draw borders
+    tft.drawLine(0, 2.5 * TFT_FONT_HEIGHT, 33.5 * TFT_FONT_WIDTH,
+                 2.5 * TFT_FONT_HEIGHT, ILI9341_WHITE);
+    tft.drawLine(0, 5.5 * TFT_FONT_HEIGHT, 33.5 * TFT_FONT_WIDTH,
+                 5.5 * TFT_FONT_HEIGHT, ILI9341_WHITE);
+    tft.drawLine(0, 7.5 * TFT_FONT_HEIGHT, 33.5 * TFT_FONT_WIDTH,
+                 7.5 * TFT_FONT_HEIGHT, ILI9341_WHITE);
+    tft.drawLine(28 * TFT_FONT_WIDTH, 0, 28 * TFT_FONT_WIDTH,
+                 7.5 * TFT_FONT_HEIGHT, ILI9341_WHITE);
+    tft.drawLine(33.5 * TFT_FONT_WIDTH, 0, 33.5 * TFT_FONT_WIDTH,
+                 7.5 * TFT_FONT_HEIGHT, ILI9341_WHITE);
+    init = false;
+  } else {
+    // Clear the area that will be re-written with voltage text
+    tft.fillRect(29 * TFT_FONT_WIDTH, 0, 4 * TFT_FONT_WIDTH,
+                 2 * TFT_FONT_HEIGHT, ILI9341_BLACK);
+    tft.fillRect(29 * TFT_FONT_WIDTH, 3 * TFT_FONT_HEIGHT, 4 * TFT_FONT_WIDTH,
+                 2 * TFT_FONT_HEIGHT, ILI9341_BLACK);
+    tft.fillRect(29 * TFT_FONT_WIDTH, 6 * TFT_FONT_HEIGHT, 4 * TFT_FONT_WIDTH,
+                 1 * TFT_FONT_HEIGHT, ILI9341_BLACK);
+  }
+
+  // Update voltage text
+  tft.setCursor(29 * TFT_FONT_WIDTH, 0 * TFT_FONT_HEIGHT);
+  tft.println(ctrl5va, 2);
+  tft.setCursor(29 * TFT_FONT_WIDTH, 1 * TFT_FONT_HEIGHT);
+  tft.println(ctrl5vd, 2);
+  tft.setCursor(29 * TFT_FONT_WIDTH, 3 * TFT_FONT_HEIGHT);
+  tft.println(preamp9v, 2);
+  tft.setCursor(29 * TFT_FONT_WIDTH, 4 * TFT_FONT_HEIGHT);
+  tft.println(preamp5v, 2);
+  tft.setCursor(29 * TFT_FONT_WIDTH, 6 * TFT_FONT_HEIGHT);
+  tft.println(preout9v, 2);
+}
+
 void setup() {
   // Setup onboard LED
   pinMode(LED_BUILTIN, OUTPUT);
+
+  // Setup ADC
+  analogReadResolution(12);
 
   // Setup I2C master
   Wire.begin();
@@ -163,13 +238,16 @@ void setup() {
   SerialUSB.println("Welcome to the Power Board Tester");
 
   // Setup display
-  tft.begin(TFT_SPI_FREQ);
+  tft.begin();
   tft.setRotation(3);
   tft.fillScreen(ILI9341_BLACK);
+  // tft.setFont(&FreeMono9pt7b);
+  // tft.setCursor(0, FreeMono9pt7b.yAdvance);
 }
 
 void loop() {
-  uint32_t loopStartTime = millis();
+  static bool update_display = true;
+  uint32_t    loopStartTime  = millis();
 
   // Blink LED, 100 ms on, 1000 ms off
   static uint32_t led_timer = 0;
@@ -181,12 +259,37 @@ void loop() {
   }
 
   // Measure ADCs
+  static uint32_t adc_timer = 0;
+  if (millis() > adc_timer) {
+    ctrl5va  = adcToVolts(analogRead(A0));
+    ctrl5vd  = adcToVolts(analogRead(A1));
+    preamp9v = adcToVolts(analogRead(A2));
+    preamp5v = adcToVolts(analogRead(A3));
+    preout9v = adcToVolts(analogRead(A4));
+    drawVoltages();
+    adc_timer += 250;
+  }
 
   // Read I2C ADC
 
   // Toggle FAN_ON
+  static uint32_t fan_timer = 0;
+  static bool     fan_on    = false;
+  if (millis() > fan_timer) {
+    /*Wire.beginTransmission(SlaveAddr::gpio);
+    Wire.write((uint8_t)0x00);  // Instruction byte
+    Wire.write(dpot_val);       // Value
+    Wire.endTransmission();
+    dpot_val++;
+    if (dpot_val > MAX_DPOT_VAL) {
+      dpot_val = 0;
+    }*/
+    fan_timer += 1000;
+    update_display = true;
+  }
 
   // Adjust DPOT to control +12V
+  /*
   static uint32_t dpot_timer = 0;
   static uint8_t  dpot_val   = 0;
   if (millis() > dpot_timer) {
@@ -199,7 +302,9 @@ void loop() {
       dpot_val = 0;
     }
     dpot_timer += 1000;
+    update_display = true;
   }
+  */
 
   // Check I2C loopback
   static uint32_t i2c_loopback_timer = 0;
@@ -208,21 +313,20 @@ void loop() {
     Wire.write((uint8_t)I2C_TEST_VAL);
     Wire.endTransmission();
     i2c_loopback_timer += 1000;
+    update_display = true;
   }
 
   // Update display
-  static bool blank = true;
-  /*if (blank) {
-    tft.fillScreen(ILI9341_WHITE);
-  } else {
-    tft.fillScreen(ILI9341_BLACK);
-  }*/
-  tft.setCursor(0, 0);
-  tft.fillScreen(ILI9341_BLACK);
-  tft.println("Hello World!");
-  blank = !blank;
-  // takes 500ms with individual pixel writes
-  // tft.drawPixel(x, y, (n * 29)<<8 | (n * 67));
+  if (update_display) {
+    // tft.fillRect(160, 0, 160, 240, ILI9341_BLUE);
+
+    // Control Board Power
+
+    // Preamp Board Power
+
+    update_display = false;
+  }
+
   uint32_t elapsedTime = millis() - loopStartTime;
   SerialUSB.print("Loop took ");
   SerialUSB.print(elapsedTime);
