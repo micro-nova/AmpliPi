@@ -467,3 +467,23 @@ function initVolControl(ctrl) {
    vols[ctrl.id].barStillDown = false;
   }, true);
 }
+
+
+// From: https://stackoverflow.com/questions/19721439/download-json-object-as-a-file-from-browser
+async function downloadConfig(){
+  // get the current config
+  let response = await fetch('/api');
+  let config = await response.json();
+  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config));
+  var downloadAnchorNode = document.createElement('a');
+  downloadAnchorNode.setAttribute("href",     dataStr);
+  downloadAnchorNode.setAttribute("download", "config.json");
+  document.body.appendChild(downloadAnchorNode); // required for firefox
+  downloadAnchorNode.click();
+  downloadAnchorNode.remove();
+}
+
+async function resetDevice() {
+  let response = await fetch('/api/reset', {method: 'POST'});
+  // TODO: validate response (and potentially change button color)
+}
