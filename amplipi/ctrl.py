@@ -482,27 +482,24 @@ class Api:
     else:
         return ApiResponse.error('set zone: index {} out of bounds'.format(idx))
 
-  def set_zones(self, update: models.ZoneUpdate, zids: List[int] = [], gids: List[int] = [], internal: bool = False) -> ApiResponse:
+  def set_zones(self, multi_update: models.MultiZoneUpdate, internal: bool = False) -> ApiResponse:
     """Reconfigures a set of zones
 
       Args:
-        update: changes to apply to each zone (given by the union of @zids and the zones beloging to each group in @gids)
-        zids: List of zone ids
-        gids: List of group ids (so we can modify the member zones)
-        internal: called by a higher-level ctrl function
+        update: changes to apply to embedded zones and groups
       Returns:
         ApiResponse
     """
     # aggregate all of the zones together
-    all_zids = Set(zids)
-    for gid in gids:
-      _, group = utils.find(self.status.groups, gid)
-      if group:
-        all_zids.update(group.zones)
+    all_zids = utils.zones_from_all(self.status, multi_update.zones, multi_update.groups)
     # update each of the zones
     resp = ApiResponse.ok()
     for zid in all_zids:
-      resp = self.set_zone(zid, update, internal=True)
+      zupdate = multi_update.update.copy() # we potentially need to make changes to the underlying update
+      if zupdate.name:
+        # ensure all zones don't get named the same
+        zupdate.name = f'{zupdate.name} {zid+1}'
+      resp = self.set_zone(zid, zupdate, internal=True)
       if resp.code != ApiResponse.OK:
         break # the response message is the internal failure
     if not internal:

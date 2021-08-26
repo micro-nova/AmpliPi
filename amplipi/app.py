@@ -277,7 +277,10 @@ def set_zone(zone: models.ZoneUpdate, ctrl: Api = Depends(get_ctrl), zid: int = 
   """ Update a zone's configuration (zone=**zid**) """
   return code_response(ctrl, ctrl.set_zone(zid, zone))
 
-# TODO: add set_zones(ctrl: Api = Depends(get_ctrl), zones:List[int]=[], groups:List[int]=[], update:ZoneUpdate)
+@api.patch('/api/zones', tags=['zone'])
+def set_zones(multi_update: models.MultiZoneUpdate, ctrl: Api = Depends(get_ctrl)) -> models.Status:
+  """ Update a bunch of zones (and groups) with the same configuration changes """
+  return code_response(ctrl, ctrl.set_zones(multi_update))
 
 # groups
 

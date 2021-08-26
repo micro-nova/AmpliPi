@@ -262,6 +262,25 @@ class ZoneUpdateWithId(ZoneUpdate):
     update.pop('id')
     return ZoneUpdate.parse_obj(update)
 
+class MultiZoneUpdate(ZoneUpdate):
+  """ Reconfiguration of multiple zones specified by zone_ids and group_ids """
+
+  zones: Optional[List[int]] = fields.Zones
+  groups: Optional[List[int]] = fields.Groups
+  update: ZoneUpdate
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Connect all zones to source 1': {
+          'value': {
+            'zones': [0,1,2,3,4,5],
+            'update': { 'source_id': 0 }
+          }
+        },
+      },
+    }
+
 class Group(Base):
   """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
 

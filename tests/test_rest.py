@@ -226,6 +226,27 @@ def test_patch_zone(client, zid):
   assert s is not None
   assert s['name'] == 'patched-name'
 
+@pytest.mark.parametrize('sid', base_source_ids())
+def test_patch_zones(client, sid):
+  """ Try changing multiple zones """
+  rv = client.patch('/api/zones', json={'zones': [z for z in range(6)], 'update': {'source_id': sid}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['source_id'] == sid
+
+def test_patch_zones_duplicate_name(client):
+  """ Try changing multiple zones and setting base name """
+  rv = client.patch('/api/zones', json={'zones': [z for z in range(6)], 'update': {'name': 'test'}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['name'] == f"test {z['id']+1}"
+
 # Test Groups
 def base_group_ids():
   """ Default groups """
