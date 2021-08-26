@@ -202,7 +202,7 @@ if __name__ == '__main__':
       for a in announcements:
         if 'analog' in a.media:
           if analog_tester_avail:
-            pst = presets[a.src_id]
+            pst = presets[a.source_id]
             if pst.id is not None:
               ap.load_preset(pst.id)
               apt.announce(a)

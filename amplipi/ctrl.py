@@ -896,7 +896,7 @@ class Api:
       return resp0
     stream = resp0
     # create a temporary preset with all zones connected to the announcement stream and load it
-    pa_src = models.SourceUpdateWithId(id=announcement.src_id, input=f'stream={stream.id}') # for now we just use the last source
+    pa_src = models.SourceUpdateWithId(id=announcement.source_id, input=f'stream={stream.id}') # for now we just use the last source
     if announcement.zones is None and announcement.groups is None:
       zones_to_use = {z.id for z in self.status.zones if z.id is not None and not z.disabled}
     else:
