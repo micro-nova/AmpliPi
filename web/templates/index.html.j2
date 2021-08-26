@@ -99,6 +99,7 @@
           <option value="#settings-tab-inputs">Inputs</option>
           <option value="#settings-tab-zones">Zones</option>
           <option value="#settings-tab-groups">Groups</option>
+          <option value="#settings-tab-config">Configuration and Reset</option>
           <option value="#settings-tab-updates">Updates</option>
         </select>
       </div>
@@ -150,6 +151,7 @@
                   </div>
                 </div>
               </div>
+              </div>
             </div>
           </div>
           <div id="settings-tab-groups" class="tab-pane">
@@ -174,6 +176,19 @@
                     <div id="settings-tab-groups-config" style="padding: .75rem 1.25rem;">
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="settings-tab-config" class="tab-pane">
+            <div class="card settings">
+              <h6 class="card-header">Configuration and Reset</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <button class="btn btn-success" onclick="loadConfig()" id="settings-config-load">Load</button>
+                  <!-- TODO: Add json file selector for specifying config file to load -->
+                  <button class="btn btn-success" onclick="saveConfig()" id="settings-config-save">Save</button>
+                  <button class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
                 </div>
               </div>
             </div>
