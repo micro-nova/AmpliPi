@@ -131,6 +131,9 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 static constexpr uint8_t MAX_DPOT_VAL = 0x7F;
 static constexpr uint8_t I2C_TEST_VAL = 0xA4;
 
+static constexpr uint8_t MCP23008_REG_IODIR = 0x00;
+static constexpr uint8_t MCP23008_REG_OLAT  = 0x0A;
+
 enum SlaveAddr : uint8_t
 {
   due  = 0x0F,
@@ -204,6 +207,37 @@ bool readI2CADC(uint8_t* ch0, uint8_t* ch1, uint8_t* ch2, uint8_t* ch3) {
     *ch3 = 0;
     return false;
   }
+}
+
+void writeGPIO(bool fan_on, bool en_12v) {
+  // FAN_ON = GP7
+  // EN_12V = GP1
+  Wire.beginTransmission(SlaveAddr::gpio);
+  Wire.write(MCP23008_REG_IODIR);
+  Wire.write((uint8_t)0x7D);  // Set GP7 and GP1 as outputs
+  Wire.endTransmission();
+
+  uint8_t val = fan_on ? 0x80 : 0x00;
+  val         = en_12v ? 0x02 | val : val;
+  Wire.beginTransmission(SlaveAddr::gpio);
+  Wire.write(MCP23008_REG_OLAT);
+  Wire.write(val);
+  Wire.endTransmission();
+}
+
+// For now just returns PG_12V's status
+bool readGPIO() {
+  // OVR_TMP  = GP5
+  // FAN_FAIL = GP4
+  // PG_12V   = GP3
+  Wire.beginTransmission(SlaveAddr::gpio);
+  Wire.write(MCP23008_REG_OLAT);
+  Wire.requestFrom(SlaveAddr::gpio, 1);
+  Wire.endTransmission();
+  if (Wire.available() && (Wire.read() & 0x08)) {
+    return true;
+  }
+  return false;
 }
 
 // N = test number, AKA what line # on the screen
@@ -352,6 +386,7 @@ void loop() {
     Wire.write((uint8_t)I2C_TEST_VAL);
     Wire.endTransmission();
 
+    // TODO: Don't lock up on I2C failure
     // Read I2C ADC
     uint8_t hv1_adc;
     uint8_t hv2_adc;
@@ -376,22 +411,12 @@ void loop() {
     }
     drawTest<5>("I2C ADC NTC", strbuf1, temp1 > 15 && temp1 < 30, "", true);
 
-    // Toggle FAN_ON
+    // Toggle FAN_ON (for now just turn on since there is no feedback)
+    writeGPIO(true, true);
+    bool pg_12v = readGPIO();
+    drawTest<6>("PG_12V", pg_12v ? " PASS" : " FAIL", pg_12v, "", true);
 
     test_timer += 250;
-  }
-
-  static uint32_t fan_timer = 0;
-  if (millis() > fan_timer) {
-    /*Wire.beginTransmission(SlaveAddr::gpio);
-    Wire.write((uint8_t)0x00);  // Instruction byte
-    Wire.write(dpot_val);       // Value
-    Wire.endTransmission();
-    dpot_val++;
-    if (dpot_val > MAX_DPOT_VAL) {
-      dpot_val = 0;
-    }*/
-    fan_timer += 1000;
   }
 
   // Adjust DPOT to control +12V
