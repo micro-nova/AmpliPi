@@ -126,20 +126,10 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 #define TFT_HEIGHT      240
 #define TFT_FONT_WIDTH  6
 #define TFT_FONT_HEIGHT 8
-
-#define ADC_REF_VOLTS     3.3
-#define ADC_PULLDOWN_OHMS 33
-#define ADC_SERIES_OHMS   100
-#define ADC_MAX_VAL       4095
+#define TEXT_MARGIN     4
 
 static constexpr uint8_t MAX_DPOT_VAL = 0x7F;
 static constexpr uint8_t I2C_TEST_VAL = 0xA4;
-
-// Drawing positions
-static constexpr int16_t volts_x0 = 0;
-static constexpr int16_t volts_y0 = 0;
-static constexpr int16_t loop_x0  = 0;
-static constexpr int16_t loop_y0  = 10 * TFT_FONT_HEIGHT;
 
 enum SlaveAddr : uint8_t
 {
@@ -162,9 +152,24 @@ void i2cSlaveRx(int rxBufLen) {
   SerialUSB.println(rx, HEX);
 }
 
-float adcToVolts(uint32_t adc_val, uint32_t pulldown, uint32_t series) {
-  return ((float)(adc_val * (pulldown + series))) *
-         (ADC_REF_VOLTS / ADC_MAX_VAL) / pulldown;
+constexpr float adcToVolts(uint32_t adc_val, uint8_t bits, float v_ref,
+                           float r_pulldown, float r_series) {
+  float scale =
+      v_ref * (r_pulldown + r_series) / r_pulldown / ((1 << bits) - 1);
+  return scale * adc_val;
+}
+
+float adcToTemp(uint8_t ntc_adc) {
+  if (ntc_adc == 0) {
+    // 0 causes divide-by-zero
+    return -INFINITY;
+  } else if (ntc_adc == 255) {
+    // 255 causes Rt=0 which leads to ln(0)
+    return INFINITY;
+  } else {
+    float rt = 4.7 * (255 / (float)ntc_adc - 1);
+    return 1.0 / (log(rt / 10) / 3900 + 1.0 / (25.0 + 273.5)) - 273.15;
+  }
 }
 
 // Inputs are in the range [0,1]
@@ -180,179 +185,92 @@ uint16_t rgb565(float red, float green, float blue) {
   return (r5 << 11) | (g6 << 5) | b5;
 }
 
-template <int16_t x0, int16_t y0>
-void drawVoltages(float ctrl5va, float ctrl5vd, float preamp9v, float preamp5v,
-                  float preout9v, float i2c3v3) {
-  static constexpr uint8_t n1 = 17;  // Number of characters in first column
-  static constexpr uint8_t n2 = 6;   // Number of characters in second column
-  static constexpr uint8_t nl = 9;   // Number of lines/rows
+bool readI2CADC(uint8_t* ch0, uint8_t* ch1, uint8_t* ch2, uint8_t* ch3) {
+  Wire.beginTransmission(SlaveAddr::adc);
+  Wire.write((uint8_t)0b00000111);  // Send configuration byte, set CS=0x2
+  Wire.endTransmission();
 
-  // Column ends and starts
-  static constexpr int16_t c1x2 = x0 + (0.5 + n1) * TFT_FONT_WIDTH;
-  static constexpr int16_t c2x1 = c1x2 + TFT_FONT_WIDTH / 2;
-  static constexpr int16_t c2x2 = c2x1 + (0.5 + n2) * TFT_FONT_WIDTH;
-
-  static bool init = true;
-
-  if (init) {
-    tft.fillRect(x0, y0, TFT_WIDTH - x0, nl * TFT_FONT_HEIGHT, ILI9341_BLACK);
-    tft.setCursor(x0, y0);
-
-    // Draw all static text
-    tft.println("Ctrl Board   +5VA");
-    tft.println("Power (J4)   +5VD");
-    tft.println();
-    tft.println("Preamp Board +9VA");
-    tft.println("Power (J5)   +5VA");
-    tft.println();
-    tft.println("Preout (J8)  +9VA");
-    tft.println();
-    tft.println("I2C (J3)   +3.3VA");
-
-    // Draw borders
-    tft.drawLine(x0, 2.5 * TFT_FONT_HEIGHT, c2x2, 2.5 * TFT_FONT_HEIGHT,
-                 ILI9341_WHITE);
-    tft.drawLine(x0, 5.5 * TFT_FONT_HEIGHT, c2x2, 5.5 * TFT_FONT_HEIGHT,
-                 ILI9341_WHITE);
-    tft.drawLine(x0, 7.5 * TFT_FONT_HEIGHT, c2x2, 7.5 * TFT_FONT_HEIGHT,
-                 ILI9341_WHITE);
-    tft.drawLine(x0, (0.5 + nl) * TFT_FONT_HEIGHT, c2x2,
-                 (0.5 + nl) * TFT_FONT_HEIGHT, ILI9341_WHITE);
-    tft.drawLine(c1x2, y0, c1x2, (0.5 + nl) * TFT_FONT_HEIGHT, ILI9341_WHITE);
-    tft.drawLine(c2x2, y0, c2x2, (0.5 + nl) * TFT_FONT_HEIGHT, ILI9341_WHITE);
-    init = false;
+  Wire.requestFrom(SlaveAddr::adc, 4);
+  if (Wire.available() >= 4) {
+    *ch0 = (uint8_t)Wire.read();
+    *ch1 = (uint8_t)Wire.read();
+    *ch2 = (uint8_t)Wire.read();
+    *ch3 = (uint8_t)Wire.read();
+    return true;
   } else {
-    // Clear the area that will be re-written with voltage text
-    tft.fillRect(c2x1, y0, n2 * TFT_FONT_WIDTH, 2 * TFT_FONT_HEIGHT,
-                 ILI9341_BLACK);
-    tft.fillRect(c2x1, y0 + 3 * TFT_FONT_HEIGHT, n2 * TFT_FONT_WIDTH,
-                 2 * TFT_FONT_HEIGHT, ILI9341_BLACK);
-    tft.fillRect(c2x1, y0 + 6 * TFT_FONT_HEIGHT, n2 * TFT_FONT_WIDTH,
-                 1 * TFT_FONT_HEIGHT, ILI9341_BLACK);
-    tft.fillRect(c2x1, y0 + 8 * TFT_FONT_HEIGHT, n2 * TFT_FONT_WIDTH,
-                 1 * TFT_FONT_HEIGHT, ILI9341_BLACK);
+    *ch0 = 0;
+    *ch1 = 0;
+    *ch2 = 0;
+    *ch3 = 0;
+    return false;
   }
-
-  // Update voltage text
-  char strbuf[n2 + 1] = {0};
-  tft.setCursor(c2x1, 0 * TFT_FONT_HEIGHT);
-  float good = ctrl5va < 6.0 && ctrl5va > 4.0 ? 1.0 : 0.0;
-  tft.setTextColor(rgb565(1.0, good, good));
-  sprintf(strbuf, "%5.2fV", ctrl5va);
-  tft.println(strbuf);
-  tft.setCursor(c2x1, 1 * TFT_FONT_HEIGHT);
-  good = ctrl5vd < 6.0 && ctrl5vd > 4.0 ? 1.0 : 0.0;
-  tft.setTextColor(rgb565(1.0, good, good));
-  sprintf(strbuf, "%5.2fV", ctrl5vd);
-  tft.println(strbuf);
-  tft.setCursor(c2x1, 3 * TFT_FONT_HEIGHT);
-  good = preamp9v < 11.0 && preamp9v > 8.0 ? 1.0 : 0.0;
-  tft.setTextColor(rgb565(1.0, good, good));
-  sprintf(strbuf, "%5.2fV", preamp9v);
-  tft.println(strbuf);
-  tft.setCursor(c2x1, 4 * TFT_FONT_HEIGHT);
-  good = preamp5v < 6.0 && preamp5v > 4.0 ? 1.0 : 0.0;
-  tft.setTextColor(rgb565(1.0, good, good));
-  sprintf(strbuf, "%5.2fV", preamp5v);
-  tft.println(strbuf);
-  tft.setCursor(c2x1, 6 * TFT_FONT_HEIGHT);
-  good = preout9v < 11.0 && preout9v > 8.0 ? 1.0 : 0.0;
-  tft.setTextColor(rgb565(1.0, good, good));
-  sprintf(strbuf, "%5.2fV", preout9v);
-  tft.println(strbuf);
-  tft.setCursor(c2x1, 8 * TFT_FONT_HEIGHT);
-  good = i2c3v3 < 4.0 && i2c3v3 > 2.7 ? 1.0 : 0.0;
-  tft.setTextColor(rgb565(1.0, good, good));
-  sprintf(strbuf, "%5.2fV", i2c3v3);
-  tft.println(strbuf);
 }
 
-template <int16_t x0, int16_t y0>
-void drawI2CLoopback(bool ok) {
+// N = test number, AKA what line # on the screen
+template <uint8_t N>
+void drawTest(const char* desc, const char* val1, bool ok1, const char* val2,
+              bool ok2) {
   static constexpr uint8_t n1 = 12;  // Number of characters in first column
-  static constexpr uint8_t n2 = 4;   // Number of characters in second column
-  static constexpr uint8_t nl = 2;   // Number of lines (text + 1 for margin)
+  static constexpr uint8_t n2 = 6;   // Number of characters in second column
+  static constexpr uint8_t n3 = 6;   // Number of characters in third column
 
-  // Column ends and starts
-  static constexpr int16_t c1x2 = x0 + (0.5 + n1) * TFT_FONT_WIDTH;
-  static constexpr int16_t c2x1 = c1x2 + TFT_FONT_WIDTH / 2;
-  static constexpr int16_t c2x2 = c2x1 + (0.5 + n2) * TFT_FONT_WIDTH;
+  // Font size (doubled)
+  static constexpr int16_t fw = 2 * TFT_FONT_WIDTH;
+  static constexpr int16_t fh = 2 * TFT_FONT_HEIGHT;
+
+  // Column starts and ends
+  static constexpr int16_t c1xl  = TEXT_MARGIN - 1;      // Leftmost pixel
+  static constexpr int16_t c1xtl = c1xl + TEXT_MARGIN;   // Text start
+  static constexpr int16_t c1xtr = c1xtl + n1 * fw;      // Text end
+  static constexpr int16_t c1xr  = c1xtr + TEXT_MARGIN;  // Rightmost pixel
+  static constexpr int16_t c2xl  = c1xr;
+  static constexpr int16_t c2xtl = c2xl + TEXT_MARGIN;
+  static constexpr int16_t c2xtr = c2xtl + n2 * fw;
+  static constexpr int16_t c2xr  = c2xtr + TEXT_MARGIN;
+  static constexpr int16_t c3xl  = c2xr;
+  static constexpr int16_t c3xtl = c3xl + TEXT_MARGIN;
+  static constexpr int16_t c3xtr = c3xtl + n3 * fw;
+  static constexpr int16_t c3xr  = c3xtr + TEXT_MARGIN;
+
+  // Row starts and ends
+  static constexpr int16_t yt  = N * (fh + 2 * TEXT_MARGIN);  // Topmost pixel
+  static constexpr int16_t ytt = yt + TEXT_MARGIN;            // Text start
+  static constexpr int16_t ytb = ytt + fh;                    // Text end
+  static constexpr int16_t yb  = ytb + TEXT_MARGIN;  // Bottommost pixel
 
   static bool init = true;
-
   if (init) {
     // Clear entire area
-    tft.fillRect(x0, y0, TFT_WIDTH - x0, nl * TFT_FONT_HEIGHT, ILI9341_BLACK);
+    tft.fillRect(c1xl, yt, c3xr - c1xl, yb - yt, ILI9341_BLACK);
 
     // Draw static text
-    tft.setCursor(x0, y0 + TFT_FONT_HEIGHT / 2);
-    tft.println("I2C out (J3)");
+    tft.setCursor(c1xtl, ytt);
+    tft.setTextColor(ILI9341_WHITE);
+    tft.println(desc);
 
-    // Draw borders
-    tft.drawLine(x0, y0, c2x2, y0, ILI9341_WHITE);
-    tft.drawLine(x0, y0 + nl * TFT_FONT_HEIGHT, c2x2, y0 + nl * TFT_FONT_HEIGHT,
-                 ILI9341_WHITE);
-    tft.drawLine(c1x2, y0, c1x2, y0 + nl * TFT_FONT_HEIGHT, ILI9341_WHITE);
-    tft.drawLine(c2x2, y0, c2x2, y0 + nl * TFT_FONT_HEIGHT, ILI9341_WHITE);
+    // Draw horizontal borders
+    tft.drawLine(c1xl, yt, c3xr, yt, ILI9341_LIGHTGREY);
+    tft.drawLine(c1xl, yb, c3xr, yb, ILI9341_LIGHTGREY);
+    // Draw vertical borders
+    tft.drawLine(c1xl, yt, c1xl, yb, ILI9341_LIGHTGREY);
+    tft.drawLine(c2xl, yt, c2xl, yb, ILI9341_LIGHTGREY);
+    tft.drawLine(c3xl, yt, c3xl, yb, ILI9341_LIGHTGREY);
+    tft.drawLine(c3xr, yt, c3xr, yb, ILI9341_LIGHTGREY);
     init = false;
   } else {
     // Clear the area that will be re-written with voltage text
-    tft.fillRect(c2x1, y0 + TFT_FONT_HEIGHT / 2, n2 * TFT_FONT_WIDTH,
-                 TFT_FONT_HEIGHT, ILI9341_BLACK);
+    tft.fillRect(c2xtl, ytt, n2 * fw, fh, ILI9341_BLACK);
+    tft.fillRect(c3xtl, ytt, n3 * fw, fh, ILI9341_BLACK);
   }
 
-  // Update voltage text
-  tft.setCursor(c2x1, y0 + TFT_FONT_HEIGHT / 2);
-  uint16_t color = ok ? ILI9341_GREEN : ILI9341_RED;
-  tft.setTextColor(color);
-  tft.println(ok ? "PASS" : "FAIL");
+  // Update test result text
+  tft.setCursor(c2xtl, ytt);
+  tft.setTextColor(ok1 ? ILI9341_GREEN : ILI9341_RED);
+  tft.println(val1);
+  tft.setCursor(c3xtl, ytt);
+  tft.setTextColor(ok2 ? ILI9341_GREEN : ILI9341_RED);
+  tft.println(val2);
 }
-
-/*template <int16_t x0, int16_t y0>
-void drawI2CLoopback() {
-  static constexpr uint8_t n1 = 13;  // Number of characters in first column
-  static constexpr uint8_t n2 = 7;   // Number of characters in second column
-  static constexpr uint8_t nl = 6;   // Number of lines/rows
-
-  // Column ends and starts
-  static constexpr int16_t c1x2 = x0 + (0.5 + n1) * TFT_FONT_WIDTH;
-  static constexpr int16_t c2x1 = c1x2 + TFT_FONT_WIDTH / 2;
-  static constexpr int16_t c2x2 = c2x1 + (0.5 + n2) * TFT_FONT_WIDTH;
-
-  static bool init = true;
-
-  if (init) {
-    tft.fillRect(x0, y0, TFT_WIDTH - x0, nl * TFT_FONT_HEIGHT, ILI9341_BLACK);
-    tft.setCursor(x0, y0);
-
-    // Draw all static text
-    tft.println("I2C GPIO (U6)");
-    tft.println();
-    tft.println("I2C ADC  (U7)");
-    tft.println("    CH1   HV1");
-    tft.println("    CH2   HV2");
-    tft.println("    CH3  NTC1");
-
-    // Draw borders
-    tft.drawLine(x0, y0, c2x2, y0, ILI9341_WHITE);
-    tft.drawLine(x0, y0 + 1.5 * TFT_FONT_HEIGHT, c2x2,
-                 y0 + 1.5 * TFT_FONT_HEIGHT, ILI9341_WHITE);
-    tft.drawLine(x0, y0 + (0.5 + nl) * TFT_FONT_HEIGHT, c2x2,
-                 y0 + (0.5 + nl) * TFT_FONT_HEIGHT, ILI9341_WHITE);
-    tft.drawLine(c1x2, y0, c1x2, y0 + (0.5 + nl) * TFT_FONT_HEIGHT,
-                 ILI9341_WHITE);
-    tft.drawLine(c2x2, y0, c2x2, y0 + (0.5 + nl) * TFT_FONT_HEIGHT,
-                 ILI9341_WHITE);
-    init = false;
-  } else {
-    // Clear the area that will be re-written with voltage text
-    tft.fillRect(c2x1, y0, n2 * TFT_FONT_WIDTH, TFT_FONT_HEIGHT, ILI9341_BLACK);
-    tft.fillRect(c2x1, y0 + 2 * TFT_FONT_HEIGHT, n2 * TFT_FONT_WIDTH,
-                 4 * TFT_FONT_HEIGHT, ILI9341_BLACK);
-  }
-
-  // Update GPIO and voltage text
-}*/
 
 void setup() {
   // Setup onboard LED
@@ -376,6 +294,7 @@ void setup() {
   tft.begin();
   tft.setRotation(3);
   tft.fillScreen(ILI9341_BLACK);
+  tft.setTextSize(2);
   // tft.setFont(&FreeMono9pt7b);
   // tft.setCursor(0, FreeMono9pt7b.yAdvance);
 }
@@ -392,30 +311,77 @@ void loop() {
     led_timer += led_state == HIGH ? 100 : 900;
   }
 
-  // Measure ADCs
-  static uint32_t adc_timer = 0;
-  if (millis() > adc_timer) {
-    float ctrl5va =
-        adcToVolts(analogRead(A0), ADC_PULLDOWN_OHMS, ADC_SERIES_OHMS);
-    float ctrl5vd =
-        adcToVolts(analogRead(A1), ADC_PULLDOWN_OHMS, ADC_SERIES_OHMS);
-    float preamp9v =
-        adcToVolts(analogRead(A2), ADC_PULLDOWN_OHMS, ADC_SERIES_OHMS);
-    float preamp5v =
-        adcToVolts(analogRead(A3), ADC_PULLDOWN_OHMS, ADC_SERIES_OHMS);
-    float preout9v =
-        adcToVolts(analogRead(A4), ADC_PULLDOWN_OHMS, ADC_SERIES_OHMS);
-    float i2c3v3 = adcToVolts(analogRead(A5), 100, ADC_SERIES_OHMS);
-    drawVoltages<volts_x0, volts_y0>(ctrl5va, ctrl5vd, preamp9v, preamp5v,
-                                     preout9v, i2c3v3);
-    adc_timer += 250;
+  static uint32_t test_timer = 0;
+  static bool     fan_on     = false;
+  if (millis() > test_timer) {
+    char strbuf1[7] = {0};
+    char strbuf2[7] = {0};
+
+    // Measure ADCs
+    float ctrl5va = adcToVolts(analogRead(A0), 12, 3.3, 33, 100);
+    float ctrl5vd = adcToVolts(analogRead(A1), 12, 3.3, 33, 100);
+    sprintf(strbuf1, "%5.2fV", ctrl5va);
+    sprintf(strbuf2, "%5.2fV", ctrl5vd);
+    bool ok1 = ctrl5va < 6.0 && ctrl5va > 4.0;
+    bool ok2 = ctrl5vd < 6.0 && ctrl5va > 4.0;
+    drawTest<0>("Ctrl 5VA/5VD", strbuf1, ok1, strbuf2, ok2);
+
+    float preamp9v = adcToVolts(analogRead(A2), 12, 3.3, 33, 100);
+    float preamp5v = adcToVolts(analogRead(A3), 12, 3.3, 33, 100);
+    sprintf(strbuf1, "%5.2fV", preamp9v);
+    sprintf(strbuf2, "%5.2fV", preamp5v);
+    ok1 = preamp9v < 11.0 && preamp9v > 8.0;
+    ok2 = preamp5v < 6.0 && preamp5v > 4.0;
+    drawTest<1>("Preamp 9V/5V", strbuf1, ok1, strbuf2, ok2);
+
+    float preout9v = adcToVolts(analogRead(A4), 12, 3.3, 33, 100);
+    sprintf(strbuf1, "%5.2fV", preout9v);
+    ok1 = preout9v < 11.0 && preout9v > 8.0;
+    drawTest<2>("Preout 9V", strbuf1, ok1, "", true);
+
+    // Check I2C loopback
+    // Update from previous transmission
+    float i2c3v3 = adcToVolts(analogRead(A5), 12, 3.3, 100, 100);
+    sprintf(strbuf1, "%5.2fV", i2c3v3);
+    drawTest<3>("I2C out (J3)", strbuf1, i2c3v3 < 4.0 && i2c3v3 > 2.7,
+                i2c_loopback_ok_ ? " PASS" : " FAIL", i2c_loopback_ok_);
+
+    // Start a new transmission
+    i2c_loopback_ok_ = false;
+    Wire.beginTransmission(SlaveAddr::due);
+    Wire.write((uint8_t)I2C_TEST_VAL);
+    Wire.endTransmission();
+
+    // Read I2C ADC
+    uint8_t hv1_adc;
+    uint8_t hv2_adc;
+    uint8_t ntc1_adc;
+    uint8_t ntc2_adc;
+    readI2CADC(&hv1_adc, &hv2_adc, &ntc1_adc, &ntc2_adc);
+    float hv1 = adcToVolts(hv1_adc, 8, 3.3, 4.7, 100);
+    float hv2 = adcToVolts(hv2_adc, 8, 3.3, 4.7, 100);
+    // float ntc1 = adcToVolts(ntc1_adc, 8, 3.3, 4.7, 0);
+    sprintf(strbuf1, "%5.2fV", hv1);
+    sprintf(strbuf2, "%5.2fV", hv2);
+    drawTest<4>("I2C ADC HV", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
+                hv2 < 28 && hv2 > 20);
+
+    float temp1 = adcToTemp(ntc1_adc);
+    if (temp1 == -INFINITY) {
+      sprintf(strbuf1, "%s", " D/C");
+    } else if (temp1 == INFINITY) {
+      sprintf(strbuf1, "%s", "SHORT");
+    } else {
+      sprintf(strbuf1, "%5.1fC", temp1);
+    }
+    drawTest<5>("I2C ADC NTC", strbuf1, temp1 > 15 && temp1 < 30, "", true);
+
+    // Toggle FAN_ON
+
+    test_timer += 250;
   }
 
-  // Read I2C ADC
-
-  // Toggle FAN_ON
   static uint32_t fan_timer = 0;
-  static bool     fan_on    = false;
   if (millis() > fan_timer) {
     /*Wire.beginTransmission(SlaveAddr::gpio);
     Wire.write((uint8_t)0x00);  // Instruction byte
@@ -445,25 +411,6 @@ void loop() {
     update_display = true;
   }
   */
-
-  // Check I2C loopback
-  static uint32_t i2c_loopback_timer = 0;
-  // Start opposite so display will update
-  static bool last_loop_ok = !i2c_loopback_ok_;
-  if (millis() > i2c_loopback_timer) {
-    // Update from previous transmission
-    if (i2c_loopback_ok_ != last_loop_ok) {
-      drawI2CLoopback<loop_x0, loop_y0>(i2c_loopback_ok_);
-    }
-
-    // Start a new transmission
-    last_loop_ok     = i2c_loopback_ok_;
-    i2c_loopback_ok_ = false;
-    Wire.beginTransmission(SlaveAddr::due);
-    Wire.write((uint8_t)I2C_TEST_VAL);
-    Wire.endTransmission();
-    i2c_loopback_timer += 100;
-  }
 
   uint32_t elapsedTime = millis() - loopStartTime;
   SerialUSB.print("Loop took ");
