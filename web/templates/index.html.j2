@@ -151,7 +151,6 @@
                   </div>
                 </div>
               </div>
-              </div>
             </div>
           </div>
           <div id="settings-tab-groups" class="tab-pane">
@@ -182,12 +181,26 @@
           </div>
           <div id="settings-tab-config" class="tab-pane">
             <div class="card settings">
-              <h6 class="card-header">Configuration and Reset</h6>
+              <h6 class="card-header">Load a Configuration</h6>
               <div class="card-body">
                 <div class="text-center">
-                  <button class="btn btn-success" onclick="loadConfig()" id="settings-config-load">Load</button>
-                  <!-- TODO: Add json file selector for specifying config file to load -->
+                  <input type="file" id="settings-config-file-selector" accept=".json">
+                  <button class="btn btn-success disabled" onclick="if (!this.classList.contains('disabled')) { this.classList.add('disabled'); uploadConfig(); }" id="settings-config-load">Load</button>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Save Current Configuration</h6>
+              <div class="card-body">
+                <div class="text-center">
                   <button class="btn btn-success" onclick="saveConfig()" id="settings-config-save">Save</button>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Hardware Reset (reloads current configuration)</h6>
+              <div class="card-body">
+                <div class="text-center">
                   <button class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
                 </div>
               </div>
