@@ -69,7 +69,8 @@ $(document).ready(function(){
       $('#' + old_src + '-input')[0].style.display = "none";
       $('#' + old_src + '-player')[0].style.display = "none";
     } else {
-      $('#settings-sel')[0].style.display = "none";
+      var src = new_src[1];
+      window.location.assign('/' + src);
     }
     if (new_src != "settings-nav") {
       $('#' + new_src + '-input')[0].style.display = "block";

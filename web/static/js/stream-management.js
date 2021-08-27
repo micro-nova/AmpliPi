@@ -1,6 +1,16 @@
 /* On page load, get list of current streams */
 $(function() {
   var streams = [];
+  $.get("/api/sources", function(data) {
+    $.each(data.sources, function(k, v) {
+      streams[v.id] = v;
+      $("#settings-tab-inputs-stream-selection").append(
+        '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+        v.name +
+        ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
+      );
+    });
+  });
 
   $.get("/api/streams", function(data) {
     $.each(data.streams, function(k, v) {
@@ -109,8 +119,10 @@ $(function() {
     $("#settings-tab-inputs-new-stream").removeClass('active');
     $(this).addClass('active');
     var s = streams[$(this).data("id")];
+    console.log(s)
+    var stream_type = s.type ? s.type : `rca ${s.id+1}`
 
-    $("#settings-tab-inputs-stream-title").text(s.name + " (" + s.type + ")");
+    $("#settings-tab-inputs-stream-title").text(s.name + " (" + stream_type + ")");
     var html = `
       <input type="hidden" id="edit-sid" name="id" value="${s.id}">
       <form id="editStreamForm">
@@ -186,9 +198,15 @@ $(function() {
         `;
       }
 
+      if (s.type == null) {
+        del = '<button type="button" class="btn btn-danger" style="display:none" id="delete" data-id="${s.id}">Delete Stream</button>'
+      } else {
+        del = '<button type="button" class="btn btn-danger" style="float:right" id="delete" data-id="${s.id}">Delete Stream</button>'
+      }
+
       html += `
         <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Save Changes</button>
-        <button type="button" class="btn btn-danger" style="float:right" id="delete" data-id="${s.id}">Delete Stream</button>
+        ${del}
         <small id="submitHelp" class="form-text text-muted"></small>
       </form>
       `;
@@ -225,6 +243,16 @@ $(function() {
         $("#settings-tab-inputs-stream-title").text("Select a stream");
         $("#settings-tab-inputs-stream-selection").empty();
         $("#settings-tab-inputs-config").html("");
+        $.get("/api/sources", function(data) {
+          $.each(data.sources, function(k, v) {
+            streams[v.id] = v;
+            $("#settings-tab-inputs-stream-selection").append(
+              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+              v.name +
+              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
+            );
+          });
+        });
         $.get("/api/streams", function(data) {
           $.each(data.streams, function(k, v) {
             streams[v.id] = v;
@@ -249,10 +277,17 @@ $(function() {
     if (!validation) { return; }
 
     var formData = getFormData($form);
+    var s = streams[document.getElementById('edit-sid').value];
+    console.log(s)
+    if (s.type == null) {
+      var nurl = '/api/sources/'
+    } else {
+      var nurl = '/api/streams/'
+    }
 
     $.ajax({
       type: "PATCH",
-      url: '/api/streams/' + $("#edit-sid").val(),
+      url: nurl + $("#edit-sid").val(),
       data: JSON.stringify(formData),
       contentType: "application/json",
       success: function(data) {
@@ -260,13 +295,25 @@ $(function() {
         $("#settings-tab-inputs-stream-selection").empty();
         $("#settings-tab-inputs-config").html("");
 
-        $.each(data.streams, function(k, v) {
-          streams[v.id] = v;
-          $("#settings-tab-inputs-stream-selection").append(
-            '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-            v.name +
-            ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
-          );
+        $.get("/api/sources", function(data) {
+          $.each(data.sources, function(k, v) {
+            streams[v.id] = v;
+            $("#settings-tab-inputs-stream-selection").append(
+              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+              v.name +
+              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
+            );
+          });
+        });
+        $.get("/api/streams", function(data) {
+          $.each(data.streams, function(k, v) {
+            streams[v.id] = v;
+            $("#settings-tab-inputs-stream-selection").append(
+              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+              v.name +
+              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
+            );
+          });
         });
       }
     });
@@ -276,7 +323,7 @@ $(function() {
   /* Delete stream and reload stream list and settings */
   $("#settings-tab-inputs-config").on("click", "#delete", function() {
     $.ajax({
-      url: '/api/streams/' + $(this).data("id"),
+      url: '/api/streams/' + document.getElementById("edit-sid").value,
       type: 'DELETE',
       success: function(data) {
         // Reload stream list and settings
@@ -284,13 +331,25 @@ $(function() {
         $("#settings-tab-inputs-stream-selection").empty();
         $("#settings-tab-inputs-config").html("");
 
-        $.each(data.streams, function(k, v) {
-          streams[v.id] = v;
-          $("#settings-tab-inputs-stream-selection").append(
-            '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-            v.name +
-            ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
-          );
+        $.get("/api/sources", function(data) {
+          $.each(data.sources, function(k, v) {
+            streams[v.id] = v;
+            $("#settings-tab-inputs-stream-selection").append(
+              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+              v.name +
+              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
+            );
+          });
+        });
+        $.get("/api/streams", function(data) {
+          $.each(data.streams, function(k, v) {
+            streams[v.id] = v;
+            $("#settings-tab-inputs-stream-selection").append(
+              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+              v.name +
+              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
+            );
+          });
         });
       }
     });
