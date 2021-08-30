@@ -133,6 +133,11 @@ class _Preamps:
             print('Error: no preamps found')
           break
 
+  def __del__(self):
+    if self.bus:
+      self.bus.close()
+
+
   def reset_preamps(self, bootloader: bool = False):
     """ Resets the preamp board.
         Any slave preamps will be reset one-by-one by the previous preamp.
