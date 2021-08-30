@@ -19,3 +19,68 @@ and operates as a standalone application.
 - Desktop
 - USB Power load
 - Bootload
+
+## AmpliPi Test Check List
+### Individual Boards Tested?
+Verify that each of the following boards in the assembled unit has a tested sticker.
+- [ ] Led:
+  - run `./scripts/built_in_test led`
+  - verify each led works
+    - [ ] Stdby (Red)
+    - [ ] Enabled (Green)
+    - [ ] Zone 1
+    - [ ] Zone 2
+    - [ ] Zone 3
+    - [ ] Zone 4
+    - [ ] Zone 5
+    - [ ] Zone 6
+- [ ] Power (standalone tester)
+- [ ] Preamp
+  - run `./scripts/built_in_test preamp`
+  - verify digital/analog left and rights are played out each zone and preout
+    - [ ] Zone 1
+    - [ ] Zone 2
+    - [ ] Zone 3
+    - [ ] Zone 4
+    - [ ] Zone 5
+    - [ ] Zone 6
+- [ ] Preout
+  - run `./scripts/built_in_test zones`
+  - verify audio is played out each preout left and right
+    - [ ] Preout 1
+    - [ ] Preout 2
+    - [ ] Preout 3
+    - [ ] Preout 4
+    - [ ] Preout 5
+    - [ ] Preout 6
+- [ ] Amplifier
+  - run `./scripts/built_in_test zones`
+  - verify audio is played out each zone left and right
+    - [ ] Zone 1
+    - [ ] Zone 2
+    - [ ] Zone 3
+    - [ ] Zone 4
+    - [ ] Zone 5
+    - [ ] Zone 6
+- [x] Controller (this will be tested in the next step)
+### Assembled Unit
+- [ ] Desktop: Plug in mouse, keyboard, and monitor (1080p@60hz). Verify they all work.
+  - [ ] Mouse
+  - [ ] Keyboard
+  - [ ] Monitor
+- [ ] Ethernet: SSH or webapp
+- [ ] Audio:
+  - run `./scripts/built_in_test preamp`
+  - verify digital/analog left and rights are played out each zone and preout
+    - [ ] Zone 1
+    - [ ] Zone 2
+    - [ ] Zone 3
+    - [ ] Zone 4
+    - [ ] Zone 5
+    - [ ] Zone 6
+    - [ ] Preout 1
+    - [ ] Preout 2
+    - [ ] Preout 3
+    - [ ] Preout 4
+    - [ ] Preout 5
+    - [ ] Preout 6
