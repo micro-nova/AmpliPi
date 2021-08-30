@@ -4,5 +4,7 @@
     "editorconfig.editorconfig",
     "42crunch.vscode-openapi",
     "ms-vscode-remote.remote-ssh",
+    "ms-vscode.cmake-tools",
+    "ms-vscode.cpptools",
   ]
 }
