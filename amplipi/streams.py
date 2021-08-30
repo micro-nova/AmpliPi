@@ -589,7 +589,7 @@ class InternetRadio(BaseStream):
     log_file_path = f'{src_config_folder}/log'
     inetradio_args = [sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
     print(f'running: {inetradio_args}')
-    self.proc = subprocess.Popen(args=inetradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    self.proc = subprocess.Popen(args=inetradio_args, preexec_fn=os.setpgrp)
 
     print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.output_device(src)}')
     self.state = 'playing'
