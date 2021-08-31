@@ -1,5 +1,5 @@
 # Power Board Tester
-This project is implemented using an Arduino Due.
+This project is implemented using an Arduino Due on a custom test rig.
 
 ## Software Setup
 Just like the Preamp Board's STM32 project, here CMake is used to configure
