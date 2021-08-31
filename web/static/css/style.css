@@ -113,6 +113,10 @@ body {
   background: #4a4a4a;
 }
 
+.man_zone, .man_group {
+  background: #c6c8ca;
+}
+
 .add-group {
   background: #3a3a3a;
 }

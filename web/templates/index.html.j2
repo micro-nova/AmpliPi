@@ -132,10 +132,20 @@
           </div>
           <div id="settings-tab-zones" class="tab-pane">
             <div class="card settings">
-              <h6 class="card-header">Zones</h6>
+              <h6 class="card-header">Zone Management</h6>
               <div class="card-body">
-                <div class="text-center">
-                  TODO
+                <div class="row">
+                  <div class="col-sm-4">
+                    <div class="selection">
+                      <ul class="list-group" id="settings-tab-zones-selection" style="cursor: pointer;">
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-sm-8">
+                    <h6 class="card-header">Zone Settings: <span id="settings-tab-zones-title"></span></h6>
+                    <div id="settings-tab-zones-config" style="padding: .75rem 1.25rem;">
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -271,6 +281,8 @@
   <script src="static/js/script.js"></script>
   <!-- Additional local script - Stream Admin TODO: merge into script.js? -->
   <script src='static/js/stream-management.js'></script>
+  <!-- Additional local script - Zone Admin -->
+  <script src='static/js/zone-management.js'></script>
   <!-- UUID CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
   <!-- UUID local fallback -->
