@@ -1,7 +1,12 @@
-/* On page load, get list of current streams */
-$(function() {
-  var streams = [];
-  $.get("/api/sources", function(data) {
+/* Set up the streams array */
+var streams = [];
+
+/* updateSettings clears out the previous API information and shows the current state */
+function updateSettings() {
+  $("#settings-tab-inputs-stream-title").text("Select a stream");
+  $("#settings-tab-inputs-stream-selection").empty();
+  $("#settings-tab-inputs-config").html("");
+  $.get("/api", function(data) {
     $.each(data.sources, function(k, v) {
       streams[v.id] = v;
       $("#settings-tab-inputs-stream-selection").append(
@@ -10,9 +15,6 @@ $(function() {
         ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
       );
     });
-  });
-
-  $.get("/api/streams", function(data) {
     $.each(data.streams, function(k, v) {
       streams[v.id] = v;
       $("#settings-tab-inputs-stream-selection").append(
@@ -22,7 +24,10 @@ $(function() {
       );
     });
   });
+};
 
+/* On page load, get list of current streams */
+$(function() {
   /* Show new stream options */
   $("#settings-tab-inputs-new-stream").click(function(){
     $("#settings-tab-inputs-stream-selection li").removeClass('active'); // De-select "active" stream on the left menu if had been selected
@@ -239,31 +244,7 @@ $(function() {
       url: '/api/stream',
       data: JSON.stringify(formData),
       contentType: "application/json",
-      success: function(result) {
-        $("#settings-tab-inputs-stream-title").text("Select a stream");
-        $("#settings-tab-inputs-stream-selection").empty();
-        $("#settings-tab-inputs-config").html("");
-        $.get("/api/sources", function(data) {
-          $.each(data.sources, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
-            );
-          });
-        });
-        $.get("/api/streams", function(data) {
-          $.each(data.streams, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
-            );
-          });
-        });
-      }
+      success: updateSettings
     });
   });
 
@@ -290,32 +271,7 @@ $(function() {
       url: nurl + $("#edit-sid").val(),
       data: JSON.stringify(formData),
       contentType: "application/json",
-      success: function(data) {
-        $("#settings-tab-inputs-stream-title").text("Select a stream");
-        $("#settings-tab-inputs-stream-selection").empty();
-        $("#settings-tab-inputs-config").html("");
-
-        $.get("/api/sources", function(data) {
-          $.each(data.sources, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
-            );
-          });
-        });
-        $.get("/api/streams", function(data) {
-          $.each(data.streams, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
-            );
-          });
-        });
-      }
+      success: updateSettings
     });
   });
 
@@ -325,33 +281,7 @@ $(function() {
     $.ajax({
       url: '/api/streams/' + document.getElementById("edit-sid").value,
       type: 'DELETE',
-      success: function(data) {
-        // Reload stream list and settings
-        $("#settings-tab-inputs-stream-title").text("Select a stream");
-        $("#settings-tab-inputs-stream-selection").empty();
-        $("#settings-tab-inputs-config").html("");
-
-        $.get("/api/sources", function(data) {
-          $.each(data.sources, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
-            );
-          });
-        });
-        $.get("/api/streams", function(data) {
-          $.each(data.streams, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
-            );
-          });
-        });
-      }
+      success: updateSettings
     });
   });
 

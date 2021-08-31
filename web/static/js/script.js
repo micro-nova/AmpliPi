@@ -78,6 +78,7 @@ $(document).ready(function(){
       $('#' + new_src + '-player')[0].style.display = "block";
     } else {
       $('#settings-sel')[0].style.display = "block";
+      updateSettings();
     }
   });
   setInterval(refresh, 2000);
