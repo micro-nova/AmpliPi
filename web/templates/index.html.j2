@@ -152,10 +152,26 @@
           </div>
           <div id="settings-tab-groups" class="tab-pane">
             <div class="card settings">
-              <h6 class="card-header">Groups</h6>
+              <h6 class="card-header">Group Management</h6>
               <div class="card-body">
-                <div class="text-center">
-                  TODO
+                <div class="row">
+                  <div class="col-sm-4">
+                    <div class="selection">
+                      <ul class="list-group" style="cursor: pointer;">
+                        <li class="list-group-item list-group-item-action list-group-item-success" id="settings-tab-groups-new-group">
+                          Add New Group
+                        </li>
+                      </ul>
+                      <hr />
+                      <ul class="list-group" id="settings-tab-groups-selection" style="cursor: pointer;">
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-sm-8">
+                    <h6 class="card-header">Group Settings: <span id="settings-tab-groups-title"></span></h6>
+                    <div id="settings-tab-groups-config" style="padding: .75rem 1.25rem;">
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -283,6 +299,8 @@
   <script src='static/js/stream-management.js'></script>
   <!-- Additional local script - Zone Admin -->
   <script src='static/js/zone-management.js'></script>
+  <!-- Additional local script - Group Admin -->
+  <script src='static/js/group-management.js'></script>
   <!-- UUID CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
   <!-- UUID local fallback -->
