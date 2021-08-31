@@ -658,13 +658,6 @@ def doc():
   # TODO: add hosted python docs as well
   return FileResponse(f'{TEMPLATE_DIR}/rest-api-doc.html')
 
-# Stream Management
-
-@app.get('/manage', include_in_schema=False)
-def manage():
-  """ Get the Stream Management page """
-  return FileResponse(f'{STATIC_DIR}/stream-management.html')
-
 # Website
 
 @app.get('/', include_in_schema=False)

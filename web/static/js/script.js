@@ -69,6 +69,7 @@ $(document).ready(function(){
       $('#' + old_src + '-input')[0].style.display = "none";
       $('#' + old_src + '-player')[0].style.display = "none";
     } else {
+      // reload the page to keep it up to date with any changes made in settings
       var src = new_src[1];
       window.location.assign('/' + src);
     }
