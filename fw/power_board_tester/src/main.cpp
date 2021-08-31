@@ -25,9 +25,9 @@
  *    +5VD, +12VD
  *    +5VA, +9VA
  * All I2C devices are verified:
- *    MAX11601 (0x64): 4-channel ADC measures HV1 and up to 3 thermistors
+ *    MAX11601 (0x64): 4-channel ADC measures HV1/2 and up to 2 thermistors
  *    MCP23008 (0x21): 8-channel GPIO expander. Currently only GP4/5/7 are used
- *    MCP4017  (0x2F): Digital potentiometer controlling +12VD
+ *    Future: MCP4017  (0x2F): Digital potentiometer controlling +12VD
  * Slave addresses in parenthesis are 7-bit right-aligned, so will be shifted
  * left one bit when sent on the wire.
  *
@@ -36,12 +36,12 @@
  * Hardware required:
  *    Arduino Due
  *    +24V power supply
- *    +24/+12 DC/DC converter
- *    2 1-7k resistors
- *    X RGB LEDs plus any resistors required
+ *    +24/+9 DC/DC converter (using an old power board)
+ *    LCD Display
+ *    33k and 100k resistors
  *
  * Connections
- *  +24V -+-> <24/12 DC/DC> -> Arduino Due barrel jack
+ *  +24V -+-> <24/9 DC/DC> -> Arduino Due barrel jack
  *        |
  *        +-> Power Board J1 Pin 1 and 3
  *
@@ -62,7 +62,7 @@
  *    SCL1        | J2 pin 2: SCL     (out)
  *    SDA1        | J2 pin 3: SDA     (out)
  *    GND         | J2 pin 4: AGND
- *  +-------------+------------------------+ IO
+ *  +-------------+------------------------+ IO (TODO)
  *    2     (out) | J6 pin 1: NTC1
  *    DAC0  (out) | J9 pin 2: DXP1
  *    DAC1  (out) | J9 pin 7: DXP2
@@ -71,46 +71,24 @@
  *    5     (out) | J9 pin 3: TACH1
  *    6     (out) | J9 pin 6: TACH2
  *    A8    (in)  | J9 pin 4: FAN_PWM (out)
- *  +-------------+------------------------+ Status LEDs
- *    23    (out) | LED (+3.3VA_J2)
- *    25    (out) | LED (+3.3VA_J9)
- *    27    (out) | LED (+5VA_J4)
- *    29    (out) | LED (+5VA_J5)
- *    31    (out) | LED (+9VA_J5)
- *    33    (out) | LED (+9VA_J8)
- *    35    (out) | LED (+5VD)
- *    37    (out) | LED (+12VD)
- *    39    (out) | LED (+24V)
- *    41    (out) | LED (Therm1)
- *    43    (out) | LED (Therm2)
- *    45    (out) | LED (Therm3)
- *    47    (out) | LED (FAN_PWM)
- *    49    (out) | LED (I2C Loopback)
  *  +-------------+------------------------+
+ *
+ *    Arduino Due | LCD Screen
+ *  +-------------+------------+
+ *    +3.3V       | VCC
+ *    GND         | GND
+ *    10          | CS
+ *    +3.3V       | RESET
+ *    11          | D/C
+ *    MOSI        | MOSI
+ *    SPCK        | SCK
+ *    +3.3V       | LED
+ *    MISO        | MISO
+ *  +-------------+------------+
  *    * This doesn't independently test all GND connections.
  *      Possibly differential measurements would solve that?
  *
- *  WIP Schematic: (TODO: Protection against shorts on power board)
- *
- *  +---------------------------------+
- *  | +-----------------------------+
- *  | |   _______________________                          ___________________
- *  | |  | PWR      USB     PROG |                        |                   |
- *  | |  |                       |                        |                   |
- *  | |  |=======================|                        |===================|
- *  | |  |          DUE          |                        |    Power Board    |
- *  | |  |=======================|                        |===================|
- *  | |  |                  SCL1 +                        | J2 I2C   Therm J6 |
- *  | +--+ 3.3-----+        SDA1 +                        | J3             J7 |
- *  +----+ GND     |        GND  +                        |                   |
- *       |         |             |                        | J9 Fans           |
- *       |         |             |                        |                   |
- *       |         |             |                        | J4 Power          |
- *       |         +-<1.5k>--SDA +--                      | J5                |
- *       |         |             |                        | J8                |
- *       |         +-<1.5k>--SCL +--                      |                   |
- *       |                       |                        |        +24V in J1 |
- *       |_______________________|                        |___________________|
+ *  TODO: Protection against shorts on power board
  */
 
 #include <Adafruit_ILI9341.h>
