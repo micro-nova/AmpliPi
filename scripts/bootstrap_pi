@@ -1,21 +1,37 @@
 #!/usr/bin/env bash
 # Install AmpliPi from scratch on a new pi compute module
-# This script is mainly intended for MicroNova employees to bringup Pi's. Your AmpliPi device should already have this configuration.
+# This script is mainly intended for MicroNova employees to bringup Pi's.
+# Your AmpliPi device should already have this configuration.
 
-helptext="Usage: bootstrap_pi diskpath [--hostname NAME] [--cli-only] [--debug] [-h|--help]
+helptext="Usage: bootstrap_pi [OPTION]...
 Bootstrap a Raspberry Pi Compute Module for first-time AmpliPi setup.
 
-  --hostname: The hostname to set on the pi, so once this script successfully
-              completes connect via {hostname}.local. Default is amplipi
-  --cli-only: Use the lite version of Raspberry Pi OS which does not have a
-              desktop environment
-  --debug:    Will print all commands to be run and disable cleanup on exit
+  --hostname NAME: The hostname to set on the pi, so once this script
+                   successfully completes connect via {hostname}.local.
+                   Default is amplipi
+  --cli-only:      Use the lite version of Raspberry Pi OS which does not have
+                   a desktop environment
+  --img FILE.img:  Specify a .img file to write to the Pi. This option will not
+                   modify the image contents, so ignores the --cli-only option
+  --no-instr:      Skip printing manual instructions. Pi must already be in
+                   bootloader mode before running this script.
+  --debug:         Prints all commands to be run and disables cleanup on exit
   -h, --help: Print this help text.
 "
 
-hostname='amplipi'
-debug=false
-lite=false
+# Examples
+# With auto-downloaded base Pi image: ./bootstrap_pi --hostname amplipi100
+# With preconfigured image: ./bootstrap_pi --img amplipi_1.4.img --no-instr
+
+# Constants
+write_speed_mb=6    # MB/s write speed to the Pi's EMMC over USB
+
+hostname='amplipi'  # Hostname to set on the Pi
+debug=false         # Enable/disable debugging
+lite=false          # Use non-desktop Pi image...
+img_file=''         # ...or use this image file explicitly
+instructions=true   # Skip manual instruction step
+hostname_only=false # Configure only hostname in root partition
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --hostname)
@@ -27,7 +43,18 @@ while [[ "$#" -gt 0 ]]; do
           exit 1
         fi
       ;;
+    --img)
+        if (($# > 1)); then
+          img_file=$2; shift
+          hostname_only=true
+        else
+          printf "--img requires a second parameter\n\n"
+          printf "$helptext"
+          exit 1
+        fi
+      ;;
     --cli-only) lite=true ;;
+    --no-instr) instructions=false ;;
     --debug) debug=true ;;
     -h|--help) printf "$helptext"; exit 0 ;;
     *)  printf "Unknown parameter passed: $1\n\n"
@@ -80,34 +107,41 @@ cleanup () {
 # trap any errors and CTRL-C
 trap cleanup INT TERM ERR
 
-echo "Downloading Raspberry Pi boot"
-git clone --depth=1 https://github.com/raspberrypi/usbboot
+boot_cmd=rpiboot
+if ! command -v $boot_cmd >/dev/null; then
 
-echo "Installing Raspberry Pi boot"
-pushd usbboot
+  echo "Downloading Raspberry Pi boot"
+  git clone --depth=1 https://github.com/raspberrypi/usbboot
 
-# install dependencies as necessary
-inst=false
-deps="libusb-1.0-0-dev make gcc"
-for dep in $deps; do
-  dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
-done
-if $inst; then
-  sudo apt update
-  sudo apt install $deps
-else
-  sudo echo "sudo permission granted"  # request sudo password now to avoid confusion later
+  echo "Installing Raspberry Pi boot"
+  pushd usbboot
+
+  # install dependencies as necessary
+  inst=false
+  deps="libusb-1.0-0-dev make gcc"
+  for dep in $deps; do
+    dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
+  done
+  if $inst; then
+    sudo apt update
+    sudo apt install $deps
+  else
+    sudo echo "sudo permission granted"  # request sudo password now to avoid confusion later
+  fi
+
+  make
+  boot_cmd=./usbboot/rpiboot
+  popd # usbboot
 fi
 
-make
-
 # instruct user on manual boot process
-echo -e "\nPlug in a usb cable from the service port to your computer. Keep AmpliPi Unplugged / Powered OFF for now."
-read -p "Press any key to continue" -n 1
-echo  # newline
-read -p "Press any key and then plug in the AmpliPi" -n 1
-sudo ./rpiboot
-popd # usbboot
+if $instructions; then
+  echo -e "\nPlug in a usb cable from the service port to your computer. Keep AmpliPi Unplugged / Powered OFF for now."
+  read -p "Press any key to continue" -n 1
+  echo  # newline
+  read -p "Press any key and then plug in the AmpliPi" -n 1
+fi
+sudo $boot_cmd
 
 # wait for the Raspberry Pi to connect
 # it will show up as 0a5c:2764 without usbboot
@@ -126,22 +160,29 @@ if ! $connected; then
   cleanup
 fi
 
-if $lite; then
-  release=2020-08-20-raspios-buster-armhf-lite
-  url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+if [[ -z $img_file ]]; then
+  if $lite; then
+    release=2020-08-20-raspios-buster-armhf-lite
+    url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+  else
+    release=2020-08-20-raspios-buster-armhf
+    url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2020-08-24/$release.zip
+  fi
+  zip_file=$HOME/Downloads/$release.zip
+  if [[ ! -f $zip_file ]]; then
+    echo "Downloading Raspberry Pi OS"
+    wget $url -O $zip_file # save for later
+  fi
+  mkdir $release
+  pushd $release
+  echo "Extracting Raspberry Pi OS"
+  unzip $zip_file
+  popd # $release
+  img_file=$release/$release.img
 else
-  release=2020-08-20-raspios-buster-armhf
-  url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2020-08-24/$release.zip
+  # Delay to ensure Pi disk device has been loaded
+  sleep 1
 fi
-zip_file=$HOME/Downloads/$release.zip
-if [[ ! -f $zip_file ]]; then
-  echo "Downloading Raspberry Pi OS"
-  wget $url -O $zip_file # save for later
-fi
-mkdir $release
-pushd $release
-echo "Extracting Raspberry Pi OS"
-unzip $zip_file
 
 # Check for Raspberry Pi device path
 disk_base_path=/dev/disk/by-id/usb-RPi-MSD
@@ -152,11 +193,14 @@ else
   echo "ERROR: No Raspberry Pi device found at $disk_base_path*"
 fi
 
-$lite && est_time=5 || est_time=10
+img_size_mb=$(du -m $img_file | cut -f1)
+# bc truncates, add 0.5 to round
+est_time=$(echo "$img_size_mb/$write_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
 echo "Copying the image to the AmpliPi. This takes about $est_time minutes."
 echo "Go get a coffee or something :)"
-sudo dd if=$release.img of=$diskpath bs=4MiB status=progress
-popd # $release
+echo "Started at: $(date)"
+sudo dd if=$img_file of=$diskpath bs=4MiB status=progress
+echo "Finished at: $(date)"
 
 # First arg is partition path to mount
 config_boot () {
@@ -174,6 +218,9 @@ config_boot () {
   sudo sed -i $CMDLINE -e "s/console=ttyAMA0,[0-9]\+ //"
   sudo sed -i $CMDLINE -e "s/console=serial0,[0-9]\+ //"
 
+  # Added to cmdline.txt between 'quiet' and 'splash' to resize on next boot
+  #init=/usr/lib/raspi-config/init_resize.sh
+
   popd # /mnt/pi-boot
 }
 
@@ -189,22 +236,24 @@ config_root () {
   # (if you don't it causes a message to be reported after every sudo)
   sudo sed -i'' -e "s/raspberrypi/$hostname/" etc/hosts
 
-  # add pi user manually to dialout group, avoiding an additional restart
-  echo "Adding the pi user to the dialout group"
-  sudo sed -i'' -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' etc/group
+  if ! $hostname_only; then
+    # add pi user manually to dialout group, avoiding an additional restart
+    echo "Adding the pi user to the dialout group"
+    sudo sed -i'' -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' etc/group
 
-  echo "Copying the pi's boot configuration"
-  sudo cp $amplipi_config_dir/boot_config.txt /mnt/pi-boot/config.txt
+    echo "Copying the pi's boot configuration"
+    sudo cp $amplipi_config_dir/boot_config.txt /mnt/pi-boot/config.txt
 
-  # extra config to enable i2c (from do-i2c in raspi-config bash script)
-  BLACKLIST=etc/modprobe.d/raspi-blacklist.conf
-  if ! [ -e $BLACKLIST ]; then
-    sudo touch $BLACKLIST
-  fi
-  sudo sed $BLACKLIST -i -e "s/^\(blacklist[[:space:]]*i2c[-_]bcm2708\)/#\1/"
-  sudo sed etc/modules -i -e "s/^#[[:space:]]*\(i2c[-_]dev\)/\1/"
-  if ! grep -q "^i2c[-_]dev" etc/modules; then
-    printf "i2c-dev\n" | sudo tee -a etc/modules
+    # extra config to enable i2c (from do-i2c in raspi-config bash script)
+    BLACKLIST=etc/modprobe.d/raspi-blacklist.conf
+    if ! [ -e $BLACKLIST ]; then
+      sudo touch $BLACKLIST
+    fi
+    sudo sed $BLACKLIST -i -e "s/^\(blacklist[[:space:]]*i2c[-_]bcm2708\)/#\1/"
+    sudo sed etc/modules -i -e "s/^#[[:space:]]*\(i2c[-_]dev\)/\1/"
+    if ! grep -q "^i2c[-_]dev" etc/modules; then
+      printf "i2c-dev\n" | sudo tee -a etc/modules
+    fi
   fi
 
   popd # /mnt/pi-root
@@ -218,8 +267,10 @@ for i in {1..10}; do
   sleep 0.5
   if ! $boot_part && [ -e $diskpath-part1 ]; then
     boot_part=true
-    echo "Editing boot configuration"
-    config_boot $diskpath-part1
+    if ! $hostname_only; then
+      echo "Editing boot configuration"
+      config_boot $diskpath-part1
+    fi
   fi
   if ! $root_part && [ -e $diskpath-part2 ]; then
     root_part=true
