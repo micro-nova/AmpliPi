@@ -33,9 +33,9 @@ Verify that each of the following boards in the assembled unit has a tested stic
 - [ ] Power (standalone tester)
 - [ ] Preamp
   - run `./scripts/built_in_test preamp`
-  - verify digital/analog left and rights are played out zone 1
+  - verify all digital/analog left and rights are played out zone 1
     - [ ] Zone 1
-  - verify digital or analog left and rights are played out the rest of the zones
+  - verify all digital or analog left and rights are played out the rest of the zones
     - [ ] Zone 2
     - [ ] Zone 3
     - [ ] Zone 4
@@ -75,13 +75,15 @@ Verify that each of the following boards in the assembled unit has a tested stic
   - verify audio is played out each zone (left and right channels)
 - [ ] Audio:
   - run `./scripts/built_in_test preamp`
-  - verify digital/analog left and rights are played out each zone and preout
+  - verify all digital/analog left and rights are played out zone 1
     - [ ] Zone 1
+  - verify all digital or analog left and rights are played out the rest of the zones
     - [ ] Zone 2
     - [ ] Zone 3
     - [ ] Zone 4
     - [ ] Zone 5
     - [ ] Zone 6
+  - verify left and rights are played out each preout
     - [ ] Preout 1
     - [ ] Preout 2
     - [ ] Preout 3
