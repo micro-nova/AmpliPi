@@ -64,7 +64,8 @@ $(function() {
           </div>
           <div class="form-group">
             <label for="user">Pandora Station ID</label>
-            <input type="text" class="form-control" name="station" data-required="true">
+            <input type="text" class="form-control" name="station" aria-describedby="stationHelp" data-required="true">
+            <small id="stationHelp" class="form-text text-muted">Station ID is the numeric section of a Pandora station link. Example: ID = <b>4610303469018478727</b> from https://www.pandora.com/station/play/<b>4610303469018478727</b></small>
           </div>
         </div>
 
@@ -95,7 +96,7 @@ $(function() {
 
         <div id="plexamp_settings" class="addl_settings" style="display:none;">
           <div class="form-group">
-            <small id="plexHelp" class="form-text text-muted">Click the 'Request Authentication' button to open a Plex authorization page. Signing into Plex will generate a UUID and Token</small>
+            <small id="plexHelp" class="form-text" style="color: #dee2e6">Click the 'Request Authentication' button to open a Plex authorization page. Signing into Plex will generate a UUID and Token</small>
           </div>
           <div class="form-group">
             <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
