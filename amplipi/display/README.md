@@ -37,7 +37,7 @@ Verify that each of the following boards in the assembled unit has a tested stic
 - [ ] Power (standalone tester)
 - [ ] Preamp
   - run `./scripts/built_in_test preamp`
-  - verify digital/analog left and rights are played out each zone and preout
+  - verify digital/analog left and rights are played out each zone
     - [ ] Zone 1
     - [ ] Zone 2
     - [ ] Zone 3
@@ -46,7 +46,7 @@ Verify that each of the following boards in the assembled unit has a tested stic
     - [ ] Zone 6
 - [ ] Preout
   - run `./scripts/built_in_test zones`
-  - verify audio is played out each preout left and right
+  - verify audio is played out each preout (left and right channels)
     - [ ] Preout 1
     - [ ] Preout 2
     - [ ] Preout 3
@@ -55,7 +55,7 @@ Verify that each of the following boards in the assembled unit has a tested stic
     - [ ] Preout 6
 - [ ] Amplifier
   - run `./scripts/built_in_test zones`
-  - verify audio is played out each zone left and right
+  - verify audio is played out each zone (left and right channels)
     - [ ] Zone 1
     - [ ] Zone 2
     - [ ] Zone 3
@@ -68,7 +68,14 @@ Verify that each of the following boards in the assembled unit has a tested stic
   - [ ] Mouse
   - [ ] Keyboard
   - [ ] Monitor
-- [ ] Ethernet: SSH or webapp
+- [ ] Ethernet: SSH or use webapp to connect to AmpliPi
+- [ ] Aux inputs
+  - Optical In
+    - run `./scripts/built_in_test zones`
+    - verify audio is played out each zone (left and right channels)
+  - Aux In
+  - run `./scripts/built_in_test zones`
+  - verify audio is played out each zone (left and right channels)
 - [ ] Audio:
   - run `./scripts/built_in_test preamp`
   - verify digital/analog left and rights are played out each zone and preout
@@ -84,3 +91,6 @@ Verify that each of the following boards in the assembled unit has a tested stic
     - [ ] Preout 4
     - [ ] Preout 5
     - [ ] Preout 6
+- [ ] TFT Display (does it show AmpliPi state?)
+- [ ] Fans
+  - Heat up the amplifier board, ensure the fans turn on
