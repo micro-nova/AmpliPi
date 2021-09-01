@@ -171,6 +171,29 @@ def loop_test(client: Client, test_name: str):
   except:
     pass
 
+def preamp_test(ap1: Client):
+  """ Test the preamp board's audio, playing 8 different audio sources then looping """
+  ap2 = Client('http://aptestanalog.local/api') # we use a second **special** amplipi instance to mux the analog audio
+  analog_tester_avail = ap2.available()
+  status = ap1.get_status()
+  if status is None:
+    print('failed to get AmpliPi status')
+    sys.exit(1)
+  presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
+  if not analog_tester_avail:
+    print('No analog tester available, only able to test digital inputs')
+  announcements = [models.Announcement(source_id=src, media=f'web/static/audio/{t}{src+1}.mp3', vol=-25) for t in ['analog', 'digital'] for src in range(4)]
+  while True:
+    # TODO: add a reset here and attempt to program fw if missing/outdated fw version
+    for msg in announcements:
+      if 'analog' in msg.media:
+        if analog_tester_avail:
+          pst = presets[msg.source_id]
+          if pst.id is not None:
+            ap1.load_preset(pst.id)
+            ap2.announce(msg)
+      else:
+        ap1.announce(msg)
 
 if __name__ == '__main__':
 
@@ -185,28 +208,9 @@ if __name__ == '__main__':
     if not ap.available():
       print('Unable to connect to local AmpliPi production (port 80) or development (port 5000) servers. Please check if AmpliPi is running and try again.')
       sys.exit(1)
-  apt = Client('http://aptestanalog.local/api')
 
   setup(ap)
   if args.test == 'preamp':
-    analog_tester_avail = apt.available()
-    status = ap.get_status()
-    if status is None:
-      print('failed to get AmpliPi status')
-      sys.exit(1)
-    presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
-    if not analog_tester_avail:
-      print('No analog tester available, only able to test digital inputs')
-    announcements = [models.Announcement(source_id=src, media=f'web/static/audio/{t}{src+1}.{side}.wav', vol=-25) for t in ['analog', 'digital'] for src in range(4) for side in ['left', 'right']]
-    while True:
-      for a in announcements:
-        if 'analog' in a.media:
-          if analog_tester_avail:
-            pst = presets[a.source_id]
-            if pst.id is not None:
-              ap.load_preset(pst.id)
-              apt.announce(a)
-        else:
-          ap.announce(a)
+    preamp_test(ap)
   else:
     loop_test(ap, args.test)
