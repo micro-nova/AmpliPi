@@ -182,18 +182,20 @@ def preamp_test(ap1: Client):
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
   if not analog_tester_avail:
     print('No analog tester available, only able to test digital inputs')
-  announcements = [models.Announcement(source_id=src, media=f'web/static/audio/{t}{src+1}.mp3', vol=-25) for t in ['analog', 'digital'] for src in range(4)]
+  digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-20) for src in range(4)]
+  analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3', vol=-25) for src in range(4)]
   while True:
     # TODO: add a reset here and attempt to program fw if missing/outdated fw version
-    for msg in announcements:
-      if 'analog' in msg.media:
-        if analog_tester_avail:
-          pst = presets[msg.source_id]
-          if pst.id is not None:
-            ap1.load_preset(pst.id)
-            ap2.announce(msg)
-      else:
-        ap1.announce(msg)
+    if analog_tester_avail:
+      for msg in analog_msgs:
+        pst = presets[msg.source_id]
+        if pst.id is not None:
+          # analog X -> All Zones
+          ap1.load_preset(pst.id)
+          # play analog announcement on other amplipi (its four source outputs are connected to ap1's analog inputs)
+          ap2.announce(msg)
+    for msg in digital_msgs:
+      ap1.announce(msg)
 
 if __name__ == '__main__':
 
