@@ -123,10 +123,8 @@ body {
   box-shadow: 6px 7px 19px 6px #000000;
 }
 
-#settings-header {
-  color: lightgrey;
-  margin-top: -8px;
-  margin-bottom: -10px;
+#settings-sel {
+  margin-top: -20px; /* Line up the settings bar*/
 }
 
 #micronova img {
