@@ -1,17 +1,9 @@
-/* On page load, get list of zones */
-$(function() {
-  var zones = [];
-  $.get("/api/zones", function(data) {
-    $.each(data.zones, function(k, v) {
-      zones[v.id] = v;
-      $("#settings-tab-zones-selection").append(
-        '<li class="list-group-item list-group-item-action list-group-item-dark man_zone" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-        v.name +
-        ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + (v.disabled ? 'disabled' : '') + '</span>'
-      );
-    });
-  });
+/* Need to set up arrays that hold API data */
+var zones = [];
+var streams = [];
+var groups = [];
 
+$(function() {
   /* Show selected zone settings */
   $("#settings-tab-zones-selection").on("click", ".man_zone", function() {
     $('#settings-tab-zones-selection li').removeClass('active');
@@ -28,9 +20,10 @@ $(function() {
           <input type="text" class="form-control" name="name" value="${z.name}" data-required="true">
         </div>
         <div class="form-group">
-          <label for="disabled">Disabled?</label>
-          <input type="text" class="form-control" name="disabled" aria-describedby="disHelp" value="${z.disabled}" data-required="true">
-          <small id="disHelp" class="form-text text-muted">Enter 'true' to disable the Zone; enter 'false' to enable it.</small>
+          <input type="hidden" value="false" name="disabled">
+          <input type="checkbox" id="disabled_state" name="disabled" value="true"${z.disabled ? " checked" : ""}>
+          <label for="disabled_state">Disabled?</label>
+          <small id="disHelp" class="form-text text-muted">Disabling a zone removes its mute and volume controls. A zone should be disabled if it isn't going to be used, or has no speakers connected to it</small>
         </div>
       `;
 
@@ -41,11 +34,6 @@ $(function() {
       `;
     $("#settings-tab-zones-config").html(html);
   });
-
-  /* Show selected zone settings */
-  // $("#settings-tab-zones-config").on("click", "#new_type", function() {
-  //   /* Do I need this for something? */
-  // });
 
   /* Save zone changes and reload page */
   $("#settings-tab-zones-config").on("submit", "#editZoneForm", function(e) {
@@ -64,22 +52,7 @@ $(function() {
       url: '/api/zones/' + $("#edit-zid").val(),
       data: JSON.stringify(formData),
       contentType: "application/json",
-      success: function(data) {
-        $("#settings-tab-zones-title").text("Select a zone");
-        $("#settings-tab-zones-selection").empty();
-        $("#settings-tab-zones-config").html("");
-
-        $.get("/api/zones", function(data) {
-          $.each(data.zones, function(k, v) {
-            zones[v.id] = v;
-            $("#settings-tab-zones-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark man_zone" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + (v.disabled ? 'disabled' : '') + '</span>'
-            );
-          });
-        });
-      }
+      success: updateSettings
     });
   });
 

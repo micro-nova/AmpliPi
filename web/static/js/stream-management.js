@@ -1,11 +1,16 @@
-/* Set up the streams array */
+/* Set up the necessary arrays */
 var streams = [];
+var zones = [];
+var groups = [];
 
 /* updateSettings clears out the previous API information and shows the current state */
 function updateSettings() {
   $("#settings-tab-inputs-stream-title").text("Select a stream");
   $("#settings-tab-inputs-stream-selection").empty();
   $("#settings-tab-inputs-config").html("");
+  $("#settings-tab-zones-title").text("Select a zone");
+  $("#settings-tab-zones-selection").empty();
+  $("#settings-tab-zones-config").html("");
   $.get("/api", function(data) {
     $.each(data.sources, function(k, v) {
       streams[v.id] = v;
@@ -21,6 +26,14 @@ function updateSettings() {
         '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
         v.name +
         ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
+      );
+    });
+    $.each(data.zones, function(k, v) {
+      zones[v.id] = v;
+      $("#settings-tab-zones-selection").append(
+        '<li class="list-group-item list-group-item-action list-group-item-dark man_zone" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+        v.name +
+        ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + (v.disabled ? 'disabled' : '') + '</span>'
       );
     });
   });
