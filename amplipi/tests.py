@@ -171,6 +171,15 @@ def loop_test(client: Client, test_name: str):
   except:
     pass
 
+def inputs_test(ap1: Client):
+  """ Test the controller boards Aux and Optical inputs """
+  # TODO: select the correct input on this device
+  # Aux: `amixer -c 2 set "PCM Capture Source" "Line In"`
+  # Optical: `amixer -c 2 set "PCM Capture Source" "IEC958 In"`
+  # TODO: add file player that plays the input alsa://plughw:2,0
+  # TODO: have aptestanalog play announcement on ch3 (if aux) or ch0 if Optical
+  pass
+
 def preamp_test(ap1: Client):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
   ap2 = Client('http://aptestanalog.local/api') # we use a second **special** amplipi instance to mux the analog audio
