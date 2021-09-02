@@ -1,35 +1,29 @@
-/* On page load, get list of current groups and zones */
+/* Set up the necessary arrays and populate them */
+var streams = [];
+var zones = [];
+var groups = [];
+updateSettings();
+
+/* Main function "on load" */
 $(function() {
-  var groups = [];
-  $.get("/api/groups", function(data) {
-    $.each(data.groups, function(k, v) {
-      groups[v.id] = v;
-      $("#settings-tab-groups-selection").append(
-        '<li class="list-group-item list-group-item-action list-group-item-dark man_group" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-        v.name
-      );
-    });
-  });
-
-  var zones = [];
-  $.get("/api/zones", function(data) {
-    $.each(data.zones, function(k, v) {
-      zones[v.id] = v;
-    });
-  });
-
   /* Show new group options */
   $("#settings-tab-groups-new-group").click(function(){
     $("#settings-tab-groups-selection li").removeClass('active'); // De-select "active" group on the left menu if had been selected
     $(this).addClass('active');
     $("#settings-tab-groups-title").text("Add a new group to AmpliPi");
+    var zone_html = "";
+
+    for (const zone in zones) {
+      zone_html = zone_html.concat(`Yo dawg, zone${zone} is named ${zones[zone].name}\n`)
+    }
+
     var html = `
       <form id="settings-tab-groups-new-group-form">
         <div class="form-group">
           <label for="name">Group Name</label>
           <input type="text" class="form-control" name="name" id="grp_name" data-required="true">
         </div>
-
+        ${zone_html}
         <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Group</button>
         <small id="submitHelp" class="form-text text-muted"></small>
       </form>
@@ -44,83 +38,17 @@ $(function() {
     $(this).addClass('active');
     var g = groups[$(this).data("id")];
     console.log(g)
-///////////////////////////////TODO BELOW THIS LINE////////////////////////
     $("#settings-tab-groups-title").text(g.name);
     var html = `
-      <input type="hidden" id="edit-sid" name="id" value="${s.id}">
-      <form id="editStreamForm">
+      <input type="hidden" id="edit-gid" name="id" value="${g.id}">
+      <form id="editGroupForm">
         <div class="form-group">
-          <label for="name">Stream Name</label>
-          <input type="text" class="form-control" name="name" value="${s.name}" data-required="true">
+          <label for="name">Group Name</label>
+          <input type="text" class="form-control" name="name" value="${g.name}" data-required="true">
         </div>
       `;
 
-      if (s.type == "pandora") {
-        html += `
-        <div class="form-group">
-          <label for="user">Pandora Username</label>
-          <input type="text" class="form-control" name="user" value="${s.user}" data-required="true">
-        </div>
-        <div class="form-group">
-          <label for="user">Pandora Password</label>
-          <input type="password" class="form-control" name="password" value="${s.password}" data-required="true">
-        </div>
-        <div class="form-group">
-          <label for="user">Pandora Station ID</label>
-          <input type="text" class="form-control" name="station" value="${s.station}" data-required="true">
-        </div>
-        `;
-      }
-
-      if (s.type == "internetradio") {
-        html += `
-        <div class="form-group">
-          <label for="user">Station Audio URL</label>
-          <input type="text" class="form-control" name="url" value="${s.url}" aria-describedby="urlHelp" data-required="true">
-          <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
-        </div>
-        <div class="form-group">
-          <label for="user">Station Logo</label>
-          <input type="text" class="form-control" name="logo" value="${s.logo}">
-        </div>
-        `;
-      }
-
-      if (s.type == "fmradio") {
-        html += `
-        <div class="form-group">
-          <label for="user">FM Frequency</label>
-          <input type="text" class="form-control" name="freq" value="${s.freq}" aria-describedby="freqHelp" data-required="true">
-          <small id="freqHelp" class="form-text text-muted">Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.</small>
-        </div>
-        <div class="form-group">
-          <label for="user">Station Logo</label>XS
-          <input type="text" class="form-control" name="logo" value="${s.logo}" aria-describedby="logoHelp">
-          <small id="logoHelp" class="form-text text-muted">Default built-in logo is: static/imgs/fmradio.png</small>
-        </div>
-        `;
-      }
-
-      if (s.type == "plexamp") {
-        html += `
-        <div class="form-group">
-          <label for="user">UUID</label>
-          <input type="text" class="form-control" name="client_id" id="client_id" aria-describedby="uuidHelp" value="${s.client_id}" data-required="true" readonly>
-          <small id="uuidHelp" class="form-text text-muted">Click the 'Request Authentication' button to input your Plex credentials, generating a UUID and Token</small>
-        </div>
-        <div class="form-group">
-          <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
-          <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
-          <button class="btn btn-primary" onclick="window.location.reload();" style="display: none" id="plexamp-done"></button>
-        </div>
-        <div class="form-group">
-          <label for="user">Authentication Token</label>
-          <input type="text" class="form-control" name="token" id="token" aria-describedby="authHelp" value="${s.token}" data-required="true" readonly>
-          <small id="authHelp" class="form-text text-muted">UUID and authToken will be provided after signing into your Plex account</small>
-        </div>
-        `;
-      }
-
+//////////////////////////////////////
       if (s.type == null) {
         del = '<button type="button" class="btn btn-danger" style="display:none" id="delete" data-id="${s.id}">Delete Stream</button>'
       } else {

@@ -22,7 +22,7 @@ $(function() {
         <div class="form-group">
           <input type="hidden" value="false" name="disabled">
           <input type="checkbox" id="disabled_state" name="disabled" value="true"${z.disabled ? " checked" : ""}>
-          <label for="disabled_state">Disabled?</label>
+          <label for="disabled_state">Disabled</label>
           <small id="disHelp" class="form-text text-muted">Disabling a zone removes its mute and volume controls. A zone should be disabled if it isn't going to be used, or has no speakers connected to it</small>
         </div>
       `;

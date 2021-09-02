@@ -36,6 +36,13 @@ function updateSettings() {
         ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + (v.disabled ? 'disabled' : '') + '</span>'
       );
     });
+    $.each(data.groups, function(k, v) {
+      groups[v.id] = v;
+      $("#settings-tab-groups-selection").append(
+        '<li class="list-group-item list-group-item-action list-group-item-dark man_group" style="vertical-align: bottom;" data-id="' + v.id + '">' +
+        v.name
+      );
+    });
   });
 };
 
