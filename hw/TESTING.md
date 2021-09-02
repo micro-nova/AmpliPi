@@ -90,6 +90,8 @@ Verify that each of the following boards in the assembled unit has a tested stic
     - [ ] Preout 4
     - [ ] Preout 5
     - [ ] Preout 6
-- [ ] TFT Display (does it show AmpliPi state?)
+- [ ] TFT Display
+    - [ ] Verify AmpliPi state is shown
+    - [ ] Run `./hw/tests/display.bash` and verify test passes
 - [ ] Fans
   - Heat up the amplifier board, ensure the fans turn on
