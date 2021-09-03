@@ -217,6 +217,21 @@ def _install_python_deps(env: dict, deps: List[str]):
     os.chdir(last_dir)
   return tasks
 
+def _add_desktop_icon(env, name, command):
+  """ Add a desktop icon to the pi """
+  entry = f"""[Desktop Entry]
+Name={name}
+Comment=My comment
+Icon=/usr/share/pixmaps/openbox.xpm
+Exec=lxterminal -t "{name}" --working-directory={env["base_dir"]} -e {command}
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=None;
+"""
+  with open('/home/pi/Desktop/', 'w') as icon:
+    icon.write(entry)
+
 def _web_service(directory: str):
   return f"""\
 [Unit]
