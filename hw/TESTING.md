@@ -65,7 +65,7 @@ Verify that each of the following boards in the assembled unit has a tested stic
   - [ ] Mouse
   - [ ] Keyboard
   - [ ] Monitor
-- [ ] Ethernet: SSH or use webapp to connect to AmpliPi
+- [ ] Ethernet: Run `./hw/tests/ethernet.bash` and verify test passes
 - [ ] Aux inputs
   - Optical In
     - run `./scripts/built_in_test zones`
