@@ -62,8 +62,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'spotify' : {
     'script' :  [
-      'curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
-      'tar --directory streams -xvf streams/vollibrespot.tar.xz',
+      'if [ ! -e "streams/vollibrespot" ] ; then',
+      '  curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
+      '  tar --directory streams -xvf streams/vollibrespot.tar.xz',
+      'fi',
+      'rm streams/vollibrespot.tar.xz',
     ]
   }
 }
