@@ -18,6 +18,7 @@ from enum import Enum
 from time import sleep
 from typing import Optional
 import sys
+import subprocess
 import argparse
 import requests
 
@@ -85,6 +86,13 @@ BEATLES_RADIO = {
   "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"
 }
 
+EXTRA_INPUTS_PLAYBACK = {
+  'id': 1002,
+  'name': 'Input Playback',
+  'type': "fileplayer",
+  'url': "alsa://plughw:2,0",
+}
+
 def pst_all_zones_to_src(name: str, src: int, input: str, vol=-50):
   return {
     'name': name,
@@ -143,12 +151,14 @@ PRESETS = [
 PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -20) for src in range(4)]
 
 def setup(client: Client):
+  prev_cfg = client.get_status()
   """ Configure AmpliPi for testing by loading a simple known configuration """
-  client.load_config(models.Status(streams=[BEATLES_RADIO]))
+  client.load_config(models.Status(streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
   for pst in PRESETS:
     client.create_preset(models.Preset(**pst))
   print('waiting for config file to be written')
   sleep(6)
+  return prev_cfg
 
 def loop_test(client: Client, test_name: str):
   """ Loop a test over and over """
@@ -171,18 +181,49 @@ def loop_test(client: Client, test_name: str):
   except:
     pass
 
+def get_analog_tester_client():
+  """ Get the second **special** amplipi instance available on MicroNova's network
+     We use this to drive an AmpliPi under test's audio inputs (analog1-4, aux, optical) """
+  return Client('http://aptestanalog.local/api')
+
 def inputs_test(ap1: Client):
   """ Test the controller boards Aux and Optical inputs """
-  # TODO: select the correct input on this device
-  # Aux: `amixer -c 2 set "PCM Capture Source" "Line In"`
-  # Optical: `amixer -c 2 set "PCM Capture Source" "IEC958 In"`
-  # TODO: add file player that plays the input alsa://plughw:2,0
-  # TODO: have aptestanalog play announcement on ch3 (if aux) or ch0 if Optical
-  pass
+  ap2 = get_analog_tester_client()
+  analog_tester_avail = ap2.available()
+  if not analog_tester_avail:
+    print('No analog tester available, please manually connect audio to the aux and optical inputs')
+  status = ap1.get_status()
+  if status is None:
+    print('failed to get AmpliPi status')
+    sys.exit(1)
+  # reuse the preamp analog presets, should be ordered sequentially by source 0-3
+  presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
+
+  # select the Aux input on this device and play audio through it to all zones
+  subprocess.check_call(['amixer', '-c', '2', 'set', "PCM Capture Source", "Line In"])
+  # connect all zones to ch3
+  if presets[3].id is not None:
+    ap1.load_preset(presets[3].id)
+    if not analog_tester_avail:
+      sleep(5)
+    else:
+      ap2.announce(models.Announcement(source_id=3, media=f'web/static/audio/aux_in.mp3', vol=-25))
+
+# select the Optical input on this device and play audio through it to all zones
+  subprocess.check_call(['amixer', '-c', '2', 'set', "PCM Capture Source", "IEC958 In"])
+  # connect all zones to ch0
+  if presets[0].id is not None:
+    ap1.load_preset(presets[0].id)
+    if not analog_tester_avail:
+      sleep(5)
+    else:
+      ap2.announce(models.Announcement(source_id=0, media=f'web/static/audio/optical_in.mp3', vol=-25))
+
+
 
 def preamp_test(ap1: Client):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
-  ap2 = Client('http://aptestanalog.local/api') # we use a second **special** amplipi instance to mux the analog audio
+  ap2 = get_analog_tester_client()
   analog_tester_avail = ap2.available()
   status = ap1.get_status()
   if status is None:
@@ -209,10 +250,10 @@ def preamp_test(ap1: Client):
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser('Test audio functionality')
-  parser.add_argument('test', help='Test to run (led,zones,preamp)')
+  parser.add_argument('test', help='Test to run (led,zones,preamp,inputs)')
   args = parser.parse_args()
 
-  print('configuring amplipi for testing (TODO: unconfigure it when done!)')
+  print('configuring amplipi for testing')
   ap = Client('http://localhost/api')
   if not ap.available():
     ap = Client('http://localhost:5000/api')
@@ -220,8 +261,14 @@ if __name__ == '__main__':
       print('Unable to connect to local AmpliPi production (port 80) or development (port 5000) servers. Please check if AmpliPi is running and try again.')
       sys.exit(1)
 
-  setup(ap)
-  if args.test == 'preamp':
-    preamp_test(ap)
-  else:
-    loop_test(ap, args.test)
+  old_config = setup(ap)
+  try:
+    if args.test == 'preamp':
+      preamp_test(ap)
+    elif args.test == 'inputs':
+      inputs_test(ap)
+    else:
+      loop_test(ap, args.test)
+  except InterruptedError:
+    print('restoring previous configuration')
+    ap.load_config(old_config)
