@@ -149,6 +149,7 @@ PRESETS = [
 ]
 
 PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -20) for src in range(4)]
+PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -20)]
 
 def setup(client: Client):
   prev_cfg = client.get_status()
@@ -169,17 +170,14 @@ def loop_test(client: Client, test_name: str):
   if len(stages) == 0:
     print(f"test '{test_name}' not found")
     return
-  print(f"Running test '{test_name}'. Press Ctrl-C to stop.")
-  try:
-    while True:
-      for stage in stages:
-        if stage.id is not None: # placate the typechecker
-          client.load_preset(stage.id)
-      sleep(1)
-      if test_name == 'led':
-        client.reset() # reset amplipi since fw can lock up during unplugging/plugging in led board
-  except:
-    pass
+  while True:
+    for stage in stages:
+      if stage.id is not None: # placate the typechecker
+        client.load_preset(stage.id)
+    sleep(1)
+    if test_name == 'led':
+      client.reset() # reset amplipi since fw can lock up during unplugging/plugging in led board
+
 
 def get_analog_tester_client():
   """ Get the second **special** amplipi instance available on MicroNova's network
@@ -196,24 +194,32 @@ def inputs_test(ap1: Client):
   if status is None:
     print('failed to get AmpliPi status')
     sys.exit(1)
-  # reuse the preamp analog presets, should be ordered sequentially by source 0-3
-  presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
+  preset = [pst for pst in status.presets if pst.name == 'inputs-in'][0]
 
-  # select the Aux input on this device and play audio through it to all zones
-  subprocess.check_call(['amixer', '-c', '2', 'set', "PCM Capture Source", "Line In"])
-  # connect all zones to ch3
-  if presets[3].id is not None:
-    ap1.load_preset(presets[3].id)
+  if not preset.id:
+    print('Preset id not available')
+    sys.exit(1)
+
+  print("""
+  Alternating between outputting Optical and Aux left and right audio
+
+  - Verify that both Auxillary and Optical In left and right channels are announced out the speaker
+  """)
+
+  while True:
+    # select the Aux input on this device and play audio through it to all zones
+    subprocess.check_call(['amixer', '-c', '2', 'set', "PCM Capture Source", "Line"], stdout=subprocess.DEVNULL)
+    # connect all zones to ch3
+    ap1.load_preset(preset.id)
     if not analog_tester_avail:
       sleep(5)
     else:
       ap2.announce(models.Announcement(source_id=3, media=f'web/static/audio/aux_in.mp3', vol=-25))
 
-# select the Optical input on this device and play audio through it to all zones
-  subprocess.check_call(['amixer', '-c', '2', 'set', "PCM Capture Source", "IEC958 In"])
-  # connect all zones to ch0
-  if presets[0].id is not None:
-    ap1.load_preset(presets[0].id)
+    # select the Optical input on this device and play audio through it to all zones
+    subprocess.check_call(['amixer', '-c', '2', 'set', "PCM Capture Source", "IEC958 In"], stdout=subprocess.DEVNULL)
+    # connect all zones to ch0
+    ap1.load_preset(preset.id)
     if not analog_tester_avail:
       sleep(5)
     else:
@@ -249,8 +255,10 @@ def preamp_test(ap1: Client):
 
 if __name__ == '__main__':
 
+  tests = ['led', 'zones', 'preamp', 'inputs']
+
   parser = argparse.ArgumentParser('Test audio functionality')
-  parser.add_argument('test', help='Test to run (led,zones,preamp,inputs)')
+  parser.add_argument('test', help=f'Test to run ({tests})')
   args = parser.parse_args()
 
   print('configuring amplipi for testing')
@@ -260,15 +268,24 @@ if __name__ == '__main__':
     if not ap.available():
       print('Unable to connect to local AmpliPi production (port 80) or development (port 5000) servers. Please check if AmpliPi is running and try again.')
       sys.exit(1)
+  if args.test not in tests:
+    print(f'Test "{args.test}" is not available. Please pick one of {tests}')
+    sys.exit(1)
 
   old_config = setup(ap)
   try:
+    print(f"Running test '{args.test}'. Press Ctrl-C to stop.")
     if args.test == 'preamp':
       preamp_test(ap)
     elif args.test == 'inputs':
       inputs_test(ap)
     else:
       loop_test(ap, args.test)
-  except InterruptedError:
-    print('restoring previous configuration')
-    ap.load_config(old_config)
+  except KeyboardInterrupt:
+    try:
+      if ap.available() and ap.load_config(old_config):
+        print('\nRestored previous configuration.')
+      else:
+        print('\nFailed to restore configuration. Left in testing state.')
+    except:
+      print('\nError restoring configuration. Left in testing state.')
