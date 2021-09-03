@@ -1,0 +1,20 @@
+[submodule "fw/sam/arduinosam"]
+  path = fw/sam/arduinosam
+  url = https://github.com/arduino/ArduinoCore-sam.git
+  branch = master
+[submodule "fw/sam/bossa"]
+  path = fw/sam/bossa
+  url = https://github.com/mike-kfed/BOSSA.git
+  branch = eefc_wait
+[submodule "fw/sam/libraries/adafruit_ili9341"]
+  path = fw/sam/libraries/adafruit_ili9341
+  url = https://github.com/adafruit/Adafruit_ILI9341.git
+  branch = 1.5.9
+[submodule "fw/sam/libraries/adafruit-gfx-library"]
+  path = fw/sam/libraries/adafruit-gfx-library
+  url = https://github.com/adafruit/Adafruit-GFX-Library.git
+  branch = 1.10.10
+[submodule "fw/sam/libraries/adafruit_busio"]
+  path = fw/sam/libraries/adafruit_busio
+  url = https://github.com/adafruit/Adafruit_BusIO.git
+  branch = 1.9.0

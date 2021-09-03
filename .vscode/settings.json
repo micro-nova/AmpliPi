@@ -17,5 +17,8 @@
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
     "**/venv/lib/**": true
+  },
+  "[cpp]": {
+    "editor.formatOnSave": true
   }
 }

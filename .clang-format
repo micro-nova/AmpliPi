@@ -1,0 +1,6 @@
+BasedOnStyle: Google
+
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveMacros: AcrossComments
+AllowShortEnumsOnASingleLine: false
