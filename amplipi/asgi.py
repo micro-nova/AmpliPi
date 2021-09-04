@@ -22,9 +22,18 @@ This initializes the webapplication found in app.py.
 """
 
 import os
+from multiprocessing import Process, Queue
 import amplipi.app
 
-mock_ctrl = os.environ.get('MOCK_CTRL', 'False').lower() == 'true'
-mock_streams = os.environ.get('MOCK_STREAMS', 'False').lower() == 'true'
+MOCK_CTRL = os.environ.get('MOCK_CTRL', 'False').lower() == 'true'
+MOCK_STREAMS = os.environ.get('MOCK_STREAMS', 'False').lower() == 'true'
+# we need the port for zeroconf advertisement, assume the default port 80.
+# When debugginq this will need to be set to 5000!
+PORT = int(os.environ.get('WEB_PORT', '80'))
 
-application = amplipi.app.create_app(delay_saves=True, mock_ctrl=mock_ctrl, mock_streams=mock_streams)
+application = amplipi.app.create_app(delay_saves=True, mock_ctrl=MOCK_CTRL, mock_streams=MOCK_STREAMS)
+
+# advertise the service here, to avoid adding bloat to underlying app, especially for test startup
+# this needs to be done as a separate process to avoid interfering with webserver (ZeroConf makes its own event loop)
+zc_reg = Process(target=amplipi.app.advertise_service, args=(PORT, Queue())) # TODO: unregister zeroconf on shutdown?
+zc_reg.start()

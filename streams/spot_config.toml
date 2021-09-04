@@ -1,0 +1,16 @@
+# Default configuration settings for Vollibrespot
+# This template file will be updated as streams are connected
+[Authentication]
+device-name = 'AmpliPi_TEMPLATE'
+
+[Playback] # required heading, we use system defaults
+
+[Output]
+device = 'ch' # ch0-ch3 are accepted
+initial-volume = 100
+backend = 'alsa'
+
+[Misc]
+disable-audio-cache = true  # Cache audio files (relies on local system for cleanup!)
+cache-location = '/tmp'     # Path to cache
+metadata-port = 5030

@@ -39,19 +39,33 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'vlc' ]
   },
   'dlna' : {
-    'apt' : [ 'uuid-runtime' ] # TODO: Need gmrender-resurrect binary
+    'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
+              'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
+              'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
+              'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git' ],
+    'script' : [
+      'if [ ! -d "gmrender-resurrect" ] ; then',
+      '  git clone https://github.com/hzeller/gmrender-resurrect.git gmrender-resurrect',
+      '  cd gmrender-resurrect',
+      'else',
+      '  cd gmrender-resurrect',
+      '  git pull https://github.com/hzeller/gmrender-resurrect.git',
+      'fi',
+      './autogen.sh',
+      './configure',
+      'make',
+      'sudo make install',
+    ],
   },
-  # 'plexamp' : {
-  #   'apt' : [ 'nodejs=9.11.2-1nodesource1' ] #TODO: Need plexamplipi tarball install
-  # },
-  # TODO: test spocon! it looks awesome
-  # 'spotify' : {
-  #   'script' :  [
-  #     '$(curl -sL https://spocon.github.io/spocon/install.sh | sh)',
-  #     'sudo systemctl stop spocon.service',
-  #     'sudo systemctl disable spocon.service'
-  #   ]
-  # }
+  'plexamp' : {
+    'script' : [ './streams/plexamp_nodeinstall.bash' ]
+  },
+  'spotify' : {
+    'script' :  [
+      'curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
+      'tar --directory streams -xvf streams/vollibrespot.tar.xz',
+    ]
+  }
 }
 
 def _check_and_setup_platform():
@@ -90,7 +104,7 @@ def _check_and_setup_platform():
 
 class Task:
   """ Task runner for scripted installation tasks """
-  def __init__(self, name: str, args:Optional[List[str]]=None, multiargs=None, output='', success=False):
+  def __init__(self, name: str, args:Optional[List[str]]=None, multiargs=None, output='', success=False, wd=None):
     # pylint: disable=too-many-arguments
     self.name = name
     if multiargs:
@@ -102,6 +116,7 @@ class Task:
       self.margs = [[]]
     self.output = output
     self.success = success
+    self.wd = wd
 
   def __str__(self):
     desc = f"{self.name} : {self.margs}" if len(self.margs) > 0 else f"{self.name} :"
@@ -115,7 +130,7 @@ class Task:
   def run(self):
     """ Run the command line task or tasks sequentially and keep track of failures, stops at the first failure"""
     for args in self.margs:
-      out = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+      out = subprocess.run(args, cwd=self.wd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
       self.output += out.stdout.decode()
       self.success = out.returncode == 0
       if not self.success:
@@ -129,17 +144,21 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     return tasks
   tasks = []
   # TODO: add extra apt repos
-  # find latest apt packages
-  tasks += print_progress([Task('get latest debian packages', 'sudo apt update'.split()).run()])
+  # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
+  # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
+  tasks += print_progress([Task('get latest debian packages', 'sudo apt update --allow-releaseinfo-change'.split()).run()])
 
   # organize stuff to install
   packages = set()
   files = []
+  scripts = []
   for dep in deps:
     if 'copy' in _os_deps[dep]:
       files += _os_deps[dep]['copy']
     if 'apt' in _os_deps[dep]:
       packages.update(_os_deps[dep]['apt'])
+    if 'script' in _os_deps[dep]:
+      scripts.append(_os_deps[dep]['script'])
 
   # copy files
   for file in files:
@@ -168,8 +187,19 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # install debian packages
   tasks += print_progress([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
 
+  # Run scripts
+  for script in scripts:
+    sh_loc = f'{env["base_dir"]}/install{scripts.index(script)}.sh'
+    with open(sh_loc, 'a') as sh:
+      for scrap in script:
+        sh.write(scrap + '\n')
+    shargs = f'sh {sh_loc}'.split()
+    clean = f'rm {sh_loc}'.split()
+    tasks += print_progress([Task('run install script', args=shargs, wd=env['base_dir']).run()])
+    tasks += print_progress([Task('rm generic script', args=clean, wd=env['base_dir']).run()])
+
   # cleanup
-  # shairport-sync install sets up a deamon we need to stop, remove it
+  # shairport-sync install sets up a daemon we need to stop, remove it
   tasks += print_progress(_stop_service('shairport-sync', system=True))
   tasks += print_progress(_disable_service('shairport-sync', system=True))
 
@@ -490,6 +520,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if os_deps:
     tasks += _install_os_deps(env, progress, _os_deps)
     if failed():
+      print('OS dependency install step failed, exiting...')
       return False
   if python_deps:
     with open(os.path.join(env['base_dir'], 'requirements.txt')) as req:
@@ -499,6 +530,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       progress(py_tasks)
       tasks += py_tasks
     if failed():
+      print('Python dependency install step failed, exiting...')
       return False
   if web:
     tasks += _update_web(env, restart_updater, progress)

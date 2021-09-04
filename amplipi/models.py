@@ -23,9 +23,10 @@ Encourages reuse of datastructures across AmpliPi
 from typing import List, Dict, Optional, Union
 from types import SimpleNamespace
 from enum import Enum
+
+# pylint: disable=no-name-in-module
 from pydantic import BaseSettings, BaseModel, Field
 
-# pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
 
@@ -40,7 +41,8 @@ class fields(SimpleNamespace):
   GroupMute = Field(description='Set to true if output is all zones muted')
   GroupVolume = Field(ge=-79, le=0, description='Average input volume in dB')
   Disabled = Field(description='Set to true if not connected to a speaker')
-  Zones = Field(description='Set of zones belonging to a group')
+  Zones = Field(description='Set of zone ids belonging to a group')
+  Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
 
   * Digital Stream ('stream=SID') where SID is the ID of the connected stream
@@ -370,12 +372,13 @@ class Stream(Base):
   * internetradio
   * spotify
   * plexamp
+  * file
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
   password: Optional[str] = Field(description='Password')
   station: Optional[str] = Field(description='Radio station identifier')
-  url: Optional[str] = Field(description='Stream url, used for internetradio')
+  url: Optional[str] = Field(description='Stream url, used for internetradio and file')
   logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
@@ -444,6 +447,12 @@ class Stream(Base):
             'type': 'shairport'
           }
         },
+        "Play single file or announcement" : {
+          'value': {
+            'name': 'Play NASA Announcement',
+            'url': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3'
+          }
+        }
       },
       'examples': {
         'Regina Spektor Radio': {
@@ -531,6 +540,7 @@ class StreamCommand(str, Enum):
   PLAY = 'play'
   PAUSE = 'pause'
   NEXT = 'next'
+  PREV = 'prev'
   STOP = 'stop'
   LOVE = 'love'
   BAN = 'ban'
@@ -618,6 +628,27 @@ class PresetUpdate(BaseUpdate):
                 {'id': 5, 'mute': True}
               ]
             }
+          }
+        }
+      }
+    }
+
+class Announcement(BaseModel):
+  """ A PA-like Announcement
+  IF no zones or groups are specified, all available zones are used
+  """
+  media : str = Field(description="URL to media to play as the announcement")
+  vol: int = Field(default=-40, ge=-79, le=0, description='Output volume in dB')
+  src_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
+  zones: Optional[List[int]] = fields.Zones
+  groups: Optional[List[int]] = fields.Groups
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Make NASA Announcement': {
+          'value': {
+            'media': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3',
           }
         }
       }

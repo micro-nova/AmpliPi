@@ -368,7 +368,7 @@ def touch_callback(pin_num):
       # Swap x and y and reverse to account for screen rotation
       y = round(height*(1 - x_cal))
       x = round(width*(1 - y_cal))
-      #print(f'Touch at {x},{y} [Raw: {x_raw},{y_raw}]')
+      log.debug(f'Touch at {x},{y}')
       if x > (3*width/4):
         _active_screen = (_active_screen + 1) % NUM_SCREENS
       if x < (width/4):

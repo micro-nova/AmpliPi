@@ -1,14 +1,24 @@
 {
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true,
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.pythonPath": "venv/bin/python",
-    "python.linting.pylintArgs": [
-      "--generated-members", "signal.Signals"
-    ]
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.nosetestsEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.pythonPath": "venv/bin/python",
+  "python.linting.pylintArgs": [
+    "--generated-members", "signal.Signals,GPIO.*"
+  ],
+  "cmake.sourceDirectory": "${workspaceFolder}/fw/preamp",
+  "cmake.buildDirectory": "${workspaceFolder}/fw/preamp/build",
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/venv/lib/**": true
+  },
+  "[cpp]": {
+    "editor.formatOnSave": true
+  }
 }

@@ -38,6 +38,7 @@ from functools import lru_cache
 import asyncio
 import json
 import yaml
+from time import sleep
 
 from PIL import Image # For custom album art size
 
@@ -49,6 +50,12 @@ from fastapi.routing import APIRoute, APIRouter
 from fastapi.templating import Jinja2Templates
 from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
+
+# mdns service advertisement
+import netifaces as ni
+from socket import gethostname, inet_aton
+from zeroconf import IPVersion, ServiceInfo, Zeroconf
+from multiprocessing import Queue
 
 # amplipi
 import amplipi.utils as utils
@@ -367,7 +374,7 @@ def get_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mod
   raise HTTPException(404, f'preset {pid} not found')
 
 @api.patch('/api/presets/{pid}', tags=['preset'])
-async def set_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID, update: models.PresetUpdate = None) -> models.Status:
+def set_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID, update: models.PresetUpdate = None) -> models.Status:
   """ Update a preset's configuration (preset=**pid**) """
   return code_response(ctrl, ctrl.set_preset(pid, update))
 
@@ -381,7 +388,18 @@ def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mo
   """ Load a preset configuration """
   return code_response(ctrl, ctrl.load_preset(pid))
 
+# PA
+
+@api.post('/api/announce', tags=['announce'])
+def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -> models.Status:
+  """ Make an announcement """
+  return code_response(ctrl, ctrl.announce(announcement))
+
+# include all routes above
+
 app.include_router(api)
+
+# API Documentation
 
 def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   """ Get json model for the body of an api request """
@@ -402,8 +420,6 @@ def get_response_model(route: APIRoute) -> Optional[Dict[str, Any]]:
     return None
   except:
     return None
-
-# API Documentation
 
 def add_creation_examples(openapi_schema, route: APIRoute) -> None:
   """ Add creation examples for a given route (for modifying request types) """
@@ -680,6 +696,69 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
     settings.delay_saves = delay_saves
   get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app
+
+def get_ip_addr(iface: str = 'eth0') -> Optional[str]:
+  """ Get the IP address of interface @iface """
+  try:
+    return ni.ifaddresses(iface)[ni.AF_INET][0]['addr']
+  except:
+    return None
+
+def advertise_service(port, q: Queue):
+  """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar'
+      Expected to be run as a seperate process, eg:
+
+          q = Queue()
+          ad = Process(target=amplipi.app.advertise_service, args=(5000, q))
+          ad.start()
+          ...
+          q.put('done')
+          ad.join()
+  """
+  hostname = f'{gethostname()}.local'
+  url = f'http://{hostname}'
+  iface = 'eth0' # TODO: support usb wifi mdns advertisement if needed
+  ip_addr = get_ip_addr(iface)
+  if not ip_addr:
+    print(f'AmpliPi zeroconf - unable to register service on {iface}, it is either not available or has no IP address.')
+    print(f'AmpliPi zeroconf - is this running on AmpliPi?')
+    ip_addr = '0.0.0.0' # Any hosted ip on this device
+  if port != 80:
+    url += f':{port}'
+  # TODO: upgrade to mdns multiinterface support with DCHP address change edge case support similar to one of the following:
+  # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/avahi_publisher.py
+  # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/zeroconf_publisher.py
+  info = ServiceInfo(
+    "_http._tcp.local.",
+    "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    addresses=[inet_aton(ip_addr)],
+    port=port,
+    properties={
+      # standard info
+      'path': '/api/',
+      # extra info - for interfacing
+      'name': 'AmpliPi',
+      "vendor": 'MicroNova',
+      'version': utils.detect_version(),
+      # extra info - for user
+      'web_app': url,
+      'documentation': f'{url}/doc'
+    },
+    server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
+  )
+  print(f'AmpliPi zeroconf - registering service: {info}')
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr]) # right now the AmpliPi webserver is ipv4 only
+  zeroconf.register_service(info, cooperating_responders=True)
+  print('AmpliPi zeroconf - finished registering service')
+  try:
+    while q.empty():
+      sleep(0.1)
+  except:
+    pass
+  finally:
+    print("AmpliPi zeroconf - unregistering service")
+    zeroconf.unregister_service(info)
+    zeroconf.close()
 
 if __name__ == "__main__":
   # Generate the openapi schema file in yaml

@@ -123,10 +123,8 @@ body {
   box-shadow: 6px 7px 19px 6px #000000;
 }
 
-#settings-header {
-  color: lightgrey;
-  margin-top: -8px;
-  margin-bottom: -10px;
+#settings-sel {
+  margin-top: -20px; /* Line up the settings bar*/
 }
 
 #micronova img {
@@ -258,7 +256,11 @@ body {
   font-size: 20pt;
   margin-left: 15pt;
 }
-.pandora-player .play-pause:hover, .pandora-player .step-forward:hover, .pandora-player .like:hover, .pandora-player .dislike:hover {
+.pandora-player .step-backward {
+  font-size: 20pt;
+  margin-right: 15pt;
+}
+.pandora-player .play-pause:hover, .pandora-player .step-forward:hover, .pandora-player .step-backward:hover, .pandora-player .like:hover, .pandora-player .dislike:hover {
   cursor: pointer;
   color: #dc3545;
 }

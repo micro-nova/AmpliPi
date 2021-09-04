@@ -42,8 +42,9 @@ cd ${SCRIPT_DIR}/..
 # use our virtual environment
 source venv/bin/activate
 # pass environment variables
-MOCK_CTRL=$mock_ctrl
-MOCK_STREAMS=$mock_streams
+export MOCK_CTRL=$mock_ctrl
+export MOCK_STREAMS=$mock_streams
+export WEB_PORT='5000'
 # run the uvicorn application server
 ./venv/bin/python -m uvicorn --host 0.0.0.0 --port 5000 amplipi.asgi:application
 deactivate

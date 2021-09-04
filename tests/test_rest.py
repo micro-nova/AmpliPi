@@ -509,6 +509,12 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
             cfg.pop(ignored_field)
         assert cfg == prev_cfg
 
+def test_pa(client):
+  """Check if a PA Announcement works """
+  # TODO: verify that the state before and after an announcement is the same? This piggybacks on presets so that should work...
+  rv = client.post('/api/announce', json={'media': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3'})
+  assert rv.status_code == HTTPStatus.OK, print(rv.json())
+
 def test_api_doc_has_examples(client):
   """Check if each api endpoint has example responses (and requests)"""
   rv = client.get('/openapi.json') # use json since it is easier to check
@@ -558,3 +564,45 @@ def test_generate(client):
   #   fn = fn.replace('..\\', '') # Taken from app.py > generated
   #   if os.path.exists('{}/{}'.format(fullpath, fn)):
   #     os.remove('{}/{}'.format(fullpath, fn))
+
+def test_zeroconf():
+  """ Unit test for zeroconf advertisement """
+  # TODO: migrate this test into its own module
+  from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
+  from time import sleep
+  from multiprocessing import Process, Queue
+
+  AMPLIPI_ZC_NAME = 'amplipi-api._http._tcp.local.'
+
+  services_advertised = {}
+  def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
+    if state_change is ServiceStateChange.Added:
+      info = zeroconf.get_service_info(service_type, name)
+      if info and info.port != 80: # ignore the actual amplipi service on your network
+        services_advertised[name] = info
+
+  # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
+  q = Queue()
+  zc_reg = Process(target=amplipi.app.advertise_service, args=(9898,q))
+  zc_reg.start()
+  sleep(4) # wait for a bit to make sure the service is started
+
+  # start listener that adds available services
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
+  services = ["_http._tcp.local."]
+  _ = ServiceBrowser(zeroconf, services, handlers=[on_service_state_change])
+
+  # wait enough time for a response from the serice
+  sleep(2)
+
+  # stop the advertiser
+  q.put('done')
+  zc_reg.join()
+
+  # stop the listener
+  zeroconf.close()
+
+  # check advertisememts
+  assert AMPLIPI_ZC_NAME in services_advertised
+  assert services_advertised[AMPLIPI_ZC_NAME].port == 9898
+

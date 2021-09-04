@@ -24,7 +24,7 @@ import os
 import functools
 import subprocess
 import re
-from typing import List, Dict, Union, Optional, Tuple, TypeVar, Iterable
+from typing import List, Dict, Set, Union, Optional, Tuple, TypeVar, Iterable
 
 import pkg_resources # version
 
@@ -138,6 +138,29 @@ def output_device(sid: int) -> str:
     return dev
   return 'default' # fallback to default
 
+def zones_from_groups(status: models.Status, groups: List[int]) -> Set[int]:
+  """ Get the set of zones from some groups """
+  zones = set()
+  for gid in groups:
+    # add all of the groups zones
+    _, match = find(status.groups, gid)
+    if match is not None:
+      zones.update(match.zones)
+  return zones
+
+def zones_from_all(status: models.Status, zones: Optional[List[int]], groups: Optional[List[int]]) -> Set[int]:
+  """ Find the unique set of enabled zones given some zones and some groups of zones """
+  # add all of the zones given
+  z_unique = set(zones or [])
+  # add all of the zones in the groups given
+  z_unique.update(zones_from_groups(status, groups or []))
+  return z_unique
+
+def enabled_zones(status: models.Status, zones: Set[int]) -> Set[int]:
+  """ Get only enabled zones """
+  z_disabled = {z.id for z in status.zones if z.id is not None and z.disabled}
+  return zones.difference(z_disabled)
+
 @functools.lru_cache(maxsize=8)
 def get_folder(folder):
   """ Get a directory
@@ -151,24 +174,25 @@ def get_folder(folder):
 
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
 
+@functools.lru_cache(1)
 def detect_version() -> str:
   """ Get the AmpliPi software version from the project TOML file """
+  # assume the application is running in its base directory and check the pyproject.toml file to determine the version
+  # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
   version = 'unknown'
+  script_folder = os.path.dirname(os.path.realpath(__file__))
   try:
-    version = pkg_resources.get_distribution('amplipi').version
+    with open(os.path.join(script_folder, '..', 'pyproject.toml')) as proj_file:
+      for line in proj_file.readlines():
+        if 'version' in line:
+          match = TOML_VERSION_STR.search(line)
+          if match is not None:
+            version = match.group(1)
   except:
     pass
-  if 'unknown' in version:
-    # assume the application is running in its base directory and check the pyproject.toml file to determine the version
-    # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
-    script_folder = os.path.dirname(os.path.realpath(__file__))
+  if version == 'unknown':
     try:
-      with open(os.path.join(script_folder, '..', 'pyproject.toml')) as proj_file:
-        for line in proj_file.readlines():
-          if 'version' in line:
-            match = TOML_VERSION_STR.search(line)
-            if match is not None:
-              version = match.group(1)
+      version = pkg_resources.get_distribution('amplipi').version
     except:
       pass
   return version

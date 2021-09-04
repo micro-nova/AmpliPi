@@ -81,6 +81,7 @@
                 <h6 class="song">{{ info['track'] }}</h6>
               </div>
               <div class="controls">
+                <i class="step-backward fas fa-backward" onclick="onPrev(this)"></i>
                 <i class="play-pause fas fa-play" onclick="onPlayPause(this)"></i>
                 <i class="step-forward fas fa-forward" onclick="onNext(this)"></i>
                 <i class="like fas fa-heart" onclick="onLike(this)"></i>
@@ -90,29 +91,73 @@
           </div>
           {% endfor %}
         </div>
-      <div id="settings-header" class="text-center" style="display: none"><h3>Settings</h3></div>
+        <!-- TODO: can this be a nav dropdown with the same styling as the custom-select? This would probably  simplify the integration and allow individual tabs to hook into a tab shown event-->
+        <select id="settings-sel" class="custom-select" onchange="$(this.value).siblings('div').removeClass('active');
+        $(this.value).addClass('active');" style="display: none">
+          <option value="#settings-tab-inputs">Inputs</option>
+          <option value="#settings-tab-zones">Zones</option>
+          <option value="#settings-tab-groups">Groups</option>
+          <option value="#settings-tab-updates">Updates</option>
+        </select>
       </div>
     </div>
     <div class="tab-content">
       <div id="settings" class="tab-pane">
-        <div class="card settings">
-          <h6 class="card-header">Updates</h6>
-          <div class="card-body">
-            <div class="text-center">
-              <a class="btn btn-success" onclick="javascript:event.target.port=5001" href="/update">Check for Updates</a>
+        <div class="tab-content">
+          <div id="settings-tab-inputs" class="tab-pane active">
+            <div class="card settings">
+              <h6 class="card-header">Stream Management</h6>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-sm-4">
+                    <div class="selection">
+                      <ul class="list-group" style="cursor: pointer;">
+                        <li class="list-group-item list-group-item-action list-group-item-success" id="settings-tab-inputs-new-stream">
+                          Add New Stream
+                        </li>
+                      </ul>
+                      <hr />
+                      <ul class="list-group" id="settings-tab-inputs-stream-selection" style="cursor: pointer;">
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-sm-8">
+                    <h6 class="card-header">Stream Settings: <span id="settings-tab-inputs-stream-title"></span></h6>
+                    <div id="settings-tab-inputs-config" style="padding: .75rem 1.25rem;">
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="card settings">
-          <h6 class="card-header">Connect Plex Account</h6>
-          <div class="card-body">
-            <div class="text-center">
-              <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
-              <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
-              <button class="btn btn-primary" onclick="window.location.reload();" style="display: none" id="plexamp-done"></button>
+          <div id="settings-tab-zones" class="tab-pane">
+            <div class="card settings">
+              <h6 class="card-header">Zones</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  TODO
+                </div>
+              </div>
             </div>
-            <div id="plexamp-msg" class="text-center" style="display: none; color: #2a2a2a; align-self: center; border-top: 20px solid #2a2a2a">
-              Some hidden text
+          </div>
+          <div id="settings-tab-groups" class="tab-pane">
+            <div class="card settings">
+              <h6 class="card-header">Groups</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  TODO
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="settings-tab-updates" class="tab-pane">
+            <div class="card settings">
+              <h6 class="card-header">Updates</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <a class="btn btn-success" onclick="javascript:event.target.port=5001" href="/update">Check for Updates</a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -224,6 +269,8 @@
   <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.min.js"><\/script>')</script>
   <!-- Local application script -->
   <script src="static/js/script.js"></script>
+  <!-- Additional local script - Stream Admin TODO: merge into script.js? -->
+  <script src='static/js/stream-management.js'></script>
   <!-- UUID CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
   <!-- UUID local fallback -->

@@ -568,7 +568,7 @@ class Api:
       return stream.id + 1
     return 1000
 
-  def create_stream(self, data: models.Stream) -> models.Stream:
+  def create_stream(self, data: models.Stream, internal=False) -> models.Stream:
     """ Create a new stream """
     try:
       # Make a new stream and add it to streams
@@ -578,7 +578,8 @@ class Api:
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
-        self.mark_changes()
+        if not internal:
+          self.mark_changes()
         return new_stream
       return ApiResponse.error('create stream failed: no stream created')
     except Exception as exc:
@@ -600,8 +601,7 @@ class Api:
     except Exception as exc:
       return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
 
-  @save_on_success
-  def delete_stream(self, sid: int) -> ApiResponse:
+  def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
     try:
       # if input is connected to a source change that input to nothing
@@ -613,6 +613,8 @@ class Api:
       i, _ = utils.find(self.status.streams, sid)
       if i is not None:
         del self.status.streams[i] # delete the cached stream state just in case
+      if not internal:
+        self.mark_changes()
       return ApiResponse.ok()
     except KeyError:
       return ApiResponse.error('delete stream failed: {} does not exist'.format(sid))
@@ -629,42 +631,10 @@ class Api:
     except Exception as exc:
       return ApiResponse.error('Unable to get stream {}: {}'.format(sid, exc))
 
-    if not isinstance(stream, amplipi.streams.Pandora) or stream.mock:
-      return ApiResponse.error(f'Stream "{stream}" does not support commands yet')
-
     try:
-      if cmd is None:
-        pass
-      elif cmd == 'play':
-        print('playing')
-        stream.state = 'playing'
-        stream.ctrl.play()
-      elif cmd == 'pause':
-        print('paused')
-        stream.state = 'paused'
-        stream.ctrl.pause()
-      elif cmd == 'stop':
-        stream.state = "stopped"
-        stream.ctrl.stop()
-      elif cmd == 'next':
-        print('next')
-        stream.ctrl.next()
-      elif cmd == 'love':
-        stream.ctrl.love()
-      elif cmd == 'ban':
-        stream.ctrl.ban()
-      elif cmd == 'shelve':
-        stream.ctrl.shelve()
-      elif 'station' in cmd:
-        station_id = int(cmd.replace('station=', ''))
-        if station_id is not None:
-          stream.ctrl.station(station_id)
-        else:
-          return ApiResponse.error('station=<int> expected where <int> is a valid integer, ie. station=23432423, received "{}"'.format(cmd))
-      else:
-        return ApiResponse.error('Command "{}" not recognized.'.format(cmd))
+      stream.send_cmd(cmd)
     except Exception as exc:
-      return ApiResponse.error('Failed to execute stream command: {}: {}'.format(cmd, exc))
+      return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
 
     return ApiResponse.ok()
 
@@ -701,7 +671,7 @@ class Api:
     """ get next available preset id """
     return utils.next_available_id(self.status.presets, default=10000)
 
-  def create_preset(self, preset: models.Preset) -> Union[ApiResponse, models.Preset]:
+  def create_preset(self, preset: models.Preset, internal=False) -> Union[ApiResponse, models.Preset]:
     """ Create a new preset """
     try:
       # Make a new preset and add it to presets
@@ -710,7 +680,8 @@ class Api:
       preset.id = pid
       preset.last_used = None # indicates this preset has never been used
       self.status.presets.append(preset)
-      self.mark_changes()
+      if not internal:
+        self.mark_changes()
       return preset
     except Exception as exc:
       return ApiResponse.error('create preset failed: {}'.format(exc))
@@ -818,8 +789,7 @@ class Api:
     # update stats
     self._update_groups()
 
-  @save_on_success
-  def load_preset(self, pid: int) -> ApiResponse:
+  def load_preset(self, pid: int, internal=False) -> ApiResponse:
     """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration.
     Below is an idea of how a preset configuration could be loaded to avoid any weirdness.
     We are also considering adding a "Last config" preset that allows us to easily revert the configuration changes.
@@ -870,3 +840,44 @@ class Api:
 
     # TODO: release lock
     return ApiResponse.ok()
+
+  def announce(self, announcement: models.Announcement) -> ApiResponse:
+    """ Create and play an announcement """
+    # create a temporary announcement stream using fileplayer
+    resp0 = self.create_stream(models.Stream(type='fileplayer', name='Announcement', url=announcement.media), internal=True)
+    if isinstance(resp0, ApiResponse):
+      return resp0
+    stream = resp0
+    # create a temporary preset with all zones connected to the announcement stream and load it
+    pa_src = models.SourceUpdateWithId(id=announcement.src_id, input=f'stream={stream.id}') # for now we just use the last source
+    if announcement.zones is None and announcement.groups is None:
+      zones_to_use = {z.id for z in self.status.zones if z.id is not None and not z.disabled}
+    else:
+      unique_zones = utils.zones_from_all(self.status, announcement.zones, announcement.groups)
+      zones_to_use = utils.enabled_zones(self.status, unique_zones)
+    pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False, vol=announcement.vol) for zid in zones_to_use]
+    resp1 = self.create_preset(models.Preset(name='PA - announcement', state=models.PresetState(sources=[pa_src], zones=pa_zones)))
+    if isinstance(resp1, ApiResponse):
+      return resp1
+    pa_preset = resp1
+    if pa_preset.id is None or stream.id is None:
+      return ApiResponse.error('ID expected to be provided')
+    resp2 = self.load_preset(pa_preset.id, internal=True)
+    if resp2.code != ApiCode.OK:
+      return resp2
+    resp3 = self.delete_preset(pa_preset.id)
+    if resp3.code != ApiCode.OK:
+      return resp3
+    # wait for the announcement to be done and switch back to the previous state
+    # TODO: what is the longest announcement we should accept?
+    stream_inst = self.streams[stream.id]
+    while True:
+      time.sleep(0.1)
+      if stream_inst.state in ['stopped', 'disconnected']:
+        break
+    resp4 = self.load_preset(self._LAST_PRESET_ID, internal=True)
+    resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
+    if resp5.code != ApiCode.OK:
+      return resp5
+    self.mark_changes()
+    return resp4
