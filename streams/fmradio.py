@@ -62,7 +62,7 @@ def main():
 
   update = False
 
-  rtlfm_args = ['rtl_fm', '-M', 'fm', '-f', '{}M'.format(freq), '-s', '171k', '-A', 'std', '-p', '0', '-l', '0', '-E', 'deemp', '-g', '20', '-F', '9']
+  rtlfm_args = f'rtl_fm -M fm -f {freq}M -s 171k -A std -p 0 -l 0 -E deemp -g 20 -F 9'.split()
   redsea_args = ['redsea', '-u', '-p', '--feed-through']
   aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', '{}'.format(args.output)]
 
