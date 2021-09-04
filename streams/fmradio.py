@@ -104,12 +104,12 @@ def main():
               latest_info["radiotext"] = rds["radiotext"]
               update = True
             print(f'rt; "{rds["radiotext"]}"')
-          elif "partial_radiotext" in rds:
+          #elif "partial_radiotext" in rds:
             # this data is bad a lot of times, probably worth updating on
-            if rds["partial_radiotext"] != latest_info["radiotext"]:
-              latest_info["radiotext"] = rds["partial_radiotext"]
-              update = True
-            print(f'pr: "{rds["partial_radiotext"]}"')
+          #  if rds["partial_radiotext"] != latest_info["radiotext"]:
+          #    latest_info["radiotext"] = rds["partial_radiotext"]
+          #    update = True
+          #  print(f'pr: "{rds["partial_radiotext"]}"')
         else:
           if args.verbose:
             log("No RDS data")
