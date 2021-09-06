@@ -328,7 +328,7 @@ void init_uart() {
   // Setup USART2
   USART_Cmd(USART2, ENABLE);
   USART_InitTypeDef USART_InitStructure2;
-  USART_InitStructure2.USART_BaudRate   = 9600;
+  USART_InitStructure2.USART_BaudRate   = 115200;
   USART_InitStructure2.USART_WordLength = USART_WordLength_8b;
   USART_InitStructure2.USART_StopBits   = USART_StopBits_1;
   USART_InitStructure2.USART_Parity     = USART_Parity_No;
