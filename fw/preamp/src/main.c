@@ -27,6 +27,8 @@
 #include "systick.h"
 #include "version.h"
 
+static bool uart_passthrough_ = false;
+
 void init_i2c1(uint8_t preamp_addr);
 void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str);
 
@@ -649,6 +651,32 @@ int main(void) {
         case REG_LED_OVERRIDE:
           writeI2C2(front_panel, data);  // Full front panel control
           break;
+        case REG_EXPANSION:
+          // NRST_OUT
+          if (data & 0x01) {
+            setPin(f0);
+          } else {
+            clearPin(f0);
+          }
+          // BOOT0_OUT
+          if (data & 0x02) {
+            setPin(f1);
+          } else {
+            clearPin(f1);
+          }
+
+          // Allow UART messages to be forwarded to expansion units
+          uart_passthrough_ = (data & 0x04) == 0x04;
+
+          // Expansion UART (USART2) interrupt enable
+          if (data & 0x08) {
+            USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+            NVIC_EnableIRQ(USART2_IRQn);
+          } else {
+            USART_ITConfig(USART2, USART_IT_RXNE, DISABLE);
+            NVIC_DisableIRQ(USART2_IRQn);
+          }
+          break;
         case 0x99:
           // Free write to the ADC for debug purposes
           // (writing to setup byte is possible)
@@ -687,7 +715,18 @@ void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str) {
 // Handles the interrupt on UART data reception
 void USART1_IRQHandler(void) {
   if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
-    unsigned char m = USART_ReceiveData(USART1);
-    RxBuf_Add(&UART_Preamp_RxBuffer, m);
+    uint16_t m = USART_ReceiveData(USART1);
+    if (uart_passthrough_) {
+      USART_SendData(USART2, m);
+    } else {
+      RxBuf_Add(&UART_Preamp_RxBuffer, (uint8_t)m);
+    }
+  }
+}
+
+void USART2_IRQHandler(void) {
+  if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {
+    uint16_t m = USART_ReceiveData(USART2);
+    USART_SendData(USART1, m);
   }
 }

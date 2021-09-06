@@ -43,6 +43,7 @@ typedef enum
   REG_FAN_STATUS    = 12,
   REG_EXTERNAL_GPIO = 13,
   REG_LED_OVERRIDE  = 14,
+  REG_EXPANSION     = 15,
   REG_HV1_VOLTAGE   = 16,
   REG_HV2_VOLTAGE   = 17,
   REG_HV1_TEMP      = 18,
