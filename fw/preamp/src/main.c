@@ -316,6 +316,12 @@ void init_uart() {
       USART_HardwareFlowControl_None;
   USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
   USART_Init(USART1, &USART_InitStructure);
+
+  // Setup auto-baudrate detection
+  // Mode 0b01, aka "Falling Edge" mode, must start with 0b10...
+  // Since UART sents LSB first, the first character must be 0bXXXXXX01
+  USART1->CR2 |= USART_AutoBaudRate_FallingEdge | USART_CR2_ABREN;
+
   USART_Cmd(USART1, ENABLE);
 
 #ifndef DEBUG_OVER_UART2
