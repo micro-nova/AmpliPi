@@ -464,27 +464,34 @@ int main(void) {
 
   // Main loop, awaiting I2C commands
   while (1) {
-    // Wait for address match
+    // Wait for address match on I2C bus
     while (I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR) == RESET) {}
+    // Setting I2C_ICR.ADDRCF releases the clock stretch if any then acks
     I2C_ClearFlag(I2C1, I2C_FLAG_ADDR);
+    // I2C_ISR.DIR is assumed to be 0 (write)
 
-    // wait for reg address
+    // Wait for register address to be written by master (Pi)
     while (I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) == RESET) {}
+    // Reading I2C_RXDR releases the clock stretch if any then acks
     reg = I2C_ReceiveData(I2C1);
 
-    // Determine if the controller is trying to read/write from/to you
-    int reading = 0;
-    for (int i = 0; i < 100; i++) {
-      reading |= I2C_GetFlagStatus(I2C1, 0x10000);
-    }
+    // Wait for either another slave address match (read),
+    // or data in the RX register (write)
+    uint32_t i2c_isr_val;
+    do {
+      i2c_isr_val = I2C1->ISR;
+    } while (!(i2c_isr_val & (I2C_FLAG_ADDR | I2C_FLAG_RXNE)));
 
-    // Provide registers to be read
-    if (reading == 1) {
-      // During reads, the address flag is set twice
-      while (I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR) == RESET) {}
+    if (i2c_isr_val & I2C_ISR_DIR) {  // Reading
+      // Just received a repeated start and slave address again,
+      // clear address flag to ACK
       I2C_ClearFlag(I2C1, I2C_FLAG_ADDR);
 
-      while (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXIS) == RESET) {}
+      // Make sure the I2C_TXDR register is empty before filling it with new
+      // data to write
+      while (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXE) == RESET) {}
+
+      // Send a response based on the register address
       switch (reg) {
         case REG_POWER_GOOD:
           msg               = readI2C2(pwr_temp_mntr_gpio);
@@ -562,12 +569,15 @@ int main(void) {
           // Return FF if a non-existent register is selected
           I2C_SendData(I2C1, 0xFF);
       }
-    } else if (reading == 0) {  // Writing
-      // Wait for reg data
-      while (I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) == RESET) {}
+
+      // We only allow reading 1 byte at a time for now, here we are assuming
+      // a NACK was sent by the master to signal the end of the read request.
+    } else {  // Writing
+      // Just received data from the master (Pi),
+      // get it from the I2C_RXDR register
       data = I2C_ReceiveData(I2C1);
 
-      // Act on command
+      // Perform appropriate action based on register address and new data
       switch (reg) {
         case REG_SRC_AD:
           for (src = 0; src < NUM_SRCS; src++) {
@@ -686,6 +696,8 @@ int main(void) {
           // do nothing
           break;
       }
+      // We only allow writing 1 byte at a time for now, here we assume the
+      // master stops transmitting and sends a STOP condition to end the write.
     }
   }
 }
