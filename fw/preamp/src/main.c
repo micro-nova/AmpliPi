@@ -397,6 +397,14 @@ int main(void) {
   uint32_t blink;       // Counter for alternating the Standby/On LED
   uint8_t  red_on = 1;  // Used for switching the Standby/On LED
 
+  // RESET AND PIN SETUP
+  Pin f0 = {'F', 0};  // Expansion connector NRST_OUT
+  Pin f1 = {'F', 1};  // Expansion connector BOOT0_OUT
+  clearPin(f0);  // Low-pulse on NRST_OUT so expansion boards are reset by the
+                 // controller board
+  clearPin(f1);  // Needs to be low so the subsequent preamp board doesn't start
+                 // in 'Boot Mode'
+
   // INIT
   init_gpio();  // UART and I2C require GPIO pins
   init_uart();  // The preamp will receive its I2C network address via UART
@@ -408,14 +416,8 @@ int main(void) {
   systickInit();  // Initialize the clock ticks for delay_ms and other timing
                   // functionality
 
-  // RESET AND PIN SETUP
-  Pin f0 = {'F', 0};  // NRST_OUT
-  Pin f1 = {'F', 1};  // BOOT0_OUT
-  clearPin(f0);  // Low-pulse on NRST_OUT so expansion boards are reset by the
-                 // controller board
-  clearPin(f1);  // Needs to be low so the subsequent preamp board doesn't start
-                 // in 'Boot Mode'
-  delay_ms(1);   // Hold low for 1 ms
+  // RELEASE EXPANSION RESET
+  // delay_ms(1);          // Hold low for 1 ms
   setPin(f0);  // Needs to be high so the subsequent preamp board is not held in
                // 'Reset Mode'
 
