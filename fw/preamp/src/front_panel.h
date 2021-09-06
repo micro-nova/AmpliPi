@@ -21,9 +21,11 @@
 #ifndef FRONT_PANEL_H_
 #define FRONT_PANEL_H_
 
+#include <stdbool.h>
+
 #include "port_defs.h"
 
-#define ON (true)
+#define ON  (true)
 #define OFF (false)
 
 void setAudioPower(bool on);

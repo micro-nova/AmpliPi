@@ -20,5 +20,8 @@
   },
   "[cpp]": {
     "editor.formatOnSave": true
+  },
+  "[c]": {
+    "editor.formatOnSave": true
   }
 }

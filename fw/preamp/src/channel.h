@@ -28,9 +28,14 @@
 // Uncomment this line to enable automatic mute control via high/low volume.
 // #define AUTO_MUTE_CTRL
 
+#include <stdbool.h>
 #include <stdint.h>
 
-typedef enum{IT_ANALOG, IT_DIGITAL} InputType;
+typedef enum
+{
+  IT_ANALOG,
+  IT_DIGITAL
+} InputType;
 
 bool isOn(int ch);
 bool anyOn();

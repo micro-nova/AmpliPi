@@ -1,3 +1,4 @@
+// clang-format off
 /**
   ******************************************************************************
   * @file    system_stm32f0xx.c
@@ -368,3 +369,4 @@ static void SetSysClock(void)
   */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+// clang-format on

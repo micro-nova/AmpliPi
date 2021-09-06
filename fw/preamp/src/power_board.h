@@ -21,11 +21,11 @@
 #ifndef POWER_BOARD_H_
 #define POWER_BOARD_H_
 
-#include "port_defs.h"
+#include <stdint.h>
 
 void enablePowerBoard();
 void enablePSU();
 void write_ADC(uint8_t data);
-int read_ADC();
+int  read_ADC();
 
 #endif /* POWER_BOARD_H_ */

@@ -24,21 +24,21 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct{
-	char port; // Valid ports in our case are A,B,C,D,F
-	unsigned char pin : 4;
-}Pin;
+typedef struct {
+  char    port;  // Valid ports in our case are A,B,C,D,F
+  uint8_t pin : 4;
+} Pin;
 
 void setPin(Pin pp);
 void clearPin(Pin pp);
 bool readPin(Pin pp);
 
-typedef struct{
-	uint8_t dev;
-	uint8_t reg;
-}I2CReg;
+typedef struct {
+  uint8_t dev;
+  uint8_t reg;
+} I2CReg;
 
-int readI2C2(I2CReg r);
+int  readI2C2(I2CReg r);
 void writeI2C2(I2CReg r, uint8_t data);
 void writeI2C1(uint8_t data);
 

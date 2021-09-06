@@ -19,13 +19,16 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
-#include "main.h"
+#define VERSION_MAJOR 0x01
+#define VERSION_MINOR 0x01
 
-#define VERSION_MAJOR 0x01 //            Major version, the 1 of 1.0
-#define VERSION_MINOR 0x01 //            Minor version, the 2 of 1.2
-#define GIT_HASH_27_20 0xf4 //           Two leftmost hex digits of the commit hash string, 74 of 0x74568921
-#define GIT_HASH_19_12 0x66 //           Two following hex digits of the commit hash string, 56 of 0x74568921
-#define GIT_HASH_11_04 0x12 //           Two following hex digits of the commit hash string, 89 of 0x74568921
-#define GIT_HASH_03_00_STATUS 0xd0 //    The final hex digit of the commit hash string, as well as the "dirty" flag (LSB). 2 and 1 of 0x74568921
+/* Last 4 bytes of the version:
+ * - 7 hex digits of the git hash, as returned from `git rev-parse --short HEAD`
+ * - A dirty bit, if set the git hash is to be treated as invalid
+ */
+#define GIT_HASH_6_5 0xf4
+#define GIT_HASH_4_3 0x66
+#define GIT_HASH_2_1 0x12
+#define GIT_HASH_0_D 0xd0  // LSB is dirty bit
 
 #endif /* VERSION_H_ */
