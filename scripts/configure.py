@@ -41,11 +41,14 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'fmradio' : {
     'apt' : [ 'rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev' ],
     'script' : [
-      'cd /tmp',
-      'git clone https://github.com/windytan/redsea.git',
-      'cd redsea',
-      './autogen.sh && ./configure && make',
-      'sudo make install'
+      'if ! which redsea  > /dev/null; then', # TODO: check version
+      '  echo "Installing redsea"',
+      '  cd /tmp',
+      '  git clone https://github.com/windytan/redsea.git',
+      '  cd redsea',
+      '  ./autogen.sh && ./configure && make',
+      '  sudo make install',
+      'fi',
     ]
   },
   'dlna' : {
