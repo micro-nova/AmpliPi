@@ -267,11 +267,10 @@ void init_i2c2() {
   I2C_Cmd(I2C2, ENABLE);
 }
 
-void init_uart() {
-  // UART allows the control board to set preamp I2C addresses and flash preamp
-  // software UART2 is used for debugging with an external debugger
+void init_uart1() {
+  // UART1 allows the Pi to set preamp I2C addresses and flash preamp software
 
-  // Enable peripheral clocks for UART
+  // Enable peripheral clocks for UART1
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 
@@ -308,7 +307,7 @@ void init_uart() {
   // Setup USART1
   USART_Cmd(USART1, ENABLE);
   USART_InitTypeDef USART_InitStructure;
-  USART_InitStructure.USART_BaudRate   = 9600;
+  USART_InitStructure.USART_BaudRate   = 9600;  // Auto-baud will override this
   USART_InitStructure.USART_WordLength = USART_WordLength_8b;
   USART_InitStructure.USART_StopBits   = USART_StopBits_1;
   USART_InitStructure.USART_Parity     = USART_Parity_No;
@@ -347,16 +346,16 @@ void init_uart() {
 // Serial buffer for UART handling of I2C addresses
 #define SB_MAX_SIZE (64)
 typedef struct {
-  unsigned char data[SB_MAX_SIZE];  // Byte buffer
-  unsigned char ind;                // Index (current location)
-  unsigned char done;               // Buffer is complete (terminator reached)
-  unsigned char ovf;                // Buffer has overflowed!
+  uint8_t data[SB_MAX_SIZE];  // Byte buffer
+  uint8_t ind;                // Index (current location)
+  uint8_t done;               // Buffer is complete (terminator reached)
+  uint8_t ovf;                // Buffer has overflowed!
 } SerialBuffer;
 volatile SerialBuffer UART_Preamp_RxBuffer;
 volatile SerialBuffer UART_Preamp_TxBuffer;
 
 // Add a character to the serial buffer (UART)
-void RxBuf_Add(volatile SerialBuffer* sb, unsigned char data_in) {
+void RxBuf_Add(volatile SerialBuffer* sb, uint8_t data_in) {
   // Add new byte to buffer (as long as it isn't complete or overflowed).
   // Post-increment index.
   if (!(sb->done) && !(sb->ovf)) {
@@ -389,8 +388,7 @@ void RxBuf_Clear(volatile SerialBuffer* sb) {
 
 int main(void) {
   // VARIABLES
-  uint8_t reg;          // The register that AmpliPi is reading/writing to. See
-                        // "preamp_i2c_regs.xlsx"
+  uint8_t  reg;         // The register that AmpliPi is reading/writing
   uint8_t  data;        // The actual value being written to the register
   uint8_t  ch, src;     // variables holding zone and source information
   uint8_t  i2c_addr;    // I2C address received via UART
@@ -402,17 +400,17 @@ int main(void) {
   Pin f1 = {'F', 1};  // Expansion connector BOOT0_OUT
   clearPin(f0);  // Low-pulse on NRST_OUT so expansion boards are reset by the
                  // controller board
-  clearPin(f1);  // Needs to be low so the subsequent preamp board doesn't start
-                 // in 'Boot Mode'
+  clearPin(f1);  // Needs to be low so the subsequent preamp board doesn't
+                 // start in 'Boot Mode'
 
   // INIT
-  init_gpio();  // UART and I2C require GPIO pins
-  init_uart();  // The preamp will receive its I2C network address via UART
-  init_i2c2();  // Need I2C2 initialized for the front panel functionality
-                // during the address loop
-  enableFrontPanel();  // setup the I2C->GPIO chip
-  enablePowerBoard();  // setup the power supply chip
-  enablePSU();         // turn on 9V/12V power
+  init_gpio();   // UART and I2C require GPIO pins
+  init_uart1();  // The preamp will receive its I2C network address via UART
+  init_i2c2();   // Need I2C2 initialized for the front panel functionality
+                 // during the address loop
+  enableFrontPanel();  // Setup the I2C->GPIO chip
+  enablePowerBoard();  // Setup the power supply chip
+  enablePSU();         // Turn on 9V/12V power
   systickInit();  // Initialize the clock ticks for delay_ms and other timing
                   // functionality
 
@@ -449,7 +447,7 @@ int main(void) {
       RxBuf_Clear(&UART_Preamp_TxBuffer);
     }
 
-    // Alternate red light status once per second
+    // Alternate red light status at ~1 Hz
     blink = millis() / 1000;
     if (red_on != (blink % 2)) {
       red_on = blink % 2;
@@ -701,7 +699,7 @@ int main(void) {
           write_ADC(data);
           break;
         default:
-          // do nothing
+          // Do nothing
           break;
       }
       // We only allow writing 1 byte at a time for now, here we assume the
@@ -717,19 +715,16 @@ int main(void) {
  * carriage return and line feed when done if needed
  */
 void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str) {
-  // delay time in ms. Increase to send out message more slowly. At 9600 baud,
+  // Delay time in ms. Increase to send out message more slowly. At 9600 baud,
   // UART sends roughly 1 char each millisecond
   int dt = 2;
   while (*str != 0) {
+    // TODO: Delay until ready
     USART_SendData(USARTx, *str);
     str++;
     delay_ms(dt);
   }
   delay_ms(dt);
-  //	USART_SendData(USARTx, 0x0D); // Use these for terminal comms
-  //	delay_ms(dt);                 // The message from ctrl bd should
-  //	USART_SendData(USARTx, 0x0A); // already have \r\n at the end
-  //	delay_ms(dt);
 }
 
 // Handles the interrupt on UART data reception
@@ -745,6 +740,8 @@ void USART1_IRQHandler(void) {
 }
 
 void USART2_IRQHandler(void) {
+  // Forward anything received on UART2 (expansion box)
+  // to UART1 (back up the chain to the controller board)
   if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {
     uint16_t m = USART_ReceiveData(USART2);
     USART_SendData(USART1, m);
