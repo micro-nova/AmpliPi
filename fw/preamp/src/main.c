@@ -388,12 +388,11 @@ void RxBuf_Clear(volatile SerialBuffer* sb) {
 
 int main(void) {
   // VARIABLES
-  uint8_t  reg;         // The register that AmpliPi is reading/writing
-  uint8_t  data;        // The actual value being written to the register
-  uint8_t  ch, src;     // variables holding zone and source information
-  uint8_t  i2c_addr;    // I2C address received via UART
-  uint32_t blink;       // Counter for alternating the Standby/On LED
-  uint8_t  red_on = 1;  // Used for switching the Standby/On LED
+  uint8_t reg;            // The register that AmpliPi is reading/writing
+  uint8_t data;           // The actual value being written to the register
+  uint8_t ch, src;        // variables holding zone and source information
+  uint8_t i2c_addr;       // I2C address received via UART
+  bool    red_on = true;  // Used for switching the Standby/On LED
 
   // RESET AND PIN SETUP
   Pin f0 = {'F', 0};  // Expansion connector NRST_OUT
@@ -448,9 +447,9 @@ int main(void) {
     }
 
     // Alternate red light status at ~1 Hz
-    blink = millis() / 1000;
-    if (red_on != (blink % 2)) {
-      red_on = blink % 2;
+    bool blink = (millis() >> 10) & 1;
+    if (red_on != blink) {
+      red_on = blink;
       updateFrontPanel(red_on);
     }
   }
