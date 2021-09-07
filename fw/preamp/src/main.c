@@ -272,17 +272,10 @@ void init_uart1() {
 
   // Enable peripheral clocks for UART1
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 
   // Connect pins to alternate function for UART1
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);   // UART1
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);  //
-
-#ifndef DEBUG_OVER_UART2
-  // Connect pins to alternate function for UART2
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource14, GPIO_AF_1);  // UART2
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_1);  //
-#endif
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);
 
   // Config UART1 GPIO pins
   GPIO_InitTypeDef GPIO_InitStructureUART;
@@ -292,17 +285,6 @@ void init_uart1() {
   GPIO_InitStructureUART.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_InitStructureUART.GPIO_Mode  = GPIO_Mode_AF;
   GPIO_Init(GPIOA, &GPIO_InitStructureUART);
-
-#ifndef DEBUG_OVER_UART2
-  // Config UART2 GPIO pins
-  GPIO_InitTypeDef GPIO_InitStructureUART2;
-  GPIO_InitStructureUART2.GPIO_Pin   = GPIO_Pin_14 | GPIO_Pin_15;
-  GPIO_InitStructureUART2.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructureUART2.GPIO_PuPd  = GPIO_PuPd_UP;
-  GPIO_InitStructureUART2.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructureUART2.GPIO_Mode  = GPIO_Mode_AF;
-  GPIO_Init(GPIOA, &GPIO_InitStructureUART2);
-#endif
 
   // Setup USART1
   USART_Cmd(USART1, ENABLE);
@@ -323,7 +305,31 @@ void init_uart1() {
 
   USART_Cmd(USART1, ENABLE);
 
-#ifndef DEBUG_OVER_UART2
+  // USART1 interrupt handler setup
+  USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+  NVIC_EnableIRQ(USART1_IRQn);
+}
+
+void init_uart2(uint16_t brr) {
+  // UART2 is used for debugging with an external debugger
+  // or for communicating with an expansion preamp.
+
+  // Enable peripheral clock
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+
+  // Connect pins to alternate function for UART2
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource14, GPIO_AF_1);
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_1);
+
+  // Configure UART2 GPIO pins
+  GPIO_InitTypeDef GPIO_InitStructureUART2;
+  GPIO_InitStructureUART2.GPIO_Pin   = GPIO_Pin_14 | GPIO_Pin_15;
+  GPIO_InitStructureUART2.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructureUART2.GPIO_PuPd  = GPIO_PuPd_UP;
+  GPIO_InitStructureUART2.GPIO_Speed = GPIO_Speed_2MHz;
+  GPIO_InitStructureUART2.GPIO_Mode  = GPIO_Mode_AF;
+  GPIO_Init(GPIOA, &GPIO_InitStructureUART2);
+
   // Setup USART2
   USART_Cmd(USART2, ENABLE);
   USART_InitTypeDef USART_InitStructure2;
@@ -335,12 +341,8 @@ void init_uart1() {
       USART_HardwareFlowControl_None;
   USART_InitStructure2.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
   USART_Init(USART2, &USART_InitStructure2);
+  USART2->BRR = brr;
   USART_Cmd(USART2, ENABLE);
-#endif
-
-  // USART1 interrupt handler setup
-  USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
-  NVIC_EnableIRQ(USART1_IRQn);
 }
 
 // Serial buffer for UART handling of I2C addresses
@@ -388,7 +390,7 @@ void RxBuf_Clear(volatile SerialBuffer* sb) {
 
 int main(void) {
   // VARIABLES
-  uint8_t reg;            // The register that AmpliPi is reading/writing
+  uint8_t reg;            // The register that AmpliPi is reading/writing to
   uint8_t data;           // The actual value being written to the register
   uint8_t ch, src;        // variables holding zone and source information
   uint8_t i2c_addr;       // I2C address received via UART
@@ -405,8 +407,9 @@ int main(void) {
   // INIT
   init_gpio();   // UART and I2C require GPIO pins
   init_uart1();  // The preamp will receive its I2C network address via UART
-  init_i2c2();   // Need I2C2 initialized for the front panel functionality
-                 // during the address loop
+  init_uart2(115200);
+  init_i2c2();  // Need I2C2 initialized for the front panel functionality
+                // during the address loop
   enableFrontPanel();  // Setup the I2C->GPIO chip
   enablePowerBoard();  // Setup the power supply chip
   enablePSU();         // Turn on 9V/12V power
