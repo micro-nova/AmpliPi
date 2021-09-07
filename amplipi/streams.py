@@ -807,12 +807,9 @@ class FMRadio:
 
   def connect(self, src):
     """ Connect a fmradio.py output to a given audio source """
-    print(f'connecting {self.name} to {src}...')
 
     if self.mock:
-      print(f'{self.name} connected to {src}')
-      self.state = 'connected'
-      self.src = src
+      self._connect(src)
       return
 
     # Make all of the necessary dir(s)
@@ -824,10 +821,7 @@ class FMRadio:
     fmradio_args = [sys.executable, f"{utils.get_folder('streams')}/fmradio.py", self.freq, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
     print(f'running: {fmradio_args}')
     self.proc = subprocess.Popen(args=fmradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
-
-    print(f'{self.name} (stream: {self.freq}) connected to {src} via {utils.output_device(src)}')
-    self.state = 'connected'
-    self.src = src
+    self._connect(src)
 
   def _is_running(self):
     if self.proc:
@@ -837,11 +831,8 @@ class FMRadio:
   def disconnect(self):
     if self._is_running():
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
-      print(f'{self.name} disconnected')
-    self.state = 'disconnected'
     self.proc = None
-    self.proc2 = None
-    self.src = None
+    self._disconnect()
 
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
@@ -851,7 +842,7 @@ class FMRadio:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
         # Example JSON: "station": "Mixx96.1", "callsign": "KXXO", "prog_type": "Soft rock", "radiotext": "        x96.1"
-        print(json.dumps(data))
+        #print(json.dumps(data))
         if data['prog_type']:
           source.artist = data['prog_type']
         else:
@@ -874,14 +865,6 @@ class FMRadio:
       pass
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
-
-  def status(self):
-    return self.state
-
-  def __str__(self):
-    connection = f' connected to src={self.src}' if self.src else ''
-    mock = ' (mock)' if self.mock else ''
-    return 'fmradio connect: {self.name}{connection}{mock}'
 
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
