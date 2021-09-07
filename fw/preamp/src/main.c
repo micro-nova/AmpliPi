@@ -407,9 +407,8 @@ int main(void) {
   // INIT
   init_gpio();   // UART and I2C require GPIO pins
   init_uart1();  // The preamp will receive its I2C network address via UART
-  init_uart2(115200);
-  init_i2c2();  // Need I2C2 initialized for the front panel functionality
-                // during the address loop
+  init_i2c2();   // Need I2C2 initialized for the front panel functionality
+                 // during the address loop
   enableFrontPanel();  // Setup the I2C->GPIO chip
   enablePowerBoard();  // Setup the power supply chip
   enablePSU();         // Turn on 9V/12V power
@@ -435,6 +434,7 @@ int main(void) {
 #ifndef DEBUG_OVER_UART2
         // Send the new address to the next preamp unless UART2 is used by the
         // debugger
+        init_uart2(USART1->BRR);  // Use the same baud rate for both UARTs
         USART_PutString(USART2, UART_Preamp_TxBuffer.data);
 #endif
         break;
