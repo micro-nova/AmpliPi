@@ -18,6 +18,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "channel.h"
 #include "front_panel.h"
@@ -354,7 +355,6 @@ typedef struct {
   uint8_t ovf;                // Buffer has overflowed!
 } SerialBuffer;
 volatile SerialBuffer UART_Preamp_RxBuffer;
-volatile SerialBuffer UART_Preamp_TxBuffer;
 
 // Add a character to the serial buffer (UART)
 void RxBuf_Add(volatile SerialBuffer* sb, uint8_t data_in) {
@@ -371,20 +371,6 @@ void RxBuf_Add(volatile SerialBuffer* sb, uint8_t data_in) {
   // Check for overflow (i.e. when index exceeds buffer)
   if (sb->ind >= SB_MAX_SIZE) {
     sb->ovf = 1;
-  }
-}
-
-// Clear the serial buffer
-void RxBuf_Clear(volatile SerialBuffer* sb) {
-  // Clear flags
-  sb->ind  = 0;
-  sb->done = 0;
-  sb->ovf  = 0;
-  // Clear data
-  int i = 0;
-  while (i < SB_MAX_SIZE) {
-    sb->data[i] = 0x00;
-    i++;
   }
 }
 
@@ -425,28 +411,24 @@ int main(void) {
       // "A" - address identifier. Defends against potential noise on the wire
       if (UART_Preamp_RxBuffer.data[0] == 0x41) {
         // This will be the device address on I2C1.
-        i2c_addr             = UART_Preamp_RxBuffer.data[1];
-        UART_Preamp_TxBuffer = UART_Preamp_RxBuffer;
-        // Subsequent boards. The left digit is incremented.
-        // Ex. A00 -> A10 -> A20 ...
-        UART_Preamp_TxBuffer.data[UART_Preamp_TxBuffer.ind - 3] =
-            UART_Preamp_TxBuffer.data[UART_Preamp_TxBuffer.ind - 3] + 16;
+        i2c_addr = UART_Preamp_RxBuffer.data[1];
 #ifndef DEBUG_OVER_UART2
-        // Send the new address to the next preamp unless UART2 is used by the
-        // debugger
+        // Set expansion preamp's address, if it exists. Increment the address
+        // received by 0x10 to get the address for the next preamp.
+        SerialBuffer tx_buf         = UART_Preamp_RxBuffer;
+        tx_buf.data[tx_buf.ind - 3] = tx_buf.data[tx_buf.ind - 3] + 0x10;
         init_uart2(USART1->BRR);  // Use the same baud rate for both UARTs
-        USART_PutString(USART2, UART_Preamp_TxBuffer.data);
+        USART_PutString(USART2, tx_buf.data);
 #endif
         break;
       }
       // Allow time for any extra garbage data to shift in
       delay_ms(2);
       // Only necessary for multiple runs without cycling power
-      RxBuf_Clear(&UART_Preamp_RxBuffer);
+      memset((void*)&UART_Preamp_RxBuffer, 0, sizeof(SerialBuffer));
     } else if (UART_Preamp_RxBuffer.ovf == 1) {
-      // Clear the buffers if they overflow
-      RxBuf_Clear(&UART_Preamp_RxBuffer);
-      RxBuf_Clear(&UART_Preamp_TxBuffer);
+      // Clear the buffer if it overflows
+      memset((void*)&UART_Preamp_RxBuffer, 0, sizeof(SerialBuffer));
     }
 
     // Alternate red light status at ~1 Hz
@@ -730,7 +712,11 @@ void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str) {
 
 // Handles the interrupt on UART data reception
 void USART1_IRQHandler(void) {
-  if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
+  uint32_t isr = USART1->ISR;
+  if (isr & USART_ISR_ABRE) {
+    // Auto-baud failed, clear read data and reset auto-baud
+    USART1->RQR |= USART_RQR_ABRRQ | USART_RQR_RXFRQ;
+  } else if (isr & USART_ISR_RXNE) {
     uint16_t m = USART_ReceiveData(USART1);
     if (uart_passthrough_) {
       USART_SendData(USART2, m);
