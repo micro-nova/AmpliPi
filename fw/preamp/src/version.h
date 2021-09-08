@@ -20,15 +20,15 @@
 #define VERSION_H_
 
 #define VERSION_MAJOR 0x01
-#define VERSION_MINOR 0x01
+#define VERSION_MINOR 0x02
 
 /* Last 4 bytes of the version:
  * - 7 hex digits of the git hash, as returned from `git rev-parse --short HEAD`
  * - A dirty bit, if set the git hash is to be treated as invalid
  */
-#define GIT_HASH_6_5 0xf4
-#define GIT_HASH_4_3 0x66
-#define GIT_HASH_2_1 0x12
-#define GIT_HASH_0_D 0xd0  // LSB is dirty bit
+#define GIT_HASH_6_5 0x15
+#define GIT_HASH_4_3 0x42
+#define GIT_HASH_2_1 0x43
+#define GIT_HASH_0_D 0x90  // LSB is dirty bit
 
 #endif /* VERSION_H_ */
