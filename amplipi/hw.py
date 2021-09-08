@@ -280,9 +280,8 @@ class Preamps:
       num_units = 1
 
     for unit in range(num_units):
-      #i2cset -y 1 0x08 0x0F 0x02 &&
-      #sleep 0.01 &&
-      #i2cset -y 1 0x08 0x0F 0x0F &&
+      major, minor, git_hash, dirty = self.preamps[unit].read_version()
+      print(f"Resetting unit {unit}'s preamp (version {major}.{minor}) and starting execution in bootloader ROM")
       print(f"Resetting unit {unit}'s preamp and starting execution in bootloader ROM")
       self.reset(unit = unit, bootloader = True)
       for p in range(unit): # Set UART passthrough on any previous units
@@ -293,7 +292,7 @@ class Preamps:
       print('Resetting all preamps and starting execution in user flash')
       self.reset()
       major, minor, git_hash, dirty = self.preamps[unit].read_version()
-      print(f'Unit {unit} version: {major}, {minor}')
+      print(f"Unit {unit}'s new version: {major}.{minor}")
 
 
 #class PeakDetect:
