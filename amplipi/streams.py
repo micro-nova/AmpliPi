@@ -396,6 +396,7 @@ class Pandora(BaseStream):
       time.sleep(0.1) # Delay a bit before creating a control pipe to pianobar
       self.ctrl = pb_control_fifo
       self._connect(src)
+      self.state = 'playing'
     except Exception as exc:
       print(f'error starting pianobar: {exc}')
 
@@ -451,11 +452,13 @@ class Pandora(BaseStream):
 
     try:
       if cmd in supported_cmds:
-        if cmd in cmd_states:
-          self.state = cmd_states[cmd]
         with open(self.ctrl, 'w') as file:
           file.write(supported_cmds[cmd])
           file.flush()
+        if cmd in cmd_states:
+          self.state = cmd_states[cmd]
+        else:
+          self.state = 'playing' # all other commands start playback even from paused
       elif 'station' in cmd:
         station_id = int(cmd.replace('station=', ''))
         if station_id is not None:
@@ -464,6 +467,7 @@ class Pandora(BaseStream):
             file.flush()
             file.write(f'{station_id}\n')
             file.flush()
+          self.state = 'playing'
         else:
           raise ValueError(f'station=<int> expected, ie. station=23432423; received "{cmd}"')
       else:
