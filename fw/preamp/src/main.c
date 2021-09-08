@@ -684,13 +684,12 @@ int main(void) {
           }
 
           // Allow UART messages to be forwarded to expansion units
-          uart_passthrough_ = (data & 0x04) == 0x04;
-
-          // Expansion UART (USART2) interrupt enable
-          if (data & 0x08) {
+          if (data & 0x04) {
+            uart_passthrough_ = true;
             USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
             NVIC_EnableIRQ(USART2_IRQn);
           } else {
+            uart_passthrough_ = false;
             USART_ITConfig(USART2, USART_IT_RXNE, DISABLE);
             NVIC_DisableIRQ(USART2_IRQn);
           }

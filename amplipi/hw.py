@@ -153,8 +153,8 @@ class Preamp:
   def uart_passthrough(self, passthrough: bool) -> None:
     """ Configures this preamp to passthrough UART1 <-> UART2 """
     reg_val = self.bus.read_byte_data(self.addr, self.Reg.EXPANSION.value)
-    if passthrough: # TODO: only 4 once single bit
-      reg_val |= 12
+    if passthrough:
+      reg_val |= 4
     else:
       reg_val &= 3
     self.bus.write_byte_data(self.addr, self.Reg.EXPANSION.value, reg_val)
