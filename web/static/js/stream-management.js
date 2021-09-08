@@ -11,6 +11,9 @@ function updateSettings() {
   $("#settings-tab-zones-title").text("Select a zone");
   $("#settings-tab-zones-selection").empty();
   $("#settings-tab-zones-config").html("");
+  $("#settings-tab-groups-title").text("Select a group");
+  $("#settings-tab-groups-selection").empty();
+  $("#settings-tab-groups-config").html("");
   $.get("/api", function(data) {
     $.each(data.sources, function(k, v) {
       streams[v.id] = v;
@@ -228,9 +231,9 @@ $(function() {
       }
 
       if (s.type == null) {
-        del = '<button type="button" class="btn btn-danger" style="display:none" id="delete" data-id="${s.id}">Delete Stream</button>'
+        del = '<button type="button" class="btn btn-danger" style="display:none" id="delete" data-id="${s.id}">Delete</button>'
       } else {
-        del = '<button type="button" class="btn btn-danger" style="float:right" id="delete" data-id="${s.id}">Delete Stream</button>'
+        del = '<button type="button" class="btn btn-danger" id="delete" data-id="${s.id}">Delete</button>'
       }
 
       html += `

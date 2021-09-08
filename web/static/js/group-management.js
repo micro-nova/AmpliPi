@@ -11,11 +11,13 @@ $(function() {
     $("#settings-tab-groups-selection li").removeClass('active'); // De-select "active" group on the left menu if had been selected
     $(this).addClass('active');
     $("#settings-tab-groups-title").text("Add a new group to AmpliPi");
-    var zone_html = "";
+    var zone_html = ``;
 
     for (const zone in zones) {
-      zone_html = zone_html.concat(`Yo dawg, zone${zone} is named ${zones[zone].name}\n`)
-    }
+      zone_html += `
+      <option value="${zone}">${zones[zone].name}</option>
+      `;
+    };
 
     var html = `
       <form id="settings-tab-groups-new-group-form">
@@ -23,12 +25,18 @@ $(function() {
           <label for="name">Group Name</label>
           <input type="text" class="form-control" name="name" id="grp_name" data-required="true">
         </div>
-        ${zone_html}
+        <div class="form-group">
+          <select class="selectpicker" id="zone-picker" multiple>
+            ${zone_html}
+          </select>
+        </div>
         <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Group</button>
         <small id="submitHelp" class="form-text text-muted"></small>
       </form>
       `;
     $("#settings-tab-groups-config").html(html);
+    /* Initialize selectpicker */
+    $('.selectpicker').selectpicker();
   });
 
   /* Show selected group settings */
@@ -39,6 +47,15 @@ $(function() {
     var g = groups[$(this).data("id")];
     console.log(g)
     $("#settings-tab-groups-title").text(g.name);
+    var zone_html = ``;
+
+    for (const zone in zones) {
+      const incl = g.zones.includes(parseInt(zone));
+      zone_html += `
+      <option value="${zone}"${incl ? " selected" : ""}>${zones[zone].name}</option>
+      `;
+    };
+
     var html = `
       <input type="hidden" id="edit-gid" name="id" value="${g.id}">
       <form id="editGroupForm">
@@ -46,163 +63,71 @@ $(function() {
           <label for="name">Group Name</label>
           <input type="text" class="form-control" name="name" value="${g.name}" data-required="true">
         </div>
-      `;
-
-//////////////////////////////////////
-      if (s.type == null) {
-        del = '<button type="button" class="btn btn-danger" style="display:none" id="delete" data-id="${s.id}">Delete Stream</button>'
-      } else {
-        del = '<button type="button" class="btn btn-danger" style="float:right" id="delete" data-id="${s.id}">Delete Stream</button>'
-      }
-
-      html += `
+        <div class="form-group">
+          <select class="selectpicker" id="zone-picker" multiple>
+            ${zone_html}
+          </select>
+        </div>
         <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Save Changes</button>
-        ${del}
+        <button type="button" class="btn btn-danger" id="delete" data-id="${g.id}">Delete</button>
         <small id="submitHelp" class="form-text text-muted"></small>
       </form>
       `;
-    $("#settings-tab-inputs-config").html(html);
+    $("#settings-tab-groups-config").html(html);
+    /* Initialize selectpicker */
+    $('.selectpicker').selectpicker();
   });
 
-  /* Show selected stream settings */
-  $("#settings-tab-inputs-config").on("click", "#new_type", function() {
-    $(".addl_settings").hide(); // Hide all additional settings
-    if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
-    else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
-    else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); }
-    else if ($(this).val() == "plexamp") { $("#plexamp_settings").show(); }
-
-  });
-
-  /* Add New Stream and Reload Page */
-  $("#settings-tab-inputs-config").on("submit", "#settings-tab-inputs-new-stream-form", function(e) {
+  /* Add New Group and Reload Page */
+  $("#settings-tab-groups-config").on("submit", "#settings-tab-groups-new-group-form", function(e) {
     e.preventDefault(); // avoid to execute the actual submit of the form.
 
-    var $form = $("#settings-tab-inputs-new-stream-form");
-    var validation = checkFormData($("#settings-tab-inputs-new-stream-form :input"))
+    var $form = $("#settings-tab-groups-new-group-form");
+    var validation = checkFormData($("#settings-tab-groups-new-group-form :input"))
     console.log(validation);
     if (!validation) { return; }
 
     var formData = getFormData($form);
+    console.log(formData);
 
     $.ajax({
       type: "POST",
-      url: '/api/stream',
+      url: '/api/group',
       data: JSON.stringify(formData),
       contentType: "application/json",
-      success: function(result) {
-        $("#settings-tab-inputs-stream-title").text("Select a stream");
-        $("#settings-tab-inputs-stream-selection").empty();
-        $("#settings-tab-inputs-config").html("");
-        $.get("/api/sources", function(data) {
-          $.each(data.sources, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
-            );
-          });
-        });
-        $.get("/api/streams", function(data) {
-          $.each(data.streams, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
-            );
-          });
-        });
-      }
+      success: updateSettings
     });
   });
 
 
-  /* Save stream changes and reload page */
-  $("#settings-tab-inputs-config").on("submit", "#editStreamForm", function(e) {
+  /* Save group changes and reload page */
+  $("#settings-tab-groups-config").on("submit", "#editGroupForm", function(e) {
     e.preventDefault(); // avoid to execute the actual submit of the form.
 
-    var $form = $("#editStreamForm");
-    var validation = checkFormData($("#editStreamForm :input"));
+    var $form = $("#editGroupForm");
+    var validation = checkFormData($("#editGroupForm :input"));
     if (!validation) { return; }
 
     var formData = getFormData($form);
-    var s = streams[document.getElementById('edit-sid').value];
-    console.log(s)
-    if (s.type == null) {
-      var nurl = '/api/sources/'
-    } else {
-      var nurl = '/api/streams/'
-    }
+    var g = groups[document.getElementById('edit-gid').value];
+    console.log(g)
 
     $.ajax({
       type: "PATCH",
-      url: nurl + $("#edit-sid").val(),
+      url: '/api/groups/' + $("#edit-gid").val(),
       data: JSON.stringify(formData),
       contentType: "application/json",
-      success: function(data) {
-        $("#settings-tab-inputs-stream-title").text("Select a stream");
-        $("#settings-tab-inputs-stream-selection").empty();
-        $("#settings-tab-inputs-config").html("");
-
-        $.get("/api/sources", function(data) {
-          $.each(data.sources, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
-            );
-          });
-        });
-        $.get("/api/streams", function(data) {
-          $.each(data.streams, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
-            );
-          });
-        });
-      }
+      success: updateSettings
     });
   });
 
 
   /* Delete stream and reload stream list and settings */
-  $("#settings-tab-inputs-config").on("click", "#delete", function() {
+  $("#settings-tab-groups-config").on("click", "#delete", function() {
     $.ajax({
-      url: '/api/streams/' + document.getElementById("edit-sid").value,
+      url: '/api/groups/' + document.getElementById("edit-gid").value,
       type: 'DELETE',
-      success: function(data) {
-        // Reload stream list and settings
-        $("#settings-tab-inputs-stream-title").text("Select a stream");
-        $("#settings-tab-inputs-stream-selection").empty();
-        $("#settings-tab-inputs-config").html("");
-
-        $.get("/api/sources", function(data) {
-          $.each(data.sources, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
-            );
-          });
-        });
-        $.get("/api/streams", function(data) {
-          $.each(data.streams, function(k, v) {
-            streams[v.id] = v;
-            $("#settings-tab-inputs-stream-selection").append(
-              '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
-              v.name +
-              ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + v.type + '</span>'
-            );
-          });
-        });
-      }
+      success: updateSettings
     });
   });
 
@@ -225,9 +150,18 @@ $(function() {
   function getFormData($form) {
     var unindexed_array = $form.serializeArray();
     var indexed_array = {};
+    var zone_array = [];
+    const zone_sel = document.getElementById('zone-picker');
+    for (const option of document.querySelectorAll('#zone-picker option')) {
+      const val = Number.parseInt(option.value);
+      if (option.selected) {
+        zone_array.push(val);
+      }
+    }
 
     $.map(unindexed_array, function(n, i){
         indexed_array[n['name']] = n['value'];
+        indexed_array['zones'] = zone_array;
     });
 
     return indexed_array;
