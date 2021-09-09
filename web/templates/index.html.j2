@@ -12,6 +12,8 @@
                 onerror="this.onerror=null;this.href='static/css/libs/font-awesome/5.15.1/all.min.css';">
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'
                 onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.18/dist/css/bootstrap-select.min.css"
+                onerror="this.onerror=null;this.href='static/css/libs/bootstrap-select/1.13.18/bootstrap-select.min.css';">
   <link rel="stylesheet" href="static/css/style.css">
   <link rel="apple-touch-icon" href="static/imgs/amplipi-small-logo.png">
 </head>
@@ -132,20 +134,46 @@
           </div>
           <div id="settings-tab-zones" class="tab-pane">
             <div class="card settings">
-              <h6 class="card-header">Zones</h6>
+              <h6 class="card-header">Zone Management</h6>
               <div class="card-body">
-                <div class="text-center">
-                  TODO
+                <div class="row">
+                  <div class="col-sm-4">
+                    <div class="selection">
+                      <ul class="list-group" id="settings-tab-zones-selection" style="cursor: pointer;">
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-sm-8">
+                    <h6 class="card-header">Zone Settings: <span id="settings-tab-zones-title"></span></h6>
+                    <div id="settings-tab-zones-config" style="padding: .75rem 1.25rem;">
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
           <div id="settings-tab-groups" class="tab-pane">
             <div class="card settings">
-              <h6 class="card-header">Groups</h6>
+              <h6 class="card-header">Group Management</h6>
               <div class="card-body">
-                <div class="text-center">
-                  TODO
+                <div class="row">
+                  <div class="col-sm-4">
+                    <div class="selection">
+                      <ul class="list-group" style="cursor: pointer;">
+                        <li class="list-group-item list-group-item-action list-group-item-success" id="settings-tab-groups-new-group">
+                          Add New Group
+                        </li>
+                      </ul>
+                      <hr />
+                      <ul class="list-group" id="settings-tab-groups-selection" style="cursor: pointer;">
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-sm-8">
+                    <h6 class="card-header">Group Settings: <span id="settings-tab-groups-title"></span></h6>
+                    <div id="settings-tab-groups-config" style="padding: .75rem 1.25rem;">
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -264,13 +292,17 @@
   <!-- jQuery JS local fallback -->
   <script>(window.jQuery.ui === undefined) && document.write('<script src="static/js/libs/jqueryui/1.12.1/jquery-ui.min.js"><\/script>')</script>
   <!-- Bootstrap JS CDN -->
-  <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'></script>
+  <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js'></script>
   <!-- Bootstrap JS local fallback -->
-  <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.min.js"><\/script>')</script>
+  <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.bundle.min.js"><\/script>')</script>
+  <!-- Bootstrap-select JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.18/dist/js/bootstrap-select.min.js"></script>
+  <!-- Bootstrap-select JS local fallback -->
+  <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap-select/1.13.18/bootstrap-select.min.js"><\/script>')</script>
   <!-- Local application script -->
   <script src="static/js/script.js"></script>
-  <!-- Additional local script - Stream Admin TODO: merge into script.js? -->
-  <script src='static/js/stream-management.js'></script>
+  <!-- Additional local script - Stream/Zone/Group Settings -->
+  <script src='static/js/settings.js'></script>
   <!-- UUID CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
   <!-- UUID local fallback -->
@@ -279,5 +311,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.10.1/qs.min.js"></script>
   <!-- qs local fallback -->
   <script>(window.uuidv4 === undefined) && document.write('<script src="static/js/libs/qs/6.10.1/qs.min.js"><\/script>')</script>
+  <script>
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
+      $('.selectpicker').selectpicker('mobile');
+    }
+    else {
+      $('.selectpicker').selectpicker({});
+    }
+  </script>
 </body>
 </html>
