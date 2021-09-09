@@ -207,9 +207,18 @@ class Api:
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
+    failed_streams: List[int] = []
     for stream in self.status.streams:
       if stream.id:
-        self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams)
+        try:
+          self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams)
+        except Exception as exc:
+          print(f"Failed to create '{stream.name}' stream: {exc}")
+          failed_streams.append(stream.id)
+    # only keep the successful streams, this fixes a common problem of loading a stream that doesn't exist in the current developement
+    # [:] does an in-place modification to the list suggested by https://stackoverflow.com/a/1208792/1110730
+    self.status.streams[:] = [s for s in self.status.streams if s.id not in failed_streams]
+
     # configure all sources so that they are in a known state
     for src in self.status.sources:
       if src.id is not None:
