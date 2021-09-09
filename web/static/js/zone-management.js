@@ -5,7 +5,7 @@ var groups = [];
 
 $(function() {
   /* Show selected zone settings */
-  $("#settings-tab-zones-selection").on("click", ".man_zone", function() {
+  $("#settings-tab-zones-selection").on("click", ".zone-config", function() {
     $('#settings-tab-zones-selection li').removeClass('active');
     $(this).addClass('active');
     var z = zones[$(this).data("id")];

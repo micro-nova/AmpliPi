@@ -40,7 +40,7 @@ $(function() {
   });
 
   /* Show selected group settings */
-  $("#settings-tab-groups-selection").on("click", ".man_group", function() {
+  $("#settings-tab-groups-selection").on("click", ".group-config", function() {
     $('#settings-tab-groups-selection li').removeClass('active');
     $("#settings-tab-groups-new-group").removeClass('active');
     $(this).addClass('active');
