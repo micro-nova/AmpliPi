@@ -432,33 +432,28 @@ class Pandora(BaseStream):
     return source
 
   def send_cmd(self, cmd):
-    """ See look up table below for accepted commands
-    These will be sent to the control fifo for pianobar
+    """ Pianobar's commands
+      cmd: Command string sent to pianobar's control fifo
+      state: Expected state after successful command execution
     """
     supported_cmds = {
-      'play': 'P\n',
-      'pause': 'S\n',
-      'stop': 'q\n',
-      'next': 'n\n',
-      'love': '+\n',
-      'ban': '-\n',
-      'shelve': 't\n'
-    }
-    cmd_states = {
-      'play': 'playing',
-      'pause': 'paused',
-      'stop': 'stopped'
+      'play':   {'cmd': 'P\n', 'state': 'playing'},
+      'pause':  {'cmd': 'S\n', 'state': 'paused'},
+      'stop':   {'cmd': 'q\n', 'state': 'stopped'},
+      'next':   {'cmd': 'n\n', 'state': 'playing'},
+      'love':   {'cmd': '+\n', 'state': None}, # love does not change state
+      'ban':    {'cmd': '-\n', 'state': 'playing'},
+      'shelve': {'cmd': 't\n', 'state': 'playing'},
     }
 
     try:
       if cmd in supported_cmds:
         with open(self.ctrl, 'w') as file:
-          file.write(supported_cmds[cmd])
+          file.write(supported_cmds[cmd]['cmd'])
           file.flush()
-        if cmd in cmd_states:
-          self.state = cmd_states[cmd]
-        else:
-          self.state = 'playing' # all other commands start playback even from paused
+        expected_state = supported_cmds[cmd]['state']
+        if expected_state is not None:
+          self.state = expected_state
       elif 'station' in cmd:
         station_id = int(cmd.replace('station=', ''))
         if station_id is not None:
@@ -467,7 +462,7 @@ class Pandora(BaseStream):
             file.flush()
             file.write(f'{station_id}\n')
             file.flush()
-          self.state = 'playing'
+          self.state = 'playing' # TODO: add verification (station could be wrong)
         else:
           raise ValueError(f'station=<int> expected, ie. station=23432423; received "{cmd}"')
       else:
