@@ -283,14 +283,17 @@
         <div class="card add-group">
           <h6 class="card-header">Add</h6>
           <div class="card-body">
-            <select id="s{{ src }}-add-input" class="custom-select source-input-sel" onchange="onSrcAdd(this);">
-              <option selected>Select Group or Zone</option>
-              {% for g, name in unused_groups[src].items() %}
-              <option value="g{{ g }}">G - {{ name }}</option>
-              {% endfor %}
-              {% for z, name in unused_zones[src].items() %}
-              <option value="z{{ z }}">Z - {{ name }}</option>
-              {% endfor %}
+            <select id="s{{ src }}-add-input" class="selectpicker" multiple title="Select Group or Zone" data-width="100%" data-size="7" onchange="onSrcAdd(this);">
+              <optgroup label="Groups">
+                {% for g, name in unused_groups[src].items() %}
+                <option value="g{{ g }}">{{ name }}</option>
+                {% endfor %}
+              </optgroup>
+              <optgroup label="Zones">
+                {% for z, name in unused_zones[src].items() %}
+                <option value="z{{ z }}">{{ name }}</option>
+                {% endfor %}
+              </optgroup>
             </select>
           </div>
         </div>
