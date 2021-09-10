@@ -520,7 +520,11 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
-    ('Zones', './scripts/built_in_test zones'),
+    ('Amplifier', './scripts/built_in_test amp'),
+    ('LEDs', './scripts/built_in_test led'),
+    ('Preamp', './scripts/built_in_test preamp'),
+    ('Inputs', './scripts/built_in_test inputs'),
+    ('Preouts', './scripts/built_in_test preout'),
   ]
   tasks = []
   for test in tests:
