@@ -135,12 +135,20 @@ PRESETS = [
   },
   # mute all
   {
-    'name': 'zones-0 mute all',
+    'name': 'amp-0 mute all',
     'state': {'zones': [{'id': zid, 'mute': True} for zid in range(6)]}
   },
   # play music
   {
-    'name': 'zones-1 play',
+    'name': 'amp-1 play',
+    'state': {
+      'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
+      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(6)]
+    }
+  },
+  # play music
+  {
+    'name': 'preout-0 play',
     'state': {
       'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
       'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(6)]
@@ -255,7 +263,7 @@ def preamp_test(ap1: Client):
 
 if __name__ == '__main__':
 
-  tests = ['led', 'zones', 'preamp', 'inputs']
+  tests = ['led', 'amp', 'preout', 'preamp', 'inputs']
 
   parser = argparse.ArgumentParser('Test audio functionality')
   parser.add_argument('test', help=f'Test to run ({tests})')
