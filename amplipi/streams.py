@@ -833,6 +833,8 @@ class FMRadio(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
+    if not self.logo:
+      self.logo = "static/imgs/fmradio.png"
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url=self.logo)
     try:
       with open(loc, 'r') as file:

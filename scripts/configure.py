@@ -44,11 +44,14 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'if ! which redsea  > /dev/null; then', # TODO: check version
       '  echo "Installing redsea"',
       '  cd /tmp',
-      '  git clone https://github.com/windytan/redsea.git',
+      '  git clone --depth 1 https://github.com/windytan/redsea.git',
       '  cd redsea',
       '  ./autogen.sh && ./configure && make',
       '  sudo make install',
       'fi',
+      'sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
+      'sudo udevadm control --reload-rules',
+      'sudo udevadm trigger'
     ]
   },
   'dlna' : {
