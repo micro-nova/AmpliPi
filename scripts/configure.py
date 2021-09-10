@@ -217,7 +217,7 @@ def _install_python_deps(env: dict, deps: List[str]):
     os.chdir(last_dir)
   return tasks
 
-def _add_desktop_icon(env, name, command):
+def _add_desktop_icon(env, name, command) -> Task:
   """ Add a desktop icon to the pi """
   entry = f"""[Desktop Entry]
 Name={name}
@@ -229,8 +229,13 @@ Encoding=UTF-8
 Terminal=false
 Categories=None;
 """
-  with open('/home/pi/Desktop/', 'w') as icon:
-    icon.write(entry)
+  success = True
+  try:
+    with open(f'/home/pi/Desktop/{name}.desktop', 'w') as icon:
+      icon.write(entry)
+  except Exception:
+    success = False
+  return Task(f'Add desktop icon for {name}', success=success)
 
 def _web_service(directory: str):
   return f"""\
@@ -512,6 +517,17 @@ def fix_file_props(env, progress) -> List[Task]:
   progress(tasks)
   return tasks
 
+def add_tests(env, progress) -> List[Task]:
+  """ Add test icons """
+  tests = [
+    ('Zones', './scripts/built_in_test zones'),
+  ]
+  tasks = []
+  for test in tests:
+    tasks += [_add_desktop_icon(env, test[0], test[1])]
+  progress(tasks)
+  return tasks
+
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
             display=True, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
@@ -533,6 +549,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if failed():
     return False
   tasks += fix_file_props(env, progress)
+  tasks += add_tests(env, progress)
   if failed():
     return False
   if os_deps:
