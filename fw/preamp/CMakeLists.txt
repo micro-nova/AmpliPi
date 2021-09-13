@@ -15,6 +15,7 @@ endif()
 
 add_executable(${PROJECT_NAME}.elf
   src/channel.c
+  src/ctrl_i2c.c
   src/front_panel.c
   src/main.c
   src/port_defs.c
