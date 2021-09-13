@@ -25,8 +25,8 @@
 #include "ctrl_i2c.h"
 
 #include "channel.h"
+#include "int_i2c.h"
 #include "port_defs.h"
-#include "power_board.h"
 #include "stm32f0xx.h"
 #include "version.h"
 
@@ -42,8 +42,6 @@
  *  t_r = ~600 ns
  *  t_f = ~9.4 ns
  */
-
-static bool uart_passthrough_ = false;
 
 void CtrlI2CInit(uint8_t addr) {
   // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
@@ -81,7 +79,103 @@ bool CtrlI2CAddrMatch() {
   return I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR);
 }
 
-void CtrlI2CTransact(Pin exp_nrst, Pin exp_boot0) {
+uint8_t ReadReg(const AmpliPiState* state, uint8_t addr) {
+  uint8_t out_msg = 0;
+  switch (addr) {
+    case REG_SRC_AD:
+      out_msg = 0;  // TODO
+      break;
+    case REG_CH321:
+      out_msg = 0;  // TODO
+      break;
+    case REG_CH654:
+      out_msg = 0;  // TODO
+      break;
+    case REG_MUTE:
+      out_msg = 0;  // TODO
+      break;
+    case REG_STANDBY:
+      out_msg = 0;  // TODO
+      break;
+    case REG_VOL_CH1:
+      out_msg = 0;  // TODO
+      break;
+    case REG_VOL_CH2:
+      out_msg = 0;  // TODO
+      break;
+    case REG_VOL_CH3:
+      out_msg = 0;  // TODO
+      break;
+    case REG_VOL_CH4:
+      out_msg = 0;  // TODO
+      break;
+    case REG_VOL_CH5:
+      out_msg = 0;  // TODO
+      break;
+    case REG_VOL_CH6:
+      out_msg = 0;  // TODO
+      break;
+    case REG_POWER_STATUS: {
+      PwrStatusMsg msg = {
+          .reserved = 0,
+          .fan_fail = state->pwr_gpio.fan_fail,  // (Developer units only)
+          .ovr_tmp  = state->pwr_gpio.ovr_tmp,
+          .pg_12v   = state->pwr_gpio.pg_12v,
+      };
+      out_msg = msg.data;
+      break;
+    }
+    case REG_FAN_CTRL:
+      out_msg = state->fan_override ? 1 : 0;
+      break;
+    case REG_LED_CTRL:
+      out_msg = state->led_override ? 1 : 0;
+      break;
+    case REG_LED_VAL:
+      out_msg = state->leds.data;
+      break;
+    case REG_EXPANSION:
+      out_msg = state->expansion.data;
+      break;
+    case REG_HV1_VOLTAGE:
+      out_msg = state->hv1;
+      break;
+    case REG_HV1_TEMP:
+      out_msg = state->hv1_temp;
+      break;
+    case REG_AMP1_TEMP:
+      out_msg = state->amp_temp1;
+      break;
+    case REG_AMP2_TEMP:
+      out_msg = state->amp_temp2;
+      break;
+    case REG_VERSION_MAJOR:
+      out_msg = VERSION_MAJOR;
+      break;
+    case REG_VERSION_MINOR:
+      out_msg = VERSION_MINOR;
+      break;
+    case REG_GIT_HASH_6_5:
+      out_msg = GIT_HASH_6_5;
+      break;
+    case REG_GIT_HASH_4_3:
+      out_msg = GIT_HASH_4_3;
+      break;
+    case REG_GIT_HASH_2_1:
+      out_msg = GIT_HASH_2_1;
+      break;
+    case REG_GIT_HASH_0_D:
+      // LSB is the clean/dirty status according to Git
+      out_msg = GIT_HASH_0_D;
+      break;
+    default:
+      // Return 0xFF if a non-existent register is selected
+      out_msg = 0xFF;
+  }
+  return out_msg;
+}
+
+void CtrlI2CTransact(AmpliPiState* state) {
   // Setting I2C_ICR.ADDRCF releases the clock stretch if any then acks
   I2C_ClearFlag(I2C1, I2C_FLAG_ADDR);
   // I2C_ISR.DIR is assumed to be 0 (write)
@@ -94,7 +188,6 @@ void CtrlI2CTransact(Pin exp_nrst, Pin exp_boot0) {
   // Wait for either another slave address match (read),
   // or data in the RX register (write)
   uint32_t i2c_isr_val;
-  uint8_t  msg;
   do {
     i2c_isr_val = I2C1->ISR;
   } while (!(i2c_isr_val & (I2C_FLAG_ADDR | I2C_FLAG_RXNE)));
@@ -109,83 +202,8 @@ void CtrlI2CTransact(Pin exp_nrst, Pin exp_boot0) {
     while (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXE) == RESET) {}
 
     // Send a response based on the register address
-    switch (reg) {
-      case REG_POWER_GOOD:
-        msg               = readI2C2(pwr_temp_mntr_gpio);
-        uint8_t pg_mask   = 0xf3;  // 1111 0011
-        uint8_t pg_status = 0;
-
-        // Gets the value of PG_12V, PG_9V, and nothing else
-        msg &= ~(pg_mask);
-        pg_status = msg >> 2;
-        I2C_SendData(I2C1, pg_status);  // Desired value is 0x03 - both good
-        break;
-      case REG_FAN_STATUS:
-        msg                = readI2C2(pwr_temp_mntr_gpio);
-        uint8_t fan_mask   = 0x4f;  // 0100 1111
-        uint8_t fan_status = 0;
-
-        // Gets the value of FAN_ON, OVR_TMP, FAN_FAIL, and nothing else
-        msg &= ~(fan_mask);
-        fan_status = msg >> 4;
-        I2C_SendData(I2C1, fan_status);
-        break;
-      case REG_EXTERNAL_GPIO:
-        msg               = readI2C2(pwr_temp_mntr_gpio);
-        uint8_t io_mask   = 0xbf;  // 1011 1111
-        uint8_t io_status = 0;
-
-        msg &= ~(io_mask);  // Gets the value of EXT_GPIO and nothing else
-        io_status = msg >> 6;
-        I2C_SendData(I2C1, io_status);
-        break;
-      case REG_LED_OVERRIDE:
-        msg = readI2C2(front_panel);  // Current state of the front panel
-        I2C_SendData(I2C1, msg);
-        break;
-      case REG_HV1_VOLTAGE:
-        write_ADC(0x61);  // Selects HV1 (AIN0)
-        msg = read_ADC();
-        I2C_SendData(I2C1, msg);
-        break;
-      case REG_HV2_VOLTAGE:
-        write_ADC(0x63);  // Selects HV2 (AIN1)
-        msg = read_ADC();
-        I2C_SendData(I2C1, msg);
-        break;
-      case REG_HV1_TEMP:
-        write_ADC(0x65);  // Selects NTC1 (AIN2)
-        msg = read_ADC();
-        I2C_SendData(I2C1, msg);
-        break;
-      case REG_HV2_TEMP:
-        write_ADC(0x67);  // Selects NTC2 (AIN3)
-        msg = read_ADC();
-        I2C_SendData(I2C1, msg);
-        break;
-      case REG_VERSION_MAJOR:
-        I2C_SendData(I2C1, VERSION_MAJOR);
-        break;
-      case REG_VERSION_MINOR:
-        I2C_SendData(I2C1, VERSION_MINOR);
-        break;
-      case REG_GIT_HASH_6_5:
-        I2C_SendData(I2C1, GIT_HASH_6_5);
-        break;
-      case REG_GIT_HASH_4_3:
-        I2C_SendData(I2C1, GIT_HASH_4_3);
-        break;
-      case REG_GIT_HASH_2_1:
-        I2C_SendData(I2C1, GIT_HASH_2_1);
-        break;
-      case REG_GIT_HASH_0_D:
-        // LSB is the clean/dirty status according to Git
-        I2C_SendData(I2C1, GIT_HASH_0_D);
-        break;
-      default:
-        // Return FF if a non-existent register is selected
-        I2C_SendData(I2C1, 0xFF);
-    }
+    uint8_t response = ReadReg(state, reg);
+    I2C_SendData(I2C1, response);
 
     // We only allow reading 1 byte at a time for now, here we are assuming
     // a NACK was sent by the master to signal the end of the read request.
@@ -195,6 +213,8 @@ void CtrlI2CTransact(Pin exp_nrst, Pin exp_boot0) {
     uint8_t data = I2C_ReceiveData(I2C1);
 
     // Perform appropriate action based on register address and new data
+    (void)data;
+    /* TODO
     uint8_t ch;
     uint8_t src;
     switch (reg) {
@@ -314,11 +334,8 @@ void CtrlI2CTransact(Pin exp_nrst, Pin exp_boot0) {
         // Do nothing
         break;
     }
+    */
     // We only allow writing 1 byte at a time for now, here we assume the
     // master stops transmitting and sends a STOP condition to end the write.
   }
-}
-
-bool UartPassthroughEnabled() {
-  return uart_passthrough_;
 }

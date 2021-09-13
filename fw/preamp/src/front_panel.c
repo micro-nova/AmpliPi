@@ -29,20 +29,14 @@ bool audio_power_on_ = false;
 // Enables/disables the 9V power supply along with the green LED
 void setAudioPower(bool on) {
   audio_power_on_ = on;
-  updateFrontPanel(!on);
+  // updateFrontPanel(!on);
   if (on) {
     delay_ms(250);  // Need time for volume IC to turn on
   }
 }
 
-// Init the I2C->GPIO IC on the led board
-// This IC controls all the LEDs on the front of the box
-// This sets all GPIO pins to output
-void enableFrontPanel() {
-  writeI2C2(front_panel_dir, ALL_OUTPUT);
-}
-
 // Updates the LEDs on the front panel depending on the system state
+/*
 void updateFrontPanel(bool red_on) {
   // bit 0: Green "System On" LED
   // bit 1: Red "System Standby" LED
@@ -66,3 +60,4 @@ void updateFrontPanel(bool red_on) {
 
   writeI2C2(front_panel, bits);
 }
+*/

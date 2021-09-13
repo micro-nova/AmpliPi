@@ -94,13 +94,13 @@ static inline void quick_unmute(int ch) {
 // Pull pin LOW to mute
 void mute(int ch) {
   quick_mute(ch);
-  updateFrontPanel(true);
+  // updateFrontPanel(true);
 }
 
 // Pull pin HI to unmute
 void unmute(int ch) {
   quick_unmute(ch);
-  updateFrontPanel(true);
+  // updateFrontPanel(true);
 }
 
 // Writes volume level to the volume ICs

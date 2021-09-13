@@ -53,11 +53,4 @@ const I2CReg ch_right[NUM_CHANNELS] = {
     {0x8A, 0x01}, {0x8A, 0x03}, {0x8A, 0x05},
 };
 
-const I2CReg front_panel     = {0x40, 0x09};
-const I2CReg front_panel_dir = {0x40, 0x00};
-
-const I2CReg pwr_temp_mntr_dir  = {0x42, 0x00};
-const I2CReg pwr_temp_mntr_gpio = {0x42, 0x09};
-const I2CReg pwr_temp_mntr_olat = {0x42, 0x0A};
-
 const I2CReg adc_dev = {0xC8, 0xFF};

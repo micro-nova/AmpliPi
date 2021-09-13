@@ -60,7 +60,7 @@ bool readPin(Pin pp) {
   }
 }
 
-int readI2C2(I2CReg r) {
+uint8_t readI2C2(I2CReg r) {
   uint8_t data;
 
   // Wait if I2C2 is busy

@@ -22,12 +22,14 @@
 
 #include "channel.h"
 #include "ctrl_i2c.h"
-#include "front_panel.h"
+#include "int_i2c.h"
 #include "port_defs.h"
-#include "power_board.h"
 #include "stm32f0xx.h"
 #include "systick.h"
 #include "version.h"
+
+// State of the AmpliPi hardware
+AmpliPiState state_ = {0};
 
 void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str);
 
@@ -96,132 +98,6 @@ void init_gpio() {
   GPIO_InitStructureF.GPIO_PuPd  = GPIO_PuPd_NOPULL;
   GPIO_InitStructureF.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_Init(GPIOF, &GPIO_InitStructureF);
-}
-
-void init_i2c2() {
-  /* I2C-2 is internal to a single AmpliPi unit.
-   * The STM32 is the master and controls the volume chips, power, fans,
-   * and front panel LEDs.
-   *
-   * Bus Capacitance
-   * | Device           | Capacitance (pF)
-   * | STM32            | 5
-   * | MAX11601 (ADC)   | 15 (t_HD.STA>.6 t_LOW>1.3 t_HIGH>0.6 t_SU.STA>.6
-   *                          t_HD.DAT<.15? t_SU.DAT>0.1 t_r<.3 t_f<.3)
-   * | MCP23008 (Power) | ?? (t_HD.STA>.6 t_LOW>1.3 t_HIGH>0.6 t_SU.STA>.6
-   *                          t_HD.DAT<.9   t_SU.DAT>0.1 t_r<.3 t_f<.3)
-   * | MCP23008 (LEDs)  | ??
-   * | MCP4017 (DPot)   | 10 (t_HD.STA>.6 t_LOW>1.3 t_HIGH>0.6 t_SU.STA>.6
-   *                          t_HD.DAT<.9   t_SU.DAT>0.1 t_r<.3 t_f<.04)
-   * | TDA7448 (Vol1)   | ??????????????
-   * | TDA7448 (Vol2)   | Doesn't even specify max frequency...
-   * ~70 pF for all devices, plus say ~20 pF for all traces and wires = ~90 pF
-   * So rise time t_r ~= 0.8473 * 1 kOhm * 90 pF = 76 ns
-   * Measured rise time: 72 ns
-   * Measured fall time:  4 ns
-   *
-   * Pullup Resistor Values
-   *   Max output current for I2C Standard/Fast mode is 3 mA, so min pullup is:
-   *    Rp > [V_DD - V_OL(max)] / I_OL = (3.3 V - 0.4 V) / 3 mA = 967 Ohm
-   *   Max bus capacitance (with only resistor for pullup) is 200 pF.
-   *   Standard mode rise-time t_r(max) = 1000 ns
-   *    Rp_std < t_r(max) / (0.8473 * C_b) = 1000 / (0.8473 * 0.2) = 5901 Ohm
-   *   Fast mode rise-time t_r(max) = 300 ns
-   *    Rp_fast < t_r(max) / (0.8473 * C_b) = 1000 / (0.8473 * 0.2) = 1770 Ohm
-   *   For Standard mode: 1k <= Rp <= 5.6k
-   *   For Fast mode: 1k <= Rp <= 1.6k
-   */
-
-  // Enable peripheral clock for I2C2
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
-
-  // Enable SDA1, SDA2, SCL1, SCL2 clocks
-  // Enabled here since this is called before I2C1
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-
-  // Connect pins to alternate function for I2C2
-  GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_1);  // I2C2_SCL
-  GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_1);  // I2C2_SDA
-
-  // Config I2C GPIO pins
-  GPIO_InitTypeDef GPIO_InitStructureI2C;
-  GPIO_InitStructureI2C.GPIO_Pin   = pSCL_VOL | pSDA_VOL;
-  GPIO_InitStructureI2C.GPIO_Mode  = GPIO_Mode_AF;
-  GPIO_InitStructureI2C.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructureI2C.GPIO_OType = GPIO_OType_OD;
-  GPIO_InitStructureI2C.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOB, &GPIO_InitStructureI2C);
-
-  // Setup I2C2
-  I2C_InitTypeDef I2C_InitStructure2;
-  I2C_InitStructure2.I2C_Mode                = I2C_Mode_I2C;
-  I2C_InitStructure2.I2C_AnalogFilter        = I2C_AnalogFilter_Enable;
-  I2C_InitStructure2.I2C_DigitalFilter       = 0x00;
-  I2C_InitStructure2.I2C_OwnAddress1         = 0x00;
-  I2C_InitStructure2.I2C_Ack                 = I2C_Ack_Enable;
-  I2C_InitStructure2.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-
-  // Datasheet example: 100 kHz: 0x10420F13, 400 kHz: 0x10310309
-  // Excel tool, rise/fall 76/15 ns: 100 kHz: 0x00201D2B (0.5935% error)
-  //                                 400 kHz: 0x0010020A (2.4170% error)
-
-  // Common parameters
-  // t_I2CCLK = 1 / 8 MHz = 125 ns
-  // t_AF(min) = 50 ns
-  // t_AF(max) = 260 ns
-  // t_r = 72 ns
-  // t_f = 4 ns
-  // Fall time must be < 300 ns
-  // For Standard mode (100 kHz), rise time < 1000 ns
-  // For Fast mode (400 kHz), rise time < 300 ns
-  // tR = 0.8473*Rp*Cb = 847.3*Cb
-
-  // Standard mode, max 100 kHz
-  // t_LOW > 4.7 us
-  // t_HIGH > 4 us
-  // t_I2CCLK < [t_LOW - t_AF(min) - t_DNF] / 4 = (4700 - 50) / 4 = 1.1625 ns
-  // t_I2CCLK < t_HIGH = 4000 ns
-  // Set PRESC = 0, so t_I2CCLK = 1 / 8 MHz = 125 ns
-  // t_PRESC = t_I2CCLK / (PRESC + 1) = 125 / (0 + 1) = 125 ns
-  // SDADEL >= [t_f + t_HD;DAT(min) - t_AF(min) - t_DNF - 3*t_I2CCLK] / t_PRESC
-  // SDADEL >= [t_f - 50 - 375] / 125 --- This will be < 0, so SDASEL >= 0
-  // SDADEL <= [t_HD;DAT(max) - t_r - t_AF(max) - t_DNF - 4*t_I2CCLK] / t_PRESC
-  // SDADEL <= (3450 - 76 - 260 - 500) / 125 = 20.912
-  // SCLDEL >= {[t_r + t_SU;DAT(min)] / t_PRESC} - 1
-  // SCLDEL >= (76 + 250) / 125 - 1 = 1.608
-  // So 0 <= SDADEL <= 20, SCLDEL >= 2
-  // I2C_TIMINGR[31:16] = 0x0020
-  //
-  // t_HIGH(min) <= t_AF(min) + t_DNF + 2*t_I2CCLK + t_PRESC*(SCLH + 1)
-  // 4000 <= 50 + 2*125 + 125*(SCLH + 1)
-  // 3575 <= 125*SCLH
-  // SCLH >= 28.6 = 0x1D
-  //
-  // t_LOW(min) <= t_AF(min) + t_DNF + 2*t_I2CCLK + t_PRESC*(SCLL + 1)
-  // 4700 <= 50 + 2*125 + 125*(SCLL + 1)
-  // 4275 <= 125*SCLL
-  // SCLL >= 34.2 = 0x23
-  //
-  // Need to stay under 100 kHz in "worst" case. Keep SCLH at min,
-  // but here we determine final SCLL.
-  // t_SCL = t_SYNC1 + t_SYNC2 + t_LOW + t_HIGH >= 10000 ns (100 kHz max)
-  // t_SYNC1(min) = t_f + t_AF(min) + t_DNF + 2*t_I2CCLK
-  // t_SYNC1(min) = 6 + 50 + 2*125 = 306 ns
-  // t_SYNC2(min) = t_r + t_AF(min) + t_DNF + 2*t_I2CCLK
-  // t_SYNC2(min) = 76 + 50 + 2*125 = 376 ns
-  // t_SYNC1 + t_SYNC2 + t_LOW + t_HIGH >= 10000 ns
-  // t_LOW + t_HIGH >= 9318 ns
-  // t_PRESC*(SCLL + 1) + t_PRESC*(SCLH + 1) >= 9318 ns
-  // 125*(SCLL + 1) + 125*30 >= 9318 ns
-  // 125*(SCLL + 1) + 125*30 >= 9318 ns
-  // SCLL >= 43.544 = 0x2C
-
-  // Fast mode, max 400 kHz
-  // TODO?
-
-  I2C_InitStructure2.I2C_Timing = 0x00201D2C;
-  I2C_Init(I2C2, &I2C_InitStructure2);
-  I2C_Cmd(I2C2, ENABLE);
 }
 
 void init_uart1() {
@@ -346,11 +222,7 @@ int main(void) {
   // INIT
   init_gpio();   // UART and I2C require GPIO pins
   init_uart1();  // The preamp will receive its I2C network address via UART
-  init_i2c2();   // Need I2C2 initialized for the front panel functionality
-                 // during the address loop
-  enableFrontPanel();  // Setup the I2C->GPIO chip
-  enablePowerBoard();  // Setup the power supply chip
-  enablePSU();         // Turn on 9V/12V power
+  InitInternalI2C(&state_);  // Setup the internal I2C bus
   systickInit();  // Initialize the clock ticks for delay_ms and other timing
                   // functionality
 
@@ -388,12 +260,10 @@ int main(void) {
     bool blink = (millis() >> 10) & 1;
     if (red_on != blink) {
       red_on = blink;
-      updateFrontPanel(red_on);
+      // TODO integrate address reception with main loop
     }
   }
 
-  // Stabilize the blinking red LED once an address is given
-  updateFrontPanel(true);
   // Initialize I2C with the new address
   CtrlI2CInit(i2c_addr);
   // Initialize each channel's volume state
@@ -406,8 +276,12 @@ int main(void) {
   while (1) {
     // Check for incomming control messages
     if (CtrlI2CAddrMatch()) {
-      CtrlI2CTransact(f0, f1);
+      CtrlI2CTransact(&state_);
     }
+
+    // Read internal I2C bus every 32 ms (31.25 Hz)
+    bool read_internal_i2c = !(millis() & ((1 << 5) - 1));
+    if (read_internal_i2c) {}
   }
 }
 
@@ -438,7 +312,7 @@ void USART1_IRQHandler(void) {
     USART1->RQR |= USART_RQR_ABRRQ | USART_RQR_RXFRQ;
   } else if (isr & USART_ISR_RXNE) {
     uint16_t m = USART_ReceiveData(USART1);
-    if (UartPassthroughEnabled()) {
+    if (state_.uart_passthrough) {
       USART_SendData(USART2, m);
     } else {
       RxBuf_Add(&UART_Preamp_RxBuffer, (uint8_t)m);

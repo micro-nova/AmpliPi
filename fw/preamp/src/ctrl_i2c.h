@@ -22,12 +22,24 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "port_defs.h"
 #include "ports.h"
+
+typedef struct {
+  PwrGpio  pwr_gpio;          // Power Board GPIO expander's state
+  LedGpio  leds;              // LED Board's state
+  Expander expansion;         // Expansion connector settings
+  uint8_t  hv1;               // High-voltage in Q6.2 Volts
+  uint8_t  hv1_temp;          // PSU temp in Q6.2 - 20 degC
+  uint8_t  amp_temp1;         // Amp heatsink 1 temp in Q6.2 - 20 degC
+  uint8_t  amp_temp2;         // Amp heatsink 2 temp in Q6.2 - 20 degC
+  bool     fan_override;      // Override fan control logic and force 100% on
+  bool     led_override;      // Override LED Board logic and force to led_val
+  bool     uart_passthrough;  // Passthrough messages between UART1<->UART2
+} AmpliPiState;
 
 void CtrlI2CInit(uint8_t addr);
 bool CtrlI2CAddrMatch();
-void CtrlI2CTransact(Pin exp_nrst, Pin exp_boot0);
-
-bool UartPassthroughEnabled();
+void CtrlI2CTransact(AmpliPiState* state);
 
 #endif /* CTRL_I2C_H_ */

@@ -30,7 +30,4 @@
 
 void setAudioPower(bool on);
 
-void enableFrontPanel();
-void updateFrontPanel(bool on);
-
 #endif /* FRONT_PANEL_H_ */

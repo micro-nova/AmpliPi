@@ -17,10 +17,10 @@ add_executable(${PROJECT_NAME}.elf
   src/channel.c
   src/ctrl_i2c.c
   src/front_panel.c
+  src/int_i2c.c
   src/main.c
   src/port_defs.c
   src/ports.c
-  src/power_board.c
   src/system_stm32f0xx.c
   src/systick.c
 
