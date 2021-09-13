@@ -12,6 +12,8 @@ pillow
 psutil
 pydantic
 pyserial
+pytest
+pytest-dependency
 python-multipart
 python-vlc
 pyyaml

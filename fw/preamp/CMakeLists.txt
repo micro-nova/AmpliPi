@@ -105,8 +105,8 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
 )
 
 add_custom_target(program
-  COMMAND sudo stm32flash -vRb 115200 -i 5,-4,4 -w ${PROJECT_NAME}.bin /dev/serial0 &&
-          printf 'A\\x10\\r\\n' > /dev/serial0 # Set i2c address
+  COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}../../.. &&
+          venv/bin/python -m amplipi.hw --flash ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.bin
   COMMENT "Programming preamp"
   DEPENDS ${PROJECT_NAME}.elf
 )

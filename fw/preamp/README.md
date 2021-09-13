@@ -44,3 +44,9 @@ or program an expansion unit by running
 ```sh
 make program-expander
 ```
+
+The programming is done by `stm32flash`, but uses `hw.py`'s logic
+to program any expanders found.
+```sh
+venv/bin/python -m amplipi.hw --flash preamp.bin
+```
