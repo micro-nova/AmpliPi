@@ -221,7 +221,7 @@ def inputs_test(ap1: Client):
 
   while True:
     # select the Aux input on this device and play audio through it to all zones
-    subprocess.check_call(['amixer', '-c', '2', 'set', "PCM Capture Source", "Line"], stdout=subprocess.DEVNULL)
+    subprocess.check_call(['amixer', 'set', "PCM Capture Source", "Line"], stdout=subprocess.DEVNULL)
     # connect all zones to ch3
     ap1.load_preset(preset.id)
     if not analog_tester_avail:
@@ -230,7 +230,7 @@ def inputs_test(ap1: Client):
       ap2.announce(models.Announcement(source_id=3, media=f'web/static/audio/aux_in.mp3', vol=-25))
 
     # select the Optical input on this device and play audio through it to all zones
-    subprocess.check_call(['amixer', '-c', '2', 'set', "PCM Capture Source", "IEC958 In"], stdout=subprocess.DEVNULL)
+    subprocess.check_call(['amixer', 'set', "PCM Capture Source", "IEC958 In"], stdout=subprocess.DEVNULL)
     # connect all zones to ch0
     ap1.load_preset(preset.id)
     if not analog_tester_avail:
@@ -238,24 +238,21 @@ def inputs_test(ap1: Client):
     else:
       ap2.announce(models.Announcement(source_id=0, media=f'web/static/audio/optical_in.mp3', vol=-25))
 
-
-
 def preamp_test(ap1: Client):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
   ap2 = get_analog_tester_client()
-  analog_tester_avail = ap2.available()
   status = ap1.get_status()
   if status is None:
     print('failed to get AmpliPi status')
     sys.exit(1)
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
-  if not analog_tester_avail:
+  if not ap2.available():
     print('No analog tester available, only able to test digital inputs')
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-20) for src in range(4)]
   analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3', vol=-25) for src in range(4)]
   while True:
     # TODO: add a reset here and attempt to program fw if missing/outdated fw version
-    if analog_tester_avail:
+    if ap2.available():
       for msg in analog_msgs:
         pst = presets[msg.source_id]
         if pst.id is not None:

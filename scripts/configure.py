@@ -181,6 +181,14 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     _from = f"{env['base_dir']}/config/asound.conf"
     _to = "/etc/asound.conf"
     tasks += print_progress([Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
+    # fix usb soundcard name
+    _from = f"{env['base_dir']}/config/85-amplipi-usb-audio.rules"
+    _to = "/etc/udev/rules.d/85-amplipi-usb-audio.rules"
+    tasks += print_progress([Task('fix usb soundard id', multiargs=[
+      f"sudo cp {_from} {_to}".split(),
+      'sudo udevadm control --reload-rules'.split(),
+      'sudo udevadm trigger'.split()
+    ])])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
