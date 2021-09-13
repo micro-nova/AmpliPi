@@ -160,8 +160,8 @@ PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -20)
 PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -20)]
 
 def setup(client: Client):
-  prev_cfg = client.get_status()
   """ Configure AmpliPi for testing by loading a simple known configuration """
+  prev_cfg = client.get_status()
   client.load_config(models.Status(streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
   for pst in PRESETS:
     client.create_preset(models.Preset(**pst))
@@ -190,7 +190,12 @@ def loop_test(client: Client, test_name: str):
 def get_analog_tester_client():
   """ Get the second **special** amplipi instance available on MicroNova's network
      We use this to drive an AmpliPi under test's audio inputs (analog1-4, aux, optical) """
-  return Client('http://aptestanalog.local/api')
+  primary = Client('http://aptestanalog.local/api')
+  if not primary.available():
+    fallback = Client('http://aptestanalog.local:5000/api')
+    if fallback.available():
+      return fallback
+  return primary # when both are not available we return the primary so primary.available() can be checked
 
 def inputs_test(ap1: Client):
   """ Test the controller boards Aux and Optical inputs """
