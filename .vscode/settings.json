@@ -23,5 +23,11 @@
   },
   "[c]": {
     "editor.formatOnSave": true
+  },
+  "files.associations": {
+    // The C/C++ extension treats *.h files as "non-standard" C files,
+    // and updates this list every time a .h file is opened.
+    // This setting just forces all *.h files to be treated as C files.
+    "*.h": "c"
   }
 }
