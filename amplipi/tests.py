@@ -178,6 +178,24 @@ def loop_test(client: Client, test_name: str):
   if len(stages) == 0:
     print(f"test '{test_name}' not found")
     return
+  elif test_name == 'preout':
+    print("""Use a pair of headphones to connect to each of the 6 channels.
+
+    - Verify both left and right sides are playing music for each channel
+    """)
+  elif test_name == 'amp':
+    print("""Connect the test speakers to each of the 6 zones
+
+    - Verify audio plays out each side, then pauses, then starts playing again
+    """)
+  elif test_name == 'led':
+    print("""Look at the front LEDs.
+
+    - Verify the seuqnece is the following:
+      1. The first led should blink red then green.
+      2. The next 6 leds will light up in a progress bar-like sequence (they should be the same brightness)
+      3. Repeat
+    """)
   while True:
     for stage in stages:
       if stage.id is not None: # placate the typechecker
@@ -247,11 +265,13 @@ def preamp_test(ap1: Client):
     sys.exit(1)
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
   if not ap2.available():
-    print('No analog tester available, only able to test digital inputs')
+    print('No analog tester available, only able to test digital inputs\n')
+    print('Test will play Analog 1 Left, Analog 1 Right...Analog 4 Right, Digital 1 Left... Dgitial 4 Right')
+    print('- Verify that each side and all 8 sources are played out of each of the 6 zones')
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-20) for src in range(4)]
   analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3', vol=-25) for src in range(4)]
   while True:
-    # TODO: add a reset here and attempt to program fw if missing/outdated fw version
+    # TODO: verify fw version
     if ap2.available():
       for msg in analog_msgs:
         pst = presets[msg.source_id]
