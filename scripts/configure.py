@@ -184,7 +184,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     # fix usb soundcard name
     _from = f"{env['base_dir']}/config/85-amplipi-usb-audio.rules"
     _to = "/etc/udev/rules.d/85-amplipi-usb-audio.rules"
-    tasks += print_progress([Task('fix usb soundard id', multiargs=[
+    tasks += print_progress([Task('fix usb soundcard id', multiargs=[
       f"sudo cp {_from} {_to}".split(),
       'sudo udevadm control --reload-rules'.split(),
       'sudo udevadm trigger'.split()
@@ -229,13 +229,11 @@ def _add_desktop_icon(env, name, command) -> Task:
   """ Add a desktop icon to the pi """
   entry = f"""[Desktop Entry]
 Name={name}
-Comment=My comment
-Icon=/usr/share/pixmaps/openbox.xpm
+Icon=lxterminal
 Exec=lxterminal -t "{name}" --working-directory={env["base_dir"]} -e {command}
 Type=Application
-Encoding=UTF-8
 Terminal=false
-Categories=None;
+Categories=Utility;
 """
   success = True
   try:
