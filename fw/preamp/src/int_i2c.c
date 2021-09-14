@@ -201,16 +201,35 @@ uint8_t ReadAdc(uint8_t chan) {
   return data;
 }
 
+uint8_t AdcToTemp(uint8_t adc_val) {
+  // TODO
+  return adc_val;
+}
+
 void UpdateAdc(AmpliPiState* state) {
+#define ADC_REF_VOLTS 3.3
+#define ADC_PD_KOHMS  4700
+#define ADC_PU_KOHMS  100000
   // TODO: low-pass filter after intial reading
 
   // Configuration byte = { config=0b0, scan=0b11, cs=0b00XX, sgl=0b1 }
-  state->hv1       = ReadAdc(0x61 | (0 << 1));
-  state->hv1_temp  = ReadAdc(0x61 | (1 << 1));
-  state->amp_temp1 = ReadAdc(0x61 | (2 << 1));
-  state->amp_temp2 = ReadAdc(0x61 | (3 << 1));
+  uint8_t hv1_adc       = ReadAdc(0x61 | (0 << 1));
+  uint8_t hv1_temp_adc  = ReadAdc(0x61 | (1 << 1));
+  uint8_t amp_temp1_adc = ReadAdc(0x61 | (2 << 1));
+  uint8_t amp_temp2_adc = ReadAdc(0x61 | (3 << 1));
 
-  // TODO: Convert to Volts/degC
+  // Convert HV1 to Volts
+  uint32_t hv1_adc2  = (uint32_t)hv1_adc << 2;  // Add fractional bits
+  uint32_t hv1_raw_v = ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS) *
+                       hv1_adc2 / (UINT8_MAX * ADC_PD_KOHMS);
+  state->hv1 = (uint8_t)(hv1_raw_v > UINT8_MAX ? UINT8_MAX : hv1_raw_v);
+
+  // Convert HV1 thermocouple to degC
+  state->hv1_temp = AdcToTemp(hv1_temp_adc);
+
+  // Convert amplifier thermocouples to degC
+  state->amp_temp1 = AdcToTemp(amp_temp1_adc);
+  state->amp_temp2 = AdcToTemp(amp_temp2_adc);
 }
 
 void InitInternalI2C(AmpliPiState* state) {
