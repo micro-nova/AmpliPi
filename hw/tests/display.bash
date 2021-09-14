@@ -24,3 +24,8 @@ if $passed; then
 else
   echo -e "${RED}TEST FAILED${NC}"
 fi
+
+if [[ $# > 0 ]]; then
+  echo "Press any key to exit..."
+  read -sn 1
+fi

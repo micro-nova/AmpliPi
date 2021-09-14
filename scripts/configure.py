@@ -531,6 +531,8 @@ def add_tests(env, progress) -> List[Task]:
     ('Preamp', './scripts/built_in_test preamp'),
     ('Inputs', './scripts/built_in_test inputs'),
     ('Preouts', './scripts/built_in_test preout'),
+    ('Display', './hw/tests/display.bash --wait'),
+    ('Ethernet', './hw/tests/ethernet.bash --wait'),
   ]
   tasks = []
   for test in tests:
