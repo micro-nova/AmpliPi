@@ -37,7 +37,7 @@ const I2CReg led_dir_  = {0x40, 0x00};
 const I2CReg led_gpio_ = {0x40, 0x09};
 const I2CReg led_olat_ = {0x42, 0x0A};
 
-void init_i2c2() {
+void InitI2C2() {
   /* I2C-2 is internal to a single AmpliPi unit.
    * The STM32 is the master and controls the volume chips, power, fans,
    * and front panel LEDs.
@@ -201,8 +201,8 @@ uint8_t ReadAdc(uint8_t chan) {
   return data;
 }
 
-void UpdateAdc(AmpliPiState* state, bool init) {
-  (void)init;  // TODO: low-pass filter after intial reading
+void UpdateAdc(AmpliPiState* state) {
+  // TODO: low-pass filter after intial reading
 
   // Configuration byte = { config=0b0, scan=0b11, cs=0b00XX, sgl=0b1 }
   state->hv1       = ReadAdc(0x61 | (0 << 1));
@@ -211,34 +211,46 @@ void UpdateAdc(AmpliPiState* state, bool init) {
   state->amp_temp2 = ReadAdc(0x61 | (3 << 1));
 
   // TODO: Convert to Volts/degC
-  // TODO: Fan control logic
 }
 
 void InitInternalI2C(AmpliPiState* state) {
-  // Init the value and direction for the power board GPIO
-  state->pwr_gpio.data   = 0;
-  state->pwr_gpio.en_12v = 1;  // Always enable 12V
-  writeI2C2(pwr_temp_mntr_olat_, state->pwr_gpio.data);
+  // Initialize the STM32's I2C2 bus as a master
+  InitI2C2();
+
+  // Set the direction for the power board GPIO
   writeI2C2(pwr_temp_mntr_dir_, 0x7D);  // 0=output, 1=input
 
-  // Init the LED Board's LEDs
-  state->leds.zones = 0;
-  state->leds.red   = 1;
-  state->leds.grn   = 0;
-  writeI2C2(led_olat_, state->leds.data);
+  // Set the LED Board's GPIO expander as all outputs
   writeI2C2(led_dir_, 0x00);  // 0=output, 1=input
 
-  // Init the ADC voltage and temp values
-  UpdateAdc(state, true);
+  UpdateInternalI2C(state);
 }
 
 void UpdateInternalI2C(AmpliPiState* state) {
-  // Read the Pwer Board's GPIO state
+  // Read the Power Board's ADC
+  UpdateAdc(state);
+
+  // Update the Power Board's GPIO state
+  if (state->fan_override) {
+    state->pwr_gpio.fan_on = 1;
+  }
+  // TODO: Fan control logic
+  writeI2C2(pwr_temp_mntr_olat_, state->pwr_gpio.data);
   state->pwr_gpio.data = readI2C2(pwr_temp_mntr_gpio_);
 
-  // Read the Power Board's ADC
-  UpdateAdc(state, false);
+  // Update the LED Board's LED state
+  if (!state->led_override) {
+    state->leds.grn = state->standby ? 0 : 1;
+    // state->leds.red = state->standby ? 1 : 0;
 
-  // Read the LED Board's LED state
+    state->leds.zones = 0;
+    for (uint8_t ch = 0; ch < NUM_CHANNELS; ch++) {
+      state->leds.zones |= (isOn(ch) ? 1 : 0) << ch;
+    }
+  }
+  writeI2C2(led_olat_, state->leds.data);
   state->pwr_gpio.data = readI2C2(led_gpio_);
+
+  // TODO: Can the volume controllers be read?
+  // TODO: Write volumes
 }

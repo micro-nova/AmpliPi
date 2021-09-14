@@ -29,7 +29,7 @@
 #include "version.h"
 
 // State of the AmpliPi hardware
-AmpliPiState state_ = {0};
+AmpliPiState state_;
 
 void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str);
 
@@ -206,10 +206,17 @@ void RxBuf_Add(volatile SerialBuffer* sb, uint8_t data_in) {
   }
 }
 
+void InitState(AmpliPiState* state) {
+  memset(state, 0, sizeof(AmpliPiState));
+  state->pwr_gpio.en_12v = 1;     // Always enable 12V
+  state->standby         = true;  // Default amps to standby
+}
+
 int main(void) {
   // VARIABLES
-  uint8_t i2c_addr;       // I2C address received via UART
-  bool    red_on = true;  // Used for switching the Standby/On LED
+  uint8_t i2c_addr;  // I2C address received via UART
+
+  // TODO: Setup watchdog
 
   // RESET AND PIN SETUP
   Pin f0 = {'F', 0};  // Expansion connector NRST_OUT
@@ -220,6 +227,7 @@ int main(void) {
                  // start in 'Boot Mode'
 
   // INIT
+  InitState(&state_);
   init_gpio();   // UART and I2C require GPIO pins
   init_uart1();  // The preamp will receive its I2C network address via UART
   InitInternalI2C(&state_);  // Setup the internal I2C bus
@@ -231,6 +239,9 @@ int main(void) {
   setPin(f0);  // Needs to be high so the subsequent preamp board is not held in
                // 'Reset Mode'
 
+  // TODO: Integrate address reception with main loop
+  // TODO: Assume default slave address, wait a bit to see if new address is
+  //       received, then either accept new address or use default.
   while (1) {
     if (UART_Preamp_RxBuffer.done == 1) {
       // "A" - address identifier. Defends against potential noise on the wire
@@ -257,13 +268,15 @@ int main(void) {
     }
 
     // Alternate red light status at ~1 Hz
-    bool blink = (millis() >> 10) & 1;
-    if (red_on != blink) {
-      red_on = blink;
-      // TODO integrate address reception with main loop
+    bool blink = !(millis() & ((1 << 10) - 1));
+    if (state_.leds.red != blink) {
+      state_.leds.red = !state_.leds.red;
+      UpdateInternalI2C(&state_);
     }
   }
 
+  // Stabilize the blinking red LED once an address is given
+  state_.leds.red = 1;
   // Initialize I2C with the new address
   CtrlI2CInit(i2c_addr);
   // Initialize each channel's volume state
@@ -274,6 +287,8 @@ int main(void) {
 
   // Main loop, awaiting I2C commands
   while (1) {
+    // TODO: Clear watchdog
+
     // Check for incomming control messages
     if (CtrlI2CAddrMatch()) {
       CtrlI2CTransact(&state_);
@@ -281,7 +296,10 @@ int main(void) {
 
     // Read internal I2C bus every 32 ms (31.25 Hz)
     bool read_internal_i2c = !(millis() & ((1 << 5) - 1));
-    if (read_internal_i2c) {}
+    if (read_internal_i2c) {
+      // TODO: move logic outside I2C function
+      UpdateInternalI2C(&state_);
+    }
   }
 }
 
