@@ -31,8 +31,8 @@ typedef struct {
   Expander expansion;         // Expansion connector settings
   uint8_t  hv1;               // High-voltage in Q6.2 Volts
   uint8_t  hv1_temp;          // PSU temp in Q6.2 - 20 degC
-  uint8_t  amp_temp1;         // Amp heatsink 1 temp in Q6.2 - 20 degC
-  uint8_t  amp_temp2;         // Amp heatsink 2 temp in Q6.2 - 20 degC
+  uint8_t  amp_temp1;         // Amp heatsink 1 temp in Q7.1 + 20 degC
+  uint8_t  amp_temp2;         // Amp heatsink 2 temp in Q7.1 + 20 degC
   uint8_t  i2c_addr;          // Slave I2C1 address
   bool     standby;           // Amps in standby mode
   bool     fan_override;      // Override fan control logic and force 100% on

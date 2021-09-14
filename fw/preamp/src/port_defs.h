@@ -48,9 +48,9 @@ typedef enum
   REG_LED_VAL      = 0x0E,  // ZONE[6,5,4,3,2,1], RED, GRN
   REG_EXPANSION    = 0x0F,  // UART_PASSTHROUGH, BOOT0, NRST
   REG_HV1_VOLTAGE  = 0x10,  // Volts in UQ6.2 format (0.25 volt resolution)
-  REG_AMP1_TEMP    = 0x11,  // degC in UQ6.2 - 20 format (0.25 degC resolution)
+  REG_AMP_TEMP1    = 0x11,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
   REG_HV1_TEMP     = 0x12,  //   0x00 = disconnected, 0xFF = shorted
-  REG_AMP2_TEMP    = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
+  REG_AMP_TEMP2    = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
 
   // Version info
   REG_VERSION_MAJOR = 0xFA,
@@ -59,7 +59,6 @@ typedef enum
   REG_GIT_HASH_4_3  = 0xFD,
   REG_GIT_HASH_2_1  = 0xFE,
   REG_GIT_HASH_0_D  = 0xFF,
-  NUM_REGS          = 25
 } CmdReg;
 
 extern const Pin    ch_src[NUM_CHANNELS][NUM_SRCS];
@@ -89,9 +88,11 @@ typedef union {
 
 typedef union {
   struct {
-    uint8_t reserved : 5;
     uint8_t fan_fail : 1;
+    uint8_t reserved : 3;
+    uint8_t fan_on   : 1;
     uint8_t ovr_tmp  : 1;
+    uint8_t en_12v   : 1;
     uint8_t pg_12v   : 1;
   };
   uint8_t data;

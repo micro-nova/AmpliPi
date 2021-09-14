@@ -23,17 +23,16 @@ def print_status(p: amplipi.rt._Preamps, u: int):
   for zone in range(6*(u-1), 6*u):
     p.print_zone_state(zone)
 
-  # Power
-  pg_12v, pg_9v = p.read_power_good(u)
-  print(f'PGood 12V: {pg_12v}, 9V: {pg_9v}')
-
-  # Fans
-  fan_on, ovr_tmp, fan_fail = p.read_fan_status(u)
-  print(f'Fans: overridden={fan_on}, overtemp={ovr_tmp}, failed={fan_fail}')
+  # Power board - note: failed only exists on Rev2 Power Board
+  pg_12v, en_12v, ovr_tmp, fan_on, fan_fail = p.read_power_status(u)
+  print('Power Board Status')
+  print(f'  12V:  EN={en_12v}, PG={pg_12v}')
+  print(f'  Fans: On={fan_on}, Failed={fan_fail}')
+  print(f'  Overtemp: {ovr_tmp}')
 
   # 24V and temp
-  hv1, hv2 = p.read_hv(u)
-  tmp1, tmp2 = p.read_temps(u)
+  hv1 = p.read_hv(u)
+  hv1_tmp, amp1_tmp, amp2_tmp = p.read_temps(u)
   def temp2str(tmp: int):
     if tmp == -math.inf:
       tmp_str = 'Thermistor disconnected'
@@ -42,8 +41,8 @@ def print_status(p: amplipi.rt._Preamps, u: int):
     else:
       tmp_str = f'{tmp:5.1f}\N{DEGREE SIGN}C'
     return tmp_str
-  print(f'HV1: {hv1:5.2f}V, {temp2str(tmp1)}')
-  print(f'HV2: {hv2:5.2f}V, {temp2str(tmp2)}')
+  print(f'HV1: {hv1:5.2f}V, {temp2str(hv1_tmp)}')
+  print(f'Amp Temps: {temp2str(amp1_tmp)}, {temp2str(amp2_tmp)}')
 
   # LEDs
   p.print_led_state(u)
@@ -85,6 +84,8 @@ if not args.b:
   preamps.force_fans(preamp = args.u, force = args.f)
   if args.l:
     preamps.led_override(preamp = args.u, leds = args.l)
+  else:
+    preamps.led_override(preamp = args.u, override=False)
 
   print_status(preamps, args.u)
 

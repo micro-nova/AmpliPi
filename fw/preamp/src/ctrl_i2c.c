@@ -117,9 +117,11 @@ uint8_t ReadReg(const AmpliPiState* state, uint8_t addr) {
       break;
     case REG_POWER_STATUS: {
       PwrStatusMsg msg = {
-          .reserved = 0,
           .fan_fail = state->pwr_gpio.fan_fail,  // (Developer units only)
+          .reserved = 0,
+          .fan_on   = state->pwr_gpio.fan_on,
           .ovr_tmp  = state->pwr_gpio.ovr_tmp,
+          .en_12v   = state->pwr_gpio.en_12v,
           .pg_12v   = state->pwr_gpio.pg_12v,
       };
       out_msg = msg.data;
@@ -143,10 +145,10 @@ uint8_t ReadReg(const AmpliPiState* state, uint8_t addr) {
     case REG_HV1_TEMP:
       out_msg = state->hv1_temp;
       break;
-    case REG_AMP1_TEMP:
+    case REG_AMP_TEMP1:
       out_msg = state->amp_temp1;
       break;
-    case REG_AMP2_TEMP:
+    case REG_AMP_TEMP2:
       out_msg = state->amp_temp2;
       break;
     case REG_VERSION_MAJOR:

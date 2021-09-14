@@ -211,7 +211,16 @@ uint8_t AdcToTemp(uint8_t adc_val) {
 #define MIN_VAL ((uint8_t)(255 * 4.7 / (328.996 + 4.7)))    // 3
 #define MAX_VAL ((uint8_t)(255 * 4.7 / (0.358 + 4.7) + 1))  // 237
 #define BETA    (3900.f)                                    // B-Constant
-#define K10K    (25.f + 273.15f)  // Degrees Kelvin at 10k Rt
+#define R0      (10.f)                                      // Resistance @ KR0
+#define KR0     (25.f + 273.15f)                            // degK at Rt=R0
+
+  /* Nominal B-Constant of 3900K, R0 resistance is 10 kOhm at 25dC (T0)
+   * Thermocouple resistance = R0*e^[B*(1/T - 1/T0)] = Rt
+   * ADC_VAL = 3.3V * 4.7kOhm / (4.7kOhm + Rt kOhm) / 3.3V * 255
+   * Rt = 4.7 * (255 / ADC_VAL - 1)
+   * T = 1/(ln(Rt/R0)/B + 1/T0)
+   * T = 1/(ln(Rt/10)/3900 + 1/(25+273.5)) - 273.15
+   */
 
   uint8_t temp;
   if (adc_val < MIN_VAL) {
@@ -221,9 +230,9 @@ uint8_t AdcToTemp(uint8_t adc_val) {
   } else {
     // float rt   = 4.7f * (255.f / adc_val - 1.f);
     // 7 * 35 cycles / 8 MHz = ~31 us + logf time
-    float rt     = (4.7f * 255.f / 10.f) / adc_val - 4.7f / 10.f;  // kOhms / 10
-    float tempf  = BETA / (logf(rt) + BETA / K10K) - 273.15f;      // degC
-    float c_q6_2 = 2.f * (tempf + 20.f);
+    float rt_r0  = (4.7f * 255.f / R0) / adc_val - 4.7f / R0;    // Rt / R0
+    float tempf  = BETA / (logf(rt_r0) + BETA / KR0) - 273.15f;  // degC
+    float c_q6_2 = 2.f * (tempf + 20.f);  // [UQ7.1 + 20] degC format
     temp         = (uint8_t)c_q6_2;
   }
   return temp;
@@ -237,8 +246,8 @@ void UpdateAdc(AmpliPiState* state) {
 
   // Configuration byte = { config=0b0, scan=0b11, cs=0b00XX, sgl=0b1 }
   uint8_t hv1_adc       = ReadAdc(0x61 | (0 << 1));
-  uint8_t hv1_temp_adc  = ReadAdc(0x61 | (1 << 1));
-  uint8_t amp_temp1_adc = ReadAdc(0x61 | (2 << 1));
+  uint8_t amp_temp1_adc = ReadAdc(0x61 | (1 << 1));
+  uint8_t hv1_temp_adc  = ReadAdc(0x61 | (2 << 1));
   uint8_t amp_temp2_adc = ReadAdc(0x61 | (3 << 1));
 
   // Convert HV1 to Volts
