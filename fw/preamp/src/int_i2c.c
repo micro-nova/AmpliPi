@@ -20,6 +20,7 @@
 
 #include "int_i2c.h"
 
+#include <math.h>
 #include <stdbool.h>
 
 #include "channel.h"
@@ -28,9 +29,9 @@
 #include "stm32f0xx.h"
 
 // I2C GPIO registers
-const I2CReg pwr_temp_mntr_dir_  = {0x42, 0x00};
-const I2CReg pwr_temp_mntr_gpio_ = {0x42, 0x09};
-const I2CReg pwr_temp_mntr_olat_ = {0x42, 0x0A};
+const I2CReg pwr_io_dir_  = {0x42, 0x00};
+const I2CReg pwr_io_gpio_ = {0x42, 0x09};
+const I2CReg pwr_io_olat_ = {0x42, 0x0A};
 
 // LED Board registers
 const I2CReg led_dir_  = {0x40, 0x00};
@@ -202,8 +203,30 @@ uint8_t ReadAdc(uint8_t chan) {
 }
 
 uint8_t AdcToTemp(uint8_t adc_val) {
-  // TODO
-  return adc_val;
+  // Return:
+  //   0x00 if adc_val < MIN_VAL
+  //   0xFF if adc_val > MAX_VAL
+  //   0xXX otherwise, where 0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
+  // Max resistance = 328996, Min resistance = 358
+#define MIN_VAL ((uint8_t)(255 * 4.7 / (328.996 + 4.7)))    // 3
+#define MAX_VAL ((uint8_t)(255 * 4.7 / (0.358 + 4.7) + 1))  // 237
+#define BETA    (3900.f)                                    // B-Constant
+#define K10K    (25.f + 273.15f)  // Degrees Kelvin at 10k Rt
+
+  uint8_t temp;
+  if (adc_val < MIN_VAL) {
+    temp = 0x00;
+  } else if (adc_val > MAX_VAL) {
+    temp = 0xFF;
+  } else {
+    // float rt   = 4.7f * (255.f / adc_val - 1.f);
+    // 7 * 35 cycles / 8 MHz = ~31 us + logf time
+    float rt     = (4.7f * 255.f / 10.f) / adc_val - 4.7f / 10.f;  // kOhms / 10
+    float tempf  = BETA / (logf(rt) + BETA / K10K) - 273.15f;      // degC
+    float c_q6_2 = 2.f * (tempf + 20.f);
+    temp         = (uint8_t)c_q6_2;
+  }
+  return temp;
 }
 
 void UpdateAdc(AmpliPiState* state) {
@@ -237,7 +260,7 @@ void InitInternalI2C(AmpliPiState* state) {
   InitI2C2();
 
   // Set the direction for the power board GPIO
-  writeI2C2(pwr_temp_mntr_dir_, 0x7D);  // 0=output, 1=input
+  writeI2C2(pwr_io_dir_, 0x7D);  // 0=output, 1=input
 
   // Set the LED Board's GPIO expander as all outputs
   writeI2C2(led_dir_, 0x00);  // 0=output, 1=input
@@ -254,8 +277,8 @@ void UpdateInternalI2C(AmpliPiState* state) {
     state->pwr_gpio.fan_on = 1;
   }
   // TODO: Fan control logic
-  writeI2C2(pwr_temp_mntr_olat_, state->pwr_gpio.data);
-  state->pwr_gpio.data = readI2C2(pwr_temp_mntr_gpio_);
+  writeI2C2(pwr_io_olat_, state->pwr_gpio.data);
+  state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
 
   // Update the LED Board's LED state
   if (!state->led_override) {
