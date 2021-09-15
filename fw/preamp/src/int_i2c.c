@@ -250,11 +250,11 @@ void UpdateAdc(AmpliPiState* state) {
   uint8_t hv1_temp_adc  = ReadAdc(0x61 | (2 << 1));
   uint8_t amp_temp2_adc = ReadAdc(0x61 | (3 << 1));
 
-  // Convert HV1 to Volts
-  uint32_t hv1_adc2  = (uint32_t)hv1_adc << 2;  // Add fractional bits
-  uint32_t hv1_raw_v = ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS) *
-                       hv1_adc2 / (UINT8_MAX * ADC_PD_KOHMS);
-  state->hv1 = (uint8_t)(hv1_raw_v > UINT8_MAX ? UINT8_MAX : hv1_raw_v);
+  // Convert HV1 to Volts (multiply by 4 to add 2 fractional bits)
+  uint32_t num       = 4 * ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
+  uint32_t den       = UINT8_MAX * ADC_PD_KOHMS;
+  uint32_t hv1_raw_v = num * hv1_adc / den;
+  state->hv1         = (uint8_t)(hv1_raw_v > UINT8_MAX ? UINT8_MAX : hv1_raw_v);
 
   // Convert HV1 thermocouple to degC
   state->hv1_temp = AdcToTemp(hv1_temp_adc);
