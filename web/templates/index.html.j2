@@ -181,7 +181,7 @@
           </div>
           <div id="settings-tab-config" class="tab-pane">
             <div class="card settings">
-              <h6 class="card-header">Load a Configuration</h6>
+              <h6 class="card-header">Upload a Configuration</h6>
               <div class="card-body">
                 <div class="text-center">
                   <input type="file" id="settings-config-file-selector" accept=".json">
@@ -190,10 +190,10 @@
               </div>
             </div>
             <div class="card settings">
-              <h6 class="card-header">Save Current Configuration</h6>
+              <h6 class="card-header">Download Current Configuration</h6>
               <div class="card-body">
                 <div class="text-center">
-                  <button class="btn btn-success" onclick="downloadConfig()" id="settings-config-save">Save</button>
+                  <button class="btn btn-success" onclick="downloadConfig()" id="settings-config-download">Download</button>
                 </div>
               </div>
             </div>
@@ -201,7 +201,7 @@
               <h6 class="card-header">Hardware Reset (reloads current configuration)</h6>
               <div class="card-body">
                 <div class="text-center">
-                  <button class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
+                  <button title="Resets the preamp hardware and controller software (does not reboot the pi-based controller)" class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
                 </div>
               </div>
             </div>

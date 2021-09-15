@@ -34,7 +34,7 @@ class Client:
     self.url = url
 
   def reset(self) -> bool:
-    """ Rest HW """
+    """ Reset firmware """
     return requests.post(f'{self.url}/reset').ok
 
   def load_config(self, cfg: models.Status) -> Optional[models.Status]:
@@ -191,7 +191,7 @@ def loop_test(client: Client, test_name: str):
   elif test_name == 'led':
     print("""Look at the front LEDs.
 
-    - Verify the seuqnece is the following:
+    - Verify the sequence is the following:
       1. The first led should blink red then green.
       2. The next 6 leds will light up in a progress bar-like sequence (they should be the same brightness)
       3. Repeat

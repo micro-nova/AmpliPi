@@ -149,7 +149,7 @@ def load_config(config: models.Status, ctrl: Api = Depends(get_ctrl)) -> models.
 
 @api.post('/api/reset', tags=['status'])
 def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
-  """ Reload the currenty configuration, resetting the hardware in the process. """
+  """ Reload the current configuration, resetting the firmware in the process. """
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change)
   return ctrl.get_state()
 

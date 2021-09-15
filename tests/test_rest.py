@@ -126,7 +126,7 @@ def test_base(client, path):
     assert '/api/' in rv.location
 
 def test_reset(client):
-  """ Reset the controller """
+  """ Reset the firmware """
   rv = client.post('/api/reset')
   assert rv.status_code == HTTPStatus.OK
 
