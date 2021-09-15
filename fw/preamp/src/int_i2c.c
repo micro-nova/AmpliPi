@@ -20,13 +20,13 @@
 
 #include "int_i2c.h"
 
-#include <math.h>
 #include <stdbool.h>
 
 #include "channel.h"
 #include "port_defs.h"
 #include "ports.h"
 #include "stm32f0xx.h"
+#include "thermistor.h"
 
 // I2C GPIO registers
 const I2CReg pwr_io_dir_  = {0x42, 0x00};
@@ -202,42 +202,6 @@ uint8_t ReadAdc(uint8_t chan) {
   return data;
 }
 
-uint8_t AdcToTemp(uint8_t adc_val) {
-  // Return:
-  //   0x00 if adc_val < MIN_VAL
-  //   0xFF if adc_val > MAX_VAL
-  //   0xXX otherwise, where 0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
-  // Max resistance = 328996, Min resistance = 358
-#define MIN_VAL ((uint8_t)(255 * 4.7 / (328.996 + 4.7)))    // 3
-#define MAX_VAL ((uint8_t)(255 * 4.7 / (0.358 + 4.7) + 1))  // 237
-#define BETA    (3900.f)                                    // B-Constant
-#define R0      (10.f)                                      // Resistance @ KR0
-#define KR0     (25.f + 273.15f)                            // degK at Rt=R0
-
-  /* Nominal B-Constant of 3900K, R0 resistance is 10 kOhm at 25dC (T0)
-   * Thermocouple resistance = R0*e^[B*(1/T - 1/T0)] = Rt
-   * ADC_VAL = 3.3V * 4.7kOhm / (4.7kOhm + Rt kOhm) / 3.3V * 255
-   * Rt = 4.7 * (255 / ADC_VAL - 1)
-   * T = 1/(ln(Rt/R0)/B + 1/T0)
-   * T = 1/(ln(Rt/10)/3900 + 1/(25+273.5)) - 273.15
-   */
-
-  uint8_t temp;
-  if (adc_val < MIN_VAL) {
-    temp = 0x00;
-  } else if (adc_val > MAX_VAL) {
-    temp = 0xFF;
-  } else {
-    // float rt   = 4.7f * (255.f / adc_val - 1.f);
-    // 7 * 35 cycles / 8 MHz = ~31 us + logf time
-    float rt_r0  = (4.7f * 255.f / R0) / adc_val - 4.7f / R0;    // Rt / R0
-    float tempf  = BETA / (logf(rt_r0) + BETA / KR0) - 273.15f;  // degC
-    float c_q6_2 = 2.f * (tempf + 20.f);  // [UQ7.1 + 20] degC format
-    temp         = (uint8_t)c_q6_2;
-  }
-  return temp;
-}
-
 void UpdateAdc(AmpliPiState* state) {
 #define ADC_REF_VOLTS 3.3
 #define ADC_PD_KOHMS  4700
@@ -257,11 +221,11 @@ void UpdateAdc(AmpliPiState* state) {
   state->hv1         = (uint8_t)(hv1_raw_v > UINT8_MAX ? UINT8_MAX : hv1_raw_v);
 
   // Convert HV1 thermocouple to degC
-  state->hv1_temp = AdcToTemp(hv1_temp_adc);
+  state->hv1_temp = THERM_LUT_[hv1_temp_adc];
 
   // Convert amplifier thermocouples to degC
-  state->amp_temp1 = AdcToTemp(amp_temp1_adc);
-  state->amp_temp2 = AdcToTemp(amp_temp2_adc);
+  state->amp_temp1 = THERM_LUT_[amp_temp1_adc];
+  state->amp_temp2 = THERM_LUT_[amp_temp2_adc];
 }
 
 void InitInternalI2C(AmpliPiState* state) {
