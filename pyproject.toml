@@ -32,11 +32,14 @@ include = [
   "config/*.conf",
   "debs/**/*",
   "fw/preamp_*", # no need to add full source tree
-  "scripts/run_debug_webserver", "scripts/run_debug_updater", "scripts/configure.py", "scripts/install_python_deps.bash", "scripts/built_in_test", # other scripts only support development
+  "scripts/*",
   "streams/**/*",
   "web/**/*",
   "bin/**",
   "docs/**",
+]
+exclude = [
+  "scripts/deploy", "scripts/bootstrap_pi" # only support development
 ]
 
 [tool.poetry.scripts]

@@ -534,6 +534,7 @@ def add_tests(env, progress) -> List[Task]:
     ('Display', './hw/tests/display.bash --wait'),
     ('Ethernet', './hw/tests/ethernet.bash --wait'),
     ('Program Preamp', './fw/preamp_flash.sh ./fw/bin/preamp_1.2.bin'),
+    ('USB Ports', './hw/tests/usb.py'),
   ]
   tasks = []
   for test in tests:
