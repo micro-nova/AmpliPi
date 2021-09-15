@@ -176,7 +176,7 @@ def get_amplipi_data(base_url: Optional[str]) -> Tuple[bool, List[models.Source]
   try:
     """ TODO: If the AmpliPi server isn't available at this url, there is a
     5-second delay introduced by socket.getaddrinfo """
-    req = requests.get(base_url, timeout=0.1)
+    req = requests.get(base_url, timeout=0.2)
     if req.status_code == 200:
       status = models.Status(**req.json())
       _zones = status.zones
