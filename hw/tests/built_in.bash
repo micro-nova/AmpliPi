@@ -7,5 +7,4 @@ set -e
 cd "$( dirname "$0" )/.."
 
 # use our virtual environment
-source venv/bin/activate
 ./venv/bin/python -m amplipi.tests $@ # pass through all of the args

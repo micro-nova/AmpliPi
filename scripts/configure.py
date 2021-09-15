@@ -526,11 +526,11 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
-    ('Amplifier', './scripts/built_in_test amp'),
-    ('LEDs', './scripts/built_in_test led'),
-    ('Preamp', './scripts/built_in_test preamp'),
-    ('Inputs', './scripts/built_in_test inputs'),
-    ('Preouts', './scripts/built_in_test preout'),
+    ('Amplifier', './hw/tests/built_in.bash amp'),
+    ('LEDs', './hw/tests/built_in.bash led'),
+    ('Preamp', './hw/tests/built_in.bash preamp'),
+    ('Inputs', './hw/tests/built_in.bash inputs'),
+    ('Preouts', './hw/tests/built_in.bash preout'),
     ('Display', './hw/tests/display.bash --wait'),
     ('Ethernet', './hw/tests/ethernet.bash --wait'),
     ('Program Preamp', './fw/preamp_flash.sh ./fw/bin/preamp_1.2.bin'),
