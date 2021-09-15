@@ -562,7 +562,8 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if failed():
     return False
   tasks += fix_file_props(env, progress)
-  tasks += add_tests(env, progress)
+  if env['is_amplipi']:
+    tasks += add_tests(env, progress)
   if failed():
     return False
   if os_deps:
