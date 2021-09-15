@@ -32,6 +32,7 @@ Verify that each of the following boards in the assembled unit has a tested stic
     - [ ] Zone 6
 - [ ] Power (standalone tester)
 - [ ] Preamp
+  - [ ] Program with latest firmware
   - run `./scripts/built_in_test preamp`
   - verify all digital/analog left and rights are played out zone 1
     - [ ] Zone 1
@@ -61,10 +62,13 @@ Verify that each of the following boards in the assembled unit has a tested stic
     - [ ] Zone 6
 - [x] Controller (this will be tested in the next step)
 ### Assembled Unit
+- [ ] Service USB: verify filesystem is accessible through service USB.
 - [ ] Desktop: Plug in mouse, keyboard, and monitor (1080p@60hz). Verify they all work.
-  - [ ] Mouse
-  - [ ] Keyboard
   - [ ] Monitor
+  - [ ] Top external USB
+  - [ ] Bottom external USB
+  - [ ] Internal USB
+- [ ] Expansion connector: Run **TODO** to program an expansion unit
 - [ ] Ethernet: Run `./hw/tests/ethernet.bash` and verify test passes
 - [ ] Aux inputs
   - Optical In
@@ -94,4 +98,7 @@ Verify that each of the following boards in the assembled unit has a tested stic
     - [ ] Verify AmpliPi state is shown
     - [ ] Run `./hw/tests/display.bash` and verify test passes
 - [ ] Fans
-  - Heat up the amplifier board, ensure the fans turn on
+  - [ ] 12V OK?
+  - [ ] Verify fans spin at 100% when forced on
+  - [ ] Verify room temp measurements are in the range [25, 30] degrees Celsius
+  - [ ] Verify fans turn on when the amplifiers are hot by heating up a heatsink

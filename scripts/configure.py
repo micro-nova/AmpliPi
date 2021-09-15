@@ -533,6 +533,7 @@ def add_tests(env, progress) -> List[Task]:
     ('Preouts', './scripts/built_in_test preout'),
     ('Display', './hw/tests/display.bash --wait'),
     ('Ethernet', './hw/tests/ethernet.bash --wait'),
+    ('Program Preamp', './fw/preamp_flash.sh ./fw/bin/preamp_1.2.bin'),
   ]
   tasks = []
   for test in tests:
