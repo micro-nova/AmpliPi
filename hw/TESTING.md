@@ -1,4 +1,5 @@
 # Built-in Tests
+- Serial Number ____________
 - [ ] Boards Tested (Manual) Verify QC Passed Sticker
   - [ ] Amplifier
   - [ ] Power Board
@@ -14,35 +15,47 @@
 
 | TOP | BOTTOM | INT |
 |-----|--------|-----|
-|_____|________|_____|
+|     |        |     |
 
-- [ ] Expansion connector: Run **TODO** to program an expansion unit
 - [ ] Ethernet:
 - [ ] LEDs:
 
 | Stdby (Red) | Enabled (Green) | Zone 1 | Zone 2 | Zone 3 | Zone 4 | Zone 5 | Zone 6 |
 |-------------|-----------------|--------|--------|--------|--------|--------|--------|
-|_____________|_________________|________|________|________|________|________|________|
-
+|             |                 |        |        |        |        |        |        |
 
 - [ ] Program Preamp
+- [ ] Program Expansion: **TODO**
 - [ ] Inputs
 
 | Optical In | Aux In |
 |------------|--------|
-|____________|________|
+|            |        |
 
 - [ ] Preamp:
 
-| Zone 1 | Zone 2 | Zone 3 | Zone 4 | Zone 5 | Zone 6 |
-|--------|--------|--------|--------|--------|--------|
-|________|________|________|________|________|________|
+| Digital 1 | Digital 2 | Digital 3 | Digital 4 | Zone |
+|-----------|-----------|-----------|-----------|------|
+|           |           |           |           |    1 |
+
+|  Analog 1 |  Analog 2 |  Analog 3 |  Analog 4 | Zone |
+|-----------|-----------|-----------|-----------|------|
+|           |           |           |           |    1 |
+
+|  An/Dig 1 |  An/Dig 2 |  An/Dig 3 |  An/Dig 4 | Zone |
+|-----------|-----------|-----------|-----------|------|
+|           |           |           |           |    2 |
+|           |           |           |           |    3 |
+|           |           |           |           |    4 |
+|           |           |           |           |    5 |
+|           |           |           |           |    6 |
+|      TODO |      TODO |      TODO |      TODO |    7 |
 
 - [ ] Preout:
 
 | Preout 1 | Preout 2 | Preout 3 | Preout 4 | Preout 5 | Preout 6 |
 |----------|----------|----------|----------|----------|----------|
-|__________|__________|__________|__________|__________|__________|
+|          |          |          |          |          |          |
 
 - [ ] Display
 - [ ] Fans (Manual)
