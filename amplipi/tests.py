@@ -7,6 +7,7 @@ from time import sleep
 from typing import Optional
 import sys
 import subprocess
+import signal
 import argparse
 import requests
 
@@ -280,6 +281,17 @@ def preamp_test(ap1: Client):
     for msg in digital_msgs:
       ap1.announce(msg)
 
+def exit_handler(_, _1):
+  """ Attempt to gracefully shutdown """
+  print('Closing (attempting to restore config)')
+  try:
+    if ap.available() and ap.load_config(old_config):
+      print('\nRestored previous configuration.')
+    else:
+      print('\nFailed to restore configuration. Left in testing state.')
+  except:
+    print('\nError restoring configuration. Left in testing state.')
+
 if __name__ == '__main__':
 
   tests = ['led', 'amp', 'preout', 'preamp', 'inputs']
@@ -298,6 +310,10 @@ if __name__ == '__main__':
   if args.test not in tests:
     print(f'Test "{args.test}" is not available. Please pick one of {tests}')
     sys.exit(1)
+
+  signal.signal(signal.SIGINT, exit_handler)
+  signal.signal(signal.SIGTERM, exit_handler)
+  signal.signal(signal.SIGHUP, exit_handler)
 
   old_config = setup(ap)
   try:
