@@ -228,7 +228,8 @@ def inputs_test(ap1: Client):
   def set_pcm(src):
     for card in range(4):
       try:
-        subprocess.check_call(['amixer', '-c', str(card), 'set', "'PCM Capture Source',0", src], stdout=subprocess.DEVNULL)
+        subprocess.check_call(['amixer', '-c', str(card), 'set', "'PCM Capture Source',0", src],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         break
       except:
         pass
