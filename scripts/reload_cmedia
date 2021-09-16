@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+
+"""
+Reload the CMedia USB Audio devices
+
+This needs to be called after a relevant udev rule is modified (in leu of a restart)
+"""
+
+import os
+import subprocess
+import fcntl
+
+def cmedia_devs():
+  """ List the usb device paths to all of our cmedia USB cards """
+  devices = subprocess.check_output(['lsusb', '-d', '0d8c:0102']).decode()
+  return [ d.split(':')[0].replace('Bus ', '/dev/bus/usb/', 1).replace(' Device ', '/') for d in devices.splitlines() ]
+
+USBDEVFS_RESET = 21780
+
+def reload_usb(path):
+  """ Reload a USB device given by path """
+  try:
+    f = open(path, 'w', os.O_WRONLY)
+    fcntl.ioctl(f, USBDEVFS_RESET, 0)
+    print('Successfully reset %s' % path)
+  except Exception as ex:
+    print('Failed to reset device! Error: %s' % ex)
+
+for dev in cmedia_devs():
+  reload_usb(dev)
