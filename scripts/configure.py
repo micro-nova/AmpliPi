@@ -172,7 +172,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _from = f"{env['base_dir']}/{_from}"
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
-    tasks += print_progress([Task(f"copy {_from} to {_to}", f"cp {_from} {_to}".split()).run()])
+    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
     if 'shairport-sync-metadata-reader' in _to:
       # windows messes up permissions
       tasks += print_progress([Task(f"make {_to} executable", f"chmod +x {_to}".split()).run()])
