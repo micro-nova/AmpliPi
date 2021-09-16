@@ -1,17 +1,5 @@
 """
 # Built-in tests
-
-LED Board
-- [x] All on/scroll
-
-Preout or Amplifier Board
-- [x] 6 Zone 50% volume/mute toggle
-
-Preamp
-- [ ] Program preamp and connected expansion board
-- [x] 4x2 sources on zone 1 (also zone 7 on expansion)
-- [ ] 4 sources on all zones, toggle volume between 45 and 60%
-- [ ] Poll/display 24V ADC + thermistors
 """
 
 from enum import Enum
