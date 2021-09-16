@@ -78,7 +78,7 @@ EXTRA_INPUTS_PLAYBACK = {
   'id': 1002,
   'name': 'Input Playback',
   'type': "fileplayer",
-  'url': "alsa://plughw:2,0",
+  'url': "alsa://plughw:cmedia8chint,0",
 }
 
 def pst_all_zones_to_src(name: str, src: int, input: str, vol=-50):
@@ -228,7 +228,7 @@ def inputs_test(ap1: Client):
   def set_pcm(src):
     for card in range(4):
       try:
-        subprocess.check_call(['amixer', 'set', '-c', str(card), "'PCM Capture Source',0", src], stdout=subprocess.DEVNULL)
+        subprocess.check_call(['amixer', '-c', str(card), 'set', "'PCM Capture Source',0", src], stdout=subprocess.DEVNULL)
         break
       except:
         pass
