@@ -307,7 +307,7 @@ if __name__ == '__main__':
       inputs_test(ap)
     else:
       loop_test(ap, args.test)
-  except KeyboardInterrupt:
+  except KeyboardInterrupt: # TODO: handle other signals kill and sigup
     try:
       if ap.available() and ap.load_config(old_config):
         print('\nRestored previous configuration.')

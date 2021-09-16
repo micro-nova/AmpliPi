@@ -189,6 +189,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       'sudo udevadm control --reload-rules'.split(),
       'sudo udevadm trigger'.split()
     ]).run()])
+    # TODO: CMedia USB port needs to be reloaded, need to find port+device #'s of cmedia device and send a reset using ideas from: https://github.com/mcarans/resetusb/blob/master/reset_usb.py
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
