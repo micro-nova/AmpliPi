@@ -225,9 +225,17 @@ def inputs_test(ap1: Client):
   - Verify that both Auxillary and Optical In left and right channels are announced out the speaker
   """)
 
+  def set_pcm(src):
+    for card in range(4):
+      try:
+        subprocess.check_call(['amixer', 'set', '-c', str(card), "'PCM Capture Source',0", src], stdout=subprocess.DEVNULL)
+        break
+      except:
+        pass
+
   while True:
     # select the Aux input on this device and play audio through it to all zones
-    subprocess.check_call(['amixer', 'set', "PCM Capture Source", "Line"], stdout=subprocess.DEVNULL)
+    set_pcm("Line")
     # connect all zones to ch3
     ap1.load_preset(preset.id)
     if not analog_tester_avail:
@@ -236,7 +244,7 @@ def inputs_test(ap1: Client):
       ap2.announce(models.Announcement(source_id=3, media=f'web/static/audio/aux_in.mp3', vol=-25))
 
     # select the Optical input on this device and play audio through it to all zones
-    subprocess.check_call(['amixer', 'set', "PCM Capture Source", "IEC958 In"], stdout=subprocess.DEVNULL)
+    set_pcm("IEC958 In")
     # connect all zones to ch0
     ap1.load_preset(preset.id)
     if not analog_tester_avail:
