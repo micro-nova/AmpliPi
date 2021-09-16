@@ -190,7 +190,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
         f"sudo cp {_from} {_to}".split(),
         'sudo udevadm control --reload-rules'.split(),
         'sudo udevadm trigger'.split(),
-        f"sudo ./{env['base_dir']}/scripts/reload_cmedia".split(),
+        f"sudo .{env['base_dir']}/scripts/reload_cmedia".split(),
       ]).run()])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
