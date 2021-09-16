@@ -30,8 +30,11 @@ include = [
   "requirements.txt",
   "AUTHORS",
   "config/*.conf",
+  "config/*.rules",
   "debs/**/*",
-  "fw/preamp_*", # no need to add full source tree
+  "fw/*.sh", # no need to add full source tree
+  "fw/bin/*",
+  "hw/**",
   "scripts/*",
   "streams/**/*",
   "web/**/*",

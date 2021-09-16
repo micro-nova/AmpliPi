@@ -3,8 +3,8 @@
 
 set -e
 
-# get directory that the script exists in
-cd "$( dirname "$0" )/.."
+# go to the base of amplipi
+cd "$( dirname "$0" )/../.."
 
 # use our virtual environment
 ./venv/bin/python -m amplipi.tests $@ # pass through all of the args
