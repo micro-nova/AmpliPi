@@ -248,13 +248,26 @@ void updateInternalI2C(AmpliPiState* state) {
   // Read the Power Board's ADC
   updateAdc(state);
 
-  // Update the Power Board's GPIO state
+  // Perform fan control
   if (state->fan_override) {
     state->pwr_gpio.fan_on = 1;
   } else {
-    // TODO: Fan control logic
-    state->pwr_gpio.fan_on = 0;
+    uint8_t max_temp = 0;
+    for (size_t i = 0; i < sizeof(state->temps); i++) {
+      if (state->temps[i] > max_temp) {
+        max_temp = state->temps[i];
+      }
+    }
+
+    if (max_temp < TEMP_THRESH_LOW_UQ7_1) {
+      state->pwr_gpio.fan_on = false;
+    }
+    if (max_temp > TEMP_THRESH_HIGH_UQ7_1) {
+      state->pwr_gpio.fan_on = true;
+    }
   }
+
+  // Update the Power Board's GPIO state
   writeI2C2(pwr_io_olat_, state->pwr_gpio.data);
   state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
 

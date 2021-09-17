@@ -23,6 +23,14 @@
 
 #include <stdint.h>
 
+// Amplifiers: TDA7492E max temp = 85C
+// Power supply: MEAN WELL LRS-350 max temp = 70C
+// Raspberry Pi: BCM2837 max temp = 85C, CM3+ max temp = 80C
+#define TEMP_THRESH_LOW_C      40  // Below this fans turn off
+#define TEMP_THRESH_HIGH_C     45  // Above this fans turn on
+#define TEMP_THRESH_LOW_UQ7_1  (2 * (TEMP_THRESH_LOW_C + 20))
+#define TEMP_THRESH_HIGH_UQ7_1 (2 * (TEMP_THRESH_HIGH_C + 20))
+
 // NCP21XV103J03RA - 0805 SMD, R0 = 10k @ 25 degC, B = 3900K
 const uint8_t THERM_LUT_[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
