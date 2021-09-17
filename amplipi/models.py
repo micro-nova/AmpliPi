@@ -683,7 +683,7 @@ class Info(BaseModel):
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
-  zones: List[Zone] = [Zone(id=i, name=f'Zone {i}') for i in range(6) ]
+  zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
   streams: List[Stream] = []
   presets: List[Preset] = []

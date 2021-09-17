@@ -82,15 +82,15 @@ EXTRA_INPUTS_PLAYBACK = {
   'url': "alsa://plughw:cmedia8chint,0",
 }
 
-def pst_all_zones_to_src(name: str, src: int, input: str, vol=-50):
+def pst_all_zones_to_src(name: str, src: int, _input: str, vol=-50):
+  """ Create a preset that connects all zones to @src"""
   return {
     'name': name,
     'state': {
-      'sources': [{'id': src, 'input': input}],
-      'zones': [{'id': zid, 'source_id': src, 'vol': vol, 'mute': False} for zid in range(6)],
+      'sources': [{'id': src, 'input': _input}],
+      'zones': [{'id': zid, 'source_id': src, 'vol': vol, 'mute': False} for zid in range(7)],
     }
   }
-
 
 PRESETS = [
   {
@@ -125,14 +125,14 @@ PRESETS = [
   # mute all
   {
     'name': 'amp-0 mute all',
-    'state': {'zones': [{'id': zid, 'mute': True} for zid in range(6)]}
+    'state': {'zones': [{'id': zid, 'mute': True} for zid in range(7)]}
   },
   # play music
   {
     'name': 'amp-1 play',
     'state': {
       'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(6)]
+      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(7)]
     }
   },
   # play music
@@ -140,7 +140,7 @@ PRESETS = [
     'name': 'preout-0 play',
     'state': {
       'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(6)]
+      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(7)]
     }
   },
 ]
@@ -151,7 +151,7 @@ PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK
 def setup(client: Client):
   """ Configure AmpliPi for testing by loading a simple known configuration """
   prev_cfg = client.get_status()
-  client.load_config(models.Status(streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
+  client.load_config(models.Status(zones=[models.Zone(id=z, name=f'Zone {z + 1}') for z in range(12)], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
   for pst in PRESETS:
     client.create_preset(models.Preset(**pst))
   print('waiting for config file to be written')
