@@ -388,7 +388,7 @@ class _Preamps:
       print('------------------------------------')
       print(f'  {rg:^10} | {zones[0]} | {zones[1]} | {zones[2]} | {zones[3]} | {zones[4]} | {zones[5]}')
 
-  def led_override(self, preamp: int = 1, override: bool = True, leds: int = 0xFF):
+  def led_override(self, preamp: int = 1, leds: Union[int, None] = 0xFF):
     """ Override the LED board's LEDs
 
       Args:
@@ -397,12 +397,15 @@ class _Preamps:
                 Green => Bit 0
                 Red => Bit 1
                 Zone[1-6] => Bit[2-7]
+                None = return control to AmpliPi
     """
     assert 1 <= preamp <= 6
-    assert 0 <= leds <= 255
+    assert leds is None or 0 <= leds <= 255
     if self.bus is not None:
-      self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_CTRL'], 1 if override is True else 0)
-      if override:
+      if leds is None:
+        self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_CTRL'], 0)
+      else:
+        self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_CTRL'], 1)
         self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_VAL'], leds)
 
   def print(self):

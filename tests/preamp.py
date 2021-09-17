@@ -93,10 +93,7 @@ if args.u > 1 and args.b:
 
 if not args.b:
   preamps.force_fans(preamp = args.u, force = args.f)
-  if args.l:
-    preamps.led_override(preamp = args.u, leds = args.l)
-  else:
-    preamps.led_override(preamp = args.u, override=False)
+  preamps.led_override(preamp = args.u, leds = args.l)
 
   time.sleep(0.1) # Wait a bit to make sure internal I2C writes have finished
   print_status(preamps, args.u)
