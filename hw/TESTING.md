@@ -13,24 +13,24 @@
   - [ ] Mouse
 - [ ] USB Ports
 
-| TOP | BOTTOM | INT |
-|-----|--------|-----|
-|     |        |     |
+|   | TOP | BOTTOM | INT |
+|---|-----|--------|-----|
+| ✓ |     |        |     |
 
 - [ ] Ethernet:
 - [ ] LEDs:
 
-| Stdby (Red) | Enabled (Green) | Zone 1 | Zone 2 | Zone 3 | Zone 4 | Zone 5 | Zone 6 |
-|-------------|-----------------|--------|--------|--------|--------|--------|--------|
-|             |                 |        |        |        |        |        |        |
+|   | Stdby (Red) | Enabled (Green) | Zone 1 | Zone 2 | Zone 3 | Zone 4 | Zone 5 | Zone 6 |
+|---|-------------|-----------------|--------|--------|--------|--------|--------|--------|
+| ✓ |             |                 |        |        |        |        |        |        |
 
 - [ ] Program Preamp
 - [ ] Program Expansion: **TODO**
 - [ ] Inputs
 
-| Optical In | Aux In |
-|------------|--------|
-|            |        |
+|   | Optical In | Aux In |
+|---|------------|--------|
+| ✓ |            |        |
 
 - [ ] Preamp:
 
@@ -53,9 +53,9 @@
 
 - [ ] Preout:
 
-| Preout 1 | Preout 2 | Preout 3 | Preout 4 | Preout 5 | Preout 6 |
-|----------|----------|----------|----------|----------|----------|
-|          |          |          |          |          |          |
+|   | Preout 1 | Preout 2 | Preout 3 | Preout 4 | Preout 5 | Preout 6 |
+|---|----------|----------|----------|----------|----------|----------|
+| ✓ |          |          |          |          |          |          |
 
 - [ ] Display
 - [ ] Fans (Manual)
