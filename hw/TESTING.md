@@ -1,11 +1,13 @@
 # Built-in Tests
 - Serial Number ____________
+- Date ____ / ____ / ____  Time  ____ : ____ AM / PM
 - [ ] Boards Tested (Manual) Verify QC Passed Sticker
-  - [ ] Amplifier
-  - [ ] Power Board
-  - [ ] Preamp
-  - [ ] Preout
-  - [ ] LED
+  - [ ] Amplifier - rev _____
+  - [ ] Power Board - rev _____
+  - [ ] Preamp - rev _____
+  - [ ] Preout - rev _____
+  - [ ] LED - rev _____
+  - Controller - rev _____
 - [ ] Service USB: **TODO** verify filesystem is accessible through service USB.
 - [ ] Desktop: (Manual) Plug in mouse, keyboard, and monitor (1080p@60hz). Verify they all work.
   - [ ] Monitor
@@ -28,34 +30,34 @@
 - [ ] Program Expansion: **TODO**
 - [ ] Inputs
 
-|   | Optical In | Aux In |
-|---|------------|--------|
-| ✓ |            |        |
+| Optical In | Aux In   |
+|------------|----------|
+| ____L____R |____L____R|
 
 - [ ] Preamp:
 
-| Digital 1 | Digital 2 | Digital 3 | Digital 4 | Zone |
-|-----------|-----------|-----------|-----------|------|
-|           |           |           |           |    1 |
-
 |  Analog 1 |  Analog 2 |  Analog 3 |  Analog 4 | Zone |
 |-----------|-----------|-----------|-----------|------|
-|           |           |           |           |    1 |
+|____L____R |____L____R |____L____R |____L____R |    1 |
+
+| Digital 1 | Digital 2 | Digital 3 | Digital 4 | Zone |
+|-----------|-----------|-----------|-----------|------|
+|____L____R |____L____R |____L____R |____L____R |    1 |
 
 |  An/Dig 1 |  An/Dig 2 |  An/Dig 3 |  An/Dig 4 | Zone |
 |-----------|-----------|-----------|-----------|------|
-|           |           |           |           |    2 |
-|           |           |           |           |    3 |
-|           |           |           |           |    4 |
-|           |           |           |           |    5 |
-|           |           |           |           |    6 |
-|      TODO |      TODO |      TODO |      TODO |    7 |
+|____L____R |____L____R |____L____R |____L____R |    2 |
+|____L____R |____L____R |____L____R |____L____R |    3 |
+|____L____R |____L____R |____L____R |____L____R |    4 |
+|____L____R |____L____R |____L____R |____L____R |    5 |
+|____L____R |____L____R |____L____R |____L____R |    6 |
+|____L____R |____L____R |____L____R |____L____R |    7 |
 
 - [ ] Preout:
 
-|   | Preout 1 | Preout 2 | Preout 3 | Preout 4 | Preout 5 | Preout 6 |
-|---|----------|----------|----------|----------|----------|----------|
-| ✓ |          |          |          |          |          |          |
+| Preout 1 | Preout 2 | Preout 3 | Preout 4 | Preout 5 | Preout 6 |
+|----------|----------|----------|----------|----------|----------|
+|____L____R|____L____R|____L____R|____L____R|____L____R|____L____R|
 
 - [ ] Display
 - [ ] Fans (Manual)
