@@ -285,12 +285,14 @@ def exit_handler(_, _1):
   """ Attempt to gracefully shutdown """
   print('Closing (attempting to restore config)')
   try:
+    subprocess.run(['killall', 'vlc'], check=False) # HACK: kill weird lingering vlc process
     if ap.available() and ap.load_config(old_config):
       print('\nRestored previous configuration.')
     else:
       print('\nFailed to restore configuration. Left in testing state.')
   except:
     print('\nError restoring configuration. Left in testing state.')
+  sys.exit(0)
 
 if __name__ == '__main__':
 
