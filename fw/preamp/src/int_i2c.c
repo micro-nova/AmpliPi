@@ -248,11 +248,16 @@ void updateInternalI2C(AmpliPiState* state) {
   // Read the Power Board's ADC
   updateAdc(state);
 
-  // Perform fan control
-  if (state->fan_override) {
-    state->pwr_gpio.fan_on = 1;
-  } else {
-    uint8_t max_temp = 0;
+  // Possible fan control methods:
+  // - Overridden (forced on) by the Pi
+  // - MAX6644 (5 developer units with Power Board 2.A)
+  // - Thermistors with FAN_ON on/off control (Power Board 3.A)
+  // - Thermistors with DPOT linear voltage control (Future)
+  uint8_t max_temp = state->hv1_temp;
+  if (state->amp_temp1 || state->amp_temp2) {
+    // So far, all Power Boards (2.A) the MAX6644 didn't use HV2/NTC2.
+    // If either of those inputs measures a valid temp, then assume
+    // no MAX6644 fan control IC is present, and thermisters are.
     for (size_t i = 0; i < sizeof(state->temps); i++) {
       if (state->temps[i] > max_temp) {
         max_temp = state->temps[i];
@@ -265,15 +270,21 @@ void updateInternalI2C(AmpliPiState* state) {
     if (max_temp > TEMP_THRESH_HIGH_UQ7_1) {
       state->pwr_gpio.fan_on = true;
     }
+
+    // No fan control IC to determine this
+    state->pwr_gpio.fan_fail = false;
+    state->pwr_gpio.ovr_tmp  = max_temp > TEMP_THRESH_OVR_UQ7_1;
+  }
+
+  if (state->fan_override || max_temp > TEMP_THRESH_HIGH_UQ7_1) {
+    state->pwr_gpio.fan_on = true;
+  } else if (max_temp < TEMP_THRESH_LOW_UQ7_1) {
+    state->pwr_gpio.fan_on = false;
   }
 
   // Update the Power Board's GPIO state
-  writeI2C2(pwr_io_olat_, state->pwr_gpio.data);
+  writeI2C2(pwr_io_gpio_, state->pwr_gpio.data);
   state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
-
-  // TODO: If no fan control chip determine these
-  state->pwr_gpio.fan_fail = false;
-  state->pwr_gpio.ovr_tmp  = false;
 
   // Update the LED Board's LED state
   if (!state->led_override) {
@@ -285,7 +296,7 @@ void updateInternalI2C(AmpliPiState* state) {
       state->leds.zones |= (isOn(zone) ? 1 : 0) << zone;
     }
   }
-  writeI2C2(led_olat_, state->leds.data);
+  writeI2C2(led_gpio_, state->leds.data);
   state->leds.data = readI2C2(led_gpio_);
 
   // TODO: Can the volume controllers be read?
