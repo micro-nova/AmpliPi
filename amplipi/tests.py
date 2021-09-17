@@ -61,12 +61,6 @@ class Client:
     except:
       return False
 
-# TODO: use these when we have processes
-class Instruction(Enum):
-  """ Instructions for sending commands to built-in tests that run as background processes"""
-  NEXT = 'next'
-  STOP = 'stop'
-
 BEATLES_RADIO = {
   'id': 1001,
   'name': 'Beatles Radio',
@@ -192,7 +186,6 @@ def loop_test(client: Client, test_name: str):
     sleep(1)
     if test_name == 'led':
       client.reset() # reset amplipi since fw can lock up during unplugging/plugging in led board
-
 
 def get_analog_tester_client():
   """ Get the second **special** amplipi instance available on MicroNova's network
