@@ -4,6 +4,7 @@ import math
 import os
 import sys
 import time
+from datetime import datetime
 
 # Add the directory above this script's location to PATH
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -55,6 +56,7 @@ parser.add_argument('-b', action='store_true', default=False, help='enter bootlo
 parser.add_argument('-a', action='store_true', default=False, help="set i2c address, currently only can set master's address")
 parser.add_argument('-f', action='store_true', default=False, help='force fans on')
 parser.add_argument('-l', type=auto_int, metavar='0xXX', help="override the LEDs")
+parser.add_argument('--temps', action='store_true', default=False, help='print temps and exit')
 args = parser.parse_args()
 
 # Force a reset if bootloader is requested
@@ -74,7 +76,15 @@ if args.a and args.b:
 # Setup preamp connection. args.r = Optionally reset master (unit 0)
 reset = args.u == 1 and args.r
 boot0 = args.u == 1 and args.b
-preamps = amplipi.rt._Preamps(reset = reset, set_addr = args.a, bootloader = boot0)
+preamps = amplipi.rt._Preamps(reset = reset, set_addr = args.a, bootloader = boot0, debug = not args.temps)
+
+# Used for temperature recording
+if args.temps:
+  _, _, _, fan_on, _ = preamps.read_power_status(args.u)
+  hv1_tmp, amp1_tmp, amp2_tmp = preamps.read_temps(args.u)
+  time = datetime.now().strftime('%H:%M:%S')
+  print(f'{time},{fan_on},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f}')
+  sys.exit(0)
 
 if args.u > 1 and args.r:
   print("Reseting expansion units is a work in progress...")

@@ -110,7 +110,7 @@ class _Preamps:
 
   preamps: Dict[int, List[int]] # Key: i2c address, Val: register values
 
-  def __init__(self, reset: bool = True, set_addr: bool = True, bootloader: bool = False):
+  def __init__(self, reset: bool = True, set_addr: bool = True, bootloader: bool = False, debug = True):
     self.preamps = dict()
     if not is_amplipi():
       self.bus = None # TODO: Use i2c-stub
@@ -127,10 +127,11 @@ class _Preamps:
       # Discover connected preamp boards
       for p in _DEV_ADDRS:
         if self.probe_preamp(p):
-          print(f'Preamp found at address {p}')
+          if debug:
+            print(f'Preamp found at address {p}')
           self.new_preamp(p)
         else:
-          if p == _DEV_ADDRS[0]:
+          if p == _DEV_ADDRS[0] and debug:
             print('Error: no preamps found')
           break
 
