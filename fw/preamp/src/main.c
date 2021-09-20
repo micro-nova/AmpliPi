@@ -36,7 +36,7 @@ void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str);
 // Uncomment the line below to use the debugger
 //#define DEBUG_OVER_UART2
 
-void init_gpio() {
+void initGpio() {
   // Enable peripheral clocks for GPIO ports
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
@@ -102,7 +102,7 @@ void init_gpio() {
   GPIO_Init(GPIOF, &GPIO_InitStructureF);
 }
 
-void init_uart1() {
+void initUart1() {
   // UART1 allows the Pi to set preamp I2C addresses and flash preamp software
 
   // Enable peripheral clocks for UART1
@@ -191,7 +191,7 @@ typedef struct {
 volatile SerialBuffer UART_Preamp_RxBuffer;
 
 // Add a character to the serial buffer (UART)
-void RxBuf_Add(volatile SerialBuffer* sb, uint8_t data_in) {
+void rxBufAdd(volatile SerialBuffer* sb, uint8_t data_in) {
   // Add new byte to buffer (as long as it isn't complete or overflowed).
   // Post-increment index.
   if (!(sb->done) && !(sb->ovf)) {
@@ -229,13 +229,13 @@ int main(void) {
   initState(&state_);
   systickInit();  // Initialize the clock ticks for delay_ms and other timing
                   // functionality
-  init_gpio();    // UART and I2C require GPIO pins
+  initGpio();     // UART and I2C require GPIO pins
   // Initialize each channel's volume state
   // (does not write to volume control ICs)
   initZones();
   // Initialize each source's analog/digital state
   initSources();
-  init_uart1();  // The preamp will receive its I2C network address via UART
+  initUart1();  // The preamp will receive its I2C network address via UART
   initInternalI2C(&state_);  // Setup the internal I2C bus
 
   // RELEASE EXPANSION RESET
@@ -332,7 +332,7 @@ void USART1_IRQHandler(void) {
     if (state_.uart_passthrough) {
       USART_SendData(USART2, m);
     } else {
-      RxBuf_Add(&UART_Preamp_RxBuffer, (uint8_t)m);
+      rxBufAdd(&UART_Preamp_RxBuffer, (uint8_t)m);
     }
   }
 }
