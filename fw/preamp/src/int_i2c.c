@@ -26,6 +26,7 @@
 #include "port_defs.h"
 #include "ports.h"
 #include "stm32f0xx.h"
+#include "systick.h"
 #include "thermistor.h"
 
 // I2C GPIO registers
@@ -289,12 +290,19 @@ void updateInternalI2C(AmpliPiState* state) {
   // Update the LED Board's LED state
   if (!state->led_override) {
     state->leds.grn = inStandby() ? 0 : 1;
-    state->leds.red = !state->leds.grn;
 
-    state->leds.zones = 0;
-    for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-      state->leds.zones |= (isOn(zone) ? 1 : 0) << zone;
+    if (state->i2c_addr) {
+      state->leds.red = !state->leds.grn;
+    } else {
+      // Blink red light at ~0.5 Hz
+      uint32_t mod2k  = millis() & ((1 << 11) - 1);
+      state->leds.red = mod2k > (1 << 10);
     }
+  }
+
+  state->leds.zones = 0;
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    state->leds.zones |= (isOn(zone) ? 1 : 0) << zone;
   }
   writeI2C2(led_gpio_, state->leds.data);
   state->leds.data = readI2C2(led_gpio_);

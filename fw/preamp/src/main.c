@@ -31,7 +31,7 @@
 // State of the AmpliPi hardware
 AmpliPiState state_;
 
-void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str);
+void USART_PutString(USART_TypeDef* USARTx, const char* str);
 
 // Uncomment the line below to use the debugger
 //#define DEBUG_OVER_UART2
@@ -124,7 +124,7 @@ void initUart1() {
   // Setup USART1
   USART_Cmd(USART1, ENABLE);
   USART_InitTypeDef USART_InitStructure;
-  USART_InitStructure.USART_BaudRate   = 9600;  // Auto-baud will override this
+  USART_InitStructure.USART_BaudRate = 115200;  // Auto-baud will override this
   USART_InitStructure.USART_WordLength = USART_WordLength_8b;
   USART_InitStructure.USART_StopBits   = USART_StopBits_1;
   USART_InitStructure.USART_Parity     = USART_Parity_No;
@@ -180,31 +180,51 @@ void initUart2(uint16_t brr) {
   USART_Cmd(USART2, ENABLE);
 }
 
+// Need at least 5 bytes for data: A + ADDR + \r + \n + \0.
+// Memory is 4-byte word aligned, so the following works well with the
+// 2 bytes for flags.
+#define SB_MAX_SIZE 6
+
+// Timeout address reception, 40 ms should allow down to 1k buad
+#define SB_TIMEOUT 40
+
 // Serial buffer for UART handling of I2C addresses
-#define SB_MAX_SIZE (64)
 typedef struct {
-  uint8_t data[SB_MAX_SIZE];  // Byte buffer
+  char    data[SB_MAX_SIZE];  // Byte buffer
   uint8_t ind;                // Index (current location)
   uint8_t done;               // Buffer is complete (terminator reached)
-  uint8_t ovf;                // Buffer has overflowed!
+  // uint32_t start;              // Time of first character reception (ms)
 } SerialBuffer;
-volatile SerialBuffer UART_Preamp_RxBuffer;
+volatile SerialBuffer uart1RxBuffer_;
+
+void rxBufReset(volatile SerialBuffer* sb) {
+  memset((void*)sb, 0, sizeof(SerialBuffer));
+}
 
 // Add a character to the serial buffer (UART)
 void rxBufAdd(volatile SerialBuffer* sb, uint8_t data_in) {
   // Add new byte to buffer (as long as it isn't complete or overflowed).
   // Post-increment index.
-  if (!(sb->done) && !(sb->ovf)) {
+  if (!sb->done) {
     sb->data[sb->ind++] = data_in;
+
+    // On first character, start timer. Reset buffer if timed out.
+    /*if (!sb->start) {
+      sb->start = millis();
+    } else if (sb->start > SB_TIMEOUT) {
+      rxBufReset(sb);
+    }*/
   }
+
   // Check for completion (i.e. when last two bytes are <CR><LF>)
-  if (sb->ind >= 2 && sb->data[(sb->ind) - 2] == 0x0D &&
-      sb->data[(sb->ind) - 1] == 0x0A) {
+  if (sb->ind >= 2 && sb->data[sb->ind - 2] == '\r' &&
+      sb->data[sb->ind - 1] == '\n') {
     sb->done = 1;
   }
+
   // Check for overflow (i.e. when index exceeds buffer)
-  if (sb->ind >= SB_MAX_SIZE) {
-    sb->ovf = 1;
+  if (sb->ind >= SB_MAX_SIZE && !sb->done) {
+    rxBufReset(sb);
   }
 }
 
@@ -214,9 +234,6 @@ void initState(AmpliPiState* state) {
 }
 
 int main(void) {
-  // VARIABLES
-  uint8_t i2c_addr;  // I2C address received via UART
-
   // TODO: Setup watchdog
 
   // RESET AND PIN SETUP
@@ -243,54 +260,37 @@ int main(void) {
   writePin(exp_nrst_, true);
   state_.expansion.nrst = true;
 
-  // TODO: Integrate address reception with main loop
-  // TODO: Assume default slave address, wait a bit to see if new address is
-  //       received, then either accept new address or use default.
-  while (1) {
-    if (UART_Preamp_RxBuffer.done == 1) {
-      // "A" - address identifier. Defends against potential noise on the wire
-      if (UART_Preamp_RxBuffer.data[0] == 0x41) {
-        // This will be the device address on I2C1.
-        i2c_addr = UART_Preamp_RxBuffer.data[1];
-#ifndef DEBUG_OVER_UART2
-        // Set expansion preamp's address, if it exists. Increment the address
-        // received by 0x10 to get the address for the next preamp.
-        SerialBuffer tx_buf         = UART_Preamp_RxBuffer;
-        tx_buf.data[tx_buf.ind - 3] = tx_buf.data[tx_buf.ind - 3] + 0x10;
-        initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
-        USART_PutString(USART2, tx_buf.data);
-#endif
-        break;
-      }
-      // Allow time for any extra garbage data to shift in
-      delayMs(2);
-      // Only necessary for multiple runs without cycling power
-      memset((void*)&UART_Preamp_RxBuffer, 0, sizeof(SerialBuffer));
-    } else if (UART_Preamp_RxBuffer.ovf == 1) {
-      // Clear the buffer if it overflows
-      memset((void*)&UART_Preamp_RxBuffer, 0, sizeof(SerialBuffer));
-    }
-
-    // Alternate red light status at ~1 Hz
-    bool blink = !(millis() & ((1 << 10) - 1));
-    if (state_.leds.red != blink) {
-      state_.leds.red = !state_.leds.red;
-      updateInternalI2C(&state_);
-    }
-  }
-
-  // Stabilize the blinking red LED once an address is given
-  state_.leds.red = 1;
-  // Initialize I2C with the new address
-  ctrlI2CInit(i2c_addr);
+  USART_PutString(USART1, "Entering main loop\r\n");
 
   // Main loop, awaiting I2C commands
   while (1) {
     // TODO: Clear watchdog
 
-    // Check for incomming control messages
-    if (ctrlI2CAddrMatch()) {
+    // Check for incomming control messages if a slave address has been set
+    if (state_.i2c_addr && ctrlI2CAddrMatch()) {
       ctrlI2CTransact(&state_);
+    }
+
+    // TODO: Assume default slave address, wait a bit to see if new address is
+    //       received, then either accept new address or use default.
+    // TODO: Better state machine with timeout
+    if (uart1RxBuffer_.done) {
+      // "A" - address identifier. Defends against potential noise on the wire
+      if (uart1RxBuffer_.data[0] == 'A') {
+#ifndef DEBUG_OVER_UART2
+        // Set expansion preamp's address, if it exists. Increment the address
+        // received by 0x10 to get the address for the next preamp.
+        SerialBuffer tx_buf = uart1RxBuffer_;
+        tx_buf.data[1]      = tx_buf.data[1] + 0x10;
+        initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
+        USART_PutString(USART2, tx_buf.data);
+#endif
+        // Initialize I2C1 with the new address
+        state_.i2c_addr = uart1RxBuffer_.data[1];
+        ctrlI2CInit(state_.i2c_addr);
+      }
+      rxBufReset(&uart1RxBuffer_);
+      USART_PutString(USART1, "Address\r\n");
     }
 
     // Read internal I2C bus every 32 ms (31.25 Hz)
@@ -308,17 +308,12 @@ int main(void) {
  * Process: Sends out string character-by-character and then sends
  * carriage return and line feed when done if needed
  */
-void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str) {
-  // Delay time in ms. Increase to send out message more slowly. At 9600 baud,
-  // UART sends roughly 1 char each millisecond
-  int dt = 2;
+void USART_PutString(USART_TypeDef* USARTx, const char* str) {
   while (*str != 0) {
-    // TODO: Delay until ready
+    while (!(USARTx->ISR & USART_ISR_TXE)) {}
     USART_SendData(USARTx, *str);
     str++;
-    delayMs(dt);
   }
-  delayMs(dt);
 }
 
 // Handles the interrupt on UART data reception
@@ -332,7 +327,7 @@ void USART1_IRQHandler(void) {
     if (state_.uart_passthrough) {
       USART_SendData(USART2, m);
     } else {
-      rxBufAdd(&UART_Preamp_RxBuffer, (uint8_t)m);
+      rxBufAdd(&uart1RxBuffer_, (uint8_t)m);
     }
   }
 }
