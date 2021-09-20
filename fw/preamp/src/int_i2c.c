@@ -233,6 +233,7 @@ void updateAdc(AmpliPiState* state) {
 }
 
 void initInternalI2C(AmpliPiState* state) {
+  (void)state;
   // Initialize the STM32's I2C2 bus as a master
   initI2C2();
 
@@ -241,8 +242,9 @@ void initInternalI2C(AmpliPiState* state) {
 
   // Set the LED Board's GPIO expander as all outputs
   writeI2C2(led_dir_, 0x00);  // 0=output, 1=input
+  writeI2C2(led_gpio_, state->leds.data);
 
-  updateInternalI2C(state);
+  // updateInternalI2C(state);
 }
 
 void updateInternalI2C(AmpliPiState* state) {

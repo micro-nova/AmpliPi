@@ -253,6 +253,7 @@ int main(void) {
   // Initialize each source's analog/digital state
   initSources();
   initUart1();  // The preamp will receive its I2C network address via UART
+  USART_PutString(USART1, "UART1 Initialized\r\n");
   initInternalI2C(&state_);  // Setup the internal I2C bus
 
   // RELEASE EXPANSION RESET
@@ -294,11 +295,11 @@ int main(void) {
     }
 
     // Read internal I2C bus every 32 ms (31.25 Hz)
-    bool read_internal_i2c = !(millis() & ((1 << 5) - 1));
-    if (read_internal_i2c) {
-      // TODO: move logic outside I2C function
-      updateInternalI2C(&state_);
-    }
+    // bool read_internal_i2c = !(millis() & ((1 << 5) - 1));
+    // if (read_internal_i2c) {
+    // TODO: move logic outside I2C function
+    // updateInternalI2C(&state_);
+    //}
   }
 }
 
