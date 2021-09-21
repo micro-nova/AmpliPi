@@ -15,7 +15,7 @@ import busio
 # Config
 CS_PIN = 17           # GPIO pin number
 SPI_BAUD = 1000000    # MHz, MCP3008 max is 3.6 MHz, min 10 kHz
-SAMPLE_RATE = 100.0   # Hz, rate at which to sample all channels
+SAMPLE_RATE = 20.0    # Hz, rate at which to sample all channels
 
 def cs_setup() -> None:
   """ CS pin setup. Leaves CS inactive. """
@@ -63,14 +63,18 @@ def read_vals():
     for chan in range(8):
       raw_val = read_adc(peak_spi, chan)
       adc_val = raw_val * 100.0 / 1023.0
-      if adc_val > max_val[chan]:
-        max_val[chan] = adc_val
+      if adc_val > max_val[7-chan]:
+        max_val[7-chan] = adc_val
         #filt_val = alpha*adc_val + (1-alpha)*filt_val
 
-    if i > int(SAMPLE_RATE):
+    # Print header once every 30 seconds
+    if i % (30*int(SAMPLE_RATE)) == 0:
+      print('  CH1R   CH1L   CH2R   CH2L   CH3R   CH3L   CH4R   CH4L')
+
+    # Print vals once a second
+    if i % int(SAMPLE_RATE) == 0:
       print(*(f'{val:5.1f}%' for val in max_val))
       max_val = [0]*8
-      i = 0
     i += 1
 
     next_time = next_time + sample_period
