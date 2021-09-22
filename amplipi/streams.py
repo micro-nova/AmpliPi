@@ -776,16 +776,12 @@ class FilePlayer(BaseStream):
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
 
-class FMRadio:
+class FMRadio(BaseStream):
   """ An FMRadio Stream using RTLSDR """
   def __init__(self, name, freq, logo, mock=False):
-    self.name = name
+    super().__init__('fm radio', name, mock)
     self.freq = freq
     self.logo = logo
-    self.proc = None
-    self.mock = mock
-    self.src = None
-    self.state = 'disconnected'
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -837,7 +833,7 @@ class FMRadio:
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(img_url=self.logo)
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url=self.logo)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
