@@ -48,10 +48,10 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       '  cd redsea',
       '  ./autogen.sh && ./configure && make',
       '  sudo make install',
+      '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
+      '  sudo udevadm control --reload-rules',
+      '  sudo udevadm trigger',
       'fi',
-      'sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
-      'sudo udevadm control --reload-rules',
-      'sudo udevadm trigger'
     ]
   },
   'dlna' : {
