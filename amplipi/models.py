@@ -262,6 +262,25 @@ class ZoneUpdateWithId(ZoneUpdate):
     update.pop('id')
     return ZoneUpdate.parse_obj(update)
 
+class MultiZoneUpdate(ZoneUpdate):
+  """ Reconfiguration of multiple zones specified by zone_ids and group_ids """
+
+  zones: Optional[List[int]] = fields.Zones
+  groups: Optional[List[int]] = fields.Groups
+  update: ZoneUpdate
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Connect all zones to source 1': {
+          'value': {
+            'zones': [0,1,2,3,4,5],
+            'update': { 'source_id': 0 }
+          }
+        },
+      },
+    }
+
 class Group(Base):
   """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
 
@@ -639,7 +658,7 @@ class Announcement(BaseModel):
   """
   media : str = Field(description="URL to media to play as the announcement")
   vol: int = Field(default=-40, ge=-79, le=0, description='Output volume in dB')
-  src_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
+  source_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
 
@@ -664,7 +683,7 @@ class Info(BaseModel):
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
-  zones: List[Zone] = [Zone(id=i, name=f'Zone {i}') for i in range(6) ]
+  zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
   streams: List[Stream] = []
   presets: List[Preset] = []

@@ -161,7 +161,7 @@ class Api:
   def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     self.reinit(settings, change_notifier)
 
-  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
+  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None, config: Optional[models.Status] = None):
     """ Initialize or Reinitialize the controller
 
     Intitializes the system to to base configuration """
@@ -170,6 +170,11 @@ class Api:
     self._mock_streams = settings.mock_streams
     self._save_timer = None
     self._delay_saves = settings.delay_saves
+    self._settings = settings
+    try:
+      del self._rt # remove the low level hardware connection
+    except AttributeError:
+      pass
     self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi()
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -177,20 +182,24 @@ class Api:
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
     self.config_file_valid = True # initially we assume the config file is valid
-    # try to load the config file or its backup
-    config_paths = [self.config_file, self.backup_config_file]
     errors = []
-    loaded_config = False
-    for cfg_path in config_paths:
-      try:
-        if os.path.exists(cfg_path):
-          self.status = models.Status.parse_file(cfg_path)
-          loaded_config = True
-          break
-        errors.append('config file "{}" does not exist'.format(cfg_path))
-      except Exception as exc:
-        self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
-        errors.append('error loading config file: {}'.format(exc))
+    if config:
+      self.status = config
+      loaded_config = True
+    else:
+      # try to load the config file or its backup
+      config_paths = [self.config_file, self.backup_config_file]
+      loaded_config = False
+      for cfg_path in config_paths:
+        try:
+          if os.path.exists(cfg_path):
+            self.status = models.Status.parse_file(cfg_path)
+            loaded_config = True
+            break
+          errors.append('config file "{}" does not exist'.format(cfg_path))
+        except Exception as exc:
+          self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
+          errors.append('error loading config file: {}'.format(exc))
 
     if not loaded_config:
       print(errors[0])
@@ -339,7 +348,7 @@ class Api:
     Args:
       src: An audio source that may have a stream connected
       sid: ID of an audio source
-    Returns
+    Returns:
       a stream, or None if input does not specify a valid stream
     """
     if sid is not None:
@@ -424,7 +433,7 @@ class Api:
         force_update: update source even if no changes have been made (for hw startup)
         internal: called by a higher-level ctrl function
       Returns:
-        'None' on success, otherwise error (dict)
+        ApiResponse
     """
     idx, zone = utils.find(self.status.zones, zid)
     if idx is not None and zone is not None:
@@ -472,6 +481,32 @@ class Api:
         return ApiResponse.error('set zone: '  + str(exc))
     else:
         return ApiResponse.error('set zone: index {} out of bounds'.format(idx))
+
+  def set_zones(self, multi_update: models.MultiZoneUpdate, internal: bool = False) -> ApiResponse:
+    """Reconfigures a set of zones
+
+      Args:
+        update: changes to apply to embedded zones and groups
+      Returns:
+        ApiResponse
+    """
+    # aggregate all of the zones together
+    all_zids = utils.zones_from_all(self.status, multi_update.zones, multi_update.groups)
+    # update each of the zones
+    resp = ApiResponse.ok()
+    for zid in all_zids:
+      zupdate = multi_update.update.copy() # we potentially need to make changes to the underlying update
+      if zupdate.name:
+        # ensure all zones don't get named the same
+        zupdate.name = f'{zupdate.name} {zid+1}'
+      resp = self.set_zone(zid, zupdate, internal=True)
+      if resp.code != ApiResponse.OK:
+        break # the response message is the internal failure
+    if not internal:
+      # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
+      self._update_groups()
+      self.mark_changes()
+    return resp
 
   def _update_groups(self) -> None:
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
@@ -757,7 +792,7 @@ class Api:
 
     # execute changes source by source in increasing order
     for src in preset_state.sources or []:
-      if src.id:
+      if src.id is not None:
         self.set_source(src.id, src.as_update(), internal=True)
       else:
         pass # TODO: support some id-less source concept that allows dynamic source allocation
@@ -858,7 +893,7 @@ class Api:
       return resp0
     stream = resp0
     # create a temporary preset with all zones connected to the announcement stream and load it
-    pa_src = models.SourceUpdateWithId(id=announcement.src_id, input=f'stream={stream.id}') # for now we just use the last source
+    pa_src = models.SourceUpdateWithId(id=announcement.source_id, input=f'stream={stream.id}') # for now we just use the last source
     if announcement.zones is None and announcement.groups is None:
       zones_to_use = {z.id for z in self.status.zones if z.id is not None and not z.disabled}
     else:

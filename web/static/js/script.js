@@ -81,7 +81,12 @@ $(document).ready(function(){
       updateSettings();
     }
   });
+  // Refresh the page sequentially in place of SSE
   setInterval(refresh, 2000);
+  // hook file selected event
+  $('#settings-config-file-selector')[0].addEventListener('change', (event) => {
+    $('#settings-config-load')[0].classList.remove('disabled');
+  });
 });
 
 function updateVol(ctrl, muted, vol) {
@@ -466,4 +471,38 @@ function initVolControl(ctrl) {
   document.addEventListener("touchend", (e) => {
    vols[ctrl.id].barStillDown = false;
   }, true);
+}
+
+function uploadConfig() {
+  const reader = new FileReader();
+  // TODO: disable button (it should have been enabled by the change event on the file selector)
+  selector = $('#settings-config-file-selector')[0];
+  reader.addEventListener('load', (event) => {
+    const config = event.target.result;
+    // TODO: parse the json config??
+    // config_str = JSON.stringify(config)
+    // load the new config
+    fetch('/api/load', {method: 'POST', headers: { 'Content-Type': 'application/json;charset=utf-8'}, body: config});
+    // TODO: show success or fail
+  });
+  reader.readAsText(selector.files[0]);
+}
+
+// From: https://stackoverflow.com/questions/19721439/download-json-object-as-a-file-from-browser
+async function downloadConfig(){
+  // get the current config
+  let response = await fetch('/api');
+  let config = await response.json();
+  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config));
+  var downloadAnchorNode = document.createElement('a');
+  downloadAnchorNode.setAttribute("href",     dataStr);
+  downloadAnchorNode.setAttribute("download", "config.json");
+  document.body.appendChild(downloadAnchorNode); // required for firefox
+  downloadAnchorNode.click();
+  downloadAnchorNode.remove();
+}
+
+async function resetDevice() {
+  let response = await fetch('/api/reset', {method: 'POST'});
+  // TODO: validate response (and potentially change button color)
 }

@@ -62,8 +62,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'spotify' : {
     'script' :  [
-      'curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
-      'tar --directory streams -xvf streams/vollibrespot.tar.xz',
+      'if [ ! -e "streams/vollibrespot" ] ; then',
+      '  curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
+      '  tar --directory streams -xvf streams/vollibrespot.tar.xz',
+      '  rm streams/vollibrespot.tar.xz',
+      'fi',
     ]
   }
 }
@@ -169,7 +172,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _from = f"{env['base_dir']}/{_from}"
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
-    tasks += print_progress([Task(f"copy {_from} to {_to}", f"cp {_from} {_to}".split()).run()])
+    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
     if 'shairport-sync-metadata-reader' in _to:
       # windows messes up permissions
       tasks += print_progress([Task(f"make {_to} executable", f"chmod +x {_to}".split()).run()])
@@ -178,6 +181,17 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     _from = f"{env['base_dir']}/config/asound.conf"
     _to = "/etc/asound.conf"
     tasks += print_progress([Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
+    # fix usb soundcard name
+    usb_audio_rule_path = '/etc/udev/rules.d/85-amplipi-usb-audio.rules'
+    if not os.path.exists(usb_audio_rule_path):
+      _from = f"{env['base_dir']}/config/85-amplipi-usb-audio.rules"
+      _to = usb_audio_rule_path
+      tasks += print_progress([Task('fix usb soundcard id', multiargs=[
+        f"sudo cp {_from} {_to}".split(),
+        'sudo udevadm control --reload-rules'.split(),
+        'sudo udevadm trigger'.split(),
+        f"sudo .{env['base_dir']}/scripts/reload_cmedia".split(),
+      ]).run()])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
@@ -214,6 +228,24 @@ def _install_python_deps(env: dict, deps: List[str]):
     os.chdir(last_dir)
   return tasks
 
+def _add_desktop_icon(env, name, command) -> Task:
+  """ Add a desktop icon to the pi """
+  entry = f"""[Desktop Entry]
+Name={name}
+Icon=lxterminal
+Exec=lxterminal -t "{name}" --working-directory={env["base_dir"]} -e {command}
+Type=Application
+Terminal=false
+Categories=Utility;
+"""
+  success = True
+  try:
+    with open(f'/home/pi/Desktop/{name}.desktop', 'w') as icon:
+      icon.write(entry)
+  except Exception:
+    success = False
+  return Task(f'Add desktop icon for {name}', success=success)
+
 def _web_service(directory: str):
   return f"""\
 [Unit]
@@ -224,7 +256,7 @@ After=network.target
 Type=simple
 WorkingDirectory={directory}
 ExecStart=/usr/bin/authbind --deep {directory}/venv/bin/python -m uvicorn --host 0.0.0.0 --port 80 amplipi.asgi:application
-Restart=on-abort
+Restart=always
 
 [Install]
 WantedBy=default.target
@@ -494,6 +526,25 @@ def fix_file_props(env, progress) -> List[Task]:
   progress(tasks)
   return tasks
 
+def add_tests(env, progress) -> List[Task]:
+  """ Add test icons """
+  tests = [
+    ('Amplifier', './hw/tests/built_in.bash amp'),
+    ('LEDs', './hw/tests/built_in.bash led'),
+    ('Preamp', './hw/tests/built_in.bash preamp'),
+    ('Inputs', './hw/tests/built_in.bash inputs'),
+    ('Preouts', './hw/tests/built_in.bash preout'),
+    ('Display', './hw/tests/display.bash --wait'),
+    ('Ethernet', './hw/tests/ethernet.bash --wait'),
+    ('Program Preamp', './fw/preamp_flash.sh ./fw/bin/preamp_1.2.bin'),
+    ('USB Ports', './hw/tests/usb.py'),
+  ]
+  tasks = []
+  for test in tests:
+    tasks += [_add_desktop_icon(env, test[0], test[1])]
+  progress(tasks)
+  return tasks
+
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
             display=True, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
@@ -515,6 +566,8 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if failed():
     return False
   tasks += fix_file_props(env, progress)
+  if env['is_amplipi']:
+    tasks += add_tests(env, progress)
   if failed():
     return False
   if os_deps:

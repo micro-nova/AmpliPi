@@ -267,22 +267,20 @@ class Preamps:
       self.preamps.append(p)
     print(f'Found {len(self.preamps)} preamp(s)')
 
-  def flash(self, filepath: str, baud: int = 115200) -> None:
+  def flash(self, filepath: str, num_units: int, baud: int = 115200) -> None:
     """ Flash all available preamps with a given file """
 
     if baud not in self.BAUD_RATES:
       raise ValueError(f'Baud rate must be one of {self.BAUD_RATES}')
 
-    # Flash all units found, but if nothing shows up
-    # attempt flashing the master preamp at least
-    num_units = len(self.preamps)
-    if num_units == 0:
-      num_units = 1
-
     for unit in range(num_units):
-      major, minor, git_hash, dirty = self.preamps[unit].read_version()
-      print(f"Resetting unit {unit}'s preamp (version {major}.{minor}) and starting execution in bootloader ROM")
-      print(f"Resetting unit {unit}'s preamp and starting execution in bootloader ROM")
+      # If the unit was previously able to be communicated to,
+      # read the version and print it.
+      ver_str = ''
+      if unit < len(self.preamps):
+        major, minor, git_hash, dirty = self.preamps[unit].read_version()
+        ver_str = f'(version {major}.{minor}) '
+      print(f"Resetting unit {unit}'s preamp {ver_str}and starting execution in bootloader ROM")
       self.reset(unit = unit, bootloader = True)
       for p in range(unit): # Set UART passthrough on any previous units
         print(f'Setting unit {p} as passthrough')
@@ -291,8 +289,14 @@ class Preamps:
       # TODO: Error handling
       print('Resetting all preamps and starting execution in user flash')
       self.reset()
-      major, minor, git_hash, dirty = self.preamps[unit].read_version()
-      print(f"Unit {unit}'s new version: {major}.{minor}")
+
+      # If the programming was successful it was just added to the list of preamps
+      if unit < len(self.preamps):
+        major, minor, git_hash, dirty = self.preamps[unit].read_version()
+        print(f"Unit {unit}'s new version: {major}.{minor}")
+      else:
+        print(f"Can't communicate with unit {unit}, stopping programming")
+        break
 
 
 #class PeakDetect:
@@ -341,12 +345,22 @@ if __name__ == '__main__':
                       help='print preamp firmware version(s)')
   parser.add_argument('-l', '--log', metavar='LEVEL', default='WARNING',
                       help='set logging level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
+  parser.add_argument('-n', '--num-units', metavar='N', type=int,
+                      help='set the number of preamps instead of auto-detecting')
   args = parser.parse_args()
 
   preamps = Preamps(args.reset)
 
   if args.flash is not None:
-    preamps.flash(filepath = args.flash, baud = args.baud)
+    # Default to attempting to flash all units found.
+    num_units = len(preamps)
+    if args.num_units is not None:
+      # Override auto-detected preamp count
+      num_units = args.num_units
+    if num_units <= 0:
+      # Always try to flash at least 1 unit
+      num_units = 1
+    preamps.flash(filepath = args.flash, num_units = num_units, baud = args.baud)
 
   if len(preamps) == 0:
     print('No preamps found, exiting')

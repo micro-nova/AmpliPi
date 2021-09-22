@@ -147,6 +147,9 @@ poetry.lock
 
 # Copied architecture specific files
 streams/shairport-sync-metadata-reader
+streams/vollibrespot
+streams/vollibrespot.tar.xz
+gmrender-resurrect
 
 # Amplipi Web
 web/generated/*

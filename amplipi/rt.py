@@ -133,6 +133,11 @@ class _Preamps:
             print('Error: no preamps found')
           break
 
+  def __del__(self):
+    if self.bus:
+      self.bus.close()
+
+
   def reset_preamps(self, bootloader: bool = False):
     """ Resets the preamp board.
         Any slave preamps will be reset one-by-one by the previous preamp.
@@ -530,6 +535,10 @@ class Rpi:
   def __init__(self):
     self._bus = _Preamps()
     self._all_muted = True # preamps start up in muted/standby state
+
+
+  def __del__(self):
+    del self._bus
 
   def update_zone_mutes(self, zone, mutes):
     """ Update the mute level to all of the zones

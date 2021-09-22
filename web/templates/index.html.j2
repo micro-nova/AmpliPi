@@ -99,6 +99,7 @@
           <option value="#settings-tab-inputs">Inputs</option>
           <option value="#settings-tab-zones">Zones</option>
           <option value="#settings-tab-groups">Groups</option>
+          <option value="#settings-tab-config">Configuration and Reset</option>
           <option value="#settings-tab-updates">Updates</option>
         </select>
       </div>
@@ -174,6 +175,33 @@
                     <div id="settings-tab-groups-config" style="padding: .75rem 1.25rem;">
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="settings-tab-config" class="tab-pane">
+            <div class="card settings">
+              <h6 class="card-header">Upload a Configuration</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <input type="file" id="settings-config-file-selector" accept=".json">
+                  <button class="btn btn-success disabled" onclick="if (!this.classList.contains('disabled')) { this.classList.add('disabled'); uploadConfig(); }" id="settings-config-load">Load</button>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Download Current Configuration</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <button class="btn btn-success" onclick="downloadConfig()" id="settings-config-download">Download</button>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Hardware Reset (reloads current configuration)</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <button title="Resets the preamp hardware and controller software (does not reboot the pi-based controller)" class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
                 </div>
               </div>
             </div>

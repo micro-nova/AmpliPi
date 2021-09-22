@@ -71,6 +71,8 @@ parser.add_argument('-t', '--test-board', action='store_true', default=False,
                     help='use SPI0 and test board pins')
 parser.add_argument('-l', '--log', metavar='LEVEL', default='WARNING',
                     help='set logging level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
+parser.add_argument('--test-timeout', metavar='SECS', type=float, default=0.0,
+                    help='if >0, perform a hardware test and exit on success or timeout')
 args = parser.parse_args()
 
 # Setup logging
@@ -90,6 +92,7 @@ except (NotImplementedError, RuntimeError) as err:
   sys.exit(1)
 
 profile = False
+_touch_test_passed = False
 
 # Configuration for extra TFT pins:
 clk_pin = board.SCLK if args.test_board else board.SCLK_2
@@ -173,7 +176,7 @@ def get_amplipi_data(base_url: Optional[str]) -> Tuple[bool, List[models.Source]
   try:
     """ TODO: If the AmpliPi server isn't available at this url, there is a
     5-second delay introduced by socket.getaddrinfo """
-    req = requests.get(base_url, timeout=0.1)
+    req = requests.get(base_url, timeout=0.2)
     if req.status_code == 200:
       status = models.Status(**req.json())
       _zones = status.zones
@@ -330,6 +333,7 @@ if temp0 == 0 or temp1 == 0:
 def touch_callback(pin_num):
   # TODO: Debounce touches
   global _active_screen
+  global _touch_test_passed
 
   # Mask the interrupt since reading the position generates a false interrupt
   gpio.remove_event_detect(t_irq_pin.id)
@@ -369,6 +373,7 @@ def touch_callback(pin_num):
       y = round(height*(1 - x_cal))
       x = round(width*(1 - y_cal))
       log.debug(f'Touch at {x},{y}')
+      _touch_test_passed = True
       if x > (3*width/4):
         _active_screen = (_active_screen + 1) % NUM_SCREENS
       if x < (width/4):
@@ -438,6 +443,7 @@ frame_num = 0
 frame_times = []
 cpu_load = []
 use_debug_port = False
+disp_start_time = time.time()
 while frame_num < 10 and run:
   frame_start_time = time.time()
 
@@ -578,6 +584,11 @@ while frame_num < 10 and run:
   if profile:
     frame_num = frame_num + 1
 
+  # If the test timeout is 0, ignore testing
+  if args.test_timeout > 0.0:
+    if _touch_test_passed or (time.time() - disp_start_time) > args.test_timeout:
+      run = False
+
 if profile:
   pr.disable()
   pr.print_stats(sort='time')
@@ -588,3 +599,6 @@ gpio.remove_event_detect(t_irq_pin.id)
 # Clear display on exit
 display.image(Image.new('RGB', (width, height)))
 led.duty_cycle = 0
+
+if args.test_timeout > 0.0 and not _touch_test_passed:
+  sys.exit(2) # Exit with an error code >0 to indicate test failure

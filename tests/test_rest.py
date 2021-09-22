@@ -108,22 +108,52 @@ def test_view_changes(client: TestClient):
 
 @pytest.mark.parametrize('path', ['/api', '/api/'])
 def test_base(client, path):
-    """ Start with a basic controller and just check if it gives a real response """
-    rv = client.get(path)
-    assert rv.status_code == HTTPStatus.OK
-    if rv.status_code == HTTPStatus.OK:
-      jrv = rv.json()
-      assert jrv is not None
-      og_config = client.original_config
-      for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
-        if t in og_config:
-          assert len(jrv[t]) == len(og_config[t])
-      # make sure a real version is reported
-      assert 'info' in jrv and 'version' in jrv['info']
-      assert len(jrv['info']['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
-    else:
-      assert path == '/api'
-      assert '/api/' in rv.location
+  """ Start with a basic controller and just check if it gives a real response """
+  rv = client.get(path)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    jrv = rv.json()
+    assert jrv is not None
+    og_config = client.original_config
+    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+      if t in og_config:
+        assert len(jrv[t]) == len(og_config[t])
+    # make sure a real version is reported
+    assert 'info' in jrv and 'version' in jrv['info']
+    assert len(jrv['info']['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
+  else:
+    assert path == '/api'
+    assert '/api/' in rv.location
+
+def test_reset(client):
+  """ Reset the firmware """
+  rv = client.post('/api/reset')
+  assert rv.status_code == HTTPStatus.OK
+
+def test_load_og_config(client):
+  """ Reload the initial configuration """
+  rv = client.post('/api/load', json=client.original_config)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    jrv = rv.json()
+    assert jrv is not None
+    og_config = client.original_config
+    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+      if t in og_config:
+        assert len(jrv[t]) == len(og_config[t])
+
+
+def test_load_null_config(client):
+  """ Load with the basic default configuration """
+  rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    jrv = rv.json()
+    assert jrv is not None
+    og_config = amplipi.models.Status().dict()
+    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+      if t in og_config:
+        assert len(jrv[t]) == len(og_config[t])
 
 def test_open_api_yamlfile(client):
     """ Check if the openapi yaml doc is available """
@@ -195,6 +225,27 @@ def test_patch_zone(client, zid):
   s = find(jrv['zones'], zid)
   assert s is not None
   assert s['name'] == 'patched-name'
+
+@pytest.mark.parametrize('sid', base_source_ids())
+def test_patch_zones(client, sid):
+  """ Try changing multiple zones """
+  rv = client.patch('/api/zones', json={'zones': [z for z in range(6)], 'update': {'source_id': sid}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['source_id'] == sid
+
+def test_patch_zones_duplicate_name(client):
+  """ Try changing multiple zones and setting base name """
+  rv = client.patch('/api/zones', json={'zones': [z for z in range(6)], 'update': {'name': 'test'}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['name'] == f"test {z['id']+1}"
 
 # Test Groups
 def base_group_ids():
