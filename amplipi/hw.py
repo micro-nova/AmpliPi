@@ -289,7 +289,7 @@ class Preamps:
       self.preamps.append(p)
     print(f'Found {len(self.preamps)} preamp(s)')
 
-  def flash(self, filepath: str, num_units: int, baud: int = 115200) -> None:
+  def flash(self, filepath: str, num_units: int, baud: int = 115200) -> bool:
     """ Flash all available preamps with a given file """
 
     if baud not in self.BAUD_RATES:
@@ -307,6 +307,8 @@ class Preamps:
       for p in range(unit): # Set UART passthrough on any previous units
         print(f'Setting unit {p} as passthrough')
         self.preamps[p].uart_passthrough(True)
+      if unit > 0: # For now the firmware can only pass through 9600 buad to expanders
+        baud = 9600
       flash_result = subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'], shell=True, check=False)
       success = flash_result.returncode == 0
       if not success:
@@ -325,6 +327,7 @@ class Preamps:
 
       if not success:
         break
+    return success
 
 
 #class PeakDetect:
@@ -367,7 +370,7 @@ if __name__ == '__main__':
                       help='reset the preamp(s) before communicating over I2C')
   parser.add_argument('--flash', metavar='FW.bin',
                       help='update the preamp(s) with the firmware in a .bin file')
-  parser.add_argument('-b', '--baud', type=int, default=9600,
+  parser.add_argument('-b', '--baud', type=int, default=115200,
                       help='baud rate to use for UART communication')
   parser.add_argument('-v', '--version', action='store_true', default=False,
                       help='print preamp firmware version(s)')
@@ -388,7 +391,9 @@ if __name__ == '__main__':
     if num_units <= 0:
       # Always try to flash at least 1 unit
       num_units = 1
-    preamps.flash(filepath = args.flash, num_units = num_units, baud = args.baud)
+    if not preamps.flash(filepath = args.flash, num_units = num_units, baud = args.baud):
+      sys.exit(2)
+
 
   if len(preamps) == 0:
     print('No preamps found, exiting')
