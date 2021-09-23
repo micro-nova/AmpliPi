@@ -371,24 +371,6 @@ class _Preamps:
       return leds
     return None
 
-  def print_led_state(self, preamp: int = 1):
-    """ Print the state of the front-panel LEDs
-
-      Args:
-        preamp: preamp number from 1 to 6
-    """
-    assert 1 <= preamp <= 6
-    led = self.read_leds(preamp)
-    if led is not None:
-      green = led & 0x01
-      red = (led >> 1) & 0x01
-      zones = [(led >> i) & 0x01 for i in range(2,8)]
-      rg = 'YELLOW' if red and green else 'RED' if red else 'GREEN' if green else 'OFF'
-      print('LEDS:        |         ZONES')
-      print('  ON/STANDBY | 1 | 2 | 3 | 4 | 5 | 6')
-      print('------------------------------------')
-      print(f'  {rg:^10} | {zones[0]} | {zones[1]} | {zones[2]} | {zones[3]} | {zones[4]} | {zones[5]}')
-
   def led_override(self, preamp: int = 1, leds: Union[int, None] = 0xFF):
     """ Override the LED board's LEDs
 

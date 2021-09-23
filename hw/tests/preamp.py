@@ -7,31 +7,45 @@ import time
 from datetime import datetime
 
 # Add the directory above this script's location to PATH
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import amplipi.rt
 
 def auto_int(x):
   return int(x, 0)
 
+def print_led_state(led: int):
+  """ Print the state of the front-panel LEDs """
+  if led is not None:
+    green = led & 0x01
+    red = (led >> 1) & 0x01
+    zones = [(led >> i) & 0x01 for i in range(2,8)]
+    rg = 'YELLOW' if red and green else 'RED' if red else 'GREEN' if green else 'OFF'
+    print('  LEDS:        |         ZONES')
+    print('    ON/STANDBY | 1 | 2 | 3 | 4 | 5 | 6')
+    print('  ------------------------------------')
+    print(f'    {rg:^10} | {zones[0]} | {zones[1]} | {zones[2]} | {zones[3]} | {zones[4]} | {zones[5]}')
+
 def print_status(p: amplipi.rt._Preamps, u: int):
+  print(f'Status of unit {u}:')
+
   # Version
   major, minor, git_hash, dirty = p.read_version(u)
   if major is None:
-    print("Couldn't read preamp version")
+    print("  Couldn't read preamp version")
     sys.exit(1)
-  print(f'Version {major}.{minor}-{git_hash:07X}, {"dirty" if dirty else "clean"}')
+  print(f'  Version {major}.{minor}-{git_hash:07X}, {"dirty" if dirty else "clean"}')
 
-  # Sources/Zones
-  for zone in range(6*(u-1), 6*u):
-    p.print_zone_state(zone)
+  # Sources/Zones (Doesn't work right now)
+  #for zone in range(6*(u-1), 6*u):
+  #  p.print_zone_state(zone)
 
   # Power board - note: failed only exists on Rev2 Power Board
   pg_12v, en_12v, ovr_tmp, fan_on, fan_fail, fan_ctrl = p.read_power_status(u)
   ctrl = 'MAX6644' if fan_ctrl == 0 else 'ON_OFF'
-  print('Power Board Status')
-  print(f'  12V:  EN={en_12v}, PG={pg_12v}')
-  print(f'  Fans: On={fan_on}, Failed={fan_fail}, Control={ctrl}')
-  print(f'  Overtemp: {ovr_tmp}')
+  print('  Power Board Status')
+  print(f'    12V:  EN={en_12v}, PG={pg_12v}')
+  print(f'    Fans: On={fan_on}, Failed={fan_fail}, Control={ctrl}')
+  print(f'    Overtemp: {ovr_tmp}')
 
   # 24V and temp
   hv1 = p.read_hv(u)
@@ -44,11 +58,11 @@ def print_status(p: amplipi.rt._Preamps, u: int):
     else:
       tmp_str = f'{tmp:5.1f}\N{DEGREE SIGN}C'
     return tmp_str
-  print(f'HV1: {hv1:5.2f}V, {temp2str(hv1_tmp)}')
-  print(f'Amp Temps: {temp2str(amp1_tmp)}, {temp2str(amp2_tmp)}')
+  print(f'  HV1: {hv1:5.2f}V, {temp2str(hv1_tmp)}')
+  print(f'  Amp Temps: {temp2str(amp1_tmp)}, {temp2str(amp2_tmp)}')
 
   # LEDs
-  p.print_led_state(u)
+  print_led_state(p.read_leds(u))
 
 parser = argparse.ArgumentParser(description='Display AmpliPi preamp status.')
 parser.add_argument('-u', type=int, choices=range(1,7), default=1, help="which unit's preamp to control. Default=1")
@@ -57,6 +71,7 @@ parser.add_argument('-b', action='store_true', default=False, help='enter bootlo
 parser.add_argument('-a', action='store_true', default=False, help="set i2c address, currently only can set master's address")
 parser.add_argument('-f', action='store_true', default=False, help='force fans on')
 parser.add_argument('-l', type=auto_int, metavar='0xXX', help="override the LEDs")
+parser.add_argument('-w', action='store_true', default=False, help="wait for key press before exiting")
 parser.add_argument('--temps', action='store_true', default=False, help='print temps and exit')
 args = parser.parse_args()
 
@@ -97,6 +112,11 @@ if not args.b:
   preamps.led_override(preamp = args.u, leds = args.l)
 
   time.sleep(0.1) # Wait a bit to make sure internal I2C writes have finished
-  print_status(preamps, args.u)
+  for u in range(len(preamps.preamps)):
+    print()
+    print_status(preamps, u + 1)
+
+  if args.w:
+    input("Press Enter to continue...")
 
 # TODO? 'STANDBY' : 0x04
