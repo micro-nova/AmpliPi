@@ -26,8 +26,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ZONES_H_
-#define ZONES_H_
+#ifndef AUDIO_MUX_H_
+#define AUDIO_MUX_H_
+
 // Uncomment this line to enable automatic mute control via high/low volume.
 // #define AUTO_MUTE_CTRL
 
@@ -45,14 +46,18 @@ bool isOn(size_t zone);
 bool anyOn();
 
 void mute(size_t zone, bool mute);
+bool muted(size_t zone);
 void standby(bool standby);
 bool inStandby();
 
-void initZones();
-void setZoneVolume(size_t zone, uint8_t vol);
-void selectZoneSource(size_t zone, size_t src);
+void    initZones();
+void    setZoneVolume(size_t zone, uint8_t vol);
+uint8_t getZoneVolume(size_t zone);
+void    setZoneSource(size_t zone, size_t src);
+size_t  getZoneSource(size_t zone);
 
-void initSources();
-void selectSourceAD(size_t src, InputType type);
+void      initSources();
+void      setSourceAD(size_t src, InputType type);
+InputType getSourceAD(size_t src);
 
-#endif /* ZONES_H_ */
+#endif /* AUDIO_MUX_H_ */

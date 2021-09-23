@@ -66,14 +66,14 @@ bool anyOn() {
   // TODO: Shortcut
 }
 
-// Checks if any of the zones are in standby
-bool inStandby() {
-  bool in_stby = false;
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    in_stby = in_stby || (!readPin(zone_standby_[zone]));
-  }
-  return in_stby;
-  // TODO: Shortcut
+// Mute the specified zone
+void mute(size_t zone, bool mute) {
+  // Set pin low to mute
+  writePin(zone_mute_[zone], !mute);
+}
+
+bool muted(size_t zone) {
+  return !readPin(zone_mute_[zone]);
 }
 
 // Writes volume level to the volume ICs via the internal I2C bus
@@ -99,10 +99,14 @@ void standby(bool standby) {
   }
 }
 
-// Mute the specified zone
-void mute(size_t zone, bool mute) {
-  // Set pin low to mute
-  writePin(zone_mute_[zone], !mute);
+// Checks if any of the zones are in standby
+bool inStandby() {
+  bool in_stby = false;
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    in_stby = in_stby || (!readPin(zone_standby_[zone]));
+  }
+  return in_stby;
+  // TODO: Shortcut
 }
 
 // Initialize each zone's volume state (does not write to volume control ICs)
@@ -110,16 +114,9 @@ void initZones() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     volumes[zone] = DEFAULT_VOL;
     mute(zone, true);
-    selectZoneSource(zone, DEFAULT_SOURCE);
+    setZoneSource(zone, DEFAULT_SOURCE);
   }
   standby(true);
-}
-
-// Initialize each source's analog/digital state
-void initSources() {
-  for (size_t src = 0; src < NUM_SRCS; src++) {
-    selectSourceAD(src, IT_DIGITAL);
-  }
 }
 
 // Set a zone's volume (required I2C write)
@@ -140,18 +137,12 @@ void setZoneVolume(size_t zone, uint8_t vol) {
   writeVolume(zone, vol);
 }
 
-// Each source can select between a digital or analog input
-void selectSourceAD(size_t src, InputType type) {
-  // Disable both mux inputs first
-  writePin(src_ad_[src][IT_ANALOG], false);
-  writePin(src_ad_[src][IT_DIGITAL], false);
-
-  // Enable selected input
-  writePin(src_ad_[src][type], true);
+uint8_t getZoneVolume(size_t zone) {
+  return volumes[zone];
 }
 
 // Connect a Zone to a Source
-void selectZoneSource(size_t zone, size_t src) {
+void setZoneSource(size_t zone, size_t src) {
   // Mute the zone during the switch to avoid an audible pop
   bool was_muted = !isOn(zone);
   mute(zone, !was_muted);
@@ -168,4 +159,39 @@ void selectZoneSource(size_t zone, size_t src) {
 
   // Restore mute status
   mute(zone, was_muted);
+}
+
+size_t getZoneSource(size_t zone) {
+  // Assume only one source is ever selected
+  for (size_t src = 0; src < NUM_SRCS; src++) {
+    if (readPin(zone_src_[zone][src])) {
+      return src;
+    }
+  }
+  return 0;  // Should never be reached
+}
+
+// Initialize each source's analog/digital state
+void initSources() {
+  for (size_t src = 0; src < NUM_SRCS; src++) {
+    setSourceAD(src, IT_DIGITAL);
+  }
+}
+
+// Each source can select between a digital or analog input
+void setSourceAD(size_t src, InputType type) {
+  // Disable both mux inputs first
+  writePin(src_ad_[src][IT_ANALOG], false);
+  writePin(src_ad_[src][IT_DIGITAL], false);
+
+  // Enable selected input
+  writePin(src_ad_[src][type], true);
+}
+
+InputType getSourceAD(size_t src) {
+  // Assume only one input is ever selected
+  if (readPin(src_ad_[src][IT_DIGITAL])) {
+    return IT_DIGITAL;
+  }
+  return IT_ANALOG;
 }

@@ -84,47 +84,42 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
   uint8_t out_msg = 0;
   switch (addr) {
     case REG_SRC_AD:
-      out_msg = 0;  // TODO
+      for (size_t src = 0; src < NUM_SRCS; src++) {
+        if (getSourceAD(src)) {
+          out_msg |= (1 << src);
+        }
+      }
       break;
 
     case REG_ZONE321:
-      out_msg = 0;  // TODO
+    case REG_ZONE654: {
+      size_t offset = 3 * (addr - REG_ZONE321);
+      for (size_t zone = 0; zone < 3; zone++) {
+        size_t src = getZoneSource(zone + offset) & 0x3;
+        out_msg |= (src << (2 * zone));
+      }
       break;
-
-    case REG_ZONE654:
-      out_msg = 0;  // TODO
-      break;
+    }
 
     case REG_MUTE:
-      out_msg = 0;  // TODO
+      for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+        if (muted(zone)) {
+          out_msg |= (1 << zone);
+        }
+      }
       break;
 
     case REG_STANDBY:
-      out_msg = 0;  // TODO
+      out_msg = inStandby() ? 1 : 0;
       break;
 
     case REG_VOL_ZONE1:
-      out_msg = 0;  // TODO
-      break;
-
     case REG_VOL_ZONE2:
-      out_msg = 0;  // TODO
-      break;
-
     case REG_VOL_ZONE3:
-      out_msg = 0;  // TODO
-      break;
-
     case REG_VOL_ZONE4:
-      out_msg = 0;  // TODO
-      break;
-
     case REG_VOL_ZONE5:
-      out_msg = 0;  // TODO
-      break;
-
     case REG_VOL_ZONE6:
-      out_msg = 0;  // TODO
+      out_msg = getZoneVolume(addr - REG_VOL_ZONE1);
       break;
 
     case REG_POWER_STATUS: {
@@ -248,7 +243,7 @@ void ctrlI2CTransact(AmpliPiState* state) {
         for (size_t src = 0; src < NUM_SRCS; src++) {
           // Analog = low, Digital = high
           InputType type = data & 0x1 ? IT_DIGITAL : IT_ANALOG;
-          selectSourceAD(src, type);
+          setSourceAD(src, type);
           data = data >> 1;
         }
         break;
@@ -259,7 +254,7 @@ void ctrlI2CTransact(AmpliPiState* state) {
         for (size_t zone = start; zone < start + 3; zone++) {
           // Connect the zone to the specified source
           size_t src = data & 0x3;
-          selectZoneSource(zone, src);
+          setZoneSource(zone, src);
           data = data >> 2;
         }
         break;
