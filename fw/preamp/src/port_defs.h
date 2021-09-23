@@ -72,14 +72,14 @@ extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 
 typedef union {
   struct {
-    uint8_t gp0      : 1;
-    uint8_t en_12v   : 1;
-    uint8_t gp2      : 1;
-    uint8_t pg_12v   : 1;
-    uint8_t fan_fail : 1;
-    uint8_t ovr_tmp  : 1;
-    uint8_t gp6      : 1;
-    uint8_t fan_on   : 1;
+    uint8_t gp0        : 1;
+    uint8_t en_12v     : 1;
+    uint8_t gp2        : 1;
+    uint8_t pg_12v     : 1;
+    uint8_t fan_fail_n : 1;
+    uint8_t ovr_tmp_n  : 1;
+    uint8_t gp6        : 1;
+    uint8_t fan_on     : 1;
   };
   uint8_t data;
 } PwrGpio;
@@ -90,8 +90,9 @@ typedef union {
     uint8_t en_12v   : 1;
     uint8_t ovr_tmp  : 1;
     uint8_t fan_on   : 1;
-    uint8_t reserved : 3;
+    uint8_t fan_ctrl : 2;
     uint8_t fan_fail : 1;
+    uint8_t reserved : 1;
   };
   uint8_t data;
 } PwrStatusMsg;

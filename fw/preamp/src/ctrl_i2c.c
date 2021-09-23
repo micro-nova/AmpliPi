@@ -126,11 +126,12 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
       PwrStatusMsg msg = {
           .pg_12v   = state->pwr_gpio.pg_12v,
           .en_12v   = state->pwr_gpio.en_12v,
-          .ovr_tmp  = !state->pwr_gpio.ovr_tmp,  // Active-low
+          .ovr_tmp  = !state->pwr_gpio.ovr_tmp_n,
           .fan_on   = state->pwr_gpio.fan_on,
+          .fan_ctrl = state->fan_ctrl,
           .reserved = 0,
           // (Developer units only)
-          .fan_fail = !state->pwr_gpio.fan_fail,  // Active-low
+          .fan_fail = !state->pwr_gpio.fan_fail_n,
       };
       out_msg = msg.data;
       break;

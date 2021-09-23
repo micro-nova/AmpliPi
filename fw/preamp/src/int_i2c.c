@@ -330,18 +330,17 @@ void updateInternalI2C(AmpliPiState* state) {
   // Read the Power Board's ADC - 728 us
   updateAdc(state);
 
-  // Possible fan control methods:
-  // - Overridden (forced on) by the Pi
-  // - MAX6644 (5 developer units with Power Board 2.A)
-  // - Thermistors with FAN_ON on/off control (Power Board 3.A)
-  // - Thermistors with DPOT linear voltage control (Future)
   // So far, no Power Boards (2.A) with a MAX6644 have used HV2/NTC2.
   // If either of those inputs measures a valid temp, then assume
   // no MAX6644 fan control IC is present, and thermisters are.
-  bool internal_fan_ctrl = state->amp_temp1 || state->amp_temp2;
+  if (state->amp_temp1 || state->amp_temp2) {
+    state->fan_ctrl = FAN_CTRL_ON_OFF;
+  } else {
+    state->fan_ctrl = FAN_CTRL_MAX6644;
+  }
 
   uint8_t max_temp = state->hv1_temp;
-  if (internal_fan_ctrl) {
+  if (state->fan_ctrl == FAN_CTRL_ON_OFF) {
     for (size_t i = 0; i < sizeof(state->temps); i++) {
       if (state->temps[i] > max_temp) {
         max_temp = state->temps[i];
@@ -363,13 +362,14 @@ void updateInternalI2C(AmpliPiState* state) {
   }
 
   // Update the Power Board's GPIO state
+  // TODO: Only write when necessary
   writeI2C2(pwr_io_gpio_, state->pwr_gpio.data);
   state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
 
-  if (internal_fan_ctrl) {
+  if (state->fan_ctrl != FAN_CTRL_MAX6644) {
     // No fan control IC to determine this
-    state->pwr_gpio.fan_fail = true;  // Active-low
-    state->pwr_gpio.ovr_tmp  = max_temp > TEMP_THRESH_OVR_UQ7_1;
+    state->pwr_gpio.fan_fail_n = !false;
+    state->pwr_gpio.ovr_tmp_n  = !(max_temp > TEMP_THRESH_OVR_UQ7_1);
   }
 
   // Update the LED Board's LED state

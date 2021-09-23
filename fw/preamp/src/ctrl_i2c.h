@@ -25,6 +25,18 @@
 #include "port_defs.h"
 #include "ports.h"
 
+// Possible fan control methods:
+// - Overridden (forced on) by the Pi
+// - MAX6644 (5 developer units with Power Board 2.A)
+// - Thermistors with FAN_ON on/off control (Power Board 3.A)
+// - Thermistors with DPOT linear voltage control (Future)
+typedef enum
+{
+  FAN_CTRL_MAX6644,
+  FAN_CTRL_ON_OFF,
+  FAN_CTRL_LINEAR,
+} FanCtrl;
+
 typedef struct {
   PwrGpio  pwr_gpio;   // Power Board GPIO expander's state
   LedGpio  leds;       // LED Board's state
@@ -41,6 +53,7 @@ typedef struct {
   uint8_t i2c_addr;      // Slave I2C1 address
   bool    fan_override;  // Override fan control logic and force 100% on
   bool    led_override;  // Override LED Board logic and force to 'leds'
+  FanCtrl fan_ctrl;
 } AmpliPiState;
 
 void ctrlI2CInit(uint8_t addr);

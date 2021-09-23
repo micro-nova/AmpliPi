@@ -26,10 +26,11 @@ def print_status(p: amplipi.rt._Preamps, u: int):
     p.print_zone_state(zone)
 
   # Power board - note: failed only exists on Rev2 Power Board
-  pg_12v, en_12v, ovr_tmp, fan_on, fan_fail = p.read_power_status(u)
+  pg_12v, en_12v, ovr_tmp, fan_on, fan_fail, fan_ctrl = p.read_power_status(u)
+  ctrl = 'MAX6644' if fan_ctrl == 0 else 'ON_OFF'
   print('Power Board Status')
   print(f'  12V:  EN={en_12v}, PG={pg_12v}')
-  print(f'  Fans: On={fan_on}, Failed={fan_fail}')
+  print(f'  Fans: On={fan_on}, Failed={fan_fail}, Control={ctrl}')
   print(f'  Overtemp: {ovr_tmp}')
 
   # 24V and temp
