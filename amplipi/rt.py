@@ -291,7 +291,7 @@ class _Preamps:
     if self.bus is not None:
       pstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['POWER_STATUS'])
       fan_fail = (pstat & 0x40) != 0
-      fan_ctrl = pstat & 0x30
+      fan_ctrl = (pstat & 0x30) >> 4
       fan_on = (pstat & 0x08) != 0
       ovr_tmp = (pstat & 0x04) != 0
       en_12v = (pstat & 0x02) != 0
