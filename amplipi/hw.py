@@ -148,7 +148,7 @@ class Preamp:
 
     # Each preamps' microcontroller takes ~3ms to startup after releasing
     # NRST. Just to be sure wait 5 ms before sending an I2C address.
-    time.sleep(0.005)
+    time.sleep(0.01)
 
   def uart_passthrough(self, passthrough: bool) -> None:
     """ Configures this preamp to passthrough UART1 <-> UART2 """
@@ -245,12 +245,13 @@ class Preamps:
     GPIO.output(self.Pin.BOOT0.value, bootloader)
 
     # Hold the reset line low >300 ns
-    time.sleep(0.001)
+    time.sleep(0.01)
     GPIO.output(self.Pin.NRST.value, 1)
 
     # Each preamps' microcontroller takes ~3ms to startup after releasing
-    # NRST. Just to be sure wait 5 ms before sending an I2C address.
-    time.sleep(0.005)
+    # NRST. Just to be sure wait 10 ms before sending an I2C address.
+    # Further testing shows 6ms minimum
+    time.sleep(0.1)
     GPIO.cleanup()
 
   def send_i2c_address(self, baud: int = 115200) -> bool:

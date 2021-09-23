@@ -157,7 +157,7 @@ class _Preamps:
     GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
     GPIO.setup(5, GPIO.OUT)
     GPIO.output(5, boot0) # Ensure BOOT0 is set (GPIO5)
-    time.sleep(0.001)
+    time.sleep(0.1)
     GPIO.output(4, 1)
 
     # Each box theoretically takes ~11ms to undergo a reset.
