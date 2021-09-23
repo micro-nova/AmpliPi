@@ -233,12 +233,79 @@ void updateAdc(AmpliPiState* state) {
 }
 
 void initInternalI2C(AmpliPiState* state) {
-  (void)state;
   // Initialize the STM32's I2C2 bus as a master
   initI2C2();
 
   // Set the direction for the power board GPIO
-  writeI2C2(pwr_io_dir_, 0x7D);  // 0=output, 1=input
+  // Retry if failed, the bus may be in a bad state if the micro was
+  // reset in the middle of a transaction.
+  uint32_t tries = 3;
+  while (tries--) {
+    uint32_t status = writeI2C2(pwr_io_dir_, 0x7D);  // 0=output, 1=input
+    if (status == I2C_ISR_NACKF) {
+      // Received a NACK, will try again
+    } else if (status == I2C_ISR_ARLO) {
+      // Arbitation lost (SDA low when master tried to set high).
+      // Reset I2C since the peripheral auto-sets itself into slave mode.
+      // Then, send 9 clocks to finish whichever slave transaction was ongoing.
+
+      // Disable I2C peripheral to reset it if previously enabled
+      I2C_Cmd(I2C2, DISABLE);
+
+      // Config I2C GPIO pins
+      GPIO_InitTypeDef GPIO_InitStructureI2C;
+      GPIO_InitStructureI2C.GPIO_Pin   = pSCL_VOL | pSDA_VOL;
+      GPIO_InitStructureI2C.GPIO_Mode  = GPIO_Mode_OUT;
+      GPIO_InitStructureI2C.GPIO_Speed = GPIO_Speed_2MHz;
+      GPIO_InitStructureI2C.GPIO_OType = GPIO_OType_OD;
+      GPIO_InitStructureI2C.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+      GPIO_Init(GPIOB, &GPIO_InitStructureI2C);
+
+      // Generate 9 clocks to clear bus
+      writePin(i2c2_scl_, true);
+      writePin(i2c2_sda_, false);  // Keep SDA low even after slave releases it
+      for (size_t i = 0; i < 9; i++) {
+        delayMs(1);
+        writePin(i2c2_scl_, false);
+        delayMs(1);
+        writePin(i2c2_scl_, true);
+      }
+
+      // Stop condition
+      delayMs(1);
+      writePin(i2c2_sda_, true);
+
+      // Re-init I2C2 now that the bus is un-stuck
+      initI2C2();
+
+      /* TODO: Figure out why the below method doesn't work.
+      I2C_TransferHandling(I2C2, 0x00, 0, I2C_AutoEnd_Mode,
+                           I2C_Generate_Start_Write);
+
+      // Wait until the transaction is done then reset I2C again
+      delayMs(1);
+      initI2C2();
+      uint32_t isr = I2C2->ISR;
+      do {
+        if (isr & I2C_ISR_NACKF) {
+          I2C2->ICR = I2C_ICR_NACKCF;
+          break;
+        }
+        if (isr & I2C_ISR_ARLO) {
+          I2C2->ICR = I2C_ICR_ARLOCF;
+          break;
+        }
+        if (isr & I2C_FLAG_STOPF) {
+          I2C2->ICR = I2C_ICR_STOPCF;
+          break;
+        }
+        isr = I2C2->ISR;
+      } while (1);
+      */
+    } else {
+      tries = 0;
+    }
+  }
 
   // Set the LED Board's GPIO expander as all outputs
   writeI2C2(led_dir_, 0x00);  // 0=output, 1=input

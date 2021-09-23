@@ -67,6 +67,8 @@ extern const Pin zone_standby_[NUM_ZONES];
 extern const Pin src_ad_[NUM_SRCS][2];  // Analog/Digital->Source mux
 extern const Pin exp_nrst_;             // Expansion connector NRST_OUT
 extern const Pin exp_boot0_;            // Expansion connector BOOT0_OUT
+extern const Pin i2c2_scl_;             // Internal I2C bus SCL
+extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 
 typedef union {
   struct {

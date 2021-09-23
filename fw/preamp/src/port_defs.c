@@ -50,3 +50,6 @@ const Pin src_ad_[NUM_SRCS][2] = {
 
 const Pin exp_nrst_  = {'F', 0};
 const Pin exp_boot0_ = {'F', 1};
+
+const Pin i2c2_scl_ = {'B', 6};
+const Pin i2c2_sda_ = {'B', 11};

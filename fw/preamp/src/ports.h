@@ -37,7 +37,7 @@ typedef struct {
   uint8_t reg;
 } I2CReg;
 
-uint8_t readI2C2(I2CReg r);
-void    writeI2C2(I2CReg r, uint8_t data);
+uint8_t  readI2C2(I2CReg r);
+uint32_t writeI2C2(I2CReg r, uint8_t data);
 
 #endif /* PORTS_H_ */
