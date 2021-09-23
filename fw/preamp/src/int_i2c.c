@@ -251,7 +251,7 @@ void initInternalI2C(AmpliPiState* state) {
   // Set the direction for the power board GPIO
   // Retry if failed, the bus may be in a bad state if the micro was
   // reset in the middle of a transaction.
-  uint32_t tries = 3;
+  uint32_t tries = 255;
   while (tries--) {
     uint32_t status = writeI2C2(pwr_io_dir_, 0x7D);  // 0=output, 1=input
     if (status == I2C_ISR_NACKF) {
