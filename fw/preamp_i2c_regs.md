@@ -15,13 +15,13 @@
       <th style="text-align:center">bit 2</th>
       <th style="text-align:center">bit 1</th>
       <th style="text-align:center">bit 0</th>
-      <th style="text-align:center">Default value in hex</th>
+      <th style="text-align:center">Default value</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>0x00</td>
-      <td style="text-align:left">SRC_AD_REG</td>
+      <td style="text-align:left">SRC_AD</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -34,103 +34,114 @@
     </tr>
     <tr>
       <td>0x01</td>
-      <td style="text-align:left">CH123_SRC_REG</td>
+      <td style="text-align:left">ZONE123_SRC</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">- <td colspan=2, td align='center'>CH3SRC </td> <td colspan=2, td align='center'>CH2SRC </td><td colspan=2, td align='center'>CH1SRC  </td></td>
+      <td style="text-align:center">-</td>
+      <td colspan=2, td align='center'>Z3SRC</td>
+      <td colspan=2, td align='center'>Z2SRC</td>
+      <td colspan=2, td align='center'>Z1SRC</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x02</td>
-      <td style="text-align:left">CH456_SRC_REG</td>
+      <td style="text-align:left">ZONE456_SRC</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">- <td colspan=2, td align='center'>CH6SRC <td colspan=2, td align='center'>CH5SRC <td colspan=2, td align='center'>CH4SRC</td>
+      <td style="text-align:center">-</td>
+      <td colspan=2, td align='center'>Z6SRC</td>
+      <td colspan=2, td align='center'>Z5SRC</td>
+      <td colspan=2, td align='center'>Z4SRC</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x03</td>
-      <td style="text-align:left">MUTE_REG</td>
+      <td style="text-align:left">MUTE</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
+      <td style="text-align:center">Z6M</td>
+      <td style="text-align:center">Z6M</td>
+      <td style="text-align:center">Z6M</td>
+      <td style="text-align:center">Z6M</td>
+      <td style="text-align:center">Z6M</td>
+      <td style="text-align:center">Z6M</td>
       <td style="text-align:center">0x3F</td>
     </tr>
     <tr>
       <td>0x04</td>
-      <td style="text-align:left">STANDBY_REG</td>
+      <td style="text-align:left">STANDBY</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">CH6STBY</td>
-      <td style="text-align:center">CH5STBY</td>
-      <td style="text-align:center">CH4STBY</td>
-      <td style="text-align:center">CH3STBY</td>
-      <td style="text-align:center">CH2STBY</td>
-      <td style="text-align:center">CH1STBY</td>
+      <td style="text-align:center">Z6STBY</td>
+      <td style="text-align:center">Z5STBY</td>
+      <td style="text-align:center">Z4STBY</td>
+      <td style="text-align:center">Z3STBY</td>
+      <td style="text-align:center">Z2STBY</td>
+      <td style="text-align:center">Z1STBY</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x05</td>
-      <td style="text-align:left">CH1_ATTEN_REG <td colspan=8, td align='center'>Ch1 Attenuation </td></td>
+      <td style="text-align:left">ZONE1_VOL</td>
+      <td colspan=8, td align='center'>Zone 1 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x06</td>
-      <td style="text-align:left">CH2_ATTEN_REG <td colspan=8, td align='center'>Ch2 Attenuation </td></td>
+      <td style="text-align:left">ZONE2_VOL</td>
+      <td colspan=8, td align='center'>Zone 2 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x07</td>
-      <td style="text-align:center">CH3_ATTEN_REG <td colspan=8, td align='center'>Ch3 Attenuation </td></td>
+      <td style="text-align:left">ZONE3_VOL</td>
+      <td colspan=8, td align='center'>Zone 3 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x08</td>
-      <td style="text-align:center">CH4_ATTEN_REG <td colspan=8, td align='center'>Ch4 Attenuation </td></td>
+      <td style="text-align:left">ZONE4_VOL</td>
+      <td colspan=8, td align='center'>Zone 4 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x09</td>
-      <td style="text-align:center">CH5_ATTEN_REG <td colspan=8, td align='center'>Ch5 Attenuation </td></td>
+      <td style="text-align:left">ZONE5_VOL</td>
+      <td colspan=8, td align='center'>Zone 5 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x0A</td>
-      <td style="text-align:center">CH6_ATTEN_REG <td colspan=8, td align='center'>Ch6 Attenuation </td></td>
+      <td style="text-align:left">ZONE6_VOL</td>
+      <td colspan=8, td align='center'>Zone 6 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x0B</td>
-      <td style="text-align:left">POWER_GOOD</td>
+      <td style="text-align:left">POWER_STATUS</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
+      <td style="text-align:center">FAN_FAIL</td>
+      <td colspan=2, td align='center'>FAN_CTRL</td>
+      <td style="text-align:center">FAN_ON</td>
+      <td style="text-align:center">OVR_TMP</td>
+      <td style="text-align:center">EN_12V</td>
       <td style="text-align:center">PG_12V</td>
-      <td style="text-align:center">PG_9V</td>
-      <td style="text-align:center">0x03</td>
+      <td style="text-align:center">0x02</td>
     </tr>
     <tr>
       <td>0x0C</td>
-      <td style="text-align:left">FAN_STATUS</td>
+      <td style="text-align:left">FAN_CTRL</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">FAN_OVERRIDE</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">OVR_TMP</td>
-      <td style="text-align:center">FAN_FAIL</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x0D</td>
-      <td style="text-align:left">EXTERNAL GPIO</td>
+      <td style="text-align:left">LED_CTRL</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -138,12 +149,12 @@
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">EXT_GPIO</td>
+      <td style="text-align:center">LED_OVERRIDE</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x0E</td>
-      <td style="text-align:left">LED_OVERRIDE</td>
+      <td style="text-align:left">LED_VAL</td>
       <td style="text-align:center">ZONE_6</td>
       <td style="text-align:center">ZONE_5</td>
       <td style="text-align:center">ZONE_4</td>
@@ -155,34 +166,38 @@
       <td style="text-align:center">0x02</td>
     </tr>
     <tr>
-      <td></td>
-      <td style="text-align:left"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td>0x0F</td>
+      <td style="text-align:left">EXPANSION</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">UART_PASSTHROUGH</td>
+      <td style="text-align:center">BOOT0</td>
+      <td style="text-align:center">NRST</td>
+      <td style="text-align:center">0x01</td>
     </tr>
     <tr>
       <td>0x10</td>
-      <td style="text-align:left">HV1_VOLTAGE <td colspan=8, td align='center'>byte value from 0-255 corresponding to HV1 voltage</td></td>
+      <td style="text-align:left">HV1_VOLTAGE</td>
+      <td colspan=8, td align='center'>Power supply voltage, unsigned with 2 fractional bits</td>
       <td style="text-align:center">N/A</td>
     </tr>
     <tr>
       <td>0x11</td>
-      <td style="text-align:left">HV2_VOLTAGE <td colspan=8, td align='center'>byte value from 0-255 corresponding to HV2 voltage</td></td>
+      <td style="text-align:left">AMP_TEMP1</td>
+      <td colspan=8, td align='center'>Temperature of heatsink over amps 1-3 in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0x12</td>
-      <td style="text-align:left">HV1_TEMP<td colspan=8, td align='center'>byte value from 0-255 corresponding to HV1 temp</td></td>
+      <td style="text-align:left">HV1_TEMP</td>
+      <td colspan=8, td align='center'>Temperature of power supply in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0x13</td>
-      <td style="text-align:left">HV2_TEMP<td colspan=8, td align='center'>byte value from 0-255 corresponding to HV2 temp</td></td>
+      <td style="text-align:left">AMP_TEMP2</td>
+      <td colspan=8, td align='center'>Temperature of heatsink over amps 4-6 in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td></td>
@@ -198,75 +213,37 @@
       <td style="text-align:center"></td>
     </tr>
       <td>0xFA</td>
-      <td style="text-align:left">version_major[7:0]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td style="text-align:left">VER_MAJOR</td>
+      <td colspan=8, td align='center'>Major Version Number</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFB</td>
-      <td style="text-align:left">version_minor[7:0]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td style="text-align:left">VER_MINOR</td>
+      <td colspan=8, td align='center'>Minor Version Number</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFC</td>
-      <td style="text-align:left">git_hash[27:20]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td style="text-align:left">HASH1</td>
+      <td colspan=8, td align='center'>GIT_HASH[27:20]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFD</td>
-      <td style="text-align:left">git_hash[19:12]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td style="text-align:left">HASH2</td>
+      <td colspan=8, td align='center'>GIT_HASH[19:12]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFE</td>
-      <td style="text-align:left">git_hash[11:4]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td style="text-align:left">HASH3</td>
+      <td colspan=8, td align='center'>GIT_HASH[11:4]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFF</td>
-      <td style="text-align:left">git_hash[3:0] & git_status[3:0]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td style="text-align:left">HASH4</td>
+      <td colspan=4, td align='center'>GIT_HASH[3:0]</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">DIRTY</td>
       <td style="text-align:center">N/A</td>
     </tr>
   </tbody>
