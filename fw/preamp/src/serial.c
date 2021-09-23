@@ -191,7 +191,7 @@ uint8_t checkForNewAddress() {
     }
     serialBufferReset(&uart1_rx_buf_);
   }
-  // Send new address back and forward next address to next preamp
+  // Forward address to next preamp
   /*if (tx_len && USART1->ISR & USART_ISR_TXE && USART2->ISR & USART_ISR_TXE) {
     uint16_t data = uart_tx_buf_.data[uart_tx_buf_.ind];
     USART_SendData(USART1, data);
@@ -202,26 +202,14 @@ uint8_t checkForNewAddress() {
     uart_tx_buf_.ind++;
     tx_len--;
   }*/
-  /*if (i2c_addr) {
-    (void)tx_len;
-    while (!(USART1->ISR & USART_ISR_TXE) && !(USART2->ISR & USART_ISR_TXE)) {}
-    USART_SendData(USART1, 'A');
-    USART_SendData(USART2, 'A');
-    while (!(USART1->ISR & USART_ISR_TXE) && !(USART2->ISR & USART_ISR_TXE)) {}
-    USART_SendData(USART1, i2c_addr);
-    USART_SendData(USART2, i2c_addr + 0x10);
-    while (!(USART1->ISR & USART_ISR_TXE) && !(USART2->ISR & USART_ISR_TXE)) {}
-    USART_SendData(USART1, '\n');
-    USART_SendData(USART2, '\n');
-  }*/
   if (i2c_addr) {
     (void)tx_len;
     while (!(USART2->ISR & USART_ISR_TXE)) {}
     USART2->TDR = 'A';
     while (!(USART2->ISR & USART_ISR_TXE)) {}
-    USART2->TDR = i2c_addr + 0x10;
+    USART2->TDR = i2c_addr + 0x10;  // Add 0x10 to get next address
     while (!(USART2->ISR & USART_ISR_TXE)) {}
-    USART2->TDR = 0x0A;
+    USART2->TDR = 0x0A;  // '\n'
   }
   return i2c_addr;
 }

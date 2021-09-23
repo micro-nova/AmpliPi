@@ -254,29 +254,17 @@ class Preamps:
     time.sleep(0.1)
     GPIO.cleanup()
 
-  def send_i2c_address(self, baud: int = 115200) -> bool:
-    """ Send the preamp's slave I2C address via UART """
+  def set_i2c_address(self, baud: int = 9600) -> bool:
+    """ Set the preamp's slave I2C address via UART """
     assert baud in self.BAUD_RATES
     addr_arr = bytes((0x41, 0x10, 0x0A))
     try:
       with Serial(PI_SERIAL_PORT, baudrate=baud, timeout=1) as ser:
         ser.write(addr_arr)
-        line = ser.readline() # Address will be echo'd back
-        return line == addr_arr
+        return True
     except SerialException as ser_err:
       print(ser_err)
       return False
-
-  def set_i2c_address(self) -> bool:
-    """ Set the I2C slave address for all preamps """
-    #if not self.send_i2c_address(baud = 115200):
-    #  print('Falling back to 9600 baud, is firmware version >=1.2?')
-      # The failed attempt at 115200 baud seems to put v1.1 firmware in a bad
-      # state, so reset and try again at 9600 baud.
-    #  self._reset_master(bootloader = False)
-    #  return self.send_i2c_address(baud = 9600)
-    #return True
-    return self.send_i2c_address(baud = 9600)
 
 
   def enumerate(self) -> None:
