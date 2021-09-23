@@ -168,42 +168,59 @@ void initI2C2() {
   I2C_Cmd(I2C2, ENABLE);
 }
 
-static inline void writeAdc(uint8_t data) {
+typedef struct {
+  uint8_t hv1;
+  uint8_t amp_temp1;
+  uint8_t hv1_temp;
+  uint8_t amp_temp2;
+} AdcVals;
+
+AdcVals readAdc() {
+  /****************************************************************************
+   *  Configure ADC to scan all 4 channels
+   ****************************************************************************/
+
   // Wait if I2C2 is busy
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
 
   // Setup to send send start, addr, subaddr
-  I2C_TransferHandling(I2C2, adc_dev_.dev, 1, I2C_AutoEnd_Mode,
+  I2C_TransferHandling(I2C2, adc_dev_.dev, 1, I2C_SoftEnd_Mode,
                        I2C_Generate_Start_Write);
 
   // Wait for transmit interrupted flag
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET) {}
 
-  I2C_SendData(I2C2, data);
+  // Configuration byte = { config=0b0, scan=0b11, cs=0b00XX, sgl=0b1 }
+  // Scan all 4 channels in single-ended mode
+  I2C_SendData(I2C2, 0x01 | (3 << 1));
 
-  // Wait for stop flag to be sent and then clear it
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
-  I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
-}
+  // Wait for transfer complete flag
+  while (I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET) {}
 
-uint8_t readAdc(uint8_t chan) {
-  // Set which channel to read from
-  writeAdc(chan);
-
-  // Taken from the latter half of readI2C2(). The ADC only has the one reg
-  // to read from, so none of the reg specifying is necessary
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
-
-  I2C_TransferHandling(I2C2, adc_dev_.dev, 1, I2C_AutoEnd_Mode,
+  /****************************************************************************
+   *  Read all 4 channels
+   ****************************************************************************/
+  AdcVals vals = {};
+  // Restart and setup a read transfer
+  I2C_TransferHandling(I2C2, adc_dev_.dev, 4, I2C_AutoEnd_Mode,
                        I2C_Generate_Start_Read);
 
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  uint8_t data = I2C_ReceiveData(I2C2);
+  vals.hv1 = I2C_ReceiveData(I2C2);
+
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
+  vals.amp_temp1 = I2C_ReceiveData(I2C2);
+
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
+  vals.hv1_temp = I2C_ReceiveData(I2C2);
+
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
+  vals.amp_temp2 = I2C_ReceiveData(I2C2);
 
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
   I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
 
-  return data;
+  return vals;
 }
 
 void updateAdc(AmpliPiState* state) {
@@ -211,25 +228,20 @@ void updateAdc(AmpliPiState* state) {
 #define ADC_PD_KOHMS  4700
 #define ADC_PU_KOHMS  100000
   // TODO: low-pass filter after intial reading
-
-  // Configuration byte = { config=0b0, scan=0b11, cs=0b00XX, sgl=0b1 }
-  uint8_t hv1_adc       = readAdc(0x61 | (0 << 1));
-  uint8_t amp_temp1_adc = readAdc(0x61 | (1 << 1));
-  uint8_t hv1_temp_adc  = readAdc(0x61 | (2 << 1));
-  uint8_t amp_temp2_adc = readAdc(0x61 | (3 << 1));
+  AdcVals adc = readAdc();
 
   // Convert HV1 to Volts (multiply by 4 to add 2 fractional bits)
   uint32_t num       = 4 * ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
   uint32_t den       = UINT8_MAX * ADC_PD_KOHMS;
-  uint32_t hv1_raw_v = num * hv1_adc / den;
+  uint32_t hv1_raw_v = num * adc.hv1 / den;
   state->hv1         = (uint8_t)(hv1_raw_v > UINT8_MAX ? UINT8_MAX : hv1_raw_v);
 
   // Convert HV1 thermocouple to degC
-  state->hv1_temp = THERM_LUT_[hv1_temp_adc];
+  state->hv1_temp = THERM_LUT_[adc.hv1_temp];
 
   // Convert amplifier thermocouples to degC
-  state->amp_temp1 = THERM_LUT_[amp_temp1_adc];
-  state->amp_temp2 = THERM_LUT_[amp_temp2_adc];
+  state->amp_temp1 = THERM_LUT_[adc.amp_temp1];
+  state->amp_temp2 = THERM_LUT_[adc.amp_temp2];
 }
 
 void initInternalI2C(AmpliPiState* state) {
@@ -311,11 +323,11 @@ void initInternalI2C(AmpliPiState* state) {
   writeI2C2(led_dir_, 0x00);  // 0=output, 1=input
   writeI2C2(led_gpio_, state->leds.data);
 
-  // updateInternalI2C(state);
+  updateInternalI2C(state);
 }
 
 void updateInternalI2C(AmpliPiState* state) {
-  // Read the Power Board's ADC
+  // Read the Power Board's ADC - 728 us
   updateAdc(state);
 
   // Possible fan control methods:
