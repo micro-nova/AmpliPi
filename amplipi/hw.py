@@ -28,6 +28,7 @@ from typing import List, Tuple
 
 # Third-party imports
 from serial import Serial
+from serial.serialutil import SerialException
 from smbus2 import SMBus
 
 from amplipi import utils
@@ -35,6 +36,8 @@ from amplipi import utils
 if utils.is_amplipi():
   from RPi import GPIO
 
+
+PI_SERIAL_PORT = '/dev/serial0'
 
 class Preamp:
   """ Low level discovery and communication for the AmpliPi Preamp's firmware """
@@ -176,13 +179,16 @@ class Preamps:
   preamps: List[Preamp]
 
   def __init__(self, reset: bool = False):
-    self.bus = SMBus(1)
+    self._bus = SMBus(1)
     self.preamps = []
     if reset:
       print('Resetting all preamps...')
       self.reset(unit = 0, bootloader = False)
     else:
       self.enumerate()
+
+  def __del__(self):
+    del self._bus
 
   def __getitem__(self, key: int) -> Preamp:
     return self.preamps[key]
@@ -213,15 +219,8 @@ class Preamps:
         return
 
       # Send I2C address over UART
-      with Serial('/dev/serial0', baudrate=115200) as ser:
-        ser.write((0x41, 0x10, 0x0D, 0x0A))
-      if not Preamp(0, self.bus).available():
-        print('Falling back to 9600 baud, is firmware version >=1.2?')
-        # The failed attempt at 115200 baud seems to put v1.1 firmware in a bad
-        # state, so reset and try again at 9600 baud.
-        self._reset_master(bootloader = False)
-        with Serial('/dev/serial0', baudrate=9600) as ser:
-          ser.write((0x41, 0x10, 0x0D, 0x0A))
+      self.set_i2c_address()
+
     else:
       self.preamps[unit - 1].reset_expander(bootloader)
 
@@ -254,11 +253,36 @@ class Preamps:
     time.sleep(0.005)
     GPIO.cleanup()
 
+  def send_i2c_address(self, baud: int = 115200) -> bool:
+    """ Send the preamp's slave I2C address via UART """
+    assert baud in self.BAUD_RATES
+    addr_arr = bytes((0x41, 0x10, 0x0A))
+    try:
+      with Serial(PI_SERIAL_PORT, baudrate=baud, timeout=1) as ser:
+        ser.write(addr_arr)
+        line = ser.readline() # Address will be echo'd back
+        return line == addr_arr
+    except SerialException as ser_err:
+      print(ser_err)
+      return False
+
+  def set_i2c_address(self) -> bool:
+    """ Set the I2C slave address for all preamps """
+    #if not self.send_i2c_address(baud = 115200):
+    #  print('Falling back to 9600 baud, is firmware version >=1.2?')
+      # The failed attempt at 115200 baud seems to put v1.1 firmware in a bad
+      # state, so reset and try again at 9600 baud.
+    #  self._reset_master(bootloader = False)
+    #  return self.send_i2c_address(baud = 9600)
+    #return True
+    return self.send_i2c_address(baud = 9600)
+
+
   def enumerate(self) -> None:
     """ Re-enumerate preamp connections """
     self.preamps = []
     for i in range(self.MAX_UNITS):
-      p = Preamp(i, self.bus)
+      p = Preamp(i, self._bus)
       if not p.available():
         break
       self.preamps.append(p)
@@ -282,8 +306,11 @@ class Preamps:
       for p in range(unit): # Set UART passthrough on any previous units
         print(f'Setting unit {p} as passthrough')
         self.preamps[p].uart_passthrough(True)
-      subprocess.run([f'stm32flash -vb {baud} -w {filepath} /dev/serial0'], shell=True, check=True)
-      # TODO: Error handling
+      flash_result = subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'], shell=True, check=False)
+      success = flash_result.returncode == 0
+      if not success:
+        # TODO: Error handling
+        print(f'Error flashing unit {unit}, stopping programming')
       print('Resetting all preamps and starting execution in user flash')
       self.reset()
 
@@ -291,8 +318,11 @@ class Preamps:
       if unit < len(self.preamps):
         major, minor, git_hash, dirty = self.preamps[unit].read_version()
         print(f"Unit {unit}'s new version: {major}.{minor}")
-      else:
+      elif success:
+        success = False
         print(f"Can't communicate with unit {unit}, stopping programming")
+
+      if not success:
         break
 
 
@@ -336,7 +366,7 @@ if __name__ == '__main__':
                       help='reset the preamp(s) before communicating over I2C')
   parser.add_argument('--flash', metavar='FW.bin',
                       help='update the preamp(s) with the firmware in a .bin file')
-  parser.add_argument('-b', '--baud', type=int, default=115200,
+  parser.add_argument('-b', '--baud', type=int, default=9600,
                       help='baud rate to use for UART communication')
   parser.add_argument('-v', '--version', action='store_true', default=False,
                       help='print preamp firmware version(s)')
