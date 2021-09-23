@@ -38,10 +38,9 @@ typedef struct {
     };
     uint8_t temps[3];  // All temperatures in 1 array
   };
-  uint8_t i2c_addr;          // Slave I2C1 address
-  bool    fan_override;      // Override fan control logic and force 100% on
-  bool    led_override;      // Override LED Board logic and force to 'leds'
-  bool    uart_passthrough;  // Passthrough messages between UART1<->UART2
+  uint8_t i2c_addr;      // Slave I2C1 address
+  bool    fan_override;  // Override fan control logic and force 100% on
+  bool    led_override;  // Override LED Board logic and force to 'leds'
 } AmpliPiState;
 
 void ctrlI2CInit(uint8_t addr);

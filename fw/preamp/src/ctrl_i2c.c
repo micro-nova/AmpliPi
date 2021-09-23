@@ -27,6 +27,7 @@
 #include "audio_mux.h"
 #include "int_i2c.h"
 #include "port_defs.h"
+#include "serial.h"
 #include "stm32f0xx.h"
 #include "version.h"
 
@@ -130,10 +131,11 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
       PwrStatusMsg msg = {
           .pg_12v   = state->pwr_gpio.pg_12v,
           .en_12v   = state->pwr_gpio.en_12v,
-          .ovr_tmp  = state->pwr_gpio.ovr_tmp,
+          .ovr_tmp  = !state->pwr_gpio.ovr_tmp,  // Active-low
           .fan_on   = state->pwr_gpio.fan_on,
           .reserved = 0,
-          .fan_fail = state->pwr_gpio.fan_fail,  // (Developer units only)
+          // (Developer units only)
+          .fan_fail = !state->pwr_gpio.fan_fail,  // Active-low
       };
       out_msg = msg.data;
       break;
@@ -299,19 +301,16 @@ void ctrlI2CTransact(AmpliPiState* state) {
 
       case REG_EXPANSION:
         // Control expansion port's NRST and BOOT0 pins
-        writePin(exp_nrst_, data & 0x01);
-        writePin(exp_boot0_, data & 0x02);
+        state->expansion.nrst  = (data & 0x01) != 0;
+        state->expansion.boot0 = (data & 0x02) != 0;
+
+        // TODO: Move these out of i2c handler
+        writePin(exp_nrst_, state->expansion.nrst);
+        writePin(exp_boot0_, state->expansion.boot0);
 
         // Allow UART messages to be forwarded to expansion units
-        if (data & 0x04) {
-          state->uart_passthrough = true;
-          USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
-          NVIC_EnableIRQ(USART2_IRQn);
-        } else {
-          state->uart_passthrough = false;
-          USART_ITConfig(USART2, USART_IT_RXNE, DISABLE);
-          NVIC_DisableIRQ(USART2_IRQn);
-        }
+        state->expansion.uart_passthrough = (data & 0x04) != 0;
+        setUartPassthrough(state->expansion.uart_passthrough);
         break;
 
       default:

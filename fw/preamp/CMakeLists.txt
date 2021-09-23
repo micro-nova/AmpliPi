@@ -20,6 +20,7 @@ add_executable(${PROJECT_NAME}.elf
   src/main.c
   src/port_defs.c
   src/ports.c
+  src/serial.c
   src/system_stm32f0xx.c
   src/systick.c
 

@@ -24,17 +24,12 @@
 #include "ctrl_i2c.h"
 #include "int_i2c.h"
 #include "port_defs.h"
+#include "serial.h"
 #include "stm32f0xx.h"
 #include "systick.h"
-#include "version.h"
 
 // State of the AmpliPi hardware
 AmpliPiState state_;
-
-void USART_PutString(USART_TypeDef* USARTx, const char* str);
-
-// Uncomment the line below to use the debugger
-//#define DEBUG_OVER_UART2
 
 void initGpio() {
   // Enable peripheral clocks for GPIO ports
@@ -102,132 +97,6 @@ void initGpio() {
   GPIO_Init(GPIOF, &GPIO_InitStructureF);
 }
 
-void initUart1() {
-  // UART1 allows the Pi to set preamp I2C addresses and flash preamp software
-
-  // Enable peripheral clocks for UART1
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
-
-  // Connect pins to alternate function for UART1
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);
-
-  // Config UART1 GPIO pins
-  GPIO_InitTypeDef GPIO_InitStructureUART;
-  GPIO_InitStructureUART.GPIO_Pin   = GPIO_Pin_9 | GPIO_Pin_10;
-  GPIO_InitStructureUART.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructureUART.GPIO_PuPd  = GPIO_PuPd_UP;
-  GPIO_InitStructureUART.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructureUART.GPIO_Mode  = GPIO_Mode_AF;
-  GPIO_Init(GPIOA, &GPIO_InitStructureUART);
-
-  // Setup USART1
-  USART_Cmd(USART1, ENABLE);
-  USART_InitTypeDef USART_InitStructure;
-  USART_InitStructure.USART_BaudRate = 115200;  // Auto-baud will override this
-  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-  USART_InitStructure.USART_StopBits   = USART_StopBits_1;
-  USART_InitStructure.USART_Parity     = USART_Parity_No;
-  USART_InitStructure.USART_HardwareFlowControl =
-      USART_HardwareFlowControl_None;
-  USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-  USART_Init(USART1, &USART_InitStructure);
-
-  // Setup auto-baudrate detection
-  // Mode 0b01, aka "Falling Edge" mode, must start with 0b10...
-  // Since UART sents LSB first, the first character must be 0bXXXXXX01
-  USART1->CR2 |= USART_AutoBaudRate_FallingEdge | USART_CR2_ABREN;
-
-  USART_Cmd(USART1, ENABLE);
-
-  // USART1 interrupt handler setup
-  USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
-  NVIC_EnableIRQ(USART1_IRQn);
-}
-
-void initUart2(uint16_t brr) {
-  // UART2 is used for debugging with an external debugger
-  // or for communicating with an expansion preamp.
-
-  // Enable peripheral clock
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
-
-  // Connect pins to alternate function for UART2
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource14, GPIO_AF_1);
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_1);
-
-  // Configure UART2 GPIO pins
-  GPIO_InitTypeDef GPIO_InitStructureUART2;
-  GPIO_InitStructureUART2.GPIO_Pin   = GPIO_Pin_14 | GPIO_Pin_15;
-  GPIO_InitStructureUART2.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructureUART2.GPIO_PuPd  = GPIO_PuPd_UP;
-  GPIO_InitStructureUART2.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructureUART2.GPIO_Mode  = GPIO_Mode_AF;
-  GPIO_Init(GPIOA, &GPIO_InitStructureUART2);
-
-  // Setup USART2
-  USART_Cmd(USART2, ENABLE);
-  USART_InitTypeDef USART_InitStructure2;
-  USART_InitStructure2.USART_BaudRate   = 115200;
-  USART_InitStructure2.USART_WordLength = USART_WordLength_8b;
-  USART_InitStructure2.USART_StopBits   = USART_StopBits_1;
-  USART_InitStructure2.USART_Parity     = USART_Parity_No;
-  USART_InitStructure2.USART_HardwareFlowControl =
-      USART_HardwareFlowControl_None;
-  USART_InitStructure2.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-  USART_Init(USART2, &USART_InitStructure2);
-  USART2->BRR = brr;
-  USART_Cmd(USART2, ENABLE);
-}
-
-// Need at least 5 bytes for data: A + ADDR + \r + \n + \0.
-// Memory is 4-byte word aligned, so the following works well with the
-// 2 bytes for flags.
-#define SB_MAX_SIZE 6
-
-// Timeout address reception, 40 ms should allow down to 1k buad
-#define SB_TIMEOUT 40
-
-// Serial buffer for UART handling of I2C addresses
-typedef struct {
-  char    data[SB_MAX_SIZE];  // Byte buffer
-  uint8_t ind;                // Index (current location)
-  uint8_t done;               // Buffer is complete (terminator reached)
-  // uint32_t start;              // Time of first character reception (ms)
-} SerialBuffer;
-volatile SerialBuffer uart1RxBuffer_;
-
-void rxBufReset(volatile SerialBuffer* sb) {
-  memset((void*)sb, 0, sizeof(SerialBuffer));
-}
-
-// Add a character to the serial buffer (UART)
-void rxBufAdd(volatile SerialBuffer* sb, uint8_t data_in) {
-  // Add new byte to buffer (as long as it isn't complete or overflowed).
-  // Post-increment index.
-  if (!sb->done) {
-    sb->data[sb->ind++] = data_in;
-
-    // On first character, start timer. Reset buffer if timed out.
-    /*if (!sb->start) {
-      sb->start = millis();
-    } else if (sb->start > SB_TIMEOUT) {
-      rxBufReset(sb);
-    }*/
-  }
-
-  // Check for completion (i.e. when last two bytes are <CR><LF>)
-  if (sb->ind >= 2 && sb->data[sb->ind - 2] == '\r' &&
-      sb->data[sb->ind - 1] == '\n') {
-    sb->done = 1;
-  }
-
-  // Check for overflow (i.e. when index exceeds buffer)
-  if (sb->ind >= SB_MAX_SIZE && !sb->done) {
-    rxBufReset(sb);
-  }
-}
-
 void initState(AmpliPiState* state) {
   memset(state, 0, sizeof(AmpliPiState));
   state->pwr_gpio.en_12v = 1;  // Always enable 12V
@@ -253,7 +122,7 @@ int main(void) {
   // Initialize each source's analog/digital state
   initSources();
   initUart1();  // The preamp will receive its I2C network address via UART
-  USART_PutString(USART1, "UART1 Initialized\r\n");
+  initUart2(9600);
   initInternalI2C(&state_);  // Setup the internal I2C bus
 
   // RELEASE EXPANSION RESET
@@ -261,83 +130,32 @@ int main(void) {
   writePin(exp_nrst_, true);
   state_.expansion.nrst = true;
 
-  USART_PutString(USART1, "Entering main loop\r\n");
-
   // Main loop, awaiting I2C commands
+  uint32_t next_loop_time = millis();
   while (1) {
     // TODO: Clear watchdog
 
-    // Check for incomming control messages if a slave address has been set
+    // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
+    // writePin(exp_boot0_, true);
+
+    // Check for incoming UART messages (setting the slave address)
+    uint8_t new_addr = checkForNewAddress();
+    if (new_addr) {
+      state_.i2c_addr = new_addr;
+      ctrlI2CInit(state_.i2c_addr);
+    }
+
+    // Check for incoming control messages if a slave address has been set
     if (state_.i2c_addr && ctrlI2CAddrMatch()) {
       ctrlI2CTransact(&state_);
     }
 
-    // TODO: Assume default slave address, wait a bit to see if new address is
-    //       received, then either accept new address or use default.
-    // TODO: Better state machine with timeout
-    if (uart1RxBuffer_.done) {
-      // "A" - address identifier. Defends against potential noise on the wire
-      if (uart1RxBuffer_.data[0] == 'A') {
-#ifndef DEBUG_OVER_UART2
-        // Set expansion preamp's address, if it exists. Increment the address
-        // received by 0x10 to get the address for the next preamp.
-        SerialBuffer tx_buf = uart1RxBuffer_;
-        tx_buf.data[1]      = tx_buf.data[1] + 0x10;
-        initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
-        USART_PutString(USART2, tx_buf.data);
-#endif
-        // Initialize I2C1 with the new address
-        state_.i2c_addr = uart1RxBuffer_.data[1];
-        ctrlI2CInit(state_.i2c_addr);
-      }
-      rxBufReset(&uart1RxBuffer_);
-      USART_PutString(USART1, "Address\r\n");
-    }
-
-    // Read internal I2C bus every 32 ms (31.25 Hz)
-    // bool read_internal_i2c = !(millis() & ((1 << 5) - 1));
-    // if (read_internal_i2c) {
     // TODO: move logic outside I2C function
-    // updateInternalI2C(&state_);
-    //}
-  }
-}
+    // TODO: This takes ~2.25 ms, reduce to <<1ms
+    updateInternalI2C(&state_);
 
-/*
- * Function to send a string over USART
- * Inputs: USARTx (1 or 2), string
- * Process: Sends out string character-by-character and then sends
- * carriage return and line feed when done if needed
- */
-void USART_PutString(USART_TypeDef* USARTx, const char* str) {
-  while (*str != 0) {
-    while (!(USARTx->ISR & USART_ISR_TXE)) {}
-    USART_SendData(USARTx, *str);
-    str++;
-  }
-}
-
-// Handles the interrupt on UART data reception
-void USART1_IRQHandler(void) {
-  uint32_t isr = USART1->ISR;
-  if (isr & USART_ISR_ABRE) {
-    // Auto-baud failed, clear read data and reset auto-baud
-    USART1->RQR |= USART_RQR_ABRRQ | USART_RQR_RXFRQ;
-  } else if (isr & USART_ISR_RXNE) {
-    uint16_t m = USART_ReceiveData(USART1);
-    if (state_.uart_passthrough) {
-      USART_SendData(USART2, m);
-    } else {
-      rxBufAdd(&uart1RxBuffer_, (uint8_t)m);
-    }
-  }
-}
-
-void USART2_IRQHandler(void) {
-  // Forward anything received on UART2 (expansion box)
-  // to UART1 (back up the chain to the controller board)
-  if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {
-    uint16_t m = USART_ReceiveData(USART2);
-    USART_SendData(USART1, m);
+    // writePin(exp_boot0_, false);
+    next_loop_time += 5;  // Loop currently takes ~2.26 ms
+    while (millis() < next_loop_time) {}
   }
 }

@@ -135,11 +135,8 @@ class Preamp:
   def reset_expander(self, bootloader: bool = False) -> None:
     """ Resets expansion unit connected to this preamp, if any """
     # Enter reset state
-    reg_val = 2 if bootloader else 0
+    reg_val = 0x02 if bootloader else 0x00
     self.bus.write_byte_data(self.addr, self.Reg.EXPANSION.value, reg_val)
-    #i2cset -y 1 0x08 0x0F 0x02 &&
-    #sleep 0.01 &&
-    #i2cset -y 1 0x08 0x0F 0x0F &&
 
     # Hold the reset line low >300 ns, then set high
     time.sleep(0.01)
@@ -154,9 +151,9 @@ class Preamp:
     """ Configures this preamp to passthrough UART1 <-> UART2 """
     reg_val = self.bus.read_byte_data(self.addr, self.Reg.EXPANSION.value)
     if passthrough:
-      reg_val |= 4
+      reg_val |= 0x04
     else:
-      reg_val &= 3
+      reg_val &= ~0x04
     self.bus.write_byte_data(self.addr, self.Reg.EXPANSION.value, reg_val)
 
 
