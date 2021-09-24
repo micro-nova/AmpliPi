@@ -65,7 +65,9 @@ Now that the AmpliPi unit is powered on, it is time to play with it. Let's see w
 
 ## Configuration
 
-You will probably want to change the default group and zone names and add different streaming sources. We are planning on having a simple interface for configuring all of this. For now, we use the interactive [API](http://amplipi.local/doc) to change these configurations. Follow the "Try it out" guide at the top of the API page to walk through some initial changes.
+You will probably want to change the default group and zone names and add different streaming sources. The Gear icon (⚙) provides an interface to configure inputs, zones, and groups. Additional configuration will be added in the future.
+
+Advanced configuration, such as presets, will need to use the API, check out the built in interactive [API docs](http://amplipi.local/doc). Follow the "Try it out" guide at the top of the API page to walk through some initial changes.
 
 The API is also available via the API link at the bottom of the [main page](http://amplipi.local/0).
 
