@@ -5,23 +5,23 @@
 <table>
   <thead>
     <tr>
-      <th style="text-align:left">Reg Address</th>
-      <th style="text-align:left">Reg Name</th>
-      <th style="text-align:center">bit 7</th>
-      <th style="text-align:center">bit 6</th>
-      <th style="text-align:center">bit 5</th>
-      <th style="text-align:center">bit 4</th>
-      <th style="text-align:center">bit 3</th>
-      <th style="text-align:center">bit 2</th>
-      <th style="text-align:center">bit 1</th>
-      <th style="text-align:center">bit 0</th>
-      <th style="text-align:center">Default value</th>
+      <th>Address</th>
+      <th>Name</th>
+      <th>bit 7</th>
+      <th>bit 6</th>
+      <th>bit 5</th>
+      <th>bit 4</th>
+      <th>bit 3</th>
+      <th>bit 2</th>
+      <th>bit 1</th>
+      <th>bit 0</th>
+      <th>Default value</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>0x00</td>
-      <td style="text-align:left">SRC_AD</td>
+      <td>SRC_AD</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -34,7 +34,7 @@
     </tr>
     <tr>
       <td>0x01</td>
-      <td style="text-align:left">ZONE123_SRC</td>
+      <td>ZONE123_SRC</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td colspan=2, td align='center'>Z3SRC</td>
@@ -44,7 +44,7 @@
     </tr>
     <tr>
       <td>0x02</td>
-      <td style="text-align:left">ZONE456_SRC</td>
+      <td>ZONE456_SRC</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td colspan=2, td align='center'>Z6SRC</td>
@@ -54,7 +54,7 @@
     </tr>
     <tr>
       <td>0x03</td>
-      <td style="text-align:left">MUTE</td>
+      <td>MUTE</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">Z6M</td>
@@ -67,7 +67,7 @@
     </tr>
     <tr>
       <td>0x04</td>
-      <td style="text-align:left">STANDBY</td>
+      <td>STANDBY</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -80,43 +80,43 @@
     </tr>
     <tr>
       <td>0x05</td>
-      <td style="text-align:left">ZONE1_VOL</td>
+      <td>ZONE1_VOL</td>
       <td colspan=8, td align='center'>Zone 1 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x06</td>
-      <td style="text-align:left">ZONE2_VOL</td>
+      <td>ZONE2_VOL</td>
       <td colspan=8, td align='center'>Zone 2 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x07</td>
-      <td style="text-align:left">ZONE3_VOL</td>
+      <td>ZONE3_VOL</td>
       <td colspan=8, td align='center'>Zone 3 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x08</td>
-      <td style="text-align:left">ZONE4_VOL</td>
+      <td>ZONE4_VOL</td>
       <td colspan=8, td align='center'>Zone 4 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x09</td>
-      <td style="text-align:left">ZONE5_VOL</td>
+      <td>ZONE5_VOL</td>
       <td colspan=8, td align='center'>Zone 5 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x0A</td>
-      <td style="text-align:left">ZONE6_VOL</td>
+      <td>ZONE6_VOL</td>
       <td colspan=8, td align='center'>Zone 6 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x0B</td>
-      <td style="text-align:left">POWER</td>
+      <td>POWER</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -129,7 +129,7 @@
     </tr>
     <tr>
       <td>0x0C</td>
-      <td style="text-align:left">FANS</td>
+      <td>FANS</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">FAILED</td>
@@ -141,7 +141,7 @@
     </tr>
     <tr>
       <td>0x0D</td>
-      <td style="text-align:left">LED_CTRL</td>
+      <td>LED_CTRL</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -154,7 +154,7 @@
     </tr>
     <tr>
       <td>0x0E</td>
-      <td style="text-align:left">LED_VAL</td>
+      <td>LED_VAL</td>
       <td style="text-align:center">ZONE6</td>
       <td style="text-align:center">ZONE5</td>
       <td style="text-align:center">ZONE4</td>
@@ -167,7 +167,7 @@
     </tr>
     <tr>
       <td>0x0F</td>
-      <td style="text-align:left">EXPANSION</td>
+      <td>EXPANSION</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -180,28 +180,28 @@
     </tr>
     <tr>
       <td>0x10</td>
-      <td style="text-align:left">HV1_VOLTAGE</td>
+      <td>HV1_VOLTAGE</td>
       <td colspan=8, td align='center'>Power supply voltage, unsigned with 2 fractional bits</td>
       <td style="text-align:center">N/A</td>
     </tr>
     <tr>
       <td>0x11</td>
-      <td style="text-align:left">AMP_TEMP1</td>
+      <td>AMP_TEMP1</td>
       <td colspan=8, td align='center'>Temperature of heatsink over amps 1-3 in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0x12</td>
-      <td style="text-align:left">HV1_TEMP</td>
+      <td>HV1_TEMP</td>
       <td colspan=8, td align='center'>Temperature of power supply in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0x13</td>
-      <td style="text-align:left">AMP_TEMP2</td>
+      <td>AMP_TEMP2</td>
       <td colspan=8, td align='center'>Temperature of heatsink over amps 4-6 in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td></td>
-      <td style="text-align:left"></td>
+      <td></td>
       <td style="text-align:center"></td>
       <td style="text-align:center"></td>
       <td style="text-align:center"></td>
@@ -213,32 +213,32 @@
       <td style="text-align:center"></td>
     </tr>
       <td>0xFA</td>
-      <td style="text-align:left">VER_MAJOR</td>
+      <td>VER_MAJOR</td>
       <td colspan=8, td align='center'>Major Version Number</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFB</td>
-      <td style="text-align:left">VER_MINOR</td>
+      <td>VER_MINOR</td>
       <td colspan=8, td align='center'>Minor Version Number</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFC</td>
-      <td style="text-align:left">HASH1</td>
+      <td>HASH1</td>
       <td colspan=8, td align='center'>GIT_HASH[27:20]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFD</td>
-      <td style="text-align:left">HASH2</td>
+      <td>HASH2</td>
       <td colspan=8, td align='center'>GIT_HASH[19:12]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFE</td>
-      <td style="text-align:left">HASH3</td>
+      <td>HASH3</td>
       <td colspan=8, td align='center'>GIT_HASH[11:4]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFF</td>
-      <td style="text-align:left">HASH4</td>
+      <td>HASH4</td>
       <td colspan=4, td align='center'>GIT_HASH[3:0]</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
