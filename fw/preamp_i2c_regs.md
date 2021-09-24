@@ -58,11 +58,11 @@
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">Z6M</td>
-      <td style="text-align:center">Z6M</td>
-      <td style="text-align:center">Z6M</td>
-      <td style="text-align:center">Z6M</td>
-      <td style="text-align:center">Z6M</td>
-      <td style="text-align:center">Z6M</td>
+      <td style="text-align:center">Z5M</td>
+      <td style="text-align:center">Z4M</td>
+      <td style="text-align:center">Z3M</td>
+      <td style="text-align:center">Z2M</td>
+      <td style="text-align:center">Z1M</td>
       <td style="text-align:center">0x3F</td>
     </tr>
     <tr>
@@ -70,12 +70,12 @@
       <td style="text-align:left">STANDBY</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">Z6STBY</td>
-      <td style="text-align:center">Z5STBY</td>
-      <td style="text-align:center">Z4STBY</td>
-      <td style="text-align:center">Z3STBY</td>
-      <td style="text-align:center">Z2STBY</td>
-      <td style="text-align:center">Z1STBY</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">STANDBY</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
@@ -116,27 +116,27 @@
     </tr>
     <tr>
       <td>0x0B</td>
-      <td style="text-align:left">POWER_STATUS</td>
+      <td style="text-align:left">POWER</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">FAN_FAIL</td>
-      <td colspan=2, td align='center'>FAN_CTRL</td>
-      <td style="text-align:center">FAN_ON</td>
-      <td style="text-align:center">OVR_TMP</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
       <td style="text-align:center">EN_12V</td>
       <td style="text-align:center">PG_12V</td>
-      <td style="text-align:center">0x02</td>
+      <td style="text-align:center">EN_9V</td>
+      <td style="text-align:center">PG_9V</td>
+      <td style="text-align:center">0x0A</td>
     </tr>
     <tr>
       <td>0x0C</td>
-      <td style="text-align:left">FAN_CTRL</td>
+      <td style="text-align:left">FANS</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">FAN_OVERRIDE</td>
+      <td style="text-align:center">FAILED</td>
+      <td style="text-align:center">OVR_TMP</td>
+      <td colspan=2, td align='center'>CTRL_METHOD</td>
+      <td style="text-align:center">ON</td>
+      <td style="text-align:center">OVERRIDE</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
@@ -149,18 +149,18 @@
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">LED_OVERRIDE</td>
+      <td style="text-align:center">OVERRIDE</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x0E</td>
       <td style="text-align:left">LED_VAL</td>
-      <td style="text-align:center">ZONE_6</td>
-      <td style="text-align:center">ZONE_5</td>
-      <td style="text-align:center">ZONE_4</td>
-      <td style="text-align:center">ZONE_3</td>
-      <td style="text-align:center">ZONE_2</td>
-      <td style="text-align:center">ZONE_1</td>
+      <td style="text-align:center">ZONE6</td>
+      <td style="text-align:center">ZONE5</td>
+      <td style="text-align:center">ZONE4</td>
+      <td style="text-align:center">ZONE3</td>
+      <td style="text-align:center">ZONE2</td>
+      <td style="text-align:center">ZONE1</td>
       <td style="text-align:center">STAT_RED</td>
       <td style="text-align:center">STAT_GRN</td>
       <td style="text-align:center">0x02</td>
@@ -173,7 +173,7 @@
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">UART_PASSTHROUGH</td>
+      <td style="text-align:center">UART_PASS</td>
       <td style="text-align:center">BOOT0</td>
       <td style="text-align:center">NRST</td>
       <td style="text-align:center">0x01</td>
@@ -251,124 +251,197 @@
 
 ## Registers
 
-### SRC_AD_REG
+### SRC_AD
 
-Switch each source between analog and digital sources. Each bit SRCxAD can have the following values.
-
-| Value | Description |
-| ----- | ----------- |
-| 0 | Analog |
-| 1 | Digital |
-
-### CHxxx_SRC_REG
-
-For each channel (zone) specify the source it is connected to. Each 2-bit CHxSRC can have the following values.
+Read/write.
+Switch each source between analog and digital sources.
+Each bit SRCxAD can have the following values:
 
 | Value | Description |
 | ----- | ----------- |
-| 0 | Use Source 0 |
-| 1 | Use Source 1 |
-| 2 | Use Source 2 |
-| 3 | Use Source 3 |
+| 0     | Analog      |
+| 1     | Digital     |
 
-### MUTE_REG
+### ZONExxx_SRC
 
-Mute each channel (zone) independently. Each bit CHxM can have the following values.
+Read/write.
+For each zone specify the source it is to be connected to.
+Each 2-bit ZxSRC can have the following values:
 
-| Value | Description |
-| ----- | ----------- |
-| 0 | Not Muted |
-| 1 | Muted |
+| Value | Description  |
+| ----- | ------------ |
+| 0     | Use Source 0 |
+| 1     | Use Source 1 |
+| 2     | Use Source 2 |
+| 3     | Use Source 3 |
 
-### STANDBY_REG
+### MUTE
 
-Standby each channel (zone) independently. Each bit CHxSTBY can have the following values.
-
-| Value | Description |
-| ----- | ----------- |
-| 0 | Enabled |
-| 1 | In Standby |
-
-### CHx_ATTEN_REG
-
-Control the attenuation (volume) in dB of each channel (zone) independently. Valid range is between 0 and 79 inclusive, where 0 corresponds to 0dB attenuation and 79 corresponds to -79dB of attenuation. Values outside this range will be saturated to 79 (-79dB).
-
-### POWER_GOOD
-
-Read-only. Check the power status of the two power supplies. 12V power runs the fans, while 9V is the audio power.
+Read/write.
+Mute each zone independently. Each bit ZxM can have the following values:
 
 | Value | Description |
 | ----- | ----------- |
-| 0 | Not Good |
-| 1 | Good |
+| 0     | Not Muted   |
+| 1     | Muted       |
 
-### FAN_STATUS
+### STANDBY
 
-Check fan status and override the fan operation. Write 0x01 to this register to turn the fans fully on, or write 0x00 to release them.
-
-FAN_OVERRIDE:
-| Value | Description |
-| ----- | ----------- |
-| 0 | Normal |
-| 1 | Fully on |
-
-OVR_TEMP:
-| Value | Description |
-| ----- | ----------- |
-| 0 | Normal |
-| 1 | Over temp |
-
-FAN_FAIL:
-| Value | Description |
-| ----- | ----------- |
-| 0 | Normal |
-| 1 | Failure |
-
-### EXTERNAL_GPIO
-
-An external GPIO for whatever you want. Set it by writing 0x00 or 0x01; reading will also return either 0x00 or 0x01.
+Read/write.
+Set bit 0 to standby all zones. Read to determine standby status.
+All amplifiers will be in standby at once, or all enabled.
 
 | Value | Description |
 | ----- | ----------- |
-| 0 | Low |
-| 1 | High |
+| 0     | Enabled     |
+| 1     | In Standby  |
 
-### LED_OVERRIDE
+### ZONE[1:6]_VOL
 
-Direct control of front panel LEDs.
+Read/write.
+Control the attenuation (volume) in dB of each zone independently.
+Valid range is between 0 and 79 inclusive, where 0 corresponds to 0 dB
+attenuation and 79 corresponds to -79 dB of attenuation.
+Values outside this will be saturated to the range [0, 79].
 
-| Value | Description |
+### POWER
+
+Check the status of the two power supplies.
+The 12 V supply runs the fans, while 9 V is used for audio power.
+
+EN_xV are read/write, PG_xV are read-only.
+EN_9V/PG_9V is only present on prototype power boards, on all others
+the 9 V supply is always on.
+
+| PG_9V | Description |
 | ----- | ----------- |
-| 0 | Off |
-| 1 | On |
+| 0     | 9 V bad     |
+| 1     | 9 V good    |
+
+| EN_9V | Description |
+| ----- | ----------- |
+| 0     | 9 V on      |
+| 1     | 9 V off     |
+
+| PG_12V | Description |
+| ------ | ----------- |
+| 0      | 12 V bad    |
+| 1      | 12 V good   |
+
+| EN_12V | Description |
+| ------ | ----------- |
+| 0      | 12 V on     |
+| 1      | 12 V off    |
+
+### FANS
+
+Check fan status and override the fan operation.
+OVERRIDE is read/write, the rest of the bits are read only.
+
+| OVERRIDE | Description |
+| -------- | ----------- |
+| 0        | Auto        |
+| 1        | On          |
+
+* The fans can be forced to 100% on with this bit.
+  By default an automatic temperature-based control is used,
+  see the CTRL_METHOD bit.
+
+| ON | Description |
+| -- | ----------- |
+| 0  | Fans off    |
+| 1  | Fans on     |
+
+| CTRL_METHOD | Description |
+| ----------- | ----------- |
+| 0           | MAX6644     |
+| 1           | ON_OFF      |
+| 2           | Reserved    |
+| 3           | Reserved    |
+
+* MAX6644: Power Board 2.A used a MAX6644 fan controller. This board version
+  is auto-detected and fan control handled by that IC.
+* ON_OFF: Newer hardware moves the fan control into the STM32 on the Preamp Board.
+  The fans will turn on above a threshold temp based on all measured tempuratures.
+
+| OVR_TEMP | Description |
+| -------- | ----------- |
+| 0        | Temp OK     |
+| 1        | Over temp   |
+
+| FAILED | Description |
+| ------ | ----------- |
+| 0      | Normal      |
+| 1      | Fans failed |
+
+* Fan failed status only present with MAX6644
+
+### LED_CTRL / LED_VAL
+
+If OVERRIDE is cleared the front-panel LEDs will display the AmpliPi's
+hardware status.
+STAT_RED blinks at 0.5 Hz until the preamp receives an I2C address,
+then it remains on if the amplifiers are in standby.
+STAT_GREEN lights if the amplifiers are on.
+The 6 zone status LEDs light if the respective zone is unmuted.
+
+If OVERRIDE is set the front-panel LEDs will display the value in the LED_VAL
+register.
+
+### EXPANSION
+
+Used to control the expansion port.
+NRST and BOOT0 directly control those hardware pins going to the expansion unit.
+NRST pulses low at boot to reset the next expander if present,
+then it remains high.
+BOOT0 defaults low, but is set high during programming to put the
+expansion unit's preamp into bootloader mode.
+
+If UART_PASS is set any data received on UART1 is forwarded to UART2 and vice-versa.
+This enables programming of expansion units by setting all previous units
+as pass-through.
 
 ## ADC REGISTERS ##
 
-### HVx_VOLTAGE
+### HV1_VOLTAGE
 
-This register reports a hex value based on the connected voltage. Looking at the decimal value from 0-255, each bit change roughly equates to 0.2883V. Following this, a decimal value of 84, or 54 in hex, will be pretty close to 24V.
+Measures the 24V high-voltage power supply voltage.
+The value is reported as an unsigned fixed-point number with 2 fractional bits,
+with units of Volts.
+So a value of 0x63 equates to a voltage of 0x63 / 4 = 24.75 V
 
-### HVx_TEMP
+### HV1_TEMP
 
-This register has an operating range from around 4-237 in decimal, corresponding to a range of -40 to 125 degrees Celsius. The direct translation is a resistance, since the temperature sensor is a thermistor. Using a temp vs. resistance look-up-table on the NCP21XV103J03RA datasheet, the temperature can be determined.
+Measures the thermistor attached to the 24V high-voltage power supply.
+The value is reported as an unsigned fixed-point number with 1 fractional bit,
+with units of &deg;C.
+There is also a 20 &deg;C offset added to keep the value positive.
+So a value of 0x5A equates to a temperature of 0x5A/2 - 20 = 25 &deg;C
 
-Resistance in kilo-ohms is calculated by taking the decimal value read from the register, dividing 255 by that value, and multiplying the resultant by 4.7. A typical reading, say 25 degrees C, would be 0x51.
+The minimum temperature reported is -19.5 &deg;C and the maximum is 107 &deg;C
+The values 0x00 and 0xFF are both invalid as temperatures:
+a value of 0x00 represents a disconnected thermistor, and
+a value of 0xFF represents a short.
+
+### AMP_TEMP[1:2]
+
+Measures the thermistors under the amplifier heatsinks.
+AMP_TEMP1 measures the heatsink for amplifiers 1-3 and
+AMP_TEMP2 measures the heatsink for amplifiers 4-6.
+The value is reported the same as for the HV1_TEMP register:
+an unsigned fixed-point number with 1 fractional bit with units of &deg;C.
 
 ## VERSION REGISTERS ##
 
-### version_major/minor
+### VER_MAJOR / VER_MINOR
 
-These registers hold the human-readable firmware version. For version 1.1, each register reports 0x01.
+These registers hold the human-readable firmware version.
+Both are unsigned, 8-bit numbers.
 
-### git_hash[x:y]
+### HASH[1:4]
 
-These registers hold two digits each of the seven digit git_hash associated with each Git commit. Reading from each of these returns the hex digits that can be seen on GitHub.
+Holds the 28-bit short Git hash of the commit used to generate the binary.
+Use `git rev-parse --short HEAD` to get the short Git hash for the current commit.
 
-### git_hash & git_status
-
-This register is different in that the upper hex digit is part of the git hash, while the lower digit is the clean/dirty flag. For git hash f46612d:
-
-| Value | Description |
-| ----- | ----------- |
-| 0xd0 | clean |
-| 0xd1 | dirty |
+If the DIRTY bit is set, the firmware is not aligned to any particular Git commit
+and the hash should be ignored.
