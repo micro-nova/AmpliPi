@@ -26,9 +26,9 @@
  * - 7 hex digits of the git hash, as returned from `git rev-parse --short HEAD`
  * - A dirty bit, if set the git hash is to be treated as invalid
  */
-#define GIT_HASH_6_5 0xFF
-#define GIT_HASH_4_3 0xFF
-#define GIT_HASH_2_1 0xFF
-#define GIT_HASH_0_D 0xFF  // LSB is dirty bit
+#define GIT_HASH_6_5 0x93
+#define GIT_HASH_4_3 0xE8
+#define GIT_HASH_2_1 0x82
+#define GIT_HASH_0_D 0x80  // LSB is dirty bit
 
 #endif /* VERSION_H_ */
