@@ -58,6 +58,11 @@ $(function() {
     $("#settings-tab-inputs-stream-title").text("Add a new stream to AmpliPi");
     var html = `
       <form id="settings-tab-inputs-new-stream-form">
+
+        <div id="fmradio_warning" class="form-group addl_settings" style="color: yellow; display:none;">
+          An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/">RTL SDR</a>
+        </div>
+
         <div class="form-group">
           <label for="type">Stream Type</label>
           <select class="form-control" name="type" id="new_type" data-required="true">
@@ -156,6 +161,17 @@ $(function() {
     var html = `
       <input type="hidden" id="edit-sid" name="id" value="${s.id}">
       <form id="editStreamForm">
+      `;
+
+      if (s.type == "fmradio") {
+        html += `
+        <div class="form-group" style="color: yellow">
+          An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/">RTL SDR</a>
+        </div>
+        `;
+      }
+
+      html += `
         <div class="form-group">
           <label for="name">Stream Name</label>
           <input type="text" class="form-control" name="name" value="${s.name}" id="str_name" aria-describedby="nameHelp" data-required="true">
@@ -250,7 +266,7 @@ $(function() {
     $(".addl_settings").hide(); // Hide all additional settings
     if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
     else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
-    else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); }
+    else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); $("#fmradio_warning").show(); }
     else if ($(this).val() == "plexamp") { $("#plexamp_settings").show(); }
 
   });
