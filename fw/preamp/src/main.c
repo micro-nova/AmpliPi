@@ -99,6 +99,7 @@ void initGpio() {
 
 void initState(AmpliPiState* state) {
   memset(state, 0, sizeof(AmpliPiState));
+  state->pwr_gpio.en_9v  = 1;  // Always enable 9V
   state->pwr_gpio.en_12v = 1;  // Always enable 12V
 }
 

@@ -42,15 +42,15 @@ typedef enum
   REG_VOL_ZONE6 = 0x0A,
 
   // Power/Fan control
-  REG_POWER_STATUS = 0x0B,  // FAN_FAIL (Developer units only), OVR_TMP, PG_12V
-  REG_FAN_CTRL     = 0x0C,  // FORCE_ON?
-  REG_LED_CTRL     = 0x0D,  // OVERRIDE?
-  REG_LED_VAL      = 0x0E,  // ZONE[6,5,4,3,2,1], RED, GRN
-  REG_EXPANSION    = 0x0F,  // UART_PASSTHROUGH, BOOT0, NRST
-  REG_HV1_VOLTAGE  = 0x10,  // Volts in UQ6.2 format (0.25 volt resolution)
-  REG_AMP_TEMP1    = 0x11,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
-  REG_HV1_TEMP     = 0x12,  //   0x00 = disconnected, 0xFF = shorted
-  REG_AMP_TEMP2    = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
+  REG_POWER       = 0x0B,
+  REG_FANS        = 0x0C,
+  REG_LED_CTRL    = 0x0D,  // OVERRIDE?
+  REG_LED_VAL     = 0x0E,  // ZONE[6,5,4,3,2,1], RED, GRN
+  REG_EXPANSION   = 0x0F,  // UART_PASSTHROUGH, BOOT0, NRST
+  REG_HV1_VOLTAGE = 0x10,  // Volts in UQ6.2 format (0.25 volt resolution)
+  REG_AMP_TEMP1   = 0x11,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
+  REG_HV1_TEMP    = 0x12,  //   0x00 = disconnected, 0xFF = shorted
+  REG_AMP_TEMP2   = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
 
   // Version info
   REG_VERSION_MAJOR = 0xFA,
@@ -72,13 +72,13 @@ extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 
 typedef union {
   struct {
-    uint8_t gp0        : 1;
+    uint8_t en_9v      : 1;  // Only on Power Board 1.X
     uint8_t en_12v     : 1;
-    uint8_t gp2        : 1;
+    uint8_t pg_9v      : 1;  // Only on Power Board 1.X
     uint8_t pg_12v     : 1;
     uint8_t fan_fail_n : 1;
     uint8_t ovr_tmp_n  : 1;
-    uint8_t gp6        : 1;
+    uint8_t pg_5v      : 1;  // Planned for Power Board 4.A
     uint8_t fan_on     : 1;
   };
   uint8_t data;
@@ -86,16 +86,26 @@ typedef union {
 
 typedef union {
   struct {
-    uint8_t pg_12v   : 1;
-    uint8_t en_12v   : 1;
-    uint8_t ovr_tmp  : 1;
-    uint8_t fan_on   : 1;
-    uint8_t fan_ctrl : 2;
-    uint8_t fan_fail : 1;
-    uint8_t reserved : 1;
+    uint8_t pg_9v    : 1;  // R
+    uint8_t en_9v    : 1;  // R/W
+    uint8_t pg_12v   : 1;  // R
+    uint8_t en_12v   : 1;  // R/W
+    uint8_t reserved : 4;
   };
   uint8_t data;
-} PwrStatusMsg;
+} PwrMsg;
+
+typedef union {
+  struct {
+    uint8_t override : 1;  // R/W - Force fans on 100%
+    uint8_t on       : 1;  // R   - Fans status
+    uint8_t ctrl     : 2;  // R   - Fan control method currently in use
+    uint8_t ovr_tmp  : 1;  // R   - Unit over dangerous temperature threshold
+    uint8_t fail     : 1;  // R   - Fan fail detection (Power Board 2.A only)
+    uint8_t reserved : 2;
+  };
+  uint8_t data;
+} FanMsg;
 
 typedef union {
   struct {

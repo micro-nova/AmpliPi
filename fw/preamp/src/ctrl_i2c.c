@@ -122,24 +122,30 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
       out_msg = getZoneVolume(addr - REG_VOL_ZONE1);
       break;
 
-    case REG_POWER_STATUS: {
-      PwrStatusMsg msg = {
+    case REG_POWER: {
+      PwrMsg msg = {
+          .pg_9v    = state->pwr_gpio.pg_9v,
+          .en_9v    = state->pwr_gpio.en_9v,
           .pg_12v   = state->pwr_gpio.pg_12v,
           .en_12v   = state->pwr_gpio.en_12v,
-          .ovr_tmp  = !state->pwr_gpio.ovr_tmp_n,
-          .fan_on   = state->pwr_gpio.fan_on,
-          .fan_ctrl = state->fan_ctrl,
           .reserved = 0,
-          // (Developer units only)
-          .fan_fail = !state->pwr_gpio.fan_fail_n,
       };
       out_msg = msg.data;
       break;
     }
 
-    case REG_FAN_CTRL:
-      out_msg = state->fan_override ? 1 : 0;
+    case REG_FANS: {
+      FanMsg msg = {
+          .override = state->fan_override,
+          .on       = state->pwr_gpio.fan_on,
+          .ctrl     = state->fan_ctrl,
+          .ovr_tmp  = !state->pwr_gpio.ovr_tmp_n,
+          .fail     = !state->pwr_gpio.fan_fail_n,
+          .reserved = 0,
+      };
+      out_msg = msg.data;
       break;
+    }
 
     case REG_LED_CTRL:
       out_msg = state->led_override ? 1 : 0;
@@ -283,8 +289,13 @@ void ctrlI2CTransact(AmpliPiState* state) {
         break;
       }
 
-      case REG_FAN_CTRL:
-        state->fan_override = data & 0x01;
+      case REG_POWER:
+        state->pwr_gpio.en_9v  = ((PwrMsg)data).en_9v;
+        state->pwr_gpio.en_12v = ((PwrMsg)data).en_12v;
+        break;
+
+      case REG_FANS:
+        state->fan_override = ((FanMsg)data).override;
         break;
 
       case REG_LED_CTRL:

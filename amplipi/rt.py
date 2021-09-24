@@ -45,8 +45,8 @@ _REG_ADDRS = {
   'VOL_ZONE4'       : 0x08,
   'VOL_ZONE5'       : 0x09,
   'VOL_ZONE6'       : 0x0A,
-  'POWER_STATUS'    : 0x0B,
-  'FAN_CTRL'        : 0x0C,
+  'POWER'           : 0x0B,
+  'FANS'            : 0x0C,
   'LED_CTRL'        : 0x0D,
   'LED_VAL'         : 0x0E,
   'EXPANSION'       : 0x0F,
@@ -277,26 +277,45 @@ class _Preamps:
     return None, None, None, None
 
   def read_power_status(self, preamp: int = 1) -> Tuple[Union[bool, None],
-    Union[bool, None], Union[bool, None], Union[bool, None], Union[bool, None]]:
-    """ Read the status of the power board
+    Union[bool, None], Union[bool, None], Union[bool, None]]:
+    """ Read the status of the power supplies
 
       Returns:
+        pg_9v:    True if the 9V rail is good
+        en_9v:    True if the 9V rail is enabled
         pg_12v:   True if the 12V rail is good
         en_12v:   True if the 12V rail is enabled
-        ovr_tmp:  True if the amplifiers or PSU are overtemp
-        fan_on:   True if the fans are on
-        fan_fail: True if the fans failed (only available on developer units)
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      pstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['POWER_STATUS'])
-      fan_fail = (pstat & 0x40) != 0
-      fan_ctrl = (pstat & 0x30) >> 4
-      fan_on = (pstat & 0x08) != 0
-      ovr_tmp = (pstat & 0x04) != 0
-      en_12v = (pstat & 0x02) != 0
-      pg_12v = (pstat & 0x01) != 0
-      return pg_12v, en_12v, ovr_tmp, fan_on, fan_fail, fan_ctrl
+      pstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['POWER'])
+      en_12v = (pstat & 0x08) != 0
+      pg_12v = (pstat & 0x04) != 0
+      en_9v = (pstat & 0x02) != 0
+      pg_9v = (pstat & 0x01) != 0
+      return pg_9v, en_9v, pg_12v, en_12v
+    return None, None, None, None
+
+  def read_fan_status(self, preamp: int = 1) -> Tuple[Union[bool, None],
+    Union[bool, None], Union[bool, None], Union[bool, None], Union[bool, None]]:
+    """ Read the status of the fans
+
+      Returns:
+        override:  True if the fans have been forced on
+        fans_on:   True if the fans are on
+        ctrl       Fan control method currently in use - True if ON/OFF, False if MAX6644
+        ovr_tmp:   True if the amplifiers or PSU are overtemp
+        failed:    True if the fans failed (only available on developer units)
+    """
+    assert 1 <= preamp <= 6
+    if self.bus is not None:
+      fstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FANS'])
+      failed = (fstat & 0x20) != 0
+      ovr_tmp = (fstat & 0x10) != 0
+      ctrl = (fstat & 0x0C) != 0
+      fans_on = (fstat & 0x02) != 0
+      override = (fstat & 0x01) != 0
+      return override, fans_on, ctrl, ovr_tmp, failed
     return None, None, None, None, None
 
   @staticmethod
@@ -350,7 +369,7 @@ class _Preamps:
   def force_fans(self, preamp: int = 1, force: bool = True):
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      self.bus.write_byte_data(preamp*8, _REG_ADDRS['FAN_CTRL'],
+      self.bus.write_byte_data(preamp*8, _REG_ADDRS['FANS'],
                                1 if force is True else 0)
 
   def read_leds(self, preamp: int = 1):

@@ -253,7 +253,7 @@ void initInternalI2C(AmpliPiState* state) {
   // reset in the middle of a transaction.
   uint32_t tries = 255;
   while (tries--) {
-    uint32_t status = writeI2C2(pwr_io_dir_, 0x7D);  // 0=output, 1=input
+    uint32_t status = writeI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
     if (status == I2C_ISR_NACKF) {
       // Received a NACK, will try again
     } else if (status == I2C_ISR_ARLO) {
