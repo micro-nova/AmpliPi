@@ -109,7 +109,7 @@ class Api:
       {"id": 1000, "name": "AmpliPi", "type": "shairport"},
       {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
       {"id": 1002, "name": "AmpliPi", "type": "spotify"},
-      {"id": 1003, "name": "Beatles Radio", "type": "internetradio", "url": "http://www.beatlesradio.com:8000/stream/1/", "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"},
+      {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
       {"id": 1004, "name": "AmpliPi", "type": "dlna"}
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected

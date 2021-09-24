@@ -60,7 +60,7 @@ Connect the AmpliPi to your local network using a CAT5 or better cable. The Ampl
 Now that the AmpliPi unit is powered on, it is time to play with it. Let's see what it can do:
 
 1. Go to [amplipi.local](http://amplipi.local/0) (Android and Windows 7 users will need to type the ip address found on the unit's display into their web browser to find the page). You should now be connected to AmpliPi's mobile-friendly website. Please note that an https connection to the AmpliPi is not currently available since certificates have to be managed on a per-unit basis.
-1. Pick a source using the selector. The `Beatles Radio - internetradio` stream comes preconfigured (needs an internet connection).
+1. Pick a source using the selector. The `Groove Salad - internetradio` stream comes preconfigured (needs an internet connection).
 1. Change the volume on the zone you would like to output music on. Many of the zones will be hidden inside a group. Click on the different groups to see which zones belong to them.
 
 ## Configuration
