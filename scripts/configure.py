@@ -244,7 +244,7 @@ def _install_python_deps(env: dict, deps: List[str]):
     os.chdir(last_dir)
   return tasks
 
-def _add_desktop_icon(env, name, command) -> Task:
+def _add_desktop_icon(env, directory: pathlib.Path, name, command) -> Task:
   """ Add a desktop icon to the pi """
   entry = f"""[Desktop Entry]
 Name={name}
@@ -256,7 +256,8 @@ Categories=Utility;
 """
   success = True
   try:
-    with open(f'/home/pi/Desktop/{name}.desktop', 'w') as icon:
+    filepath = directory.joinpath(f'{name}.desktop')
+    with open(f'{filepath}', 'w') as icon:
       icon.write(entry)
   except Exception:
     success = False
@@ -399,26 +400,33 @@ def _restart_service(name: str, system: bool = False) -> List[Task]:
   tasks = [Task(f'Restart {service}', cmd.split()).run()]
   return tasks
 
-def _create_service(name: str, config: str) -> List[Task]:
-  filename = f'{name}.service'
-  directory = pathlib.Path.home().joinpath('.config/systemd/user')
-  tasks = []
-
-  # create the systemd directory if it doesn't already exist
+def _create_dir(directory: str) -> List[Task]:
+  tasks = [Task(f'Create directory {directory}')]
   path = pathlib.Path(directory)
-  if not path.exists():
-    tasks.append(Task('Create user systemd directory'))
+  if path.exists():
+    tasks[-1].success = True
+    tasks[-1].output = f'Directory {directory} already exists'
+  else:
     try:
       path.mkdir(parents=True)
       tasks[-1].success = True
       tasks[-1].output = f'Created {directory}'
     except:
       tasks[-1].output = f'Failed to create {directory}'
+  return tasks
+
+def _create_service(name: str, config: str) -> List[Task]:
+  filename = f'{name}.service'
+  directory = pathlib.Path.home().joinpath('.config/systemd/user')
+  tasks = []
+
+  # create the systemd directory if it doesn't already exist
+  tasks += _create_dir(directory)
 
   # create the service file, overwriting any existing one
   tasks.append(Task(f'Create {filename}'))
   try:
-    with path.joinpath(filename).open('w+') as svc_file:
+    with directory.joinpath(filename).open('w+') as svc_file:
       svc_file.write(config)
     tasks[-1].success = True
     tasks[-1].output = f'Created {filename}'
@@ -545,7 +553,6 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
-    ('Program Master Preamp', './hw/tests/program_preamps.bash 1 --wait'),
     ('Program Master + Expander Preamp', './hw/tests/program_preamps.bash 2 --wait'),
     ('Amplifier', './hw/tests/built_in.bash amp'),
     ('LEDs', './hw/tests/built_in.bash led'),
@@ -561,8 +568,13 @@ def add_tests(env, progress) -> List[Task]:
     ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'),
   ]
   tasks = []
+
+  # create the ~/tests directory if it doesn't already exist
+  directory = pathlib.Path.home().joinpath('Desktop', 'tests')
+  tasks += _create_dir(directory)
+
   for test in tests:
-    tasks += [_add_desktop_icon(env, test[0], test[1])]
+    tasks += [_add_desktop_icon(env, directory, test[0], test[1])]
   progress(tasks)
   return tasks
 
