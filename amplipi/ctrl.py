@@ -309,7 +309,7 @@ class Api:
     """ get the system state """
     # update the state with the latest stream info
     # TODO: figure out how to cache stream info
-    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'token', 'client_id'] # optional configuration fields
+    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'freq', 'token', 'client_id'] # optional configuration fields
     streams = []
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class

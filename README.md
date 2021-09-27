@@ -25,6 +25,7 @@ Most of these digital streaming services are provided by other open-source proje
 |DLNA|Yes|Yes|Yes|[gmrender-resurrect](https://github.com/hzeller/gmrender-resurrect)||
 |Internet Radio|Yes|Yes|Yes|[VLC](https://github.com/videolan/vlc)||
 |Plexamp|Yes|No|No|[Plexamp](https://plexamp.com/)||
+|FM Radio|Yes|No|Yes|[rtl-sdr](https://osmocom.org/projects/rtl-sdr/wiki/Rtl-sdr)/[redsea](https://github.com/windytan/redsea)|Requires [RTL SDR](https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/) compatible USB device|
 |Google Cast|No||||Need to investigate|
 |Offline Music|No||||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|
 |TIDAL|No||||See [#87](http://github.com/micro-nova/AmpliPi/issues/87)|
@@ -34,7 +35,7 @@ In the future we plan to integrate with several home automation systems. Below i
 |Integrations|Supported|Notes|
 |--|--:|--|
 |Home Assistant|No|Future integration planned|
-|openHAB|No|See [#54](http://github.com/micro-nova/AmpliPi/issues/54)|
+|openHAB|Yes|See https://next.openhab.org/addons/bindings/amplipi/|
 |Alexa|No|See [#25](http://github.com/micro-nova/AmpliPi/issues/25)|
 |Google Assistant|No|See [#69](http://github.com/micro-nova/AmpliPi/issues/69)|
 

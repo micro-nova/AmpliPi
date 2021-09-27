@@ -38,6 +38,22 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'internet_radio' : {
     'apt' : [ 'vlc' ]
   },
+  'fmradio' : {
+    'apt' : [ 'rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev' ],
+    'script' : [
+      'if ! which redsea  > /dev/null; then', # TODO: check version
+      '  echo "Installing redsea"',
+      '  cd /tmp',
+      '  git clone --depth 1 https://github.com/windytan/redsea.git',
+      '  cd redsea',
+      '  ./autogen.sh && ./configure && make',
+      '  sudo make install',
+      '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
+      '  sudo udevadm control --reload-rules',
+      '  sudo udevadm trigger',
+      'fi',
+    ]
+  },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
               'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
