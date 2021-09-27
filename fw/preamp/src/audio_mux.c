@@ -87,12 +87,13 @@ void writeVolume(size_t zone, uint8_t vol) {
 
 // Standby all amps at once
 void standby(bool standby) {
+  bool prev_stby_state = inStandby();
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Set pin low to standby
     writePin(zone_standby_[zone], !standby);
   }
   // After returning from standby we need to configure each of the volumes again
-  if (inStandby() && !standby) {
+  if (prev_stby_state && !standby) {
     for (size_t zone = 0; zone < NUM_ZONES; zone++) {
       writeVolume(zone, volumes[zone]);
     }
