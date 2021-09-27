@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "channel.h"
+#include "audio_mux.h"
 #include "ctrl_i2c.h"
 #include "int_i2c.h"
 #include "port_defs.h"
@@ -46,10 +46,10 @@ void init_gpio() {
 
   // Setup IO pin directions PORT A
   GPIO_InitTypeDef GPIO_InitStructureA;
-  GPIO_InitStructureA.GPIO_Pin = pCH1_SRC1_EN | pCH1_SRC3_EN | pCH2_SRC1_EN |
-                                 pCH2_SRC2_EN | pCH2_SRC4_EN | pCH6_SRC2_EN |
-                                 pCH6_SRC3_EN | pCH6_SRC4_EN | pCH4_MUTE |
-                                 pCH5_MUTE | pCH6_STBY;
+  GPIO_InitStructureA.GPIO_Pin =
+      pZONE1_SRC1_EN | pZONE1_SRC3_EN | pZONE2_SRC1_EN | pZONE2_SRC2_EN |
+      pZONE2_SRC4_EN | pZONE6_SRC2_EN | pZONE6_SRC3_EN | pZONE6_SRC4_EN |
+      pZONE4_MUTE | pZONE5_MUTE | pZONE6_STBY;
   GPIO_InitStructureA.GPIO_Mode  = GPIO_Mode_OUT;
   GPIO_InitStructureA.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructureA.GPIO_PuPd  = GPIO_PuPd_NOPULL;
@@ -58,10 +58,10 @@ void init_gpio() {
 
   // Setup IO pin directions PORT B
   GPIO_InitTypeDef GPIO_InitStructureB;
-  GPIO_InitStructureB.GPIO_Pin = pCH3_SRC2_EN | pCH3_SRC3_EN | pCH3_SRC4_EN |
-                                 pCH3_SRC2_EN | pCH4_SRC2_EN | pCH5_SRC2_EN |
-                                 pCH5_SRC4_EN | pCH1_MUTE | pCH1_STBY |
-                                 pCH2_STBY | pCH3_STBY | pSRC1_AEN | pSRC2_AEN;
+  GPIO_InitStructureB.GPIO_Pin =
+      pZONE3_SRC2_EN | pZONE3_SRC3_EN | pZONE3_SRC4_EN | pZONE3_SRC2_EN |
+      pZONE4_SRC2_EN | pZONE5_SRC2_EN | pZONE5_SRC4_EN | pZONE1_MUTE |
+      pZONE1_STBY | pZONE2_STBY | pZONE3_STBY | pSRC1_AEN | pSRC2_AEN;
   GPIO_InitStructureB.GPIO_Mode  = GPIO_Mode_OUT;
   GPIO_InitStructureB.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructureB.GPIO_PuPd  = GPIO_PuPd_NOPULL;
@@ -71,9 +71,10 @@ void init_gpio() {
   // Setup IO pin directions PORT C
   GPIO_InitTypeDef GPIO_InitStructureC;
   GPIO_InitStructureC.GPIO_Pin =
-      pCH2_SRC3_EN | pCH3_SRC1_EN | pCH4_SRC1_EN | pCH4_SRC3_EN | pCH4_SRC4_EN |
-      pCH5_SRC3_EN | pCH6_SRC1_EN | pCH2_MUTE | pCH3_MUTE | pCH4_STBY |
-      pCH5_STBY | pSRC3_AEN | pSRC4_AEN | pSRC2_DEN | pSRC3_DEN | pSRC4_DEN;
+      pZONE2_SRC3_EN | pZONE3_SRC1_EN | pZONE4_SRC1_EN | pZONE4_SRC3_EN |
+      pZONE4_SRC4_EN | pZONE5_SRC3_EN | pZONE6_SRC1_EN | pZONE2_MUTE |
+      pZONE3_MUTE | pZONE4_STBY | pZONE5_STBY | pSRC3_AEN | pSRC4_AEN |
+      pSRC2_DEN | pSRC3_DEN | pSRC4_DEN;
   GPIO_InitStructureC.GPIO_Mode  = GPIO_Mode_OUT;
   GPIO_InitStructureC.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructureC.GPIO_PuPd  = GPIO_PuPd_NOPULL;
@@ -91,8 +92,9 @@ void init_gpio() {
 
   // Setup IO pin directions PORT F
   GPIO_InitTypeDef GPIO_InitStructureF;
-  GPIO_InitStructureF.GPIO_Pin = pCH1_SRC2_EN | pCH1_SRC4_EN | pCH5_SRC1_EN |
-                                 pCH6_MUTE | pNRST_OUT | pBOOT0_OUT;
+  GPIO_InitStructureF.GPIO_Pin = pZONE1_SRC2_EN | pZONE1_SRC4_EN |
+                                 pZONE5_SRC1_EN | pZONE6_MUTE | pNRST_OUT |
+                                 pBOOT0_OUT;
   GPIO_InitStructureF.GPIO_Mode  = GPIO_Mode_OUT;
   GPIO_InitStructureF.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructureF.GPIO_PuPd  = GPIO_PuPd_NOPULL;
@@ -143,7 +145,7 @@ void init_uart1() {
   NVIC_EnableIRQ(USART1_IRQn);
 }
 
-void init_uart2(uint16_t brr) {
+void initUart2(uint16_t brr) {
   // UART2 is used for debugging with an external debugger
   // or for communicating with an expansion preamp.
 
@@ -206,10 +208,9 @@ void RxBuf_Add(volatile SerialBuffer* sb, uint8_t data_in) {
   }
 }
 
-void InitState(AmpliPiState* state) {
+void initState(AmpliPiState* state) {
   memset(state, 0, sizeof(AmpliPiState));
-  state->pwr_gpio.en_12v = 1;     // Always enable 12V
-  state->standby         = true;  // Default amps to standby
+  state->pwr_gpio.en_12v = 1;  // Always enable 12V
 }
 
 int main(void) {
@@ -219,25 +220,28 @@ int main(void) {
   // TODO: Setup watchdog
 
   // RESET AND PIN SETUP
-  Pin f0 = {'F', 0};  // Expansion connector NRST_OUT
-  Pin f1 = {'F', 1};  // Expansion connector BOOT0_OUT
-  clearPin(f0);  // Low-pulse on NRST_OUT so expansion boards are reset by the
-                 // controller board
-  clearPin(f1);  // Needs to be low so the subsequent preamp board doesn't
-                 // start in 'Boot Mode'
+  writePin(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are
+                                // reset by the controller board
+  writePin(exp_boot0_, false);  // Needs to be low so the subsequent preamp
+                                // board doesn't start in 'Boot Mode'
 
   // INIT
-  InitState(&state_);
-  init_gpio();   // UART and I2C require GPIO pins
-  init_uart1();  // The preamp will receive its I2C network address via UART
-  InitInternalI2C(&state_);  // Setup the internal I2C bus
+  initState(&state_);
   systickInit();  // Initialize the clock ticks for delay_ms and other timing
                   // functionality
+  init_gpio();    // UART and I2C require GPIO pins
+  // Initialize each channel's volume state
+  // (does not write to volume control ICs)
+  initZones();
+  // Initialize each source's analog/digital state
+  initSources();
+  init_uart1();  // The preamp will receive its I2C network address via UART
+  initInternalI2C(&state_);  // Setup the internal I2C bus
 
   // RELEASE EXPANSION RESET
-  // delay_ms(1);          // Hold low for 1 ms
-  setPin(f0);  // Needs to be high so the subsequent preamp board is not held in
-               // 'Reset Mode'
+  // Needs to be high so the subsequent preamp board is not held in 'Reset Mode'
+  writePin(exp_nrst_, true);
+  state_.expansion.nrst = true;
 
   // TODO: Integrate address reception with main loop
   // TODO: Assume default slave address, wait a bit to see if new address is
@@ -253,13 +257,13 @@ int main(void) {
         // received by 0x10 to get the address for the next preamp.
         SerialBuffer tx_buf         = UART_Preamp_RxBuffer;
         tx_buf.data[tx_buf.ind - 3] = tx_buf.data[tx_buf.ind - 3] + 0x10;
-        init_uart2(USART1->BRR);  // Use the same baud rate for both UARTs
+        initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
         USART_PutString(USART2, tx_buf.data);
 #endif
         break;
       }
       // Allow time for any extra garbage data to shift in
-      delay_ms(2);
+      delayMs(2);
       // Only necessary for multiple runs without cycling power
       memset((void*)&UART_Preamp_RxBuffer, 0, sizeof(SerialBuffer));
     } else if (UART_Preamp_RxBuffer.ovf == 1) {
@@ -271,34 +275,29 @@ int main(void) {
     bool blink = !(millis() & ((1 << 10) - 1));
     if (state_.leds.red != blink) {
       state_.leds.red = !state_.leds.red;
-      UpdateInternalI2C(&state_);
+      updateInternalI2C(&state_);
     }
   }
 
   // Stabilize the blinking red LED once an address is given
   state_.leds.red = 1;
   // Initialize I2C with the new address
-  CtrlI2CInit(i2c_addr);
-  // Initialize each channel's volume state
-  // (does not write to volume control ICs)
-  initChannels();
-  // Initialize each source's analog/digital state
-  initSources();
+  ctrlI2CInit(i2c_addr);
 
   // Main loop, awaiting I2C commands
   while (1) {
     // TODO: Clear watchdog
 
     // Check for incomming control messages
-    if (CtrlI2CAddrMatch()) {
-      CtrlI2CTransact(&state_);
+    if (ctrlI2CAddrMatch()) {
+      ctrlI2CTransact(&state_);
     }
 
     // Read internal I2C bus every 32 ms (31.25 Hz)
     bool read_internal_i2c = !(millis() & ((1 << 5) - 1));
     if (read_internal_i2c) {
       // TODO: move logic outside I2C function
-      UpdateInternalI2C(&state_);
+      updateInternalI2C(&state_);
     }
   }
 }
@@ -317,9 +316,9 @@ void USART_PutString(USART_TypeDef* USARTx, volatile uint8_t* str) {
     // TODO: Delay until ready
     USART_SendData(USARTx, *str);
     str++;
-    delay_ms(dt);
+    delayMs(dt);
   }
-  delay_ms(dt);
+  delayMs(dt);
 }
 
 // Handles the interrupt on UART data reception

@@ -39,16 +39,16 @@ static GPIO_TypeDef* getPort(Pin pp) {
   }
 }
 
-void setPin(Pin pp) {
+void writePin(Pin pp, bool set) {
   GPIO_TypeDef* port = getPort(pp);
-  // Lower 16 bits of BSRR used for setting, upper for clearing
-  port->BSRR = 1 << pp.pin;
-}
-
-void clearPin(Pin pp) {
-  GPIO_TypeDef* port = getPort(pp);
-  // Lower 16 bits of BRR used for clearing
-  port->BRR = 1 << pp.pin;
+  // getPort(pp)->BSRR = (1 << pp.pin)
+  if (set) {
+    // Lower 16 bits of BSRR used for setting, upper for clearing
+    port->BSRR = 1 << pp.pin;
+  } else {
+    // Lower 16 bits of BRR used for clearing
+    port->BRR = 1 << pp.pin;
+  }
 }
 
 bool readPin(Pin pp) {
@@ -113,18 +113,4 @@ void writeI2C2(I2CReg r, uint8_t data) {
   // Wait for stop flag to be sent and then clear it
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
   I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
-}
-
-void writeI2C1(uint8_t data) {
-  // Expanded transfer handling that makes more sense as a slave transmitter
-  uint32_t nbytes = 1;
-  uint32_t tmpreg = I2C1->CR2;
-  tmpreg &= ~(I2C_CR2_SADD | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_AUTOEND |
-              I2C_CR2_RD_WRN | I2C_CR2_START | I2C_CR2_STOP);
-  tmpreg |= ((nbytes << 16) & I2C_CR2_NBYTES) | I2C_SoftEnd_Mode |
-            I2C_Generate_Start_Write;
-  I2C1->CR2 = tmpreg;
-
-  // Send subaddress and data
-  I2C_SendData(I2C1, data);
 }

@@ -14,9 +14,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 add_executable(${PROJECT_NAME}.elf
-  src/channel.c
+  src/audio_mux.c
   src/ctrl_i2c.c
-  src/front_panel.c
   src/int_i2c.c
   src/main.c
   src/port_defs.c

@@ -35,16 +35,16 @@ from smbus2 import SMBus
 # Preamp register addresses
 _REG_ADDRS = {
   'SRC_AD'          : 0x00,
-  'CH123_SRC'       : 0x01,
-  'CH456_SRC'       : 0x02,
+  'ZONE123_SRC'     : 0x01,
+  'ZONE456_SRC'     : 0x02,
   'MUTE'            : 0x03,
   'STANDBY'         : 0x04,
-  'CH1_ATTEN'       : 0x05,
-  'CH2_ATTEN'       : 0x06,
-  'CH3_ATTEN'       : 0x07,
-  'CH4_ATTEN'       : 0x08,
-  'CH5_ATTEN'       : 0x09,
-  'CH6_ATTEN'       : 0x0A,
+  'VOL_ZONE1'       : 0x05,
+  'VOL_ZONE2'       : 0x06,
+  'VOL_ZONE3'       : 0x07,
+  'VOL_ZONE4'       : 0x08,
+  'VOL_ZONE5'       : 0x09,
+  'VOL_ZONE6'       : 0x0A,
   'POWER_STATUS'    : 0x0B,
   'FAN_CTRL'        : 0x0C,
   'LED_CTRL'        : 0x0D,
@@ -381,7 +381,7 @@ class _Preamps:
       green = led & 0x01
       red = (led >> 1) & 0x01
       zones = [(led >> i) & 0x01 for i in range(2,8)]
-      rg = 'YELLOW' if red and green else 'RED' if red else 'GREEN'
+      rg = 'YELLOW' if red and green else 'RED' if red else 'GREEN' if green else 'OFF'
       print('LEDS:        |         ZONES')
       print('  ON/STANDBY | 1 | 2 | 3 | 4 | 5 | 6')
       print('------------------------------------')
@@ -423,9 +423,9 @@ class _Preamps:
     zone = zone % 6
     regs = self.preamps[preamp]
     src_types = self.preamps[0x08][_REG_ADDRS['SRC_AD']]
-    src = ((regs[_REG_ADDRS['CH456_SRC']] << 8) | regs[_REG_ADDRS['CH123_SRC']] >> 2 * zone) & 0b11
+    src = ((regs[_REG_ADDRS['ZONE456_SRC']] << 8) | regs[_REG_ADDRS['ZONE123_SRC']] >> 2 * zone) & 0b11
     src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
-    vol = -regs[_REG_ADDRS['CH1_ATTEN'] + zone]
+    vol = -regs[_REG_ADDRS['VOL_ZONE1'] + zone]
     muted = (regs[_REG_ADDRS['MUTE']] & (1 << zone)) > 0
     state = []
     if muted:
@@ -587,8 +587,8 @@ class Rpi:
         source_cfg123 = source_cfg123 | (src << (z*2))
       else:
         source_cfg456 = source_cfg456 | (src << ((z-3)*2))
-    self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['CH123_SRC'], source_cfg123)
-    self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['CH456_SRC'], source_cfg456)
+    self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['ZONE123_SRC'], source_cfg123)
+    self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['ZONE456_SRC'], source_cfg456)
 
     # TODO: Add error checking on successful write
     return True
@@ -611,7 +611,7 @@ class Rpi:
     chan = zone - (preamp * 6)
     hvol = abs(vol)
 
-    chan_reg = _REG_ADDRS['CH1_ATTEN'] + chan
+    chan_reg = _REG_ADDRS['VOL_ZONE1'] + chan
     self._bus.write_byte_data(_DEV_ADDRS[preamp], chan_reg, hvol)
 
     # TODO: Add error checking on successful write

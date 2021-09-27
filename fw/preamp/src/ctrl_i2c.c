@@ -24,7 +24,7 @@
 
 #include "ctrl_i2c.h"
 
-#include "channel.h"
+#include "audio_mux.h"
 #include "int_i2c.h"
 #include "port_defs.h"
 #include "stm32f0xx.h"
@@ -43,7 +43,7 @@
  *  t_f = ~9.4 ns
  */
 
-void CtrlI2CInit(uint8_t addr) {
+void ctrlI2CInit(uint8_t addr) {
   // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
 
   // Enable peripheral clock for I2C1
@@ -75,101 +75,127 @@ void CtrlI2CInit(uint8_t addr) {
   I2C_Cmd(I2C1, ENABLE);
 }
 
-bool CtrlI2CAddrMatch() {
+bool ctrlI2CAddrMatch() {
   return I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR);
 }
 
-uint8_t ReadReg(const AmpliPiState* state, uint8_t addr) {
+uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
   uint8_t out_msg = 0;
   switch (addr) {
     case REG_SRC_AD:
       out_msg = 0;  // TODO
       break;
-    case REG_CH321:
+
+    case REG_ZONE321:
       out_msg = 0;  // TODO
       break;
-    case REG_CH654:
+
+    case REG_ZONE654:
       out_msg = 0;  // TODO
       break;
+
     case REG_MUTE:
       out_msg = 0;  // TODO
       break;
+
     case REG_STANDBY:
       out_msg = 0;  // TODO
       break;
-    case REG_VOL_CH1:
+
+    case REG_VOL_ZONE1:
       out_msg = 0;  // TODO
       break;
-    case REG_VOL_CH2:
+
+    case REG_VOL_ZONE2:
       out_msg = 0;  // TODO
       break;
-    case REG_VOL_CH3:
+
+    case REG_VOL_ZONE3:
       out_msg = 0;  // TODO
       break;
-    case REG_VOL_CH4:
+
+    case REG_VOL_ZONE4:
       out_msg = 0;  // TODO
       break;
-    case REG_VOL_CH5:
+
+    case REG_VOL_ZONE5:
       out_msg = 0;  // TODO
       break;
-    case REG_VOL_CH6:
+
+    case REG_VOL_ZONE6:
       out_msg = 0;  // TODO
       break;
+
     case REG_POWER_STATUS: {
       PwrStatusMsg msg = {
-          .fan_fail = state->pwr_gpio.fan_fail,  // (Developer units only)
-          .reserved = 0,
-          .fan_on   = state->pwr_gpio.fan_on,
-          .ovr_tmp  = state->pwr_gpio.ovr_tmp,
-          .en_12v   = state->pwr_gpio.en_12v,
           .pg_12v   = state->pwr_gpio.pg_12v,
+          .en_12v   = state->pwr_gpio.en_12v,
+          .ovr_tmp  = state->pwr_gpio.ovr_tmp,
+          .fan_on   = state->pwr_gpio.fan_on,
+          .reserved = 0,
+          .fan_fail = state->pwr_gpio.fan_fail,  // (Developer units only)
       };
       out_msg = msg.data;
       break;
     }
+
     case REG_FAN_CTRL:
       out_msg = state->fan_override ? 1 : 0;
       break;
+
     case REG_LED_CTRL:
       out_msg = state->led_override ? 1 : 0;
       break;
+
     case REG_LED_VAL:
       out_msg = state->leds.data;
       break;
+
     case REG_EXPANSION:
       out_msg = state->expansion.data;
       break;
+
     case REG_HV1_VOLTAGE:
       out_msg = state->hv1;
       break;
+
     case REG_HV1_TEMP:
       out_msg = state->hv1_temp;
       break;
+
     case REG_AMP_TEMP1:
       out_msg = state->amp_temp1;
       break;
+
     case REG_AMP_TEMP2:
       out_msg = state->amp_temp2;
       break;
+
     case REG_VERSION_MAJOR:
       out_msg = VERSION_MAJOR;
       break;
+
     case REG_VERSION_MINOR:
       out_msg = VERSION_MINOR;
       break;
+
     case REG_GIT_HASH_6_5:
       out_msg = GIT_HASH_6_5;
       break;
+
     case REG_GIT_HASH_4_3:
       out_msg = GIT_HASH_4_3;
       break;
+
     case REG_GIT_HASH_2_1:
       out_msg = GIT_HASH_2_1;
       break;
+
     case REG_GIT_HASH_0_D:
       // LSB is the clean/dirty status according to Git
       out_msg = GIT_HASH_0_D;
       break;
+
     default:
       // Return 0xFF if a non-existent register is selected
       out_msg = 0xFF;
@@ -177,7 +203,7 @@ uint8_t ReadReg(const AmpliPiState* state, uint8_t addr) {
   return out_msg;
 }
 
-void CtrlI2CTransact(AmpliPiState* state) {
+void ctrlI2CTransact(AmpliPiState* state) {
   // Setting I2C_ICR.ADDRCF releases the clock stretch if any then acks
   I2C_ClearFlag(I2C1, I2C_FLAG_ADDR);
   // I2C_ISR.DIR is assumed to be 0 (write)
@@ -204,7 +230,7 @@ void CtrlI2CTransact(AmpliPiState* state) {
     while (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXE) == RESET) {}
 
     // Send a response based on the register address
-    uint8_t response = ReadReg(state, reg);
+    uint8_t response = readReg(state, reg);
     I2C_SendData(I2C1, response);
 
     // We only allow reading 1 byte at a time for now, here we are assuming
@@ -215,128 +241,83 @@ void CtrlI2CTransact(AmpliPiState* state) {
     uint8_t data = I2C_ReceiveData(I2C1);
 
     // Perform appropriate action based on register address and new data
-    (void)data;
-    /* TODO
-    uint8_t ch;
-    uint8_t src;
     switch (reg) {
       case REG_SRC_AD:
-        for (src = 0; src < NUM_SRCS; src++) {
+        for (size_t src = 0; src < NUM_SRCS; src++) {
           // Analog = low, Digital = high
-          InputType type = data % 2 ? IT_DIGITAL : IT_ANALOG;
-          configInput(src, type);
+          InputType type = data & 0x1 ? IT_DIGITAL : IT_ANALOG;
+          selectSourceAD(src, type);
           data = data >> 1;
         }
         break;
 
-      case REG_CH321:
-        for (ch = 0; ch < 3; ch++) {
-          src = data % 4;  // TODO: & 0x3
-          // Places one of the four sources on the lower three channels
-          connectChannel(src, ch);
+      case REG_ZONE321:
+      case REG_ZONE654: {
+        size_t start = 3 * (reg - REG_ZONE321);
+        for (size_t zone = start; zone < start + 3; zone++) {
+          // Connect the zone to the specified source
+          size_t src = data & 0x3;
+          selectZoneSource(zone, src);
           data = data >> 2;
         }
         break;
-
-      case REG_CH654:
-        for (ch = 3; ch < 6; ch++) {
-          src = data % 4;
-          // Places one of the four sources on the upper three channels
-          connectChannel(src, ch);
-          data = data >> 2;
-        }
-        break;
+      }
 
       case REG_MUTE:
-        for (ch = 0; ch < 6; ch++) {
-          if (data % 2) {
-            mute(ch);
-          } else {
-            unmute(ch);
-          }
-          data = data >> 1;
+        for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+          mute(zone, data & (0x1 << zone));
         }
         break;
 
       case REG_STANDBY:
-        // Writes to this register now directly handle standby and audio power
-        if (data == 0) {
-          standby();
-        } else {
-          unstandby();
-        }
+        // Standby is active-low and all channels must be put in standby at once
+        standby(data == 0);
         break;
 
-      case REG_VOL_CH1:
-      case REG_VOL_CH2:
-      case REG_VOL_CH3:
-      case REG_VOL_CH4:
-      case REG_VOL_CH5:
-      case REG_VOL_CH6:
-        ch = reg - REG_VOL_CH1;
-        setChannelVolume(ch, data);
+      case REG_VOL_ZONE1:
+      case REG_VOL_ZONE2:
+      case REG_VOL_ZONE3:
+      case REG_VOL_ZONE4:
+      case REG_VOL_ZONE5:
+      case REG_VOL_ZONE6: {
+        size_t zone = reg - REG_VOL_ZONE1;
+        setZoneVolume(zone, data);
         break;
-      case REG_FAN_STATUS:
-        // Writing to this register is only used for turning the fan on 100%
-        msg               = readI2C2(pwr_temp_mntr_gpio);
-        uint8_t full_mask = 0x80;  // 1000 0000
+      }
 
-        if (data == 0) {  // Set FAN_ON to ON/OFF
-          msg &= ~(full_mask);
-        } else if (data == 1) {
-          msg |= full_mask;
-        }
-        writeI2C2(pwr_temp_mntr_olat, msg);
+      case REG_FAN_CTRL:
+        state->fan_override = data & 0x01;
         break;
-      case REG_EXTERNAL_GPIO:
-        msg               = readI2C2(pwr_temp_mntr_gpio);
-        uint8_t gpio_mask = 0x40;  // 0100 0000
 
-        if (data == 0) {  // Set EXT_GPIO to 0 or 1
-          msg &= ~(gpio_mask);
-        } else if (data == 1) {
-          msg |= gpio_mask;
-        }
-        writeI2C2(pwr_temp_mntr_olat, msg);
+      case REG_LED_CTRL:
+        state->led_override = data & 0x01;
         break;
-      case REG_LED_OVERRIDE:
-        writeI2C2(front_panel, data);  // Full front panel control
+
+      case REG_LED_VAL:
+        state->leds.data = data;
         break;
+
       case REG_EXPANSION:
-        // NRST_OUT
-        if (data & 0x01) {
-          setPin(exp_nrst);
-        } else {
-          clearPin(exp_nrst);
-        }
-        // BOOT0_OUT
-        if (data & 0x02) {
-          setPin(exp_boot0);
-        } else {
-          clearPin(exp_boot0);
-        }
+        // Control expansion port's NRST and BOOT0 pins
+        writePin(exp_nrst_, data & 0x01);
+        writePin(exp_boot0_, data & 0x02);
 
         // Allow UART messages to be forwarded to expansion units
         if (data & 0x04) {
-          uart_passthrough_ = true;
+          state->uart_passthrough = true;
           USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
           NVIC_EnableIRQ(USART2_IRQn);
         } else {
-          uart_passthrough_ = false;
+          state->uart_passthrough = false;
           USART_ITConfig(USART2, USART_IT_RXNE, DISABLE);
           NVIC_DisableIRQ(USART2_IRQn);
         }
         break;
-      case 0x99:
-        // Free write to the ADC for debug purposes
-        // (writing to setup byte is possible)
-        write_ADC(data);
-        break;
+
       default:
         // Do nothing
         break;
     }
-    */
     // We only allow writing 1 byte at a time for now, here we assume the
     // master stops transmitting and sends a STOP condition to end the write.
   }

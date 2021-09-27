@@ -25,7 +25,7 @@
 
 #include "ctrl_i2c.h"
 
-void InitInternalI2C(AmpliPiState* state);
-void UpdateInternalI2C(AmpliPiState* state);
+void initInternalI2C(AmpliPiState* state);
+void updateInternalI2C(AmpliPiState* state);
 
 #endif /* INT_I2C_H_ */

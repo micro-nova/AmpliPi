@@ -29,8 +29,7 @@ typedef struct {
   uint8_t pin : 4;
 } Pin;
 
-void setPin(Pin pp);
-void clearPin(Pin pp);
+void writePin(Pin pp, bool set);
 bool readPin(Pin pp);
 
 typedef struct {
@@ -40,6 +39,5 @@ typedef struct {
 
 uint8_t readI2C2(I2CReg r);
 void    writeI2C2(I2CReg r, uint8_t data);
-void    writeI2C1(uint8_t data);
 
 #endif /* PORTS_H_ */

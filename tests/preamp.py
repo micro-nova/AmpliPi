@@ -3,6 +3,7 @@ import argparse
 import math
 import os
 import sys
+import time
 
 # Add the directory above this script's location to PATH
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -87,6 +88,7 @@ if not args.b:
   else:
     preamps.led_override(preamp = args.u, override=False)
 
+  time.sleep(0.1) # Wait a bit to make sure internal I2C writes have finished
   print_status(preamps, args.u)
 
 # TODO? 'STANDBY' : 0x04

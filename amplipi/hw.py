@@ -42,25 +42,25 @@ class Preamp:
   class Reg(Enum):
     """ Preamp register addresses """
     SRC_AD          = 0x00
-    CH123_SRC       = 0x01
-    CH456_SRC       = 0x02
+    ZONE123_SRC     = 0x01
+    ZONE456_SRC     = 0x02
     MUTE            = 0x03
     STANDBY         = 0x04
-    CH1_ATTEN       = 0x05
-    CH2_ATTEN       = 0x06
-    CH3_ATTEN       = 0x07
-    CH4_ATTEN       = 0x08
-    CH5_ATTEN       = 0x09
-    CH6_ATTEN       = 0x0A
-    POWER_GOOD      = 0x0B
-    FAN_STATUS      = 0x0C
-    EXTERNAL_GPIO   = 0x0D
-    LED_OVERRIDE    = 0x0E
+    VOL_ZONE1       = 0x05
+    VOL_ZONE2       = 0x06
+    VOL_ZONE3       = 0x07
+    VOL_ZONE4       = 0x08
+    VOL_ZONE5       = 0x09
+    VOL_ZONE6       = 0x0A
+    POWER_STATUS    = 0x0B
+    FAN_CTRL        = 0x0C
+    LED_CTRL        = 0x0D
+    LED_VAL         = 0x0E
     EXPANSION       = 0x0F
     HV1_VOLTAGE     = 0x10
-    HV2_VOLTAGE     = 0x11
+    AMP_TEMP1       = 0x11
     HV1_TEMP        = 0x12
-    HV2_TEMP        = 0x13
+    AMP_TEMP2       = 0x13
     VERSION_MAJOR   = 0xFA
     VERSION_MINOR   = 0xFB
     GIT_HASH_27_20  = 0xFC
@@ -99,7 +99,7 @@ class Preamp:
                 Bit 1 => Red,
                 Bit[2-7] => Zone[1-6]
     """
-    return self.bus.read_byte_data(self.addr, self.Reg.LED_OVERRIDE.value)
+    return self.bus.read_byte_data(self.addr, self.Reg.LED_CTRL.value)
 
   def write_leds(self, leds: int = 0xFF) -> None:
     """ Override the LED board's LEDs
@@ -111,7 +111,7 @@ class Preamp:
                 Bit[2-7] => Zone[1-6]
     """
     assert 0 <= leds <= 255
-    self.bus.write_byte_data(self.addr, self.Reg.LED_OVERRIDE.value, leds)
+    self.bus.write_byte_data(self.addr, self.Reg.LED_CTRL.value, leds)
 
   def read_version(self) -> Tuple[int, int, int, bool]:
     """ Read the firmware version of the preamp
