@@ -239,7 +239,7 @@ void ctrlI2CTransact(AmpliPiState* state) {
 
     // We only allow reading 1 byte at a time for now, here we are assuming
     // a NACK was sent by the master to signal the end of the read request.
-  } else {  // Writing
+  } else {  // Writing - TODO: Move to a function
     // Just received data from the master (Pi),
     // get it from the I2C_RXDR register
     uint8_t data = I2C_ReceiveData(I2C1);

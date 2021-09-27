@@ -20,6 +20,7 @@ NUM_EXPANDERS = 0
 # Preamp firmware .bin file path, relative to amplipi's directory.
 BIN_FILE = 'fw/preamp/build/preamp_bd.bin'
 
+# The 'request' fixture contains info of the requesting test function.
 @pytest.fixture
 def fw_path(request) -> str:
   return f'{request.fspath.dirname}/../fw/preamp'
@@ -71,6 +72,8 @@ def test_set_address():
     if not preamps.send_i2c_address():
       pytest.fail(f'Failed setting address after {i} tries.')
     #ver = preamps[0].read_version()
+
+# TODO: Fully exercise firmware interfaces
 
 # @pytest.mark.dependency(depends=['test_flash_master'])
 # def test_read_i2c():

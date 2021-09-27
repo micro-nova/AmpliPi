@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+#
+# Generate look-up tables for the various thermistors in the amplipi system.
+#
+# There are two types of thermistors: a generic thermistor with B=3950
+# and two NCP21XV103J03RA (B=3900) placed under the amp heatsinks.
+#
+# From the B value a LUT can be generated, but in addition the
+# NCP21XV103J03RA provides a low-res LUT in its datasheet.
+# After reviewing the differences between the different B values and the
+# provided LUT, the max difference in calculated temps between tables is
+# low so for the sake of simplicity only 1 table is used for both thermistors.
 
 import math
 try:
@@ -120,7 +131,7 @@ def adc2temp_interp(adc_val: int) -> float:
 
 THERM_LUT_NCP = [round(adc2temp_interp(x)) for x in range(256)]
 THERM_LUT_NCP_B = [round(adc2temp(x, B_NCP)) for x in range(256)]
-print(max([abs(t1 - t2) for t1, t2 in zip(THERM_LUT_PSU[30:-1], THERM_LUT_NCP_B[30:-1])]))
+#print(max([abs(t1 - t2) for t1, t2 in zip(THERM_LUT_PSU[30:-1], THERM_LUT_NCP_B[30:-1])]))
 
 # THERM_LUT_NCP_B errs slightly on the side of warmer, but is no more than
 # 1.5 degC different than any other LUT
