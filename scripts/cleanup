@@ -71,6 +71,12 @@ ssh $user_host "systemctl --user start amplipi"
 echo -e "removing deployments:"
 ssh $user_host "rm -f amplipi-*.tar.gz"
 
+echo -e "removing any temporary firmware binaries:"
+ssh $user_host "rm preamp_*.bin"
+
+echo -e "removing old desktop files:"
+ssh $user_host "rm ~/Desktop/*.desktop"
+
 echo -e "\ncleaning up amplipi logs:"
 ssh $user_host "sudo journalctl --rotate && sleep 1 && sudo journalctl --vacuum-time=1s"
 
