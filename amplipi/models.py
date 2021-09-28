@@ -262,7 +262,7 @@ class ZoneUpdateWithId(ZoneUpdate):
     update.pop('id')
     return ZoneUpdate.parse_obj(update)
 
-class MultiZoneUpdate(ZoneUpdate):
+class MultiZoneUpdate(BaseModel):
   """ Reconfiguration of multiple zones specified by zone_ids and group_ids """
 
   zones: Optional[List[int]] = fields.Zones
