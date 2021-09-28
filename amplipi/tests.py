@@ -139,8 +139,8 @@ PRESETS = [
   },
 ]
 
-PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -20) for src in range(4)]
-PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -20)]
+PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -40) for src in range(4)]
+PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
 
 def setup(client: Client):
   """ Configure AmpliPi for testing by loading a simple known configuration """
@@ -236,7 +236,7 @@ def inputs_test(ap1: Client):
     if not analog_tester_avail:
       sleep(5)
     else:
-      ap2.announce(models.Announcement(source_id=3, media=f'web/static/audio/aux_in.mp3', vol=-25))
+      ap2.announce(models.Announcement(source_id=3, media=f'web/static/audio/aux_in.mp3'))
 
     # select the Optical input on this device and play audio through it to all zones
     set_pcm("IEC958 In")
@@ -245,7 +245,7 @@ def inputs_test(ap1: Client):
     if not analog_tester_avail:
       sleep(5)
     else:
-      ap2.announce(models.Announcement(source_id=0, media=f'web/static/audio/optical_in.mp3', vol=-25))
+      ap2.announce(models.Announcement(source_id=0, media=f'web/static/audio/optical_in.mp3'))
 
 def preamp_test(ap1: Client):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
@@ -259,8 +259,12 @@ def preamp_test(ap1: Client):
     print('No analog tester available, only able to test digital inputs\n')
     print('Test will play Analog 1 Left, Analog 1 Right...Analog 4 Right, Digital 1 Left... Dgitial 4 Right')
     print('- Verify that each side and all 8 sources are played out of each of the 6 zones')
-  digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-20) for src in range(4)]
-  analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3', vol=-25) for src in range(4)]
+
+  # first DAC outputs about the same volume as analog inputs
+  digital_msgs = [models.Announcement(source_id=0, media=f'web/static/audio/digital1.mp3', vol=-38)]
+  # the DAC for sources 2-4 outputs quieter
+  digital_msgs.extend([models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(1,4)])
+  analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3') for src in range(4)]
   while True:
     # TODO: verify fw version
     if ap2.available():
