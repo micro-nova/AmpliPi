@@ -20,13 +20,13 @@
 | ✓ |     |        |     |
 
 - [ ] Ethernet:
+- [ ] Program Master + Expander Preamp
 - [ ] LEDs:
 
 |   | Stdby (Red) | Enabled (Green) | Zone 1 | Zone 2 | Zone 3 | Zone 4 | Zone 5 | Zone 6 |
 |---|-------------|-----------------|--------|--------|--------|--------|--------|--------|
 | ✓ |             |                 |        |        |        |        |        |        |
 
-- [ ] Program Master + Expander Preamp
 - [ ] Inputs
 
 | Optical In | Aux In   |
@@ -68,4 +68,4 @@
 - [ ] Fans (Manual)
   - [ ] Fans On: Verify fans spin up
   - [ ] Preamp Status: Verify fans spin down, room temp measurements are correct, PG_12V is good.
-  - [ ] Heat up a heatsink with the heat gun: Verify fans turn on when the amplifiers are hot.
+  - [ ] Heat up a heatsink with the heat gun: Verify "Preamp Status" shows a rise in temperature.
