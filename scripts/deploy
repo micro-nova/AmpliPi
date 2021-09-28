@@ -135,7 +135,7 @@ scp $latest_release $user_host:
 echo "Making development folder on pi"
 ssh $user_host "mkdir -p amplipi-dev"
 echo "Extracting folder into $user_host:~/amplipi-dev"
-ssh $user_host "cd amplipi-dev && tar -xvf ../${release_name}.tar.gz && cp -a ${release_name}/* . && rm -r ${release_name}"
+ssh $user_host "cd amplipi-dev && tar -xvf ../${release_name}.tar.gz && cp -af ${release_name}/* . && rm -r ${release_name}"
 echo "Configuring installation"
 ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display"
