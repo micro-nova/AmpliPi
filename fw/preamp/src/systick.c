@@ -41,7 +41,7 @@ inline uint32_t millis(void) {
 }
 
 // Synchronous delay in milliseconds
-void delay_ms(uint32_t t) {
+void delayMs(uint32_t t) {
   uint32_t start = millis();
   uint32_t end   = start + t;
   if (start < end) {

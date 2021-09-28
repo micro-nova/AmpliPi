@@ -2,12 +2,15 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Configure each of the preamp controller's six channels.
- * Each channel has four configurable properties:
+ * Configure each of the preamp controller's six zones.
+ * Each zone has four configurable properties:
  *   - Attenuation
  *   - Standby
  *   - Mute
  *   - Audio Source
+ *
+ * Also controls each of the 4 audio sources.
+ * Each source can have an analog or digital source selected as its input.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +26,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef CHANNEL_H_
-#define CHANNEL_H_
+#ifndef AUDIO_MUX_H_
+#define AUDIO_MUX_H_
+
 // Uncomment this line to enable automatic mute control via high/low volume.
 // #define AUTO_MUTE_CTRL
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 typedef enum
@@ -37,19 +42,22 @@ typedef enum
   IT_DIGITAL
 } InputType;
 
-bool isOn(int ch);
+bool isOn(size_t zone);
 bool anyOn();
 
-void standby();
-void unstandby();
+void mute(size_t zone, bool mute);
+bool muted(size_t zone);
+void standby(bool standby);
+bool inStandby();
 
-void mute(int ch);
-void unmute(int ch);
+void    initZones();
+void    setZoneVolume(size_t zone, uint8_t vol);
+uint8_t getZoneVolume(size_t zone);
+void    setZoneSource(size_t zone, size_t src);
+size_t  getZoneSource(size_t zone);
 
-void initChannels();
-void initSources();
-void setChannelVolume(int ch_out, uint8_t vol);
-void configInput(int src, InputType type);
-void connectChannel(int ch_in, int ch_out);
+void      initSources();
+void      setSourceAD(size_t src, InputType type);
+InputType getSourceAD(size_t src);
 
-#endif /* CHANNEL_H_ */
+#endif /* AUDIO_MUX_H_ */

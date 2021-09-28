@@ -81,6 +81,7 @@ class Api:
   # pylint: disable=too-many-instance-attributes
   # pylint: disable=too-many-public-methods
 
+  _initialized = False # we need to know when we initialized first
   _mock_hw: bool
   _mock_streams: bool
   _save_timer: Optional[threading.Timer] = None
@@ -160,6 +161,7 @@ class Api:
   # returning a boolean on whether or not it was successful
   def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     self.reinit(settings, change_notifier)
+    self._initialized = True
 
   def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None, config: Optional[models.Status] = None):
     """ Initialize or Reinitialize the controller
@@ -171,11 +173,18 @@ class Api:
     self._save_timer = None
     self._delay_saves = settings.delay_saves
     self._settings = settings
-    try:
-      del self._rt # remove the low level hardware connection
-    except AttributeError:
-      pass
-    self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi()
+
+    # Create firmware interface. If one already exists delete then re-init.
+    if self._initialized:
+      # we need to make sure to mute every zone before resetting the fw
+      zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones], update=models.ZoneUpdate(mute=True))
+      self.set_zones(zones_update, force_update=True, internal=True)
+      try:
+        del self._rt # remove the low level hardware connection
+      except AttributeError:
+        pass
+    self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi() # reset the fw
+
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
@@ -449,7 +458,6 @@ class Api:
         # update non hw state
         zone.name = name
         zone.disabled = disabled
-        # TODO: figure out an order of operations here, like does mute need to be done before changing sources?
         if update_source_id or force_update:
           zone_sources = [zone.source_id for zone in zones]
           zone_sources[idx] = sid
@@ -457,19 +465,39 @@ class Api:
             zone.source_id = sid
           else:
             return ApiResponse.error('set zone failed: unable to update zone source')
-        if update_mutes or force_update:
+
+        def set_mute():
           mutes = [zone.mute for zone in zones]
           mutes[idx] = mute
           if self._rt.update_zone_mutes(idx, mutes):
             zone.mute = mute
           else:
-            return ApiResponse.error('set zone failed: unable to update zone mute')
-        if update_vol or force_update:
+            raise Exception('set zone failed: unable to update zone mute')
+
+        def set_vol():
           real_vol = utils.clamp(vol, -79, 0)
           if self._rt.update_zone_vol(idx, real_vol):
             zone.vol = vol
           else:
-            return ApiResponse.error('set zone failed: unable to update zone volume')
+            raise Exception('set zone failed: unable to update zone volume')
+
+        # To avoid potential unwanted loud output:
+        # If muting, mute before setting volumes
+        # If un-muting, set desired volume first
+        try:
+          if force_update or (update_mutes and update_vol):
+            if mute:
+              set_mute()
+              set_vol()
+            else:
+              set_vol()
+              set_mute()
+          elif update_vol:
+            set_vol()
+          elif update_mutes:
+            set_mute()
+        except Exception as exc:
+          return ApiResponse.error(str(exc))
 
         if not internal:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
@@ -482,7 +510,7 @@ class Api:
     else:
         return ApiResponse.error('set zone: index {} out of bounds'.format(idx))
 
-  def set_zones(self, multi_update: models.MultiZoneUpdate, internal: bool = False) -> ApiResponse:
+  def set_zones(self, multi_update: models.MultiZoneUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Reconfigures a set of zones
 
       Args:
@@ -499,7 +527,7 @@ class Api:
       if zupdate.name:
         # ensure all zones don't get named the same
         zupdate.name = f'{zupdate.name} {zid+1}'
-      resp = self.set_zone(zid, zupdate, internal=True)
+      resp = self.set_zone(zid, zupdate, force_update=force_update, internal=True)
       if resp.code != ApiResponse.OK:
         break # the response message is the internal failure
     if not internal:

@@ -11,7 +11,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERZONEANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -23,99 +23,152 @@
 
 #include "ports.h"
 
-#define NUM_SRCS     4
-#define NUM_CHANNELS 6
+#define NUM_SRCS  4
+#define NUM_ZONES 6
 
 typedef enum
 {
-  REG_SRC_AD        = 0,
-  REG_CH321         = 1,
-  REG_CH654         = 2,
-  REG_MUTE          = 3,
-  REG_STANDBY       = 4,
-  REG_VOL_CH1       = 5,
-  REG_VOL_CH2       = 6,
-  REG_VOL_CH3       = 7,
-  REG_VOL_CH4       = 8,
-  REG_VOL_CH5       = 9,
-  REG_VOL_CH6       = 10,
-  REG_POWER_GOOD    = 11,
-  REG_FAN_STATUS    = 12,
-  REG_EXTERNAL_GPIO = 13,
-  REG_LED_OVERRIDE  = 14,
-  REG_EXPANSION     = 15,
-  REG_HV1_VOLTAGE   = 16,
-  REG_HV2_VOLTAGE   = 17,
-  REG_HV1_TEMP      = 18,
-  REG_HV2_TEMP      = 19,
-  REG_VERSION_MAJOR = 250,
-  REG_VERSION_MINOR = 251,
-  REG_GIT_HASH_6_5  = 252,
-  REG_GIT_HASH_4_3  = 253,
-  REG_GIT_HASH_2_1  = 254,
-  REG_GIT_HASH_0_D  = 255,
-  NUM_REGS          = 25
+  // Audio control
+  REG_SRC_AD    = 0x00,
+  REG_ZONE321   = 0x01,
+  REG_ZONE654   = 0x02,
+  REG_MUTE      = 0x03,
+  REG_STANDBY   = 0x04,
+  REG_VOL_ZONE1 = 0x05,
+  REG_VOL_ZONE2 = 0x06,
+  REG_VOL_ZONE3 = 0x07,
+  REG_VOL_ZONE4 = 0x08,
+  REG_VOL_ZONE5 = 0x09,
+  REG_VOL_ZONE6 = 0x0A,
+
+  // Power/Fan control
+  REG_POWER       = 0x0B,
+  REG_FANS        = 0x0C,
+  REG_LED_CTRL    = 0x0D,  // OVERRIDE?
+  REG_LED_VAL     = 0x0E,  // ZONE[6,5,4,3,2,1], RED, GRN
+  REG_EXPANSION   = 0x0F,  // UART_PASSTHROUGH, BOOT0, NRST
+  REG_HV1_VOLTAGE = 0x10,  // Volts in UQ6.2 format (0.25 volt resolution)
+  REG_AMP_TEMP1   = 0x11,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
+  REG_HV1_TEMP    = 0x12,  //   0x00 = disconnected, 0xFF = shorted
+  REG_AMP_TEMP2   = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
+
+  // Version info
+  REG_VERSION_MAJOR = 0xFA,
+  REG_VERSION_MINOR = 0xFB,
+  REG_GIT_HASH_6_5  = 0xFC,
+  REG_GIT_HASH_4_3  = 0xFD,
+  REG_GIT_HASH_2_1  = 0xFE,
+  REG_GIT_HASH_0_D  = 0xFF,
 } CmdReg;
 
-extern const Pin    ch_src[NUM_CHANNELS][NUM_SRCS];
-extern const Pin    ch_mute[NUM_CHANNELS];
-extern const Pin    ch_standby[NUM_CHANNELS];
-extern const Pin    src_aen[NUM_CHANNELS];  // TODO: Change to NUM_SRCS
-extern const Pin    src_den[NUM_CHANNELS];  // TODO: Change to NUM_SRCS
-extern const I2CReg ch_left[NUM_CHANNELS];
-extern const I2CReg ch_right[NUM_CHANNELS];
-extern const I2CReg front_panel;
-extern const I2CReg front_panel_dir;
-extern const I2CReg pwr_temp_mntr_gpio;
-extern const I2CReg pwr_temp_mntr_olat;
-extern const I2CReg pwr_temp_mntr_dir;
-extern const I2CReg adc_dev;
+extern const Pin zone_src_[NUM_ZONES][NUM_SRCS];  // Source[1-4]->Zone mux
+extern const Pin zone_mute_[NUM_ZONES];
+extern const Pin zone_standby_[NUM_ZONES];
+extern const Pin src_ad_[NUM_SRCS][2];  // Analog/Digital->Source mux
+extern const Pin exp_nrst_;             // Expansion connector NRST_OUT
+extern const Pin exp_boot0_;            // Expansion connector BOOT0_OUT
+extern const Pin i2c2_scl_;             // Internal I2C bus SCL
+extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 
-#define ALL_OUTPUT 0
+typedef union {
+  struct {
+    uint8_t en_9v      : 1;  // Only on Power Board 1.X
+    uint8_t en_12v     : 1;
+    uint8_t pg_9v      : 1;  // Only on Power Board 1.X
+    uint8_t pg_12v     : 1;
+    uint8_t fan_fail_n : 1;
+    uint8_t ovr_tmp_n  : 1;
+    uint8_t pg_5v      : 1;  // Planned for Power Board 4.A
+    uint8_t fan_on     : 1;
+  };
+  uint8_t data;
+} PwrGpio;
 
-#define pCH1_SRC1_EN GPIO_Pin_3  // PA3
-#define pCH1_SRC2_EN GPIO_Pin_5  // PF5
-#define pCH1_SRC3_EN GPIO_Pin_4  // PA4
-#define pCH1_SRC4_EN GPIO_Pin_4  // PF4
+typedef union {
+  struct {
+    uint8_t pg_9v    : 1;  // R
+    uint8_t en_9v    : 1;  // R/W
+    uint8_t pg_12v   : 1;  // R
+    uint8_t en_12v   : 1;  // R/W
+    uint8_t reserved : 4;
+  };
+  uint8_t data;
+} PwrMsg;
 
-#define pCH2_SRC1_EN GPIO_Pin_5  // PA5
-#define pCH2_SRC2_EN GPIO_Pin_7  // PA7
-#define pCH2_SRC3_EN GPIO_Pin_4  // PC4
-#define pCH2_SRC4_EN GPIO_Pin_6  // PA6
+typedef union {
+  struct {
+    uint8_t override : 1;  // R/W - Force fans on 100%
+    uint8_t on       : 1;  // R   - Fans status
+    uint8_t ctrl     : 2;  // R   - Fan control method currently in use
+    uint8_t ovr_tmp  : 1;  // R   - Unit over dangerous temperature threshold
+    uint8_t fail     : 1;  // R   - Fan fail detection (Power Board 2.A only)
+    uint8_t reserved : 2;
+  };
+  uint8_t data;
+} FanMsg;
 
-#define pCH3_SRC1_EN GPIO_Pin_5  // PC5
-#define pCH3_SRC2_EN GPIO_Pin_1  // PB1
-#define pCH3_SRC3_EN GPIO_Pin_2  // PB2
-#define pCH3_SRC4_EN GPIO_Pin_0  // PB0
+typedef union {
+  struct {
+    uint8_t grn   : 1;
+    uint8_t red   : 1;
+    uint8_t zones : 6;
+  };
+  uint8_t data;
+} LedGpio;
 
-#define pCH4_SRC1_EN GPIO_Pin_1   // PC1
-#define pCH4_SRC2_EN GPIO_Pin_8   // PB8
-#define pCH4_SRC3_EN GPIO_Pin_11  // PC11
-#define pCH4_SRC4_EN GPIO_Pin_0   // PC0
+typedef union {
+  struct {
+    uint8_t nrst             : 1;
+    uint8_t boot0            : 1;
+    uint8_t uart_passthrough : 1;
+    uint8_t reserved         : 5;
+  };
+  uint8_t data;
+} Expander;
 
-#define pCH5_SRC1_EN GPIO_Pin_7   // PF7
-#define pCH5_SRC2_EN GPIO_Pin_3   // PB3
-#define pCH5_SRC3_EN GPIO_Pin_12  // PC12
-#define pCH5_SRC4_EN GPIO_Pin_5   // PB5
+#define pZONE1_SRC1_EN GPIO_Pin_3  // PA3
+#define pZONE1_SRC2_EN GPIO_Pin_5  // PF5
+#define pZONE1_SRC3_EN GPIO_Pin_4  // PA4
+#define pZONE1_SRC4_EN GPIO_Pin_4  // PF4
 
-#define pCH6_SRC1_EN GPIO_Pin_10  // PC10
-#define pCH6_SRC2_EN GPIO_Pin_2   // PA2
-#define pCH6_SRC3_EN GPIO_Pin_1   // PA1
-#define pCH6_SRC4_EN GPIO_Pin_0   // PA0
+#define pZONE2_SRC1_EN GPIO_Pin_5  // PA5
+#define pZONE2_SRC2_EN GPIO_Pin_7  // PA7
+#define pZONE2_SRC3_EN GPIO_Pin_4  // PC4
+#define pZONE2_SRC4_EN GPIO_Pin_6  // PA6
 
-#define pCH1_MUTE GPIO_Pin_14  // PB14
-#define pCH2_MUTE GPIO_Pin_6   // PC6
-#define pCH3_MUTE GPIO_Pin_8   // PC8
-#define pCH4_MUTE GPIO_Pin_8   // PA8
-#define pCH5_MUTE GPIO_Pin_12  // PA12
-#define pCH6_MUTE GPIO_Pin_6   // PF6
+#define pZONE3_SRC1_EN GPIO_Pin_5  // PC5
+#define pZONE3_SRC2_EN GPIO_Pin_1  // PB1
+#define pZONE3_SRC3_EN GPIO_Pin_2  // PB2
+#define pZONE3_SRC4_EN GPIO_Pin_0  // PB0
 
-#define pCH1_STBY GPIO_Pin_12  // PB12
-#define pCH2_STBY GPIO_Pin_13  // PB13
-#define pCH3_STBY GPIO_Pin_15  // PB15
-#define pCH4_STBY GPIO_Pin_7   // PC7
-#define pCH5_STBY GPIO_Pin_9   // PC9
-#define pCH6_STBY GPIO_Pin_11  // PA11
+#define pZONE4_SRC1_EN GPIO_Pin_1   // PC1
+#define pZONE4_SRC2_EN GPIO_Pin_8   // PB8
+#define pZONE4_SRC3_EN GPIO_Pin_11  // PC11
+#define pZONE4_SRC4_EN GPIO_Pin_0   // PC0
+
+#define pZONE5_SRC1_EN GPIO_Pin_7   // PF7
+#define pZONE5_SRC2_EN GPIO_Pin_3   // PB3
+#define pZONE5_SRC3_EN GPIO_Pin_12  // PC12
+#define pZONE5_SRC4_EN GPIO_Pin_5   // PB5
+
+#define pZONE6_SRC1_EN GPIO_Pin_10  // PC10
+#define pZONE6_SRC2_EN GPIO_Pin_2   // PA2
+#define pZONE6_SRC3_EN GPIO_Pin_1   // PA1
+#define pZONE6_SRC4_EN GPIO_Pin_0   // PA0
+
+#define pZONE1_MUTE GPIO_Pin_14  // PB14
+#define pZONE2_MUTE GPIO_Pin_6   // PC6
+#define pZONE3_MUTE GPIO_Pin_8   // PC8
+#define pZONE4_MUTE GPIO_Pin_8   // PA8
+#define pZONE5_MUTE GPIO_Pin_12  // PA12
+#define pZONE6_MUTE GPIO_Pin_6   // PF6
+
+#define pZONE1_STBY GPIO_Pin_12  // PB12
+#define pZONE2_STBY GPIO_Pin_13  // PB13
+#define pZONE3_STBY GPIO_Pin_15  // PB15
+#define pZONE4_STBY GPIO_Pin_7   // PC7
+#define pZONE5_STBY GPIO_Pin_9   // PC9
+#define pZONE6_STBY GPIO_Pin_11  // PA11
 
 #define pSRC1_AEN GPIO_Pin_4   // PB4
 #define pSRC2_AEN GPIO_Pin_9   // PB9

@@ -5,23 +5,23 @@
 <table>
   <thead>
     <tr>
-      <th style="text-align:left">Reg Address</th>
-      <th style="text-align:left">Reg Name</th>
-      <th style="text-align:center">bit 7</th>
-      <th style="text-align:center">bit 6</th>
-      <th style="text-align:center">bit 5</th>
-      <th style="text-align:center">bit 4</th>
-      <th style="text-align:center">bit 3</th>
-      <th style="text-align:center">bit 2</th>
-      <th style="text-align:center">bit 1</th>
-      <th style="text-align:center">bit 0</th>
-      <th style="text-align:center">Default value in hex</th>
+      <th>Address</th>
+      <th>Name</th>
+      <th>bit 7</th>
+      <th>bit 6</th>
+      <th>bit 5</th>
+      <th>bit 4</th>
+      <th>bit 3</th>
+      <th>bit 2</th>
+      <th>bit 1</th>
+      <th>bit 0</th>
+      <th>Default value</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>0x00</td>
-      <td style="text-align:left">SRC_AD_REG</td>
+      <td>SRC_AD</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -34,103 +34,114 @@
     </tr>
     <tr>
       <td>0x01</td>
-      <td style="text-align:left">CH123_SRC_REG</td>
+      <td>ZONE123_SRC</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">- <td colspan=2, td align='center'>CH3SRC </td> <td colspan=2, td align='center'>CH2SRC </td><td colspan=2, td align='center'>CH1SRC  </td></td>
+      <td style="text-align:center">-</td>
+      <td colspan=2, td align='center'>Z3SRC</td>
+      <td colspan=2, td align='center'>Z2SRC</td>
+      <td colspan=2, td align='center'>Z1SRC</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x02</td>
-      <td style="text-align:left">CH456_SRC_REG</td>
+      <td>ZONE456_SRC</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">- <td colspan=2, td align='center'>CH6SRC <td colspan=2, td align='center'>CH5SRC <td colspan=2, td align='center'>CH4SRC</td>
+      <td style="text-align:center">-</td>
+      <td colspan=2, td align='center'>Z6SRC</td>
+      <td colspan=2, td align='center'>Z5SRC</td>
+      <td colspan=2, td align='center'>Z4SRC</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x03</td>
-      <td style="text-align:left">MUTE_REG</td>
+      <td>MUTE</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
-      <td style="text-align:center">CH6M</td>
+      <td style="text-align:center">Z6M</td>
+      <td style="text-align:center">Z5M</td>
+      <td style="text-align:center">Z4M</td>
+      <td style="text-align:center">Z3M</td>
+      <td style="text-align:center">Z2M</td>
+      <td style="text-align:center">Z1M</td>
       <td style="text-align:center">0x3F</td>
     </tr>
     <tr>
       <td>0x04</td>
-      <td style="text-align:left">STANDBY_REG</td>
+      <td>STANDBY</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">CH6STBY</td>
-      <td style="text-align:center">CH5STBY</td>
-      <td style="text-align:center">CH4STBY</td>
-      <td style="text-align:center">CH3STBY</td>
-      <td style="text-align:center">CH2STBY</td>
-      <td style="text-align:center">CH1STBY</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">STANDBY</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x05</td>
-      <td style="text-align:left">CH1_ATTEN_REG <td colspan=8, td align='center'>Ch1 Attenuation </td></td>
+      <td>ZONE1_VOL</td>
+      <td colspan=8, td align='center'>Zone 1 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x06</td>
-      <td style="text-align:left">CH2_ATTEN_REG <td colspan=8, td align='center'>Ch2 Attenuation </td></td>
+      <td>ZONE2_VOL</td>
+      <td colspan=8, td align='center'>Zone 2 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x07</td>
-      <td style="text-align:center">CH3_ATTEN_REG <td colspan=8, td align='center'>Ch3 Attenuation </td></td>
+      <td>ZONE3_VOL</td>
+      <td colspan=8, td align='center'>Zone 3 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x08</td>
-      <td style="text-align:center">CH4_ATTEN_REG <td colspan=8, td align='center'>Ch4 Attenuation </td></td>
+      <td>ZONE4_VOL</td>
+      <td colspan=8, td align='center'>Zone 4 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x09</td>
-      <td style="text-align:center">CH5_ATTEN_REG <td colspan=8, td align='center'>Ch5 Attenuation </td></td>
+      <td>ZONE5_VOL</td>
+      <td colspan=8, td align='center'>Zone 5 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x0A</td>
-      <td style="text-align:center">CH6_ATTEN_REG <td colspan=8, td align='center'>Ch6 Attenuation </td></td>
+      <td>ZONE6_VOL</td>
+      <td colspan=8, td align='center'>Zone 6 Attenuation</td>
       <td style="text-align:center">0x4F</td>
     </tr>
     <tr>
       <td>0x0B</td>
-      <td style="text-align:left">POWER_GOOD</td>
+      <td>POWER</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
+      <td style="text-align:center">EN_12V</td>
       <td style="text-align:center">PG_12V</td>
+      <td style="text-align:center">EN_9V</td>
       <td style="text-align:center">PG_9V</td>
-      <td style="text-align:center">0x03</td>
+      <td style="text-align:center">0x0A</td>
     </tr>
     <tr>
       <td>0x0C</td>
-      <td style="text-align:left">FAN_STATUS</td>
+      <td>FANS</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">-</td>
-      <td style="text-align:center">FAN_OVERRIDE</td>
-      <td style="text-align:center">-</td>
+      <td style="text-align:center">FAILED</td>
       <td style="text-align:center">OVR_TMP</td>
-      <td style="text-align:center">FAN_FAIL</td>
+      <td colspan=2, td align='center'>CTRL_METHOD</td>
+      <td style="text-align:center">ON</td>
+      <td style="text-align:center">OVERRIDE</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x0D</td>
-      <td style="text-align:left">EXTERNAL GPIO</td>
+      <td>LED_CTRL</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
@@ -138,55 +149,59 @@
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
       <td style="text-align:center">-</td>
-      <td style="text-align:center">EXT_GPIO</td>
+      <td style="text-align:center">OVERRIDE</td>
       <td style="text-align:center">0x00</td>
     </tr>
     <tr>
       <td>0x0E</td>
-      <td style="text-align:left">LED_OVERRIDE</td>
-      <td style="text-align:center">ZONE_6</td>
-      <td style="text-align:center">ZONE_5</td>
-      <td style="text-align:center">ZONE_4</td>
-      <td style="text-align:center">ZONE_3</td>
-      <td style="text-align:center">ZONE_2</td>
-      <td style="text-align:center">ZONE_1</td>
+      <td>LED_VAL</td>
+      <td style="text-align:center">ZONE6</td>
+      <td style="text-align:center">ZONE5</td>
+      <td style="text-align:center">ZONE4</td>
+      <td style="text-align:center">ZONE3</td>
+      <td style="text-align:center">ZONE2</td>
+      <td style="text-align:center">ZONE1</td>
       <td style="text-align:center">STAT_RED</td>
       <td style="text-align:center">STAT_GRN</td>
       <td style="text-align:center">0x02</td>
     </tr>
     <tr>
-      <td></td>
-      <td style="text-align:left"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td>0x0F</td>
+      <td>EXPANSION</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">UART_PASS</td>
+      <td style="text-align:center">BOOT0</td>
+      <td style="text-align:center">NRST</td>
+      <td style="text-align:center">0x01</td>
     </tr>
     <tr>
       <td>0x10</td>
-      <td style="text-align:left">HV1_VOLTAGE <td colspan=8, td align='center'>byte value from 0-255 corresponding to HV1 voltage</td></td>
+      <td>HV1_VOLTAGE</td>
+      <td colspan=8, td align='center'>Power supply voltage, unsigned with 2 fractional bits</td>
       <td style="text-align:center">N/A</td>
     </tr>
     <tr>
       <td>0x11</td>
-      <td style="text-align:left">HV2_VOLTAGE <td colspan=8, td align='center'>byte value from 0-255 corresponding to HV2 voltage</td></td>
+      <td>AMP_TEMP1</td>
+      <td colspan=8, td align='center'>Temperature of heatsink over amps 1-3 in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0x12</td>
-      <td style="text-align:left">HV1_TEMP<td colspan=8, td align='center'>byte value from 0-255 corresponding to HV1 temp</td></td>
+      <td>HV1_TEMP</td>
+      <td colspan=8, td align='center'>Temperature of power supply in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0x13</td>
-      <td style="text-align:left">HV2_TEMP<td colspan=8, td align='center'>byte value from 0-255 corresponding to HV2 temp</td></td>
+      <td>AMP_TEMP2</td>
+      <td colspan=8, td align='center'>Temperature of heatsink over amps 4-6 in degrees C, unsigned with 1 fractional bit</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td></td>
-      <td style="text-align:left"></td>
+      <td></td>
       <td style="text-align:center"></td>
       <td style="text-align:center"></td>
       <td style="text-align:center"></td>
@@ -198,75 +213,37 @@
       <td style="text-align:center"></td>
     </tr>
       <td>0xFA</td>
-      <td style="text-align:left">version_major[7:0]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td>VER_MAJOR</td>
+      <td colspan=8, td align='center'>Major Version Number</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFB</td>
-      <td style="text-align:left">version_minor[7:0]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td>VER_MINOR</td>
+      <td colspan=8, td align='center'>Minor Version Number</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFC</td>
-      <td style="text-align:left">git_hash[27:20]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td>HASH1</td>
+      <td colspan=8, td align='center'>GIT_HASH[27:20]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFD</td>
-      <td style="text-align:left">git_hash[19:12]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td>HASH2</td>
+      <td colspan=8, td align='center'>GIT_HASH[19:12]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFE</td>
-      <td style="text-align:left">git_hash[11:4]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td>HASH3</td>
+      <td colspan=8, td align='center'>GIT_HASH[11:4]</td>
       <td style="text-align:center">N/A</td>
     </tr>
       <td>0xFF</td>
-      <td style="text-align:left">git_hash[3:0] & git_status[3:0]</td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
-      <td style="text-align:center"></td>
+      <td>HASH4</td>
+      <td colspan=4, td align='center'>GIT_HASH[3:0]</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">-</td>
+      <td style="text-align:center">DIRTY</td>
       <td style="text-align:center">N/A</td>
     </tr>
   </tbody>
@@ -274,124 +251,197 @@
 
 ## Registers
 
-### SRC_AD_REG
+### SRC_AD
 
-Switch each source between analog and digital sources. Each bit SRCxAD can have the following values.
-
-| Value | Description |
-| ----- | ----------- |
-| 0 | Analog |
-| 1 | Digital |
-
-### CHxxx_SRC_REG
-
-For each channel (zone) specify the source it is connected to. Each 2-bit CHxSRC can have the following values.
+Read/write.
+Switch each source between analog and digital sources.
+Each bit SRCxAD can have the following values:
 
 | Value | Description |
 | ----- | ----------- |
-| 0 | Use Source 0 |
-| 1 | Use Source 1 |
-| 2 | Use Source 2 |
-| 3 | Use Source 3 |
+| 0     | Analog      |
+| 1     | Digital     |
 
-### MUTE_REG
+### ZONExxx_SRC
 
-Mute each channel (zone) independently. Each bit CHxM can have the following values.
+Read/write.
+For each zone specify the source it is to be connected to.
+Each 2-bit ZxSRC can have the following values:
 
-| Value | Description |
-| ----- | ----------- |
-| 0 | Not Muted |
-| 1 | Muted |
+| Value | Description  |
+| ----- | ------------ |
+| 0     | Use Source 0 |
+| 1     | Use Source 1 |
+| 2     | Use Source 2 |
+| 3     | Use Source 3 |
 
-### STANDBY_REG
+### MUTE
 
-Standby each channel (zone) independently. Each bit CHxSTBY can have the following values.
-
-| Value | Description |
-| ----- | ----------- |
-| 0 | Enabled |
-| 1 | In Standby |
-
-### CHx_ATTEN_REG
-
-Control the attenuation (volume) in dB of each channel (zone) independently. Valid range is between 0 and 79 inclusive, where 0 corresponds to 0dB attenuation and 79 corresponds to -79dB of attenuation. Values outside this range will be saturated to 79 (-79dB).
-
-### POWER_GOOD
-
-Read-only. Check the power status of the two power supplies. 12V power runs the fans, while 9V is the audio power.
+Read/write.
+Mute each zone independently. Each bit ZxM can have the following values:
 
 | Value | Description |
 | ----- | ----------- |
-| 0 | Not Good |
-| 1 | Good |
+| 0     | Not Muted   |
+| 1     | Muted       |
 
-### FAN_STATUS
+### STANDBY
 
-Check fan status and override the fan operation. Write 0x01 to this register to turn the fans fully on, or write 0x00 to release them.
-
-FAN_OVERRIDE:
-| Value | Description |
-| ----- | ----------- |
-| 0 | Normal |
-| 1 | Fully on |
-
-OVR_TEMP:
-| Value | Description |
-| ----- | ----------- |
-| 0 | Normal |
-| 1 | Over temp |
-
-FAN_FAIL:
-| Value | Description |
-| ----- | ----------- |
-| 0 | Normal |
-| 1 | Failure |
-
-### EXTERNAL_GPIO
-
-An external GPIO for whatever you want. Set it by writing 0x00 or 0x01; reading will also return either 0x00 or 0x01.
+Read/write.
+Set bit 0 to standby all zones. Read to determine standby status.
+All amplifiers will be in standby at once, or all enabled.
 
 | Value | Description |
 | ----- | ----------- |
-| 0 | Low |
-| 1 | High |
+| 0     | Enabled     |
+| 1     | In Standby  |
 
-### LED_OVERRIDE
+### ZONE[1:6]_VOL
 
-Direct control of front panel LEDs.
+Read/write.
+Control the attenuation (volume) in dB of each zone independently.
+Valid range is between 0 and 79 inclusive, where 0 corresponds to 0 dB
+attenuation and 79 corresponds to -79 dB of attenuation.
+Values outside this will be saturated to the range [0, 79].
 
-| Value | Description |
+### POWER
+
+Check the status of the two power supplies.
+The 12 V supply runs the fans, while 9 V is used for audio power.
+
+EN_xV are read/write, PG_xV are read-only.
+EN_9V/PG_9V is only present on prototype power boards, on all others
+the 9 V supply is always on.
+
+| PG_9V | Description |
 | ----- | ----------- |
-| 0 | Off |
-| 1 | On |
+| 0     | 9 V bad     |
+| 1     | 9 V good    |
+
+| EN_9V | Description |
+| ----- | ----------- |
+| 0     | 9 V on      |
+| 1     | 9 V off     |
+
+| PG_12V | Description |
+| ------ | ----------- |
+| 0      | 12 V bad    |
+| 1      | 12 V good   |
+
+| EN_12V | Description |
+| ------ | ----------- |
+| 0      | 12 V on     |
+| 1      | 12 V off    |
+
+### FANS
+
+Check fan status and override the fan operation.
+OVERRIDE is read/write, the rest of the bits are read only.
+
+| OVERRIDE | Description |
+| -------- | ----------- |
+| 0        | Auto        |
+| 1        | On          |
+
+* The fans can be forced to 100% on with this bit.
+  By default an automatic temperature-based control is used,
+  see the CTRL_METHOD bit.
+
+| ON | Description |
+| -- | ----------- |
+| 0  | Fans off    |
+| 1  | Fans on     |
+
+| CTRL_METHOD | Description |
+| ----------- | ----------- |
+| 0           | MAX6644     |
+| 1           | ON_OFF      |
+| 2           | Reserved    |
+| 3           | Reserved    |
+
+* MAX6644: Power Board 2.A used a MAX6644 fan controller. This board version
+  is auto-detected and fan control handled by that IC.
+* ON_OFF: Newer hardware moves the fan control into the STM32 on the Preamp Board.
+  The fans will turn on above a threshold temp based on all measured tempuratures.
+
+| OVR_TEMP | Description |
+| -------- | ----------- |
+| 0        | Temp OK     |
+| 1        | Over temp   |
+
+| FAILED | Description |
+| ------ | ----------- |
+| 0      | Normal      |
+| 1      | Fans failed |
+
+* Fan failed status only present with MAX6644
+
+### LED_CTRL / LED_VAL
+
+If OVERRIDE is cleared the front-panel LEDs will display the AmpliPi's
+hardware status.
+STAT_RED blinks at 0.5 Hz until the preamp receives an I2C address,
+then it remains on if the amplifiers are in standby.
+STAT_GREEN lights if the amplifiers are on.
+The 6 zone status LEDs light if the respective zone is unmuted.
+
+If OVERRIDE is set the front-panel LEDs will display the value in the LED_VAL
+register.
+
+### EXPANSION
+
+Used to control the expansion port.
+NRST and BOOT0 directly control those hardware pins going to the expansion unit.
+NRST pulses low at boot to reset the next expander if present,
+then it remains high.
+BOOT0 defaults low, but is set high during programming to put the
+expansion unit's preamp into bootloader mode.
+
+If UART_PASS is set any data received on UART1 is forwarded to UART2 and vice-versa.
+This enables programming of expansion units by setting all previous units
+as pass-through.
 
 ## ADC REGISTERS ##
 
-### HVx_VOLTAGE
+### HV1_VOLTAGE
 
-This register reports a hex value based on the connected voltage. Looking at the decimal value from 0-255, each bit change roughly equates to 0.2883V. Following this, a decimal value of 84, or 54 in hex, will be pretty close to 24V.
+Measures the 24V high-voltage power supply voltage.
+The value is reported as an unsigned fixed-point number with 2 fractional bits,
+with units of Volts.
+So a value of 0x63 equates to a voltage of 0x63 / 4 = 24.75 V
 
-### HVx_TEMP
+### HV1_TEMP
 
-This register has an operating range from around 4-237 in decimal, corresponding to a range of -40 to 125 degrees Celsius. The direct translation is a resistance, since the temperature sensor is a thermistor. Using a temp vs. resistance look-up-table on the NCP21XV103J03RA datasheet, the temperature can be determined.
+Measures the thermistor attached to the 24V high-voltage power supply.
+The value is reported as an unsigned fixed-point number with 1 fractional bit,
+with units of &deg;C.
+There is also a 20 &deg;C offset added to keep the value positive.
+So a value of 0x5A equates to a temperature of 0x5A/2 - 20 = 25 &deg;C
 
-Resistance in kilo-ohms is calculated by taking the decimal value read from the register, dividing 255 by that value, and multiplying the resultant by 4.7. A typical reading, say 25 degrees C, would be 0x51.
+The minimum temperature reported is -19.5 &deg;C and the maximum is 107 &deg;C
+The values 0x00 and 0xFF are both invalid as temperatures:
+a value of 0x00 represents a disconnected thermistor, and
+a value of 0xFF represents a short.
+
+### AMP_TEMP[1:2]
+
+Measures the thermistors under the amplifier heatsinks.
+AMP_TEMP1 measures the heatsink for amplifiers 1-3 and
+AMP_TEMP2 measures the heatsink for amplifiers 4-6.
+The value is reported the same as for the HV1_TEMP register:
+an unsigned fixed-point number with 1 fractional bit with units of &deg;C.
 
 ## VERSION REGISTERS ##
 
-### version_major/minor
+### VER_MAJOR / VER_MINOR
 
-These registers hold the human-readable firmware version. For version 1.1, each register reports 0x01.
+These registers hold the human-readable firmware version.
+Both are unsigned, 8-bit numbers.
 
-### git_hash[x:y]
+### HASH[1:4]
 
-These registers hold two digits each of the seven digit git_hash associated with each Git commit. Reading from each of these returns the hex digits that can be seen on GitHub.
+Holds the 28-bit short Git hash of the commit used to generate the binary.
+Use `git rev-parse --short HEAD` to get the short Git hash for the current commit.
 
-### git_hash & git_status
-
-This register is different in that the upper hex digit is part of the git hash, while the lower digit is the clean/dirty flag. For git hash f46612d:
-
-| Value | Description |
-| ----- | ----------- |
-| 0xd0 | clean |
-| 0xd1 | dirty |
+If the DIRTY bit is set, the firmware is not aligned to any particular Git commit
+and the hash should be ignored.

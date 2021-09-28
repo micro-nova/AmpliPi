@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Control for front panel LEDs
+ * Serial USART interface
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef POWER_BOARD_H_
-#define POWER_BOARD_H_
+#ifndef SERIAL_H_
+#define SERIAL_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
-void enablePowerBoard();
-void enablePSU();
-void write_ADC(uint8_t data);
-int  read_ADC();
+// Uncomment the line below to use the debugger
+//#define DEBUG_OVER_UART2
 
-#endif /* POWER_BOARD_H_ */
+void setUartPassthrough(bool passthrough);
+void initUart1();
+void initUart2(uint16_t brr);
+
+// Returns new I2C address if one was received via USART1, otherwise 0
+uint8_t checkForNewAddress();
+
+#endif /* SERIAL_H_ */

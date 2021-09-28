@@ -28,6 +28,7 @@ from typing import List, Tuple
 
 # Third-party imports
 from serial import Serial
+from serial.serialutil import SerialException
 from smbus2 import SMBus
 
 from amplipi import utils
@@ -36,31 +37,33 @@ if utils.is_amplipi():
   from RPi import GPIO
 
 
+PI_SERIAL_PORT = '/dev/serial0'
+
 class Preamp:
   """ Low level discovery and communication for the AmpliPi Preamp's firmware """
 
   class Reg(Enum):
     """ Preamp register addresses """
     SRC_AD          = 0x00
-    CH123_SRC       = 0x01
-    CH456_SRC       = 0x02
+    ZONE123_SRC     = 0x01
+    ZONE456_SRC     = 0x02
     MUTE            = 0x03
     STANDBY         = 0x04
-    CH1_ATTEN       = 0x05
-    CH2_ATTEN       = 0x06
-    CH3_ATTEN       = 0x07
-    CH4_ATTEN       = 0x08
-    CH5_ATTEN       = 0x09
-    CH6_ATTEN       = 0x0A
-    POWER_GOOD      = 0x0B
-    FAN_STATUS      = 0x0C
-    EXTERNAL_GPIO   = 0x0D
-    LED_OVERRIDE    = 0x0E
+    VOL_ZONE1       = 0x05
+    VOL_ZONE2       = 0x06
+    VOL_ZONE3       = 0x07
+    VOL_ZONE4       = 0x08
+    VOL_ZONE5       = 0x09
+    VOL_ZONE6       = 0x0A
+    POWER_STATUS    = 0x0B
+    FAN_CTRL        = 0x0C
+    LED_CTRL        = 0x0D
+    LED_VAL         = 0x0E
     EXPANSION       = 0x0F
     HV1_VOLTAGE     = 0x10
-    HV2_VOLTAGE     = 0x11
+    AMP_TEMP1       = 0x11
     HV1_TEMP        = 0x12
-    HV2_TEMP        = 0x13
+    AMP_TEMP2       = 0x13
     VERSION_MAJOR   = 0xFA
     VERSION_MINOR   = 0xFB
     GIT_HASH_27_20  = 0xFC
@@ -99,7 +102,7 @@ class Preamp:
                 Bit 1 => Red,
                 Bit[2-7] => Zone[1-6]
     """
-    return self.bus.read_byte_data(self.addr, self.Reg.LED_OVERRIDE.value)
+    return self.bus.read_byte_data(self.addr, self.Reg.LED_CTRL.value)
 
   def write_leds(self, leds: int = 0xFF) -> None:
     """ Override the LED board's LEDs
@@ -111,7 +114,7 @@ class Preamp:
                 Bit[2-7] => Zone[1-6]
     """
     assert 0 <= leds <= 255
-    self.bus.write_byte_data(self.addr, self.Reg.LED_OVERRIDE.value, leds)
+    self.bus.write_byte_data(self.addr, self.Reg.LED_CTRL.value, leds)
 
   def read_version(self) -> Tuple[int, int, int, bool]:
     """ Read the firmware version of the preamp
@@ -135,11 +138,8 @@ class Preamp:
   def reset_expander(self, bootloader: bool = False) -> None:
     """ Resets expansion unit connected to this preamp, if any """
     # Enter reset state
-    reg_val = 2 if bootloader else 0
+    reg_val = 0x02 if bootloader else 0x00
     self.bus.write_byte_data(self.addr, self.Reg.EXPANSION.value, reg_val)
-    #i2cset -y 1 0x08 0x0F 0x02 &&
-    #sleep 0.01 &&
-    #i2cset -y 1 0x08 0x0F 0x0F &&
 
     # Hold the reset line low >300 ns, then set high
     time.sleep(0.01)
@@ -148,15 +148,15 @@ class Preamp:
 
     # Each preamps' microcontroller takes ~3ms to startup after releasing
     # NRST. Just to be sure wait 5 ms before sending an I2C address.
-    time.sleep(0.005)
+    time.sleep(0.01)
 
   def uart_passthrough(self, passthrough: bool) -> None:
     """ Configures this preamp to passthrough UART1 <-> UART2 """
     reg_val = self.bus.read_byte_data(self.addr, self.Reg.EXPANSION.value)
     if passthrough:
-      reg_val |= 4
+      reg_val |= 0x04
     else:
-      reg_val &= 3
+      reg_val &= ~0x04
     self.bus.write_byte_data(self.addr, self.Reg.EXPANSION.value, reg_val)
 
 
@@ -179,13 +179,16 @@ class Preamps:
   preamps: List[Preamp]
 
   def __init__(self, reset: bool = False):
-    self.bus = SMBus(1)
+    self._bus = SMBus(1)
     self.preamps = []
     if reset:
       print('Resetting all preamps...')
       self.reset(unit = 0, bootloader = False)
     else:
       self.enumerate()
+
+  def __del__(self):
+    del self._bus
 
   def __getitem__(self, key: int) -> Preamp:
     return self.preamps[key]
@@ -216,15 +219,8 @@ class Preamps:
         return
 
       # Send I2C address over UART
-      with Serial('/dev/serial0', baudrate=115200) as ser:
-        ser.write((0x41, 0x10, 0x0D, 0x0A))
-      if not Preamp(0, self.bus).available():
-        print('Falling back to 9600 baud, is firmware version >=1.2?')
-        # The failed attempt at 115200 baud seems to put v1.1 firmware in a bad
-        # state, so reset and try again at 9600 baud.
-        self._reset_master(bootloader = False)
-        with Serial('/dev/serial0', baudrate=9600) as ser:
-          ser.write((0x41, 0x10, 0x0D, 0x0A))
+      self.set_i2c_address()
+
     else:
       self.preamps[unit - 1].reset_expander(bootloader)
 
@@ -249,25 +245,39 @@ class Preamps:
     GPIO.output(self.Pin.BOOT0.value, bootloader)
 
     # Hold the reset line low >300 ns
-    time.sleep(0.001)
+    time.sleep(0.01)
     GPIO.output(self.Pin.NRST.value, 1)
 
     # Each preamps' microcontroller takes ~3ms to startup after releasing
-    # NRST. Just to be sure wait 5 ms before sending an I2C address.
-    time.sleep(0.005)
+    # NRST. Just to be sure wait 10 ms before sending an I2C address.
+    # Further testing shows 6ms minimum
+    time.sleep(0.1)
     GPIO.cleanup()
+
+  def set_i2c_address(self, baud: int = 9600) -> bool:
+    """ Set the preamp's slave I2C address via UART """
+    assert baud in self.BAUD_RATES
+    addr_arr = bytes((0x41, 0x10, 0x0A))
+    try:
+      with Serial(PI_SERIAL_PORT, baudrate=baud, timeout=1) as ser:
+        ser.write(addr_arr)
+        return True
+    except SerialException as ser_err:
+      print(ser_err)
+      return False
+
 
   def enumerate(self) -> None:
     """ Re-enumerate preamp connections """
     self.preamps = []
     for i in range(self.MAX_UNITS):
-      p = Preamp(i, self.bus)
+      p = Preamp(i, self._bus)
       if not p.available():
         break
       self.preamps.append(p)
     print(f'Found {len(self.preamps)} preamp(s)')
 
-  def flash(self, filepath: str, num_units: int, baud: int = 115200) -> None:
+  def flash(self, filepath: str, num_units: int, baud: int = 115200) -> bool:
     """ Flash all available preamps with a given file """
 
     if baud not in self.BAUD_RATES:
@@ -285,8 +295,13 @@ class Preamps:
       for p in range(unit): # Set UART passthrough on any previous units
         print(f'Setting unit {p} as passthrough')
         self.preamps[p].uart_passthrough(True)
-      subprocess.run([f'stm32flash -vb {baud} -w {filepath} /dev/serial0'], shell=True, check=True)
-      # TODO: Error handling
+      if unit > 0: # For now the firmware can only pass through 9600 buad to expanders
+        baud = 9600
+      flash_result = subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'], shell=True, check=False)
+      success = flash_result.returncode == 0
+      if not success:
+        # TODO: Error handling
+        print(f'Error flashing unit {unit}, stopping programming')
       print('Resetting all preamps and starting execution in user flash')
       self.reset()
 
@@ -294,9 +309,13 @@ class Preamps:
       if unit < len(self.preamps):
         major, minor, git_hash, dirty = self.preamps[unit].read_version()
         print(f"Unit {unit}'s new version: {major}.{minor}")
-      else:
+      elif success:
+        success = False
         print(f"Can't communicate with unit {unit}, stopping programming")
+
+      if not success:
         break
+    return success
 
 
 #class PeakDetect:
@@ -360,7 +379,9 @@ if __name__ == '__main__':
     if num_units <= 0:
       # Always try to flash at least 1 unit
       num_units = 1
-    preamps.flash(filepath = args.flash, num_units = num_units, baud = args.baud)
+    if not preamps.flash(filepath = args.flash, num_units = num_units, baud = args.baud):
+      sys.exit(2)
+
 
   if len(preamps) == 0:
     print('No preamps found, exiting')

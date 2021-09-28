@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Control for front panel LEDs
+ * Internal I2C bus control/status
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,19 +18,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FRONT_PANEL_H_
-#define FRONT_PANEL_H_
+#ifndef INT_I2C_H_
+#define INT_I2C_H_
 
-#include <stdbool.h>
+#include <stdint.h>
 
-#include "port_defs.h"
+#include "ctrl_i2c.h"
 
-#define ON  (true)
-#define OFF (false)
+void initInternalI2C(AmpliPiState* state);
+void updateInternalI2C(AmpliPiState* state);
 
-void setAudioPower(bool on);
-
-void enableFrontPanel();
-void updateFrontPanel(bool on);
-
-#endif /* FRONT_PANEL_H_ */
+#endif /* INT_I2C_H_ */

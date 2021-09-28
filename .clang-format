@@ -1,6 +1,7 @@
 BasedOnStyle: Google
 
 AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: true
 AlignConsecutiveDeclarations: Consecutive
 AlignConsecutiveMacros: AcrossComments
 AllowShortEnumsOnASingleLine: false

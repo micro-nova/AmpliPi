@@ -8,7 +8,7 @@
   - [ ] Preout - rev _____
   - [ ] LED - rev _____
   - Controller - rev _____
-- [ ] Service USB: **TODO** verify filesystem is accessible through service USB.
+- [ ] Service USB
 - [ ] Desktop: (Manual) Plug in mouse, keyboard, and monitor (1080p@60hz). Verify they all work.
   - [ ] Monitor
   - [ ] Keyboard
@@ -26,8 +26,7 @@
 |---|-------------|-----------------|--------|--------|--------|--------|--------|--------|
 | ✓ |             |                 |        |        |        |        |        |        |
 
-- [ ] Program Preamp
-- [ ] Program Expansion: **TODO**
+- [ ] Program Master + Expander Preamp
 - [ ] Inputs
 
 | Optical In | Aux In   |
@@ -53,6 +52,12 @@
 |____L____R |____L____R |____L____R |____L____R |     6 |
 |____L____R |____L____R |____L____R |____L____R |(exp) 7|
 
+- [ ] Peak Detect:
+
+|  Input 1  |  Input 2  |  Input 3  |  Input 4  |
+|-----------|-----------|-----------|-----------|
+|____L____R |____L____R |____L____R |____L____R |
+
 - [ ] Preout:
 
 | Preout 1 | Preout 2 | Preout 3 | Preout 4 | Preout 5 | Preout 6 |
@@ -61,7 +66,6 @@
 
 - [ ] Display
 - [ ] Fans (Manual)
-  - [ ] 12V OK?
-  - [ ] Verify fans spin at 100% when forced on
-  - [ ] Verify room temp measurements are in the range [25, 30] degrees Celsius
-  - [ ] Verify fans turn on when the amplifiers are hot by heating up a heatsink
+  - [ ] Fans On: Verify fans spin up
+  - [ ] Preamp Status: Verify fans spin down, room temp measurements are correct, PG_12V is good.
+  - [ ] Heat up a heatsink with the heat gun: Verify fans turn on when the amplifiers are hot.
