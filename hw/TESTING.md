@@ -1,18 +1,18 @@
 # Built-in Tests
 - Serial Number ____________
-- Date ____ / ____ / ____  Time  ____ : ____ AM / PM
+- Date _____ / _____ / _____  Time  _____ : _____ AM / PM
 - [ ] Boards Tested (Manual) Verify QC Passed Sticker
-  - [ ] Amplifier - rev _____
-  - [ ] Power Board - rev _____
-  - [ ] Preamp - rev _____
-  - [ ] Preout - rev _____
-  - [ ] LED - rev _____
-  - Controller - rev _____
+
+|     | Amp Board | Power Board | Preamp Board | Preout Board | LED Board | Controller Board |
+|-----|-----------|-------------|--------------|--------------|-----------|------------------|
+| rev |           |             |              |              |           |                  |
+|  QC |           |             |              |              |           |                  |
+
 - [ ] Service USB
 - [ ] Desktop: (Manual) Plug in mouse, keyboard, and monitor (1080p@60hz). Verify they all work.
-  - [ ] Monitor
-  - [ ] Keyboard
-  - [ ] Mouse
+
+    ____Monitor  ____Keyboard  ____Mouse
+
 - [ ] USB Ports
 
 |   | TOP | BOTTOM | INT |
@@ -20,13 +20,13 @@
 | ✓ |     |        |     |
 
 - [ ] Ethernet:
+- [ ] Program Master + Expander Preamp
 - [ ] LEDs:
 
 |   | Stdby (Red) | Enabled (Green) | Zone 1 | Zone 2 | Zone 3 | Zone 4 | Zone 5 | Zone 6 |
 |---|-------------|-----------------|--------|--------|--------|--------|--------|--------|
 | ✓ |             |                 |        |        |        |        |        |        |
 
-- [ ] Program Master + Expander Preamp
 - [ ] Inputs
 
 | Optical In | Aux In   |
@@ -67,5 +67,5 @@
 - [ ] Display
 - [ ] Fans (Manual)
   - [ ] Fans On: Verify fans spin up
-  - [ ] Preamp Status: Verify fans spin down, room temp measurements are correct, PG_12V is good.
-  - [ ] Heat up a heatsink with the heat gun: Verify fans turn on when the amplifiers are hot.
+  - Preamp Status: ____Fans Off, ____PG_12V, ____HV1 temp, Amp temp1, ____Amp temp2
+  - Preamp Status (heated): ____HV1 temp rise, ____Amp temp1 rise, ____Amp temp2 rise

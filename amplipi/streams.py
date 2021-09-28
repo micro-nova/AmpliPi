@@ -264,8 +264,8 @@ class Spotify(BaseStream):
     spotify_args = [f'{utils.get_folder("streams")}/vollibrespot']
 
     try:
-      self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      self.proc2 = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp)
+      self.proc2 = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
       self._connect(src)
     except Exception as exc:
