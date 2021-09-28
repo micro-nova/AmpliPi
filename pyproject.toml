@@ -4,6 +4,7 @@ version = "0.1.5-alpha.13"
 description = "A Pi-based whole house audio controller"
 authors = [
   "Lincoln Lorenz <lincoln@micro-nova.com>",
+  "Michael Lohrer <michael@micro-nova.com>",
   "Jeremy Bowers <jeremy@micro-nova.com>",
   "Mark Bowers <mark@micro-nova.com>",
   "Jason Gorski <jason@micro-nova.com>",
