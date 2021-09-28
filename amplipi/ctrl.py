@@ -177,7 +177,7 @@ class Api:
     # Create firmware interface. If one already exists delete then re-init.
     if self._initialized:
       # we need to make sure to mute every zone before resetting the fw
-      zones_update = models.MultiZoneUpdate(mute=True, zones=[z.id for z in self.status.zones])
+      zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones], update=models.ZoneUpdate(mute=True))
       self.set_zones(zones_update, force_update=True, internal=True)
       try:
         del self._rt # remove the low level hardware connection
