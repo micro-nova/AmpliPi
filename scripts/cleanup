@@ -98,9 +98,9 @@ done
 
 #shutdown amplipi
 sleep 5
-rm ~./known_hosts
+rm -f ~./known_hosts
 echo "Logging in to shutdown AmpliPi for shipping"
-ssh -o PasswordAuthentication=yes pi@amplipi.local "sudo systemctl reboot"
+ssh -o PasswordAuthentication=yes pi@amplipi.local "sudo systemctl shutdown"
 
 echo -e "\nSUCCESS!"
 echo -e "AmpliPi unit has been powered off"
