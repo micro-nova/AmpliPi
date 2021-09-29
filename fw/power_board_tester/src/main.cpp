@@ -38,7 +38,7 @@
  *    +24V power supply
  *    +24/+9 DC/DC converter (using an old power board)
  *    LCD Display
- *    33k and 100k resistors
+ *    10k, 33k, and 100k resistors
  *
  * Connections
  *  +24V -+-> <24/9 DC/DC> -> Arduino Due barrel jack
@@ -62,15 +62,14 @@
  *    SCL1        | J2 pin 2: SCL     (out)
  *    SDA1        | J2 pin 3: SDA     (out)
  *    GND         | J2 pin 4: AGND
- *  +-------------+------------------------+ IO (TODO)
- *    2     (out) | J6 pin 1: NTC1
- *    DAC0  (out) | J9 pin 2: DXP1
- *    DAC1  (out) | J9 pin 7: DXP2
- *    A6    (in)  | J9 pin 1: +3.3VA  (out)
- *    A7    (in)  | J9 pin 5: +12VD   (out)
- *    5     (out) | J9 pin 3: TACH1
- *    6     (out) | J9 pin 6: TACH2
- *    A8    (in)  | J9 pin 4: FAN_PWM (out)
+ *  +-------------+------------------------+ Fans
+ *         10k    | J9 pin 2: DXP1    (in)
+ *         10k    | J9 pin 7: DXP2    (in)
+ *         Pullup | J9 pin 1: +3.3VA  (out)
+ *    A6   Input  | J9 pin 5: +12VD   (out)
+ *         Unused | J9 pin 3: TACH1   (out)
+ *         Unused | J9 pin 6: TACH2   (out)
+ *    A7   Input  | J9 pin 4: FAN_PWM (out)
  *  +-------------+------------------------+
  *
  *    Arduino Due | LCD Screen
@@ -140,16 +139,21 @@ constexpr float adcToVolts(uint32_t adc_val, uint8_t bits, float v_ref,
   return scale * adc_val;
 }
 
-float adcToTemp(uint8_t ntc_adc) {
+// Returns false if outside of [min, max], disconnected, or shorted
+bool adcToTempStr(uint8_t ntc_adc, float min, float max, char* str) {
   if (ntc_adc == 0) {
     // 0 causes divide-by-zero
-    return -INFINITY;
+    sprintf(str, "%s", " D/C");
+    return false;
   } else if (ntc_adc == 255) {
     // 255 causes Rt=0 which leads to ln(0)
-    return INFINITY;
+    sprintf(str, "%s", "SHORT");
+    return false;
   } else {
-    float rt = 4.7 * (255 / (float)ntc_adc - 1);
-    return 1.0 / (log(rt / 10) / 3900 + 1.0 / (25.0 + 273.5)) - 273.15;
+    float rt   = 4.7 * (255 / (float)ntc_adc - 1);
+    float temp = 1.0 / (log(rt / 10) / 3900 + 1.0 / (25.0 + 273.5)) - 273.15;
+    sprintf(str, "%5.1fC", temp);
+    return min < temp && temp < max;
   }
 }
 
@@ -285,8 +289,9 @@ void drawTest(const char* desc, const char* val1, bool ok1, const char* val2,
 }
 
 void setup() {
-  // Setup onboard LED
+  // Setup GPIO
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(A7, INPUT);
 
   // Setup ADC
   analogReadResolution(12);
@@ -324,7 +329,6 @@ void loop() {
   }
 
   static uint32_t test_timer = 0;
-  static bool     fan_on     = false;
   if (millis() > test_timer) {
     char strbuf1[7] = {0};
     char strbuf2[7] = {0};
@@ -367,32 +371,35 @@ void loop() {
     // TODO: Don't lock up on I2C failure
     // Read I2C ADC
     uint8_t hv1_adc;
-    uint8_t hv2_adc;
-    uint8_t ntc1_adc;
-    uint8_t ntc2_adc;
-    readI2CADC(&hv1_adc, &hv2_adc, &ntc1_adc, &ntc2_adc);
+    uint8_t hv1_ntc_adc;
+    uint8_t amp_ntc1_adc;
+    uint8_t amp_ntc2_adc;
+    readI2CADC(&hv1_adc, &amp_ntc1_adc, &hv1_ntc_adc, &amp_ntc2_adc);
     float hv1 = adcToVolts(hv1_adc, 8, 3.3, 4.7, 100);
-    float hv2 = adcToVolts(hv2_adc, 8, 3.3, 4.7, 100);
-    // float ntc1 = adcToVolts(ntc1_adc, 8, 3.3, 4.7, 0);
     sprintf(strbuf1, "%5.2fV", hv1);
-    sprintf(strbuf2, "%5.2fV", hv2);
+    bool hv1_ntc_ok = adcToTempStr(hv1_ntc_adc, 15, 30, strbuf2);
     drawTest<4>("I2C ADC HV", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
-                hv2 < 28 && hv2 > 20);
+                hv1_ntc_ok);
 
-    float temp1 = adcToTemp(ntc1_adc);
-    if (temp1 == -INFINITY) {
-      sprintf(strbuf1, "%s", " D/C");
-    } else if (temp1 == INFINITY) {
-      sprintf(strbuf1, "%s", "SHORT");
-    } else {
-      sprintf(strbuf1, "%5.1fC", temp1);
-    }
-    drawTest<5>("I2C ADC NTC", strbuf1, temp1 > 15 && temp1 < 30, "", true);
+    bool temp1_ok = adcToTempStr(amp_ntc1_adc, 24, 26, strbuf1);
+    bool temp2_ok = adcToTempStr(amp_ntc2_adc, 24, 26, strbuf2);
+    drawTest<5>("I2C ADC temp", strbuf1, temp1_ok, strbuf2, temp2_ok);
 
-    // Toggle FAN_ON (for now just turn on since there is no feedback)
+    // Check the 12V power supply
+    bool  pg_12v = readGPIO();
+    float fan12v = adcToVolts(analogRead(A6), 12, 3.3, 10, 100);
+    sprintf(strbuf1, "%5.2fV", fan12v);
+    ok1 = fan12v < 13.0 && fan12v > 11.0;
+    drawTest<6>("12V/PG_12V", strbuf1, ok1, pg_12v ? " PASS" : " FAIL", pg_12v);
+
+    // Check that the fan control output works
     writeGPIO(true, true);
-    bool pg_12v = readGPIO();
-    drawTest<6>("PG_12V", pg_12v ? " PASS" : " FAIL", pg_12v, "", true);
+    delay(1);
+    ok1 = digitalRead(A7) == HIGH;
+    writeGPIO(false, true);
+    delay(1);
+    ok1 &= digitalRead(A7) == LOW;
+    drawTest<7>("FAN_PWM", ok1 ? " PASS" : " FAIL", ok1, "", true);
 
     test_timer += 250;
   }
