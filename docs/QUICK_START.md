@@ -49,7 +49,7 @@ Each of the stereo RCA inputs can be connected to a different audio source, such
 
 Plug the unit into an 110v/220v outlet using the supplied power cable. Based on your location, we have attempted to configure the AmpliPi into the correct power mode and supply the appropriate cable. Please contact amplipi@micro-nova.com if we have made a mistake.
 
-Once plugged in, the AmpliPi will start booting. The display will not be driven until the Pi has fully booted and the AmpliPi server has started; this takes about 20 seconds.
+Once plugged in, the AmpliPi will start booting. The display will not be driven until the Pi has fully booted and the AmpliPi server has started; this takes about 20 seconds. By default the display will sleep after 60 seconds but can be woken up by a touch.
 
 ### Networking
 
