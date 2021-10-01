@@ -15,8 +15,10 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
 user_host='pi@amplipi.local'
 user_host_set=false
 mock_ctrl=false
+bump=true
 while [[ "$#" -gt 0 ]]; do
   case $1 in
+    --no-bump) bump=false ;;
     --mock-ctrl) mock_ctrl=true ;;
     -h|--help) echo -e $HELP; exit 0 ;;
     *) if ! $user_host_set; then
@@ -102,8 +104,11 @@ if ! $mock_ctrl; then
   sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
 fi
 
-# Bump version and generate tar
-poetry version prerelease
+if $bump; then
+  # Bump version so we can keep track of chanqges
+  poetry version prerelease
+fi
+# package release
 poetry build
 
 # exit virtual environment

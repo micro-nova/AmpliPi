@@ -14,7 +14,6 @@ HELP="Cleanup filesystem on a remote system defined by USER@HOST (default: pi@am
 
 user_host='pi@amplipi.local'
 user_host_set=false
-mock_ctrl=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     -h|--help) echo -e $HELP; exit 0 ;;
@@ -85,7 +84,32 @@ ssh $user_host "sudo sed -i 's/127\.0\.1\.1.*/127.0.1.1       amplipi/' /etc/hos
 ssh $user_host "sudo sed -i 's/.*/amplipi/' /etc/hostname"
 
 echo -e "\nremoving ssh key and erasing tracks"
-ssh $user_host "rm ~/.ssh/* && cat /dev/null > ~/.bash_history && history -c && sudo systemctl poweroff"
+ssh $user_host "rm -f ~/.ssh/*"
+# || true used to ignore the error ssh returns due to being cut off
+ssh $user_host "cat /dev/null > ~/.bash_history && history -c && sudo systemctl reboot" || true
+
+# verify amplipi.local get request is successful
+echo "Waiting for AmpliPi server to startup"
+printf '.'
+sleep 5
+until $(curl --output /dev/null --silent --fail http://amplipi.local); do
+    printf '.'
+    sleep 5
+done
+echo "" # newline
+
+# remove old known_hosts entries
+echo -e "\nCleaning old ~/.ssh/known_hosts entries on local machine"
+ssh-keygen -f ~/.ssh/known_hosts -R amplipi.local
+if $user_host_set; then
+  ssh-keygen -f ~/.ssh/known_hosts -R $user_host
+fi
+
+# shutdown amplipi
+sleep 5
+echo -e "\nLogging in to shutdown AmpliPi for shipping"
+# || true used to ignore the error ssh returns due to being cut off
+ssh -o PasswordAuthentication=yes pi@amplipi.local "sudo systemctl poweroff" || true
 
 echo -e "\nSUCCESS!"
 echo -e "AmpliPi unit has been powered off"

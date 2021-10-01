@@ -35,18 +35,20 @@ make
 
 ## Program
 After running the Compile steps above on the Pi,
-program the master unit's preamp by running
+program the preamp's firmware by running
 ```sh
 make program
 ```
 
-or program an expansion unit by running
-```sh
-make program-expander
-```
-
-The programming is done by `stm32flash`, but uses `hw.py`'s logic
-to program any expanders found.
+The programming is done by the [stm32flash](https://sourceforge.net/p/stm32flash)
+utility, but uses `amplipi/hw.py`'s logic to program any expanders found.
 ```sh
 venv/bin/python -m amplipi.hw --flash preamp.bin
+```
+
+If for whatever reason an expander is not responding properly to I2C messages,
+then it won't be auto-detected and programmed.
+The number of units to attempt programming of can be overriden with `-n`.
+```sh
+venv/bin/python -m amplipi.hw -n 3 --flash preamp.bin
 ```

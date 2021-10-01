@@ -63,6 +63,8 @@ parser = argparse.ArgumentParser(description='Display AmpliPi information on a T
 parser.add_argument('-u', '--url', default='localhost', help="the AmpliPi's URL to contact")
 parser.add_argument('-r', '--update-rate', metavar='HZ', type=float, default=1.0,
                     help="the display's update rate in Hz")
+parser.add_argument('-s', '--sleep-time', metavar='S', type=float, default=60.0,
+                    help="number of seconds to wait before sleeping, 0=don't sleep")
 parser.add_argument('-b', '--brightness', metavar='%', type=float, default=1.0,
                     help='the brightness of the backlight, range=[0.0, 1.0]')
 parser.add_argument('-i', '--iface', default='eth0',
@@ -263,7 +265,12 @@ display = ili9341.ILI9341(spi, cs=disp_cs, dc=disp_dc, rst=rst_pin, baudrate=spi
 # Set backlight brightness out of 65535
 # Turn off until first image is written to work around not having RST
 led = pwmio.PWMOut(led_pin, frequency=5000, duty_cycle=0)
-led.duty_cycle = 0
+def backlight(on: bool):
+  if on:
+    led.duty_cycle = int(args.brightness*(2**16-1))
+  else:
+    led.duty_cycle = 0
+backlight(False)
 
 # Start bit=1, A[2:0], 12-bit=0, differential=0, power down when done=00
 XPT2046_CMD_X   = 0b11010000  # X=101
@@ -334,6 +341,7 @@ def touch_callback(pin_num):
   # TODO: Debounce touches
   global _active_screen
   global _touch_test_passed
+  global _sleep_timer
 
   # Mask the interrupt since reading the position generates a false interrupt
   gpio.remove_event_detect(t_irq_pin.id)
@@ -374,10 +382,13 @@ def touch_callback(pin_num):
       x = round(width*(1 - y_cal))
       log.debug(f'Touch at {x},{y}')
       _touch_test_passed = True
-      if x > (3*width/4):
-        _active_screen = (_active_screen + 1) % NUM_SCREENS
-      if x < (width/4):
-        _active_screen = (_active_screen - 1) % NUM_SCREENS
+      #if x > (3*width/4):
+      #  _active_screen = (_active_screen + 1) % NUM_SCREENS
+      #if x < (width/4):
+      #  _active_screen = (_active_screen - 1) % NUM_SCREENS
+      _active_screen = 0 # 'Wake up' the screen
+      _sleep_timer = time.time()
+      # TODO: Redraw screen instantly, don't wait for next display period
     else:
       log.debug(f'Not enough inliers: {inlier_count} of 16')
   else:
@@ -406,7 +417,7 @@ display.image(mn_logo)
 
 # Turn on display backlight now that an image is loaded
 # TODO: Anything duty cycle less than 100% causes flickering
-led.duty_cycle = int(args.brightness*(2**16-1))
+backlight(True)
 
 # Get fonts
 fontname = 'DejaVuSansMono'
@@ -444,9 +455,11 @@ frame_times = []
 cpu_load = []
 use_debug_port = False
 disp_start_time = time.time()
+_sleep_timer = time.time()
 while frame_num < 10 and run:
   frame_start_time = time.time()
 
+  log.debug(f'Active screen = {_active_screen}')
   if _active_screen == 0:
     # Get AmpliPi status
     if use_debug_port:
@@ -551,6 +564,7 @@ while frame_num < 10 and run:
       draw.line(((cw, ys+4*ch+2), (width-2*cw, ys+4*ch+2)), width=2, fill='#999999')
 
       # Show volumes
+      # TODO: only update volume bars if a volume changed
       draw_volume_bars(draw, font, small_font, zones, x=cw, y=9*ch-2, height=height-9*ch, width=width - 2*cw)
     else:
       # Show an error message on the display, and the AmpliPi logo below
@@ -564,13 +578,21 @@ while frame_num < 10 and run:
       draw.text((width/2 - 1, text_y), msg, anchor='mm', align='center', font=font, fill=text_c)
       image.paste(ap_logo, box=(0, height - ap_logo.size[1]))
 
-    # Send the updated image to the display
-    display.image(image)
+    if time.time() - _sleep_timer > args.sleep_time:
+      # Transition to sleep mode, clear screen
+      log.debug('Clearing screen then sleeping')
+      backlight(False)
+      draw.rectangle((0, 0, width-1, height-1), fill='#000000')
+      display.image(image)
+      _active_screen = 1
+    else:
+      # Send the updated image to the display
+      display.image(image)
+      backlight(True)
   elif _active_screen == 1:
-    display.image(mn_logo)
-  elif _active_screen == 2:
-    draw.rectangle((0, 0, width-1, height-1), fill='#FF0000')
-    display.image(image)
+    # Sleeping, wait for touch to wake up
+    log.debug('Sleeping...')
+
 
   end = time.time()
   frame_times.append(end - frame_start_time)
@@ -598,7 +620,7 @@ gpio.remove_event_detect(t_irq_pin.id)
 
 # Clear display on exit
 display.image(Image.new('RGB', (width, height)))
-led.duty_cycle = 0
+backlight(False)
 
 if args.test_timeout > 0.0 and not _touch_test_passed:
   sys.exit(2) # Exit with an error code >0 to indicate test failure
