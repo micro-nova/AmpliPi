@@ -5012,30 +5012,6 @@ components:
       - update
       type: object
       properties:
-        name:
-          title: Name
-          type: string
-          description: Friendly name
-        source_id:
-          title: Source Id
-          maximum: 3.0
-          minimum: 0.0
-          type: integer
-          description: id of the connected source
-        mute:
-          title: Mute
-          type: boolean
-          description: Set to true if output is muted
-        vol:
-          title: Vol
-          maximum: 0.0
-          minimum: -79.0
-          type: integer
-          description: Output volume in dB
-        disabled:
-          title: Disabled
-          type: boolean
-          description: Set to true if not connected to a speaker
         zones:
           title: Zones
           type: array
