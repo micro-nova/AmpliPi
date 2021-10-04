@@ -7,7 +7,7 @@ The AmpliPi design is entirely open source, from the software, to the firmware, 
 
 The system is self-hosted on the Raspberry Pi and is privacy-centric. By design, AmpliPi doesn’t listen to you or spy on you — it just plays your audio! The way it should be. An internet connection is only needed for some external streaming sources, such as Pandora. The Python application running on the Pi hosts a mobile-friendly website and REST API used to control the system. The website is built on top of the REST API.
 
-![High-level Schematic](docs/imgs/Signal_Diagram_with_Expansion_Out.png)
+![High-level Schematic](hw/diagrams/signal_diagram.drawio.svg)
 
 Check us out on [Kickstarter](https://www.kickstarter.com/projects/micro-nova/amplipi-home-audio-system)!
 
