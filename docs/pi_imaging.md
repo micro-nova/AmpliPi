@@ -112,6 +112,16 @@ sudo losetup -d $loopdev
 pidev=/dev/sda
 img_file=amplipi.img
 
+# Setup resize2fs on Pi
+ssh pi@amplipi.local
+cmdline=$(cat /boot/cmdline.txt)
+cmdline+=" init=/usr/lib/raspi-config/init_resize.sh"
+echo $cmdline | sudo tee /boot/cmdline.txt
+sudo wget -O /etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
+sudo chmod +x /etc/init.d/resize2fs_once
+sudo systemctl enable resize2fs_once
+cat /dev/null > ~/.bash_history && history -c && exit
+
 # Copy
 sudo dd if=$pidev of=$img_file bs=4MiB status=progress
 sudo chown $USER:$USER $img_file
