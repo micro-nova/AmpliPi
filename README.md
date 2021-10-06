@@ -20,8 +20,13 @@ Most of these digital streaming services are provided by other open-source proje
 |Streaming Service|Supported|Multiple?|Metadata|Provided By|Notes|
 |--|--:|--:|--:|--|--|
 |Pandora|Yes|Yes|Yes|[Pianobar](https://github.com/PromyLOPh/pianobar)||
+<<<<<<< HEAD
 |AirPlay|Yes|Yes|Yes|[Shairport-sync](https://github.com/mikebrady/shairport-sync)|Metadata only available from iTunes|
 |Spotify|Yes|Yes|No see [#37](http://github.com/micro-nova/AmpliPi/issues/37)|[Librespot](https://github.com/librespot-org/librespot)|Requires Spotify Premium, one account per stream. See [disclaimer](https://github.com/librespot-org/librespot#disclaimer)|
+=======
+|Airplay|Yes|Yes|Yes|[Shairport-sync](https://github.com/mikebrady/shairport-sync)|Metadata only available from iTunes|
+|Spotify|Yes|Yes|Yes|[Librespot](https://github.com/librespot-org/librespot)|Requires Spotify Premium, one account per stream. See [disclaimer](https://github.com/librespot-org/librespot#disclaimer)|
+>>>>>>> Update current state of Features
 |DLNA|Yes|Yes|Yes|[gmrender-resurrect](https://github.com/hzeller/gmrender-resurrect)||
 |Internet Radio|Yes|Yes|Yes|[VLC](https://github.com/videolan/vlc)||
 |Plexamp|Yes|No|No|[Plexamp](https://plexamp.com/)||
@@ -29,6 +34,7 @@ Most of these digital streaming services are provided by other open-source proje
 |Google Cast|No||||Need to investigate|
 |Offline Music|No||||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|
 |TIDAL|No||||See [#87](http://github.com/micro-nova/AmpliPi/issues/87)|
+|Bluetooth|No||||See [#150](http://github.com/micro-nova/AmpliPi/issues/150)|
 
 In the future we plan to integrate with several home automation systems. Below is their current status.
 
