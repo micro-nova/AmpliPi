@@ -8,7 +8,7 @@
 | rev |           |             |              |              |           |                  |
 |  QC |           |             |              |              |           |                  |
 
-- [ ] Service USB
+- [ ] Image New Pi OR Service USB (if already imaged)
 - [ ] Desktop: (Manual) Plug in mouse, keyboard, and monitor (1080p@60hz). Verify they all work.
 
     ____Monitor  ____Keyboard  ____Mouse
@@ -52,7 +52,7 @@
 |____L____R |____L____R |____L____R |____L____R |     6 |
 |____L____R |____L____R |____L____R |____L____R |(exp) 7|
 
-- [ ] Peak Detect:
+- [ ] Peak Detect (run with Preamp):
 
 |  Input 1  |  Input 2  |  Input 3  |  Input 4  |
 |-----------|-----------|-----------|-----------|
@@ -64,8 +64,10 @@
 |----------|----------|----------|----------|----------|----------|
 |____L____R|____L____R|____L____R|____L____R|____L____R|____L____R|
 
-- [ ] Display
-- [ ] Fans (Manual)
+- [ ] Display (manual)
+    - [ ] Wakes when touched
+    - [ ] Shows image properly
+- [ ] Fans (manual)
   - [ ] Fans On: Verify fans spin up
-  - Preamp Status: ____Fans Off, ____PG_12V, ____HV1 temp, Amp temp1, ____Amp temp2
+  - Preamp Status: ____Fans Off, ____PG_12V, ____HV1 temp, ____Amp temp1, ____Amp temp2
   - Preamp Status (heated): ____HV1 temp rise, ____Amp temp1 rise, ____Amp temp2 rise
