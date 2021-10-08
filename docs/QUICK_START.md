@@ -63,9 +63,11 @@ Now that the AmpliPi unit is powered on, it is time to play with it. Let's see w
 1. Pick an audio input using the selector. The `Groove Salad - internetradio` stream comes preconfigured (needs an internet connection).
 1. Change the volume on the zone you would like to output music on. Many of the zones will be hidden inside a group. Click on the different groups to see which zones belong to them.
 
+Check out the web app demos here: [docs/WEB_APP.md](WEB_APP.md) for more information.
+
 ## Configuration
 
-You will probably want to change the default group and zone names and add different streaming sources. The Gear icon (⚙) provides an interface to configure inputs, zones, and groups. Additional configuration will be added in the future.
+You will probably want to change the default group and zone names and add different streaming sources. The Gear icon (⚙) provides an interface to configure inputs, zones, and groups. Additional configuration will be added in the future. See [docs/WEB_APP.md](WEB_APP.md#settings) for some configuration examples.
 
 Advanced configuration, such as presets, will need to use the API, check out the built in interactive [API docs](http://amplipi.local/doc). Follow the "Try it out" guide at the top of the API page to walk through some initial changes.
 
