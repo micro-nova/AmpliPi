@@ -2,7 +2,7 @@
 Thanks for considering developing for AmpliPi. We appreciate your support!
 
 ## Developing on a seperate linux computer
-This allows remote devlopement with the ability to test changes on your AmpliPi
+This allows remote development with the ability to test changes on your AmpliPi
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
 1. Make changes with your favorite editor, we suggest vscode
 1. Use `scripts/deploy` to deploy the latest software.
@@ -64,7 +64,7 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
   * Analog Audio input
 
 ## Developing with a mocked out controller on a debian based os
-This is the aimplest way to develop new features for AmpliPi without an AmpliPi controller.
+This is the simplest way to develop new features for AmpliPi without an AmpliPi controller.
 Optionally you can install some streaming sources for partial streaming testing.
 1. Checkout this repo
 1. (Optional) Install streaming os dependencies with `./scripts/configure.py --os-deps`.
