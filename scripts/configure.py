@@ -74,7 +74,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     ],
   },
   'plexamp' : {
-    'script' : [ './streams/plexamp_nodeinstall.bash' ]
+    # TODO: do a full install of plexamp, the partial install below is not useful
+    # 'script' : [ './streams/plexamp_nodeinstall.bash' ]
   },
   'spotify' : {
     'script' :  [
