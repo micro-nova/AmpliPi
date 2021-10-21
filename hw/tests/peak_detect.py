@@ -82,7 +82,9 @@ def read_vals():
     if sleep_time > 0:
       time.sleep(sleep_time)
     else:
-      print(f'Warning: ADC sampling took {sleep_time}s too long!')
+      print(f'Warning: ADC sampling took {-sleep_time}s too long!')
+      # Reset sampling period in case of NTP time jumps
+      next_time = time.time() + sample_period
 
 if __name__ == "__main__":
   read_vals()
