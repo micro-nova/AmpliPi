@@ -51,6 +51,7 @@ typedef enum
   REG_AMP_TEMP1   = 0x11,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
   REG_HV1_TEMP    = 0x12,  //   0x00 = disconnected, 0xFF = shorted
   REG_AMP_TEMP2   = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
+  REG_PI_TEMP     = 0x14,  // RPi's temp sent to the micro
 
   // Version info
   REG_VERSION_MAJOR = 0xFA,

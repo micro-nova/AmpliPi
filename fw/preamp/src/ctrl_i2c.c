@@ -175,6 +175,10 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
       out_msg = state->amp_temp2;
       break;
 
+    case REG_PI_TEMP:
+      out_msg = state->pi_temp;
+      break;
+
     case REG_VERSION_MAJOR:
       out_msg = VERSION_MAJOR;
       break;
@@ -318,6 +322,10 @@ void ctrlI2CTransact(AmpliPiState* state) {
         // Allow UART messages to be forwarded to expansion units
         state->expansion.uart_passthrough = (data & 0x04) != 0;
         setUartPassthrough(state->expansion.uart_passthrough);
+        break;
+
+      case REG_PI_TEMP:
+        state->pi_temp = data;
         break;
 
       default:
