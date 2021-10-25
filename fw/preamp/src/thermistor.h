@@ -27,7 +27,7 @@
 // Power supply: MEAN WELL LRS-350 max temp = 70C
 // Raspberry Pi: BCM2837 max temp = 85C, CM3+ max temp = 80C
 #define TEMP_THRESH_LOW_C      40  // Below this fans turn off
-#define TEMP_THRESH_HIGH_C     45  // Above this fans turn on
+#define TEMP_THRESH_HIGH_C     60  // Above this fans turn on 100%
 #define TEMP_THRESH_OVR_C      70  // Above this warn of overtemp
 #define TEMP_THRESH_LOW_UQ7_1  (2 * (TEMP_THRESH_LOW_C + 20))
 #define TEMP_THRESH_HIGH_UQ7_1 (2 * (TEMP_THRESH_HIGH_C + 20))

@@ -334,13 +334,13 @@ void updateInternalI2C(AmpliPiState* state) {
   // If either of those inputs measures a valid temp, then assume
   // no MAX6644 fan control IC is present, and thermisters are.
   if (state->amp_temp1 || state->amp_temp2) {
-    state->fan_ctrl = FAN_CTRL_ON_OFF;
+    state->fan_ctrl = FAN_CTRL_PWM;
   } else {
     state->fan_ctrl = FAN_CTRL_MAX6644;
   }
 
   uint8_t max_temp = state->hv1_temp;
-  if (state->fan_ctrl == FAN_CTRL_ON_OFF) {
+  if (state->fan_ctrl == FAN_CTRL_PWM) {
     for (size_t i = 0; i < sizeof(state->temps); i++) {
       if (state->temps[i] > max_temp) {
         max_temp = state->temps[i];
@@ -356,9 +356,19 @@ void updateInternalI2C(AmpliPiState* state) {
   }
 
   if (state->fan_override || max_temp > TEMP_THRESH_HIGH_UQ7_1) {
-    state->pwr_gpio.fan_on = true;
+    state->pwr_gpio.fan_on = true;  // 100% on
   } else if (max_temp < TEMP_THRESH_LOW_UQ7_1) {
-    state->pwr_gpio.fan_on = false;
+    state->pwr_gpio.fan_on = false;  // Off
+  } else {
+#define FAN_PERIOD_MS 32  // 1000 Hz / 32 = 31.25 Hz
+#define MINVAL        ((uint32_t)((0.3 * (FAN_PERIOD_MS - .01)) + 1))
+    // PWM, 30% - 100%
+    uint32_t duty = (FAN_PERIOD_MS - MINVAL) *
+                        ((uint32_t)max_temp - TEMP_THRESH_LOW_UQ7_1) /
+                        (TEMP_THRESH_HIGH_UQ7_1 - TEMP_THRESH_LOW_UQ7_1) +
+                    (MINVAL - 1);
+    uint32_t mod32         = millis() & (FAN_PERIOD_MS - 1);
+    state->pwr_gpio.fan_on = mod32 <= duty;
   }
 
   // Update the Power Board's GPIO state

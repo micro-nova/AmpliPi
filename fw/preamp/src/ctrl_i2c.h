@@ -28,12 +28,12 @@
 // Possible fan control methods:
 // - Overridden (forced on) by the Pi
 // - MAX6644 (5 developer units with Power Board 2.A)
-// - Thermistors with FAN_ON on/off control (Power Board 3.A)
+// - Thermistors with FAN_ON PWM control (Power Board 3.A)
 // - Thermistors with DPOT linear voltage control (Future)
 typedef enum
 {
   FAN_CTRL_MAX6644,
-  FAN_CTRL_ON_OFF,
+  FAN_CTRL_PWM,
   FAN_CTRL_LINEAR,
 } FanCtrl;
 
