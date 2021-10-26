@@ -104,8 +104,10 @@ preamps = amplipi.rt._Preamps(reset = reset, set_addr = args.a, bootloader = boo
 if args.temps:
   fan_pcnt = preamps.read_fan_speed(args.u)
   hv1_tmp, amp1_tmp, amp2_tmp = preamps.read_temps(args.u)
+  with open('/sys/class/thermal/thermal_zone0/temp') as f:
+    pi_tmp = int(f.read()) / 1000
   time = datetime.now().strftime('%H:%M:%S')
-  print(f'{time},{fan_pcnt},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f}')
+  print(f'{time},{fan_pcnt},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f},{pi_tmp:.1f}')
   sys.exit(0)
 
 if args.u > 1 and args.r:
