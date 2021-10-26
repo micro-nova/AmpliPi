@@ -56,6 +56,7 @@ typedef struct {
   bool    fan_override;  // Override fan control logic and force 100% on
   bool    led_override;  // Override LED Board logic and force to 'leds'
   FanCtrl fan_ctrl;
+  uint8_t fan_speed;  // Fan speed, [0,100]
 } AmpliPiState;
 
 void ctrlI2CInit(uint8_t addr);

@@ -52,6 +52,7 @@ typedef enum
   REG_HV1_TEMP    = 0x12,  //   0x00 = disconnected, 0xFF = shorted
   REG_AMP_TEMP2   = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
   REG_PI_TEMP     = 0x14,  // RPi's temp sent to the micro
+  REG_FAN_SPEED   = 0x15,  // Fan PWM percent, [0,100]
 
   // Version info
   REG_VERSION_MAJOR = 0xFA,

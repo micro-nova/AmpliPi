@@ -102,10 +102,10 @@ preamps = amplipi.rt._Preamps(reset = reset, set_addr = args.a, bootloader = boo
 
 # Used for temperature recording
 if args.temps:
-  _, fan_on, _, _, _ = preamps.read_fan_status(args.u)
+  fan_pcnt = preamps.read_fan_speed(args.u)
   hv1_tmp, amp1_tmp, amp2_tmp = preamps.read_temps(args.u)
   time = datetime.now().strftime('%H:%M:%S')
-  print(f'{time},{fan_on},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f}')
+  print(f'{time},{fan_pcnt},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f}')
   sys.exit(0)
 
 if args.u > 1 and args.r:

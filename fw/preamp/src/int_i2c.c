@@ -357,8 +357,10 @@ void updateInternalI2C(AmpliPiState* state) {
 
   if (state->fan_override || max_temp > TEMP_THRESH_HIGH_UQ7_1) {
     state->pwr_gpio.fan_on = true;  // 100% on
+    state->fan_speed       = 100;
   } else if (max_temp < TEMP_THRESH_LOW_UQ7_1) {
     state->pwr_gpio.fan_on = false;  // Off
+    state->fan_speed       = 0;
   } else {
 #define FAN_PERIOD_MS 32  // 1000 Hz / 32 = 31.25 Hz
 #define MINVAL        ((uint32_t)((0.3 * (FAN_PERIOD_MS - .01)) + 1))
@@ -369,6 +371,7 @@ void updateInternalI2C(AmpliPiState* state) {
                     (MINVAL - 1);
     uint32_t mod32         = millis() & (FAN_PERIOD_MS - 1);
     state->pwr_gpio.fan_on = mod32 <= duty;
+    state->fan_speed       = 100 * duty / FAN_PERIOD_MS;
   }
 
   // Update the Power Board's GPIO state

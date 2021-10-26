@@ -179,6 +179,10 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
       out_msg = state->pi_temp;
       break;
 
+    case REG_FAN_SPEED:
+      out_msg = state->fan_speed;
+      break;
+
     case REG_VERSION_MAJOR:
       out_msg = VERSION_MAJOR;
       break;

@@ -54,6 +54,8 @@ _REG_ADDRS = {
   'AMP_TEMP1'       : 0x11,
   'HV1_TEMP'        : 0x12,
   'AMP_TEMP2'       : 0x13,
+  'PI_TEMP'         : 0x14,
+  'FAN_SPEED'       : 0x15,
   'VERSION_MAJOR'   : 0xFA,
   'VERSION_MINOR'   : 0xFB,
   'GIT_HASH_27_20'  : 0xFC,
@@ -317,6 +319,18 @@ class _Preamps:
       override = (fstat & 0x01) != 0
       return override, fans_on, ctrl, ovr_tmp, failed
     return None, None, None, None, None
+
+  def read_fan_speed(self, preamp: int = 1) -> Union[int, None]:
+    """ Read the fan speed
+
+      Returns:
+        speed: 0-100%
+    """
+    assert 1 <= preamp <= 6
+    if self.bus is not None:
+      speed = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FAN_SPEED'])
+      return speed
+    return None
 
   @staticmethod
   def _fix2temp(fval: int) -> float:
