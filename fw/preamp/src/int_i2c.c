@@ -162,7 +162,7 @@ void initI2C2() {
   // SCLL >= 43.544 = 0x2C
 
   // Fast mode, max 400 kHz
-  // TODO?
+  // TODO: change to fast mode
 
   I2C_InitStructure2.I2C_Timing = 0x00201D2C;
   I2C_Init(I2C2, &I2C_InitStructure2);
@@ -243,6 +243,25 @@ void updateAdc(AmpliPiState* state) {
   // Convert amplifier thermocouples to degC
   state->amp_temp1 = THERM_LUT_[adc.amp_temp1];
   state->amp_temp2 = THERM_LUT_[adc.amp_temp2];
+}
+
+LedGpio updateLeds(bool addr_set) {
+  LedGpio leds = {0};
+
+  leds.grn = inStandby() ? 0 : 1;
+  if (addr_set) {
+    leds.red = !leds.grn;
+  } else {
+    // Blink red light at ~0.5 Hz
+    uint32_t mod2k = millis() & ((1 << 11) - 1);
+    leds.red       = mod2k > (1 << 10);
+  }
+
+  leds.zones = 0;
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    leds.zones |= (isOn(zone) ? 1 : 0) << zone;
+  }
+  return leds;
 }
 
 void initInternalI2C(AmpliPiState* state) {
@@ -328,51 +347,47 @@ void initInternalI2C(AmpliPiState* state) {
 }
 
 void updateInternalI2C(AmpliPiState* state) {
-  // TODO: Only read ADC and update fans every 10ms
-  // Read the Power Board's ADC - 728 us
-  updateAdc(state);
+  uint32_t mod8 = millis() & ((1 << 3) - 1);
+  if (mod8 == 0) {
+    // Read ADC and update fans every 8 ms
+    // Reading the Power Board's ADC takes ~728 us
+    updateAdc(state);
 
-  // In UQ7.1 + 20, convert to Q7.8
-  // TODO: do this conversion in ADC filter when added
-  int16_t amp_temp1_q7_8 = ((int16_t)state->amp_temp1 - (20 << 1)) << 7;
-  int16_t amp_temp2_q7_8 = ((int16_t)state->amp_temp1 - (20 << 1)) << 7;
-  int16_t hv1_temp_q7_8  = ((int16_t)state->hv1_temp - (20 << 1)) << 7;
-  int16_t rpi_temp_q7_8  = ((int16_t)state->pi_temp - (20 << 1)) << 7;
+    // In UQ7.1 + 20, convert to Q7.8
+    // TODO: do this conversion in ADC filter when added
+    int16_t amp_temp1_q7_8 = ((int16_t)state->amp_temp1 - (20 << 1)) << 7;
+    int16_t amp_temp2_q7_8 = ((int16_t)state->amp_temp1 - (20 << 1)) << 7;
+    int16_t hv1_temp_q7_8  = ((int16_t)state->hv1_temp - (20 << 1)) << 7;
+    int16_t rpi_temp_q7_8  = ((int16_t)state->pi_temp - (20 << 1)) << 7;
 
-  state->fans = updateFans(amp_temp1_q7_8, amp_temp2_q7_8, hv1_temp_q7_8,
-                           rpi_temp_q7_8, state->fan_override);
-  state->pwr_gpio.fan_on = getFanOnFromDuty(state->fans->duty_f7);
-
-  // Update the Power Board's GPIO state
-  // TODO: Only write when necessary
-  writeI2C2(pwr_io_gpio_, state->pwr_gpio.data);
-  state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
-
-  if (state->fans->ctrl != FAN_CTRL_MAX6644) {
-    // No fan control IC to determine this
-    state->pwr_gpio.fan_fail_n = !false;
-    state->pwr_gpio.ovr_tmp_n  = !false;
-  }
-
-  // Update the LED Board's LED state
-  if (!state->led_override) {
-    state->leds.grn = inStandby() ? 0 : 1;
-
-    if (state->i2c_addr) {
-      state->leds.red = !state->leds.grn;
-    } else {
-      // Blink red light at ~0.5 Hz
-      uint32_t mod2k  = millis() & ((1 << 11) - 1);
-      state->leds.red = mod2k > (1 << 10);
+    // No I2C reads/writes, just fan calculations
+    state->fans = updateFans(amp_temp1_q7_8, amp_temp2_q7_8, hv1_temp_q7_8,
+                             rpi_temp_q7_8, state->fan_override);
+  } else {
+    state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
+    if (state->fans->ctrl != FAN_CTRL_MAX6644) {
+      // No fan control IC to determine this
+      state->pwr_gpio.fan_fail_n = !false;
+      state->pwr_gpio.ovr_tmp_n  = !false;
     }
+
+    // Update the LED Board's LED state
+    if (!state->led_override) {
+      state->leds = updateLeds(state->i2c_addr != 0);
+    }
+    // TODO: only write on change
+    writeI2C2(led_gpio_, state->leds.data);
   }
 
-  state->leds.zones = 0;
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    state->leds.zones |= (isOn(zone) ? 1 : 0) << zone;
+  // Update the Power Board's GPIO state, only writing when necessary
+  PwrGpio gpio_request = {
+      .en_9v  = true,  // Always enable 9V
+      .en_12v = true,  // Always enable 12V
+      .fan_on = getFanOnFromDuty(state->fans->duty_f7),
+  };
+  if (gpio_request.data != (PWR_GPIO_OUT_MASK & state->pwr_gpio.data)) {
+    writeI2C2(pwr_io_gpio_, gpio_request.data);
   }
-  writeI2C2(led_gpio_, state->leds.data);
-  state->leds.data = readI2C2(led_gpio_);
 
   // TODO: Can the volume controllers be read?
   // TODO: Write volumes

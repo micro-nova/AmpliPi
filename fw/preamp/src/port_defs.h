@@ -72,6 +72,8 @@ extern const Pin exp_boot0_;            // Expansion connector BOOT0_OUT
 extern const Pin i2c2_scl_;             // Internal I2C bus SCL
 extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 
+#define PWR_GPIO_OUT_MASK 0x83
+
 typedef union {
   struct {
     uint8_t en_9v      : 1;  // Only on Power Board 1.X

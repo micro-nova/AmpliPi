@@ -97,12 +97,6 @@ void initGpio() {
   GPIO_Init(GPIOF, &GPIO_InitStructureF);
 }
 
-void initState(AmpliPiState* state) {
-  memset(state, 0, sizeof(AmpliPiState));
-  state->pwr_gpio.en_9v  = 1;  // Always enable 9V
-  state->pwr_gpio.en_12v = 1;  // Always enable 12V
-}
-
 int main(void) {
   // TODO: Setup watchdog
 
@@ -113,7 +107,7 @@ int main(void) {
                                 // board doesn't start in 'Boot Mode'
 
   // INIT
-  initState(&state_);
+  memset(&state_, 0, sizeof(AmpliPiState));
   systickInit();  // Initialize the clock ticks for delay_ms and other timing
                   // functionality
   initGpio();     // UART and I2C require GPIO pins
@@ -151,12 +145,10 @@ int main(void) {
       ctrlI2CTransact(&state_);
     }
 
-    // TODO: move logic outside I2C function
-    // TODO: This takes ~2.25 ms, reduce to <<1ms
     updateInternalI2C(&state_);
 
     // writePin(exp_boot0_, false);
-    next_loop_time += 5;  // Loop currently takes ~2.26 ms
+    next_loop_time += 1;  // Loop currently takes ~800 us
     while (millis() < next_loop_time) {}
   }
 }
