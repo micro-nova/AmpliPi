@@ -20,8 +20,6 @@
 
 #include "fans.h"
 
-#include <stdbool.h>
-
 #include "systick.h"
 
 // 2-wire fan control PWM works well around 30 Hz
@@ -63,17 +61,17 @@
 /* Updates the fan state based on the current temp
  *
  * Inputs
- *    amp1_temp: Temperature of the first amplifier heatsink
- *    amp2_temp: Temperature of the second amplifier heatsink
- *    psu_temp:  Temperature of the high-voltage PSU
- *    pi_temp:   Temperature of the Raspberry Pi
- *    force:     Force fans on 100%
+ *    amp_temp: Temperature of the amplifier heatsinks
+ *    psu_temp: Temperature of the high-voltage PSU
+ *    pi_temp:  Temperature of the Raspberry Pi
+ *    force:    Force fans on 100%
+ *    linear:   Digital potentiometer for linear voltage control is available
  * All temps are in Q7.8 fixed-point format.
  *
  * Returns the current fan state.
  */
-FanState* updateFans(int16_t amp_temp1, int16_t amp_temp2, int16_t psu_temp,
-                     int16_t rpi_temp, bool force) {
+FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
+                     bool force, bool linear) {
 // Minimum fan PWM duty value based on the period. ~30% duty is the min,
 // round up to the nearest integer.
 #define MINVAL ((int32_t)((0.3 * (FAN_PERIOD_MS - .01)) + 1))
@@ -82,16 +80,10 @@ FanState* updateFans(int16_t amp_temp1, int16_t amp_temp2, int16_t psu_temp,
       .ctrl     = FAN_CTRL_MAX6644,
       .ovr_temp = false,
       .duty_f7  = 0,
+      .dpot_val = 0,
   };
-
-  // The two amp heatsinks can be combined by simply taking the max
-  int16_t amp_temp = amp_temp1 > amp_temp2 ? amp_temp1 : amp_temp2;
-
-  // First, determine hardware fan control capabilities
-  // So far, no Power Boards (2.A) with a MAX6644 have used HV2/NTC2.
-  // If either of those inputs measures a valid temp, then assume
-  // no MAX6644 fan control IC is present, and thermisters are.
-  state.ctrl = amp_temp ? FAN_CTRL_PWM : FAN_CTRL_MAX6644;
+  // Leave at max by default in case a dpot is detected later
+  state.dpot_val = 0x00;  // Min resistance = max voltage
 
   state.ovr_temp = amp_temp > TEMP_AMP_THRESH_OVR_Q7_8 ||
                    psu_temp > TEMP_PSU_THRESH_OVR_Q7_8 ||
@@ -105,43 +97,73 @@ FanState* updateFans(int16_t amp_temp1, int16_t amp_temp2, int16_t psu_temp,
    */
 
   if (force) {
-    // 100% fans, 1.0 in UQ1.7
-    state.duty_f7 = 1 << 7;
-  } else if (state.ctrl == FAN_CTRL_MAX6644) {
-    // Fans are controlled by the MAX6644 fan controller
-    state.duty_f7 = 0;
+    state.ctrl    = FAN_CTRL_FORCED;
+    state.duty_f7 = 1 << 7;  // 1.0 in UQ1.7, 100% duty cycle
+  } else if (!amp_temp) {
+    // Power Board 2.A uses MAX6644 but has no HV2/NTC2.
+    // If neither of those inputs measures a valid temp, then assume
+    // a MAX6644 fan control IC is controlling the fans.
+    state.ctrl    = FAN_CTRL_MAX6644;
+    state.duty_f7 = 0;  // Release control to MAX6644.
   } else if (amp_temp <= TEMP_AMP_THRESH_OFF_Q7_8 &&
              psu_temp <= TEMP_PSU_THRESH_OFF_Q7_8 &&
              rpi_temp <= TEMP_RPI_THRESH_OFF_Q7_8) {
     // Cool enough that fans can be left off
-    state.duty_f7 = 0;
+    state.ctrl     = linear ? FAN_CTRL_LINEAR : FAN_CTRL_PWM;
+    state.duty_f7  = 0;
+    state.dpot_val = 0x7F;  // Max resistance = min voltage
   } else {
-    // Calculate duty cycles for each temp
+    // Calculate fan percent for each temp
     // measurement in Q7.8 format, 1.0 = 100%
-    int16_t amp_duty = (amp_temp - TEMP_AMP_THRESH_LOW_Q7_8) /
+    int16_t amp_pcnt = (amp_temp - TEMP_AMP_THRESH_LOW_Q7_8) /
                        (TEMP_AMP_THRESH_HIGH_C - TEMP_AMP_THRESH_LOW_C);
-    int16_t psu_duty = (psu_temp - TEMP_PSU_THRESH_LOW_Q7_8) /
+    int16_t psu_pcnt = (psu_temp - TEMP_PSU_THRESH_LOW_Q7_8) /
                        (TEMP_PSU_THRESH_HIGH_C - TEMP_PSU_THRESH_LOW_C);
-    int16_t rpi_duty = (rpi_temp - TEMP_RPI_THRESH_LOW_Q7_8) /
+    int16_t rpi_pcnt = (rpi_temp - TEMP_RPI_THRESH_LOW_Q7_8) /
                        (TEMP_RPI_THRESH_HIGH_C - TEMP_RPI_THRESH_LOW_C);
 
-    // Take the max duty cycle requested.
-    int16_t max_duty1   = amp_duty > psu_duty ? amp_duty : psu_duty;
-    int16_t max_duty_f8 = max_duty1 > rpi_duty ? max_duty1 : rpi_duty;
+    // Take the max percentage requested.
+    int16_t max_pcnt1   = amp_pcnt > psu_pcnt ? amp_pcnt : psu_pcnt;
+    int16_t max_pcnt_f8 = max_pcnt1 > rpi_pcnt ? max_pcnt1 : rpi_pcnt;
 
-    if (max_duty_f8 > (1 << 8)) {  // 1.0 in Q7.8
-      // 100% fans, 1.0 in UQ1.7
-      state.duty_f7 = 1 << 7;
-    } else if (max_duty_f8 > 0) {
-      // Fans partially on, convert [0.0,1.0] in Q7.8 to [0.3,1.0] in UQ1.7
-      const int32_t scale_f16 = (1.0 - 0.3) * (1 << 16);
-      const int32_t min_f16   = 0.3 * (1 << 24);
-      int32_t       duty_f24  = scale_f16 * max_duty_f8 + min_f16;
-      state.duty_f7           = (uint8_t)(duty_f24 >> (24 - 7));
+    state.ctrl = linear ? FAN_CTRL_LINEAR : FAN_CTRL_PWM;
+    if (max_pcnt_f8 > (1 << 8)) {  // 1.0 in Q7.8
+      state.duty_f7 = 1 << 7;      // 1.0 in UQ1.7, 100% duty cycle
+    } else if (state.ctrl == FAN_CTRL_LINEAR) {
+      if (max_pcnt_f8 > 0) {
+        // Fans partially on, convert [0.0,1.0] in Q7.8 to [0x00,0x7F] dpot val
+
+        // Rpot (kOhms) = 10k * DPOT_VAL / 127 + 0.1
+        // V = 100k / (Rpot + 9k) + 1
+        //   = 100k / (10k * DPOT_VAL / 127 + 0.1 + 9k) + 1
+        //   = 100k / (10k / 127 * DPOT_VAL + 9.1k) + 1
+        // 10k / 127 * DPOT_VAL + 9.1k = 100k / (V - 1)
+        // DPOT_VAL = 127 / 10k * [100k / (V - 1) - 9.1k]
+        // DPOT_VAL = 1270 / (V - 1) - 115.57
+        // const int32_t v_scale_f8 = (100 / 9.1 - 100 / 19.1) * (1 << 8);
+        // const int32_t v_min_f16  = (100 / 19.1 + 1) * (1 << 16);
+        // int32_t v_fan_f16 = v_scale_f8 * max_pcnt_f8 + v_min_f16;
+        state.duty_f7 = 1 << 7;  // 1.0 in UQ1.7, 100% duty cycle
+        // state.dpot_val = (1270 * (1 << 20) / (v_fan_f16 - (1 << 16)) - 115.57
+        // * (1 << 4)) >> 4;
+        // TODO: use the above proper calculation
+        state.dpot_val = ((1 << 8) - max_pcnt_f8) >> 1;
+      } else {
+        // Hysteresis region, use old duty cycle and min dpot value
+        state.dpot_val = 0x7F;  // Max resistance = min voltage
+      }
     } else {
-      // Hysteresis region, use old duty cycle (but cap at 30%)
-      const uint8_t min_f8 = 0.3 * (1 << 7);
-      state.duty_f7        = state.duty_f7 > min_f8 ? min_f8 : state.duty_f7;
+      if (max_pcnt_f8 > 0) {
+        // Fans partially on, convert [0.0,1.0] in Q7.8 to [0.3,1.0] in UQ1.7
+        const int32_t scale_f16 = (1.0 - 0.3) * (1 << 16);
+        const int32_t min_f24   = 0.3 * (1 << 24);
+        int32_t       duty_f24  = scale_f16 * max_pcnt_f8 + min_f24;
+        state.duty_f7           = (uint8_t)(duty_f24 >> (24 - 7));
+      } else {
+        // Hysteresis region, use old duty cycle (but cap at 30%)
+        const uint8_t min_f8 = 0.3 * (1 << 7);
+        state.duty_f7        = state.duty_f7 > min_f8 ? min_f8 : state.duty_f7;
+      }
     }
   }
 

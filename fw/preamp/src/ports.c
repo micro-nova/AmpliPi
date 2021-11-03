@@ -99,7 +99,7 @@ uint32_t writeI2C2(I2CReg r, uint8_t data) {
   // Wait if I2C2 is busy
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 
-  // Setup to send send start, addr, subaddr
+  // Setup to send start, addr, subaddr
   I2C_TransferHandling(I2C2, r.dev, 2, I2C_AutoEnd_Mode,
                        I2C_Generate_Start_Write);
 

@@ -40,8 +40,11 @@ const I2CReg led_dir_  = {0x40, 0x00};
 const I2CReg led_gpio_ = {0x40, 0x09};
 const I2CReg led_olat_ = {0x40, 0x0A};
 
-// Power Board ADC register
+// Power Board ADC register (no registers)
 const I2CReg adc_dev_ = {0xC8, 0xFF};
+
+// DPOT register (no registers)
+const I2CReg dpot_dev_ = {0x5E, 0xFF};
 
 void initI2C2() {
   /* I2C-2 is internal to a single AmpliPi unit.
@@ -280,6 +283,43 @@ void updateAdc(AmpliPiState* state) {
   state->amp_temp2 = THERM_LUT_[adc.amp_temp2];
 }
 
+uint32_t writeDpot(uint8_t val) {
+  // TODO: add more I2C read/write functions in ports.c and use here and ADC
+
+  // Wait if I2C2 is busy
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Setup to send send start, addr, subaddr
+  I2C_TransferHandling(I2C2, dpot_dev_.dev, 1, I2C_AutoEnd_Mode,
+                       I2C_Generate_Start_Write);
+
+  // Wait for transmit interrupted flag or an error
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_TXIS));
+
+  // Send subaddress and data
+  I2C_SendData(I2C2, val);
+
+  // Wait for stop flag to be sent and then clear it
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
+  I2C2->ICR = I2C_ICR_STOPCF;
+  return 0;
+}
+
 LedGpio updateLeds(bool addr_set) {
   LedGpio leds = {0};
 
@@ -385,7 +425,7 @@ void updateInternalI2C(AmpliPiState* state) {
   uint32_t mod8 = millis() & ((1 << 3) - 1);
   if (mod8 == 0) {
     // Read ADC and update fans every 8 ms
-    // Reading the Power Board's ADC takes ~728 us
+    // Reading the Power Board's ADC takes ~248 us
     updateAdc(state);
 
     // In UQ7.1 + 20, convert to Q7.8
@@ -395,9 +435,15 @@ void updateInternalI2C(AmpliPiState* state) {
     int16_t hv1_temp_q7_8  = ((int16_t)state->hv1_temp - (20 << 1)) << 7;
     int16_t rpi_temp_q7_8  = ((int16_t)state->pi_temp - (20 << 1)) << 7;
 
+    // The two amp heatsinks can be combined by simply taking the max
+    int16_t amp_temp_q7_8 =
+        amp_temp1_q7_8 > amp_temp2_q7_8 ? amp_temp1_q7_8 : amp_temp2_q7_8;
+
     // No I2C reads/writes, just fan calculations
-    state->fans = updateFans(amp_temp1_q7_8, amp_temp2_q7_8, hv1_temp_q7_8,
-                             rpi_temp_q7_8, state->fan_override);
+    static bool dpot_present = false;
+    state->fans  = updateFans(amp_temp_q7_8, hv1_temp_q7_8, rpi_temp_q7_8,
+                             state->fan_override, dpot_present);
+    dpot_present = writeDpot(state->fans->dpot_val) == 0;
   } else {
     state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
     if (state->fans->ctrl != FAN_CTRL_MAX6644) {
