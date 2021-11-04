@@ -132,7 +132,6 @@ FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
     } else if (state.ctrl == FAN_CTRL_LINEAR) {
       if (max_pcnt_f8 > 0) {
         // Fans partially on, convert [0.0,1.0] in Q7.8 to [0x00,0x7F] dpot val
-
         // Rpot (kOhms) = 10k * DPOT_VAL / 127 + 0.1
         // V = 100k / (Rpot + 9k) + 1
         //   = 100k / (10k * DPOT_VAL / 127 + 0.1 + 9k) + 1
@@ -140,14 +139,13 @@ FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
         // 10k / 127 * DPOT_VAL + 9.1k = 100k / (V - 1)
         // DPOT_VAL = 127 / 10k * [100k / (V - 1) - 9.1k]
         // DPOT_VAL = 1270 / (V - 1) - 115.57
-        // const int32_t v_scale_f8 = (100 / 9.1 - 100 / 19.1) * (1 << 8);
-        // const int32_t v_min_f16  = (100 / 19.1 + 1) * (1 << 16);
-        // int32_t v_fan_f16 = v_scale_f8 * max_pcnt_f8 + v_min_f16;
-        state.duty_f7 = 1 << 7;  // 1.0 in UQ1.7, 100% duty cycle
-        // state.dpot_val = (1270 * (1 << 20) / (v_fan_f16 - (1 << 16)) - 115.57
-        // * (1 << 4)) >> 4;
-        // TODO: use the above proper calculation
-        state.dpot_val = ((1 << 8) - max_pcnt_f8) >> 1;
+        const int32_t v_scale_f8 = (100 / 9.1 - 100 / 19.1) * (1 << 8);
+        const int32_t v_min_f16  = (100 / 19.1 + 1) * (1 << 16);
+        int32_t       v_fan_f16  = v_scale_f8 * max_pcnt_f8 + v_min_f16;
+        const int32_t num_f20    = 1270 * (1 << 20);
+        const int32_t offset_f4  = 115.57 * (1 << 4);
+        state.dpot_val = (num_f20 / (v_fan_f16 - (1 << 16)) - offset_f4) >> 4;
+        state.duty_f7  = 1 << 7;  // 1.0 in UQ1.7, 100% duty cycle
       } else {
         // Hysteresis region, use old duty cycle and min dpot value
         state.dpot_val = 0x7F;  // Max resistance = min voltage
