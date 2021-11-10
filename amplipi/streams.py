@@ -92,12 +92,12 @@ class BaseStream:
     return f'{self.name} - {self.stype}'
 
   def _disconnect(self):
-    print(f'{self.name} disconnected')
+    print(f'{self.full_name()} disconnected')
     self.state = 'disconnected'
     self.src = None
 
   def _connect(self, src):
-    print(f'{self.name} connected to {src}')
+    print(f'{self.full_name()} connected to {src}')
     self.state = 'connected'
     self.src = src
 
