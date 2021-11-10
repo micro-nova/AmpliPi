@@ -46,7 +46,7 @@ typedef struct {
 } FanState;
 
 FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                     bool force, bool linear);
+                     bool force, bool thermistors, bool linear);
 bool      getFanOnFromDuty(uint8_t duty_f7);
 
 #endif /* FANS_H_ */

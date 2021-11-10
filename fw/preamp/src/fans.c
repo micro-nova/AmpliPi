@@ -138,7 +138,7 @@ uint8_t dpotValFromPercent(int16_t pcnt_f8) {
  * Returns the current fan state.
  */
 FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                     bool force, bool linear) {
+                     bool force, bool thermistors, bool linear) {
 #define FAN_DUTY_ON    (1 << 7)  // 1.0 in UQ1.7, 100% duty cycle
 #define FAN_DUTY_OFF   0         // 0% duty cycle
 #define DPOT_MAX_VOLTS 0         // Min resistance = max voltage
@@ -169,10 +169,9 @@ FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
   if (force) {
     state.ctrl    = FAN_CTRL_FORCED;
     state.duty_f7 = FAN_DUTY_ON;
-  } else if (!amp_temp) {
-    // Power Board 2.A uses MAX6644 but has no HV2/NTC2.
-    // If neither of those inputs measures a valid temp, then assume
-    // a MAX6644 fan control IC is controlling the fans.
+  } else if (!thermistors) {
+    // Power Board 2.A uses a MAX6644 fan controller IC and has no
+    // thermistor inputs.
     state.ctrl    = FAN_CTRL_MAX6644;
     state.duty_f7 = FAN_DUTY_OFF;  // Release control to MAX6644.
   } else {

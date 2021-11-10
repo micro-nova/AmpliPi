@@ -262,7 +262,8 @@ AdcVals readAdc() {
   return vals;
 }
 
-void updateAdc(AmpliPiState* state) {
+// Returns true if thermistors are present, false otherwise
+bool updateAdc(AmpliPiState* state) {
 #define ADC_REF_VOLTS 3.3
 #define ADC_PD_KOHMS  4700
 #define ADC_PU_KOHMS  100000
@@ -281,6 +282,11 @@ void updateAdc(AmpliPiState* state) {
   // Convert amplifier thermocouples to degC
   state->amp_temp1 = THERM_LUT_[adc.amp_temp1];
   state->amp_temp2 = THERM_LUT_[adc.amp_temp2];
+
+  // Power Board 2.A doesn't have thermistors. Instead, it has HV2/NTC2 inputs.
+  // Neither of those were used and are pulled low. So if either input measures
+  // more than 0 assume thermistors are present, otherwise not.
+  return adc.amp_temp1 || adc.amp_temp2;
 }
 
 uint32_t writeDpot(uint8_t val) {
@@ -426,7 +432,7 @@ void updateInternalI2C(AmpliPiState* state) {
   if (mod8 == 0) {
     // Read ADC and update fans every 8 ms
     // Reading the Power Board's ADC takes ~248 us
-    updateAdc(state);
+    bool thermistors = updateAdc(state);
 
     // In UQ7.1 + 20, convert to Q7.8
     // TODO: do this conversion in ADC filter when added
@@ -442,7 +448,7 @@ void updateInternalI2C(AmpliPiState* state) {
     // No I2C reads/writes, just fan calculations
     static bool dpot_present = false;
     state->fans  = updateFans(amp_temp_q7_8, hv1_temp_q7_8, rpi_temp_q7_8,
-                             state->fan_override, dpot_present);
+                             state->fan_override, thermistors, dpot_present);
     dpot_present = writeDpot(state->fans->dpot_val) == 0;
   } else {
     state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
