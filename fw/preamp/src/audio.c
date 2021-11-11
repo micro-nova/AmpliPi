@@ -106,26 +106,38 @@ void initZones() {
   standby(true);
 }
 
-// Set a zone's volume (required I2C write)
+// Set a zone's volume (requires I2C write)
 void setZoneVolume(size_t zone, uint8_t vol) {
-#ifdef AUTO_MUTE_CTRL
-  // Automatic On-Off control
-  if (vol > 78) {
-    mute(zone, true);
-  } else if (!IsOn(zone)) {
-    mute(zone, false);
+  /* The volume IC has a discontinuity in its register value to attenuation
+   * conversion after -71dB. To set -72dB the value 128 must be written.
+   * Aditionally, mute (-90dB) is set by any value 192 to 255.
+   */
+  uint8_t vol_reg;
+  if (vol < 72) {
+    vol_reg = vol;
+  } else if (vol < 80) {
+    vol_reg = vol + 56;
+  } else {
+    vol_reg = 255;
   }
-#endif
 
   // Keep track of the volume so it is not lost when we standby
-  volumes[zone] = vol;
+  volumes[zone] = vol_reg;
 
   // Actually write the volume to the volume control IC
-  writeVolume(zone, vol);
+  writeVolume(zone, vol_reg);
 }
 
 uint8_t getZoneVolume(size_t zone) {
-  return volumes[zone];
+  uint8_t vol;
+  if (volumes[zone] < 72) {
+    vol = volumes[zone];
+  } else if (volumes[zone] < 80 + 56) {
+    vol = volumes[zone] - 56;
+  } else {
+    vol = 80;
+  }
+  return vol;
 }
 
 // Connect a Zone to a Source
