@@ -77,6 +77,8 @@ class FanCtrl(Enum):
   LINEAR  = 2
   FORCED  = 3
 
+MIN_VOL = -255
+
 def is_amplipi():
   """ Check if the current hardware is an AmpliPi
 
@@ -527,7 +529,7 @@ class Mock:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[-79, 0]
+        vol: int in range[MIN_VOL, 0]
 
       Returns:
         True on success, False on hw failure
@@ -535,7 +537,7 @@ class Mock:
     preamp = zone // 6
     assert zone >= 0
     assert 0 <= preamp <= 5
-    assert 0 >= vol >= -79
+    assert 0 >= vol >= MIN_VOL
     return True
 
   def exists(self, zone):
@@ -627,7 +629,7 @@ class Rpi:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[-79, 0]
+        vol: int in range[MIN_VOL, 0]
 
       Returns:
         True on success, False on hw failure
@@ -635,7 +637,7 @@ class Rpi:
     preamp = int(zone / 6) # int(x/y) does the same thing as (x // y)
     assert zone >= 0
     assert preamp < 15
-    assert vol <= 0 and vol >= -79
+    assert vol <= 0 and vol >= MIN_VOL
 
     chan = zone - (preamp * 6)
     hvol = abs(vol)
