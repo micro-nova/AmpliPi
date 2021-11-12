@@ -56,6 +56,7 @@ _REG_ADDRS = {
   'AMP_TEMP2'       : 0x13,
   'PI_TEMP'         : 0x14,
   'FAN_DUTY'        : 0x15,
+  'FAN_VOLTS'       : 0x16,
   'VERSION_MAJOR'   : 0xFA,
   'VERSION_MINOR'   : 0xFB,
   'GIT_HASH_27_20'  : 0xFC,
@@ -279,7 +280,7 @@ class _Preamps:
     return None, None, None, None
 
   def read_power_status(self, preamp: int = 1) -> Tuple[Union[bool, None],
-    Union[bool, None], Union[bool, None], Union[bool, None]]:
+    Union[bool, None], Union[bool, None], Union[bool, None], Union[float, None]]:
     """ Read the status of the power supplies
 
       Returns:
@@ -295,29 +296,30 @@ class _Preamps:
       pg_12v = (pstat & 0x04) != 0
       en_9v = (pstat & 0x02) != 0
       pg_9v = (pstat & 0x01) != 0
-      return pg_9v, en_9v, pg_12v, en_12v
+      fvstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FAN_VOLTS'])
+      v12 = fvstat / 2**3
+      return pg_9v, en_9v, pg_12v, en_12v, v12
     return None, None, None, None
 
   def read_fan_status(self, preamp: int = 1) -> Tuple[Union[bool, None],
-    Union[bool, None], Union[bool, None], Union[bool, None], Union[bool, None]]:
+    Union[int, None], Union[bool, None], Union[bool, None]]:
     """ Read the status of the fans
 
       Returns:
-        override:  True if the fans have been forced on
+        ctrl       Fan control method currently in use:
+                   0 = MAX6644, 1 = PWM, 2 = Linear, 3 = Forced
         fans_on:   True if the fans are on
-        ctrl       Fan control method currently in use - True if ON/OFF, False if MAX6644
         ovr_tmp:   True if the amplifiers or PSU are overtemp
         failed:    True if the fans failed (only available on developer units)
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
       fstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FANS'])
-      failed = (fstat & 0x20) != 0
-      ovr_tmp = (fstat & 0x10) != 0
-      ctrl = (fstat & 0x0C) != 0
-      fans_on = (fstat & 0x02) != 0
-      override = (fstat & 0x01) != 0
-      return override, fans_on, ctrl, ovr_tmp, failed
+      ctrl = (fstat & 0x03)
+      fans_on = (fstat & 0x04) != 0
+      ovr_tmp = (fstat & 0x08) != 0
+      failed = (fstat & 0x10) != 0
+      return ctrl, fans_on, ovr_tmp, failed
     return None, None, None, None, None
 
   def read_fan_duty(self, preamp: int = 1) -> Union[float, None]:

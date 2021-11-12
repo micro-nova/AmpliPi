@@ -40,17 +40,22 @@ def print_status(p: amplipi.rt._Preamps, u: int):
   #  p.print_zone_state(zone)
 
   # Power - note: failed only exists on Rev2 Power Board
-  pg_9v, en_9v, pg_12v, en_12v = p.read_power_status(u)
+  pg_9v, en_9v, pg_12v, en_12v, v12 = p.read_power_status(u)
   print('  Power Board Status')
   print(f'     9V:  EN={en_9v}, PG={pg_9v}')
-  print(f'    12V:  EN={en_12v}, PG={pg_12v}')
+  print(f'    12V:  EN={en_12v}, PG={pg_12v}, {v12} V')
 
   # Fans
-  override, fans_on, ctrl, ovr_tmp, failed = p.read_fan_status(u)
+  ctrl, fans_on, ovr_tmp, failed = p.read_fan_status(u)
   print('  Fan Status')
-  fan_ctrl = 'MAX6644' if ctrl == False else 'PWM'
-  fans_forced = ' (forced)' if override == True else ''
-  print(f'    Fans: On={fans_on}{fans_forced}, Failed={failed}, Control={fan_ctrl}')
+  fan_ctrl = 'MAX6644'
+  if ctrl == 1:
+    fan_ctrl = 'PWM'
+  elif ctrl == 2:
+    fan_ctrl = 'Linear'
+  elif ctrl == 3:
+    fan_ctrl = 'Forced'
+  print(f'    Fans: On={fans_on}, Failed={failed}, Control={fan_ctrl}')
   print(f'    Overtemp: {ovr_tmp}')
 
   # 24V and temp

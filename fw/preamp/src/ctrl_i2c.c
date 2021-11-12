@@ -136,9 +136,8 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
 
     case REG_FANS: {
       FanMsg msg = {
-          .override = state->fan_override,
-          .on       = state->fans->duty_f7 > 0,
           .ctrl     = state->fans->ctrl,
+          .on       = state->fans->duty_f7 > 0,
           .ovr_tmp  = !state->pwr_gpio.ovr_tmp_n || state->fans->ovr_temp,
           .fail     = !state->pwr_gpio.fan_fail_n,
           .reserved = 0,
@@ -182,6 +181,18 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
     case REG_FAN_DUTY:
       out_msg = state->fans->duty_f7;
       break;
+
+    case REG_FAN_VOLTS: {
+      out_msg = 12 * (1 << 3);
+      if (state->fans->ctrl == FAN_CTRL_LINEAR) {
+        // V = 100,000 / (10,000 / 127 * DPOT_VAL + 9,100) + 1
+        uint32_t volts =
+            100000 * (1 << 12) / (10000 * state->fans->dpot_val / 127 + 9100) +
+            (1 << 12);
+        out_msg = (uint8_t)(volts >> 9);
+      }
+      break;
+    }
 
     case REG_VERSION_MAJOR:
       out_msg = VERSION_MAJOR;
@@ -303,7 +314,10 @@ void ctrlI2CTransact(AmpliPiState* state) {
         break;
 
       case REG_FANS:
-        state->fan_override = ((FanMsg)data).override;
+        state->fan_override = false;
+        if (((FanMsg)data).ctrl == FAN_CTRL_FORCED) {
+          state->fan_override = true;
+        }
         break;
 
       case REG_LED_CTRL:
