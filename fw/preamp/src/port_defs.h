@@ -51,6 +51,9 @@ typedef enum
   REG_AMP_TEMP1   = 0x11,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
   REG_HV1_TEMP    = 0x12,  //   0x00 = disconnected, 0xFF = shorted
   REG_AMP_TEMP2   = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
+  REG_PI_TEMP     = 0x14,  // RPi's temp sent to the micro, in UQ7.1 + 20 format
+  REG_FAN_DUTY    = 0x15,  // Fan PWM duty, [0.0,1.0] in UQ1.7 format
+  REG_FAN_VOLTS   = 0x16,  // Fan voltage in UQ3.4 format
 
   // Version info
   REG_VERSION_MAJOR = 0xFA,
@@ -69,6 +72,8 @@ extern const Pin exp_nrst_;             // Expansion connector NRST_OUT
 extern const Pin exp_boot0_;            // Expansion connector BOOT0_OUT
 extern const Pin i2c2_scl_;             // Internal I2C bus SCL
 extern const Pin i2c2_sda_;             // Internal I2C bus SDA
+
+#define PWR_GPIO_OUT_MASK 0x83
 
 typedef union {
   struct {
@@ -97,12 +102,12 @@ typedef union {
 
 typedef union {
   struct {
-    uint8_t override : 1;  // R/W - Force fans on 100%
+    uint8_t ctrl : 2;      // R/W - Fan control method currently in use.
+                           //       0b11 = force fans on.
     uint8_t on       : 1;  // R   - Fans status
-    uint8_t ctrl     : 2;  // R   - Fan control method currently in use
     uint8_t ovr_tmp  : 1;  // R   - Unit over dangerous temperature threshold
     uint8_t fail     : 1;  // R   - Fan fail detection (Power Board 2.A only)
-    uint8_t reserved : 2;
+    uint8_t reserved : 3;
   };
   uint8_t data;
 } FanMsg;

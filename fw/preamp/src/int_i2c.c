@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Control for front panel LEDs
+ * Internal I2C bus control/status
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <stdbool.h>
 
 #include "audio_mux.h"
+#include "fans.h"
 #include "port_defs.h"
 #include "ports.h"
 #include "stm32f0xx.h"
@@ -39,8 +40,11 @@ const I2CReg led_dir_  = {0x40, 0x00};
 const I2CReg led_gpio_ = {0x40, 0x09};
 const I2CReg led_olat_ = {0x40, 0x0A};
 
-// Power Board ADC register
+// Power Board ADC register (no registers)
 const I2CReg adc_dev_ = {0xC8, 0xFF};
+
+// DPOT register (no registers)
+const I2CReg dpot_dev_ = {0x5E, 0xFF};
 
 void initI2C2() {
   /* I2C-2 is internal to a single AmpliPi unit.
@@ -60,7 +64,7 @@ void initI2C2() {
    * | TDA7448 (Vol1)   | ??????????????
    * | TDA7448 (Vol2)   | Doesn't even specify max frequency...
    * ~70 pF for all devices, plus say ~20 pF for all traces and wires = ~90 pF
-   * So rise time t_r ~= 0.8473 * 1 kOhm * 90 pF = 76 ns
+   * Rise time t_r = 0.8473*Rp*Cb ~= 0.8473 * 1 kOhm * 90 pF = 76 ns
    * Measured rise time: 72 ns
    * Measured fall time:  4 ns
    *
@@ -69,9 +73,9 @@ void initI2C2() {
    *    Rp > [V_DD - V_OL(max)] / I_OL = (3.3 V - 0.4 V) / 3 mA = 967 Ohm
    *   Max bus capacitance (with only resistor for pullup) is 200 pF.
    *   Standard mode rise-time t_r(max) = 1000 ns
-   *    Rp_std < t_r(max) / (0.8473 * C_b) = 1000 / (0.8473 * 0.2) = 5901 Ohm
+   *    Rp_std < t_r(max) / (0.8473 * Cb) = 1000 / (0.8473 * 0.2) = 5901 Ohm
    *   Fast mode rise-time t_r(max) = 300 ns
-   *    Rp_fast < t_r(max) / (0.8473 * C_b) = 1000 / (0.8473 * 0.2) = 1770 Ohm
+   *    Rp_fast < t_r(max) / (0.8473 * Cb) = 1000 / (0.8473 * 0.2) = 1770 Ohm
    *   For Standard mode: 1k <= Rp <= 5.6k
    *   For Fast mode: 1k <= Rp <= 1.6k
    */
@@ -105,65 +109,100 @@ void initI2C2() {
   I2C_InitStructure2.I2C_Ack                 = I2C_Ack_Enable;
   I2C_InitStructure2.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
 
-  // Datasheet example: 100 kHz: 0x10420F13, 400 kHz: 0x10310309
-  // Excel tool, rise/fall 76/15 ns: 100 kHz: 0x00201D2B (0.5935% error)
-  //                                 400 kHz: 0x0010020A (2.4170% error)
+  // See the STM32F030 reference manual section 22.4.9 "I2C master mode" or
+  // AN4235 for I2C timing calculations.
+  // Excel tool, rise/fall 72/4 ns: 100 kHz: 0x00201D2C (0.5074% error)
+  //                                400 kHz: 0x0010020B (1.9992% error)
 
-  // Common parameters
-  // t_I2CCLK = 1 / 8 MHz = 125 ns
-  // t_AF(min) = 50 ns
-  // t_AF(max) = 260 ns
-  // t_r = 72 ns
-  // t_f = 4 ns
-  // Fall time must be < 300 ns
-  // For Standard mode (100 kHz), rise time < 1000 ns
-  // For Fast mode (400 kHz), rise time < 300 ns
-  // tR = 0.8473*Rp*Cb = 847.3*Cb
+  /* Common parameters
+   * t_I2CCLK = 1 / 8 MHz = 125 ns
+   * t_AF(min) = 50 ns  - Analog filter minimum input delay
+   * t_AF(max) = 260 ns - Analog filter maximum input delay
+   * t_DNF = 0          - Digital filter input delay
+   * t_r = 72 ns        - Rise time
+   *   For Standard mode (100 kHz), rise time < 1000 ns
+   *   For Fast mode (400 kHz), rise time < 300 ns
+   * t_f = 4 ns         - Fall time (must be < 300 ns)
+   *
+   * t_SYNC1(min) = t_f + t_AF(min) + t_DNF + 2*t_I2CCLK
+   * t_SYNC1(min) = 4 + 50 + 2*125 = 306 ns
+   * t_SYNC2(min) = t_r + t_AF(min) + t_DNF + 2*t_I2CCLK
+   * t_SYNC2(min) = 76 + 50 + 2*125 = 376 ns
+   */
 
-  // Standard mode, max 100 kHz
-  // t_LOW > 4.7 us
-  // t_HIGH > 4 us
-  // t_I2CCLK < [t_LOW - t_AF(min) - t_DNF] / 4 = (4700 - 50) / 4 = 1.1625 ns
-  // t_I2CCLK < t_HIGH = 4000 ns
-  // Set PRESC = 0, so t_I2CCLK = 1 / 8 MHz = 125 ns
-  // t_PRESC = t_I2CCLK / (PRESC + 1) = 125 / (0 + 1) = 125 ns
-  // SDADEL >= [t_f + t_HD;DAT(min) - t_AF(min) - t_DNF - 3*t_I2CCLK] / t_PRESC
-  // SDADEL >= [t_f - 50 - 375] / 125 --- This will be < 0, so SDASEL >= 0
-  // SDADEL <= [t_HD;DAT(max) - t_r - t_AF(max) - t_DNF - 4*t_I2CCLK] / t_PRESC
-  // SDADEL <= (3450 - 76 - 260 - 500) / 125 = 20.912
-  // SCLDEL >= {[t_r + t_SU;DAT(min)] / t_PRESC} - 1
-  // SCLDEL >= (76 + 250) / 125 - 1 = 1.608
-  // So 0 <= SDADEL <= 20, SCLDEL >= 2
-  // I2C_TIMINGR[31:16] = 0x0020
-  //
-  // t_HIGH(min) <= t_AF(min) + t_DNF + 2*t_I2CCLK + t_PRESC*(SCLH + 1)
-  // 4000 <= 50 + 2*125 + 125*(SCLH + 1)
-  // 3575 <= 125*SCLH
-  // SCLH >= 28.6 = 0x1D
-  //
-  // t_LOW(min) <= t_AF(min) + t_DNF + 2*t_I2CCLK + t_PRESC*(SCLL + 1)
-  // 4700 <= 50 + 2*125 + 125*(SCLL + 1)
-  // 4275 <= 125*SCLL
-  // SCLL >= 34.2 = 0x23
-  //
-  // Need to stay under 100 kHz in "worst" case. Keep SCLH at min,
-  // but here we determine final SCLL.
-  // t_SCL = t_SYNC1 + t_SYNC2 + t_LOW + t_HIGH >= 10000 ns (100 kHz max)
-  // t_SYNC1(min) = t_f + t_AF(min) + t_DNF + 2*t_I2CCLK
-  // t_SYNC1(min) = 6 + 50 + 2*125 = 306 ns
-  // t_SYNC2(min) = t_r + t_AF(min) + t_DNF + 2*t_I2CCLK
-  // t_SYNC2(min) = 76 + 50 + 2*125 = 376 ns
-  // t_SYNC1 + t_SYNC2 + t_LOW + t_HIGH >= 10000 ns
-  // t_LOW + t_HIGH >= 9318 ns
-  // t_PRESC*(SCLL + 1) + t_PRESC*(SCLH + 1) >= 9318 ns
-  // 125*(SCLL + 1) + 125*30 >= 9318 ns
-  // 125*(SCLL + 1) + 125*30 >= 9318 ns
-  // SCLL >= 43.544 = 0x2C
+  /* Standard mode, max 100 kHz
+   * t_LOW > 4.7 us,t_HIGH > 4 us
+   * t_I2CCLK < [t_LOW - t_AF(min) - t_DNF] / 4 = (4700 - 50) / 4 = 1162.5 ns
+   * t_I2CCLK < t_HIGH = 4000 ns
+   * Set PRESC = 0, so t_I2CCLK = 1 / 8 MHz = 125 ns
+   * t_PRESC = t_I2CCLK / (PRESC + 1) = 125 / (0 + 1) = 125 ns
+   * SDADEL >= [t_f + t_HD;DAT(min) - t_AF(min) - t_DNF - 3*t_I2CCLK] / t_PRESC
+   * SDADEL >= [4 - 50 - 375] / 125 = -3.368 < 0, so SDASEL >= 0
+   * SDADEL <= [t_VD;DAT(max) - t_r - t_AF(max) - t_DNF - 4*t_I2CCLK] / t_PRESC
+   * SDADEL <= (3450 - 72 - 260 - 500) / 125 = 20.944
+   * SCLDEL >= {[t_r + t_SU;DAT(min)] / t_PRESC} - 1
+   * SCLDEL >= (72 + 250) / 125 - 1 = 1.576
+   * So 0 <= SDADEL <= 20, SCLDEL >= 2
+   * I2C_TIMINGR[31:16] = 0x0020
+   *
+   * t_HIGH(min) <= t_AF(min) + t_DNF + 2*t_I2CCLK + t_PRESC*(SCLH + 1)
+   * 4000 <= 50 + 2*125 + 125*(SCLH + 1)
+   * 3575 <= 125*SCLH
+   * SCLH >= 28.6 = 0x1D
+   *
+   * t_LOW(min) <= t_AF(min) + t_DNF + 2*t_I2CCLK + t_PRESC*(SCLL + 1)
+   * 4700 <= 50 + 2*125 + 125*(SCLL + 1)
+   * 4275 <= 125*SCLL
+   * SCLL >= 34.2 = 0x23
+   *
+   * Need to stay under 100 kHz in "worst" case. Keep SCLH at min,
+   * but here we determine final SCLL.
+   * t_SCL = t_SYNC1 + t_SYNC2 + t_LOW + t_HIGH >= 10000 ns (100 kHz max)
+   * t_LOW + t_HIGH >= 10000 - 304 - 372 ns = 9324 ns
+   * t_PRESC*(SCLL + 1) + t_PRESC*(SCLH + 1) >= 9324 ns
+   * 125*(SCLL + 1) + 125*30 >= 9324 ns
+   * SCLL >= 43.592 = 0x2C
+   *
+   * I2C_TIMINGR[31:0] = 0x00101D2C
+   */
 
-  // Fast mode, max 400 kHz
-  // TODO?
+  /* Fast mode, max 400 kHz
+   * t_LOW > 1.3 us, t_HIGH > 0.6 us
+   * t_I2CCLK < [t_LOW - t_AF(min) - t_DNF] / 4 = (1300 - 50) / 4 = 312.5 ns
+   * t_I2CCLK < t_HIGH = 600 ns
+   * Set PRESC = 0, so t_I2CCLK = 1 / 8 MHz = 125 ns
+   * t_PRESC = t_I2CCLK / (PRESC + 1) = 125 / (0 + 1) = 125 ns
+   * SDADEL >= [t_f + t_HD;DAT(min) - t_AF(min) - t_DNF - 3*t_I2CCLK] / t_PRESC
+   * SDADEL >= [4 - 50 - 375] / 125 = -3.368 < 0, so SDASEL >= 0
+   * SDADEL <= [t_VD;DAT(max) - t_r - t_AF(max) - t_DNF - 4*t_I2CCLK] / t_PRESC
+   * SDADEL <= (900 - 72 - 260 - 500) / 125 = 0.544
+   * SCLDEL >= {[t_r + t_SU;DAT(min)] / t_PRESC} - 1
+   * SCLDEL >= (72 + 100) / 125 - 1 = 0.376
+   * So 0 <= SDADEL <= 0, SCLDEL >= 1
+   * I2C_TIMINGR[31:16] = 0x0010
+   *
+   * t_HIGH(min) <= t_AF(min) + t_DNF + 2*t_I2CCLK + t_PRESC*(SCLH + 1)
+   * 600 <= 50 + 2*125 + 125*(SCLH + 1)
+   * 175 <= 125*SCLH
+   * SCLH >= 1.4 = 0x02
+   *
+   * t_LOW(min) <= t_AF(min) + t_DNF + 2*t_I2CCLK + t_PRESC*(SCLL + 1)
+   * 1300 <= 50 + 2*125 + 125*(SCLL + 1)
+   * 875 <= 125*SCLL
+   * SCLL >= 7 = 0x07
+   *
+   * Need to stay under 400 kHz in "worst" case. Keep SCLH at min,
+   * but here we determine final SCLL.
+   * t_SCL = t_SYNC1 + t_SYNC2 + t_LOW + t_HIGH >= 2500 ns (400 kHz max)
+   * t_LOW + t_HIGH >= 2500 - 304 - 372 ns = 1824 ns
+   * t_PRESC*(SCLL + 1) + t_PRESC*(SCLH + 1) >= 1824 ns
+   * 125*(SCLL + 1) + 125*3 >= 1824 ns
+   * SCLL >= 10.592 = 0x0B
+   *
+   * I2C_TIMINGR[31:0] = 0x0010020B
+   */
 
-  I2C_InitStructure2.I2C_Timing = 0x00201D2C;
+  I2C_InitStructure2.I2C_Timing = 0x0010020B;
   I2C_Init(I2C2, &I2C_InitStructure2);
   I2C_Cmd(I2C2, ENABLE);
 }
@@ -223,7 +262,8 @@ AdcVals readAdc() {
   return vals;
 }
 
-void updateAdc(AmpliPiState* state) {
+// Returns true if thermistors are present, false otherwise
+bool updateAdc(AmpliPiState* state) {
 #define ADC_REF_VOLTS 3.3
 #define ADC_PD_KOHMS  4700
 #define ADC_PU_KOHMS  100000
@@ -242,6 +282,67 @@ void updateAdc(AmpliPiState* state) {
   // Convert amplifier thermocouples to degC
   state->amp_temp1 = THERM_LUT_[adc.amp_temp1];
   state->amp_temp2 = THERM_LUT_[adc.amp_temp2];
+
+  // Power Board 2.A doesn't have thermistors. Instead, it has HV2/NTC2 inputs.
+  // Neither of those were used and are pulled low. So if either input measures
+  // more than 0 assume thermistors are present, otherwise not.
+  return adc.amp_temp1 || adc.amp_temp2;
+}
+
+uint32_t writeDpot(uint8_t val) {
+  // TODO: add more I2C read/write functions in ports.c and use here and ADC
+
+  // Wait if I2C2 is busy
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Setup to send send start, addr, subaddr
+  I2C_TransferHandling(I2C2, dpot_dev_.dev, 1, I2C_AutoEnd_Mode,
+                       I2C_Generate_Start_Write);
+
+  // Wait for transmit interrupted flag or an error
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_TXIS));
+
+  // Send subaddress and data
+  I2C_SendData(I2C2, val);
+
+  // Wait for stop flag to be sent and then clear it
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
+  I2C2->ICR = I2C_ICR_STOPCF;
+  return 0;
+}
+
+LedGpio updateLeds(bool addr_set) {
+  LedGpio leds = {0};
+
+  leds.grn = inStandby() ? 0 : 1;
+  if (addr_set) {
+    leds.red = !leds.grn;
+  } else {
+    // Blink red light at ~0.5 Hz
+    uint32_t mod2k = millis() & ((1 << 11) - 1);
+    leds.red       = mod2k > (1 << 10);
+  }
+
+  leds.zones = 0;
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    leds.zones |= (isOn(zone) ? 1 : 0) << zone;
+  }
+  return leds;
 }
 
 void initInternalI2C(AmpliPiState* state) {
@@ -327,70 +428,53 @@ void initInternalI2C(AmpliPiState* state) {
 }
 
 void updateInternalI2C(AmpliPiState* state) {
-  // Read the Power Board's ADC - 728 us
-  updateAdc(state);
+  uint32_t mod8 = millis() & ((1 << 3) - 1);
+  if (mod8 == 0) {
+    // Read ADC and update fans every 8 ms
+    // Reading the Power Board's ADC takes ~248 us
+    bool thermistors = updateAdc(state);
 
-  // So far, no Power Boards (2.A) with a MAX6644 have used HV2/NTC2.
-  // If either of those inputs measures a valid temp, then assume
-  // no MAX6644 fan control IC is present, and thermisters are.
-  if (state->amp_temp1 || state->amp_temp2) {
-    state->fan_ctrl = FAN_CTRL_ON_OFF;
+    // In UQ7.1 + 20, convert to Q7.8
+    // TODO: do this conversion in ADC filter when added
+    int16_t amp_temp1_q7_8 = ((int16_t)state->amp_temp1 - (20 << 1)) << 7;
+    int16_t amp_temp2_q7_8 = ((int16_t)state->amp_temp1 - (20 << 1)) << 7;
+    int16_t hv1_temp_q7_8  = ((int16_t)state->hv1_temp - (20 << 1)) << 7;
+    int16_t rpi_temp_q7_8  = ((int16_t)state->pi_temp - (20 << 1)) << 7;
+
+    // The two amp heatsinks can be combined by simply taking the max
+    int16_t amp_temp_q7_8 =
+        amp_temp1_q7_8 > amp_temp2_q7_8 ? amp_temp1_q7_8 : amp_temp2_q7_8;
+
+    // No I2C reads/writes, just fan calculations
+    static bool dpot_present = false;
+    state->fans  = updateFans(amp_temp_q7_8, hv1_temp_q7_8, rpi_temp_q7_8,
+                             state->fan_override, thermistors, dpot_present);
+    dpot_present = writeDpot(state->fans->dpot_val) == 0;
   } else {
-    state->fan_ctrl = FAN_CTRL_MAX6644;
-  }
-
-  uint8_t max_temp = state->hv1_temp;
-  if (state->fan_ctrl == FAN_CTRL_ON_OFF) {
-    for (size_t i = 0; i < sizeof(state->temps); i++) {
-      if (state->temps[i] > max_temp) {
-        max_temp = state->temps[i];
-      }
+    state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
+    if (state->fans->ctrl != FAN_CTRL_MAX6644) {
+      // No fan control IC to determine this
+      state->pwr_gpio.fan_fail_n = !false;
+      state->pwr_gpio.ovr_tmp_n  = !false;
     }
 
-    if (max_temp < TEMP_THRESH_LOW_UQ7_1) {
-      state->pwr_gpio.fan_on = false;
+    // Update the LED Board's LED state
+    if (!state->led_override) {
+      state->leds = updateLeds(state->i2c_addr != 0);
     }
-    if (max_temp > TEMP_THRESH_HIGH_UQ7_1) {
-      state->pwr_gpio.fan_on = true;
-    }
+    // TODO: only write on change
+    writeI2C2(led_gpio_, state->leds.data);
   }
 
-  if (state->fan_override || max_temp > TEMP_THRESH_HIGH_UQ7_1) {
-    state->pwr_gpio.fan_on = true;
-  } else if (max_temp < TEMP_THRESH_LOW_UQ7_1) {
-    state->pwr_gpio.fan_on = false;
+  // Update the Power Board's GPIO state, only writing when necessary
+  PwrGpio gpio_request = {
+      .en_9v  = true,  // Always enable 9V
+      .en_12v = true,  // Always enable 12V
+      .fan_on = getFanOnFromDuty(state->fans->duty_f7),
+  };
+  if (gpio_request.data != (PWR_GPIO_OUT_MASK & state->pwr_gpio.data)) {
+    writeI2C2(pwr_io_gpio_, gpio_request.data);
   }
-
-  // Update the Power Board's GPIO state
-  // TODO: Only write when necessary
-  writeI2C2(pwr_io_gpio_, state->pwr_gpio.data);
-  state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
-
-  if (state->fan_ctrl != FAN_CTRL_MAX6644) {
-    // No fan control IC to determine this
-    state->pwr_gpio.fan_fail_n = !false;
-    state->pwr_gpio.ovr_tmp_n  = !(max_temp > TEMP_THRESH_OVR_UQ7_1);
-  }
-
-  // Update the LED Board's LED state
-  if (!state->led_override) {
-    state->leds.grn = inStandby() ? 0 : 1;
-
-    if (state->i2c_addr) {
-      state->leds.red = !state->leds.grn;
-    } else {
-      // Blink red light at ~0.5 Hz
-      uint32_t mod2k  = millis() & ((1 << 11) - 1);
-      state->leds.red = mod2k > (1 << 10);
-    }
-  }
-
-  state->leds.zones = 0;
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    state->leds.zones |= (isOn(zone) ? 1 : 0) << zone;
-  }
-  writeI2C2(led_gpio_, state->leds.data);
-  state->leds.data = readI2C2(led_gpio_);
 
   // TODO: Can the volume controllers be read?
   // TODO: Write volumes

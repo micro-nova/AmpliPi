@@ -22,20 +22,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "fans.h"
 #include "port_defs.h"
 #include "ports.h"
-
-// Possible fan control methods:
-// - Overridden (forced on) by the Pi
-// - MAX6644 (5 developer units with Power Board 2.A)
-// - Thermistors with FAN_ON on/off control (Power Board 3.A)
-// - Thermistors with DPOT linear voltage control (Future)
-typedef enum
-{
-  FAN_CTRL_MAX6644,
-  FAN_CTRL_ON_OFF,
-  FAN_CTRL_LINEAR,
-} FanCtrl;
 
 typedef struct {
   PwrGpio  pwr_gpio;   // Power Board GPIO expander's state
@@ -43,17 +32,19 @@ typedef struct {
   Expander expansion;  // Expansion connector settings
   uint8_t  hv1;        // High-voltage in Q6.2 Volts
   union {
+    // All temps in UQ7.1 + 20 degC format
     struct {
-      uint8_t hv1_temp;   // PSU temp in UQ7.1 + 20 degC
-      uint8_t amp_temp1;  // Amp heatsink 1 temp in Q7.1 + 20 degC
-      uint8_t amp_temp2;  // Amp heatsink 2 temp in Q7.1 + 20 degC
+      uint8_t hv1_temp;   // PSU temp
+      uint8_t amp_temp1;  // Amp heatsink 1 temp
+      uint8_t amp_temp2;  // Amp heatsink 2 temp
+      uint8_t pi_temp;    // Control board Raspberry Pi temp
     };
-    uint8_t temps[3];  // All temperatures in 1 array
+    uint8_t temps[4];  // All temperatures in 1 array
   };
-  uint8_t i2c_addr;      // Slave I2C1 address
-  bool    fan_override;  // Override fan control logic and force 100% on
-  bool    led_override;  // Override LED Board logic and force to 'leds'
-  FanCtrl fan_ctrl;
+  uint8_t   i2c_addr;      // Slave I2C1 address
+  bool      led_override;  // Override LED Board logic and force to 'leds'
+  bool      fan_override;  // Override fan control logic and force 100% on
+  FanState* fans;
 } AmpliPiState;
 
 void ctrlI2CInit(uint8_t addr);

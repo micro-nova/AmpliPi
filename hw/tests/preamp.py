@@ -5,7 +5,6 @@ import os
 import sys
 import time
 from datetime import datetime
-
 # Add the directory above this script's location to PATH
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import amplipi.rt
@@ -40,17 +39,24 @@ def print_status(p: amplipi.rt._Preamps, u: int):
   #  p.print_zone_state(zone)
 
   # Power - note: failed only exists on Rev2 Power Board
-  pg_9v, en_9v, pg_12v, en_12v = p.read_power_status(u)
+  pg_9v, en_9v, pg_12v, en_12v, v12 = p.read_power_status(u)
   print('  Power Board Status')
   print(f'     9V:  EN={en_9v}, PG={pg_9v}')
-  print(f'    12V:  EN={en_12v}, PG={pg_12v}')
+  print(f'    12V:  EN={en_12v}, PG={pg_12v}, {v12} V')
 
   # Fans
-  override, fans_on, ctrl, ovr_tmp, failed = p.read_fan_status(u)
+  ctrl, fans_on, ovr_tmp, failed = p.read_fan_status(u)
+  fan_duty = preamps.read_fan_duty(args.u)
   print('  Fan Status')
-  fan_ctrl = 'MAX6644' if ctrl == False else 'ON_OFF'
-  fans_forced = ' (forced)' if override == True else ''
-  print(f'    Fans: On={fans_on}{fans_forced}, Failed={failed}, Control={fan_ctrl}')
+  if ctrl == amplipi.rt.FanCtrl.MAX6644:
+    fan_str = f', Failed={failed}'
+  elif ctrl == amplipi.rt.FanCtrl.PWM:
+    fan_str = f', Duty={fan_duty}'
+  elif ctrl == amplipi.rt.FanCtrl.LINEAR:
+    fan_str = f', On={fans_on}'
+  elif ctrl == amplipi.rt.FanCtrl.FORCED:
+    fan_str = ' ON'
+  print(f'    Fans: Control={ctrl.name}{fan_str}')
   print(f'    Overtemp: {ovr_tmp}')
 
   # 24V and temp
@@ -102,10 +108,12 @@ preamps = amplipi.rt._Preamps(reset = reset, set_addr = args.a, bootloader = boo
 
 # Used for temperature recording
 if args.temps:
-  _, fan_on, _, _, _ = preamps.read_fan_status(args.u)
+  fan_duty = preamps.read_fan_duty(args.u)
   hv1_tmp, amp1_tmp, amp2_tmp = preamps.read_temps(args.u)
+  with open('/sys/class/thermal/thermal_zone0/temp') as f:
+    pi_tmp = int(f.read()) / 1000
   time = datetime.now().strftime('%H:%M:%S')
-  print(f'{time},{fan_on},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f}')
+  print(f'{time},{fan_duty:.1f},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f},{pi_tmp:.1f}')
   sys.exit(0)
 
 if args.u > 1 and args.r:
