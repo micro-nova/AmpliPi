@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Control for front panel LEDs
+ * Internal I2C bus control/status
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <stdbool.h>
 
 #include "audio_mux.h"
+#include "fans.h"
 #include "port_defs.h"
 #include "ports.h"
 #include "stm32f0xx.h"
@@ -327,62 +328,30 @@ void initInternalI2C(AmpliPiState* state) {
 }
 
 void updateInternalI2C(AmpliPiState* state) {
+  // TODO: Only read ADC and update fans every 10ms
   // Read the Power Board's ADC - 728 us
   updateAdc(state);
 
-  // So far, no Power Boards (2.A) with a MAX6644 have used HV2/NTC2.
-  // If either of those inputs measures a valid temp, then assume
-  // no MAX6644 fan control IC is present, and thermisters are.
-  if (state->amp_temp1 || state->amp_temp2) {
-    state->fan_ctrl = FAN_CTRL_PWM;
-  } else {
-    state->fan_ctrl = FAN_CTRL_MAX6644;
-  }
+  // In UQ7.1 + 20, convert to Q7.8
+  // TODO: do this conversion in ADC filter when added
+  int16_t amp_temp1_q7_8 = ((int16_t)state->amp_temp1 - (20 << 1)) << 7;
+  int16_t amp_temp2_q7_8 = ((int16_t)state->amp_temp1 - (20 << 1)) << 7;
+  int16_t hv1_temp_q7_8  = ((int16_t)state->hv1_temp - (20 << 1)) << 7;
+  int16_t rpi_temp_q7_8  = ((int16_t)state->pi_temp - (20 << 1)) << 7;
 
-  uint8_t max_temp = state->hv1_temp;
-  if (state->fan_ctrl == FAN_CTRL_PWM) {
-    for (size_t i = 0; i < sizeof(state->temps); i++) {
-      if (state->temps[i] > max_temp) {
-        max_temp = state->temps[i];
-      }
-    }
-
-    if (max_temp < TEMP_THRESH_LOW_UQ7_1) {
-      state->pwr_gpio.fan_on = false;
-    }
-    if (max_temp > TEMP_THRESH_HIGH_UQ7_1) {
-      state->pwr_gpio.fan_on = true;
-    }
-  }
-
-  if (state->fan_override || max_temp > TEMP_THRESH_HIGH_UQ7_1) {
-    state->pwr_gpio.fan_on = true;  // 100% on
-    state->fan_speed       = 100;
-  } else if (max_temp < TEMP_THRESH_LOW_UQ7_1) {
-    state->pwr_gpio.fan_on = false;  // Off
-    state->fan_speed       = 0;
-  } else {
-#define FAN_PERIOD_MS 32  // 1000 Hz / 32 = 31.25 Hz
-#define MINVAL        ((uint32_t)((0.3 * (FAN_PERIOD_MS - .01)) + 1))
-    // PWM, 30% - 100%
-    uint32_t duty = (FAN_PERIOD_MS - MINVAL) *
-                        ((uint32_t)max_temp - TEMP_THRESH_LOW_UQ7_1) /
-                        (TEMP_THRESH_HIGH_UQ7_1 - TEMP_THRESH_LOW_UQ7_1) +
-                    (MINVAL - 1);
-    uint32_t mod32         = millis() & (FAN_PERIOD_MS - 1);
-    state->pwr_gpio.fan_on = mod32 <= duty;
-    state->fan_speed       = 100 * duty / FAN_PERIOD_MS;
-  }
+  state->fans = updateFans(amp_temp1_q7_8, amp_temp2_q7_8, hv1_temp_q7_8,
+                           rpi_temp_q7_8, state->fan_override);
+  state->pwr_gpio.fan_on = getFanOnFromDuty(state->fans->duty_f7);
 
   // Update the Power Board's GPIO state
   // TODO: Only write when necessary
   writeI2C2(pwr_io_gpio_, state->pwr_gpio.data);
   state->pwr_gpio.data = readI2C2(pwr_io_gpio_);
 
-  if (state->fan_ctrl != FAN_CTRL_MAX6644) {
+  if (state->fans->ctrl != FAN_CTRL_MAX6644) {
     // No fan control IC to determine this
     state->pwr_gpio.fan_fail_n = !false;
-    state->pwr_gpio.ovr_tmp_n  = !(max_temp > TEMP_THRESH_OVR_UQ7_1);
+    state->pwr_gpio.ovr_tmp_n  = !false;
   }
 
   // Update the LED Board's LED state

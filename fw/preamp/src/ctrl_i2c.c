@@ -137,9 +137,9 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
     case REG_FANS: {
       FanMsg msg = {
           .override = state->fan_override,
-          .on       = state->pwr_gpio.fan_on,
-          .ctrl     = state->fan_ctrl,
-          .ovr_tmp  = !state->pwr_gpio.ovr_tmp_n,
+          .on       = state->fans->duty_f7 > 0,
+          .ctrl     = state->fans->ctrl,
+          .ovr_tmp  = !state->pwr_gpio.ovr_tmp_n || state->fans->ovr_temp,
           .fail     = !state->pwr_gpio.fan_fail_n,
           .reserved = 0,
       };
@@ -179,8 +179,8 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
       out_msg = state->pi_temp;
       break;
 
-    case REG_FAN_SPEED:
-      out_msg = state->fan_speed;
+    case REG_FAN_DUTY:
+      out_msg = state->fans->duty_f7;
       break;
 
     case REG_VERSION_MAJOR:

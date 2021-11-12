@@ -48,7 +48,7 @@ def print_status(p: amplipi.rt._Preamps, u: int):
   # Fans
   override, fans_on, ctrl, ovr_tmp, failed = p.read_fan_status(u)
   print('  Fan Status')
-  fan_ctrl = 'MAX6644' if ctrl == False else 'ON_OFF'
+  fan_ctrl = 'MAX6644' if ctrl == False else 'PWM'
   fans_forced = ' (forced)' if override == True else ''
   print(f'    Fans: On={fans_on}{fans_forced}, Failed={failed}, Control={fan_ctrl}')
   print(f'    Overtemp: {ovr_tmp}')
@@ -102,12 +102,12 @@ preamps = amplipi.rt._Preamps(reset = reset, set_addr = args.a, bootloader = boo
 
 # Used for temperature recording
 if args.temps:
-  fan_pcnt = preamps.read_fan_speed(args.u)
+  fan_duty = preamps.read_fan_duty(args.u)
   hv1_tmp, amp1_tmp, amp2_tmp = preamps.read_temps(args.u)
   with open('/sys/class/thermal/thermal_zone0/temp') as f:
     pi_tmp = int(f.read()) / 1000
   time = datetime.now().strftime('%H:%M:%S')
-  print(f'{time},{fan_pcnt},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f},{pi_tmp:.1f}')
+  print(f'{time},{fan_duty:.1f},{hv1_tmp:.1f},{amp1_tmp:.1f},{amp2_tmp:.1f},{pi_tmp:.1f}')
   sys.exit(0)
 
 if args.u > 1 and args.r:

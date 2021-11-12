@@ -16,6 +16,7 @@ endif()
 add_executable(${PROJECT_NAME}.elf
   src/audio_mux.c
   src/ctrl_i2c.c
+  src/fans.c
   src/int_i2c.c
   src/main.c
   src/port_defs.c
