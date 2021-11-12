@@ -5,7 +5,6 @@ import os
 import sys
 import time
 from datetime import datetime
-
 # Add the directory above this script's location to PATH
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import amplipi.rt
@@ -47,15 +46,17 @@ def print_status(p: amplipi.rt._Preamps, u: int):
 
   # Fans
   ctrl, fans_on, ovr_tmp, failed = p.read_fan_status(u)
+  fan_duty = preamps.read_fan_duty(args.u)
   print('  Fan Status')
-  fan_ctrl = 'MAX6644'
-  if ctrl == 1:
-    fan_ctrl = 'PWM'
-  elif ctrl == 2:
-    fan_ctrl = 'Linear'
-  elif ctrl == 3:
-    fan_ctrl = 'Forced'
-  print(f'    Fans: On={fans_on}, Failed={failed}, Control={fan_ctrl}')
+  if ctrl == amplipi.rt.FanCtrl.MAX6644:
+    fan_str = f', Failed={failed}'
+  elif ctrl == amplipi.rt.FanCtrl.PWM:
+    fan_str = f', Duty={fan_duty}'
+  elif ctrl == amplipi.rt.FanCtrl.LINEAR:
+    fan_str = f', On={fans_on}'
+  elif ctrl == amplipi.rt.FanCtrl.FORCED:
+    fan_str = ' ON'
+  print(f'    Fans: Control={ctrl.name}{fan_str}')
   print(f'    Overtemp: {ovr_tmp}')
 
   # 24V and temp

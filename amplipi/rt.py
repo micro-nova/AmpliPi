@@ -23,6 +23,7 @@ import io
 import os
 import time
 import amplipi.extras as extras
+from enum import Enum
 
 from typing import Dict, List, Tuple, Union
 
@@ -69,6 +70,12 @@ _SRC_TYPES = {
   0 : 'Analog',
 }
 _DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30]
+
+class FanCtrl(Enum):
+  MAX6644 = 0
+  PWM     = 1
+  LINEAR  = 2
+  FORCED  = 3
 
 def is_amplipi():
   """ Check if the current hardware is an AmpliPi
@@ -288,6 +295,7 @@ class _Preamps:
         en_9v:    True if the 9V rail is enabled
         pg_12v:   True if the 12V rail is good
         en_12v:   True if the 12V rail is enabled
+        v12:      Fan power supply voltage, nominally 12V
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
@@ -297,17 +305,16 @@ class _Preamps:
       en_9v = (pstat & 0x02) != 0
       pg_9v = (pstat & 0x01) != 0
       fvstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FAN_VOLTS'])
-      v12 = fvstat / 2**3
+      v12 = fvstat / 2**4
       return pg_9v, en_9v, pg_12v, en_12v, v12
     return None, None, None, None
 
-  def read_fan_status(self, preamp: int = 1) -> Tuple[Union[bool, None],
-    Union[int, None], Union[bool, None], Union[bool, None]]:
+  def read_fan_status(self, preamp: int = 1) -> Tuple[Union[FanCtrl, None],
+    Union[bool, None], Union[bool, None], Union[bool, None]]:
     """ Read the status of the fans
 
       Returns:
-        ctrl       Fan control method currently in use:
-                   0 = MAX6644, 1 = PWM, 2 = Linear, 3 = Forced
+        ctrl:      Fan control method currently in use
         fans_on:   True if the fans are on
         ovr_tmp:   True if the amplifiers or PSU are overtemp
         failed:    True if the fans failed (only available on developer units)
@@ -315,7 +322,7 @@ class _Preamps:
     assert 1 <= preamp <= 6
     if self.bus is not None:
       fstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FANS'])
-      ctrl = (fstat & 0x03)
+      ctrl = FanCtrl(fstat & 0x03)
       fans_on = (fstat & 0x04) != 0
       ovr_tmp = (fstat & 0x08) != 0
       failed = (fstat & 0x10) != 0
@@ -386,7 +393,7 @@ class _Preamps:
     assert 1 <= preamp <= 6
     if self.bus is not None:
       self.bus.write_byte_data(preamp*8, _REG_ADDRS['FANS'],
-                               1 if force is True else 0)
+                               3 if force is True else 0)
 
   def read_leds(self, preamp: int = 1):
     """ Read the state of the front-panel LEDs

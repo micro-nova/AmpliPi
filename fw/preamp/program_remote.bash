@@ -2,8 +2,8 @@
 # This script assumes a directory 'amplipi-test' exists on the remote AmpliPi
 # that has the prerequisites to flashing the preamp already setup.
 fw_bin=${1:-preamp_bd.bin}
-remote_host=${2:-amplipi105.local}
-remote_dir=${3:-amplipi-test}
+remote_host=${2:-amplipi.local}
+remote_dir=${3:-amplipi-dev}
 
 echo "Programming $fw_bin on $remote_host using ~/$remote_dir"
 #echo "Building firmware locally then programming on $remote_host using ~/$remote_dir"
