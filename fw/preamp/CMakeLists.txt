@@ -14,13 +14,16 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 add_executable(${PROJECT_NAME}.elf
-  src/audio_mux.c
+  src/adc.c
+  src/audio.c
   src/ctrl_i2c.c
   src/fans.c
+  src/i2c.c
   src/int_i2c.c
+  src/leds.c
   src/main.c
-  src/port_defs.c
-  src/ports.c
+  src/pins.c
+  src/pwr_gpio.c
   src/serial.c
   src/system_stm32f0xx.c
   src/systick.c

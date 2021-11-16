@@ -58,6 +58,46 @@
 #define TEMP_RPI_THRESH_HIGH_Q7_8 C_TO_Q7_8(TEMP_RPI_THRESH_HIGH_C)
 #define TEMP_RPI_THRESH_OVR_Q7_8  C_TO_Q7_8(TEMP_RPI_THRESH_OVR_C)
 
+FanCtrl ctrl_;             // Control method currently in use
+uint8_t duty_f7_  = 0;     // Fan duty cycle in the range [0,1] in UQ1.7 format
+uint8_t dpot_val_ = 0x3F;  // Digital pot setting that controls fan voltage
+uint8_t volts_f4_ = 12 << 4;  // Fan power supply voltage in UQ4.4 format
+bool    ovr_temp_;            // Temp too high
+
+void setFanCtrl(FanCtrl ctrl) {
+  if (ctrl == FAN_CTRL_FORCED) {
+    // Only allow writing to forced mode
+    ctrl_ = FAN_CTRL_FORCED;
+  } else {
+    // Reset to default mode, auto-control will determine real mode later
+    ctrl_ = FAN_CTRL_MAX6644;
+  }
+}
+
+FanCtrl getFanCtrl() {
+  return ctrl_;
+}
+
+uint8_t getFanDuty() {
+  return duty_f7_;
+}
+
+uint8_t getFanDPot() {
+  return dpot_val_;
+}
+
+uint8_t getFanVolts() {
+  return volts_f4_;
+}
+
+bool overTemp() {
+  return ovr_temp_;
+}
+
+bool fansOn() {
+  return duty_f7_ > 0;
+}
+
 /* Calculates the desired fan percent based on the current system temps
  *
  * Inputs
@@ -137,26 +177,19 @@ uint8_t dpotValFromPercent(int16_t pcnt_f8) {
  *
  * Returns the current fan state.
  */
-FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                     bool force, bool thermistors, bool linear) {
+void updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
+                bool linear) {
 #define FAN_DUTY_ON    (1 << 7)  // 1.0 in UQ1.7, 100% duty cycle
 #define FAN_DUTY_OFF   0         // 0% duty cycle
 #define DPOT_MAX_VOLTS 0         // Min resistance = max voltage
 #define DPOT_MIN_VOLTS 127       // Max resistance = min voltage
 
-  static FanState state = {
-      .ctrl     = FAN_CTRL_MAX6644,
-      .ovr_temp = false,
-      .duty_f7  = 0,
-      .dpot_val = 0,
-      .volts_f4 = 0,
-  };
   // Leave at max by default in case a dpot is detected later
-  state.dpot_val = DPOT_MAX_VOLTS;
+  dpot_val_ = DPOT_MAX_VOLTS;
 
-  state.ovr_temp = amp_temp > TEMP_AMP_THRESH_OVR_Q7_8 ||
-                   psu_temp > TEMP_PSU_THRESH_OVR_Q7_8 ||
-                   rpi_temp > TEMP_RPI_THRESH_OVR_Q7_8;
+  ovr_temp_ = amp_temp > TEMP_AMP_THRESH_OVR_Q7_8 ||
+              psu_temp > TEMP_PSU_THRESH_OVR_Q7_8 ||
+              rpi_temp > TEMP_RPI_THRESH_OVR_Q7_8;
 
   /* Fan temp -> duty regions:
    *        T <= Toff | duty = 0
@@ -166,43 +199,43 @@ FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
    */
 
   // Determine appropriate control method
-  if (force) {
-    state.ctrl    = FAN_CTRL_FORCED;
-    state.duty_f7 = FAN_DUTY_ON;
-  } else if (!thermistors) {
-    // Power Board 2.A uses a MAX6644 fan controller IC and has no
-    // thermistor inputs.
-    state.ctrl    = FAN_CTRL_MAX6644;
-    state.duty_f7 = FAN_DUTY_OFF;  // Release control to MAX6644.
+  if (ctrl_ == FAN_CTRL_FORCED) {
+    duty_f7_ = FAN_DUTY_ON;
+  } else if (!amp_temp) {
+    // Power Board 2.A uses MAX6644 but has no HV2/NTC2.
+    // If neither of those inputs measures a valid temp, then assume
+    // a MAX6644 fan control IC is controlling the fans.
+    ctrl_    = FAN_CTRL_MAX6644;
+    duty_f7_ = FAN_DUTY_OFF;  // Release control to MAX6644.
   } else {
-    state.ctrl = linear ? FAN_CTRL_LINEAR : FAN_CTRL_PWM;
+    ctrl_ = linear ? FAN_CTRL_LINEAR : FAN_CTRL_PWM;
     if (amp_temp <= TEMP_AMP_THRESH_OFF_Q7_8 &&
         psu_temp <= TEMP_PSU_THRESH_OFF_Q7_8 &&
         rpi_temp <= TEMP_RPI_THRESH_OFF_Q7_8) {
       // Cool enough that fans can be left off
-      state.duty_f7  = FAN_DUTY_OFF;
-      state.dpot_val = DPOT_MIN_VOLTS;
+      duty_f7_  = FAN_DUTY_OFF;
+      dpot_val_ = DPOT_MIN_VOLTS;
     } else {
       // Fans on at some percentage, update duty cycle or voltage
       int16_t pcnt_f8 = fanPercentFromTemps(amp_temp, psu_temp, rpi_temp);
       if (pcnt_f8 > (1 << 8)) {  // 1.0 in Q7.8
         // Temp high, max fan voltage and duty cycle
-        state.duty_f7 = FAN_DUTY_ON;
+        duty_f7_ = FAN_DUTY_ON;
       } else if (linear) {
         if (pcnt_f8 > 0) {
-          state.dpot_val = dpotValFromPercent(pcnt_f8);
-          state.duty_f7  = FAN_DUTY_ON;
+          dpot_val_ = dpotValFromPercent(pcnt_f8);
+          duty_f7_  = FAN_DUTY_ON;
         } else {
           // Hysteresis region, use old duty cycle and min dpot value
-          state.dpot_val = DPOT_MIN_VOLTS;
+          dpot_val_ = DPOT_MIN_VOLTS;
         }
       } else {
         if (pcnt_f8 > 0) {
-          state.duty_f7 = dutyFromPercent(pcnt_f8);
+          duty_f7_ = dutyFromPercent(pcnt_f8);
         } else {
           // Hysteresis region, use old duty cycle (but cap at 30%)
           const uint8_t min_f8 = 0.3 * (1 << 7);
-          state.duty_f7 = state.duty_f7 > min_f8 ? min_f8 : state.duty_f7;
+          duty_f7_             = duty_f7_ > min_f8 ? min_f8 : duty_f7_;
         }
       }
     }
@@ -213,13 +246,11 @@ FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
   if (linear) {
     // V = 100,000 / (10,000 / 127 * DPOT_VAL + 9,100) + 1
     uint32_t volts_f12 =
-        (100000 << 12) / (10000 * state.dpot_val / 127 + 9100) + (1 << 12);
-    state.volts_f4 = (uint8_t)(volts_f12 >> 8);
+        (100000 << 12) / (10000 * dpot_val_ / 127 + 9100) + (1 << 12);
+    volts_f4_ = (uint8_t)(volts_f12 >> 8);
   } else {
-    state.volts_f4 = 12 << 4;
+    volts_f4_ = 12 << 4;
   }
-
-  return &state;
 }
 
 /* Determines the GPIO expander's FAN_ON pin state.
@@ -230,8 +261,8 @@ FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
  *
  * Returns boolean FAN_ON pin state
  */
-bool getFanOnFromDuty(uint8_t duty_f7) {
-  uint32_t duty_ms = (FAN_PERIOD_MS * duty_f7) >> 7;
+bool getFanOnFromDuty() {
+  uint32_t duty_ms = (FAN_PERIOD_MS * duty_f7_) >> 7;
   uint32_t ms32    = millis() & (FAN_PERIOD_MS - 1);
   return ms32 < duty_ms;
 }

@@ -2,6 +2,8 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
+ * Base I2C functionality
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -16,19 +18,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef VERSION_H_
-#define VERSION_H_
+#ifndef I2C_H_
+#define I2C_H_
 
-#define VERSION_MAJOR 0x01
-#define VERSION_MINOR 0x03
+#include <stdbool.h>
+#include <stdint.h>
 
-/* Last 4 bytes of the version:
- * - 7 hex digits of the git hash, as returned from `git rev-parse --short HEAD`
- * - A dirty bit, if set the git hash is to be treated as invalid
- */
-#define GIT_HASH_6_5 0x00
-#define GIT_HASH_4_3 0x00
-#define GIT_HASH_2_1 0x00
-#define GIT_HASH_0_D 0x01  // LSB is dirty bit
+typedef uint8_t I2CDev;
 
-#endif /* VERSION_H_ */
+typedef struct {
+  I2CDev  dev;
+  uint8_t reg;
+} I2CReg;
+
+void initI2C1(uint8_t addr);
+void initI2C2();
+
+uint8_t  readRegI2C2(I2CReg r);
+uint32_t writeRegI2C2(I2CReg r, uint8_t data);
+
+#endif /* I2C_H_ */

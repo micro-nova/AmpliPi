@@ -2,6 +2,8 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
+ * Front-panel LED status and control
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -16,19 +18,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef VERSION_H_
-#define VERSION_H_
+#ifndef LEDS_H_
+#define LEDS_H_
 
-#define VERSION_MAJOR 0x01
-#define VERSION_MINOR 0x03
+#include <stdbool.h>
+#include <stdint.h>
 
-/* Last 4 bytes of the version:
- * - 7 hex digits of the git hash, as returned from `git rev-parse --short HEAD`
- * - A dirty bit, if set the git hash is to be treated as invalid
- */
-#define GIT_HASH_6_5 0x00
-#define GIT_HASH_4_3 0x00
-#define GIT_HASH_2_1 0x00
-#define GIT_HASH_0_D 0x01  // LSB is dirty bit
+typedef union {
+  struct {
+    uint8_t grn   : 1;
+    uint8_t red   : 1;
+    uint8_t zones : 6;
+  };
+  uint8_t data;
+} Leds;
 
-#endif /* VERSION_H_ */
+void setLedOverride(bool override);
+bool getLedOverride();
+void setLeds(Leds leds);
+Leds getLeds();
+
+Leds updateLeds();
+
+#endif /* LEDS_H_ */

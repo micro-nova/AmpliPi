@@ -21,11 +21,9 @@
 #ifndef INT_I2C_H_
 #define INT_I2C_H_
 
-#include <stdint.h>
+#include <stdbool.h>
 
-#include "ctrl_i2c.h"
-
-void initInternalI2C(AmpliPiState* state);
-void updateInternalI2C(AmpliPiState* state);
+void initInternalI2C();
+void updateInternalI2C();
 
 #endif /* INT_I2C_H_ */

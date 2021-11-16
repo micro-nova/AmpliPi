@@ -2,6 +2,8 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
+ * Power Board GPIO status and control
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -16,19 +18,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef VERSION_H_
-#define VERSION_H_
+#include "pwr_gpio.h"
 
-#define VERSION_MAJOR 0x01
-#define VERSION_MINOR 0x03
+GpioReg gpio_ = {0};
 
-/* Last 4 bytes of the version:
- * - 7 hex digits of the git hash, as returned from `git rev-parse --short HEAD`
- * - A dirty bit, if set the git hash is to be treated as invalid
- */
-#define GIT_HASH_6_5 0x00
-#define GIT_HASH_4_3 0x00
-#define GIT_HASH_2_1 0x00
-#define GIT_HASH_0_D 0x01  // LSB is dirty bit
+void setPwrGpio(GpioReg val) {
+  gpio_ = val;
+}
 
-#endif /* VERSION_H_ */
+GpioReg getPwrGpio() {
+  return gpio_;
+}
+
+bool pg9v() {
+  return gpio_.pg_9v;
+}
+
+bool pg12v() {
+  return gpio_.pg_12v;
+}
+
+bool overTempMax6644() {
+  return !gpio_.fan_fail_n;
+}
+
+bool fanFailMax6644() {
+  return !gpio_.ovr_tmp_n;
+}
+
+void set9vEn(bool en) {
+  gpio_.en_9v = en;
+}
+
+bool get9vEn() {
+  return gpio_.en_9v;
+}
+
+void set12vEn(bool en) {
+  gpio_.en_12v = en;
+}
+
+bool get12vEn() {
+  return gpio_.en_12v;
+}
+
+void setFanOn(bool on) {
+  gpio_.fan_on = on;
+}
