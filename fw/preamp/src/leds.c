@@ -21,11 +21,17 @@
 #include "leds.h"
 
 #include "audio.h"
+#include "i2c.h"
 #include "serial.h"
 #include "systick.h"
 
-bool led_override_ = false;
-Leds leds_;
+// LED Board I2C registers
+const I2CReg i2c_led_dir_reg_  = {0x40, 0x00};
+const I2CReg i2c_led_gpio_reg_ = {0x40, 0x09};
+
+bool led_override_   = false;
+Leds leds_requested_ = {};
+Leds leds_           = {};
 
 void setLedOverride(bool override) {
   led_override_ = override;
@@ -36,30 +42,41 @@ bool getLedOverride() {
 }
 
 void setLeds(Leds leds) {
-  leds_ = leds;
+  leds_requested_ = leds;
 }
 
 Leds getLeds() {
   return leds_;
 }
 
-Leds updateLeds() {
-  if (led_override_) {
-    return leds_;
+void initLeds() {
+  // Set the LED Board's GPIO expander as all outputs
+  writeRegI2C2(i2c_led_dir_reg_, 0x00);  // 0=output, 1=input
+  leds_.data = 0;
+}
+
+void updateLeds() {
+  // Determine the LEDs based on the system status, unless overriden.
+  if (!led_override_) {
+    leds_requested_.grn = inStandby() ? 0 : 1;
+    if (getI2C1Address()) {
+      leds_requested_.red = !leds_requested_.grn;
+    } else {
+      // Blink red light at ~0.5 Hz
+      uint32_t mod2k      = millis() & ((1 << 11) - 1);
+      leds_requested_.red = mod2k > (1 << 10);
+    }
+
+    leds_requested_.zones = 0;
+    for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+      leds_requested_.zones |= (muted(zone) ? 0 : 1) << zone;
+    }
   }
 
-  leds_.grn = inStandby() ? 0 : 1;
-  if (getI2C1Address()) {
-    leds_.red = !leds_.grn;
-  } else {
-    // Blink red light at ~0.5 Hz
-    uint32_t mod2k = millis() & ((1 << 11) - 1);
-    leds_.red      = mod2k > (1 << 10);
+  if (leds_requested_.data != leds_.data) {
+    // Attempt to update led board. If no errors update our state.
+    if (writeRegI2C2(i2c_led_gpio_reg_, leds_requested_.data) == 0) {
+      leds_ = leds_requested_;
+    }
   }
-
-  leds_.zones = 0;
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    leds_.zones |= (muted(zone) ? 0 : 1) << zone;
-  }
-  return leds_;
 }
