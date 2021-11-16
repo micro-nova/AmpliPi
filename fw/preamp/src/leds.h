@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Internal I2C bus control/status
+ * Front-panel LED status and control
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,12 +18,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef INT_I2C_H_
-#define INT_I2C_H_
+#ifndef LEDS_H_
+#define LEDS_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
-void initInternalI2C();
-void updateInternalI2C();
+typedef union {
+  struct {
+    uint8_t grn   : 1;
+    uint8_t red   : 1;
+    uint8_t zones : 6;
+  };
+  uint8_t data;
+} Leds;
 
-#endif /* INT_I2C_H_ */
+void setLedOverride(bool override);
+bool getLedOverride();
+void setLeds(Leds leds);
+Leds getLeds();
+
+Leds updateLeds();
+
+#endif /* LEDS_H_ */

@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Internal I2C bus control/status
+ * Power Board GPIO status and control
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,12 +18,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef INT_I2C_H_
-#define INT_I2C_H_
+#include "pwr_gpio.h"
 
-#include <stdbool.h>
+GpioReg gpio_ = {0};
 
-void initInternalI2C();
-void updateInternalI2C();
+void setPwrGpio(GpioReg val) {
+  gpio_ = val;
+}
 
-#endif /* INT_I2C_H_ */
+GpioReg getPwrGpio() {
+  return gpio_;
+}
+
+bool pg9v() {
+  return gpio_.pg_9v;
+}
+
+bool pg12v() {
+  return gpio_.pg_12v;
+}
+
+bool overTempMax6644() {
+  return !gpio_.fan_fail_n;
+}
+
+bool fanFailMax6644() {
+  return !gpio_.ovr_tmp_n;
+}
+
+void set9vEn(bool en) {
+  gpio_.en_9v = en;
+}
+
+bool get9vEn() {
+  return gpio_.en_9v;
+}
+
+void set12vEn(bool en) {
+  gpio_.en_12v = en;
+}
+
+bool get12vEn() {
+  return gpio_.en_12v;
+}
+
+void setFanOn(bool on) {
+  gpio_.fan_on = on;
+}

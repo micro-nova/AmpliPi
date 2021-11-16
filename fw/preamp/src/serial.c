@@ -35,6 +35,9 @@
 // Timeout address reception, 40 ms should allow down to 1k buad
 #define SB_TIMEOUT 40
 
+// Slave I2C address on I2C1 (controller bus)
+uint8_t i2c_addr_ = 0;
+
 // Passthrough messages between UART1<->UART2
 bool uart_passthrough_ = false;
 
@@ -47,6 +50,10 @@ void setUartPassthrough(bool passthrough) {
     USART_ITConfig(USART2, USART_IT_RXNE, DISABLE);
     NVIC_DisableIRQ(USART2_IRQn);
   }
+}
+
+bool getUartPassthrough() {
+  return uart_passthrough_;
 }
 
 // Serial buffer for UART handling of I2C addresses
@@ -95,19 +102,6 @@ void initUart1() {
   // Enable peripheral clocks for UART1
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 
-  // Connect pins to alternate function for UART1
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);
-
-  // Config UART1 GPIO pins
-  GPIO_InitTypeDef GPIO_InitStructureUART;
-  GPIO_InitStructureUART.GPIO_Pin   = GPIO_Pin_9 | GPIO_Pin_10;
-  GPIO_InitStructureUART.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructureUART.GPIO_PuPd  = GPIO_PuPd_UP;
-  GPIO_InitStructureUART.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructureUART.GPIO_Mode  = GPIO_Mode_AF;
-  GPIO_Init(GPIOA, &GPIO_InitStructureUART);
-
   // Setup USART1
   USART_Cmd(USART1, ENABLE);
   USART_InitTypeDef USART_InitStructure;
@@ -140,19 +134,6 @@ void initUart2(uint16_t brr) {
   // Enable peripheral clock
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 
-  // Connect pins to alternate function for UART2
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource14, GPIO_AF_1);
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_1);
-
-  // Configure UART2 GPIO pins
-  GPIO_InitTypeDef GPIO_InitStructureUART2;
-  GPIO_InitStructureUART2.GPIO_Pin   = GPIO_Pin_14 | GPIO_Pin_15;
-  GPIO_InitStructureUART2.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructureUART2.GPIO_PuPd  = GPIO_PuPd_UP;
-  GPIO_InitStructureUART2.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructureUART2.GPIO_Mode  = GPIO_Mode_AF;
-  GPIO_Init(GPIOA, &GPIO_InitStructureUART2);
-
   // Setup USART2
   USART_Cmd(USART2, ENABLE);
   USART_InitTypeDef USART_InitStructure2;
@@ -170,9 +151,8 @@ void initUart2(uint16_t brr) {
 #endif
 }
 
-uint8_t checkForNewAddress() {
-  static size_t tx_len   = 0;
-  uint8_t       i2c_addr = 0;
+bool checkForNewAddress() {
+  static size_t tx_len = 0;
 
   // TODO: Assume default slave address, wait a bit to see if new address is
   //       received, then either accept new address or use default.
@@ -187,7 +167,7 @@ uint8_t checkForNewAddress() {
       uart_tx_buf_.ind  = 0;
       uart_tx_buf_.done = 0;
       // initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
-      i2c_addr = uart1_rx_buf_.data[1];
+      i2c_addr_ = uart1_rx_buf_.data[1];
     }
     serialBufferReset(&uart1_rx_buf_);
   }
@@ -202,16 +182,20 @@ uint8_t checkForNewAddress() {
     uart_tx_buf_.ind++;
     tx_len--;
   }*/
-  if (i2c_addr) {
+  if (i2c_addr_) {
     (void)tx_len;
     while (!(USART2->ISR & USART_ISR_TXE)) {}
     USART2->TDR = 'A';
     while (!(USART2->ISR & USART_ISR_TXE)) {}
-    USART2->TDR = i2c_addr + 0x10;  // Add 0x10 to get next address
+    USART2->TDR = i2c_addr_ + 0x10;  // Add 0x10 to get next address
     while (!(USART2->ISR & USART_ISR_TXE)) {}
     USART2->TDR = 0x0A;  // '\n'
   }
-  return i2c_addr;
+  return i2c_addr_ != 0;
+}
+
+uint8_t getI2C1Address() {
+  return i2c_addr_;
 }
 
 // Handles the interrupt on UART data reception

@@ -37,16 +37,16 @@ typedef enum
   FAN_CTRL_FORCED,
 } FanCtrl;
 
-typedef struct {
-  FanCtrl ctrl;      // Control method currently in use
-  bool    ovr_temp;  // Temp too high
-  uint8_t duty_f7;   // Fan duty cycle in the range [0,1] in UQ1.7 format
-  uint8_t dpot_val;  // Digital pot setting that controls power supply voltage
-  uint8_t volts_f4;  // Fan power supply voltage in UQ4.4 format
-} FanState;
+void    setFanCtrl(FanCtrl ctrl);
+FanCtrl getFanCtrl();
+uint8_t getFanDuty();
+uint8_t getFanDPot();
+uint8_t getFanVolts();
+bool    overTemp();
+bool    fansOn();
 
-FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                     bool force, bool thermistors, bool linear);
-bool      getFanOnFromDuty(uint8_t duty_f7);
+void updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
+                bool linear);
+bool getFanOnFromDuty();
 
 #endif /* FANS_H_ */

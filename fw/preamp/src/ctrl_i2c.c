@@ -24,14 +24,55 @@
 
 #include "ctrl_i2c.h"
 
-#include "audio_mux.h"
-#include "int_i2c.h"
-#include "port_defs.h"
+#include "adc.h"
+#include "audio.h"
+#include "fans.h"
+#include "leds.h"
+#include "pins.h"
+#include "pwr_gpio.h"
 #include "serial.h"
 #include "stm32f0xx.h"
 #include "version.h"
 
-/* Measured rise and fal times of the controller I2C bus
+typedef enum
+{
+  // Audio control
+  REG_SRC_AD    = 0x00,
+  REG_ZONE321   = 0x01,
+  REG_ZONE654   = 0x02,
+  REG_MUTE      = 0x03,
+  REG_STANDBY   = 0x04,
+  REG_VOL_ZONE1 = 0x05,
+  REG_VOL_ZONE2 = 0x06,
+  REG_VOL_ZONE3 = 0x07,
+  REG_VOL_ZONE4 = 0x08,
+  REG_VOL_ZONE5 = 0x09,
+  REG_VOL_ZONE6 = 0x0A,
+
+  // Power/Fan control
+  REG_POWER       = 0x0B,
+  REG_FANS        = 0x0C,
+  REG_LED_CTRL    = 0x0D,  // OVERRIDE?
+  REG_LED_VAL     = 0x0E,  // ZONE[6,5,4,3,2,1], RED, GRN
+  REG_EXPANSION   = 0x0F,  // UART_PASSTHROUGH, BOOT0, NRST
+  REG_HV1_VOLTAGE = 0x10,  // Volts in UQ6.2 format (0.25 volt resolution)
+  REG_AMP_TEMP1   = 0x11,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
+  REG_HV1_TEMP    = 0x12,  //   0x00 = disconnected, 0xFF = shorted
+  REG_AMP_TEMP2   = 0x13,  //   0x01 = -19.5C, 0x5E = 27C, 0xFE = 107C
+  REG_PI_TEMP     = 0x14,  // RPi's temp sent to the micro, in UQ7.1 + 20 format
+  REG_FAN_DUTY    = 0x15,  // Fan PWM duty, [0.0,1.0] in UQ1.7 format
+  REG_FAN_VOLTS   = 0x16,  // Fan voltage in UQ4.3 format
+
+  // Version info
+  REG_VERSION_MAJOR = 0xFA,
+  REG_VERSION_MINOR = 0xFB,
+  REG_GIT_HASH_6_5  = 0xFC,
+  REG_GIT_HASH_4_3  = 0xFD,
+  REG_GIT_HASH_2_1  = 0xFE,
+  REG_GIT_HASH_0_D  = 0xFF,
+} CmdReg;
+
+/* Measured rise and fall times of the controller I2C bus
  *
  * Single AmpliPi unit:
  *  t_r = ~370 ns
@@ -43,36 +84,23 @@
  *  t_r = ~600 ns
  *  t_f = ~9.4 ns
  */
-
-void ctrlI2CInit(uint8_t addr) {
+void ctrlI2CInit() {
   // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
 
   // Enable peripheral clock for I2C1
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
 
-  // Connect pins to alternate function for I2C1
-  GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_1);  // I2C1_SCL
-  GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_1);  // I2C1_SDA
-
-  // Config I2C GPIO pins
-  GPIO_InitTypeDef GPIO_InitStructureI2C;
-  GPIO_InitStructureI2C.GPIO_Pin   = pSCL | pSDA;
-  GPIO_InitStructureI2C.GPIO_Mode  = GPIO_Mode_AF;
-  GPIO_InitStructureI2C.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructureI2C.GPIO_OType = GPIO_OType_OD;
-  GPIO_InitStructureI2C.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOB, &GPIO_InitStructureI2C);
-
   // Setup I2C1
-  I2C_InitTypeDef I2C_InitStructure1;
-  I2C_InitStructure1.I2C_Mode                = I2C_Mode_I2C;
-  I2C_InitStructure1.I2C_AnalogFilter        = I2C_AnalogFilter_Enable;
-  I2C_InitStructure1.I2C_DigitalFilter       = 0x00;
-  I2C_InitStructure1.I2C_OwnAddress1         = addr;
-  I2C_InitStructure1.I2C_Ack                 = I2C_Ack_Enable;
-  I2C_InitStructure1.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-  I2C_InitStructure1.I2C_Timing = 0;  // Clocks not generated in slave mode
-  I2C_Init(I2C1, &I2C_InitStructure1);
+  I2C_InitTypeDef i2cInit = {
+      .I2C_Mode                = I2C_Mode_I2C,
+      .I2C_AnalogFilter        = I2C_AnalogFilter_Enable,
+      .I2C_DigitalFilter       = 0x00,
+      .I2C_OwnAddress1         = getI2C1Address(),
+      .I2C_Ack                 = I2C_Ack_Enable,
+      .I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit,
+      .I2C_Timing              = 0,  // Clocks not generated in slave mode
+  };
+  I2C_Init(I2C1, &i2cInit);
   I2C_Cmd(I2C1, ENABLE);
 }
 
@@ -80,7 +108,7 @@ bool ctrlI2CAddrMatch() {
   return I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR);
 }
 
-uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
+uint8_t readReg(uint8_t addr) {
   uint8_t out_msg = 0;
   switch (addr) {
     case REG_SRC_AD:
@@ -123,11 +151,11 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
       break;
 
     case REG_POWER: {
-      PwrMsg msg = {
-          .pg_9v    = state->pwr_gpio.pg_9v,
-          .en_9v    = state->pwr_gpio.en_9v,
-          .pg_12v   = state->pwr_gpio.pg_12v,
-          .en_12v   = state->pwr_gpio.en_12v,
+      PwrReg msg = {
+          .pg_9v    = pg9v(),
+          .en_9v    = get9vEn(),
+          .pg_12v   = pg12v(),
+          .en_12v   = get12vEn(),
           .reserved = 0,
       };
       out_msg = msg.data;
@@ -135,11 +163,11 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
     }
 
     case REG_FANS: {
-      FanMsg msg = {
-          .ctrl     = state->fans->ctrl,
-          .on       = state->fans->duty_f7 > 0,
-          .ovr_tmp  = !state->pwr_gpio.ovr_tmp_n || state->fans->ovr_temp,
-          .fail     = !state->pwr_gpio.fan_fail_n,
+      FanReg msg = {
+          .ctrl     = getFanCtrl(),
+          .on       = fansOn(),
+          .ovr_tmp  = overTempMax6644() || overTemp(),
+          .fail     = fanFailMax6644(),
           .reserved = 0,
       };
       out_msg = msg.data;
@@ -147,43 +175,49 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
     }
 
     case REG_LED_CTRL:
-      out_msg = state->led_override ? 1 : 0;
+      out_msg = getLedOverride() ? 1 : 0;
       break;
 
     case REG_LED_VAL:
-      out_msg = state->leds.data;
+      out_msg = getLeds().data;
       break;
 
-    case REG_EXPANSION:
-      out_msg = state->expansion.data;
+    case REG_EXPANSION: {
+      ExpansionReg reg = {
+          .nrst             = readPin(exp_nrst_),
+          .boot0            = readPin(exp_boot0_),
+          .uart_passthrough = getUartPassthrough(),
+      };
+      out_msg = reg.data;
       break;
+    }
 
     case REG_HV1_VOLTAGE:
-      out_msg = state->hv1;
+      out_msg = getHV1_f2();
       break;
 
     case REG_HV1_TEMP:
-      out_msg = state->hv1_temp;
+      out_msg = getHV1Temp_f1();
       break;
 
     case REG_AMP_TEMP1:
-      out_msg = state->amp_temp1;
+      out_msg = getAmp1Temp_f1();
       break;
 
     case REG_AMP_TEMP2:
-      out_msg = state->amp_temp2;
+      out_msg = getAmp2Temp_f1();
       break;
 
     case REG_PI_TEMP:
-      out_msg = state->pi_temp;
+      out_msg = getPiTemp_f1();
       break;
 
     case REG_FAN_DUTY:
-      out_msg = state->fans->duty_f7;
+      out_msg = getFanDuty();
       break;
 
     case REG_FAN_VOLTS: {
-      out_msg = state->fans->volts_f4;
+      out_msg = getFanVolts();
       break;
     }
 
@@ -209,7 +243,7 @@ uint8_t readReg(const AmpliPiState* state, uint8_t addr) {
   return out_msg;
 }
 
-void writeReg(AmpliPiState* state, uint8_t addr, uint8_t data) {
+void writeReg(uint8_t addr, uint8_t data) {
   switch (addr) {
     case REG_SRC_AD:
       for (size_t src = 0; src < NUM_SRCS; src++) {
@@ -255,41 +289,33 @@ void writeReg(AmpliPiState* state, uint8_t addr, uint8_t data) {
     }
 
     case REG_POWER:
-      state->pwr_gpio.en_9v  = ((PwrMsg)data).en_9v;
-      state->pwr_gpio.en_12v = ((PwrMsg)data).en_12v;
+      set9vEn(((PwrReg)data).en_9v);
+      set12vEn(((PwrReg)data).en_12v);
       break;
 
     case REG_FANS:
-      state->fan_override = false;
-      if (((FanMsg)data).ctrl == FAN_CTRL_FORCED) {
-        state->fan_override = true;
-      }
+      setFanCtrl((FanCtrl)data);
       break;
 
     case REG_LED_CTRL:
-      state->led_override = data & 0x01;
+      setLedOverride(data & 0x01);
       break;
 
     case REG_LED_VAL:
-      state->leds.data = data;
+      setLeds((Leds)data);
       break;
 
     case REG_EXPANSION:
       // Control expansion port's NRST and BOOT0 pins
-      state->expansion.nrst  = (data & 0x01) != 0;
-      state->expansion.boot0 = (data & 0x02) != 0;
-
-      // TODO: Move these out of i2c handler
-      writePin(exp_nrst_, state->expansion.nrst);
-      writePin(exp_boot0_, state->expansion.boot0);
+      writePin(exp_nrst_, ((ExpansionReg)data).nrst);
+      writePin(exp_boot0_, ((ExpansionReg)data).boot0);
 
       // Allow UART messages to be forwarded to expansion units
-      state->expansion.uart_passthrough = (data & 0x04) != 0;
-      setUartPassthrough(state->expansion.uart_passthrough);
+      setUartPassthrough(((ExpansionReg)data).uart_passthrough);
       break;
 
     case REG_PI_TEMP:
-      state->pi_temp = data;
+      setPiTemp_f1(data);
       break;
 
     default:
@@ -298,7 +324,7 @@ void writeReg(AmpliPiState* state, uint8_t addr, uint8_t data) {
   }
 }
 
-void ctrlI2CTransact(AmpliPiState* state) {
+void ctrlI2CTransact() {
   // Setting I2C_ICR.ADDRCF releases the clock stretch if any then acks
   I2C_ClearFlag(I2C1, I2C_FLAG_ADDR);
   // I2C_ISR.DIR is assumed to be 0 (write)
@@ -326,7 +352,7 @@ void ctrlI2CTransact(AmpliPiState* state) {
     while (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXE) == RESET) {}
 
     // Send a response based on the register address
-    uint8_t response = readReg(state, reg_addr);
+    uint8_t response = readReg(reg_addr);
     I2C_SendData(I2C1, response);
 
     // We only allow reading 1 byte at a time for now, here we are assuming
@@ -335,7 +361,7 @@ void ctrlI2CTransact(AmpliPiState* state) {
     // Just received data from the master (Pi),
     // get it from the I2C_RXDR register
     uint8_t data = I2C_ReceiveData(I2C1);
-    writeReg(state, reg_addr, data);
+    writeReg(reg_addr, data);
 
     // We only allow writing 1 byte at a time for now, here we assume the
     // master stops transmitting and sends a STOP condition to end the write.

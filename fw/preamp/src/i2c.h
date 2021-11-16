@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Internal I2C bus control/status
+ * Base I2C functionality
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,12 +18,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef INT_I2C_H_
-#define INT_I2C_H_
+#ifndef I2C_H_
+#define I2C_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
-void initInternalI2C();
-void updateInternalI2C();
+typedef uint8_t I2CDev;
 
-#endif /* INT_I2C_H_ */
+typedef struct {
+  I2CDev  dev;
+  uint8_t reg;
+} I2CReg;
+
+void initI2C1(uint8_t addr);
+void initI2C2();
+
+uint8_t  readRegI2C2(I2CReg r);
+uint32_t writeRegI2C2(I2CReg r, uint8_t data);
+
+#endif /* I2C_H_ */

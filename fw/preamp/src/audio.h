@@ -29,12 +29,12 @@
 #ifndef AUDIO_MUX_H_
 #define AUDIO_MUX_H_
 
-// Uncomment this line to enable automatic mute control via high/low volume.
-// #define AUTO_MUTE_CTRL
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#define NUM_SRCS  4
+#define NUM_ZONES 6
 
 typedef enum
 {
@@ -42,8 +42,9 @@ typedef enum
   IT_DIGITAL
 } InputType;
 
-bool isOn(size_t zone);
-bool anyOn();
+typedef struct {
+  uint8_t volume[NUM_ZONES];
+} AudioState;
 
 void mute(size_t zone, bool mute);
 bool muted(size_t zone);

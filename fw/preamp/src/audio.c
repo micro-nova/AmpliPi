@@ -26,14 +26,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "audio_mux.h"
+#include "audio.h"
 
-#include "port_defs.h"
-#include "ports.h"
+#include "i2c.h"
+#include "pins.h"
 #include "systick.h"
 
-// The minimum volume. Scale goes from 0-79 with 0 being maximum
-#define DEFAULT_VOL 79
+// The minimum volume. Volume range is [-80, 0] dB.
+// 0 dB is no attenuation so max volume. -80 dB corresponds to mute.
+#define DEFAULT_VOL 80
 
 // The source to connect all zones to at startup
 #define DEFAULT_SOURCE 0
@@ -51,21 +52,6 @@ const I2CReg zone_right_[NUM_ZONES] = {
 // Keep track of volumes so they are not lost when we standby
 uint8_t volumes[NUM_ZONES];
 
-// Returns true if zone is unmuted
-bool isOn(size_t zone) {
-  return readPin(zone_mute_[zone]);
-}
-
-// Returns true if any zone is unmuted
-bool anyOn() {
-  bool on = false;
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    on = on | isOn(zone);
-  }
-  return on;
-  // TODO: Shortcut
-}
-
 // Mute the specified zone
 void mute(size_t zone, bool mute) {
   // Set pin low to mute
@@ -80,8 +66,8 @@ bool muted(size_t zone) {
 void writeVolume(size_t zone, uint8_t vol) {
   // We can't write to the volume registers if they are disabled
   if (!inStandby()) {
-    writeI2C2(zone_left_[zone], vol);
-    writeI2C2(zone_right_[zone], vol);
+    writeRegI2C2(zone_left_[zone], vol);
+    writeRegI2C2(zone_right_[zone], vol);
   }
 }
 
@@ -145,7 +131,7 @@ uint8_t getZoneVolume(size_t zone) {
 // Connect a Zone to a Source
 void setZoneSource(size_t zone, size_t src) {
   // Mute the zone during the switch to avoid an audible pop
-  bool was_muted = !isOn(zone);
+  bool was_muted = muted(zone);
   mute(zone, !was_muted);
 
   // Disconnect zone from all sources first
