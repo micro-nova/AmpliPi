@@ -37,11 +37,6 @@ const I2CReg pwr_io_dir_  = {0x42, 0x00};
 const I2CReg pwr_io_gpio_ = {0x42, 0x09};
 const I2CReg pwr_io_olat_ = {0x42, 0x0A};
 
-// LED Board registers
-const I2CReg led_dir_  = {0x40, 0x00};
-const I2CReg led_gpio_ = {0x40, 0x09};
-const I2CReg led_olat_ = {0x40, 0x0A};
-
 // DPOT register (no registers)
 const I2CReg dpot_dev_ = {0x5E, 0xFF};
 
@@ -153,13 +148,11 @@ void initInternalI2C() {
     }
   }
 
-  // Set the LED Board's GPIO expander as all outputs
-  writeRegI2C2(led_dir_, 0x00);  // 0=output, 1=input
-
   // Enable power supplies
   set9vEn(true);
   set12vEn(true);
 
+  initLeds();
   updateInternalI2C();
 }
 
@@ -194,12 +187,8 @@ void updateInternalI2C() {
     }
     setPwrGpio(pwr_gpio);
 
-    // Update the LED Board's LED state
-    Leds leds_old = getLeds();
-    Leds leds     = updateLeds();
-    if (leds.data != leds_old.data) {
-      writeRegI2C2(led_gpio_, leds.data);
-    }
+    // Update the LED Board's LED state (possible I2C write)
+    updateLeds();
   }
 
   // Update the Power Board's GPIO outputs, only writing when necessary

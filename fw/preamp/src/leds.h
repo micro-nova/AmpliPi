@@ -38,6 +38,7 @@ bool getLedOverride();
 void setLeds(Leds leds);
 Leds getLeds();
 
-Leds updateLeds();
+void initLeds();
+void updateLeds();
 
 #endif /* LEDS_H_ */
