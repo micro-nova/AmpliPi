@@ -152,7 +152,7 @@ void initUart2(uint16_t brr) {
 }
 
 bool checkForNewAddress() {
-  static size_t tx_len = 0;
+  size_t tx_len = 0;
 
   // TODO: Assume default slave address, wait a bit to see if new address is
   //       received, then either accept new address or use default.
@@ -182,16 +182,16 @@ bool checkForNewAddress() {
     uart_tx_buf_.ind++;
     tx_len--;
   }*/
-  if (i2c_addr_) {
-    (void)tx_len;
+  if (tx_len) {
     while (!(USART2->ISR & USART_ISR_TXE)) {}
     USART2->TDR = 'A';
     while (!(USART2->ISR & USART_ISR_TXE)) {}
     USART2->TDR = i2c_addr_ + 0x10;  // Add 0x10 to get next address
     while (!(USART2->ISR & USART_ISR_TXE)) {}
     USART2->TDR = 0x0A;  // '\n'
+    return true;
   }
-  return i2c_addr_ != 0;
+  return false;
 }
 
 uint8_t getI2C1Address() {
