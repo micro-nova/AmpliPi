@@ -77,7 +77,7 @@ class FanCtrl(Enum):
   LINEAR  = 2
   FORCED  = 3
 
-MIN_VOL = -255
+MIN_VOL = -80
 
 def is_amplipi():
   """ Check if the current hardware is an AmpliPi
