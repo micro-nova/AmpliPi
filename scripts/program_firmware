@@ -48,6 +48,9 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
+# Get full filepath here before changing directory
+local_file="$(realpath $file)"
+
 # cd to amplipi root dir
 cd "$(dirname ${BASH_SOURCE[0]})/.."
 
@@ -67,31 +70,31 @@ if [ -z "$file" ]; then
   printf "$helptext"
   exit 1
 fi
-file_path="$(realpath $file)"
-if [ ! -f "$file_path" ]; then
-  printf "Error: file $file_path doesn't exist.\n"
+if [ ! -f "$local_file" ]; then
+  printf "Error: file $local_file doesn't exist.\n"
   exit 2
 fi
 
 # Print out info of what's to be done
-printf "Programming $file_path"
+printf "Programming $local_file"
 prog_remote=true
+prog_file="$local_file"
 [ -z "$remote_host" ] || [ -z "$remote_path" ] && prog_remote=false
 if $prog_remote; then
   printf " at $remote_host:$remote_path"
+  prog_file=/tmp/preamp_bd.bin
 fi
 if [ ! -z "$nprog_opt" ]; then
   printf " and forcing $nprog units"
 fi
-printf " with \n"
+printf ""
+
+prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --flash \"$prog_file\""
+printf " with \n$prog_cmd\n\n"
 
 if $prog_remote; then
-  prog_cmd="cd \"$remote_path\"; venv/bin/python -m amplipi.hw --flash /tmp/preamp_bd.bin"
-  printf "$prog_cmd\n\n"
-  scp $file_path pi@$remote_host:/tmp/preamp_bd.bin
-  ssh pi@$remote_host -- "$prog_cmd"
+  scp "$local_file" pi@$remote_host:$prog_file
+  ssh pi@$remote_host -- "cd \"$remote_path\"; $prog_cmd"
 else # Program locally
-  prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --flash \"$file_path\""
-  printf "$prog_cmd\n\n"
   eval $prog_cmd
 fi
