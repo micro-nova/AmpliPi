@@ -32,10 +32,6 @@
 #include "pins.h"
 #include "systick.h"
 
-// The minimum volume. Volume range is [-80, 0] dB.
-// 0 dB is no attenuation so max volume. -80 dB corresponds to mute.
-#define DEFAULT_VOL 80
-
 // The source to connect all zones to at startup
 #define DEFAULT_SOURCE 0
 
@@ -49,95 +45,114 @@ const I2CReg zone_right_[NUM_ZONES] = {
     {0x8A, 0x01}, {0x8A, 0x03}, {0x8A, 0x05},
 };
 
-// Keep track of volumes so they are not lost when we standby
-uint8_t volumes[NUM_ZONES];
+// -80 is a special value that means mute, and actually sets -90 dB.
+#define VOL_MUTE 80
 
-// Mute the specified zone
-void mute(size_t zone, bool mute) {
-  // Set pin low to mute
-  writePin(zone_mute_[zone], !mute);
-}
+// Zone volumes, range is [-80, 0] dB with 0 as the max (no attenuation).
+// Requested volume for each zone, default to  mute (-90 dB)
+uint8_t vol_req_[NUM_ZONES] = {VOL_MUTE};
 
-bool muted(size_t zone) {
-  return !readPin(zone_mute_[zone]);
-}
+// Actual volume (last written via I2C)
+// The TDA7448 volume controller always reports 0x00 on read
+uint8_t vol_[NUM_ZONES] = {0};
 
-// Writes volume level to the volume ICs via the internal I2C bus
-void writeVolume(size_t zone, uint8_t vol) {
-  // We can't write to the volume registers if they are disabled
-  if (!inStandby()) {
-    writeRegI2C2(zone_left_[zone], vol);
-    writeRegI2C2(zone_right_[zone], vol);
-  }
-}
-
-// Standby all amps at once
-void standby(bool standby) {
-  bool prev_stby_state = inStandby();
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    // Set pin low to standby
-    writePin(zone_standby_[zone], !standby);
-  }
-  // After returning from standby we need to configure each of the volumes again
-  if (prev_stby_state && !standby) {
-    for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-      writeVolume(zone, volumes[zone]);
-    }
-  }
-}
-
-// Checks if any of the zones are in standby
-bool inStandby() {
-  bool in_stby = false;
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    in_stby = in_stby || (!readPin(zone_standby_[zone]));
-  }
-  return in_stby;
-  // TODO: Shortcut
-}
-
-// Initialize each zone's volume state (does not write to volume control ICs)
-void initZones() {
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    volumes[zone] = DEFAULT_VOL;
-    mute(zone, true);
-    setZoneSource(zone, DEFAULT_SOURCE);
-  }
-  standby(true);
-}
-
-// Set a zone's volume (requires I2C write)
-void setZoneVolume(size_t zone, uint8_t vol) {
+// Convert a requested dB to the corresponding volume IC register value.
+static inline uint8_t dB2VolReg(uint8_t db) {
   /* The volume IC has a discontinuity in its register value to attenuation
    * conversion after -71dB. To set -72dB the value 128 must be written.
    * Aditionally, mute (-90dB) is set by any value 192 to 255.
    */
   uint8_t vol_reg;
-  if (vol < 72) {
-    vol_reg = vol;
-  } else if (vol < 80) {
-    vol_reg = vol + 56;
+  if (db < 72) {
+    vol_reg = db;
+  } else if (db < 80) {
+    vol_reg = db + 56;
   } else {
     vol_reg = 255;
   }
+  return vol_reg;
+}
 
-  // Keep track of the volume so it is not lost when we standby
-  volumes[zone] = vol_reg;
+// Convert a requested dB to the corresponding volume IC register value.
+static inline uint8_t volReg2dB(uint8_t vol) {
+  uint8_t db;
+  if (vol < 72) {
+    db = vol;
+  } else if (vol < 80 + 56) {
+    db = vol - 56;
+  } else {
+    db = 80;
+  }
+  return db;
+}
 
-  // Actually write the volume to the volume control IC
-  writeVolume(zone, vol_reg);
+// Writes volume level to the volume ICs via the internal I2C bus
+static bool writeVolume(size_t zone, uint8_t vol) {
+  // Convert dB to volume controller register value
+  uint8_t vol_reg = dB2VolReg(vol);
+
+  bool success = writeRegI2C2(zone_left_[zone], vol_reg) == 0 &&
+                 writeRegI2C2(zone_right_[zone], vol_reg) == 0;
+  return success;
+}
+
+// Set a zone's volume from 0 to 80
+void setZoneVolume(size_t zone, uint8_t vol) {
+  // Request a volume change
+  vol_req_[zone] = vol;
 }
 
 uint8_t getZoneVolume(size_t zone) {
-  uint8_t vol;
-  if (volumes[zone] < 72) {
-    vol = volumes[zone];
-  } else if (volumes[zone] < 80 + 56) {
-    vol = volumes[zone] - 56;
+  if (muted(zone)) {
+    // If muted the real volume will be VOL_MUTE.
+    // Instead, report to the user the value which will be set upon unmuting.
+    return vol_req_[zone];
   } else {
-    vol = 80;
+    return vol_[zone];
   }
-  return vol;
+}
+
+// All amps must be in standby together due to the SYNCLK
+static void standby(bool standby) {
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    // Set pin low to standby
+    writePin(zone_standby_[zone], !standby);
+  }
+}
+
+// Checks if any of the zones are in standby
+bool inStandby() {
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    // Standby pins are active-low
+    if (!readPin(zone_standby_[zone])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Returns true if any zone is unmuted
+static bool anyZoneOn() {
+  for (uint8_t zone = 0; zone < NUM_ZONES; zone++) {
+    if (!muted(zone)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Mute the specified zone
+void mute(size_t zone, bool mute) {
+  // Set pin low to mute
+  writePin(zone_mute_[zone], !mute);
+
+  // If no zones are on, standby
+  standby(!anyZoneOn());
+}
+
+bool muted(size_t zone) {
+  // Mute pins are active-low
+  return !readPin(zone_mute_[zone]);
 }
 
 // Connect a Zone to a Source
@@ -170,13 +185,6 @@ size_t getZoneSource(size_t zone) {
   return 0;  // Should never be reached
 }
 
-// Initialize each source's analog/digital state
-void initSources() {
-  for (size_t src = 0; src < NUM_SRCS; src++) {
-    setSourceAD(src, IT_DIGITAL);
-  }
-}
-
 // Each source can select between a digital or analog input
 void setSourceAD(size_t src, InputType type) {
   // Disable both mux inputs first
@@ -193,4 +201,33 @@ InputType getSourceAD(size_t src) {
     return IT_DIGITAL;
   }
   return IT_ANALOG;
+}
+
+void initAudio() {
+  // Initialize each zone's audio state (does not write to volume control ICs)
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    mute(zone, true);
+    setZoneSource(zone, DEFAULT_SOURCE);
+  }
+
+  // Initialize each source's analog/digital state
+  for (size_t src = 0; src < NUM_SRCS; src++) {
+    setSourceAD(src, IT_DIGITAL);
+  }
+}
+
+void updateAudio() {
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    // The mute pin only affects the amps, set the volume to mute for preouts
+    if (muted(zone)) {
+      if (vol_[zone] != VOL_MUTE && writeVolume(zone, VOL_MUTE)) {
+        vol_[zone] = VOL_MUTE;
+      }
+    } else if (vol_[zone] != vol_req_[zone]) {
+      // Actually write the volume to the volume control IC
+      if (writeVolume(zone, vol_req_[zone])) {
+        vol_[zone] = vol_req_[zone];
+      }
+    }
+  }
 }

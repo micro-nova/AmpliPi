@@ -551,7 +551,6 @@ class Rpi:
 
   def __init__(self):
     self._bus = _Preamps()
-    self._all_muted = True # preamps start up in muted/standby state
 
 
   def __del__(self):
@@ -577,21 +576,6 @@ class Rpi:
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
     self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['MUTE'], mute_cfg)
-
-    # Audio power needs to be on each box when subsequent boxes are playing audio
-    all_muted = False not in mutes
-    if self._all_muted != all_muted:
-      if all_muted:
-        for p in self._bus.preamps.keys():
-          # Standby all preamps
-          self._bus.write_byte_data(p, _REG_ADDRS['STANDBY'], 0x00)
-        time.sleep(0.1)
-      else:
-        for p in self._bus.preamps.keys():
-          # Unstandby all preamps
-          self._bus.write_byte_data(p, _REG_ADDRS['STANDBY'], 0x3F)
-        time.sleep(0.3)
-      self._all_muted = all_muted
     return True
 
   def update_zone_sources(self, zone, sources):

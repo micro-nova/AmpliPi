@@ -42,22 +42,18 @@ typedef enum
   IT_DIGITAL
 } InputType;
 
-typedef struct {
-  uint8_t volume[NUM_ZONES];
-} AudioState;
+void initAudio();
+void updateAudio();
 
 void mute(size_t zone, bool mute);
 bool muted(size_t zone);
-void standby(bool standby);
 bool inStandby();
 
-void    initZones();
 void    setZoneVolume(size_t zone, uint8_t vol);
 uint8_t getZoneVolume(size_t zone);
 void    setZoneSource(size_t zone, size_t src);
 size_t  getZoneSource(size_t zone);
 
-void      initSources();
 void      setSourceAD(size_t src, InputType type);
 InputType getSourceAD(size_t src);
 

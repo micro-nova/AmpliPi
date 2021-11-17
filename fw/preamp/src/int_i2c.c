@@ -201,7 +201,5 @@ void updateInternalI2C() {
     writeRegI2C2(pwr_io_gpio_, gpio_request.data);
   }
 
-  // TODO: Can the volume controllers be read?
-  // TODO: Write volumes
-  // setZoneVolume(size_t zone, uint8_t vol)
+  updateAudio();
 }
