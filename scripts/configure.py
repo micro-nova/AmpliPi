@@ -424,7 +424,7 @@ def _create_service(name: str, config: str) -> List[Task]:
   tasks = []
 
   # create the systemd directory if it doesn't already exist
-  tasks += _create_dir(directory)
+  tasks += _create_dir(str(directory))
 
   # create the service file, overwriting any existing one
   tasks.append(Task(f'Create {filename}'))
@@ -610,7 +610,7 @@ def add_tests(env, progress) -> List[Task]:
 
   # create the ~/tests directory if it doesn't already exist
   directory = pathlib.Path.home().joinpath('Desktop', 'tests')
-  tasks += _create_dir(directory)
+  tasks += _create_dir(str(directory))
 
   for test in tests:
     tasks += [_add_desktop_icon(env, directory, test[0], test[1])]
