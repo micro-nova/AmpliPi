@@ -54,7 +54,7 @@ real_path = os.path.realpath(__file__)
 dir_path = os.path.dirname(real_path)
 app.mount("/static", StaticFiles(directory=f"{dir_path}/static"), name="static")
 
-home = f"{os.environ.get('HOME')}/amplipi-dev2" # placeholder
+home = f"{os.environ.get('HOME')}/amplipi-dev" # standard install directory
 
 @app.get('/update')
 def get_index():
