@@ -135,11 +135,12 @@ def extract_to_home(home):
   temp_dir = mkdtemp()
   sse_info(f'Extracting software to temp directory {temp_dir}')
   file_list = subprocess.getoutput('tar -tvf web/uploads/update.tar.gz')
-  release = re.search(r'(amplipi-.*?)/', file_list).group(1) # get the full name of the release
+  # get the full name of the release
+  release = re.search(r'(amplipi-.*?)/', file_list, flags=re.IGNORECASE).group(1)
   sse_info(f'Got amplipi release: {release}')
   out = subprocess.run('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   sse_info('copying software')
-  files_to_copy = ' '.join(glob.glob(f'{temp_dir}/amplipi-*/*'))
+  files_to_copy = ' '.join(glob.glob(f'{temp_dir}/{release}/*'))
   subprocess.check_call(f'mkdir -p {home}'.split())
   subprocess.check_call(f'cp -a {files_to_copy}  {home}/'.split())
 
