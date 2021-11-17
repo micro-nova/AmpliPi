@@ -153,27 +153,36 @@ def install_thread():
 
   sse_info('starting installation')
 
-  extract_to_home(home)
+  try:
+    extract_to_home(home)
+    sse_info('done copying software')
+  except Exception as e:
+    sse_failed(f'installation failed, error extracting release: {e}')
+    return
 
-  # use the configure script provided by the new install to configure the installation
-  sys.path.insert(0, f'{home}/scripts')
-  import configure # we want the new configure! # pylint: disable=import-error,import-outside-toplevel
-  def progress_sse(tl):
-    for task in tl:
-      sse_info(task.name)
-      output = indent(task.output)
-      if task.success:
-        print(f'info: {output}')
-        sse_info(output)
-      else:
-        print(f'error: {output}')
-        sse_error(output)
-  success = configure.install(progress=progress_sse)
-  if success:
-    sse_done('installation done')
-  else:
-    sse_failed('installation failed')
-  # TODO: now we have to install the updater if needed
+  try:
+    # use the configure script provided by the new install to configure the installation
+    sys.path.insert(0, f'{home}/scripts')
+    import configure # we want the new configure! # pylint: disable=import-error,import-outside-toplevel
+    def progress_sse(tl):
+      for task in tl:
+        sse_info(task.name)
+        output = indent(task.output)
+        if task.success:
+          print(f'info: {output}')
+          sse_info(output)
+        else:
+          print(f'error: {output}')
+          sse_error(output)
+    # reconfigure and restart everything but the updater (which is restarted later by update/restart)
+    success = configure.install(progress=progress_sse)
+    if success:
+      sse_done('installation done')
+    else:
+      sse_failed('installation failed')
+  except Exception as e:
+    sse_failed(f'installation failed, error configuring update: {e}')
+    return
 
 @app.get('/update/install')
 def install():
