@@ -40,12 +40,8 @@ int main(void) {
   systickInit();  // Initialize the clock ticks for delay_ms and other timing
                   // functionality
   initPins();     // UART and I2C require GPIO pins
-  // Initialize each channel's volume state
-  // (does not write to volume control ICs)
-  initZones();
-  // Initialize each source's analog/digital state
-  initSources();
-  initUart1();  // The preamp will receive its I2C network address via UART
+  initAudio();    // Initialize audio mux, volumes, mute and standby
+  initUart1();    // The preamp will receive its I2C network address via UART
   initUart2(9600);
   initInternalI2C();  // Setup the internal I2C bus
 

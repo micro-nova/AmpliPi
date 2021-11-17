@@ -138,7 +138,7 @@ uint8_t readReg(uint8_t addr) {
       break;
 
     case REG_STANDBY:
-      out_msg = inStandby() ? 1 : 0;
+      out_msg = inStandby() ? 0x3F : 0;
       break;
 
     case REG_VOL_ZONE1:
@@ -270,11 +270,6 @@ void writeReg(uint8_t addr, uint8_t data) {
       for (size_t zone = 0; zone < NUM_ZONES; zone++) {
         mute(zone, data & (0x1 << zone));
       }
-      break;
-
-    case REG_STANDBY:
-      // Standby is active-low and all channels must be put in standby at once
-      standby(data == 0);
       break;
 
     case REG_VOL_ZONE1:
