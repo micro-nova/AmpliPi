@@ -505,6 +505,7 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   tasks += print_progress([_check_version('http://0.0.0.0/api')])
   tasks += print_progress(_create_service('amplipi-updater', _update_service(env['base_dir'])))
   if restart_updater:
+    tasks += print_progress(_stop_service('amplipi-updater'))
     tasks += print_progress(_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
   else:
     # start a second updater service and check if it serves a url
@@ -662,7 +663,9 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       return False
   if not web and restart_updater: # if web and restart_updater are True this restart happens in the _update_web function
     # The update server needs to restart itself after everything else is successful
-    ssts =_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
+    # stop amplipi before reconfiguring authbind
+    ssts = _stop_service('amplipi-updater')
+    ssts +=_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
     progress(ssts)
     tasks += ssts
     if failed():
