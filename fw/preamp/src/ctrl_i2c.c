@@ -222,28 +222,18 @@ uint8_t readReg(uint8_t addr) {
     }
 
     case REG_VERSION_MAJOR:
-      out_msg = VERSION_MAJOR;
+      out_msg = VERSION_MAJOR_;
       break;
 
     case REG_VERSION_MINOR:
-      out_msg = VERSION_MINOR;
+      out_msg = VERSION_MINOR_;
       break;
 
     case REG_GIT_HASH_6_5:
-      out_msg = GIT_HASH_6_5;
-      break;
-
     case REG_GIT_HASH_4_3:
-      out_msg = GIT_HASH_4_3;
-      break;
-
     case REG_GIT_HASH_2_1:
-      out_msg = GIT_HASH_2_1;
-      break;
-
     case REG_GIT_HASH_0_D:
-      // LSB is the clean/dirty status according to Git
-      out_msg = GIT_HASH_0_D;
+      out_msg = GIT_HASH_[addr - REG_GIT_HASH_6_5];
       break;
 
     default:
