@@ -47,10 +47,10 @@ int main(void) {
 
   // RELEASE EXPANSION RESET
   // Needs to be high so the subsequent preamp board is not held in 'Reset Mode'
-  writePin(exp_nrst_, true);
+  // writePin(exp_nrst_, true);
 
   // Main loop, awaiting I2C commands
-  uint32_t next_loop_time = millis();
+  // uint32_t next_loop_time = millis();
   while (1) {
     // TODO: Clear watchdog
 
@@ -70,7 +70,7 @@ int main(void) {
     updateInternalI2C();
 
     // writePin(exp_boot0_, false);
-    next_loop_time += 1;  // Loop currently takes ~800 us
-    while (millis() < next_loop_time) {}
+    // next_loop_time += 1;  // Loop currently takes ~800 us
+    // while (millis() < next_loop_time) {}
   }
 }

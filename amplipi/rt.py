@@ -22,7 +22,7 @@ import math
 import io
 import os
 import time
-import amplipi.extras as extras
+#import amplipi.extras as extras
 from enum import Enum
 
 from typing import Dict, List, Tuple, Union
@@ -445,23 +445,23 @@ class _Preamps:
         src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
         src_cfg += ['{}'.format(src_type)]
       print('  [{}]'.format(', '.join(src_cfg)))
-      for zone in range(6):
-        self.print_zone_state(6 * (preamp - 1) + zone)
+      #for zone in range(6):
+      #  self.print_zone_state(6 * (preamp - 1) + zone)
 
-  def print_zone_state(self, zone):
-    assert zone >= 0
-    preamp = (int(zone / 6) + 1) * 8
-    zone = zone % 6
-    regs = self.preamps[preamp]
-    src_types = self.preamps[0x08][_REG_ADDRS['SRC_AD']]
-    src = ((regs[_REG_ADDRS['ZONE456_SRC']] << 8) | regs[_REG_ADDRS['ZONE123_SRC']] >> 2 * zone) & 0b11
-    src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
-    vol = -regs[_REG_ADDRS['VOL_ZONE1'] + zone]
-    muted = (regs[_REG_ADDRS['MUTE']] & (1 << zone)) > 0
-    state = []
-    if muted:
-      state += ['muted']
-    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, extras.vol_string(vol), ', '.join(state)))
+  # def print_zone_state(self, zone):
+  #   assert zone >= 0
+  #   preamp = (int(zone / 6) + 1) * 8
+  #   zone = zone % 6
+  #   regs = self.preamps[preamp]
+  #   src_types = self.preamps[0x08][_REG_ADDRS['SRC_AD']]
+  #   src = ((regs[_REG_ADDRS['ZONE456_SRC']] << 8) | regs[_REG_ADDRS['ZONE123_SRC']] >> 2 * zone) & 0b11
+  #   src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
+  #   vol = -regs[_REG_ADDRS['VOL_ZONE1'] + zone]
+  #   muted = (regs[_REG_ADDRS['MUTE']] & (1 << zone)) > 0
+  #   state = []
+  #   if muted:
+  #     state += ['muted']
+  #   print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, extras.vol_string(vol), ', '.join(state)))
 
 class Mock:
   """ Mock of an Amplipi Runtime

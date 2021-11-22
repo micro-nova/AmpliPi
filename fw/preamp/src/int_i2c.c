@@ -89,7 +89,9 @@ void initInternalI2C() {
     uint32_t status = writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
     if (status == I2C_ISR_NACKF) {
       // Received a NACK, will try again
+      writePin(exp_boot0_, true);
     } else if (status == I2C_ISR_ARLO) {
+      writePin(exp_nrst_, true);
       // Arbitation lost (SDA low when master tried to set high).
       // Reset I2C since the peripheral auto-sets itself into slave mode.
       // Then, send 9 clocks to finish whichever slave transaction was ongoing.
