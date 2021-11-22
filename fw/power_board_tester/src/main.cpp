@@ -222,6 +222,14 @@ bool readGPIO() {
   return false;
 }
 
+uint32_t readAna16(uint8_t pin) {
+  uint32_t ana = 0;
+  for (size_t i = 0; i < 16; i++) {
+    ana += analogRead(pin);
+  }
+  return ana;
+}
+
 // N = test number, AKA what line # on the screen
 template <uint8_t N>
 void drawTest(const char* desc, const char* val1, bool ok1, const char* val2,
@@ -334,32 +342,32 @@ void loop() {
     char strbuf2[7] = {0};
 
     // Measure ADCs
-    float ctrl5va = adcToVolts(analogRead(A0), 12, 3.3, 33, 100);
-    float ctrl5vd = adcToVolts(analogRead(A1), 12, 3.3, 33, 100);
+    float ctrl5va = adcToVolts(readAna16(A0), 16, 3.3, 33, 100);
+    float ctrl5vd = adcToVolts(readAna16(A1), 16, 3.3, 33, 100);
     sprintf(strbuf1, "%5.2fV", ctrl5va);
     sprintf(strbuf2, "%5.2fV", ctrl5vd);
-    bool ok1 = ctrl5va < 6.0 && ctrl5va > 4.0;
-    bool ok2 = ctrl5vd < 6.0 && ctrl5va > 4.0;
+    bool ok1 = ctrl5va < 5.5 && ctrl5va > 4.5;
+    bool ok2 = ctrl5vd < 5.5 && ctrl5va > 4.5;
     drawTest<0>("Ctrl 5VA/5VD", strbuf1, ok1, strbuf2, ok2);
 
-    float preamp9v = adcToVolts(analogRead(A2), 12, 3.3, 33, 100);
-    float preamp5v = adcToVolts(analogRead(A3), 12, 3.3, 33, 100);
+    float preamp9v = adcToVolts(readAna16(A2), 16, 3.3, 33, 100);
+    float preamp5v = adcToVolts(readAna16(A3), 16, 3.3, 33, 100);
     sprintf(strbuf1, "%5.2fV", preamp9v);
     sprintf(strbuf2, "%5.2fV", preamp5v);
-    ok1 = preamp9v < 11.0 && preamp9v > 8.0;
-    ok2 = preamp5v < 6.0 && preamp5v > 4.0;
+    ok1 = preamp9v < 9.5 && preamp9v > 8.5;
+    ok2 = preamp5v < 5.5 && preamp5v > 4.5;
     drawTest<1>("Preamp 9V/5V", strbuf1, ok1, strbuf2, ok2);
 
-    float preout9v = adcToVolts(analogRead(A4), 12, 3.3, 33, 100);
+    float preout9v = adcToVolts(readAna16(A4), 16, 3.3, 33, 100);
     sprintf(strbuf1, "%5.2fV", preout9v);
-    ok1 = preout9v < 11.0 && preout9v > 8.0;
+    ok1 = preout9v < 9.5 && preout9v > 8.5;
     drawTest<2>("Preout 9V", strbuf1, ok1, "", true);
 
     // Check I2C loopback
     // Update from previous transmission
-    float i2c3v3 = adcToVolts(analogRead(A5), 12, 3.3, 100, 100);
+    float i2c3v3 = adcToVolts(readAna16(A5), 16, 3.3, 100, 100);
     sprintf(strbuf1, "%5.2fV", i2c3v3);
-    drawTest<3>("I2C out (J3)", strbuf1, i2c3v3 < 4.0 && i2c3v3 > 2.7,
+    drawTest<3>("I2C out (J3)", strbuf1, i2c3v3 < 3.6 && i2c3v3 > 3.0,
                 i2c_loopback_ok_ ? " PASS" : " FAIL", i2c_loopback_ok_);
 
     // Start a new transmission
@@ -387,7 +395,7 @@ void loop() {
 
     // Check the 12V power supply
     bool  pg_12v = readGPIO();
-    float fan12v = adcToVolts(analogRead(A6), 12, 3.3, 10, 100);
+    float fan12v = adcToVolts(readAna16(A6), 16, 3.3, 10, 100);
     sprintf(strbuf1, "%5.2fV", fan12v);
     ok1 = fan12v < 13.0 && fan12v > 11.0;
     drawTest<6>("12V/PG_12V", strbuf1, ok1, pg_12v ? " PASS" : " FAIL", pg_12v);
