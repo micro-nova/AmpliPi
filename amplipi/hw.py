@@ -39,6 +39,30 @@ if utils.is_amplipi():
 
 PI_SERIAL_PORT = '/dev/serial0'
 
+class FwVersion:
+  """ Represents the Preamp Board's firmware version """
+
+  major: int
+  minor: int
+  hash: int
+  dirty: bool
+
+  def __init__(self, major: int = 0, minor: int = 0, hash: int = 0, dirty: bool = False):
+    if not 0 < major < 255 or not 0 < minor < 255:
+      raise ValueError('Major and minor version must be in the range [0,255]')
+    if not 0 < hash < 0xFFFFFFF:
+      raise ValueError('Hash must be an unsigned 28-bit value')
+    self.major = major
+    self.minor = minor
+    self.hash = hash
+    self.dirty = dirty
+
+  def __str__(self):
+    return f'{self.major}.{self.minor}-{self.hash:07X}{"-dirty" if self.dirty else ""}'
+
+  def __repr__(self):
+    return f'FwVersion({self.major}, {self.minor}, {self.hash:07X}, {self.dirty})'
+
 class Preamp:
   """ Low level discovery and communication for the AmpliPi Preamp's firmware """
 
@@ -116,7 +140,7 @@ class Preamp:
     assert 0 <= leds <= 255
     self.bus.write_byte_data(self.addr, self.Reg.LED_CTRL.value, leds)
 
-  def read_version(self) -> Tuple[int, int, int, bool]:
+  def read_version(self) -> FwVersion:
     """ Read the firmware version of the preamp
 
       Returns:
@@ -133,7 +157,7 @@ class Preamp:
     git_hash4_stat = self.bus.read_byte_data(self.addr, self.Reg.GIT_HASH_STATUS.value)
     git_hash |= (git_hash4_stat >> 4)
     dirty = (git_hash4_stat & 0x01) != 0
-    return major, minor, git_hash, dirty
+    return FwVersion(major, minor, git_hash, dirty)
 
   def reset_expander(self, bootloader: bool = False) -> None:
     """ Resets expansion unit connected to this preamp, if any """
@@ -288,8 +312,8 @@ class Preamps:
       # read the version and print it.
       ver_str = ''
       if unit < len(self.preamps):
-        major, minor, git_hash, dirty = self.preamps[unit].read_version()
-        ver_str = f'(version {major}.{minor}) '
+        fw_ver = self.preamps[unit].read_version()
+        ver_str = f'(version {fw_ver}) '
       print(f"Resetting unit {unit}'s preamp {ver_str}and starting execution in bootloader ROM")
       self.reset(unit = unit, bootloader = True)
       for p in range(unit): # Set UART passthrough on any previous units
@@ -307,8 +331,8 @@ class Preamps:
 
       # If the programming was successful it was just added to the list of preamps
       if unit < len(self.preamps):
-        major, minor, git_hash, dirty = self.preamps[unit].read_version()
-        print(f"Unit {unit}'s new version: {major}.{minor}")
+        fw_ver = self.preamps[unit].read_version()
+        print(f"Unit {unit}'s new version: {fw_ver}")
       elif success:
         success = False
         print(f"Can't communicate with unit {unit}, stopping programming")
@@ -388,6 +412,5 @@ if __name__ == '__main__':
     sys.exit(1)
 
   if args.version:
-    major, minor, git_hash, dirty = preamps[0].read_version()
-    print(f'Master preamp firmware version: {major}.{minor}-{git_hash:07X},'
-          f'{"dirty" if dirty else "clean"}')
+    fw_ver = preamps[0].read_version()
+    print(f"Master preamp's firmware version: {fw_ver}")
