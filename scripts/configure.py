@@ -12,6 +12,7 @@ import pwd # username
 import glob
 from typing import List, Union, Tuple, Dict, Any, Optional
 import time
+import re
 import requests
 
 # pylint: disable=broad-except
@@ -533,6 +534,41 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+def _fw_ver_from_filename(name: str) -> int:
+  """ Input: .bin filename, with the pattern 'preamp_X.Y.bin'.
+      X = major version, Y = minor version.
+      The result is a single integer 256*X + Y
+  """
+  nums = re.findall(r'\d+', name)
+  major = int(nums[0])
+  minor = int(nums[1])
+  return (major << 8) + minor
+
+def _update_firmware(env: dict, progress) -> List[Task]:
+  """ If on AmpliPi hardware, update to the latest firmware """
+  task = Task('Flash latest firmware')
+  latest_ver = 0
+  latest_file = ''
+  for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
+    ver = _fw_ver_from_filename(f)
+    if ver > latest_ver:
+      latest_ver = ver
+      latest_file = f
+  if latest_ver > 0:
+    if env['is_amplipi']:
+      os.chdir(env['base_dir'])
+      task.margs = [f'bash scripts/program_firmware {latest_file}'.split()]
+      task.run()
+    else:
+      task.output = 'Not on AmpliPi'
+      task.success = False
+  else:
+    task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
+    task.success = False
+  progress([task])
+  return [task]
+
+
 def print_task_results(tasks : List[Task]) -> None:
   """ Print out all of the task results """
   for task in tasks:
@@ -581,7 +617,7 @@ def add_tests(env, progress) -> List[Task]:
   return tasks
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
-            display=True, progress=print_task_results) -> bool:
+            display=True, firmware=True, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -635,6 +671,10 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_display(env, progress)
     if failed():
       return False
+  if firmware:
+    tasks += _update_firmware(env, progress)
+    if failed():
+      return False
   return True
 
 if __name__ == '__main__':
@@ -652,10 +692,12 @@ if __name__ == '__main__':
       When this is set False system will need to be restarted to complete update""")
   parser.add_argument('--display', action='store_true', default=False,
     help="Install and run the front-panel display service")
+  parser.add_argument('--firmware', action='store_true', default=False,
+    help="Flash the latest firmware")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
-  has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display
+  has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
   if not has_args:
     print('  WARNING: expected some arguments, check --help for more information')
   install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
-          display=flags.display, restart_updater=flags.restart_updater)
+          display=flags.display, firmware=flags.firmware, restart_updater=flags.restart_updater)
