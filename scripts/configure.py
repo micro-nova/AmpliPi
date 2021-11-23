@@ -21,7 +21,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'base' : {
     'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
              'python3-pil', 'libopenjp2-7', # Pillow dependencies
-             'libatlas-base-dev'            # numpy dependencies
+             'libatlas-base-dev',           # numpy dependencies
+             'stm32flash'
             ],
   },
   'web' : {
@@ -554,7 +555,7 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
-    ('Program Master + Expander Preamp', './hw/tests/program_preamps.bash 2 --wait'),
+    ('Program Master + Expander Preamp', './hw/tests/program_preamps.bash 2'),
     ('Amplifier', './hw/tests/built_in.bash amp'),
     ('LEDs', './hw/tests/built_in.bash led'),
     ('Preamp', './hw/tests/built_in.bash preamp'),
