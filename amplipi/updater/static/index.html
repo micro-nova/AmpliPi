@@ -22,28 +22,46 @@
       <p class="lead mb-4">
         Update your AmpliPi device
       </p>
-      <div class="input-group my-3">
-        <div class="input-group-prepend">
-          <input id="sel-auto-update" type="radio" aria-label="Select Manual Update File" style="margin-right: 5px" checked="true" onclick="$('#sel-manual-update').prop('checked', false)">
-          <span class="input-group-text">Latest Release</span>
+      <div id="update-options">
+        <div class="card" style="background: #4a4a4a;">
+          <a class="btn btn-link" data-toggle="collapse" data-target="#auto-update" aria-expanded="true" aria-controls="auto-update" style="text-align: left;">
+            <div class="card-header" id="auto-update-heading">
+              <h5 class="mb-0">
+                Latest Release
+              </h5>
+            </div>
+          </a>
+
+          <div id="auto-update" class="collapse show" aria-labelledby="auto-update-heading" data-parent="#update-options">
+            <div class="card-body">
+              <select class="custom-select" id="inputGroupSelect01">
+                <option selected="">Choose...</option>
+                <option value="1">One</option>
+                <option value="2">Two</option>
+                <option value="3">Three</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <select class="custom-select" id="inputGroupSelect01">
-          <option selected="">Choose...</option>
-          <option value="1">One</option>
-          <option value="2">Two</option>
-          <option value="3">Three</option>
-        </select>
+        <div class="card" style="background: #4a4a4a;">
+          <a class="btn btn-link collapsed" data-toggle="collapse" data-target="#manual-update" aria-expanded="false" aria-controls="manual-update" style="text-align: left;">
+            <div class="card-header" id="manual-update-header">
+              <h5 class="mb-0">
+                  Upload Custom Update
+              </h5>
+            </div>
+          </a>
+          <div id="manual-update" class="collapse" aria-labelledby="manual-update-header" data-parent="#update-options">
+            <div class="card-body">
+              <div class="custom-file">
+                <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);" disabled="true">
+                <label class="custom-file-label" for="update-file-selector">Choose file</label>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="input-group my-3">
-        <div class="input-group-prepend">
-          <input id="sel-manual-update" type="radio" aria-label="Select Manual Update File" style="margin-right: 5px" onclick="$('#sel-auto-update').prop('checked', false); $('#update-file-selector').prop('disabled', false);">
-          <span class="input-group-text">Manual Update</span>
-        </div>
-        <div class="custom-file">
-          <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);" disabled="true">
-          <label class="custom-file-label" for="update-file-selector">Choose file</label>
-        </div>
-      </div>
+
       <div class="text-center">
         <a id="submit-update" role="button" class="btn btn-lg btn-warning disabled" onclick="upload_software_update();"><i class="fas fa-upload"></i>Start</a>
       </div>
