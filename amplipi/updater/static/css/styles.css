@@ -4,6 +4,8 @@
 body {
 	padding-bottom: 2rem;
 	padding-top: 4rem;
+  color: white;
+  background-color: #2a2a2a;
 }
 .row {
 	margin-bottom: 1rem;
@@ -15,6 +17,14 @@ body {
 hr {
 	margin-top: 2rem;
 	margin-bottom: 2rem;
+}
+#update-log {
+  color: white;
+  background-color: #4a4a4a;
+}
+.list-group-item {
+  color: white;
+  background-color: #4a4a4a;
 }
 #files {
     overflow-y: scroll !important;
