@@ -24,22 +24,39 @@
       </p>
       <div id="update-options">
         <div class="card" style="background: #4a4a4a;">
-          <a class="btn btn-link" data-toggle="collapse" data-target="#auto-update" aria-expanded="true" aria-controls="auto-update" style="text-align: left;">
-            <div class="card-header" id="auto-update-heading">
+          <a class="btn btn-link" data-toggle="collapse" data-target="#latest-update" aria-expanded="true" aria-controls="latest-update" style="text-align: left;">
+            <div class="card-header" id="latest-update-heading">
               <h5 class="mb-0">
                 Latest Release
               </h5>
             </div>
           </a>
 
-          <div id="auto-update" class="collapse show" aria-labelledby="auto-update-heading" data-parent="#update-options">
+          <div id="latest-update" class="collapse show" aria-labelledby="latest-update-heading" data-parent="#update-options">
+            <div class="card-body">
+              <!-- TODO: populate latest release info abnd button -->
+            </div>
+          </div>
+        </div>
+        <div class="card" style="background: #4a4a4a;">
+          <a class="btn btn-link" data-toggle="collapse" data-target="#older-update" aria-expanded="true" aria-controls="older-update" style="text-align: left;">
+            <div class="card-header" id="older-update-heading">
+              <h5 class="mb-0">
+                Older Releases
+              </h5>
+            </div>
+          </a>
+
+          <div id="older-update" class="collapse show" aria-labelledby="older-update-heading" data-parent="#update-options">
             <div class="card-body">
               <select class="custom-select" id="inputGroupSelect01">
+                <!-- TODO: populate older releases-->
                 <option selected="">Choose...</option>
                 <option value="1">One</option>
                 <option value="2">Two</option>
                 <option value="3">Three</option>
               </select>
+              <!-- TODO: show selected release info and button -->
             </div>
           </div>
         </div>
@@ -47,7 +64,7 @@
           <a class="btn btn-link collapsed" data-toggle="collapse" data-target="#manual-update" aria-expanded="false" aria-controls="manual-update" style="text-align: left;">
             <div class="card-header" id="manual-update-header">
               <h5 class="mb-0">
-                  Upload Custom Update
+                  Custom Software
               </h5>
             </div>
           </a>
@@ -57,13 +74,10 @@
                 <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);" disabled="true">
                 <label class="custom-file-label" for="update-file-selector">Choose file</label>
               </div>
+              <a id="submit-update" role="button" class="btn btn-lg btn-warning text-center disabled" onclick="upload_software_update();"><i class="fas fa-upload"></i>Start</a>
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="text-center">
-        <a id="submit-update" role="button" class="btn btn-lg btn-warning disabled" onclick="upload_software_update();"><i class="fas fa-upload"></i>Start</a>
       </div>
 
       <div class="row">
