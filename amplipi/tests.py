@@ -91,42 +91,17 @@ PRESETS = [
     'name': 'led-0 mute all',
     'state': {'zones': [{'id': zid, 'mute': True} for zid in range(6)]}
   },
-  # set volume on zoneX
-  {
-    'name': 'led-1 enable zone 1',
-    'state': {'zones': [{'id': 0, 'mute': False, 'vol': -50}]}
-  },
-  {
-    'name': 'led-2 enable zone 2',
-    'state': {'zones': [{'id': 1, 'mute': False, 'vol': -50}]}
-  },
-  {
-    'name': 'led-3 enable zone 3',
-    'state': {'zones': [{'id': 2, 'mute': False, 'vol': -50}]}
-  },
-  {
-    'name': 'led-4 enable zone 4',
-    'state': {'zones': [{'id': 3, 'mute': False, 'vol': -50}]}
-  },
-  {
-    'name': 'led-5 enable zone 5',
-    'state': {'zones': [{'id': 4, 'mute': False, 'vol': -50}]}
-  },
-  {
-    'name': 'led-6 enable zone 6',
-    'state': {'zones': [{'id': 5, 'mute': False, 'vol': -50}]}
-  },
   # mute all
   {
     'name': 'amp-0 mute all',
-    'state': {'zones': [{'id': zid, 'mute': True} for zid in range(7)]}
+    'state': {'zones': [{'id': zid, 'mute': True} for zid in range(12)]}
   },
   # play music
   {
     'name': 'amp-1 play',
     'state': {
       'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(7)]
+      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(12)]
     }
   },
   # play music
@@ -134,11 +109,19 @@ PRESETS = [
     'name': 'preout-0 play',
     'state': {
       'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(7)]
+      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(12)]
     }
   },
 ]
 
+# set volume on zoneX
+for zid in range(12):
+  PRESETS += [
+    {
+      'name': f'led-{zid + 1} enable zone {zid + 1}',
+      'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
+    }
+  ]
 PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -40) for src in range(4)]
 PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
 
@@ -256,7 +239,10 @@ def preamp_test(ap1: Client):
     sys.exit(1)
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
   if not ap2.available():
-    print('No analog tester available, only able to test digital inputs\n')
+    print('No analog tester found at aptestanalog.local, only able to test digital inputs\n')
+    print('Test will play Digital 1 Left... Dgitial 4 Right')
+    print('- Verify that each side and all 4 sources are played out of each of the 6 zones')
+  else:
     print('Test will play Analog 1 Left, Analog 1 Right...Analog 4 Right, Digital 1 Left... Dgitial 4 Right')
     print('- Verify that each side and all 8 sources are played out of each of the 6 zones')
 
