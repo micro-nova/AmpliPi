@@ -463,6 +463,13 @@ def _configure_authbind() -> List[Task]:
 def _enable_linger(user: str) -> List[Task]:
   return [Task(f'Enable linger for {user} user', f'sudo loginctl enable-linger {user}'.split()).run()]
 
+def _copy_old_config(dest_dir: str) -> None:
+  # try to copy the config of the current runming amplipi service into base_dir/house.json
+  # success is not required since the config will be generated from defaults if missing
+  old_dir = subprocess.getoutput('systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
+  if old_dir:
+    subprocess.run(f'cp {old_dir}/house.json {dest_dir}/house.json', check=False)
+
 def _check_url(url) -> Task:
   task = Task(f'Check url {url}')
   try:
@@ -493,6 +500,10 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
     return tasks
+  # try to copy the old config into the potentially new directory
+  # This fixes some potential update issues caused by migrating install to a different directory
+  # (using the web updated the install dir used to be amplipi-dev2 and is now amplipi-dev)
+  _copy_old_config(env['base_dir'])
   tasks = []
   # stop amplipi before reconfiguring authbind
   tasks += print_progress(_stop_service('amplipi'))
