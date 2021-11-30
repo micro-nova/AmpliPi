@@ -22,7 +22,6 @@ import math
 import io
 import os
 import time
-import amplipi.extras as extras
 from enum import Enum
 
 from typing import Dict, List, Tuple, Union
@@ -433,20 +432,18 @@ class _Preamps:
         self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_CTRL'], 1)
         self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_VAL'], leds)
 
-  def print(self):
+  def __str__(self):
+    preamp_str = ''
     for preamp_addr in self.preamps.keys():
+      if preamp_addr > _DEV_ADDRS[0]:
+        preamp_str += '\n'
       preamp = int(preamp_addr / 8)
-      print('preamp {}:'.format(preamp))
-      src_types = self.preamps[0x08][_REG_ADDRS['SRC_AD']]
-      src_cfg = []
-      for src in range(4):
-        src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
-        src_cfg += ['{}'.format(src_type)]
-      print('  [{}]'.format(', '.join(src_cfg)))
+      preamp_str += f'Preamp {preamp}:'
       for zone in range(6):
-        self.print_zone_state(6 * (preamp - 1) + zone)
+        preamp_str += '\n' + self.get_zone_state_str(6 * (preamp - 1) + zone)
+    return preamp_str
 
-  def print_zone_state(self, zone):
+  def get_zone_state_str(self, zone):
     assert zone >= 0
     preamp = (int(zone / 6) + 1) * 8
     zone = zone % 6
@@ -456,10 +453,7 @@ class _Preamps:
     src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
     vol = -regs[_REG_ADDRS['VOL_ZONE1'] + zone]
     muted = (regs[_REG_ADDRS['MUTE']] & (1 << zone)) > 0
-    state = []
-    if muted:
-      state += ['muted']
-    print('  {}({}) --> zone {} vol [{}] {}'.format(src, src_type[0], zone, extras.vol_string(vol), ', '.join(state)))
+    return f'  {src}({src_type[0]}) --> zone {zone} vol {vol}{" (muted)" if muted else ""}'
 
 class Mock:
   """ Mock of an Amplipi Runtime
