@@ -601,9 +601,7 @@ def add_tests(env, progress) -> List[Task]:
     ('Ethernet', './hw/tests/ethernet.bash --wait'),
     ('USB Ports', './hw/tests/usb.py'),
     ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
-    ('Fans On', 'venv/bin/python ./hw/tests/preamp.py -f'),
-    ('Fans Off', 'venv/bin/python ./hw/tests/preamp.py'),
-    ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'),
+    ('Fans and Power', './hw/tests/fans.bash'),
   ]
   tasks = []
 
