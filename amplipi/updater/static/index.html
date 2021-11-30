@@ -23,40 +23,36 @@
         Update your AmpliPi device
       </p>
       <div class="card" style="background: #4a4a4a;">
-        <div class="card-header text-center">
-          <ol class="nav nav-tabs nav-fill">
-            <li class="nav-item">
-              <a id="latest-update-nav" class="nav-link active show" aria-selected="true" data-toggle="tab" role="tab" href="#latest-update-tab">Latest Update</a>
-            </li>
-            <li class="nav-item">
-              <a id="older-update-nav" class="nav-link" aria-selected="false" data-toggle="tab" role="tab" href="#older-update-tab">Older Update</a>
-            </li>
-            <li class="nav-item">
-              <a id="manual-update-nav" class="nav-link" aria-selected="false" data-toggle="tab" role="tab" href="#manual-update-tab">Manual Update</a>
-            </li>
-          </ol>
-        </div>
-        <div class="card-body">
-          <div class="tab-content">
-            <div id="latest-update-tab" class="tab-pane show active" role="tabpanel">
-                Latest
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" id="latest-update-tab" data-toggle="tab" href="#latest-update" role="tab" aria-controls="latest-update" aria-selected="true">Latest Release</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="older-update-tab" data-toggle="tab" href="#older-update" role="tab" aria-controls="older-update" aria-selected="false">Older Releases</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="manual-update-tab" data-toggle="tab" href="#manual-update" role="tab" aria-controls="manual-update" aria-selected="false">Custom</a>
+          </li>
+        </ul>
+        <div class="tab-content" id="myTabContent">
+          <div class="tab-pane fade show active" id="latest-update" role="tabpanel" aria-labelledby="latest-update-tab">
+            Update Info or (Your system is up to date! with checkbox)
+          </div>
+          <div class="tab-pane fade" id="older-update" role="tabpanel" aria-labelledby="older-update-tab">
+            <select class="custom-select" id="inputGroupSelect01">
+              <!-- TODO: populate older releases-->
+              <option selected="">Choose...</option>
+              <option value="1">One</option>
+              <option value="2">Two</option>
+              <option value="3">Three</option>
+            </select>
+           </div>
+          <div class="tab-pane fade" id="manual-update" role="tabpanel" aria-labelledby="manual-update-tab">
+            <div class="custom-file">
+              <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);" disabled="true">
+              <label class="custom-file-label" for="update-file-selector">Choose file</label>
             </div>
-            <div id="older-update-tab" class="tab-pane" role="tabpanel">
-              <select class="custom-select" id="inputGroupSelect01">
-                <!-- TODO: populate older releases-->
-                <option selected="">Choose...</option>
-                <option value="1">One</option>
-                <option value="2">Two</option>
-                <option value="3">Three</option>
-              </select>
-            </div>
-            <div id="manual-update-tab" class="tab-pane" role="tabpanel">
-              <div class="custom-file">
-                <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);" disabled="true">
-                <label class="custom-file-label" for="update-file-selector">Choose file</label>
-              </div>
-              <a id="submit-update" role="button" class="btn btn-lg btn-warning text-center disabled" onclick="upload_software_update();"><i class="fas fa-upload"></i>Start</a>
-            </div>
+            <a id="submit-update" role="button" class="btn btn-lg btn-warning text-center disabled" onclick="upload_software_update();"><i class="fas fa-upload"></i>Start</a>
           </div>
         </div>
       </div>
