@@ -230,7 +230,7 @@ def inputs_test(ap1: Client):
     else:
       ap2.announce(models.Announcement(source_id=0, media=f'web/static/audio/optical_in.mp3'))
 
-def preamp_test(ap1: Client):
+def preamp_test(ap1: Client, try_analog: bool = True):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
   ap2 = get_analog_tester_client()
   status = ap1.get_status()
@@ -238,18 +238,19 @@ def preamp_test(ap1: Client):
     print('failed to get AmpliPi status')
     sys.exit(1)
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
-  if not ap2.available():
-    print('No analog tester found at aptestanalog.local, only able to test digital inputs\n')
-    print('Test will play Digital 1 Left... Dgitial 4 Right')
-    print('- Verify that each side and all 4 sources are played out of each of the 6 zones')
-  else:
+  if try_analog and ap2.available():
     print('Test will play Analog 1 Left, Analog 1 Right...Analog 4 Right, Digital 1 Left... Dgitial 4 Right')
     print('- Verify that each side and all 8 sources are played out of each of the 6 zones')
+  else:
+    if try_analog:
+      print('No analog tester found at aptestanalog.local, only able to test digital inputs\n')
+    print('Test will play Digital 1 Left... Dgitial 4 Right')
+    print('- Verify that each side and all 4 sources are played out of each of the 6 zones')
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
   analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3') for src in range(4)]
   while True:
     # TODO: verify fw version
-    if ap2.available():
+    if try_analog and ap2.available():
       for msg in analog_msgs:
         pst = presets[msg.source_id]
         if pst.id is not None:
@@ -279,6 +280,8 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser('Test audio functionality')
   parser.add_argument('test', help=f'Test to run ({tests})')
+  parser.add_argument('--no-analog', action='store_true',
+                      help='Disable analog input tests (used to test expansion units)')
   args = parser.parse_args()
 
   print('configuring amplipi for testing')
@@ -300,7 +303,8 @@ if __name__ == '__main__':
   try:
     print(f"Running test '{args.test}'. Press Ctrl-C to stop.")
     if args.test == 'preamp':
-      preamp_test(ap)
+      use_analog_inputs = not args.no_analog
+      preamp_test(ap, try_analog=use_analog_inputs)
     elif args.test == 'inputs':
       inputs_test(ap)
     else:
