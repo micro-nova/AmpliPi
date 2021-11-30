@@ -159,7 +159,7 @@ def loop_test(client: Client, test_name: str):
 
     - Verify the sequence is the following:
       1. The first led should blink red then green.
-      2. The next 6 leds will light up in a progress bar-like sequence (they should be the same brightness)
+      2. The blue zone leds will light up in a progress bar-like sequence (they should be the same brightness)
       3. Repeat
     """)
   while True:
@@ -245,11 +245,7 @@ def preamp_test(ap1: Client):
   else:
     print('Test will play Analog 1 Left, Analog 1 Right...Analog 4 Right, Digital 1 Left... Dgitial 4 Right')
     print('- Verify that each side and all 8 sources are played out of each of the 6 zones')
-
-  # first DAC outputs about the same volume as analog inputs
-  digital_msgs = [models.Announcement(source_id=0, media=f'web/static/audio/digital1.mp3', vol=-38)]
-  # the DAC for sources 2-4 outputs quieter
-  digital_msgs.extend([models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(1,4)])
+  digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
   analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3') for src in range(4)]
   while True:
     # TODO: verify fw version
