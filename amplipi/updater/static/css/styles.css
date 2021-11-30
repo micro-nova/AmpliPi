@@ -50,3 +50,27 @@ hr {
 
 	border-style: solid;
 }
+.card {
+  margin-bottom: 12px;
+  -webkit-box-shadow: 6px 7px 19px 6px #000000;
+  box-shadow: 6px 7px 19px 6px #000000;
+}
+.card {
+  background: #2a2a2a;
+  margin-bottom: 10px;
+}
+.card .nav-item {
+  font-size: 0.9rem;
+}
+.card .card-header .nav .nav-item .active {
+  background: #4a4a4a;
+}
+.card .card-header .nav .nav-item a {
+  color: inherit;
+}
+.card .nav-item:hover, .card .nav-link:hover, .card .nav-link.active {
+  border-color: #4a4a4a;
+}
+.card .card-body {
+  background: #4a4a4a;
+}
