@@ -595,6 +595,7 @@ def add_tests(env, progress) -> List[Task]:
     ('Amplifier', './hw/tests/built_in.bash amp'),
     ('LEDs', './hw/tests/built_in.bash led'),
     ('Preamp', './hw/tests/built_in.bash preamp'),
+    ('Expander Preamp', './hw/tests/built_in.bash preamp --no-analog'),
     ('Inputs', './hw/tests/built_in.bash inputs'),
     ('Preouts', './hw/tests/built_in.bash preout'),
     ('Display', './hw/tests/display.bash --wait'),
