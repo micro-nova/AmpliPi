@@ -166,8 +166,9 @@ bool adcToTempStr(uint8_t ntc_adc, float min, float max, char* str) {
     sprintf(str, "%s", "SHORT");
     return false;
   } else {
-    float rt   = 4.7 * (255 / (float)ntc_adc - 1);
-    float temp = 1.0 / (log(rt / 10) / 3900 + 1.0 / (25.0 + 273.5)) - 273.15;
+    float rt   = 4.7f * 255 / ntc_adc - 4.7f;
+    float c    = 1.0f / (25.0f + 273.5f);
+    float temp = 1.0f / (logf(rt / 10) / 3900 + c) - 273.15f;
     sprintf(str, "%5.1fC", temp);
     return min < temp && temp < max;
   }
@@ -407,8 +408,8 @@ void loop() {
     drawTest<4>("I2C ADC HV", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
                 hv1_ntc_ok);
 
-    bool temp1_ok = adcToTempStr(amp_ntc1_adc, 24, 26, strbuf1);
-    bool temp2_ok = adcToTempStr(amp_ntc2_adc, 24, 26, strbuf2);
+    bool temp1_ok = adcToTempStr(amp_ntc1_adc, 25 * 0.9, 25 * 1.1, strbuf1);
+    bool temp2_ok = adcToTempStr(amp_ntc2_adc, 25 * 0.9, 25 * 1.1, strbuf2);
     drawTest<5>("I2C ADC temp", strbuf1, temp1_ok, strbuf2, temp2_ok);
 
     // Check the 12V power supply
