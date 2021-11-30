@@ -115,3 +115,9 @@ function upload_software_update() {
     ui_add_log(e, 'danger');
   }
 }
+
+
+// TODO: fetch the GH Releases and populate the release selector and latest releases
+fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) => {
+  console.log(resp);
+})
