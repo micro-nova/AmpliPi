@@ -24,7 +24,7 @@ from enum import Enum
 import subprocess
 import sys
 import time
-from typing import List, Tuple
+from typing import List
 
 # Third-party imports
 from serial import Serial
@@ -38,6 +38,30 @@ if utils.is_amplipi():
 
 
 PI_SERIAL_PORT = '/dev/serial0'
+
+class FwVersion:
+  """ Represents the Preamp Board's firmware version """
+
+  major: int
+  minor: int
+  git_hash: int
+  dirty: bool
+
+  def __init__(self, major: int = 0, minor: int = 0, git_hash: int = 0, dirty: bool = False):
+    if not 0 < major < 255 or not 0 < minor < 255:
+      raise ValueError('Major and minor version must be in the range [0,255]')
+    if not 0 < git_hash < 0xFFFFFFF:
+      raise ValueError('Hash must be an unsigned 28-bit value')
+    self.major = major
+    self.minor = minor
+    self.git_hash = git_hash
+    self.dirty = dirty
+
+  def __str__(self):
+    return f'{self.major}.{self.minor}-{self.git_hash:07X}{"-dirty" if self.dirty else ""}'
+
+  def __repr__(self):
+    return f'FwVersion({self.major}, {self.minor}, {self.git_hash:07X}, {self.dirty})'
 
 class Preamp:
   """ Low level discovery and communication for the AmpliPi Preamp's firmware """
@@ -88,7 +112,7 @@ class Preamp:
     """
     try:
       self.bus.write_byte_data(self.addr, self.Reg.VERSION_MAJOR.value, 0)
-    except OSError as err:
+    except: #OSError as err:
       #print(err)
       return False
     return True
@@ -116,7 +140,7 @@ class Preamp:
     assert 0 <= leds <= 255
     self.bus.write_byte_data(self.addr, self.Reg.LED_CTRL.value, leds)
 
-  def read_version(self) -> Tuple[int, int, int, bool]:
+  def read_version(self) -> FwVersion:
     """ Read the firmware version of the preamp
 
       Returns:
@@ -133,7 +157,7 @@ class Preamp:
     git_hash4_stat = self.bus.read_byte_data(self.addr, self.Reg.GIT_HASH_STATUS.value)
     git_hash |= (git_hash4_stat >> 4)
     dirty = (git_hash4_stat & 0x01) != 0
-    return major, minor, git_hash, dirty
+    return FwVersion(major, minor, git_hash, dirty)
 
   def reset_expander(self, bootloader: bool = False) -> None:
     """ Resets expansion unit connected to this preamp, if any """
@@ -209,8 +233,6 @@ class Preamps:
         bootloader: If True, set BOOT0 pin high to enter bootloader mode after reset
     """
 
-    # TODO: If unit=1,2,3,4, or 5, only reset those units and onward
-
     if unit == 0:
       # Reset and return if bringing up in bootloader mode
       self._reset_master(bootloader)
@@ -223,6 +245,7 @@ class Preamps:
 
     else:
       self.preamps[unit - 1].reset_expander(bootloader)
+      # TODO: If bootloader=False, set the address either here or in firmware
 
     # Delay to account for address being set
     # Each box theoretically takes ~5ms to receive its address.
@@ -288,8 +311,8 @@ class Preamps:
       # read the version and print it.
       ver_str = ''
       if unit < len(self.preamps):
-        major, minor, git_hash, dirty = self.preamps[unit].read_version()
-        ver_str = f'(version {major}.{minor}) '
+        fw_ver = self.preamps[unit].read_version()
+        ver_str = f'(version {fw_ver}) '
       print(f"Resetting unit {unit}'s preamp {ver_str}and starting execution in bootloader ROM")
       self.reset(unit = unit, bootloader = True)
       for p in range(unit): # Set UART passthrough on any previous units
@@ -307,8 +330,8 @@ class Preamps:
 
       # If the programming was successful it was just added to the list of preamps
       if unit < len(self.preamps):
-        major, minor, git_hash, dirty = self.preamps[unit].read_version()
-        print(f"Unit {unit}'s new version: {major}.{minor}")
+        fw_ver = self.preamps[unit].read_version()
+        print(f"Unit {unit}'s new version: {fw_ver}")
       elif success:
         success = False
         print(f"Can't communicate with unit {unit}, stopping programming")
@@ -337,8 +360,8 @@ class AmpliPiHelpFormatter(argparse.HelpFormatter):
     else:                                   # -s, --long ARGS
       args_string = self._format_args(action, action.dest.upper())
       for option_string in action.option_strings:
-        parts.append('%s' % option_string)
-      parts[-1] += ' %s' % args_string
+        parts.append(f'{option_string}')
+      parts[-1] += f' {args_string}'
     return ', '.join(parts)
 
   def _get_help_string(self, action):
@@ -388,6 +411,5 @@ if __name__ == '__main__':
     sys.exit(1)
 
   if args.version:
-    major, minor, git_hash, dirty = preamps[0].read_version()
-    print(f'Master preamp firmware version: {major}.{minor}-{git_hash:07X},'
-          f'{"dirty" if dirty else "clean"}')
+    main_version = preamps[0].read_version()
+    print(f"Main preamp's firmware version: {main_version}")

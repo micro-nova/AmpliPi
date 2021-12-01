@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Program the Preamp Board's firmware
+# stm32 flash is required for programming, install with:
+#   sudo apt install stm32flash
+
+
+helptext="Usage: program_firmware [OPTION]... [HOST:PATH] [-b|FILE.bin]
+Program the Preamp Board's firmware.
+
+By default the number of expansion units to program is determined before
+programming. An attempt will always be made to program the main unit's preamp,
+then any expansion units that were detected will be programmed.
+
+  HOST:PATH         If set programming will be done on the remote amplipi
+                    at HOST. AmpliPi should be installed in PATH.
+                    For example use amplipi.local:amplipi-dev
+  --num-units NUM   Force the number of units to be programmed.
+  -b, --build       Build from source then program built binary.
+  -h, --help        Print this help text.
+"
+
+file=''             # Firmware .bin file to program
+remote_host=''      # Hostname/url to program remotely through ssh
+remote_path=''      # Location of the amplipi install directory on the remote
+nprog=''            # Number of units to program
+nprog_opt=''        # Actual string passed as a flag and number
+build=false         #
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    *.bin) file="$1" ;;
+    *:*) IFS=: read remote_host remote_path <<< "$1" ;;
+    --num-units)
+        if (($# > 1)); then
+          nprog=$2; nprog_opt="-n $2"; shift
+        else
+          printf "--num-units requires a second parameter\n\n"
+          printf "$helptext"
+          exit 1
+        fi
+      ;;
+    -b|--build) build=true ;;
+    -h|--help) printf "$helptext"; exit 0 ;;
+    *)  printf "Unknown parameter passed: $1\n\n"
+        printf "$helptext"
+        exit 1
+      ;;
+  esac
+  shift
+done
+
+# Get full filepath here before changing directory
+if $build; then
+  local_file=fw/preamp/build/preamp_bd.bin
+else
+  local_file="$(realpath $file)"
+fi
+
+# cd to amplipi root dir
+cd "$(dirname ${BASH_SOURCE[0]})/.."
+
+# Build from source if specified. cmake and gcc-arm-none-eabi are required
+# sudo apt install cmake gcc-arm-none-eabi
+if $build; then
+  printf "Building preamp firmware.\n\n"
+  cmake -S fw/preamp -B fw/preamp/build
+  cmake --build fw/preamp/build -j $(nproc)
+  printf "\n"
+fi
+
+# Verify a file to program was selected
+if [ -z "$local_file" ]; then
+  printf "Must give a .bin file to program.\n\n"
+  printf "$helptext"
+  exit 1
+fi
+if [ ! -f "$local_file" ]; then
+  printf "Error: file $local_file doesn't exist.\n"
+  exit 2
+fi
+
+# Print out info of what's to be done
+printf "Programming $local_file"
+prog_remote=true
+prog_file="$local_file"
+[ -z "$remote_host" ] || [ -z "$remote_path" ] && prog_remote=false
+if $prog_remote; then
+  printf " at $remote_host:$remote_path"
+  prog_file=/tmp/preamp_bd.bin
+fi
+if [ ! -z "$nprog_opt" ]; then
+  printf " and forcing $nprog units"
+fi
+printf ""
+
+prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --flash \"$prog_file\""
+printf " with \n$prog_cmd\n\n"
+
+if $prog_remote; then
+  scp "$local_file" pi@$remote_host:$prog_file
+  ssh pi@$remote_host -- "cd \"$remote_path\"; $prog_cmd"
+else # Program locally
+  eval $prog_cmd
+fi

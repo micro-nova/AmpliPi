@@ -1,0 +1,5 @@
+#include "version.h"
+
+const uint8_t VERSION_MAJOR_ = @FW_VER_MAJOR@;
+const uint8_t VERSION_MINOR_ = @FW_VER_MINOR@;
+const uint8_t GIT_HASH_[4] = {0x@FW_VER_HASH0@, 0x@FW_VER_HASH1@, 0x@FW_VER_HASH2@, 0x@FW_VER_HASH3@};

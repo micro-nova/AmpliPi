@@ -36,7 +36,6 @@ add_executable(${PROJECT_NAME}.elf
 )
 
 target_include_directories(${PROJECT_NAME}.elf PRIVATE
-  inc
   CMSIS/core
   CMSIS/device
   StdPeriph_Driver/inc
@@ -85,6 +84,18 @@ target_link_options(${PROJECT_NAME}.elf PRIVATE
   -Wl,--gc-sections
   -Wl,-Map,${PROJECT_NAME}.map
 )
+
+# Generate version.c, which contains version info from the git repo
+set(version_c_file "${CMAKE_CURRENT_BINARY_DIR}/generated/version.c")
+add_custom_target(gitversion COMMAND ${CMAKE_COMMAND}
+  -Dinfile="${CMAKE_CURRENT_SOURCE_DIR}/src/version.c.in"
+  -Doutfile=${version_c_file}
+  -P ${CMAKE_CURRENT_LIST_DIR}/GitVersion.cmake
+  BYPRODUCTS ${version_c_file}
+)
+add_dependencies(${PROJECT_NAME}.elf gitversion)
+target_sources(${PROJECT_NAME}.elf PRIVATE ${version_c_file})
+target_include_directories(${PROJECT_NAME}.elf PRIVATE src)
 
 # Print firmware size
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
