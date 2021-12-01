@@ -239,12 +239,12 @@ def preamp_test(ap1: Client, try_analog: bool = True):
     sys.exit(1)
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
   if try_analog and ap2.available():
-    print('Test will play Analog 1 Left, Analog 1 Right...Analog 4 Right, Digital 1 Left... Dgitial 4 Right')
+    print('Test will play Analog 1 Left, Analog 1 Right...Analog 4 Right, Digital 1 Left... Digital 4 Right')
     print('- Verify that each side and all 8 sources are played out of each of the 6 zones')
   else:
     if try_analog:
       print('No analog tester found at aptestanalog.local, only able to test digital inputs\n')
-    print('Test will play Digital 1 Left... Dgitial 4 Right')
+    print('Test will play Digital 1 Left... Digital 4 Right')
     print('- Verify that each side and all 4 sources are played out of each of the 6 zones')
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
   analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3') for src in range(4)]
