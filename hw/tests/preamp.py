@@ -78,42 +78,23 @@ def self_check(p: amplipi.rt._Preamps):
     if u == 0:
       return 'Main'
     return f'Expander {u}'
-  def print_err(u: int, s: str):
-    print(f'\033[0;31m{unit_to_name(u)}: {s}\033[0m')
-  def print_ok(u: int, s: str):
-    print(f'\033[0;32m{unit_to_name(u)}: {s}\033[0m')
+  def print_cond(u: int, ok: bool, s: str):
+    return print(f'\033[0;3{2 if ok else 1}m{unit_to_name(u)}: {s}\033[0m')
   success = True
   for u in range(len(p.preamps)):
-    _, _, pg_12v, en_12v, v12 = p.read_power_status(u + 1)
-    success &= pg_12v and en_12v and 6 < v12 < 12.5
-    if pg_12v:
-      print_ok(u, 'PG_12V ok')
-    else:
-      print_err(u, 'PG_12V bad')
-    if en_12v:
-      print_ok(u, 'EN_12V ok')
-    else:
-      print_err(u, 'EN_12V bad')
-    if 6 < v12 < 12.5:
-      print_ok(u, f'12V supply ok - {v12:.2f}V')
-    else:
-      print_err(u, f'12V supply bad - {v12:.2f}V')
+    _, _, pg_12v, _, v12 = p.read_power_status(u + 1)
+    v12_ok = 6 < v12 < 12.5
+    success &= pg_12v and v12_ok
+    print_cond(u, pg_12v, f'PG_12V {"ok" if pg_12v else "bad"}')
+    print_cond(u, v12_ok, f'12V supply {"ok" if v12_ok else "bad"} - {v12:.2f}V')
     hv1_tmp, amp1_tmp, amp2_tmp = p.read_temps(u + 1)
-    if 10 < hv1_tmp < 45:
-      print_ok(u, f'HV1 Temp ok - {temp2str(hv1_tmp)}')
-    else:
-      success = False
-      print_err(u, f'HV1 Temp bad - {temp2str(hv1_tmp)}')
-    if 10 < amp1_tmp < 60:
-      print_ok(u, f'AMP1 Temp ok - {temp2str(amp1_tmp)}')
-    else:
-      success = False
-      print_err(u, f'AMP1 Temp bad - {temp2str(amp1_tmp)}')
-    if 10 < amp2_tmp < 60:
-      print_ok(u, f'AMP2 Temp ok - {temp2str(amp2_tmp)}')
-    else:
-      success = False
-      print_err(u, f'AMP2 Temp bad - {temp2str(amp2_tmp)}')
+    hv1_ok = 10 < hv1_tmp < 45
+    amp1_ok = 10 < amp1_tmp < 60
+    amp2_ok = 10 < amp2_tmp < 60
+    success &= hv1_ok and amp1_ok and amp2_ok
+    print_cond(u, hv1_ok, f'HV1 Temp {"ok" if hv1_ok else "bad"}   - {temp2str(hv1_tmp)}')
+    print_cond(u, amp1_ok, f'AMP1 Temp {"ok" if amp1_ok else "bad"}  - {temp2str(amp1_tmp)}')
+    print_cond(u, amp2_ok, f'AMP2 Temp {"ok" if amp2_ok else "bad"}  - {temp2str(amp2_tmp)}')
     print()
   return success
 
