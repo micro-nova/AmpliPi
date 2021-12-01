@@ -24,7 +24,7 @@ from enum import Enum
 import subprocess
 import sys
 import time
-from typing import List, Tuple
+from typing import List
 
 # Third-party imports
 from serial import Serial
@@ -44,24 +44,24 @@ class FwVersion:
 
   major: int
   minor: int
-  hash: int
+  git_hash: int
   dirty: bool
 
-  def __init__(self, major: int = 0, minor: int = 0, hash: int = 0, dirty: bool = False):
+  def __init__(self, major: int = 0, minor: int = 0, git_hash: int = 0, dirty: bool = False):
     if not 0 < major < 255 or not 0 < minor < 255:
       raise ValueError('Major and minor version must be in the range [0,255]')
-    if not 0 < hash < 0xFFFFFFF:
+    if not 0 < git_hash < 0xFFFFFFF:
       raise ValueError('Hash must be an unsigned 28-bit value')
     self.major = major
     self.minor = minor
-    self.hash = hash
+    self.git_hash = git_hash
     self.dirty = dirty
 
   def __str__(self):
-    return f'{self.major}.{self.minor}-{self.hash:07X}{"-dirty" if self.dirty else ""}'
+    return f'{self.major}.{self.minor}-{self.git_hash:07X}{"-dirty" if self.dirty else ""}'
 
   def __repr__(self):
-    return f'FwVersion({self.major}, {self.minor}, {self.hash:07X}, {self.dirty})'
+    return f'FwVersion({self.major}, {self.minor}, {self.git_hash:07X}, {self.dirty})'
 
 class Preamp:
   """ Low level discovery and communication for the AmpliPi Preamp's firmware """
@@ -112,7 +112,7 @@ class Preamp:
     """
     try:
       self.bus.write_byte_data(self.addr, self.Reg.VERSION_MAJOR.value, 0)
-    except OSError as err:
+    except: #OSError as err:
       #print(err)
       return False
     return True
@@ -233,8 +233,6 @@ class Preamps:
         bootloader: If True, set BOOT0 pin high to enter bootloader mode after reset
     """
 
-    # TODO: If unit=1,2,3,4, or 5, only reset those units and onward
-
     if unit == 0:
       # Reset and return if bringing up in bootloader mode
       self._reset_master(bootloader)
@@ -247,6 +245,7 @@ class Preamps:
 
     else:
       self.preamps[unit - 1].reset_expander(bootloader)
+      # TODO: If bootloader=False, set the address either here or in firmware
 
     # Delay to account for address being set
     # Each box theoretically takes ~5ms to receive its address.
@@ -361,8 +360,8 @@ class AmpliPiHelpFormatter(argparse.HelpFormatter):
     else:                                   # -s, --long ARGS
       args_string = self._format_args(action, action.dest.upper())
       for option_string in action.option_strings:
-        parts.append('%s' % option_string)
-      parts[-1] += ' %s' % args_string
+        parts.append(f'{option_string}')
+      parts[-1] += f' {args_string}'
     return ', '.join(parts)
 
   def _get_help_string(self, action):
@@ -412,5 +411,5 @@ if __name__ == '__main__':
     sys.exit(1)
 
   if args.version:
-    fw_ver = preamps[0].read_version()
-    print(f"Master preamp's firmware version: {fw_ver}")
+    main_version = preamps[0].read_version()
+    print(f"Main preamp's firmware version: {main_version}")
