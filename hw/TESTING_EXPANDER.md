@@ -6,7 +6,7 @@
 |     | Amp Board | Power Board | Preamp Board | Preout Board | LED Board | Expansion Board |
 |-----|-----------|-------------|--------------|--------------|-----------|-----------------|
 | rev |           |             |              |              |           |                 |
-|  QC |           |             |              |              |           |                 |
+|  QC |           |             |              |              |           |       N/A       |
 
 - [ ] Program Master + Expander Preamp
 
@@ -33,7 +33,8 @@
 |-----------|-----------|-----------|-----------|-----------|-----------|
 |____L____R |____L____R |____L____R |____L____R |____L____R |____L____R |
 
-- [ ] Fans (manual)
-  - [ ] Fans On: Verify fans spin up
-  - Preamp Status: ____Fans Off, ____PG_12V, ____HV1 temp, ____Amp temp1, ____Amp temp2
-  - Preamp Status (heated): ____HV1 temp rise, ____Amp temp1 rise, ____Amp temp2 rise
+- [ ] Fans and Power
+
+|   | Fans Off | Fans On | PG_12V | 12V Supply | HV1 Temp | AMP1 Temp | AMP2 Temp | Temp Rise |
+|---|----------|---------|--------|------------|----------|-----------|-----------|-----------|
+| ✓ |          |         |        |            |          |           |           |           |
