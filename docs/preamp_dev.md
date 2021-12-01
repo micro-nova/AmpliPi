@@ -24,7 +24,7 @@ See the Preamp's [README](fw/preamp/README.md) for instructions.
 
 ### Windows Requirements
 This section will be updated with a full local build guide,
-but for now use the Remote Editing option.
+but for now use the [Remote Editing and Programming](#remote-editing-and-programming) option.
 
 ### Developing Directly on the Pi
 First setup the Pi for development as described in the Preamp's
