@@ -5,6 +5,8 @@ This directory contains the multiple firmware projects used in AmpliPi developme
 The [preamp](preamp) subdirectory contains an STM32 firmware project
 for the microcontroller on AmpliPi's Preamp Board.
 See the [README](preamp/README.md) for setup and development instructions.
+See the [CHANGELOG](preamp/CHANGELOG.md) for the list of changes for each
+released firmware version.
 
 ## Power Board Tester
 The [power_board_tester](power_board_tester) subdirectory contains an
