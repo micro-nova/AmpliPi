@@ -11,7 +11,7 @@ cd "$(dirname ${BASH_SOURCE[0]})/../.." # cd to amplipi root dir
 
 # Program master and 1 expansion unit (forced)
 passed=false
-if ./scripts/program_firmware $nprog fw/bin/preamp_1.3.bin; then
+if ./scripts/program_firmware $nprog fw/bin/preamp_1.4.bin; then
   passed=true
 fi
 
