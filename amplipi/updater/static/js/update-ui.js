@@ -103,7 +103,7 @@ function upload_software_update() {
   let data = new FormData();
   let file = $('#update-file-selector')[0].files[0];
   data.append('file', file);
-  try{
+  try {
     fetch('/update/upload', {
       method: 'POST',
       body: data,
@@ -116,8 +116,47 @@ function upload_software_update() {
   }
 }
 
+function start_software_update(url, version) {
+  req = {"url" : url, "version" : version};
+  try {
+    fetch('/update/download', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+      },
+      body: JSON.stringify(req)
+    }).then((response) => {
+      ui_add_log('file dowloaded', 'info');
+      ui_begin_update();
+    });
+  } catch(e) {
+    ui_add_log(e, 'danger');
+  }
+}
+
+let version = 'unknown';
 
 // TODO: fetch the GH Releases and populate the release selector and latest releases
 fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) => {
   console.log(resp);
+  resp.json().then((releases) => {
+    // TODO: get the current version of AmpliPi if it doesn't match releases[0] populate the release and activate the button
+    latest_release = releases[0];
+    if (latest_release.tag_name == version) {
+      console.log('already up to date');
+      $('#latest-update').text('Your system is up to date')
+    } else {
+      $('#submit-latest-update').removeClass('d-none');
+      $('#latest-update-desc').text(latest_release.name);
+      // embedd the url and version so it can be passed on click
+      $('#latest-update').attr('data-url', latest_release.tarball_url);
+      $('#latest-update').attr('data-version', latest_release.tag_name);
+    }
+    // TODO: populate release selector
+    for (const release of releases) {
+      console.log(release.tag_name + " - " + release.name);
+      console.log(release.tarball_url);
+      $('#older-update-sel').append(`<option value="${release.tarball_url}" data-version="${release.tag_name}">${release.name}</option>`);
+    }
+  });
 })

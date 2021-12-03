@@ -35,6 +35,7 @@ import glob
 import sys
 from tempfile import mkdtemp
 import re
+import requests
 import json
 import threading
 import time
@@ -44,9 +45,15 @@ import shutil
 import asyncio
 import pkg_resources
 from typing import List
+from pydantic import BaseModel
 
 app = FastAPI()
 sse_messages: queue.Queue = queue.Queue()
+
+class ReleaseInfo(BaseModel):
+  """ Software Release Information """
+  url: str
+  version: str
 
 # host all of the static files the client will look for
 # TODO: put static files somewhere else?
@@ -68,13 +75,33 @@ def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None
   finally:
     upload_file.file.close()
 
-@app.post("/update/upload/")
+@app.post("/update/upload")
 async def start_update(file: UploadFile = File(...)):
   print(file.filename)
   try:
     # TODO: use a temp directory and pass it the installation
     os.makedirs('web/uploads', exist_ok=True)
     save_upload_file(file, pathlib.Path('web/uploads/update.tar.gz'))
+    return 200
+  except Exception as e:
+    print(e)
+    return 500
+
+def download(url, file_name):
+  """ Download a binary file from @url to @file_name """
+  with open(file_name, "wb") as file:
+      # get request
+      response = requests.get(url)
+      # write to file
+      file.write(response.content)
+
+@app.post("/update/download")
+async def download_update(info: ReleaseInfo ):
+  """ Download the update """
+  print(f'downloading update from: {info.url}')
+  try:
+    os.makedirs('web/uploads', exist_ok=True)
+    download(info.url, 'web/uploads/update.tar.gz')
     return 200
   except Exception as e:
     print(e)
