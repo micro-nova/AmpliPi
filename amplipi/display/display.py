@@ -223,10 +223,11 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
         color = '#666666' if zones[i].mute else '#0080ff'
         xv = xb + (wb - round(zones[i].vol * vol2pix))
         draw.rectangle(((xb, int(yb+2), xv, int(yb+hb))), fill=color)
-  elif n <= 18: # Draw vertical bars
+  else:#if n <= 18: # Draw vertical bars
+    n = 12
     # Get the pixel height of a character, and add vertical margins
     ch = small_font.getbbox('0', anchor='lt')[3] + 4
-    wb = 12                               # Each bar's width
+    wb = 16                               # Each bar's width
     sp = int((width - n*wb) / (2*(n-1)))  # Spacing between bars
     yt = y + height - ch                  # Text top y-position
     vol2pix = (height - ch) / -78         # dB to pixels conversion factor
@@ -245,8 +246,8 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
         color = '#666666' if zones[i].mute else '#0080ff'
         yv = y + round(zones[i].vol * vol2pix)
         draw.rectangle(((xb, yv, xb+wb, yt)), fill=color)
-  else:
-    log.error("Can't display more than 18 volumes")
+  #else:
+  #  log.error("Can't display more than 18 volumes")
 
 
 # Pins
@@ -526,46 +527,47 @@ while frame_num < 10 and run:
     disk_str2 = f'{disk_used:.2f}/{disk_total:.2f} GB'
 
     # Render text
+    lb = 5    # Left border
     cw = 8    # Character width
     ch = 16   # Character height
     draw.rectangle((0, 0, width-1, height-1), fill=0) # Clear image
-    draw.text((1*cw, 0*ch + 2), 'CPU:',     font=font, fill='#FFFFFF')
-    draw.text((1*cw, 1*ch + 2), 'Mem:',     font=font, fill='#FFFFFF')
-    draw.text((1*cw, 2*ch + 2), 'Disk:',    font=font, fill='#FFFFFF')
-    draw.text((1*cw, 3*ch + 2), 'IP:',      font=font, fill='#FFFFFF')
+    draw.text((0*cw + lb, 0*ch + 2), 'CPU:',     font=font, fill='#FFFFFF')
+    draw.text((0*cw + lb, 1*ch + 2), 'Mem:',     font=font, fill='#FFFFFF')
+    draw.text((0*cw + lb, 2*ch + 2), 'Disk:',    font=font, fill='#FFFFFF')
+    draw.text((0*cw + lb, 3*ch + 2), 'IP:',      font=font, fill='#FFFFFF')
 
-    draw.text((7*cw, 0*ch + 2), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
-    draw.text((7*cw, 1*ch + 2), ram_str1,   font=font, fill=gradient(ram_pcnt))
-    draw.text((7*cw, 2*ch + 2), disk_str1,  font=font, fill=gradient(disk_pcnt))
-    draw.text((7*cw, 3*ch + 2), ip_str,     font=font, fill='#FFFFFF')
+    draw.text((6*cw + lb, 0*ch + 2), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
+    draw.text((6*cw + lb, 1*ch + 2), ram_str1,   font=font, fill=gradient(ram_pcnt))
+    draw.text((6*cw + lb, 2*ch + 2), disk_str1,  font=font, fill=gradient(disk_pcnt))
+    draw.text((6*cw + lb, 3*ch + 2), ip_str,     font=font, fill='#FFFFFF')
 
     # BCM2837B0 is rated for [-40, 85] C
     # For now show green for anything below room temp
-    draw.text((14*cw, 0*ch + 2), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
-    draw.text((14*cw, 1*ch + 2), ram_str2,  font=font, fill='#FFFFFF')
-    draw.text((14*cw, 2*ch + 2), disk_str2, font=font, fill='#FFFFFF')
+    draw.text((13*cw + lb, 0*ch + 2), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
+    draw.text((13*cw + lb, 1*ch + 2), ram_str2,  font=font, fill='#FFFFFF')
+    draw.text((13*cw + lb, 2*ch + 2), disk_str2, font=font, fill='#FFFFFF')
 
     if connected:
       # Show source input names
-      draw.text((1*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
-      xs = 11*cw
+      draw.text((0*cw + lb, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
+      draw.text((0*cw + lb, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
+      draw.text((0*cw + lb, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
+      draw.text((0*cw + lb, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
+      xs = 11*cw + lb
       xp = xs - round(0.5*cw) # Shift playing arrow back a bit
       ys = 4*ch + round(0.5*ch)
-      draw.line(((cw, ys-3), (width-2*cw, ys-3)), width=2, fill='#999999')
+      draw.line(((lb, ys-3), (width-cw-lb, ys-3)), width=2, fill='#999999')
       for i, src in enumerate(sources):
         sinfo = sources[i].info
         if sinfo is not None:
           if sinfo.state == 'playing':
             draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
           draw.text((xs + 1*cw, ys + i*ch), sinfo.name, font=font, fill='#F0E68C')
-      draw.line(((cw, ys+4*ch+2), (width-2*cw, ys+4*ch+2)), width=2, fill='#999999')
+      draw.line(((lb, ys+4*ch+2), (width-cw-lb, ys+4*ch+2)), width=2, fill='#999999')
 
       # Show volumes
       # TODO: only update volume bars if a volume changed
-      draw_volume_bars(draw, font, small_font, zones, x=cw, y=9*ch-2, height=height-9*ch, width=width - 2*cw)
+      draw_volume_bars(draw, font, small_font, zones, x=lb, y=9*ch-2, height=height-9*ch, width=width - cw - lb)
     else:
       # Show an error message on the display, and the AmpliPi logo below
       if not connected_once and connection_retries <= max_connection_retries:
