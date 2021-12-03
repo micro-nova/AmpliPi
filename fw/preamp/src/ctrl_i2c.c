@@ -72,17 +72,13 @@ typedef enum
   REG_GIT_HASH_0_D  = 0xFF,
 } CmdReg;
 
-/* Measured rise and fall times of the controller I2C bus
+/* Measured rise and fall times of the controller I2C bus.
+ * Rise time is from 30% to 70%.
  *
- * Single AmpliPi unit:
- *  t_r = ~370 ns
- *  t_f = ~5.3 ns
- * Single expansion unit:
- *  t_r = ~450 ns
- *  t_f = ~7.2 ns
- * Two expansion units:
- *  t_r = ~600 ns
- *  t_f = ~9.4 ns
+ * (ns)| Main | 1 Exp | 2 Exp | 3 Exp | 4 Exp | 5 Exp |
+ * ----+------+-------+-------+-------+-------+-------+
+ * t_r |  260 |   420 |   590 |   720 |   880 |  1000 |
+ * t_f | 16.4 |  16.4 |  16.4 |  17.2 |  19.6 |  20.0 |
  */
 void ctrlI2CInit() {
   // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
