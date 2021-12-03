@@ -769,7 +769,7 @@ def advertise_service(port, q: Queue):
 
 
   info = ServiceInfo(
-    "_amplipi._tcp.local.",
+    "_amplipi._tcp.local.", # use a custom type to easily support multiple amplipi device enumeration
     f"amplipi-{mac_addr}._amplipi._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
     addresses=[inet_aton(ip_addr)],
     port=port,

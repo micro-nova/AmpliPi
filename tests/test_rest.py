@@ -617,7 +617,7 @@ def test_generate(client):
   #     os.remove('{}/{}'.format(fullpath, fn))
 
 def test_zeroconf_deprecated():
-  """ Unit test for zeroconf advertisement """
+  """ Unit test for older, deprecated zeroconf advertisement """
   # TODO: migrate this test into its own module
   from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
   from time import sleep
