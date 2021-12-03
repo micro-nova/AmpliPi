@@ -761,9 +761,16 @@ def advertise_service(port, q: Queue):
     server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
   )
 
+  MAC_Addr = ''
+  try:
+    MAC_Addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    MAC_Addr = 'none'
+  
+
   info = ServiceInfo(
     "_amplipi._tcp.local.",
-    "amplipi-api._amplipi._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    "amplipi-api" + MAC_Addr + "._amplipi._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
     addresses=[inet_aton(ip_addr)],
     port=port,
     properties={

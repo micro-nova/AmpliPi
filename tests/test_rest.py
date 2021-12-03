@@ -664,7 +664,13 @@ def test_zeroconf():
   from time import sleep
   from multiprocessing import Process, Queue
 
-  AMPLIPI_ZC_NAME = 'amplipi-api._amplipi._tcp.local.'
+  MAC_Addr = ''
+  try:
+    MAC_Addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    MAC_Addr = 'none'
+
+  AMPLIPI_ZC_NAME = 'amplipi-api' + MAC_Addr + '._amplipi._tcp.local.'
 
   services_advertised = {}
   def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
