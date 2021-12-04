@@ -39,18 +39,18 @@
         <div class="card-body text-center">
           <div class="tab-content" id="myTabContent">
             <div class="tab-pane fade show active" id="latest-update" role="tabpanel" aria-labelledby="latest-update-tab">
-              <div id='latest-update-desc'>...</div>
+              <div id='latest-update-name'>...</div>
+              <div id='latest-update-desc' class="text-left"></div>
               <a id="submit-latest-update" role="button" class="btn btn-lg btn-primary text-center mt-3 d-none"
                 onclick="start_software_update($('#latest-update').attr('data-url'), $('#latest-update').attr('data-version'));">
                 <i class="fas fa-upload"></i>Start Update</a>
             </div>
             <div class="tab-pane fade" id="older-update" role="tabpanel" aria-labelledby="older-update-tab">
-              <select class="custom-select" id="older-update-sel" onchange="$('#submit-older-update').toggleClass('disabled', $(this).find(':selected').data('version'));">
+              <select class="custom-select" id="older-update-sel" onchange="select_release(this);">
                 <!-- Releases populated from GH -->
                 <option selected="">Choose...</option>
               </select>
-              <div id='older-update-desc'>...</div>
-              <!-- TODO: get url, version from selected -->
+              <div id='older-update-desc' class="text-left mt-2"></div>
               <a id="submit-older-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled"
                  onclick="start_software_update($('#older-update-sel').val(), $('#older-update-sel').find(':selected').data('version'));">
                  <i class="fas fa-upload"></i>Start Update</a>
@@ -84,6 +84,8 @@
 
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/remarkable/2.0.1/remarkable.min.js"></script>
 
     <script src="static/js/update-ui.js"></script>
 
