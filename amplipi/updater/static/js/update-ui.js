@@ -127,6 +127,15 @@ function ui_disable_buttons() {
 
 }
 
+
+let md = new remarkable.Remarkable();
+
+function select_release(sel) {
+  selected = $(sel).find(':selected');
+  $('#submit-older-update').toggleClass('disabled', selected.data('version'));
+  $('#older-update-desc').empty().append(md.render(selected.data('desc')));
+}
+
 function start_software_update(url, version) {
   ui_disable_buttons();
   req = {"url" : url, "version" : version};
@@ -155,6 +164,7 @@ fetch('/update/version').then((resp) => {
   });
 });
 
+
 // fetch the GH Releases and populate the release selector and latest release
 fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) => {
   console.log(resp);
@@ -166,15 +176,21 @@ fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) =>
       $('#latest-update').text('Your system is up to date')
     } else {
       $('#submit-latest-update').removeClass('d-none');
-      $('#latest-update-desc').text(latest_release.name);
+      $('#latest-update-name').text(latest_release.name);
       // embedd the url and version so it can be passed on click
       $('#latest-update').attr('data-url', latest_release.tarball_url);
       $('#latest-update').attr('data-version', latest_release.tag_name);
+      $('#latest-update-desc').append(md.render(latest_release.body));
     }
     // populate release selector
     for (const release of releases) {
       console.log(`found "${release.name}" - ${release.tarball_url}`);
-      $('#older-update-sel').append(`<option value="${release.tarball_url}" data-version="${release.tag_name}">${release.name}</option>`);
+      $('#older-update-sel').append(`<option value="${release.tarball_url}"
+                                             data-version="${release.tag_name}"
+                                             data-name="${release.name}"
+                                             data-desc="${release.body}">
+                                             ${release.name}
+                                     </option>`);
     }
   });
 })
