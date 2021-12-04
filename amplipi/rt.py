@@ -307,7 +307,7 @@ class _Preamps:
       fvstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FAN_VOLTS'])
       v12 = fvstat / 2**4
       return pg_9v, en_9v, pg_12v, en_12v, v12
-    return None, None, None, None
+    return None, None, None, None, None
 
   def read_fan_status(self, preamp: int = 1) -> Tuple[Union[FanCtrl, None],
     Union[bool, None], Union[bool, None], Union[bool, None]]:
@@ -327,7 +327,7 @@ class _Preamps:
       ovr_tmp = (fstat & 0x08) != 0
       failed = (fstat & 0x10) != 0
       return ctrl, fans_on, ovr_tmp, failed
-    return None, None, None, None, None
+    return None, None, None, None
 
   def read_fan_duty(self, preamp: int = 1) -> Union[float, None]:
     """ Read the fans' duty cycle
