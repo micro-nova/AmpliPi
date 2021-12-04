@@ -112,11 +112,23 @@ def restart():
   subprocess.Popen(f'python3 {home}/scripts/configure.py --restart-updater'.split())
   return {}
 
+
+TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
+
 @app.get('/update/version')
 def version():
+  """ Get the AmpliPi software version from the project TOML file """
+  # assume the application is running in its base directory and check the pyproject.toml file to determine the version
+  # this is needed for a straight github checkout (the common developement paradigm at MicroNova)
   version = 'unknown'
+  updater_folder = os.path.dirname(os.path.realpath(__file__))
   try:
-    version = pkg_resources.get_distribution('amplipi').version
+    with open(os.path.join(updater_folder, '../..', 'pyproject.toml')) as proj_file:
+      for line in proj_file.readlines():
+        if 'version' in line:
+          match = TOML_VERSION_STR.search(line)
+          if match is not None:
+            version = match.group(1)
   except:
     pass
   return {'version': version}

@@ -134,9 +134,16 @@ function start_software_update(url, version) {
   }
 }
 
+// get the current AmpliPi version
 let version = 'unknown';
+fetch('/update/version').then((resp) => {
+  console.log(resp);
+  resp.json().then((info) => {
+    version = info.version;
+  });
+});
 
-// TODO: fetch the GH Releases and populate the release selector and latest releases
+// fetch the GH Releases and populate the release selector and latest release
 fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) => {
   console.log(resp);
   resp.json().then((releases) => {
@@ -152,10 +159,9 @@ fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) =>
       $('#latest-update').attr('data-url', latest_release.tarball_url);
       $('#latest-update').attr('data-version', latest_release.tag_name);
     }
-    // TODO: populate release selector
+    // populate release selector
     for (const release of releases) {
-      console.log(release.tag_name + " - " + release.name);
-      console.log(release.tarball_url);
+      console.log(`found "${release.name}" - ${release.tarball_url}`);
       $('#older-update-sel').append(`<option value="${release.tarball_url}" data-version="${release.tag_name}">${release.name}</option>`);
     }
   });
