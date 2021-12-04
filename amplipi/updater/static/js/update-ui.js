@@ -96,10 +96,13 @@ function ui_redirect_to_amplipi() {
 function ui_show_update_progress(status) {
   // assumes status {'message': str, 'type': 'info'|'warning'|'error'|'success'|'failed'}
   let color = (status.type == 'error' || status.type == 'failed') ? 'danger' : status.type;
-  ui_add_log(status.message, color);
+  if (status.message.trim().length > 0) {
+    ui_add_log(status.message, color);
+  }
 }
 
 function upload_software_update() {
+  ui_disable_buttons();
   let data = new FormData();
   let file = $('#update-file-selector')[0].files[0];
   data.append('file', file);
@@ -116,7 +119,16 @@ function upload_software_update() {
   }
 }
 
+
+function ui_disable_buttons() {
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').addClass('disabled');
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').text('Updating...');
+  $('#older-update-sel, #update-file-selector').attr('disabled', '');
+
+}
+
 function start_software_update(url, version) {
+  ui_disable_buttons();
   req = {"url" : url, "version" : version};
   try {
     fetch('/update/download', {
@@ -126,7 +138,7 @@ function start_software_update(url, version) {
       },
       body: JSON.stringify(req)
     }).then((response) => {
-      ui_add_log('file dowloaded', 'info');
+      ui_add_log(`dowloaded "${version}" release`, 'info');
       ui_begin_update();
     });
   } catch(e) {
