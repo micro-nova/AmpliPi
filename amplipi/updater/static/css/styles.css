@@ -78,3 +78,9 @@ hr {
 .fa-circle-notch {
   animation: fa-spin 1s infinite linear;
 }
+
+/* Make the disabled buttons look more disabled */
+.btn-primary.disabled, .btn-primary:disabled {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
