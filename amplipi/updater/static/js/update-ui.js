@@ -46,9 +46,7 @@ function ui_multi_update_file_progress(id, percent, color, active)
 }
 
 function ui_begin_update() {
-  // TODO: hide file uploader
   // setup SSE events, for intermediate step info
-  // TODO: start spinner
   var source = new EventSource("update/install/progress");
   source.onmessage = function(event) {
     var data = JSON.parse(event.data);
@@ -60,7 +58,10 @@ function ui_begin_update() {
       }
     }
   };
-  fetch("update/install"); // start the install TODO: check response
+  fetch("update/install").catch( err => {
+    ui_add_log('Error starting installation: ' + err.message, 'danger');
+    ui_show_failure();
+  });
 }
 
 function ui_reboot_app() {
@@ -71,9 +72,13 @@ function ui_reboot_app() {
       setTimeout(ui_check_after_reboot, 3000)
         // TODO: on fail -> show info on how to recover
     } else {
-      ui_add_log('Error restarting update server: ' + response, 'danger')
+      ui_add_log('Error restarting update server: ' + response, 'danger');
+      ui_show_failure();
     }
-  }).catch( err => {ui_add_log('Error restarting update server: ' + err.message, 'danger');})
+  }).catch( err => {
+    ui_add_log('Error restarting update server: ' + err.message, 'danger');
+    ui_show_failure();
+  })
 }
 
 function ui_check_after_reboot() {
@@ -83,10 +88,16 @@ function ui_check_after_reboot() {
       ui_add_log(json.version, 'info')
       ui_add_log('Done restarting updater', 'info')
       ui_add_log('Redirecting back to AmpliPi server', 'info')
-      // TODO: stop spinner and show good/done
+      ui_show_done();
       setTimeout(ui_redirect_to_amplipi, 3000)
-    }).catch( err => {ui_add_log('Error checking version: ' + err.message, 'danger');});
-  }).catch( err => {ui_add_log('Error checking version: ' + err.message, 'danger');})
+    }).catch( err => {
+      ui_add_log('Error checking version: ' + err.message, 'danger');
+      ui_show_failure();
+    });
+  }).catch( err => {
+    ui_add_log('Error checking version: ' + err.message, 'danger');
+    ui_show_failure();
+  });
 }
 
 function ui_redirect_to_amplipi() {
@@ -111,11 +122,13 @@ function ui_upload_software_update() {
       method: 'POST',
       body: data,
     }).then((response) => {
+      ui_add_log('updates typically take 10-15 minutes, please be patient', 'info');
       ui_add_log('file uploaded', 'info');
       ui_begin_update();
     });
   } catch(e) {
-    ui_add_log(e, 'danger');
+    ui_add_log('Failed to upload file: ' + e, 'danger');
+    ui_show_failure();
   }
 }
 
@@ -123,6 +136,18 @@ function ui_disable_buttons() {
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').addClass('disabled');
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Updating <i class="fas fa-circle-notch"></i>');
   $('#older-update-sel, #update-file-selector').attr('disabled', '');
+}
+
+function ui_show_done() {
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').removeClass('btn-primary').addClass('btn-success');
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Done!');
+}
+
+function ui_show_failure() {
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').removeClass('btn-primary').addClass('btn-danger');
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Failed, Retry?');
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').attr('onclick', 'window.location.reload(true)');
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').removeClass('disabled');
 }
 
 let md = new remarkable.Remarkable();
@@ -144,11 +169,13 @@ function ui_start_software_update(url, version) {
       },
       body: JSON.stringify(req)
     }).then((response) => {
+      ui_add_log('updates typically take 10-15 minutes, please be patient', 'info');
       ui_add_log(`dowloaded "${version}" release`, 'info');
       ui_begin_update();
     });
   } catch(e) {
-    ui_add_log(e, 'danger');
+    ui_add_log('Failed to dowload release: '+ e, 'danger');
+    ui_show_failure();
   }
 }
 
