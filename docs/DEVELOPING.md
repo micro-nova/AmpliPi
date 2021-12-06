@@ -6,6 +6,7 @@ Thanks for considering developing for AmpliPi. We appreciate your support!
 1. Make changes with your favorite editor, we suggest vscode
 1. Use `scripts/deploy` to deploy the latest software.
    The pi must have access to the internet to successfully run this script.
+   #### Congratulations! The Amplipi is now running the software you deployed! You can stop now or continue in order to debug over SSH!
 1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
 1. Change directory to the development root `~/amplipi-dev` (this is where `deploy` put the software)
 1. To run the amplipi server in debug mode over an ssh connection, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
