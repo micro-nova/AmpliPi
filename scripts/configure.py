@@ -468,7 +468,10 @@ def _copy_old_config(dest_dir: str) -> None:
   # success is not required since the config will be generated from defaults if missing
   old_dir = subprocess.getoutput('systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
   if old_dir:
-    subprocess.run(f'cp {old_dir}/house.json {dest_dir}/house.json', check=False)
+    try:
+      subprocess.run(['cp', f'{old_dir}/house.json', f'{dest_dir}/house.json'], check=False)
+    except:
+      pass
 
 def _check_url(url) -> Task:
   task = Task(f'Check url {url}')
