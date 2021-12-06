@@ -765,7 +765,7 @@ def advertise_service(port, q: Queue):
   try:
     mac_addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
   except:
-    mac_aaddr = 'none'
+    mac_addr = 'none'
 
 
   info = ServiceInfo(

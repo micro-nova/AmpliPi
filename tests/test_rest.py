@@ -17,6 +17,8 @@ from fastapi.testclient import TestClient
 # testing context
 from context import amplipi
 
+import netifaces as ni
+
 # pylint: disable=redefined-outer-name
 # pylint: disable=invalid-name
 
