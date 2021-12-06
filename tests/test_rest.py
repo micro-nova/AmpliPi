@@ -666,11 +666,12 @@ def test_zeroconf():
   from time import sleep
   from multiprocessing import Process, Queue
 
-  temp = ''
+
+  # first time ni.ifaddresses is called in the CI system it fails
   try:
-    temp = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+    ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
   except:
-    temp = ''
+    pass
 
   services_advertised = {}
   def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
