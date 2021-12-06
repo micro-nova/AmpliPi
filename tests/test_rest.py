@@ -17,6 +17,8 @@ from fastapi.testclient import TestClient
 # testing context
 from context import amplipi
 
+import netifaces as ni
+
 # pylint: disable=redefined-outer-name
 # pylint: disable=invalid-name
 
@@ -616,8 +618,8 @@ def test_generate(client):
   #   if os.path.exists('{}/{}'.format(fullpath, fn)):
   #     os.remove('{}/{}'.format(fullpath, fn))
 
-def test_zeroconf():
-  """ Unit test for zeroconf advertisement """
+def test_zeroconf_deprecated():
+  """ Unit test for older, deprecated zeroconf advertisement """
   # TODO: migrate this test into its own module
   from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
   from time import sleep
@@ -657,3 +659,57 @@ def test_zeroconf():
   assert AMPLIPI_ZC_NAME in services_advertised
   assert services_advertised[AMPLIPI_ZC_NAME].port == 9898
 
+def test_zeroconf():
+  """ Unit test for zeroconf advertisement """
+  # TODO: migrate this test into its own module
+  from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
+  from time import sleep
+  from multiprocessing import Process, Queue
+
+
+  # first time ni.ifaddresses is called in the CI system it fails
+  try:
+    ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    pass
+
+  services_advertised = {}
+  def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
+    if state_change is ServiceStateChange.Added:
+      info = zeroconf.get_service_info(service_type, name)
+      if info and info.port != 80: # ignore the actual amplipi service on your network
+        services_advertised[name] = info
+
+  # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
+  q = Queue()
+  zc_reg = Process(target=amplipi.app.advertise_service, args=(9898,q))
+  zc_reg.start()
+  sleep(4) # wait for a bit to make sure the service is started
+
+  # start listener that adds available services
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
+  services = ["_amplipi._tcp.local."]
+  _ = ServiceBrowser(zeroconf, services, handlers=[on_service_state_change])
+
+  # wait enough time for a response from the serice
+  sleep(2)
+
+  # figure out what the name will be
+  mac_addr = ''
+  try:
+    mac_addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    mac_addr = 'none'
+
+  AMPLIPI_ZC_NAME = f'amplipi-{mac_addr}._amplipi._tcp.local.'
+
+  # stop the advertiser
+  q.put('done')
+  zc_reg.join()
+
+  # stop the listener
+  zeroconf.close()
+
+  # check advertisememts
+  assert AMPLIPI_ZC_NAME in services_advertised
+  assert services_advertised[AMPLIPI_ZC_NAME].port == 9898

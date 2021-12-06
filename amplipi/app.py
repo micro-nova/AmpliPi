@@ -742,7 +742,7 @@ def advertise_service(port, q: Queue):
   # TODO: upgrade to mdns multiinterface support with DCHP address change edge case support similar to one of the following:
   # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/avahi_publisher.py
   # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/zeroconf_publisher.py
-  info = ServiceInfo(
+  info_deprecated = ServiceInfo(
     "_http._tcp.local.",
     "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
     addresses=[inet_aton(ip_addr)],
@@ -760,9 +760,37 @@ def advertise_service(port, q: Queue):
     },
     server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
   )
+
+  mac_addr = ''
+  try:
+    mac_addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    mac_addr = 'none'
+
+
+  info = ServiceInfo(
+    "_amplipi._tcp.local.", # use a custom type to easily support multiple amplipi device enumeration
+    f"amplipi-{mac_addr}._amplipi._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    addresses=[inet_aton(ip_addr)],
+    port=port,
+    properties={
+      # standard info
+      'path': '/api/',
+      # extra info - for interfacing
+      'name': 'AmpliPi',
+      "vendor": 'MicroNova',
+      'version': utils.detect_version(),
+      # extra info - for user
+      'web_app': url,
+      'documentation': f'{url}/doc'
+    },
+    server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
+  )
+
   print(f'AmpliPi zeroconf - registering service: {info}')
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr]) # right now the AmpliPi webserver is ipv4 only
-  zeroconf.register_service(info, cooperating_responders=True)
+  zeroconf.register_service(info_deprecated, cooperating_responders=True)
+  zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
     while q.empty():
