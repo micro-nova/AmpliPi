@@ -24,10 +24,9 @@ $cmd -q
 echo "Are the fans off?"
 select yn in Yes No; do
   case $yn in
-    Yes ) print_result true "Succeeded";;
-    No ) print_result false "Failed"; success=false;;
+    Yes ) print_result true "Succeeded"; break;;
+    No ) print_result false "Failed"; success=false; break;;
   esac
-  break
 done
 echo
 
@@ -36,10 +35,9 @@ $cmd -qf
 echo "Are the fans on?"
 select yn in Yes No; do
   case $yn in
-    Yes ) print_result true "Succeeded";;
-    No ) print_result false "Failed"; success=false;;
+    Yes ) print_result true "Succeeded"; break;;
+    No ) print_result false "Failed"; success=false; break;;
   esac
-  break
 done
 echo
 
