@@ -2,9 +2,8 @@
 # Built-in tests
 """
 
-from enum import Enum
 from time import sleep
-from typing import Optional
+from typing import Optional, Sequence
 import sys
 import subprocess
 import signal
@@ -76,59 +75,62 @@ EXTRA_INPUTS_PLAYBACK = {
   'url': "alsa://plughw:cmedia8chint,0",
 }
 
-def pst_all_zones_to_src(name: str, src: int, _input: str, vol=-50):
-  """ Create a preset that connects all zones to @src"""
-  return {
-    'name': name,
-    'state': {
-      'sources': [{'id': src, 'input': _input}],
-      'zones': [{'id': zid, 'source_id': src, 'vol': vol, 'mute': False} for zid in range(7)],
-    }
-  }
+def all_zones(exp_unit: bool = False) -> Sequence[int]:
+  return range(18) if exp_unit else range(12)
 
-PRESETS = [
-  {
-    'name': 'led-0 mute all',
-    'state': {'zones': [{'id': zid, 'mute': True} for zid in range(6)]}
-  },
-  # mute all
-  {
-    'name': 'amp-0 mute all',
-    'state': {'zones': [{'id': zid, 'mute': True} for zid in range(12)]}
-  },
-  # play music
-  {
-    'name': 'amp-1 play',
-    'state': {
-      'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(12)]
+def setup(client: Client, exp_unit: bool):
+  def pst_all_zones_to_src(name: str, src: int, _input: str, vol=-50):
+    """ Create a preset that connects all zones to @src"""
+    return {
+      'name': name,
+      'state': {
+        'sources': [{'id': src, 'input': _input}],
+        'zones': [{'id': zid, 'source_id': src, 'vol': vol, 'mute': False} for zid in all_zones(exp_unit)],
+      }
     }
-  },
-  # play music
-  {
-    'name': 'preout-0 play',
-    'state': {
-      'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-      'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in range(12)]
-    }
-  },
-]
 
-# set volume on zoneX
-for zid in range(12):
-  PRESETS += [
+  PRESETS = [
     {
-      'name': f'led-{zid + 1} enable zone {zid + 1}',
-      'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
-    }
+      'name': 'led-0 mute all',
+      'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
+    },
+    # mute all
+    {
+      'name': 'amp-0 mute all',
+      'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
+    },
+    # play music
+    {
+      'name': 'amp-1 play',
+      'state': {
+        'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
+        'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
+      }
+    },
+    # play music
+    {
+      'name': 'preout-0 play',
+      'state': {
+        'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
+        'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
+      }
+    },
   ]
-PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -40) for src in range(4)]
-PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
 
-def setup(client: Client):
+  # set volume on zoneX
+  for zid in all_zones(exp_unit):
+    PRESETS += [
+      {
+        'name': f'led-{zid + 1} enable zone {zid + 1}',
+        'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
+      }
+    ]
+  PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -40) for src in range(4)]
+  PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
+
   """ Configure AmpliPi for testing by loading a simple known configuration """
   prev_cfg = client.get_status()
-  client.load_config(models.Status(zones=[models.Zone(id=z, name=f'Zone {z + 1}') for z in range(12)], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
+  client.load_config(models.Status(zones=[models.Zone(id=z, name=f'Zone {z + 1}') for z in all_zones(exp_unit)], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
   for pst in PRESETS:
     client.create_preset(models.Preset(**pst))
   print('waiting for config file to be written')
@@ -230,7 +232,7 @@ def inputs_test(ap1: Client):
     else:
       ap2.announce(models.Announcement(source_id=0, media=f'web/static/audio/optical_in.mp3'))
 
-def preamp_test(ap1: Client, try_analog: bool = True):
+def preamp_test(ap1: Client, exp_unit: bool = False):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
   ap2 = get_analog_tester_client()
   status = ap1.get_status()
@@ -238,6 +240,7 @@ def preamp_test(ap1: Client, try_analog: bool = True):
     print('failed to get AmpliPi status')
     sys.exit(1)
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
+  try_analog = not exp_unit # the analog tester is not needed for expansion units
   if try_analog and ap2.available():
     print('Test will play Analog 1 Left, Analog 1 Right...Analog 4 Right, Digital 1 Left... Digital 4 Right')
     print('- Verify that each side and all 8 sources are played out of each of the 6 zones')
@@ -280,8 +283,8 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser('Test audio functionality')
   parser.add_argument('test', help=f'Test to run ({tests})')
-  parser.add_argument('--no-analog', action='store_true',
-                      help='Disable analog input tests (used to test expansion units)')
+  parser.add_argument('--expansion', action='store_true',
+                      help='Test expansion units: disable analog input tests and set 18 zones')
   args = parser.parse_args()
 
   print('configuring amplipi for testing')
@@ -299,17 +302,16 @@ if __name__ == '__main__':
   signal.signal(signal.SIGTERM, exit_handler)
   signal.signal(signal.SIGHUP, exit_handler)
 
-  old_config = setup(ap)
+  old_config = setup(ap, exp_unit=args.expansion)
   try:
     print(f"Running test '{args.test}'. Press Ctrl-C to stop.")
     if args.test == 'preamp':
-      use_analog_inputs = not args.no_analog
-      preamp_test(ap, try_analog=use_analog_inputs)
+      preamp_test(ap, exp_unit=args.expansion)
     elif args.test == 'inputs':
       inputs_test(ap)
     else:
       loop_test(ap, args.test)
-  except KeyboardInterrupt: # TODO: handle other signals kill and sigup
+  except KeyboardInterrupt: # TODO: handle other signals kill and sighup
     try:
       if ap.available() and ap.load_config(old_config):
         print('\nRestored previous configuration.')
