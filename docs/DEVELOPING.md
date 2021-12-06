@@ -1,7 +1,7 @@
 # Developing for the AmpliPi Project
 Thanks for considering developing for AmpliPi. We appreciate your support!
 
-## Developing on a seperate computer
+## Developing on a separate computer
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
 1. Make changes with your favorite editor, we suggest vscode
 1. Use `scripts/deploy` to deploy the latest software.
