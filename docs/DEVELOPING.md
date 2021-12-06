@@ -1,8 +1,12 @@
 # Developing for the AmpliPi Project
 Thanks for considering developing for AmpliPi. We appreciate your support!
 
+<<<<<<< HEAD
 ## Developing on a seperate linux computer
 This allows remote development with the ability to test changes on your AmpliPi
+=======
+## Developing on a separate computer
+>>>>>>> Update DEVELOPING.md
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
 1. Make changes with your favorite editor, we suggest vscode
 1. Use `scripts/deploy` to deploy the latest software.
