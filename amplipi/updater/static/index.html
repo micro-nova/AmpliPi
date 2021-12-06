@@ -6,8 +6,14 @@
 
     <title>AmpliPi Updater</title>
 
+    <link rel="shortcut icon" href="static/imgs/amplipi-small-logo.png">
+
+    <!-- Font Awesome CSS -->
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'
+      onerror="this.onerror=null;this.href='static/css/libs/font-awesome/5.15.1/all.min.css';">
     <!-- Bootstrap core CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'
+      onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
 
     <!-- Custom styles -->
     <link href="static/css/jquery.dm-uploader.min.css" rel="stylesheet">
@@ -43,7 +49,7 @@
               <div id='latest-update-desc' class="text-left"></div>
               <a id="submit-latest-update" role="button" class="btn btn-lg btn-primary text-center mt-3 d-none"
                 onclick="start_software_update($('#latest-update').attr('data-url'), $('#latest-update').attr('data-version'));">
-                <i class="fas fa-upload"></i>Start Update</a>
+                Start Update</a>
             </div>
             <div class="tab-pane fade" id="older-update" role="tabpanel" aria-labelledby="older-update-tab">
               <select class="custom-select" id="older-update-sel" onchange="select_release(this);">
@@ -53,14 +59,14 @@
               <div id='older-update-desc' class="text-left mt-2"></div>
               <a id="submit-older-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled"
                  onclick="start_software_update($('#older-update-sel').val(), $('#older-update-sel').find(':selected').data('version'));">
-                 <i class="fas fa-upload"></i>Start Update</a>
+                Start Update</a>
             </div>
             <div class="tab-pane fade" id="manual-update" role="tabpanel" aria-labelledby="manual-update-tab">
               <div class="custom-file">
                 <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);">
                 <label class="custom-file-label" for="update-file-selector">Choose file</label>
               </div>
-              <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="upload_software_update();"><i class="fas fa-upload"></i>Start Update</a>
+              <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="upload_software_update();">Start Update</a>
             </div>
           </div>
         </div>
@@ -82,10 +88,22 @@
 
     </main> <!-- /container -->
 
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
-
+    <!-- jQuery JS CDN -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+    <!-- jQuery JS local fallback -->
+    <script>window.jQuery || document.write('<script src="static/js/libs/jquery/3.5.1/jquery.min.js"><\/script>')</script>
+    <!-- jQuery UI JS CDN -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+    <!-- jQuery JS local fallback -->
+    <script>(window.jQuery.ui === undefined) && document.write('<script src="static/js/libs/jqueryui/1.12.1/jquery-ui.min.js"><\/script>')</script>
+    <!-- Bootstrap JS CDN -->
+    <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js'></script>
+    <!-- Bootstrap JS local fallback -->
+    <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap/4.5.2/bootstrap.bundle.min.js"><\/script>')</script>
+    <!-- Remarkable JS CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/remarkable/2.0.1/remarkable.min.js"></script>
+    <!-- Remarkable JS CDN local fallback -->
+    <script>window.remarkable || document.write('<script src="static/js/libs/remarkable/2.0.1/remarkable.min.js"><\/script>')</script>
 
     <script src="static/js/update-ui.js"></script>
 

@@ -119,14 +119,11 @@ function upload_software_update() {
   }
 }
 
-
 function ui_disable_buttons() {
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').addClass('disabled');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').text('Updating...');
+  $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Updating <i class="fas fa-circle-notch"></i>');
   $('#older-update-sel, #update-file-selector').attr('disabled', '');
-
 }
-
 
 let md = new remarkable.Remarkable();
 
@@ -158,29 +155,46 @@ function start_software_update(url, version) {
 // get the current AmpliPi version
 let version = 'unknown';
 fetch('/update/version').then((resp) => {
-  console.log(resp);
   resp.json().then((info) => {
     version = info.version;
   });
 });
 
 
+function ui_show_offline_message() {
+  $('#latest-update-name').empty().append('Unable to automatically check for latest release <i class="fas fa-times text-danger"></i>');
+  OFFLINE_INFO = 'To update:\n\n\
+  1. Download the latest tar.gz release file from our \n\
+      [GitHub releases page](https://github.com/micro-nova/AmpliPi/releases).\n\
+  1. Use the the **Custom** update tab to upload the release.'
+  $('#latest-update-desc').append(md.render(OFFLINE_INFO));
+}
+
 // fetch the GH Releases and populate the release selector and latest release
 fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) => {
   console.log(resp);
+  if (resp.status != 200) {
+    ui_show_offline_message();
+    return
+  }
   resp.json().then((releases) => {
-    // TODO: get the current version of AmpliPi if it doesn't match releases[0] populate the release and activate the button
+    if (releases.length == 0) {
+      ui_show_offline_message();
+      return
+    }
+    // show the latest release
     latest_release = releases[0];
     if (latest_release.tag_name == version) {
       console.log('already up to date');
-      $('#latest-update').text('Your system is up to date')
+      $('#latest-update-name').empty().append('Your system is up to date  <i class="fas fa-check-circle text-success"></i>')
     } else {
+      // show the release info with its markdown from GH
       $('#submit-latest-update').removeClass('d-none');
       $('#latest-update-name').text(latest_release.name);
+      $('#latest-update-desc').append(md.render(latest_release.body));
       // embedd the url and version so it can be passed on click
       $('#latest-update').attr('data-url', latest_release.tarball_url);
       $('#latest-update').attr('data-version', latest_release.tag_name);
-      $('#latest-update-desc').append(md.render(latest_release.body));
     }
     // populate release selector
     for (const release of releases) {
@@ -192,5 +206,5 @@ fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) =>
                                              ${release.name}
                                      </option>`);
     }
-  });
-})
+  }).catch((err) => { ui_show_offline_message(); });
+}).catch((err) => { ui_show_offline_message(); });
