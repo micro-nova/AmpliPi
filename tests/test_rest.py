@@ -666,6 +666,12 @@ def test_zeroconf():
   from time import sleep
   from multiprocessing import Process, Queue
 
+  temp = ''
+  try:
+    temp = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    temp = ''
+
   services_advertised = {}
   def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
     if state_change is ServiceStateChange.Added:
