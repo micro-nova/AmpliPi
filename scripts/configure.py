@@ -591,11 +591,12 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
-    ('Program Master + Expander Preamp', './hw/tests/program_preamps.bash 2'),
+    ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
+    ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
     ('Amplifier', './hw/tests/built_in.bash amp'),
     ('LEDs', './hw/tests/built_in.bash led'),
     ('Preamp', './hw/tests/built_in.bash preamp'),
-    ('Expander Preamp', './hw/tests/built_in.bash preamp --no-analog'),
+    ('Expander Preamp', './hw/tests/built_in.bash preamp --expansion'),
     ('Inputs', './hw/tests/built_in.bash inputs'),
     ('Preouts', './hw/tests/built_in.bash preout'),
     ('Display', './hw/tests/display.bash --wait'),
