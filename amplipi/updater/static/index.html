@@ -48,17 +48,17 @@
               <div id='latest-update-name'>...</div>
               <div id='latest-update-desc' class="text-left"></div>
               <a id="submit-latest-update" role="button" class="btn btn-lg btn-primary text-center mt-3 d-none"
-                onclick="start_software_update($('#latest-update').attr('data-url'), $('#latest-update').attr('data-version'));">
+                onclick="ui_start_software_update($('#latest-update').attr('data-url'), $('#latest-update').attr('data-version'));">
                 Start Update</a>
             </div>
             <div class="tab-pane fade" id="older-update" role="tabpanel" aria-labelledby="older-update-tab">
-              <select class="custom-select" id="older-update-sel" onchange="select_release(this);">
+              <select class="custom-select" id="older-update-sel" onchange="ui_select_release(this);">
                 <!-- Releases populated from GH -->
                 <option selected="">Choose...</option>
               </select>
               <div id='older-update-desc' class="text-left mt-2"></div>
               <a id="submit-older-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled"
-                 onclick="start_software_update($('#older-update-sel').val(), $('#older-update-sel').find(':selected').data('version'));">
+                 onclick="ui_start_software_update($('#older-update-sel').val(), $('#older-update-sel').find(':selected').data('version'));">
                 Start Update</a>
             </div>
             <div class="tab-pane fade" id="manual-update" role="tabpanel" aria-labelledby="manual-update-tab">
@@ -66,7 +66,7 @@
                 <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);">
                 <label class="custom-file-label" for="update-file-selector">Choose file</label>
               </div>
-              <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="upload_software_update();">Start Update</a>
+              <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="ui_upload_software_update();">Start Update</a>
             </div>
           </div>
         </div>

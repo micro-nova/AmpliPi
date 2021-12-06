@@ -101,7 +101,7 @@ function ui_show_update_progress(status) {
   }
 }
 
-function upload_software_update() {
+function ui_upload_software_update() {
   ui_disable_buttons();
   let data = new FormData();
   let file = $('#update-file-selector')[0].files[0];
@@ -127,13 +127,13 @@ function ui_disable_buttons() {
 
 let md = new remarkable.Remarkable();
 
-function select_release(sel) {
+function ui_select_release(sel) {
   selected = $(sel).find(':selected');
   $('#submit-older-update').toggleClass('disabled', selected.data('version'));
   $('#older-update-desc').empty().append(md.render(selected.data('desc')));
 }
 
-function start_software_update(url, version) {
+function ui_start_software_update(url, version) {
   ui_disable_buttons();
   req = {"url" : url, "version" : version};
   try {
@@ -152,15 +152,6 @@ function start_software_update(url, version) {
   }
 }
 
-// get the current AmpliPi version
-let version = 'unknown';
-fetch('/update/version').then((resp) => {
-  resp.json().then((info) => {
-    version = info.version;
-  });
-});
-
-
 function ui_show_offline_message() {
   $('#latest-update-name').empty().append('Unable to automatically check for latest release <i class="fas fa-times text-danger"></i>');
   OFFLINE_INFO = 'To update:\n\n\
@@ -169,6 +160,14 @@ function ui_show_offline_message() {
   1. Use the the **Custom** update tab to upload the release.'
   $('#latest-update-desc').append(md.render(OFFLINE_INFO));
 }
+
+// get the current AmpliPi version
+let version = 'unknown';
+fetch('/update/version').then((resp) => {
+  resp.json().then((info) => {
+    version = info.version;
+  });
+});
 
 // fetch the GH Releases and populate the release selector and latest release
 fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) => {
