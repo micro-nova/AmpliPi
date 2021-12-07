@@ -1,22 +1,22 @@
 /*
-	A couple styles to make the demo page look good
+  A couple styles to make the demo page look good
  */
 body {
-	padding-bottom: 2rem;
-	padding-top: 4rem;
+  padding-bottom: 2rem;
+  padding-top: 4rem;
   color: white;
   background-color: #2a2a2a;
 }
 .row {
-	margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 [class*="col-"] {
-	padding-top: 1rem;
-	padding-bottom: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
 }
 hr {
-	margin-top: 2rem;
-	margin-bottom: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 #update-log {
   color: white;
@@ -31,24 +31,24 @@ hr {
     min-height: 320px;
 }
 @media (min-width: 768px) {
-	#files {
-		min-height: 0;
-	}
+  #files {
+    min-height: 0;
+  }
 }
 #debug {
-	overflow-y: scroll !important;
-	min-height: 100px;
-	min-height: 500px;
+  overflow-y: scroll !important;
+  min-height: 100px;
+  min-height: 500px;
 }
 
 .dm-uploader {
-	border: 0.25rem dashed #A5A5C7;
-	text-align: center;
+  border: 0.25rem dashed #A5A5C7;
+  text-align: center;
 }
 .dm-uploader.active {
-	border-color: red;
+  border-color: red;
 
-	border-style: solid;
+  border-style: solid;
 }
 .card {
   margin-bottom: 12px;
