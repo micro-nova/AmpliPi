@@ -43,6 +43,7 @@ from starlette.responses import FileResponse
 # web server
 import uvicorn
 # models
+# pylint: disable=no-name-in-module
 from pydantic import BaseModel
 
 app = FastAPI()
