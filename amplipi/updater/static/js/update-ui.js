@@ -156,8 +156,12 @@ let md = new remarkable.Remarkable();
 
 function ui_select_release(sel) {
   selected = $(sel).find(':selected');
-  $('#submit-older-update').toggleClass('disabled', selected.data('version'));
-  $('#older-update-desc').empty().append(md.render(selected.data('desc')));
+  if (selected.data('version') !== undefined) {
+    $('#submit-older-update').removeClass('disabled');
+    $('#older-update-desc').empty().append(md.render(selected.data('desc')));
+  } else {
+    $('#submit-older-update').addClass('disabled');
+  }
 }
 
 function ui_start_software_update(url, version) {
