@@ -55,6 +55,8 @@ function ui_begin_update() {
       source.close();
       if (data.type == 'success') {
         ui_reboot_app();
+      } else {
+        ui_show_failure();
       }
     }
   };
