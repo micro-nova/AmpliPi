@@ -184,7 +184,7 @@ def extract_to_home(home):
   _sse_info(f'Extracting software to temp directory {temp_dir}')
   file_list = subprocess.getoutput('tar -tvf web/uploads/update.tar.gz')
   # get the full name of the release
-  release = re.search(r'(amplipi-.*?)/', file_list, flags=re.IGNORECASE).group(1)
+  release = re.search(r'((micro-nova-)?amplipi-.*?)/', file_list, flags=re.IGNORECASE).group(1)
   _sse_info(f'Got amplipi release: {release}')
   subprocess.run('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split(),
                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True)
