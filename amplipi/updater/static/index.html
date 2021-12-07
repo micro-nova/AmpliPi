@@ -63,8 +63,7 @@
             </div>
             <div class="tab-pane fade" id="manual-update" role="tabpanel" aria-labelledby="manual-update-tab">
               <div class="custom-file">
-                <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-update')[0].classList.toggle('disabled', false);">
-                <label class="custom-file-label" for="update-file-selector">Choose file</label>
+                <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-custom-update').removeClass('disabled');">
               </div>
               <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="ui_upload_software_update();">Start Update</a>
             </div>
