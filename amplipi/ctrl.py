@@ -105,12 +105,7 @@ class Api:
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
-      # an example for each type of stream
-      {"id": 1000, "name": "AmpliPi", "type": "shairport"},
-      {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
-      {"id": 1002, "name": "AmpliPi", "type": "spotify"},
-      {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
-      {"id": 1004, "name": "AmpliPi", "type": "dlna"}
+      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
