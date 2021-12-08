@@ -29,8 +29,6 @@ from typing import Dict, List, Tuple, Union
 # TODO: move constants like this to their own file
 DEBUG_PREAMPS = False # print out preamp state after register write
 
-MAX_ZONES = 36
-
 from serial import Serial
 from smbus2 import SMBus
 
@@ -71,6 +69,8 @@ _SRC_TYPES = {
   0 : 'Analog',
 }
 _DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30]
+
+MAX_ZONES = 6 * len(_DEV_ADDRS)
 
 class FanCtrl(Enum):
   MAX6644 = 0
@@ -674,7 +674,7 @@ class Rpi:
 
   def exists(self, zone):
     if self._bus:
-      preamp = zone // 6
-      return preamp in self._bus.preamps
+      preamp_addr = 8*(zone // 6 + 1)
+      return preamp_addr in self._bus.preamps
     else:
       return True
