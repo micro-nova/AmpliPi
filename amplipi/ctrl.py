@@ -223,12 +223,19 @@ class Api:
       version=utils.detect_version()
     )
 
-    # detect new zones
-    if not self._mock_hw:
-      for zid in range(rt.MAX_ZONES):
-        _, zone = utils.find(self.status.zones, zid)
-        if zone is None and self._rt.exists(zid):
-          self.status.zones.append(models.Zone(id=zid, name='Zone {zid+1}'))
+    # TODO: detect missing sources
+
+    # detect missing zones
+    if self._mock_hw:
+      # only allow 6 zones when mocked to simplify testing
+      # add more if needed by specifying them in the config
+      potential_zones = range(6)
+    else:
+      potential_zones = range(rt.MAX_ZONES)
+    for zid in potential_zones:
+      _, zone = utils.find(self.status.zones, zid)
+      if zone is None and self._rt.exists(zid):
+        self.status.zones.append(models.Zone(id=zid, name='Zone {zid+1}'))
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
