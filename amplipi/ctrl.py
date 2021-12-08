@@ -223,6 +223,13 @@ class Api:
       version=utils.detect_version()
     )
 
+    # detect new zones
+    if not self._mock_hw:
+      for zid in range(rt.MAX_ZONES):
+        _, zone = utils.find(self.status.zones, zid)
+        if zone is None and self._rt.exists(zid):
+          self.status.zones.append(models.Zone(id=zid, name='Zone {zid+1}'))
+
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
     failed_streams: List[int] = []

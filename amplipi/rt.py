@@ -29,6 +29,8 @@ from typing import Dict, List, Tuple, Union
 # TODO: move constants like this to their own file
 DEBUG_PREAMPS = False # print out preamp state after register write
 
+MAX_ZONES = 36
+
 from serial import Serial
 from smbus2 import SMBus
 
