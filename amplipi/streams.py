@@ -112,10 +112,10 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
-class Shairport(BaseStream):
+class Airplay(BaseStream):
   """ An Airplay Stream """
   def __init__(self, name, mock=False):
-    super().__init__('shairport', name, mock)
+    super().__init__('airplay', name, mock)
     self.proc2 = None
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
@@ -865,7 +865,7 @@ class FMRadio(BaseStream):
     return source
 
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
+AnyStream = Union[Airplay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -875,8 +875,8 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   args = stream.dict(exclude_none=True)
   if stream.type == 'pandora':
     return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
-  elif stream.type == 'shairport':
-    return Shairport(args['name'], mock=mock)
+  elif stream.type == 'shairport' or stream.type == 'airplay': # handle older configs
+    return Airplay(args['name'], mock=mock)
   elif stream.type == 'spotify':
     return Spotify(args['name'], mock=mock)
   elif stream.type == 'dlna':

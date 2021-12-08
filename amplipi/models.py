@@ -386,7 +386,7 @@ class Stream(Base):
   type: str = Field(description="""stream type
 
   * pandora
-  * shairport
+  * airplay
   * dlna
   * internetradio
   * spotify
@@ -465,7 +465,7 @@ class Stream(Base):
         'Add Micronova Airplay': {
           'value': {
             'name': 'Micronova AP',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
         "Play single file or announcement" : {
@@ -507,22 +507,22 @@ class Stream(Base):
             'user': 'example2@micro-nova.com'
           }
         },
-        'Shairport (connected)': {
+        'Airplay (connected)': {
           'value': {
             'id': 44590,
             'info': {'details': 'No info available'},
             'name': "Jason's iPhone",
             'status': 'connected',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
-        'Shairport (disconnected)': {
+        'Airplay (disconnected)': {
           'value': {
             'id': 4894,
             'info': {'details': 'No info available'},
             'name': 'Rnay',
             'status': 'disconnected',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
       }
@@ -785,14 +785,14 @@ class Status(BaseModel):
                 'name': "Jason's "
                         'iPhone',
                 'status': 'connected',
-                'type': 'shairport'
+                'type': 'airplay'
               },
               {
                 'id': 4894,
                 'info': {'details': 'No info available'},
                 'name': 'Rnay',
                 'status': 'disconnected',
-                'type': 'shairport'
+                'type': 'airplay'
               }
             ],
             'info': { 'version': '0.0.1'},
