@@ -533,11 +533,6 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
     # stop and disable the service so it doesn't start up on a reboot
     tasks += print_progress(_stop_service('amplipi-updater-test'))
     tasks += print_progress(_remove_service('amplipi-updater-test'))
-    # let the user know how to handle a specific failure condition of the old updater
-    UPDATER_MSG = """Older updaters can fail mistakenly after this.
-
-                     Just go back to AmpliPi (http://amplipi.local) to check out the new features."""
-    print_progress([Task('New updater tested - Works!', output=UPDATER_MSG, success=True)])
   if env['is_amplipi']:
     # start the user manager at boot, instead of after first login
     # this is needed so the user systemd services start at boot
@@ -702,6 +697,12 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_firmware(env, progress)
     if failed():
       return False
+  if web and not restart_updater:
+    # let the user know how to handle a specific failure condition of the old updater
+    UPDATER_MSG = """Older updaters can fail mistakenly after this.
+
+                     Just go back to AmpliPi (http://amplipi.local) to check out the new features."""
+    progress([Task('New updater tested - Works!', output=UPDATER_MSG, success=True)])
   return True
 
 if __name__ == '__main__':
