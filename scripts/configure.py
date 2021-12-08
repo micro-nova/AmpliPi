@@ -558,10 +558,13 @@ def _fw_ver_from_filename(name: str) -> int:
       X = major version, Y = minor version.
       The result is a single integer 256*X + Y
   """
-  nums = re.findall(r'\d+', name)
-  major = int(nums[0])
-  minor = int(nums[1])
-  return (major << 8) + minor
+  fw_match = re.search(r'preamp_(\d+)\.(\d+)', name)
+  if fw_match is not None and len(fw_match.groups()) >= 2:
+    major = int(fw_match[1])
+    minor = int(fw_match[2])
+    return (major << 8) + minor
+  # by default return 0 so non-standard file names won't be considered
+  return 0
 
 def _update_firmware(env: dict, progress) -> List[Task]:
   """ If on AmpliPi hardware, update to the latest firmware """
