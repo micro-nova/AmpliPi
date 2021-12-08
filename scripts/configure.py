@@ -533,6 +533,10 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
     # stop and disable the service so it doesn't start up on a reboot
     tasks += print_progress(_stop_service('amplipi-updater-test'))
     tasks += print_progress(_remove_service('amplipi-updater-test'))
+    # let the user know how to handle a specific failure condition of the old updater
+    UPDATER_MSG = """If the updater fails after this:
+                      Fix it by restarting the AmpliPi (unplug it and plugg it back in)."""
+    print_progress(Task('New updater tested - Works!', output=UPDATER_MSG, success=True))
   if env['is_amplipi']:
     # start the user manager at boot, instead of after first login
     # this is needed so the user systemd services start at boot
