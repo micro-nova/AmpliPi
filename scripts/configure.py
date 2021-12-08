@@ -111,7 +111,7 @@ def _check_and_setup_platform():
   # Figure out what platform we are on since we expect to be on a raspberry pi or a debian based development system
   if 'linux' in lplatform:
     if 'x86_64' in lplatform:
-      apt = subprocess.run('which apt'.split(), check=True)
+      apt = subprocess.run('which apt-get'.split(), check=True)
       env['arch'] = 'x64'
       if apt:
         env['has_apt'] = True
@@ -143,7 +143,7 @@ class Task:
   def __str__(self):
     desc = f"{self.name} : {self.margs}" if len(self.margs) > 0 else f"{self.name} :"
     for line in self.output.splitlines():
-      if line and not "WARNING: apt does not have a stable CLI interface." in line: # ignore apt warnings so user doesnt get confused
+      if line:
         desc += f'\n  {line}'
     if not self.success:
       desc += '\n  Error: Task Failed'
@@ -168,7 +168,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # TODO: add extra apt repos
   # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
   # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
-  tasks += print_progress([Task('get latest debian packages', 'sudo apt update --allow-releaseinfo-change'.split()).run()])
+  tasks += print_progress([Task('get latest debian packages', 'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
   # organize stuff to install
   packages = set()
@@ -218,7 +218,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       tasks += print_progress([Task("Giving pi serial permission. !!!AmpliPi will need to be restarted after this!!!", "sudo gpasswd -a pi dialout".split()).run()])
       return tasks
   # install debian packages
-  tasks += print_progress([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
+  tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
   # Run scripts
   for script in scripts:
