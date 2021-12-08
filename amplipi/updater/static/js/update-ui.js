@@ -70,9 +70,8 @@ function ui_reboot_app() {
   // initiate a reboot
   fetch("update/restart").then(function (response) {
     if (response.ok) {
-      ui_add_log('Restarting AmpliPi Update server to finish update', 'info')
-      setTimeout(ui_check_after_reboot, 3000)
-        // TODO: on fail -> show info on how to recover
+      ui_add_log('Restarting AmpliPi Update server to finish update', 'info');
+      setTimeout(ui_check_after_reboot, 5000, 10);
     } else {
       ui_add_log('Error restarting update server: ' + response, 'danger');
       ui_show_failure();
@@ -83,22 +82,27 @@ function ui_reboot_app() {
   })
 }
 
-function ui_check_after_reboot() {
+function ui_check_after_reboot(retry_check_ct) {
   // check reported version
-  r = fetch("update/version").then(function (response){
+  r = fetch("update/version").then(function (response) {
     response.json().then(function(json) {
-      ui_add_log(json.version, 'info')
-      ui_add_log('Done restarting updater', 'info')
-      ui_add_log('Redirecting back to AmpliPi server', 'info')
+      ui_add_log(json.version, 'info');
+      ui_add_log('Done restarting updater', 'info');
+      ui_add_log('Redirecting back to AmpliPi server', 'info');
       ui_show_done();
-      setTimeout(ui_redirect_to_amplipi, 3000)
+      setTimeout(ui_redirect_to_amplipi, 5000);
     }).catch( err => {
       ui_add_log('Error checking version: ' + err.message, 'danger');
       ui_show_failure();
     });
   }).catch( err => {
-    ui_add_log('Error checking version: ' + err.message, 'danger');
-    ui_show_failure();
+    if (retry_check_ct > 0) {
+      setTimeout(ui_check_after_reboot, 2000, retry_check_ct - 1); // don't continue to retry forever
+      ui_add_log('Waiting for the updater to start', 'info');
+    } else {
+      ui_add_log('Unable to communicate with New updater: ' + err.message, 'danger');
+      ui_show_failure();
+    }
   });
 }
 
