@@ -212,6 +212,7 @@ def install_thread():
 
   try:
     # use the configure script provided by the new install to configure the installation
+    time.sleep(1) # update was just copied in, add a small delay to make sure we are accessing the new files
     sys.path.insert(0, f'{HOME}/scripts')
     import configure # we want the new configure! # pylint: disable=import-error,import-outside-toplevel
     def progress_sse(tasks):
