@@ -366,9 +366,13 @@ def _disable_service(name: str, system: bool = False) -> List[Task]:
   tasks = [Task(f'Disable {service}', cmd.split()).run()]
   return tasks
 
-def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] = None) -> List[Task]:
   service = f'{name}.service'
-  tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
+  if restart:
+    tasks = [Task(f'Restart {service}', f'systemctl --user restart {service}'.split()).run()]
+  else:
+    # just start
+    tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
 
   # wait a bit, so initial failures are detected before is-active is called
   if tasks[-1].success:
@@ -397,11 +401,11 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
       tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
   return tasks
 
-def _restart_service(name: str, system: bool = False) -> List[Task]:
-  service = f'{name}.service'
-  cmd = f'{systemctl_cmd(system)} restart {service}'
-  tasks = [Task(f'Restart {service}', cmd.split()).run()]
-  return tasks
+def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+  return _start_restart_service(name, restart=False, test_url=test_url)
+
+def _restart_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+  return _start_restart_service(name, restart=True, test_url=test_url)
 
 def _create_dir(directory: str) -> List[Task]:
   tasks = [Task(f'Create directory {directory}')]
@@ -677,9 +681,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       return False
   if not web and restart_updater: # if web and restart_updater are True this restart happens in the _update_web function
     # The update server needs to restart itself after everything else is successful
-    # stop amplipi before reconfiguring authbind
-    ssts = _stop_service('amplipi-updater')
-    ssts +=_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
+    ssts =_restart_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
     progress(ssts)
     tasks += ssts
     if failed():
