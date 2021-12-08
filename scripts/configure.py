@@ -464,7 +464,7 @@ def _enable_linger(user: str) -> List[Task]:
   return [Task(f'Enable linger for {user} user', f'sudo loginctl enable-linger {user}'.split()).run()]
 
 def _copy_old_config(dest_dir: str) -> None:
-  # try to copy the config of the current runming amplipi service into base_dir/house.json
+  # try to copy the config of the current running amplipi service into base_dir/house.json
   # success is not required since the config will be generated from defaults if missing
   old_dir = subprocess.getoutput('systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
   if old_dir:
