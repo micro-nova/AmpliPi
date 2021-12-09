@@ -674,7 +674,7 @@ class Rpi:
 
   def exists(self, zone):
     if self._bus:
-      preamp_addr = 8*(zone // 6 + 1)
+      preamp_addr = 8 * (zone // 6 + 1)
       return preamp_addr in self._bus.preamps
     else:
       return True
