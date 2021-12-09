@@ -17,7 +17,7 @@
 """Digital Audio Streams
 
 This module allows you to connect and control configurable network audio sources
-such as Pandora, Spotify, and Airplay. Each digital source is expected to have
+such as Pandora, Spotify, and AirPlay. Each digital source is expected to have
 a consistent interface.
 """
 
@@ -112,8 +112,8 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
-class Airplay(BaseStream):
-  """ An Airplay Stream """
+class AirPlay(BaseStream):
+  """ An AirPlay Stream """
   def __init__(self, name, mock=False):
     super().__init__('airplay', name, mock)
     self.proc2 = None
@@ -136,8 +136,8 @@ class Airplay(BaseStream):
     self.disconnect()
 
   def connect(self, src):
-    """ Connect an Airplay device to a given audio source
-    This creates an Airplay streaming option based on the configuration
+    """ Connect an AirPlay device to a given audio source
+    This creates an AirPlay streaming option based on the configuration
     """
     if self.mock:
       self._connect(src)
@@ -866,7 +866,7 @@ class FMRadio(BaseStream):
     return source
 
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[Airplay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
+AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -877,7 +877,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   if stream.type == 'pandora':
     return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
   elif stream.type == 'shairport' or stream.type == 'airplay': # handle older configs
-    return Airplay(args['name'], mock=mock)
+    return AirPlay(args['name'], mock=mock)
   elif stream.type == 'spotify':
     return Spotify(args['name'], mock=mock)
   elif stream.type == 'dlna':
