@@ -382,7 +382,7 @@ class GroupUpdateWithId(GroupUpdate):
     return GroupUpdate.parse_obj(update)
 
 class Stream(Base):
-  """ Digital stream such as Pandora, Airplay or Spotify """
+  """ Digital stream such as Pandora, AirPlay or Spotify """
   type: str = Field(description="""stream type
 
   * pandora
@@ -462,7 +462,7 @@ class Stream(Base):
             'type': 'spotify'
           }
         },
-        'Add Micronova Airplay': {
+        'Add Micronova AirPlay': {
           'value': {
             'name': 'Micronova AP',
             'type': 'airplay'
@@ -507,7 +507,7 @@ class Stream(Base):
             'user': 'example2@micro-nova.com'
           }
         },
-        'Airplay (connected)': {
+        'AirPlay (connected)': {
           'value': {
             'id': 44590,
             'info': {'details': 'No info available'},
@@ -516,7 +516,7 @@ class Stream(Base):
             'type': 'airplay'
           }
         },
-        'Airplay (disconnected)': {
+        'AirPlay (disconnected)': {
           'value': {
             'id': 4894,
             'info': {'details': 'No info available'},

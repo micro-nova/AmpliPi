@@ -2578,7 +2578,7 @@ paths:
                 value:
                   name: MicroNova Spotify
                   type: spotify
-              Add Micronova Airplay:
+              Add Micronova AirPlay:
                 value:
                   name: Micronova AP
                   type: airplay
@@ -5597,7 +5597,7 @@ components:
           title: Token
           type: string
           description: Plexamp token for server.json
-      description: 'Digital stream such as Pandora, Airplay or Spotify '
+      description: 'Digital stream such as Pandora, AirPlay or Spotify '
       examples:
         Regina Spektor Radio:
           value:
@@ -5675,7 +5675,7 @@ components:
           value:
             name: MicroNova Spotify
             type: spotify
-        Add Micronova Airplay:
+        Add Micronova AirPlay:
           value:
             name: Micronova AP
             type: airplay
@@ -5912,7 +5912,7 @@ tags:
     A zone can belong to multiple groups, allowing for different levels of abstraction,
     e.g. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.
 - name: stream
-  description: Digital stream that can be connected to a source, e.g. Pandora, Airplay,
+  description: Digital stream that can be connected to a source, e.g. Pandora, AirPlay,
     Spotify, Internet Radio, DLNA.
 - name: preset
   description: A partial system configuration. Used to load specific configurations,
