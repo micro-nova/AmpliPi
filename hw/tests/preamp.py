@@ -12,6 +12,15 @@ import amplipi.rt
 def auto_int(x):
   return int(x, 0)
 
+def temp2str(tmp: float):
+  if tmp == -math.inf:
+    tmp_str = 'Thermistor disconnected'
+  elif tmp == math.inf:
+    tmp_str = 'Thermistor shorted'
+  else:
+    tmp_str = f'{tmp:.1f}\N{DEGREE SIGN}C'
+  return tmp_str
+
 def print_led_state(led: int):
   """ Print the state of the front-panel LEDs """
   if led is not None:
@@ -34,10 +43,6 @@ def print_status(p: amplipi.rt._Preamps, u: int):
     sys.exit(1)
   print(f'  Version {major}.{minor}-{git_hash:07X}, {"dirty" if dirty else "clean"}')
 
-  # Sources/Zones (Doesn't work right now)
-  #for zone in range(6*(u-1), 6*u):
-  #  p.print_zone_state(zone)
-
   # Power - note: failed only exists on Rev2 Power Board
   pg_9v, en_9v, pg_12v, en_12v, v12 = p.read_power_status(u)
   print('  Power Board Status')
@@ -46,7 +51,7 @@ def print_status(p: amplipi.rt._Preamps, u: int):
 
   # Fans
   ctrl, fans_on, ovr_tmp, failed = p.read_fan_status(u)
-  fan_duty = preamps.read_fan_duty(args.u)
+  fan_duty = p.read_fan_duty(u)
   print('  Fan Status')
   if ctrl == amplipi.rt.FanCtrl.MAX6644:
     fan_str = f', Failed={failed}'
@@ -62,19 +67,58 @@ def print_status(p: amplipi.rt._Preamps, u: int):
   # 24V and temp
   hv1 = p.read_hv(u)
   hv1_tmp, amp1_tmp, amp2_tmp = p.read_temps(u)
-  def temp2str(tmp: int):
-    if tmp == -math.inf:
-      tmp_str = 'Thermistor disconnected'
-    elif tmp == math.inf:
-      tmp_str = 'Thermistor shorted'
-    else:
-      tmp_str = f'{tmp:5.1f}\N{DEGREE SIGN}C'
-    return tmp_str
   print(f'  HV1: {hv1:5.2f}V, {temp2str(hv1_tmp)}')
   print(f'  Amp Temps: {temp2str(amp1_tmp)}, {temp2str(amp2_tmp)}')
 
   # LEDs
   print_led_state(p.read_leds(u))
+
+def self_check(p: amplipi.rt._Preamps):
+  def unit_to_name(u: int):
+    if u == 0:
+      return 'Main'
+    return f'Expander {u}'
+  def print_cond(u: int, ok: bool, s: str):
+    return print(f'\033[0;3{2 if ok else 1}m{unit_to_name(u)}: {s}\033[0m')
+  success = True
+  for u in range(len(p.preamps)):
+    _, _, pg_12v, _, v12 = p.read_power_status(u + 1)
+    v12_ok = 6 < v12 < 12.5
+    success &= pg_12v and v12_ok
+    print_cond(u, pg_12v, f'PG_12V {"ok" if pg_12v else "bad"}')
+    print_cond(u, v12_ok, f'12V supply {"ok" if v12_ok else "bad"} - {v12:.2f}V')
+    hv1_tmp, amp1_tmp, amp2_tmp = p.read_temps(u + 1)
+    hv1_ok = 10 < hv1_tmp < 45
+    amp1_ok = 10 < amp1_tmp < 60
+    amp2_ok = 10 < amp2_tmp < 60
+    success &= hv1_ok and amp1_ok and amp2_ok
+    print_cond(u, hv1_ok, f'HV1 Temp {"ok" if hv1_ok else "bad"}   - {temp2str(hv1_tmp)}')
+    print_cond(u, amp1_ok, f'AMP1 Temp {"ok" if amp1_ok else "bad"}  - {temp2str(amp1_tmp)}')
+    print_cond(u, amp2_ok, f'AMP2 Temp {"ok" if amp2_ok else "bad"}  - {temp2str(amp2_tmp)}')
+    print()
+  return success
+
+def heat_test(p: amplipi.rt._Preamps, timeout: int):
+  """ Requires manual heating, check for a 5 degC temp rise in ANY unit
+      Timeout after 30 seconds
+  """
+  # Get initial temps
+  a1t_s = []
+  a2t_s = []
+  for u in range(len(p.preamps)):
+    _, a1t_temp, a2t_temp = p.read_temps(u + 1)
+    a1t_s.append(a1t_temp)
+    a2t_s.append(a2t_temp)
+  start_time = time.time()
+  success = False
+  while not success and time.time() < start_time + timeout:
+    for u in range(len(p.preamps)):
+      _, a1t, a2t = p.read_temps(u + 1)
+      if a1t > a1t_s[u] + 5:
+        success = True
+      if a2t > a2t_s[u] + 5:
+        success = True
+  return success
 
 parser = argparse.ArgumentParser(description='Display AmpliPi preamp status.')
 parser.add_argument('-u', type=int, choices=range(1,7), default=1, help="which unit's preamp to control. Default=1")
@@ -83,8 +127,11 @@ parser.add_argument('-b', action='store_true', default=False, help='enter bootlo
 parser.add_argument('-a', action='store_true', default=False, help="set i2c address, currently only can set master's address")
 parser.add_argument('-f', action='store_true', default=False, help='force fans on')
 parser.add_argument('-l', type=auto_int, metavar='0xXX', help="override the LEDs")
+parser.add_argument('-q', action='store_true', default=False, help="don't print status")
+parser.add_argument('-t', action='store_true', default=False, help='perform a voltage and temperature self-test')
 parser.add_argument('-w', action='store_true', default=False, help="wait for key press before exiting")
 parser.add_argument('--temps', action='store_true', default=False, help='print temps and exit')
+parser.add_argument('--heat', type=int, metavar='TIMEOUT', help='perform a mannually-heated temp rise test')
 args = parser.parse_args()
 
 # Force a reset if bootloader is requested
@@ -104,7 +151,7 @@ if args.a and args.b:
 # Setup preamp connection. args.r = Optionally reset master (unit 0)
 reset = args.u == 1 and args.r
 boot0 = args.u == 1 and args.b
-preamps = amplipi.rt._Preamps(reset = reset, set_addr = args.a, bootloader = boot0, debug = not args.temps)
+preamps = amplipi.rt._Preamps(reset = reset, set_addr = args.a, bootloader = boot0, debug = False)
 
 # Used for temperature recording
 if args.temps:
@@ -122,15 +169,26 @@ if args.u > 1 and args.b:
   print("Bootloading expansion units is a work in progress...")
 
 if not args.b:
-  preamps.force_fans(preamp = args.u, force = args.f)
+  for u in range(len(preamps.preamps)):
+    preamps.force_fans(preamp = u + 1, force = args.f)
   preamps.led_override(preamp = args.u, leds = args.l)
 
-  time.sleep(0.1) # Wait a bit to make sure internal I2C writes have finished
-  for u in range(len(preamps.preamps)):
-    print()
-    print_status(preamps, u + 1)
+  if not args.q:
+    time.sleep(0.1)       # Wait a bit to make sure internal I2C writes have finished
+    print(f'{preamps}\n') # Print zone info for main unit
+    for u in range(len(preamps.preamps)):
+      print()
+      print_status(preamps, u + 1)
 
   if args.w:
     input("Press Enter to continue...")
+
+if args.t:
+  if not self_check(preamps):
+    sys.exit(2)
+if args.heat:
+  if not heat_test(preamps, args.heat):
+    sys.exit(2)
+
 
 # TODO? 'STANDBY' : 0x04
