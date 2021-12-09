@@ -163,6 +163,7 @@ class Airplay(BaseStream):
       },
     }
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'rm -f {src_config_folder}/currentSong')
     web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
     # make all of the necessary dir(s)
     os.system(f'rm -r -f {web_dir}')
