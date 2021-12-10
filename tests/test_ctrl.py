@@ -15,10 +15,9 @@ from context import amplipi
 
 # several starting configurations to load for testing including a corrupted configuration
 DEFAULT_STATUS = deepcopy(amplipi.ctrl.Api.DEFAULT_CONFIG) # pylint: disable=no-member
-# make a good config string, that has less groups than the default (so we can tell the difference)
+# make a good config string, that has more groups than the default (so we can tell the difference)
 GOOD_STATUS = deepcopy(DEFAULT_STATUS)
-del GOOD_STATUS['groups'][2]
-del GOOD_STATUS['groups'][1]
+GOOD_STATUS['groups'] = [{'id': 199, 'name': 'test group', 'zones': [0, 1, 2, 3, 4, 5]}]
 GOOD_CONFIG = json.dumps(GOOD_STATUS) # make it a json string we can write to a config file
 # corrupt the json string by only taking the first half
 # ( simulating what would happen if the program was terminated while writing the config file)
