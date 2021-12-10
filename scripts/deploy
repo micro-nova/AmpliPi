@@ -104,16 +104,15 @@ fi
 
 if $dev; then
   old_version=$(poetry version -s)
-  developer_version="$(git describe --always --dirty)-$(git rev-parse --abbrev-ref HEAD)"
+  # git_info="$(git describe --always --dirty)-$(git rev-parse --abbrev-ref HEAD)"
   # TODO: write extra git info to the pyproject.toml file since poetry complains about non-standard versions
-  #poetry version $developer_version
+  poetry version prerelease
 fi
-# package release
+# build release file (put in dist/)
 poetry build
 
 if $dev; then
-  #poetry version $old_version
-  echo
+  poetry version $old_version
 fi
 
 # exit virtual environment
