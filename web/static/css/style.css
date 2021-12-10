@@ -268,3 +268,6 @@ body {
   cursor: pointer;
   color: #dc3545;
 }
+.dropdown-menu.show{
+  width: 100%;
+}

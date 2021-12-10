@@ -13,19 +13,25 @@ function onSrcInputChange(obj) {
 }
 
 function onSrcAdd(obj) {
-  const src = Number(obj.id.substring(1,2));
-  const to_add = obj.value;
-  if (to_add) {
-    const type = to_add.substring(0,1);
-    const id = Number(to_add.substring(1));
-    let req = { 'source_id' : src };
+  const src = Number(obj[0].id.substring(1,2));
+  const to_add = obj.val();
+
+  zones = []
+  groups = []
+
+  for(i of to_add){
+    const type = i.substring(0,1);
+    const id = Number(i.substring(1));
     if (type == 'z'){
-      path =  '/zones/' + id;
+      zones.push(id);
     } else if (type == 'g') {
-      path = '/groups/' + id;
+      groups.push(id);
     }
-    sendRequestAndReload(path, 'PATCH', req, src);
   }
+
+  let req = {zones: zones, groups: groups, update: {source_id: src}}
+
+  if(groups.length > 0 || zones.length > 0) sendRequestAndReload("/zones/", 'PATCH', req, src);
 }
 
 function onMuteToggle(icon) {
@@ -83,6 +89,16 @@ $(document).ready(function(){
   });
   // Refresh the page sequentially in place of SSE
   setInterval(refresh, 2000);
+
+  // Make all zone/group multiselectors multiselectors and configures them
+  $('[id^=s][id$=-add-input]').multiselect({
+    onDropdownHide: function(e){
+      // Yeah I know this is a gross way to get the multiselector's id but it's all I could find.
+      onSrcAdd($('#'+e.target.previousSibling.id))
+    },
+    buttonTextAlignment: "left"
+  })
+
   // hook file selected event
   $('#settings-config-file-selector')[0].addEventListener('change', (event) => {
     $('#settings-config-load')[0].classList.remove('disabled');
