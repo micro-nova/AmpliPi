@@ -22,13 +22,56 @@ import netifaces as ni
 # pylint: disable=redefined-outer-name
 # pylint: disable=invalid-name
 
+TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
+
+# add several groups and most of the default streams to the config
+TEST_CONFIG['groups'] = [
+  {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
+  {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
+  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_delta": -79},
+]
+TEST_CONFIG['streams'] = [
+  {"id": 1000, "name": "AmpliPi", "type": "shairport"},
+  {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
+  {"id": 1002, "name": "AmpliPi", "type": "spotify"},
+  {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+  {"id": 1004, "name": "AmpliPi", "type": "dlna"},
+]
+TEST_CONFIG['presets'] = [
+  {"id": 10000,
+    "name": "Mute All",
+    "state" : {
+      "zones" : [
+        {"id": 0, "mute": True},
+        {"id": 1, "mute": True},
+        {"id": 2, "mute": True},
+        {"id": 3, "mute": True},
+        {"id": 4, "mute": True},
+        {"id": 5, "mute": True},
+      ]
+    }
+  },
+  {"id": 10001,
+    "name": "Play Pandora",
+    "state" : {
+      "sources" : [
+        {"id": 1, "input": "stream=1001"},
+      ],
+      "groups" : [
+        {"id": 100, "source_id": 1},
+        {"id": 101, "source_id": 1},
+      ]
+    }
+  }
+]
+
 def base_config():
   """ Default Amplipi configuration """
-  return amplipi.ctrl.Api.DEFAULT_CONFIG
+  return TEST_CONFIG
 
 def base_config_copy():
   """ Modify-able Amplipi configuration """
-  return deepcopy(base_config())
+  return deepcopy(TEST_CONFIG)
 
 def base_config_no_presets():
   """ AmpliPi configuration with presets field unpopulated """
@@ -158,9 +201,9 @@ def test_load_null_config(client):
         assert len(jrv[t]) == len(og_config[t])
 
 def test_open_api_yamlfile(client):
-    """ Check if the openapi yaml doc is available """
-    rv = client.get('/openapi.yaml')
-    assert rv.status_code == HTTPStatus.OK
+  """ Check if the openapi yaml doc is available """
+  rv = client.get('/openapi.yaml')
+  assert rv.status_code == HTTPStatus.OK
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 

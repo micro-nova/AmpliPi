@@ -132,19 +132,6 @@ class Api:
           ]
         }
       },
-      # We need this for testing # TODO: remove and generate it during testing
-      {"id": 10001,
-        "name": "Play Pandora",
-        "state" : {
-          "sources" : [
-            {"id": 1, "input": "stream=1001"},
-          ],
-          "groups" : [
-            {"id": 100, "source_id": 1},
-            {"id": 101, "source_id": 1},
-          ]
-        }
-      }
     ]
   }
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
