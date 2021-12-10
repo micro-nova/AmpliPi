@@ -387,7 +387,7 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
     tasks += task_check
     if test_url and running:
       task = None
-      for _ in range(40): # retry for 10 seconds, giving the server time to start
+      for _ in range(40): # retry for 20 seconds, giving the server time to start
         task = _check_url(test_url)
         if task.success:
           break

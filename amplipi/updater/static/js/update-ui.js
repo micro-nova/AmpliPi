@@ -71,7 +71,7 @@ function ui_reboot_app() {
   fetch("update/restart").then(function (response) {
     if (response.ok) {
       ui_add_log('Restarting AmpliPi Update server to finish update', 'info');
-      setTimeout(ui_check_after_reboot, 5000, 21); // wait for 2 minutes just in case we ever have to restart the pi
+      setTimeout(ui_check_after_reboot, 5000, 2 * 60 / 5 - 1); // wait for 2 minutes just in case we ever have to restart the pi
     } else {
       ui_add_log('Error restarting update server: ' + response, 'danger');
       ui_show_failure();
