@@ -71,7 +71,7 @@ function ui_reboot_app() {
   fetch("update/restart").then(function (response) {
     if (response.ok) {
       ui_add_log('Restarting AmpliPi Update server to finish update', 'info');
-      setTimeout(ui_check_after_reboot, 5000, 10);
+      setTimeout(ui_check_after_reboot, 5000, 21); // wait for 2 minutes just in case we ever have to restart the pi
     } else {
       ui_add_log('Error restarting update server: ' + response, 'danger');
       ui_show_failure();
@@ -97,7 +97,7 @@ function ui_check_after_reboot(retry_check_ct) {
     });
   }).catch( err => {
     if (retry_check_ct > 0) {
-      setTimeout(ui_check_after_reboot, 2000, retry_check_ct - 1); // don't continue to retry forever
+      setTimeout(ui_check_after_reboot, 5000, retry_check_ct - 1); // don't continue to retry forever
       ui_add_log('Waiting for the updater to start', 'info');
     } else {
       ui_add_log('Unable to communicate with New updater: ' + err.message, 'danger');
