@@ -223,6 +223,25 @@ class Api:
       version=utils.detect_version()
     )
 
+    # TODO: detect missing sources
+
+    # detect missing zones
+    if self._mock_hw:
+      # only allow 6 zones when mocked to simplify testing
+      # add more if needed by specifying them in the config
+      potential_zones = range(6)
+    else:
+      potential_zones = range(rt.MAX_ZONES)
+    added_zone = False
+    for zid in potential_zones:
+      _, zone = utils.find(self.status.zones, zid)
+      if zone is None and self._rt.exists(zid):
+        added_zone = True
+        self.status.zones.append(models.Zone(id=zid, name=f'Zone {zid+1}'))
+    # save new config if zones were added
+    if added_zone:
+      self.save()
+
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
     failed_streams: List[int] = []
@@ -245,7 +264,8 @@ class Api:
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for zone in self.status.zones:
-      # TODO: disable zones that are not found and add zones that are found
+      # TODO: disable zones that are not found
+      # we likely need an additional field for this, maybe auto-disabled?
       zone_update = models.ZoneUpdate(source_id=zone.source_id, mute=True, vol=zone.vol)
       self.set_zone(zone.id, zone_update, force_update=True, internal=True)
     # configure all of the groups (some fields may need to be updated)
