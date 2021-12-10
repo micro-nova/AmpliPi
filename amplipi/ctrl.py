@@ -115,11 +115,7 @@ class Api:
       {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
       {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
     ],
-    # TODO: make groups a dictionary
-    "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-      {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
-      {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
-      {"id": 102, "name": "Group 3", "zones": [5], "source_id": 0, "mute": True, "vol_delta": -79},
+    "groups": [
     ],
     "presets" : [
       {"id": 10000,
@@ -136,7 +132,7 @@ class Api:
           ]
         }
       },
-      # We need this for testing
+      # We need this for testing # TODO: remove and generate it during testing
       {"id": 10001,
         "name": "Play Pandora",
         "state" : {
