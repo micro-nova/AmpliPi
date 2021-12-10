@@ -704,7 +704,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     UPDATER_MSG = """Older updaters can fail mistakenly after this.
 
                      Just go back to AmpliPi (http://amplipi.local) to check out the new features."""
-    progress([Task('New updater tested - Works!', output=UPDATER_MSG, success=True)])
+    progress([Task(UPDATER_MSG, success=True)])
   return True
 
 if __name__ == '__main__':
