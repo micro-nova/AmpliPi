@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "amplipi"
-version = "0.1.6"
+version = "0.1.7-beta.1"
 description = "A Pi-based whole house audio controller"
 authors = [
   "Lincoln Lorenz <lincoln@micro-nova.com>",
