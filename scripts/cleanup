@@ -8,7 +8,7 @@ set -e
 cd "$( dirname "$0" )"
 
 HELP="Cleanup filesystem on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
-  usage: deploy [USER@HOST]\n
+  usage: cleanup [USER@HOST]\n
 \n
 "
 
