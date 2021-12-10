@@ -17,7 +17,12 @@ from context import amplipi
 DEFAULT_STATUS = deepcopy(amplipi.ctrl.Api.DEFAULT_CONFIG) # pylint: disable=no-member
 # make a good config string, that has more groups than the default (so we can tell the difference)
 GOOD_STATUS = deepcopy(DEFAULT_STATUS)
-GOOD_STATUS['groups'] = [{'id': 199, 'name': 'test group', 'zones': [0, 1, 2, 3, 4, 5]}]
+# vol_delta need to be equal to the average volume of  zones 0-5, here it is hardcoded
+vol = 0
+for zone in GOOD_STATUS['zones']:
+  vol += zone['vol']
+vol_delta = vol / len( GOOD_STATUS['zones'])
+GOOD_STATUS['groups'] = [{'id': 100, 'name': 'test group', 'mute': True, 'vol_delta': vol_delta, 'source_id': 0, 'zones': [0, 1, 2, 3, 4, 5]}]
 GOOD_CONFIG = json.dumps(GOOD_STATUS) # make it a json string we can write to a config file
 # corrupt the json string by only taking the first half
 # ( simulating what would happen if the program was terminated while writing the config file)
