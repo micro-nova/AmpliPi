@@ -111,7 +111,7 @@ def _check_and_setup_platform():
   # Figure out what platform we are on since we expect to be on a raspberry pi or a debian based development system
   if 'linux' in lplatform:
     if 'x86_64' in lplatform:
-      apt = subprocess.run('which apt'.split(), check=True)
+      apt = subprocess.run('which apt-get'.split(), check=True)
       env['arch'] = 'x64'
       if apt:
         env['has_apt'] = True
@@ -143,7 +143,7 @@ class Task:
   def __str__(self):
     desc = f"{self.name} : {self.margs}" if len(self.margs) > 0 else f"{self.name} :"
     for line in self.output.splitlines():
-      if line and not "WARNING: apt does not have a stable CLI interface." in line: # ignore apt warnings so user doesnt get confused
+      if line:
         desc += f'\n  {line}'
     if not self.success:
       desc += '\n  Error: Task Failed'
@@ -168,7 +168,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # TODO: add extra apt repos
   # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
   # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
-  tasks += print_progress([Task('get latest debian packages', 'sudo apt update --allow-releaseinfo-change'.split()).run()])
+  tasks += print_progress([Task('get latest debian packages', 'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
   # organize stuff to install
   packages = set()
@@ -218,7 +218,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       tasks += print_progress([Task("Giving pi serial permission. !!!AmpliPi will need to be restarted after this!!!", "sudo gpasswd -a pi dialout".split()).run()])
       return tasks
   # install debian packages
-  tasks += print_progress([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
+  tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
   # Run scripts
   for script in scripts:
@@ -366,9 +366,13 @@ def _disable_service(name: str, system: bool = False) -> List[Task]:
   tasks = [Task(f'Disable {service}', cmd.split()).run()]
   return tasks
 
-def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] = None) -> List[Task]:
   service = f'{name}.service'
-  tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
+  if restart:
+    tasks = [Task(f'Restart {service}', f'systemctl --user restart {service}'.split()).run()]
+  else:
+    # just start
+    tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
 
   # wait a bit, so initial failures are detected before is-active is called
   if tasks[-1].success:
@@ -397,11 +401,11 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
       tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
   return tasks
 
-def _restart_service(name: str, system: bool = False) -> List[Task]:
-  service = f'{name}.service'
-  cmd = f'{systemctl_cmd(system)} restart {service}'
-  tasks = [Task(f'Restart {service}', cmd.split()).run()]
-  return tasks
+def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+  return _start_restart_service(name, restart=False, test_url=test_url)
+
+def _restart_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+  return _start_restart_service(name, restart=True, test_url=test_url)
 
 def _create_dir(directory: str) -> List[Task]:
   tasks = [Task(f'Create directory {directory}')]
@@ -424,7 +428,7 @@ def _create_service(name: str, config: str) -> List[Task]:
   tasks = []
 
   # create the systemd directory if it doesn't already exist
-  tasks += _create_dir(directory)
+  tasks += _create_dir(str(directory))
 
   # create the service file, overwriting any existing one
   tasks.append(Task(f'Create {filename}'))
@@ -463,6 +467,16 @@ def _configure_authbind() -> List[Task]:
 def _enable_linger(user: str) -> List[Task]:
   return [Task(f'Enable linger for {user} user', f'sudo loginctl enable-linger {user}'.split()).run()]
 
+def _copy_old_config(dest_dir: str) -> None:
+  # try to copy the config of the current running amplipi service into base_dir/house.json
+  # success is not required since the config will be generated from defaults if missing
+  old_dir = subprocess.getoutput('systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
+  if old_dir:
+    try:
+      subprocess.run(['cp', f'{old_dir}/house.json', f'{dest_dir}/house.json'], check=False)
+    except:
+      pass
+
 def _check_url(url) -> Task:
   task = Task(f'Check url {url}')
   try:
@@ -493,6 +507,10 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
     return tasks
+  # try to copy the old config into the potentially new directory
+  # This fixes some potential update issues caused by migrating install to a different directory
+  # (using the web updated the install dir used to be amplipi-dev2 and is now amplipi-dev)
+  _copy_old_config(env['base_dir'])
   tasks = []
   # stop amplipi before reconfiguring authbind
   tasks += print_progress(_stop_service('amplipi'))
@@ -505,6 +523,7 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   tasks += print_progress([_check_version('http://0.0.0.0/api')])
   tasks += print_progress(_create_service('amplipi-updater', _update_service(env['base_dir'])))
   if restart_updater:
+    tasks += print_progress(_stop_service('amplipi-updater'))
     tasks += print_progress(_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
   else:
     # start a second updater service and check if it serves a url
@@ -539,10 +558,13 @@ def _fw_ver_from_filename(name: str) -> int:
       X = major version, Y = minor version.
       The result is a single integer 256*X + Y
   """
-  nums = re.findall(r'\d+', name)
-  major = int(nums[0])
-  minor = int(nums[1])
-  return (major << 8) + minor
+  fw_match = re.search(r'preamp_(\d+)\.(\d+)', name)
+  if fw_match is not None and len(fw_match.groups()) >= 2:
+    major = int(fw_match[1])
+    minor = int(fw_match[2])
+    return (major << 8) + minor
+  # by default return 0 so non-standard file names won't be considered
+  return 0
 
 def _update_firmware(env: dict, progress) -> List[Task]:
   """ If on AmpliPi hardware, update to the latest firmware """
@@ -609,7 +631,7 @@ def add_tests(env, progress) -> List[Task]:
 
   # create the ~/tests directory if it doesn't already exist
   directory = pathlib.Path.home().joinpath('Desktop', 'tests')
-  tasks += _create_dir(directory)
+  tasks += _create_dir(str(directory))
 
   for test in tests:
     tasks += [_add_desktop_icon(env, directory, test[0], test[1])]
@@ -662,7 +684,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       return False
   if not web and restart_updater: # if web and restart_updater are True this restart happens in the _update_web function
     # The update server needs to restart itself after everything else is successful
-    ssts =_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
+    ssts =_restart_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
     progress(ssts)
     tasks += ssts
     if failed():
@@ -675,6 +697,12 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_firmware(env, progress)
     if failed():
       return False
+  if web and not restart_updater:
+    # let the user know how to handle a specific failure condition of the old updater
+    UPDATER_MSG = """Older updaters can fail mistakenly after this.
+
+                     Just go back to AmpliPi (http://amplipi.local) to check out the new features."""
+    progress([Task('New updater tested - Works!', output=UPDATER_MSG, success=True)])
   return True
 
 if __name__ == '__main__':

@@ -153,6 +153,7 @@ gmrender-resurrect
 
 # Amplipi Web
 web/generated/*
+web/uploads/*
 
 # Firmware builds
 fw/preamp/Debug

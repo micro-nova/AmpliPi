@@ -9,17 +9,15 @@ cd "$( dirname "$0" )"
 HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
   usage: deploy [USER@HOST] [--mock-ctrl]\n
 \n
-  --mock-ctrl: Don't use actual amplipi controller, useful for testing without actual AmpliPi controller\n
+  --dev: add info to version showing the current git hash and branch\n
 "
 
 user_host='pi@amplipi.local'
 user_host_set=false
-mock_ctrl=false
-bump=true
+dev=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
-    --no-bump) bump=false ;;
-    --mock-ctrl) mock_ctrl=true ;;
+    --dev) dev=true ;;
     -h|--help) echo -e $HELP; exit 0 ;;
     *) if ! $user_host_set; then
           user_host=$1
@@ -104,20 +102,21 @@ if ! $mock_ctrl; then
   sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
 fi
 
-if $bump; then
-  # Bump version so we can keep track of chanqges
+if $dev; then
+  old_version=$(poetry version -s)
+  # git_info="$(git describe --always --dirty)-$(git rev-parse --abbrev-ref HEAD)"
+  # TODO: write extra git info to the pyproject.toml file since poetry complains about non-standard versions
   poetry version prerelease
 fi
-# package release
+# build release file (put in dist/)
 poetry build
+
+if $dev; then
+  poetry version $old_version
+fi
 
 # exit virtual environment
 deactivate
-
-if ! $mock_ctrl; then
-  # revert changes to the local file
-  sed -i 's/DISABLE_HW = False/DISABLE_HW = True/' ../amplipi/rt.py
-fi
 
 # setup ssh access if necessary
 if ! ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"'; then
