@@ -102,28 +102,47 @@ def prune_state(state: amplipi.models.Status):
   dstate.pop('info')
   return dstate
 
-def test_config_loading():
-  """ Test config file loading """
+def test_no_config():
+  """ Test loading an empty config (should load default config) """
   use_tmpdir() # run from temp dir so we don't mess with current directory
-  # test loading an empty config (should load default config)
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
-  # test loading a known good config file by making a copy of it and loading the api with the copy
+
+def test_good_config():
+  """ Test loading a known good config file by making a copy of it and loading the api with the copy """
+  use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(GOOD_CONFIG)
   assert GOOD_STATUS == prune_state(api.get_state())
-  # test loading a corrupted config file with a good backup
+
+def test_corrupted_config():
+  """ Test loading a corrupted config file with a good backup """
+  use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=GOOD_CONFIG)
   assert GOOD_STATUS == prune_state(api.get_state())
-  # test loading a missing config file with a good backup
-  api = api_w_mock_rt(NO_CONFIG, backup_config=GOOD_CONFIG)
-  assert GOOD_STATUS == prune_state(api.get_state())
-  # test loading a corrupted config file and a corrupted backup
+
+def test_doubly_corrupted_config():
+  """ Test loading a corrupted config file and a corrupted backup """
+  use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=CORRUPTED_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
-  # test loading a missing config file and a missing backup
+
+def test_missing_config():
+  """ Test loading a missing config file with a good backup """
+  use_tmpdir() # run from temp dir so we don't mess with current directory
+  api = api_w_mock_rt(NO_CONFIG, backup_config=GOOD_CONFIG)
+  assert GOOD_STATUS == prune_state(api.get_state())
+
+def test_doubly_missing_config():
+  """ Test loading a missing config file and a missing backup """
+  use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
 
 if __name__ == '__main__':
   # run tests without pytest
-  test_config_loading()
+  test_no_config()
+  test_good_config()
+  test_corrupted_config()
+  test_doubly_corrupted_config()
+  test_missing_config()
+  test_doubly_missing_config()
