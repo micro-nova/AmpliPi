@@ -192,13 +192,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -386,13 +386,13 @@ paths:
                       details: No info available
                     name: Jason's iPhone
                     status: connected
-                    type: shairport
+                    type: airplay
                   - id: 4894
                     info:
                       details: No info available
                     name: Rnay
                     status: disconnected
-                    type: shairport
+                    type: airplay
                   info:
                     version: 0.0.1
                   zones:
@@ -574,13 +574,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -775,13 +775,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -1114,13 +1114,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -1481,13 +1481,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -1794,13 +1794,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -2189,13 +2189,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -2434,13 +2434,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -2578,10 +2578,10 @@ paths:
                 value:
                   name: MicroNova Spotify
                   type: spotify
-              Add Micronova Airplay:
+              Add Micronova AirPlay:
                 value:
                   name: Micronova AP
-                  type: shairport
+                  type: airplay
               Play single file or announcement:
                 value:
                   name: Play NASA Announcement
@@ -2622,7 +2622,7 @@ paths:
                       details: No info available
                     name: Jason's iPhone
                     status: connected
-                    type: shairport
+                    type: airplay
                 Shairport (disconnected):
                   value:
                     id: 4894
@@ -2630,7 +2630,7 @@ paths:
                       details: No info available
                     name: Rnay
                     status: disconnected
-                    type: shairport
+                    type: airplay
         '422':
           description: Validation Error
           content:
@@ -2694,13 +2694,13 @@ paths:
                     details: No info available
                   name: Jason's iPhone
                   status: connected
-                  type: shairport
+                  type: airplay
                 - id: 4894
                   info:
                     details: No info available
                   name: Rnay
                   status: disconnected
-                  type: shairport
+                  type: airplay
   /api/streams/{sid}:
     get:
       tags:
@@ -2763,7 +2763,7 @@ paths:
                       details: No info available
                     name: Jason's iPhone
                     status: connected
-                    type: shairport
+                    type: airplay
                 Shairport (disconnected):
                   value:
                     id: 4894
@@ -2771,7 +2771,7 @@ paths:
                       details: No info available
                     name: Rnay
                     status: disconnected
-                    type: shairport
+                    type: airplay
         '422':
           description: Validation Error
           content:
@@ -2909,13 +2909,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -3147,13 +3147,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -3378,13 +3378,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -3608,13 +3608,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -3980,13 +3980,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -4215,13 +4215,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -4432,13 +4432,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -4642,13 +4642,13 @@ paths:
                         details: No info available
                       name: Jason's iPhone
                       status: connected
-                      type: shairport
+                      type: airplay
                     - id: 4894
                       info:
                         details: No info available
                       name: Rnay
                       status: disconnected
-                      type: shairport
+                      type: airplay
                     info:
                       version: 0.0.1
                     zones:
@@ -5467,13 +5467,13 @@ components:
                 details: No info available
               name: Jason's iPhone
               status: connected
-              type: shairport
+              type: airplay
             - id: 4894
               info:
                 details: No info available
               name: Rnay
               status: disconnected
-              type: shairport
+              type: airplay
             info:
               version: 0.0.1
             zones:
@@ -5567,7 +5567,7 @@ components:
         type:
           title: Type
           type: string
-          description: "stream type\n\n  * pandora\n  * shairport\n  * dlna\n  * internetradio\n\
+          description: "stream type\n\n  * pandora\n  * airplay\n  * dlna\n  * internetradio\n\
             \  * spotify\n  * plexamp\n  * file\n  "
         user:
           title: User
@@ -5597,7 +5597,7 @@ components:
           title: Token
           type: string
           description: Plexamp token for server.json
-      description: 'Digital stream such as Pandora, Airplay or Spotify '
+      description: 'Digital stream such as Pandora, AirPlay or Spotify '
       examples:
         Regina Spektor Radio:
           value:
@@ -5626,7 +5626,7 @@ components:
               details: No info available
             name: Jason's iPhone
             status: connected
-            type: shairport
+            type: airplay
         Shairport (disconnected):
           value:
             id: 4894
@@ -5634,7 +5634,7 @@ components:
               details: No info available
             name: Rnay
             status: disconnected
-            type: shairport
+            type: airplay
       creation_examples:
         Add Beatles Internet Radio Station:
           value:
@@ -5675,10 +5675,10 @@ components:
           value:
             name: MicroNova Spotify
             type: spotify
-        Add Micronova Airplay:
+        Add Micronova AirPlay:
           value:
             name: Micronova AP
-            type: shairport
+            type: airplay
     StreamCommand:
       title: StreamCommand
       enum:
@@ -5912,7 +5912,7 @@ tags:
     A zone can belong to multiple groups, allowing for different levels of abstraction,
     e.g. Guest Bedroom can belong to both the 'Upstairs' and 'Whole House' groups.
 - name: stream
-  description: Digital stream that can be connected to a source, e.g. Pandora, Airplay,
+  description: Digital stream that can be connected to a source, e.g. Pandora, AirPlay,
     Spotify, Internet Radio, DLNA.
 - name: preset
   description: A partial system configuration. Used to load specific configurations,

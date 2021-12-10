@@ -527,7 +527,7 @@ def generate_openapi_spec(add_test_docs=True):
       },
       {
         'name': 'stream',
-        'description': 'Digital stream that can be connected to a source, e.g. Pandora, Airplay, Spotify, Internet Radio, DLNA.',
+        'description': 'Digital stream that can be connected to a source, e.g. Pandora, AirPlay, Spotify, Internet Radio, DLNA.',
       },
       {
         'name': 'preset',

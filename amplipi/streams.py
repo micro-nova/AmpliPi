@@ -17,7 +17,7 @@
 """Digital Audio Streams
 
 This module allows you to connect and control configurable network audio sources
-such as Pandora, Spotify, and Airplay. Each digital source is expected to have
+such as Pandora, Spotify, and AirPlay. Each digital source is expected to have
 a consistent interface.
 """
 
@@ -112,10 +112,10 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
-class Shairport(BaseStream):
-  """ An Airplay Stream """
+class AirPlay(BaseStream):
+  """ An AirPlay Stream """
   def __init__(self, name, mock=False):
-    super().__init__('shairport', name, mock)
+    super().__init__('airplay', name, mock)
     self.proc2 = None
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
@@ -136,8 +136,8 @@ class Shairport(BaseStream):
     self.disconnect()
 
   def connect(self, src):
-    """ Connect an Airplay device to a given audio source
-    This creates an Airplay streaming option based on the configuration
+    """ Connect an AirPlay device to a given audio source
+    This creates an AirPlay streaming option based on the configuration
     """
     if self.mock:
       self._connect(src)
@@ -163,6 +163,7 @@ class Shairport(BaseStream):
       },
     }
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'rm -f {src_config_folder}/currentSong')
     web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
     # make all of the necessary dir(s)
     os.system(f'rm -r -f {web_dir}')
@@ -865,7 +866,7 @@ class FMRadio(BaseStream):
     return source
 
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[Shairport, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
+AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -875,8 +876,8 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   args = stream.dict(exclude_none=True)
   if stream.type == 'pandora':
     return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
-  elif stream.type == 'shairport':
-    return Shairport(args['name'], mock=mock)
+  elif stream.type == 'shairport' or stream.type == 'airplay': # handle older configs
+    return AirPlay(args['name'], mock=mock)
   elif stream.type == 'spotify':
     return Spotify(args['name'], mock=mock)
   elif stream.type == 'dlna':

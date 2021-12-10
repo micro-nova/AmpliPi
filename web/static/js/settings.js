@@ -67,7 +67,7 @@ $(function() {
           <label for="type">Stream Type</label>
           <select class="form-control" name="type" id="new_type" data-required="true">
             <option value="0">- Select a Stream Type -</option>
-            <option value="shairport">AirPlay Device</option>
+            <option value="airplay">AirPlay Device</option>
             <option value="dlna">DLNA</option>
             <option value="fmradio">FM Radio Station</option>
             <option value="internetradio">Internet Radio Station</option>

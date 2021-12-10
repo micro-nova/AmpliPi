@@ -382,11 +382,11 @@ class GroupUpdateWithId(GroupUpdate):
     return GroupUpdate.parse_obj(update)
 
 class Stream(Base):
-  """ Digital stream such as Pandora, Airplay or Spotify """
+  """ Digital stream such as Pandora, AirPlay or Spotify """
   type: str = Field(description="""stream type
 
   * pandora
-  * shairport
+  * airplay
   * dlna
   * internetradio
   * spotify
@@ -462,10 +462,10 @@ class Stream(Base):
             'type': 'spotify'
           }
         },
-        'Add Micronova Airplay': {
+        'Add Micronova AirPlay': {
           'value': {
             'name': 'Micronova AP',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
         "Play single file or announcement" : {
@@ -507,22 +507,22 @@ class Stream(Base):
             'user': 'example2@micro-nova.com'
           }
         },
-        'Shairport (connected)': {
+        'AirPlay (connected)': {
           'value': {
             'id': 44590,
             'info': {'details': 'No info available'},
             'name': "Jason's iPhone",
             'status': 'connected',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
-        'Shairport (disconnected)': {
+        'AirPlay (disconnected)': {
           'value': {
             'id': 4894,
             'info': {'details': 'No info available'},
             'name': 'Rnay',
             'status': 'disconnected',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
       }
@@ -785,14 +785,14 @@ class Status(BaseModel):
                 'name': "Jason's "
                         'iPhone',
                 'status': 'connected',
-                'type': 'shairport'
+                'type': 'airplay'
               },
               {
                 'id': 4894,
                 'info': {'details': 'No info available'},
                 'name': 'Rnay',
                 'status': 'disconnected',
-                'type': 'shairport'
+                'type': 'airplay'
               }
             ],
             'info': { 'version': '0.0.1'},

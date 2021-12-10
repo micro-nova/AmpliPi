@@ -105,12 +105,7 @@ class Api:
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
-      # an example for each type of stream
-      {"id": 1000, "name": "AmpliPi", "type": "shairport"},
-      {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
-      {"id": 1002, "name": "AmpliPi", "type": "spotify"},
-      {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
-      {"id": 1004, "name": "AmpliPi", "type": "dlna"}
+      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
@@ -120,11 +115,7 @@ class Api:
       {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
       {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
     ],
-    # TODO: make groups a dictionary
-    "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-      {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
-      {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
-      {"id": 102, "name": "Group 3", "zones": [5], "source_id": 0, "mute": True, "vol_delta": -79},
+    "groups": [
     ],
     "presets" : [
       {"id": 10000,
@@ -141,19 +132,6 @@ class Api:
           ]
         }
       },
-      # We need this for testing
-      {"id": 10001,
-        "name": "Play Pandora",
-        "state" : {
-          "sources" : [
-            {"id": 1, "input": "stream=1001"},
-          ],
-          "groups" : [
-            {"id": 100, "source_id": 1},
-            {"id": 101, "source_id": 1},
-          ]
-        }
-      }
     ]
   }
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
