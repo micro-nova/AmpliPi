@@ -211,6 +211,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
         'sudo udevadm trigger'.split(),
         f"sudo .{env['base_dir']}/scripts/reload_cmedia".split(),
       ]).run()])
+    # set usb soundcard to 100% volume
+    tasks += print_progress([Task('set usb soundcard to 100% volume', 'amixer -Dusb71 cset numid=8 100%'.split()).run()])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
