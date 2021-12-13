@@ -12,13 +12,13 @@
 * Documentation:
   * Added better web app documentation and updated examples.
   * Improved high-level hardware diagrams and updated to match the shipped hardware.
-  * Add new hardware schematics and changelogs.
+  * Added new hardware schematics and changelogs.
 * Updater:
   * Show up-to-date status.
   * Update directly from releases on Github.
   * Programs latest firmware.
 * Hardware
-  * Updated to Preamp Board firmware 1.4: improved fan control.
+  * Updated to Preamp Board firmware 1.4: support linear voltage fan control on new hardware.
   * Auto-add new zones if a new Expansion Unit is detected.
 
 ## 0.1.6
@@ -38,4 +38,4 @@
 * Hardware
   * Updated schematics and hardware info for developer units.
   * Added production and built in tests.
-  * Improved fan control.
+  * Updated to Preamp Board firmware 1.3: added PWM fan control for new hardware.
