@@ -11,7 +11,7 @@
   * Added link to community forums.
 * Documentation:
   * Added better web app documentation and updated examples.
-  * Improved high-level hardware diagrams and updated to match the shipped hardware.
+  * Improved high-level hardware diagrams and updated them to match the shipped hardware.
   * Added new hardware schematics and changelogs.
 * Updater:
   * Show up-to-date status.
