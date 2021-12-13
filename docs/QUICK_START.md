@@ -80,3 +80,6 @@ We would love to hear your feedback about AmpliPi.
 - Feature requests and bug reports please [Create an issue](https://github.com/micro-nova/AmpliPi/issues/new).
 - Feedback on webapp: [Add comments to Webapp Feedback](https://github.com/micro-nova/AmpliPi/issues/34)
 - Other feedback: [Add or Comment on a discussion](https://github.com/micro-nova/AmpliPi/discussions)
+
+## Q & A
+Ask questions at our [Discourse community](https://amplipi.discourse.group/)
