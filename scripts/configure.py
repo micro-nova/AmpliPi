@@ -701,9 +701,9 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       return False
   if web and not restart_updater:
     # let the user know how to handle a specific failure condition of the old updater
-    UPDATER_MSG = """Older updaters can fail mistakenly after this.
+    UPDATER_MSG = """!!! OLDER UPDATERS CAN MISTAKENLY FAIL AFTER THIS !!!
 
-                     Just go back to AmpliPi (http://amplipi.local) to check out the new features."""
+                     Just go back to AmpliPi http://amplipi.local to check out the new features."""
     progress([Task(UPDATER_MSG, success=True)])
   return True
 
