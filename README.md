@@ -20,8 +20,8 @@ Most of these digital streaming services are provided by other open-source proje
 |Streaming Service|Supported|Multiple?|Metadata|Provided By|Notes|
 |--|--:|--:|--:|--|--|
 |Pandora|Yes|Yes|Yes|[Pianobar](https://github.com/PromyLOPh/pianobar)||
-|AirPlay|Yes|Yes|Yes|[Shairport-sync](https://github.com/mikebrady/shairport-sync)|Metadata only available from iTunes|
-|Spotify|Yes|Yes|No see [#37](http://github.com/micro-nova/AmpliPi/issues/37)|[Librespot](https://github.com/librespot-org/librespot)|Requires Spotify Premium, one account per stream. See [disclaimer](https://github.com/librespot-org/librespot#disclaimer)|
+|Airplay|Yes|Yes|Yes|[Shairport-sync](https://github.com/mikebrady/shairport-sync)|Metadata only available from iTunes|
+|Spotify|Yes|Yes|Yes|[Librespot](https://github.com/librespot-org/librespot)|Requires Spotify Premium, one account per stream. See [disclaimer](https://github.com/librespot-org/librespot#disclaimer)|
 |DLNA|Yes|Yes|Yes|[gmrender-resurrect](https://github.com/hzeller/gmrender-resurrect)||
 |Internet Radio|Yes|Yes|Yes|[VLC](https://github.com/videolan/vlc)||
 |Plexamp|Yes|No|No|[Plexamp](https://plexamp.com/)||
@@ -29,6 +29,7 @@ Most of these digital streaming services are provided by other open-source proje
 |Google Cast|No||||Need to investigate|
 |Offline Music|No||||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|
 |TIDAL|No||||See [#87](http://github.com/micro-nova/AmpliPi/issues/87)|
+|Bluetooth|No||||See [#150](http://github.com/micro-nova/AmpliPi/issues/150)|
 
 In the future we plan to integrate with several home automation systems. Below is their current status.
 
@@ -55,41 +56,14 @@ For details on how to help out with new features and bug fixes, check out [docs/
 ## Web interface
 AmpliPi hosts a mobile-friendly web app that can control the system from any PC or mobile phone on the local network. Its design was based on the idea that each of the four audio sources could be controlled separately by different people in the house. Each audio source's controls are in their own tab at the top of the app.
 
-### Selecting an audio source
-A source has an input selector to pick what is playing. So, playing a Pandora radio station on that source is as
-simple as picking say Matt and Kim Radio from the drop down.
-<p align="center">
-  <img alt="Selecting an audio source"
-      src="docs/imgs/app_demos/change_source_small.gif"
-      width="250">
-  </img>
-</p>
-
-### Changing Group and Zone volumes
-Underneath the input selector are the volume controls for groups and zones connected to the source. The number of zones present is determined by the number of zone expander units discovered during system startup. Zone volume controls only control themselves, whereas group volume controls adjust the volume for all of the zones in the group. The user can create an unlimited number of groups. Zones can also belong to multiple groups.
+Here's an example of changing group and zone volumes:
 <p align="center">
   <img alt="Changing group and zone volumes"
       src="docs/imgs/app_demos/expand_group_and_change_vols_small.gif" width="250">
   </img>
 </p>
 
-### Adding a group or zone to a different source
-Below the volumes is an add zone/group selector. To play the current Pandora station when you move to the living room, just add ‘living room’ from the selector. Living room will be removed from the audio source it was previously connected to (if any).
-<p align="center">
-  <img alt="Adding a group to a source"
-      src="docs/imgs/app_demos/add_group_to_source_small.gif"
-      width="250">
-  </img>
-</p>
-
-### Loading a preset
-We figured that presets should be simple to access, while not taking up much space while they weren't in use. This compromise led us to hide the presets in the AmpliPi logo. Just click the AmpliPi logo to access the preset control pane. Using presets, we can play the Matt and Kim radio station thoughout the house in a couple of clicks.
-<p align="center">
-  <img alt="Load a preset"
-      src="docs/imgs/app_demos/load_preset_small.gif"
-      width="250">
-  </img>
-</p>
+Check out the full documentation for the web app at [docs/WEB_APP.md](docs/WEB_APP.md).
 
 ## The REST API
 AmpliPi has a REST API that can be used to control volumes, switch and control audio sources, configure different streaming sources, and much more. It allows full configuration and real-time control of the AmpliPi device. The API conforms to the OpenAPI standard. It is fully documented on our [AmpliPi OpenAPI site](https://micro-nova.github.io/AmpliPi).
