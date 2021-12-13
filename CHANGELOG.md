@@ -2,21 +2,40 @@
 
 ## 0.1.7
 
-* All 4 DACs connected to the Raspberry Pi now output the same volume.
-* Updated to Preamp Board firmware 1.4: improved fan control.
-* Improved mDNS service advertisement (will help with mobile apps currently under development).
-* Auto-add new zones if a new Expansion Unit is detected.
-* Simplified initial configuration.
-* Renamed the Shairport stream to AirPlay.
-* Added link to community forums from the web app.
-* Updated documentation:
+* Audio
+  * All 4 DACs connected to the Raspberry Pi now output the same volume.
+* Web App
+  * Improved mDNS/zeroconf service advertisement (will help with mobile apps currently under development).
+  * Simplified initial configuration.
+  * Renamed the Shairport stream to AirPlay.
+  * Added link to community forums.
+* Documentation:
   * Added better web app documentation and updated examples.
   * Improved high-level hardware diagrams and updated to match the shipped hardware.
   * Add new hardware schematics and changelogs.
-* Updater improvements:
+* Updater:
   * Show up-to-date status.
   * Update directly from releases on Github.
   * Programs latest firmware.
+* Hardware
+  * Updated to Preamp Board firmware 1.4: improved fan control.
+  * Auto-add new zones if a new Expansion Unit is detected.
 
 ## 0.1.6
-TODO
+
+* Web App
+  * Added stream/input, zone, and group configuration interface.
+  * Added load/save configuration (and hw reset).
+  * Automated Plex account connection/authorization.
+  * Added mDNS/zeroconf advertisement for amplipi-api service.
+* Streams
+  * Added Spotify Metadata using Vollibrespot.
+  * Added FMRadio stream (requires USB Receiver).
+* API
+  * Added album art endpoint for rendering custom album art sizes (/api/sources/{sid}/image/{height}).
+  * Moved stream.info to source.info so analog inputs have info as well.
+  * Added endpoint for PA Style Announcements (api/announce).
+* Hardware
+  * Updated schematics and hardware info for developer units.
+  * Added production and built in tests.
+  * Improved fan control.
