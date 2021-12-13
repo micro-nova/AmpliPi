@@ -83,3 +83,9 @@ Not quite sure how to accomplish this? No problem - The AmpliPi controller hosts
 [coverage-badge]:  https://codecov.io/github/micro-nova/AmpliPi/coverage.svg?branch=master
 [coverage-link]:   https://codecov.io/github/micro-nova/AmpliPi?branch=master
 [license-badge]:   https://img.shields.io/badge/License-GPL%20v3-blue.svg
+
+## Updates and Releases
+Releases are available on GitHub, see [CHANGELOG.md](CHANGELOG.md)
+for the changes in each release.
+For custom changes or offline updating, a .tar.gz file can also be uploaded
+to the AmpliPi.
