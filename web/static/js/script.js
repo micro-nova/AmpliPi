@@ -63,7 +63,7 @@ function debounce(ms, fun){
 function refresh() {
   get();
 }
-
+current_src = 's0';
 $(document).ready(function(){
   // Some things are not part of the automatic tab-content switching
   // hide things related to the old src and show things related to the new one
@@ -86,6 +86,7 @@ $(document).ready(function(){
       $('#settings-sel')[0].style.display = "block";
       updateSettings();
     }
+    current_src = new_src;
   });
   // Refresh the page sequentially in place of SSE
   setInterval(refresh, 2000);
@@ -297,11 +298,17 @@ function updateSourceView(status) {
   }
 
   // update volumes
+  zone_mismatch = false; // detect when a zone's audio source is displayed wrong
   const controls = document.querySelectorAll(".volume");
   for (const ctrl of controls) {
     if (ctrl.dataset.hasOwnProperty('zone')){
       let z = ctrl.dataset.zone;
-      updateVol(ctrl, status.zones[z].mute, status.zones[z].vol);
+      const zone = status.zones[z];
+      updateVol(ctrl, zone.mute, zone.vol);
+      parent_src = ctrl.parentElement.parentElement.parentElement.id.replace('-groups', '').replace('s', '');
+      if (zone.source_id != parent_src) {
+        zone_mismatch = true;
+      }
     } else if (ctrl.dataset.hasOwnProperty('group')) {
       let gid = ctrl.dataset.group;
       for (const g of status.groups) {
@@ -327,8 +334,12 @@ function updateSourceView(status) {
       last_used.innerHTML = 'never';
     }
   }
-  // TODO: add/remove groups and zones?
-  // TODO: for now can we detect a group/zone change and force an update?
+  // detect a group/zone change and force an update // TODO: zone changes shouldn't need a refresh
+  // current_source can be ['s0', 's1', 's2', 's3', 'settings-nav']
+  if (zone_mismatch && current_src != "settings-nav") {
+    const selected_src = current_src.replace('s', '');
+    window.location.assign('/' + selected_src);
+  }
 }
 
 // basic request handling
