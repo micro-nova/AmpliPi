@@ -139,6 +139,7 @@ function ui_upload_software_update() {
 }
 
 function ui_disable_buttons() {
+  $('#back-to-app').addClass('disabled');
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').addClass('disabled');
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Updating <i class="fas fa-circle-notch"></i>');
   $('#older-update-sel, #update-file-selector').attr('disabled', '');
@@ -150,6 +151,7 @@ function ui_show_done() {
 }
 
 function ui_show_failure() {
+  $('#back-to-app').removeClass('disabled');
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').removeClass('btn-primary').addClass('btn-danger');
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Failed, Retry?');
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').attr('onclick', 'window.location.reload(true)');
