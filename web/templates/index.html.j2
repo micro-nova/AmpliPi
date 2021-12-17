@@ -285,16 +285,20 @@
           <div class="card-body">
             <div class="input-group">
               <select id="s{{ src }}-add-input" class="multiselect custom-select" multiple="multiple" title="Select Group or Zone">
+                {% if unused_groups[src].items() %}
                 <optgroup label="Groups">
                   {% for g, name in unused_groups[src].items() %}
                   <option value="g{{ g }}">{{ name }}</option>
                   {% endfor %}
                 </optgroup>>
+                {% endif %}
+                {% if unused_zones[src].items() %}
                 <optgroup label="Zones">
                   {% for z, name in unused_zones[src].items() %}
                   <option value="z{{ z }}">{{ name }}</option>
                   {% endfor %}
                 </optgroup>
+                {% endif %}
               </select>
             </div>
           </div>
@@ -348,14 +352,6 @@
   <script src="static/js/script.js"></script>
   <!-- Additional local script - Stream/Zone/Group Settings -->
   <script src='static/js/settings.js'></script>
-  <!-- UUID CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
-  <!-- UUID local fallback -->
-  <script>(window.uuidv4 === undefined) && document.write('<script src="static/js/libs/uuid/8.1.0/uuidv4.min.js"><\/script>')</script>
-  <!-- qs CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.10.1/qs.min.js"></script>
-  <!-- qs local fallback -->
-  <script>(window.uuidv4 === undefined) && document.write('<script src="static/js/libs/qs/6.10.1/qs.min.js"><\/script>')</script>
   <script>
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
       $('.selectpicker').selectpicker('mobile');
