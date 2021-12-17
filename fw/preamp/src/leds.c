@@ -52,6 +52,9 @@ Leds getLeds() {
 void initLeds() {
   // Set the LED Board's GPIO expander as all outputs
   writeRegI2C2(i2c_led_dir_reg_, 0x00);  // 0=output, 1=input
+
+  // Initialize LEDs as all off
+  writeRegI2C2(i2c_led_gpio_reg_, 0x00);
   leds_.data = 0;
 }
 
