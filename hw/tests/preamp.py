@@ -88,9 +88,9 @@ def self_check(p: amplipi.rt._Preamps):
     print_cond(u, pg_12v, f'PG_12V {"ok" if pg_12v else "bad"}')
     print_cond(u, v12_ok, f'12V supply {"ok" if v12_ok else "bad"} - {v12:.2f}V')
     hv1_tmp, amp1_tmp, amp2_tmp = p.read_temps(u + 1)
-    hv1_ok = 10 < hv1_tmp < 45
-    amp1_ok = 10 < amp1_tmp < 60
-    amp2_ok = 10 < amp2_tmp < 60
+    hv1_ok = -19 <= hv1_tmp <= 106
+    amp1_ok = -19 < amp1_tmp <= 106
+    amp2_ok = -19 < amp2_tmp <= 106
     success &= hv1_ok and amp1_ok and amp2_ok
     print_cond(u, hv1_ok, f'HV1 Temp {"ok" if hv1_ok else "bad"}   - {temp2str(hv1_tmp)}')
     print_cond(u, amp1_ok, f'AMP1 Temp {"ok" if amp1_ok else "bad"}  - {temp2str(amp1_tmp)}')
@@ -168,20 +168,21 @@ if args.u > 1 and args.r:
 if args.u > 1 and args.b:
   print("Bootloading expansion units is a work in progress...")
 
+# Print status if not entering bootloader mode
 if not args.b:
-  for u in range(len(preamps.preamps)):
-    preamps.force_fans(preamp = u + 1, force = args.f)
-  preamps.led_override(preamp = args.u, leds = args.l)
-
-  if not args.q:
-    time.sleep(0.1)       # Wait a bit to make sure internal I2C writes have finished
-    print(f'{preamps}\n') # Print zone info for main unit
+  if len(preamps.preamps) < args.u:
+    print('Error: desired unit does not exist')
+  else:
     for u in range(len(preamps.preamps)):
-      print()
-      print_status(preamps, u + 1)
+      preamps.force_fans(preamp = u + 1, force = args.f)
+    preamps.led_override(preamp = args.u, leds = args.l)
 
-  if args.w:
-    input("Press Enter to continue...")
+    if not args.q:
+      time.sleep(0.1)       # Wait a bit to make sure internal I2C writes have finished
+      print(f'{preamps}\n') # Print zone info for main unit
+      for u in range(len(preamps.preamps)):
+        print()
+        print_status(preamps, u + 1)
 
 if args.t:
   if not self_check(preamps):
@@ -190,5 +191,7 @@ if args.heat:
   if not heat_test(preamps, args.heat):
     sys.exit(2)
 
+if args.w:
+  input("Press Enter to continue...")
 
 # TODO? 'STANDBY' : 0x04
