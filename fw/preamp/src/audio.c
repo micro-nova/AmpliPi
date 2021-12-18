@@ -159,7 +159,7 @@ bool muted(size_t zone) {
 void setZoneSource(size_t zone, size_t src) {
   // Mute the zone during the switch to avoid an audible pop
   bool was_muted = muted(zone);
-  mute(zone, !was_muted);
+  mute(zone, true);
 
   // Disconnect zone from all sources first
   for (size_t src = 0; src < NUM_SRCS; src++) {
@@ -210,7 +210,13 @@ void initAudio() {
     setZoneSource(zone, DEFAULT_SOURCE);
   }
 
-  // Initialize each source's analog/digital state
+  /* Initialize each source's analog/digital mux to select digital.
+   * Upon AmpliPi startup the digital input won't have any audio playing so
+   * selecting digital avoids unwanted playback.
+   * Also audio is input to expanders through the digital inputs,
+   * so analog inputs must never be selected.
+   * This firmware supports both main units and expanders.
+   */
   for (size_t src = 0; src < NUM_SRCS; src++) {
     setSourceAD(src, IT_DIGITAL);
   }
