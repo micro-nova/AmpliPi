@@ -22,8 +22,8 @@ import math
 import io
 import os
 import time
+from amplipi import models # TODO: importing this takes ~0.5s, reduce
 from enum import Enum
-
 from typing import Dict, List, Tuple, Union
 
 # TODO: move constants like this to their own file
@@ -523,7 +523,7 @@ class Mock:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[-79, 0]
+        vol: int in range[MIN_VOL, 0]
 
       Returns:
         True on success, False on hw failure
@@ -531,7 +531,7 @@ class Mock:
     preamp = zone // 6
     assert zone >= 0
     assert 0 <= preamp <= 5
-    assert 0 >= vol >= -79
+    assert models.MIN_VOL <= vol <= models.MAX_VOL
     return True
 
   def exists(self, zone):
@@ -623,7 +623,7 @@ class Rpi:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[-79, 0]
+        vol: int in range[MIN_VOL, 0]
 
       Returns:
         True on success, False on hw failure
@@ -631,7 +631,7 @@ class Rpi:
     preamp = int(zone / 6) # int(x/y) does the same thing as (x // y)
     assert zone >= 0
     assert preamp < 15
-    assert vol <= 0 and vol >= -79
+    assert models.MIN_VOL <= vol <= models.MAX_VOL
 
     chan = zone - (preamp * 6)
     hvol = abs(vol)

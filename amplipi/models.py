@@ -30,6 +30,10 @@ from pydantic import BaseSettings, BaseModel, Field
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
 
+# min and max volumes in dB. -80 is special and is actually -90 dB (mute).
+MIN_VOL = -80
+MAX_VOL = 0
+
 class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
@@ -37,9 +41,9 @@ class fields(SimpleNamespace):
   SourceId = Field(ge=0, le=3, description='id of the connected source')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
-  Volume = Field(ge=-79, le=0, description='Output volume in dB')
+  Volume = Field(ge=MIN_VOL, le=MAX_VOL, description='Output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
-  GroupVolume = Field(ge=-79, le=0, description='Average input volume in dB')
+  GroupVolume = Field(ge=MIN_VOL, le=MAX_VOL, description='Average input volume in dB')
   Disabled = Field(description='Set to true if not connected to a speaker')
   Zones = Field(description='Set of zone ids belonging to a group')
   Groups = Field(description='List of group ids')
@@ -58,9 +62,9 @@ class fields_w_default(SimpleNamespace):
   # TODO: less duplication
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
   Mute = Field(default=True, description='Set to true if output is muted')
-  Volume = Field(default=-79, ge=-79, le=0, description='Output volume in dB')
+  Volume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Output volume in dB')
   GroupMute = Field(default=True, description='Set to true if output is all zones muted')
-  GroupVolume = Field(default=-79, ge=-79, le=0, description='Average utput volume in dB')
+  GroupVolume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average utput volume in dB')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
 
 class Base(BaseModel):
@@ -668,7 +672,7 @@ class Announcement(BaseModel):
   IF no zones or groups are specified, all available zones are used
   """
   media : str = Field(description="URL to media to play as the announcement")
-  vol: int = Field(default=-40, ge=-79, le=0, description='Output volume in dB')
+  vol: int = Field(default=(MAX_VOL + MIN_VOL)/2, ge=MIN_VOL, le=MAX_VOL, description='Output volume in dB')
   source_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
