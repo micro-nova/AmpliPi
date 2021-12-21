@@ -56,6 +56,9 @@ uint8_t vol_req_[NUM_ZONES] = {VOL_MUTE};
 // The TDA7448 volume controller always reports 0x00 on read
 uint8_t vol_[NUM_ZONES] = {0};
 
+// If only preouts are used, the amplifier for a zone can be disabled
+bool amp_en_[NUM_ZONES] = {};
+
 // Convert a requested dB to the corresponding volume IC register value.
 static inline uint8_t dB2VolReg(uint8_t db) {
   /* The volume IC has a discontinuity in its register value to attenuation
@@ -131,14 +134,25 @@ bool inStandby() {
   return false;
 }
 
-// Returns true if any zone is unmuted
-static bool anyZoneOn() {
+// Returns true if any zone is unmuted and has amps enabled
+static bool anyZoneAmpOn() {
   for (uint8_t zone = 0; zone < NUM_ZONES; zone++) {
-    if (!muted(zone)) {
+    if (!muted(zone) && amp_en_[zone]) {
       return true;
     }
   }
   return false;
+}
+
+void enZoneAmp(size_t zone, bool en) {
+  amp_en_[zone] = en;
+
+  // If no zones are on, standby
+  standby(!anyZoneAmpOn());
+}
+
+bool zoneAmpEnabled(size_t zone) {
+  return amp_en_[zone];
 }
 
 // Mute the specified zone
@@ -147,7 +161,7 @@ void mute(size_t zone, bool mute) {
   writePin(zone_mute_[zone], !mute);
 
   // If no zones are on, standby
-  standby(!anyZoneOn());
+  standby(!anyZoneAmpOn());
 }
 
 bool muted(size_t zone) {
@@ -206,6 +220,7 @@ InputType getSourceAD(size_t src) {
 void initAudio() {
   // Initialize each zone's audio state (does not write to volume control ICs)
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    enZoneAmp(zone, true);
     mute(zone, true);
     setZoneSource(zone, DEFAULT_SOURCE);
   }

@@ -68,16 +68,16 @@
     </tr>
     <tr>
       <td>0x04</td>
-      <td>STANDBY</td>
+      <td>AMP ENABLE</td>
       <td align=center>-</td>
       <td align=center>-</td>
-      <td align=center>-</td>
-      <td align=center>-</td>
-      <td align=center>-</td>
-      <td align=center>-</td>
-      <td align=center>-</td>
-      <td align=center>STANDBY</td>
-      <td>0x00</td>
+      <td align=center>Z6EN</td>
+      <td align=center>Z5EN</td>
+      <td align=center>Z4EN</td>
+      <td align=center>Z3EN</td>
+      <td align=center>Z2EN</td>
+      <td align=center>Z1EN</td>
+      <td>0x3F</td>
     </tr>
     <tr>
       <td>0x05</td>
@@ -300,16 +300,21 @@ Mute each zone independently. Each bit ZxM can have the following values:
 | 0     | Not Muted   |
 | 1     | Muted       |
 
-### STANDBY
+### AMP ENABLE
 
 Read/write.
-Set bit 0 to standby all zones. Read to determine standby status.
-All amplifiers will be in standby at once, or all enabled.
+Bits 0 to 5 enable/disable the amplifier for a zone. A disabled amplifier will
+always remain muted, and won't be considered on for determining if all the
+amplifiers can be placed into standby. By default all amplifiers are enabled,
+but disabling an amplifier can be useful if only the preout is used for a zone.
 
-| Value | Description |
-| ----- | ----------- |
-| 0     | Enabled     |
-| 1     | In Standby  |
+| Value | Description       |
+| ----- | ----------------- |
+| 0     | Zone amp disabled |
+| 1     | Zone amp enabled  |
+
+Replaces STANDBY register. Old software will simply enable all zone amplifiers
+instead of disabling standby.
 
 ### ZONE[1:6]_VOL
 

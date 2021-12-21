@@ -41,7 +41,7 @@ typedef enum
   REG_ZONE321   = 0x01,
   REG_ZONE654   = 0x02,
   REG_MUTE      = 0x03,
-  REG_STANDBY   = 0x04,
+  REG_AMP_EN    = 0x04,
   REG_VOL_ZONE1 = 0x05,
   REG_VOL_ZONE2 = 0x06,
   REG_VOL_ZONE3 = 0x07,
@@ -137,8 +137,12 @@ uint8_t readReg(uint8_t addr) {
       }
       break;
 
-    case REG_STANDBY:
-      out_msg = inStandby() ? 0x3F : 0;
+    case REG_AMP_EN:
+      for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+        if (zoneAmpEnabled(zone)) {
+          out_msg |= (1 << zone);
+        }
+      }
       break;
 
     case REG_VOL_ZONE1:
@@ -268,6 +272,12 @@ void writeReg(uint8_t addr, uint8_t data) {
     case REG_MUTE:
       for (size_t zone = 0; zone < NUM_ZONES; zone++) {
         mute(zone, data & (0x1 << zone));
+      }
+      break;
+
+    case REG_AMP_EN:
+      for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+        enZoneAmp(zone, (data & (0x1 << zone)));
       }
       break;
 
