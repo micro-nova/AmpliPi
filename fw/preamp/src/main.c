@@ -43,7 +43,7 @@ int main(void) {
   initAudio();    // Initialize audio mux, volumes, mute and standby
   initUart1();    // The preamp will receive its I2C network address via UART
   initUart2(9600);
-  initInternalI2C();  // Setup the internal I2C bus - worst case ~2.2 ms
+  initInternalI2C();  // Setup the internal I2C bus - worst case ~2.4 ms
 
   // RELEASE EXPANSION RESET
   // Needs to be high so the subsequent preamp board is not held in 'Reset Mode'

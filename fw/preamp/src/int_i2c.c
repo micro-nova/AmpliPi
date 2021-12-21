@@ -88,10 +88,11 @@ static void delayUs(uint32_t us) {
 }
 
 /* Ensure no transactions are in-progress on the bus
- * Time required: 44 us to 368 us.
- * Max time seen in practice: 100 us.
+ * Time required: 66 us to 552 us.
+ * Max time seen in practice: 150 us.
  */
 void quiesceI2C() {
+  const uint32_t HALF_PERIOD = 3;  // 4 us period = 166.7 kHz I2C clock
   // Ensure the I2C peripheral is disabled and pins are set as GPIO
   // Pins will be configured to HI-Z (pulled up externally)
   deinitI2C2();
@@ -105,23 +106,22 @@ void quiesceI2C() {
 
     bool success = true;
     for (count = 0; count < NUM_CONSECUTIVE_ONES && success; count++) {
-      // Hold time for clock high - 4 us period = 250 kHz I2C clock
-      delayUs(2);
+      delayUs(HALF_PERIOD);  // Hold time for clock high
 
       // If the I2C SDA line is low, start over and try again.
       success = readPin(i2c2_sda_);
 
       writePin(i2c2_scl_, false);  // Falling edge on the I2C clock line
-      delayUs(2);                  // Hold time for clock low
+      delayUs(HALF_PERIOD);        // Hold time for clock low
       writePin(i2c2_scl_, true);   // Set the I2C clock line high
     }
   }
 
-  delayUs(2);                  // Hold time for clock and data high
+  delayUs(HALF_PERIOD);        // Hold time for clock and data high
   writePin(i2c2_sda_, false);  // Set low the I2C data line. (Start)
-  delayUs(4);                  // Double hold time for clock high and data low
+  delayUs(HALF_PERIOD * 2);    // Double hold time for clock high and data low
   writePin(i2c2_sda_, true);   // Rising edge on the I2C data line. (Stop)
-  delayUs(2);                  // Hold time for clock and data high.
+  delayUs(HALF_PERIOD);        // Hold time for clock and data high.
 
   // Initialize the STM32's I2C2 bus as a master and control pins by peripheral
   initI2C2();
