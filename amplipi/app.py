@@ -33,7 +33,6 @@ from typing import List, Dict, Tuple, Set, Any, Optional, Callable, Union, TYPE_
 from types import SimpleNamespace
 
 import urllib.request # For custom album art size
-from queue import Queue
 from functools import lru_cache
 import asyncio
 import json
@@ -719,7 +718,7 @@ def get_ip_info(iface: str = 'eth0') -> Tuple[Optional[str], Optional[str]]:
   except:
     return None, None
 
-def advertise_service(port, q: Queue):
+def advertise_service(port, que: Queue):
   """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar'
       Expected to be run as a seperate process, eg:
 
@@ -748,14 +747,16 @@ def advertise_service(port, q: Queue):
       break # take the first good interface found
 
   if not ip_addr:
-    print(f'AmpliPi zeroconf - unable to register service on {iface}, it is either not available or has no IP address.')
+    print(f'AmpliPi zeroconf - unable to register service on one of {ifaces}, \
+            they all are either not available or have no IP address.')
     print(f'AmpliPi zeroconf - is this running on AmpliPi?')
     ip_addr = '0.0.0.0' # Any hosted ip on this device
   if port != 80:
     url += f':{port}'
   info_deprecated = ServiceInfo(
-    "_http._tcp.local.",
-    "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    '_http._tcp.local.',
+    # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    'amplipi-api._http._tcp.local.',
     addresses=[inet_aton(ip_addr)],
     port=port,
     properties={
@@ -763,7 +764,7 @@ def advertise_service(port, q: Queue):
       'path': '/api/',
       # extra info - for interfacing
       'name': 'AmpliPi',
-      "vendor": 'MicroNova',
+      'vendor': 'MicroNova',
       'version': utils.detect_version(),
       # extra info - for user
       'web_app': url,
@@ -774,9 +775,9 @@ def advertise_service(port, q: Queue):
 
   info = ServiceInfo(
     # use a custom type to easily support multiple amplipi device enumeration
-    "_amplipi._tcp.local.",
+    '_amplipi._tcp.local.',
     # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
-    f"amplipi-{str(mac_addr).lower()}._amplipi._tcp.local.",
+    f'amplipi-{str(mac_addr).lower()}._amplipi._tcp.local.',
     addresses=[inet_aton(ip_addr)],
     port=port,
     properties={
@@ -784,7 +785,7 @@ def advertise_service(port, q: Queue):
       'path': '/api/',
       # extra info - for interfacing
       'name': 'AmpliPi',
-      "vendor": 'MicroNova',
+      'vendor': 'MicroNova',
       'version': utils.detect_version(),
       # extra info - for user
       'web_app': url,
@@ -794,23 +795,24 @@ def advertise_service(port, q: Queue):
   )
 
   print(f'AmpliPi zeroconf - registering service: {info}')
-  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr]) # right now the AmpliPi webserver is ipv4 only
+  # right now the AmpliPi webserver is ipv4 only
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr])
   zeroconf.register_service(info_deprecated, cooperating_responders=True)
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
-    while q.empty():
+    while que.empty():
       sleep(0.1)
   except:
     pass
   finally:
-    print("AmpliPi zeroconf - unregistering service")
+    print('AmpliPi zeroconf - unregistering service')
     zeroconf.unregister_service(info)
     zeroconf.close()
 
-if __name__ == "__main__":
-  # Generate the openapi schema file in yaml
-  parser = argparse.ArgumentParser(description='Create the openapi yaml file describing the AmpliPi API')
+if __name__ == '__main__':
+  """ Create the openapi yaml file describing the AmpliPi API """
+  parser = argparse.ArgumentParser(description="Create AmpliPi's openapi spec in YAML")
   parser.add_argument('file', type=argparse.FileType('w'))
   args = parser.parse_args()
   with args.file as file:
