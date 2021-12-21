@@ -253,7 +253,7 @@ void writePin(Pin pp, bool set) {
 
 bool readPin(Pin pp) {
   GPIO_TypeDef* port = getPort(pp);
-  if (port->ODR & (1 << pp.pin)) {
+  if (port->IDR & (1 << pp.pin)) {
     return true;
   } else {
     return false;
