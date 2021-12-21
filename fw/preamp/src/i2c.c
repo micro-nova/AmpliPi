@@ -20,6 +20,7 @@
 
 #include "i2c.h"
 
+#include "pins.h"
 #include "stm32f0xx.h"
 
 // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
@@ -73,6 +74,19 @@ void initI2C2() {
   I2C_InitStructure2.I2C_Timing = 0x0010020B;
   I2C_Init(I2C2, &I2C_InitStructure2);
   I2C_Cmd(I2C2, ENABLE);
+
+  configI2C2Pins();
+}
+
+void deinitI2C2() {
+  /* Disable I2C2 and release GPIO control */
+
+  // Ensure I2C clock is enabled
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+
+  // Disable I2C2 peripheral and release pins back to GPIO
+  I2C_Cmd(I2C2, DISABLE);
+  configI2C2PinsAsGPIO();
 }
 
 uint8_t readRegI2C2(I2CReg r) {

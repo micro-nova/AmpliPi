@@ -168,7 +168,8 @@ void initPins() {
 
   // Configure special function pins
   configUARTPins();
-  configI2CPins();
+  configI2C1Pins();
+  configI2C2PinsAsGPIO();
 }
 
 void configUARTPins() {
@@ -190,17 +191,14 @@ void configUARTPins() {
   GPIO_Init(getPort(uart1_tx_), &uartInit);
 }
 
-void configI2CPins() {
+void configI2C1Pins() {
   // Connect pins to alternate function for I2C1 and I2C2
   GPIO_PinAFConfig(getPort(i2c1_scl_), i2c1_scl_.pin, GPIO_AF_1);
   GPIO_PinAFConfig(getPort(i2c1_sda_), i2c1_sda_.pin, GPIO_AF_1);
-  GPIO_PinAFConfig(getPort(i2c2_scl_), i2c2_scl_.pin, GPIO_AF_1);
-  GPIO_PinAFConfig(getPort(i2c2_sda_), i2c2_sda_.pin, GPIO_AF_1);
 
   // Config I2C GPIO pins
   GPIO_InitTypeDef GPIO_InitStructureI2C = {
-      .GPIO_Pin = (1 << i2c1_scl_.pin) | (1 << i2c1_sda_.pin) |
-                  (1 << i2c2_scl_.pin) | (1 << i2c2_sda_.pin),
+      .GPIO_Pin   = (1 << i2c1_scl_.pin) | (1 << i2c1_sda_.pin),
       .GPIO_Mode  = GPIO_Mode_AF,
       .GPIO_Speed = GPIO_Speed_2MHz,
       .GPIO_OType = GPIO_OType_OD,
@@ -209,7 +207,27 @@ void configI2CPins() {
   GPIO_Init(getPort(i2c1_scl_), &GPIO_InitStructureI2C);
 }
 
+void configI2C2Pins() {
+  // Connect pins to alternate function for I2C1 and I2C2
+  GPIO_PinAFConfig(getPort(i2c2_scl_), i2c2_scl_.pin, GPIO_AF_1);
+  GPIO_PinAFConfig(getPort(i2c2_sda_), i2c2_sda_.pin, GPIO_AF_1);
+
+  // Config I2C GPIO pins
+  GPIO_InitTypeDef GPIO_InitStructureI2C = {
+      .GPIO_Pin   = (1 << i2c2_scl_.pin) | (1 << i2c2_sda_.pin),
+      .GPIO_Mode  = GPIO_Mode_AF,
+      .GPIO_Speed = GPIO_Speed_2MHz,
+      .GPIO_OType = GPIO_OType_OD,
+      .GPIO_PuPd  = GPIO_PuPd_NOPULL,
+  };
+  GPIO_Init(getPort(i2c2_scl_), &GPIO_InitStructureI2C);
+}
+
 void configI2C2PinsAsGPIO() {
+  // Default pins High-Z
+  writePin(i2c2_scl_, true);
+  writePin(i2c2_sda_, true);
+
   // Config I2C2 GPIO pins
   GPIO_InitTypeDef GPIO_InitStructureI2C = {
       .GPIO_Pin   = (1 << i2c2_scl_.pin) | (1 << i2c2_sda_.pin),
@@ -218,7 +236,7 @@ void configI2C2PinsAsGPIO() {
       .GPIO_OType = GPIO_OType_OD,
       .GPIO_PuPd  = GPIO_PuPd_NOPULL,
   };
-  GPIO_Init(GPIOB, &GPIO_InitStructureI2C);
+  GPIO_Init(getPort(i2c2_scl_), &GPIO_InitStructureI2C);
 }
 
 void writePin(Pin pp, bool set) {

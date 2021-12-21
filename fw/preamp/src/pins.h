@@ -43,7 +43,8 @@ extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 // Pin configuration
 void initPins();
 void configUARTPins();
-void configI2CPins();
+void configI2C1Pins();
+void configI2C2Pins();
 void configI2C2PinsAsGPIO();
 
 void writePin(Pin pp, bool set);

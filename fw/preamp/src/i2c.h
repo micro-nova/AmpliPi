@@ -33,6 +33,7 @@ typedef struct {
 
 void initI2C1(uint8_t addr);
 void initI2C2();
+void deinitI2C2();
 
 uint8_t  readRegI2C2(I2CReg r);
 uint32_t writeRegI2C2(I2CReg r, uint8_t data);

@@ -216,10 +216,9 @@ uint8_t readReg(uint8_t addr) {
       out_msg = getFanDuty();
       break;
 
-    case REG_FAN_VOLTS: {
+    case REG_FAN_VOLTS:
       out_msg = getFanVolts();
       break;
-    }
 
     case REG_VERSION_MAJOR:
       out_msg = VERSION_MAJOR_;
