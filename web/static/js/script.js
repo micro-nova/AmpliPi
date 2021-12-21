@@ -63,7 +63,14 @@ function debounce(ms, fun){
 function refresh() {
   get();
 }
-current_src = 's0';
+current_src = 's0'; // this needs to be set base on the URL path
+for (var i = 0; i < 4; i++) {
+  if (window.location.href.endsWith(`/${i}`)) {
+    current_src = `s${i}`;
+    break;
+  }
+}
+
 $(document).ready(function(){
   // Some things are not part of the automatic tab-content switching
   // hide things related to the old src and show things related to the new one
