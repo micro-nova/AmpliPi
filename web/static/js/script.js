@@ -312,7 +312,7 @@ function updateSourceView(status) {
       let z = ctrl.dataset.zone;
       const zone = status.zones[z];
       updateVol(ctrl, zone.mute, zone.vol);
-      parent_src = ctrl.parentElement.parentElement.parentElement.id.replace('-groups', '').replace('s', '');
+      parent_src = ctrl.dataset.source;
       if (zone.source_id != parent_src) {
         zone_mismatch = true;
       }
