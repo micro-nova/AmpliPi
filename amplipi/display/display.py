@@ -21,7 +21,8 @@ import socket
 import time
 from typing import Any, Dict, List, Tuple, Optional
 
-import amplipi.models as models
+from amplipi import formatter
+from amplipi import models
 
 # Display
 import adafruit_rgb_display.ili9341 as ili9341
@@ -31,35 +32,8 @@ from PIL import Image, ImageDraw, ImageFont
 import netifaces as ni    # network interfaces
 import psutil             # CPU, RAM, etc.
 
-# Remove duplicate metavars
-# https://stackoverflow.com/a/23941599/8055271
-class AmpliPiHelpFormatter(argparse.HelpFormatter):
-  def _format_action_invocation(self, action):
-    if not action.option_strings:
-      metavar, = self._metavar_formatter(action, action.dest)(1)
-      return metavar
-    else:
-      parts = []
-      if action.nargs == 0:                   # -s, --long
-        parts.extend(action.option_strings)
-      else:                                   # -s, --long ARGS
-        args_string = self._format_args(action, action.dest.upper())
-        for option_string in action.option_strings:
-          parts.append('%s' % option_string)
-        parts[-1] += ' %s' % args_string
-      return ', '.join(parts)
-
-  def _get_help_string(self, action):
-    help_str = action.help
-    if '%(default)' not in action.help:
-      if action.default is not argparse.SUPPRESS and action.default is not None:
-        defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
-        if action.option_strings or action.nargs in defaulting_nargs:
-          help_str += ' (default: %(default)s)'
-    return help_str
-
 parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
-                                 formatter_class=AmpliPiHelpFormatter)
+                                 formatter_class=formatter.AmpliPiHelpFormatter)
 parser.add_argument('-u', '--url', default='localhost', help="the AmpliPi's URL to contact")
 parser.add_argument('-r', '--update-rate', metavar='HZ', type=float, default=1.0,
                     help="the display's update rate in Hz")
