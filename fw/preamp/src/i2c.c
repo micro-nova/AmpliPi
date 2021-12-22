@@ -85,6 +85,41 @@ void deinitI2C2() {
   I2C_Cmd(I2C2, DISABLE);
 }
 
+uint32_t writeByteI2C2(I2CDev dev, uint8_t val) {
+  // Wait if I2C2 is busy
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Setup to send send start, addr, subaddr
+  I2C_TransferHandling(I2C2, dev, 1, I2C_AutoEnd_Mode,
+                       I2C_Generate_Start_Write);
+
+  // Wait for transmit interrupted flag or an error
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_TXIS));
+
+  // Send data
+  I2C_SendData(I2C2, val);
+
+  // Wait for stop flag to be sent and then clear it
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
+  I2C2->ICR = I2C_ICR_STOPCF;
+  return 0;
+}
+
 uint8_t readRegI2C2(I2CReg r) {
   uint8_t data;
 

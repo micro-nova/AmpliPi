@@ -74,6 +74,15 @@ Temps temps_ = {0};
 
 uint8_t hv1_f2_ = 0;
 
+void initAdc() {
+  // Write ADC setup byte
+  // REG=1 (setup byte), SEL[2:0] = 000 (VDD), CLK = 0 (internal),
+  // BIP/UNI=0 (unipolar), RST=0 (reset config register), X=0 (don't care)
+  uint32_t result = writeByteI2C2(adc_dev_, 0x80);
+  // TODO: Handle errors here
+  (void)result;
+}
+
 // TODO: Make standard i2c function
 AdcVals readAdc() {
   /****************************************************************************
@@ -127,7 +136,7 @@ void updateAdc() {
 #define ADC_REF_VOLTS 3.3
 #define ADC_PD_KOHMS  4700
 #define ADC_PU_KOHMS  100000
-  // TODO: low-pass filter after intial reading
+  // TODO: low-pass filter after initial reading
   AdcVals adc = readAdc();
 
   // Convert HV1 to Volts (multiply by 4 to add 2 fractional bits)

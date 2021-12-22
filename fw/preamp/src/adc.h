@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 
+void initAdc();
 void updateAdc();
 
 uint8_t getHV1_f2();

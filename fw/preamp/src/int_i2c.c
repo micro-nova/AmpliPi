@@ -39,44 +39,7 @@ const I2CReg pwr_io_gpio_ = {0x42, 0x09};
 const I2CReg pwr_io_olat_ = {0x42, 0x0A};
 
 // DPOT register (no registers)
-const I2CReg dpot_dev_ = {0x5E, 0xFF};
-
-uint32_t writeDpot(uint8_t val) {
-  // TODO: add more I2C read/write functions in ports.c and use here and ADC
-
-  // Wait if I2C2 is busy
-  while (I2C2->ISR & I2C_ISR_BUSY) {}
-
-  // Setup to send send start, addr, subaddr
-  I2C_TransferHandling(I2C2, dpot_dev_.dev, 1, I2C_AutoEnd_Mode,
-                       I2C_Generate_Start_Write);
-
-  // Wait for transmit interrupted flag or an error
-  uint32_t isr = I2C2->ISR;
-  do {
-    if (isr & I2C_ISR_NACKF) {
-      I2C2->ICR = I2C_ICR_NACKCF;
-      return I2C_ISR_NACKF;
-    }
-    if (isr & I2C_ISR_BERR) {
-      I2C2->ICR = I2C_ICR_BERRCF;
-      return I2C_ISR_BERR;
-    }
-    if (isr & I2C_ISR_ARLO) {
-      I2C2->ICR = I2C_ICR_ARLOCF;
-      return I2C_ISR_ARLO;
-    }
-    isr = I2C2->ISR;
-  } while (!(isr & I2C_ISR_TXIS));
-
-  // Send subaddress and data
-  I2C_SendData(I2C2, val);
-
-  // Wait for stop flag to be sent and then clear it
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
-  I2C2->ICR = I2C_ICR_STOPCF;
-  return 0;
-}
+const I2CDev dpot_dev_ = 0x5E;
 
 static void delayUs(uint32_t us) {
   for (uint32_t i = 0; i < us; i++) {
@@ -141,6 +104,7 @@ void initInternalI2C() {
   set12vEn(true);
 
   initLeds();
+  initAdc();
   updateInternalI2C();
 }
 
@@ -164,7 +128,7 @@ void updateInternalI2C() {
     // TODO: only write dpot when necessary
     static bool dpot_present = false;
     updateFans(amp_temp_f8, getHV1Temp_f8(), getPiTemp_f8(), dpot_present);
-    dpot_present = writeDpot(getFanDPot()) == 0;
+    dpot_present = writeByteI2C2(dpot_dev_, getFanDPot()) == 0;
   } else {
     // Read the power board's GPIO inputs
     GpioReg pwr_gpio = {.data = readRegI2C2(pwr_io_gpio_)};
