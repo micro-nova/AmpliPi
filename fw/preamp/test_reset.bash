@@ -25,10 +25,12 @@ while ! $failed; do
   ((cnt=cnt+1))
 
   # Reset preamp
+  sleep 0.1
   if ! ./preamp.py -raq 2>/dev/null; then
     echo "Error communicating to preamp"
     break
   fi
+  sleep 0.1
 
   if $read_i2c; then
     # Check if exp_nrst or exp_boot0 were set (used as error flags)
