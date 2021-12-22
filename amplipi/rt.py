@@ -22,8 +22,8 @@ import math
 import io
 import os
 import time
+from amplipi import models # TODO: importing this takes ~0.5s, reduce
 from enum import Enum
-
 from typing import Dict, List, Tuple, Union
 
 # TODO: move constants like this to their own file
@@ -523,7 +523,7 @@ class Mock:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[-79, 0]
+        vol: int in range[MIN_VOL, 0]
 
       Returns:
         True on success, False on hw failure
@@ -531,7 +531,7 @@ class Mock:
     preamp = zone // 6
     assert zone >= 0
     assert 0 <= preamp <= 5
-    assert 0 >= vol >= -79
+    assert models.MIN_VOL <= vol <= models.MAX_VOL
     return True
 
   def exists(self, zone):
@@ -545,7 +545,6 @@ class Rpi:
 
   def __init__(self):
     self._bus = _Preamps()
-    self._all_muted = True # preamps start up in muted/standby state
 
 
   def __del__(self):
@@ -571,21 +570,6 @@ class Rpi:
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
     self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['MUTE'], mute_cfg)
-
-    # Audio power needs to be on each box when subsequent boxes are playing audio
-    all_muted = False not in mutes
-    if self._all_muted != all_muted:
-      if all_muted:
-        for p in self._bus.preamps.keys():
-          # Standby all preamps
-          self._bus.write_byte_data(p, _REG_ADDRS['STANDBY'], 0x00)
-        time.sleep(0.1)
-      else:
-        for p in self._bus.preamps.keys():
-          # Unstandby all preamps
-          self._bus.write_byte_data(p, _REG_ADDRS['STANDBY'], 0x3F)
-        time.sleep(0.3)
-      self._all_muted = all_muted
     return True
 
   def update_zone_sources(self, zone, sources):
@@ -623,7 +607,7 @@ class Rpi:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[-79, 0]
+        vol: int in range[MIN_VOL, 0]
 
       Returns:
         True on success, False on hw failure
@@ -631,7 +615,7 @@ class Rpi:
     preamp = int(zone / 6) # int(x/y) does the same thing as (x // y)
     assert zone >= 0
     assert preamp < 15
-    assert vol <= 0 and vol >= -79
+    assert models.MIN_VOL <= vol <= models.MAX_VOL
 
     chan = zone - (preamp * 6)
     hvol = abs(vol)

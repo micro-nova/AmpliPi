@@ -28,10 +28,12 @@
 //#define DEBUG_OVER_UART2
 
 void setUartPassthrough(bool passthrough);
+bool getUartPassthrough();
 void initUart1();
 void initUart2(uint16_t brr);
 
 // Returns new I2C address if one was received via USART1, otherwise 0
-uint8_t checkForNewAddress();
+bool    checkForNewAddress();
+uint8_t getI2C1Address();
 
 #endif /* SERIAL_H_ */

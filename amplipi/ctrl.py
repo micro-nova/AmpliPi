@@ -451,7 +451,7 @@ class Api:
       disabled, _ = utils.updated_val(update.disabled, zone.disabled)
       try:
         sid = utils.parse_int(source_id, [0, 1, 2, 3])
-        vol = utils.parse_int(vol, range(-79, 79)) # hold additional state for group delta volume adjustments, output volume will be saturated to 0dB
+        vol = utils.parse_int(vol, range(models.MIN_VOL, -models.MIN_VOL)) # hold additional state for group delta volume adjustments, output volume will be saturated to 0dB
         zones = self.status.zones
         # update non hw state
         zone.name = name
@@ -473,7 +473,7 @@ class Api:
             raise Exception('set zone failed: unable to update zone mute')
 
         def set_vol():
-          real_vol = utils.clamp(vol, -79, 0)
+          real_vol = utils.clamp(vol, models.MIN_VOL, models.MAX_VOL)
           if self._rt.update_zone_vol(idx, real_vol):
             zone.vol = vol
           else:

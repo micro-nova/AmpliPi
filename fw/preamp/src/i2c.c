@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Port usage and functions for GPIO
+ * Base I2C functionality
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,49 +18,64 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "ports.h"
+#include "i2c.h"
 
 #include "stm32f0xx.h"
 
-static GPIO_TypeDef* getPort(Pin pp) {
-  switch (pp.port) {
-    case 'A':
-      return GPIOA;
-    case 'B':
-      return GPIOB;
-    case 'C':
-      return GPIOC;
-    case 'D':
-      return GPIOD;
-    case 'F':
-      return GPIOF;
-    default:
-      return 0;
-  }
+// addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
+void initI2C1(uint8_t addr) {
+  // Enable peripheral clock for I2C1
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+
+  // Enable SDA1, SDA2, SCL1, SCL2 clocks
+  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+
+  // Setup I2C1
+  I2C_InitTypeDef I2C_InitStructure1;
+  I2C_InitStructure1.I2C_Mode                = I2C_Mode_I2C;
+  I2C_InitStructure1.I2C_AnalogFilter        = I2C_AnalogFilter_Enable;
+  I2C_InitStructure1.I2C_DigitalFilter       = 0x00;
+  I2C_InitStructure1.I2C_OwnAddress1         = addr;
+  I2C_InitStructure1.I2C_Ack                 = I2C_Ack_Enable;
+  I2C_InitStructure1.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+  I2C_InitStructure1.I2C_Timing = 0;  // Clocks not generated in slave mode
+  I2C_Init(I2C1, &I2C_InitStructure1);
+  I2C_Cmd(I2C1, ENABLE);
 }
 
-void writePin(Pin pp, bool set) {
-  GPIO_TypeDef* port = getPort(pp);
-  // getPort(pp)->BSRR = (1 << pp.pin)
-  if (set) {
-    // Lower 16 bits of BSRR used for setting, upper for clearing
-    port->BSRR = 1 << pp.pin;
-  } else {
-    // Lower 16 bits of BRR used for clearing
-    port->BRR = 1 << pp.pin;
-  }
+void initI2C2() {
+  /* I2C-2 is internal to a single AmpliPi unit.
+   * The STM32 is the master and controls the volume chips, power, fans,
+   * and front panel LEDs.
+   *
+   * See the STM32F030 reference manual section 22.4.9 "I2C master mode" or
+   * AN4235 for I2C timing calculations.
+   * Excel tool, rise/fall 72/4 ns: 100 kHz: 0x00201D2C (0.5074% error)
+   *                                400 kHz: 0x0010020B (1.9992% error)
+   * Full math done in i2c_calcs.md
+   */
+
+  // Enable peripheral clock for I2C2
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+
+  // Enable SDA1, SDA2, SCL1, SCL2 clocks
+  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+
+  // Setup I2C2
+  I2C_InitTypeDef I2C_InitStructure2;
+  I2C_InitStructure2.I2C_Mode                = I2C_Mode_I2C;
+  I2C_InitStructure2.I2C_AnalogFilter        = I2C_AnalogFilter_Enable;
+  I2C_InitStructure2.I2C_DigitalFilter       = 0x00;
+  I2C_InitStructure2.I2C_OwnAddress1         = 0x00;
+  I2C_InitStructure2.I2C_Ack                 = I2C_Ack_Enable;
+  I2C_InitStructure2.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+
+  I2C_InitStructure2.I2C_Timing = 0x0010020B;
+  I2C_Init(I2C2, &I2C_InitStructure2);
+  I2C_Cmd(I2C2, ENABLE);
 }
 
-bool readPin(Pin pp) {
-  GPIO_TypeDef* port = getPort(pp);
-  if (port->ODR & (1 << pp.pin)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-uint8_t readI2C2(I2CReg r) {
+uint8_t readRegI2C2(I2CReg r) {
   uint8_t data;
 
   // Wait if I2C2 is busy
@@ -95,7 +110,7 @@ uint8_t readI2C2(I2CReg r) {
   return data;
 }
 
-uint32_t writeI2C2(I2CReg r, uint8_t data) {
+uint32_t writeRegI2C2(I2CReg r, uint8_t data) {
   // Wait if I2C2 is busy
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 

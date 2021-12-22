@@ -2,7 +2,8 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
- * Port usage and functions for GPIO
+ * ADC related functions including reading the I2C ADC, voltage and temperature
+ * conversions, and a thermistor temperature conversion look-up table.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,26 +19,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PORTS_H_
-#define PORTS_H_
+#ifndef ADC_H_
+#define ADC_H_
 
-#include <stdbool.h>
 #include <stdint.h>
 
-typedef struct {
-  char    port;  // Valid ports in our case are A,B,C,D,F
-  uint8_t pin : 4;
-} Pin;
+void updateAdc();
 
-void writePin(Pin pp, bool set);
-bool readPin(Pin pp);
+uint8_t getHV1_f2();
+uint8_t getHV1Temp_f1();
+int16_t getHV1Temp_f8();
+uint8_t getAmp1Temp_f1();
+int16_t getAmp1Temp_f8();
+uint8_t getAmp2Temp_f1();
+int16_t getAmp2Temp_f8();
+uint8_t getPiTemp_f1();
+int16_t getPiTemp_f8();
+void    setPiTemp_f1(uint8_t temp_f1);
 
-typedef struct {
-  uint8_t dev;
-  uint8_t reg;
-} I2CReg;
-
-uint8_t  readI2C2(I2CReg r);
-uint32_t writeI2C2(I2CReg r, uint8_t data);
-
-#endif /* PORTS_H_ */
+#endif /* ADC_H_ */

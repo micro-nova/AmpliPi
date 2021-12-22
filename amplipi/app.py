@@ -693,6 +693,8 @@ def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
     'ungrouped_zones': [ungrouped_zones(ctrl, src.id) for src in state.sources if src.id is not None],
     'song_info': [src.info for src in state.sources if src.info is not None], # src.info should never be None
     'version': state.info.version if state.info else 'unknown',
+    'min_vol': models.MIN_VOL,
+    'max_vol': models.MAX_VOL,
   }
   return templates.TemplateResponse('index.html.j2', context, media_type='text/html')
 

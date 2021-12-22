@@ -22,33 +22,41 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "fans.h"
-#include "port_defs.h"
-#include "ports.h"
-
-typedef struct {
-  PwrGpio  pwr_gpio;   // Power Board GPIO expander's state
-  LedGpio  leds;       // LED Board's state
-  Expander expansion;  // Expansion connector settings
-  uint8_t  hv1;        // High-voltage in Q6.2 Volts
-  union {
-    // All temps in UQ7.1 + 20 degC format
-    struct {
-      uint8_t hv1_temp;   // PSU temp
-      uint8_t amp_temp1;  // Amp heatsink 1 temp
-      uint8_t amp_temp2;  // Amp heatsink 2 temp
-      uint8_t pi_temp;    // Control board Raspberry Pi temp
-    };
-    uint8_t temps[4];  // All temperatures in 1 array
+typedef union {
+  struct {
+    uint8_t pg_9v    : 1;  // R
+    uint8_t en_9v    : 1;  // R/W
+    uint8_t pg_12v   : 1;  // R
+    uint8_t en_12v   : 1;  // R/W
+    uint8_t reserved : 4;
   };
-  uint8_t   i2c_addr;      // Slave I2C1 address
-  bool      led_override;  // Override LED Board logic and force to 'leds'
-  bool      fan_override;  // Override fan control logic and force 100% on
-  FanState* fans;
-} AmpliPiState;
+  uint8_t data;
+} PwrReg;
 
-void ctrlI2CInit(uint8_t addr);
+typedef union {
+  struct {
+    uint8_t ctrl : 2;      // R/W - Fan control method currently in use.
+                           //       0b11 = force fans on.
+    uint8_t on       : 1;  // R   - Fans status
+    uint8_t ovr_tmp  : 1;  // R   - Unit over dangerous temperature threshold
+    uint8_t fail     : 1;  // R   - Fan fail detection (Power Board 2.A only)
+    uint8_t reserved : 3;
+  };
+  uint8_t data;
+} FanReg;
+
+typedef union {
+  struct {
+    uint8_t nrst             : 1;
+    uint8_t boot0            : 1;
+    uint8_t uart_passthrough : 1;
+    uint8_t reserved         : 5;
+  };
+  uint8_t data;
+} ExpansionReg;
+
+void ctrlI2CInit();
 bool ctrlI2CAddrMatch();
-void ctrlI2CTransact(AmpliPiState* state);
+void ctrlI2CTransact();
 
 #endif /* CTRL_I2C_H_ */
