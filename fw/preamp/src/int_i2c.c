@@ -96,6 +96,7 @@ void quiesceI2C() {
   // Ensure the I2C peripheral is disabled and pins are set as GPIO
   // Pins will be configured to HI-Z (pulled up externally)
   deinitI2C2();
+  configI2C2PinsAsGPIO();
 
   const uint32_t NUM_CONSECUTIVE_ONES = 9;
   // Require NUM_CONSECUTIVE_ONES on I2C's SDA before proceeding.
@@ -125,6 +126,7 @@ void quiesceI2C() {
 
   // Initialize the STM32's I2C2 bus as a master and control pins by peripheral
   initI2C2();
+  configI2C2Pins();
 }
 
 void initInternalI2C() {
