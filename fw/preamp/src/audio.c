@@ -245,16 +245,23 @@ void initAudio() {
 
 void updateAudio() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    // The mute pin only affects the amps, set the volume to mute for preouts
+    // Check if volume update required
+    uint8_t new_vol = vol_[zone];
     if (muted(zone)) {
-      if (vol_[zone] != VOL_MUTE && writeVolume(zone, VOL_MUTE)) {
-        vol_[zone] = VOL_MUTE;
+      // The mute pin only affects the amps, set the volume to mute for preouts
+      new_vol = VOL_MUTE;  // Instantly mute
+    } else {
+      // Only change volume 1 dB at a time to reduce crackling
+      if (vol_[zone] < vol_req_[zone]) {
+        new_vol = vol_[zone] + 1;
+      } else if (vol_[zone] > vol_req_[zone]) {
+        new_vol = vol_[zone] - 1;
       }
-    } else if (vol_[zone] != vol_req_[zone]) {
-      // Actually write the volume to the volume control IC
-      if (writeVolume(zone, vol_req_[zone])) {
-        vol_[zone] = vol_req_[zone];
-      }
+    }
+
+    // Perform volume update if required
+    if (vol_[zone] != new_vol && writeVolume(zone, new_vol)) {
+      vol_[zone] = new_vol;
     }
   }
 }
