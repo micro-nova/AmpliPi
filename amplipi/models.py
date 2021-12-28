@@ -50,6 +50,8 @@ def pcnt2Vol(pcnt: float) -> int:
   assert MIN_VOL <= pcnt <= MAX_VOL
   return round(pcnt * (MAX_VOL_DB - MIN_VOL_DB) + MIN_VOL_DB)
 
+# TODO: use the concept of mixins to make ID and ID-less types and separate different update concepts
+
 class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
@@ -444,7 +446,7 @@ class Stream(Base):
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
-  password: Optional[str] = Field(description='Password')
+  password: Optional[str] = Field(description='Password') # TODO: encrypt the password with per box key
   station: Optional[str] = Field(description='Radio station identifier')
   url: Optional[str] = Field(description='Stream url, used for internetradio and file')
   logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
@@ -740,6 +742,15 @@ class Info(BaseModel):
   mock_ctrl: bool = False
   mock_streams: bool = False
 
+class StatusUpdate(BaseModel):
+  full_update: bool = Field(default=False, description='Is update partial or full? '
+  'A full update is needed when something is deleted or added')
+  groups: Optional[List[GroupUpdateWithId]]
+  presets: Optional[List[PresetUpdate]]
+  sources: Optional[List[SourceUpdateWithId]]
+  streams: Optional[List[Stream]]
+  zones: Optional[List[ZoneUpdateWithId]]
+
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
@@ -748,6 +759,14 @@ class Status(BaseModel):
   streams: List[Stream] = []
   presets: List[Preset] = []
   info: Optional[Info]
+
+  def as_update(self) -> StatusUpdate:
+    return StatusUpdate(full_update=True,
+                        sources=self.sources,
+                        zones=self.zones,
+                        groups=self.groups,
+                        streams=self.streams,
+                        presets=self.presets)
 
   class Config:
     schema_extra = {
