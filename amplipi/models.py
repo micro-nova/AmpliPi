@@ -51,6 +51,7 @@ class fields(SimpleNamespace):
 
   * Digital Stream ('stream=SID') where SID is the ID of the connected stream
   * Analog RCA Input ('local') connects to the RCA inputs associated
+  * Analog RCA Input ('local=LID') connects to a specific RCA input
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 

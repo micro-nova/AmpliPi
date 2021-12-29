@@ -21,7 +21,7 @@ GOOD_STATUS = deepcopy(DEFAULT_STATUS)
 vol = 0
 for zone in GOOD_STATUS['zones']:
   vol += zone['vol']
-vol_delta = vol / len( GOOD_STATUS['zones'])
+vol_delta = vol / len(GOOD_STATUS['zones'])
 GOOD_STATUS['groups'] = [{'id': 100, 'name': 'test group', 'mute': True, 'vol_delta': vol_delta, 'source_id': 0, 'zones': [0, 1, 2, 3, 4, 5]}]
 GOOD_CONFIG = json.dumps(GOOD_STATUS) # make it a json string we can write to a config file
 # corrupt the json string by only taking the first half
@@ -99,6 +99,8 @@ def prune_state(state: amplipi.models.Status):
   dstate = state.dict(exclude_none=True)
   for field in dstate['sources']:
     field.pop('info')
+    field.pop('vol_delta')
+    field.pop('mute')
   dstate.pop('info')
   return dstate
 
