@@ -20,7 +20,7 @@ This module provides complete control of the AmpliPi Audio System's sources,
 zones, groups and streams.
 """
 
-from typing import List, Dict, Set, Union, Optional, Callable
+from typing import List, Dict, Set, Union, Optional, Tuple, Callable
 
 from enum import Enum
 
@@ -247,7 +247,7 @@ class Api:
       zone_update = models.ZoneUpdate(source_id=zone.source_id, mute=True, vol=zone.vol)
       self.set_zone(zone.id, zone_update, force_update=True, internal=True)
     # configure all of the groups (some fields may need to be updated)
-    self._update_groups()
+    self._update_stats()
 
   def __del__(self):
     # stop save in the future so we can save right away
@@ -426,6 +426,8 @@ class Api:
         if update.changes_zones():
           connected_zones = [ z.id for z in self.status.zones if z.source_id == sid and z.id is not None ]
           self.set_zones(update.as_multizone_update(connected_zones), internal=True)
+          if not internal:
+            self._update_stats()
         if not internal:
           self.mark_changes()
         return ApiResponse.ok()
@@ -502,7 +504,7 @@ class Api:
 
         if not internal:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
-          self._update_groups()
+          self._update_stats()
           self.mark_changes()
 
         return ApiResponse.ok()
@@ -533,24 +535,42 @@ class Api:
         break # the response message is the internal failure
     if not internal:
       # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
-      self._update_groups()
+      self._update_stats()
       self.mark_changes()
     return resp
 
-  def _update_groups(self) -> None:
-    """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
+  @staticmethod
+  def _aggregate_stats(zones: List[models.Zone]) -> Tuple[int, bool, Optional[int]]:
+    """ Compute the aggregate stats of a list of zones
+
+        Args: None
+        Returns:
+          vol, muted, source_id or None
+    """
+    mutes = [z.mute for z in zones]
+    sources = {z.source_id for z in zones}
+    vols = [z.vol for z in zones]
+    mute = False not in mutes # group is only considered muted if all zones are muted
+    if len(sources) == 1:
+      source_id: Optional[int] = sources.pop()
+    else: # multiple sources
+      source_id = None
+    if len(vols) > 0:
+      # compute the midpoint/median volume
+      vols.sort()
+      vol_delta = (vols[0] + vols[-1]) // 2
+    else:
+      vol_delta = models.MIN_VOL
+    return vol_delta, mute, source_id
+
+  def _update_stats(self) -> None:
+    """Updates group and source aggregate fields to maintain consistency and simplify app interface"""
     for group in self.status.groups:
       zones = [self.status.zones[z] for z in group.zones]
-      mutes = [z.mute for z in zones]
-      sources = {z.source_id for z in zones}
-      vols = [z.vol for z in zones]
-      vols.sort()
-      group.mute = False not in mutes # group is only considered muted if all zones are muted
-      if len(sources) == 1:
-        group.source_id = sources.pop() # TODO: how should we handle different sources in the group?
-      else: # multiple sources
-        group.source_id = None
-      group.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
+      group.vol_delta, group.mute, group.source_id = self._aggregate_stats(zones)
+    for src in self.status.sources:
+      zones = [z for z in self.status.zones if z.id is not None and z.source_id == src.id]
+      src.vol_delta, src.mute, _ = self._aggregate_stats(zones)
 
   def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> ApiResponse:
     """Configures an existing group
@@ -591,7 +611,7 @@ class Api:
 
     if not internal:
       # update the group stats
-      self._update_groups()
+      self._update_stats()
       self.mark_changes()
 
     return ApiResponse.ok()
@@ -618,7 +638,7 @@ class Api:
     self.status.groups.append(group)
 
     # update the group stats and populate uninitialized fields of the group
-    self._update_groups()
+    self._update_stats()
 
     self.mark_changes()
     return group
@@ -860,7 +880,7 @@ class Api:
       self.set_zone(zid, zone_update, internal=True)
 
     # update stats
-    self._update_groups()
+    self._update_stats()
 
   def load_preset(self, pid: int, internal=False) -> ApiResponse:
     """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration.
