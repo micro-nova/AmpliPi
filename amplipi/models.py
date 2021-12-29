@@ -64,7 +64,7 @@ class fields_w_default(SimpleNamespace):
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Output volume in dB')
   GroupMute = Field(default=True, description='Set to true if output is all zones muted')
-  GroupVolume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average utput volume in dB')
+  GroupVolume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average input volume in dB')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
 
 class Base(BaseModel):
@@ -95,6 +95,8 @@ class SourceInfo(BaseModel):
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
+  mute: Optional[bool] = fields.GroupMute
+  vol_delta: Optional[int] = fields.GroupVolume
   info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
 
   def get_stream(self) -> Optional[int]:
@@ -159,6 +161,16 @@ class Source(Base):
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
   input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
+  mute: Optional[bool] = fields.GroupMute
+  vol_delta: Optional[int] = fields.GroupVolume
+
+  def changes_zones(self) -> bool:
+    """ Are connected zone (mute/vol) changes embedded in this update? """
+    return self.vol_delta is not None or self.mute is not None
+
+  def as_multizone_update(self, zones: List[int]):
+    """ Convert to partial zone update """
+    return MultiZoneUpdate(zones=zones, update=ZoneUpdate(mute=self.mute, vol=self.vol_delta))
 
   class Config:
     schema_extra = {

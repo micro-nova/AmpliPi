@@ -423,6 +423,9 @@ class Api:
             if not self._rt.update_sources(src_cfg):
               return ApiResponse.error('failed to set source')
           self._update_src_info(src) # synchronize the source's info
+        if update.changes_zones():
+          connected_zones = [ z.id for z in self.status.zones if z.source_id == sid and z.id is not None ]
+          self.set_zones(update.as_multizone_update(connected_zones), internal=True)
         if not internal:
           self.mark_changes()
         return ApiResponse.ok()
