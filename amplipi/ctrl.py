@@ -549,7 +549,7 @@ class Api:
     """
     mutes = [z.mute for z in zones]
     sources = {z.source_id for z in zones}
-    vols = [z.vol for z in zones]
+    vols = [z.vol for z in zones if not z.mute]
     mute = False not in mutes # group is only considered muted if all zones are muted
     if len(sources) == 1:
       source_id: Optional[int] = sources.pop()
