@@ -6,10 +6,12 @@ Thanks for supporting AmpliPi, we hope you love your new unit!
 
 We suggest making the speaker connections before connecting AmpliPi to power. Please check out the steps below for more information on how to install your AmpliPi unit.
 
+WARNING!! DO NOT CONNECT UNIT TO 230V MAINS WITHOUT FIRST SETTING INTERNAL MAINS POWER SWITCH see [Power](#power).
+
 ### Back Panel
 
 All of the connections will be made to the back panel. Here's a quick reference for each of the different connections:
-- **POWER**: 110v or 220v connection, 120/220 switch is set on internal power supply and marked, see [Power](#power)
+- **POWER**: 115V, or optionally 230V connection, 115/230 switch is set on internal power supply and marked on rear of unit, see [Power](#power)
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller
   - **SERVICE**: USB mini connection for reimaging the Pi's EMMC
   - **USB**:  USB A ports for connecting peripherals such as additional storage devices
@@ -47,7 +49,14 @@ Each of the stereo RCA inputs can be connected to a different audio source, such
 
 ### Power
 
-Plug the unit into an 110v/220v outlet using the supplied power cable. Based on your location, we have attempted to configure the AmpliPi into the correct power mode and supply the appropriate cable. Please contact amplipi@micro-nova.com if we have made a mistake.
+Plug the unit into an 120V outlet using the supplied power cable.
+WARNING: if you intend to power AmpliPi with 230V mains, you must set the input
+voltage selector switch to 230V line voltage BEFORE supplying power to the unit.
+Failure to do this will damage the unit.
+The input voltage selector switch is located on the right side of the MeanWell PSU inside the AmpliPi.
+It can be accessed either through the vent slots on the side of the unit or by removing the top cover.
+For more details and pictures of the process, check out the [guide](https://amplipi.discourse.group/t/setting-your-amplipi-for-230v-operation/69).
+Please contact amplipi@micro-nova.com before powering up the unit if you have any questions.
 
 Once plugged in, the AmpliPi will start booting. The display will not be driven until the Pi has fully booted and the AmpliPi server has started; this takes about 20 seconds. By default the display will sleep after 60 seconds but can be woken up by a touch.
 
