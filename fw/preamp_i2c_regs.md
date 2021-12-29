@@ -68,7 +68,7 @@
     </tr>
     <tr>
       <td>0x04</td>
-      <td>AMP ENABLE</td>
+      <td>AMP_ENABLE</td>
       <td align=center>-</td>
       <td align=center>-</td>
       <td align=center>Z6EN</td>
@@ -300,11 +300,11 @@ Mute each zone independently. Each bit ZxM can have the following values:
 | 0     | Not Muted   |
 | 1     | Muted       |
 
-### AMP ENABLE
+### AMP_ENABLE
 
 Read/write.
 Bits 0 to 5 enable/disable the amplifier for a zone. A disabled amplifier will
-always remain muted, and won't be considered on for determining if all the
+not be considered on for determining if all the
 amplifiers can be placed into standby. By default all amplifiers are enabled,
 but disabling an amplifier can be useful if only the preout is used for a zone.
 

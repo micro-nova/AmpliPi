@@ -43,18 +43,11 @@ void initI2C1(uint8_t addr) {
   I2C_Cmd(I2C1, ENABLE);
 }
 
+/* Init the second I2C bus. I2C2 is internal to a single AmpliPi unit.
+ * The STM32 is the master and controls the volume chips, power, fans,
+ * and front panel LEDs.
+ */
 void initI2C2() {
-  /* I2C-2 is internal to a single AmpliPi unit.
-   * The STM32 is the master and controls the volume chips, power, fans,
-   * and front panel LEDs.
-   *
-   * See the STM32F030 reference manual section 22.4.9 "I2C master mode" or
-   * AN4235 for I2C timing calculations.
-   * Excel tool, rise/fall 72/4 ns: 100 kHz: 0x00201D2C (0.5074% error)
-   *                                400 kHz: 0x0010020B (1.9992% error)
-   * Full math done in i2c_calcs.md
-   */
-
   // Enable peripheral clock for I2C2
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
 
@@ -70,15 +63,21 @@ void initI2C2() {
   I2C_InitStructure2.I2C_Ack                 = I2C_Ack_Enable;
   I2C_InitStructure2.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
 
+  /* See the STM32F030 reference manual section 22.4.9 "I2C master mode" or
+   * AN4235 for I2C timing calculations.
+   * Excel tool, rise/fall 72/4 ns: 100 kHz: 0x00201D2C (0.5074% error)
+   *                                400 kHz: 0x0010020B (1.9992% error)
+   * Full math done in i2c_calcs.md
+   */
   I2C_InitStructure2.I2C_Timing = 0x0010020B;
   I2C_Init(I2C2, &I2C_InitStructure2);
   I2C_Cmd(I2C2, ENABLE);
 }
 
+/* Disable the I2C2 peripheral */
 void deinitI2C2() {
-  /* Disable I2C2 and release GPIO control */
-
-  // Ensure I2C clock is enabled
+  // Ensure I2C peripheral clock is enabled in case this function is called
+  // before the I2C init function.
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
 
   // Disable I2C2 peripheral
@@ -86,6 +85,8 @@ void deinitI2C2() {
 }
 
 uint32_t writeByteI2C2(I2CDev dev, uint8_t val) {
+  // TODO: Add timeout conditions for all while loops
+
   // Wait if I2C2 is busy
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 
@@ -121,7 +122,7 @@ uint32_t writeByteI2C2(I2CDev dev, uint8_t val) {
 }
 
 uint8_t readRegI2C2(I2CReg r) {
-  uint8_t data;
+  // TODO: Add timeout conditions for all while loops
 
   // Wait if I2C2 is busy
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
@@ -145,7 +146,7 @@ uint8_t readRegI2C2(I2CReg r) {
 
   // Wait until we get the rx data then read it out
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  data = I2C_ReceiveData(I2C2);
+  uint8_t data = I2C_ReceiveData(I2C2);
 
   // Wait for stop condition to get sent then clear it
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
@@ -156,6 +157,8 @@ uint8_t readRegI2C2(I2CReg r) {
 }
 
 uint32_t writeRegI2C2(I2CReg r, uint8_t data) {
+  // TODO: Add timeout conditions for all while loops
+
   // Wait if I2C2 is busy
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 

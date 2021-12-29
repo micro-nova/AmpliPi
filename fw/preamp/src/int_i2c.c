@@ -50,12 +50,24 @@ static void delayUs(uint32_t us) {
   }
 }
 
-/* Ensure no transactions are in-progress on the bus
- * Time required: 66 us to 552 us.
- * Max time seen in practice: 150 us.
+/* This function resolves an I2C Arbitration Lost error by clearing any
+ * in-progress transactions on the bus. Also run at startup since the bus is
+ * in an unknown state.
+ *
+ * Arbitration is lost if SDA is low when the I2C master is attempting to
+ * send a high on the bus. Usually this only occurs if another I2C master is
+ * sending at the same time, but there is only one master in AmpliPi's setup.
+ * Another way this error occurs is if the preamp's micro is reset during
+ * the middle of a read transaction. The slave could still be sending data.
+ * Ideally all slaves would be reset to fix this second case, but that control
+ * doesn't exist in AmpliPi hardware. So this function attempts to finish out
+ * the transaction by sending more clocks and verifying SDA is untouched.
+ *
+ * Time required: 44 us to 370 us.
+ * Max time seen in practice: 100 us.
  */
 void quiesceI2C() {
-  const uint32_t HALF_PERIOD = 3;  // 4 us period = 166.7 kHz I2C clock
+  const uint32_t HALF_PERIOD = 2;  // 4 us period = 250 kHz I2C clock
   // Ensure the I2C peripheral is disabled and pins are set as GPIO
   // Pins will be configured to HI-Z (pulled up externally)
   deinitI2C2();
@@ -63,28 +75,30 @@ void quiesceI2C() {
 
   const uint32_t NUM_CONSECUTIVE_ONES = 9;
   // Require NUM_CONSECUTIVE_ONES on I2C's SDA before proceeding.
+  // As of now all transactions are 8-bits, so 8 clocks plus one more for the
+  // ACK should finish any ongoing transaction.
   uint32_t tries = 0;
   uint32_t count = 0;
   while (tries < 10 && count < NUM_CONSECUTIVE_ONES) {
     tries++;
 
+    // Produce the SCL clocks. Read SDA while SCL is high since the slave
+    // will not change SDA while SCL is high.
+    // If the I2C SDA line is low, start over and try again.
     bool success = true;
     for (count = 0; count < NUM_CONSECUTIVE_ONES && success; count++) {
-      delayUs(HALF_PERIOD);  // Hold time for clock high
-
-      // If the I2C SDA line is low, start over and try again.
-      success = readPin(i2c2_sda_);
-
-      writePin(i2c2_scl_, false);  // Falling edge on the I2C clock line
-      delayUs(HALF_PERIOD);        // Hold time for clock low
-      writePin(i2c2_scl_, true);   // Set the I2C clock line high
+      delayUs(HALF_PERIOD);          // Hold clock high
+      success = readPin(i2c2_sda_);  // Start over if SDA low
+      writePin(i2c2_scl_, false);    // Falling edge on the I2C clock line
+      delayUs(HALF_PERIOD);          // Hold clock low
+      writePin(i2c2_scl_, true);     // Rising edge on the I2C clock line
     }
   }
 
   delayUs(HALF_PERIOD);        // Hold time for clock and data high
-  writePin(i2c2_sda_, false);  // Set low the I2C data line. (Start)
+  writePin(i2c2_sda_, false);  // Falling edge on SDA while SCL is high: START
   delayUs(HALF_PERIOD * 2);    // Double hold time for clock high and data low
-  writePin(i2c2_sda_, true);   // Rising edge on the I2C data line. (Stop)
+  writePin(i2c2_sda_, true);   // Rising edge on SDA while SCL is high: STOP
   delayUs(HALF_PERIOD);        // Hold time for clock and data high.
 
   // Initialize the STM32's I2C2 bus as a master and control pins by peripheral

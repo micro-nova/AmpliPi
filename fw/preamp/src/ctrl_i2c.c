@@ -273,7 +273,8 @@ void writeReg(uint8_t addr, uint8_t data) {
 
     case REG_AMP_EN:
       for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-        enZoneAmp(zone, (data & (0x1 << zone)));
+        bool enable = data & (0x1 << zone);
+        enZoneAmp(zone, enable);
       }
       break;
 

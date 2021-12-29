@@ -56,7 +56,13 @@ uint8_t vol_req_[NUM_ZONES] = {VOL_MUTE};
 // The TDA7448 volume controller always reports 0x00 on read
 uint8_t vol_[NUM_ZONES] = {0};
 
-// If only preouts are used, the amplifier for a zone can be disabled
+// If any zone uses only the preout, the amp can be 'disabled' which will
+// remove it from consideration for leaving standby.
+// For example, consider zone 1 is 'disabled' but the rest are 'enabled'.
+// If zone 1 is the only zone unmuted, the amps will remain in standby.
+// The amps will exit standby if any other zone becomes unmuted.
+// A second example:
+// If all amps are 'disabled', then the amps will always remain in standby.
 bool amp_en_[NUM_ZONES] = {};
 
 // Convert a requested dB to the corresponding volume IC register value.
