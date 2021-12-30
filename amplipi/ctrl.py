@@ -108,12 +108,12 @@ class Api:
       {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
-      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
-      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
-      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
-      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
-      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
-      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
+      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
+      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
+      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
+      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
+      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
+      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
     ],
     "groups": [
     ],
@@ -451,7 +451,7 @@ class Api:
       disabled, _ = utils.updated_val(update.disabled, zone.disabled)
       try:
         sid = utils.parse_int(source_id, [0, 1, 2, 3])
-        vol = utils.parse_int(vol, range(models.MIN_VOL, -models.MIN_VOL)) # hold additional state for group delta volume adjustments, output volume will be saturated to 0dB
+        #vol = utils.parse_int(vol, range(-models.MAX_VOL, models.MAX_VOL)) # hold additional state for group delta volume adjustments, output volume will be saturated to 0dB
         zones = self.status.zones
         # update non hw state
         zone.name = name
@@ -473,8 +473,10 @@ class Api:
             raise Exception('set zone failed: unable to update zone mute')
 
         def set_vol():
-          real_vol = utils.clamp(vol, models.MIN_VOL, models.MAX_VOL)
-          if self._rt.update_zone_vol(idx, real_vol):
+          vol_f = utils.clamp(vol, models.MIN_VOL, models.MAX_VOL)
+          vol_db = round((vol_f - models.MIN_VOL) * (models.MAX_VOL_DB - models.MIN_VOL_DB) / (models.MAX_VOL - models.MIN_VOL) + models.MIN_VOL_DB)
+          print(f'Setting volume to {vol_f}: {vol_db} dB')
+          if self._rt.update_zone_vol(idx, vol_db):
             zone.vol = vol
           else:
             raise Exception('set zone failed: unable to update zone volume')
@@ -567,6 +569,7 @@ class Api:
     name, _ = utils.updated_val(update.name, group.name)
     zones, _ = utils.updated_val(update.zones, group.zones)
     vol_delta, vol_updated = utils.updated_val(update.vol_delta, group.vol_delta)
+    print(f'vol_updated={vol_updated}, vol_delta={vol_delta}, update.vol_delta={update.vol_delta}, group.vol_delta={group.vol_delta}')
     if vol_updated and (group.vol_delta is not None and vol_delta is not None):
       vol_change = vol_delta - group.vol_delta
     else:
@@ -585,6 +588,7 @@ class Api:
 
     # save the volume
     group.vol_delta = vol_delta
+    print(f'vol_delta={vol_delta}, group.vol_delta={group.vol_delta}')
 
     if not internal:
       # update the group stats

@@ -523,7 +523,7 @@ class Mock:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[MIN_VOL, 0]
+        vol: int in range[MIN_VOL_DB, 0]
 
       Returns:
         True on success, False on hw failure
@@ -531,7 +531,7 @@ class Mock:
     preamp = zone // 6
     assert zone >= 0
     assert 0 <= preamp <= 5
-    assert models.MIN_VOL <= vol <= models.MAX_VOL
+    assert models.MIN_VOL_DB <= vol <= models.MAX_VOL_DB
     return True
 
   def exists(self, zone):
@@ -607,7 +607,7 @@ class Rpi:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[MIN_VOL, 0]
+        vol: int in range[MIN_VOL_DB, 0]
 
       Returns:
         True on success, False on hw failure
@@ -615,7 +615,7 @@ class Rpi:
     preamp = int(zone / 6) # int(x/y) does the same thing as (x // y)
     assert zone >= 0
     assert preamp < 15
-    assert models.MIN_VOL <= vol <= models.MAX_VOL
+    assert models.MIN_VOL_DB <= vol <= models.MAX_VOL_DB
 
     chan = zone - (preamp * 6)
     hvol = abs(vol)

@@ -436,14 +436,13 @@ function initVolControl(ctrl) {
   const setValue = (value) => {
     const val = clamp(range.min, range.max, value);
     initValue(val);
-    const vol = Math.round(val);
     const cur_stamp = Date.now();
     const req_throttled = (cur_stamp - last_req_stamp) < VOL_REQ_THROTTLE_MS;
     if (!req_throttled){
       if (zone){
-        onZoneVolChange(zone, vol);
+        onZoneVolChange(zone, val);
       } else if (group) {
-        onGroupVolChange(group, vol);
+        onGroupVolChange(group, val);
       } else {
         console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
       }
