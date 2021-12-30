@@ -41,7 +41,7 @@ typedef enum
   REG_ZONE321   = 0x01,
   REG_ZONE654   = 0x02,
   REG_MUTE      = 0x03,
-  REG_STANDBY   = 0x04,
+  REG_AMP_EN    = 0x04,
   REG_VOL_ZONE1 = 0x05,
   REG_VOL_ZONE2 = 0x06,
   REG_VOL_ZONE3 = 0x07,
@@ -72,17 +72,13 @@ typedef enum
   REG_GIT_HASH_0_D  = 0xFF,
 } CmdReg;
 
-/* Measured rise and fall times of the controller I2C bus
+/* Measured rise and fall times of the controller I2C bus.
+ * Rise time is from 30% to 70%.
  *
- * Single AmpliPi unit:
- *  t_r = ~370 ns
- *  t_f = ~5.3 ns
- * Single expansion unit:
- *  t_r = ~450 ns
- *  t_f = ~7.2 ns
- * Two expansion units:
- *  t_r = ~600 ns
- *  t_f = ~9.4 ns
+ * (ns)| Main | 1 Exp | 2 Exp | 3 Exp | 4 Exp | 5 Exp |
+ * ----+------+-------+-------+-------+-------+-------+
+ * t_r |  260 |   420 |   590 |   720 |   880 |  1000 |
+ * t_f | 16.4 |  16.4 |  16.4 |  17.2 |  19.6 |  20.0 |
  */
 void ctrlI2CInit() {
   // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
@@ -137,8 +133,12 @@ uint8_t readReg(uint8_t addr) {
       }
       break;
 
-    case REG_STANDBY:
-      out_msg = inStandby() ? 0x3F : 0;
+    case REG_AMP_EN:
+      for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+        if (zoneAmpEnabled(zone)) {
+          out_msg |= (1 << zone);
+        }
+      }
       break;
 
     case REG_VOL_ZONE1:
@@ -216,10 +216,9 @@ uint8_t readReg(uint8_t addr) {
       out_msg = getFanDuty();
       break;
 
-    case REG_FAN_VOLTS: {
+    case REG_FAN_VOLTS:
       out_msg = getFanVolts();
       break;
-    }
 
     case REG_VERSION_MAJOR:
       out_msg = VERSION_MAJOR_;
@@ -269,6 +268,13 @@ void writeReg(uint8_t addr, uint8_t data) {
     case REG_MUTE:
       for (size_t zone = 0; zone < NUM_ZONES; zone++) {
         mute(zone, data & (0x1 << zone));
+      }
+      break;
+
+    case REG_AMP_EN:
+      for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+        bool enable = data & (0x1 << zone);
+        enZoneAmp(zone, enable);
       }
       break;
 

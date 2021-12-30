@@ -183,9 +183,11 @@ if args.unit > 1 and args.bootload:
   print("Bootloading expansion units is a work in progress...")
 
 # Print status if not entering bootloader mode
+error = 0
 if not args.bootload:
   if len(preamps.preamps) < args.unit:
-    print('Error: desired unit does not exist')
+    print('Error: desired unit does not exist', file=sys.stderr)
+    error = 1
   else:
     for u in range(len(preamps.preamps)):
       preamps.force_fans(preamp = u + 1, force = args.force_fans)
@@ -200,12 +202,14 @@ if not args.bootload:
 
 if args.self_test:
   if not self_check(preamps):
-    sys.exit(2)
+    error = 2
 if args.heat:
   if not heat_test(preamps, args.heat):
-    sys.exit(2)
+    error = 3
 
 if args.wait:
   input("Press Enter to continue...")
+
+sys.exit(error)
 
 # TODO? 'STANDBY' : 0x04

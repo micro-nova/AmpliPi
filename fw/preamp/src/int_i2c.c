@@ -21,6 +21,7 @@
 #include "int_i2c.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "adc.h"
 #include "audio.h"
@@ -38,121 +39,86 @@ const I2CReg pwr_io_gpio_ = {0x42, 0x09};
 const I2CReg pwr_io_olat_ = {0x42, 0x0A};
 
 // DPOT register (no registers)
-const I2CReg dpot_dev_ = {0x5E, 0xFF};
+const I2CDev dpot_dev_ = 0x5E;
 
-uint32_t writeDpot(uint8_t val) {
-  // TODO: add more I2C read/write functions in ports.c and use here and ADC
-
-  // Wait if I2C2 is busy
-  while (I2C2->ISR & I2C_ISR_BUSY) {}
-
-  // Setup to send send start, addr, subaddr
-  I2C_TransferHandling(I2C2, dpot_dev_.dev, 1, I2C_AutoEnd_Mode,
-                       I2C_Generate_Start_Write);
-
-  // Wait for transmit interrupted flag or an error
-  uint32_t isr = I2C2->ISR;
-  do {
-    if (isr & I2C_ISR_NACKF) {
-      I2C2->ICR = I2C_ICR_NACKCF;
-      return I2C_ISR_NACKF;
+static void delayUs(uint32_t us) {
+  for (uint32_t i = 0; i < us; i++) {
+    // Create a ~1 us delay based on the CPU clock
+    for (size_t n = 0; n < HSI_VALUE / 1000000; n++) {
+      __ASM volatile("nop");
     }
-    if (isr & I2C_ISR_BERR) {
-      I2C2->ICR = I2C_ICR_BERRCF;
-      return I2C_ISR_BERR;
-    }
-    if (isr & I2C_ISR_ARLO) {
-      I2C2->ICR = I2C_ICR_ARLOCF;
-      return I2C_ISR_ARLO;
-    }
-    isr = I2C2->ISR;
-  } while (!(isr & I2C_ISR_TXIS));
+  }
+}
 
-  // Send subaddress and data
-  I2C_SendData(I2C2, val);
+/* This function resolves an I2C Arbitration Lost error by clearing any
+ * in-progress transactions on the bus. Also run at startup since the bus is
+ * in an unknown state.
+ *
+ * Arbitration is lost if SDA is low when the I2C master is attempting to
+ * send a high on the bus. Usually this only occurs if another I2C master is
+ * sending at the same time, but there is only one master in AmpliPi's setup.
+ * Another way this error occurs is if the preamp's micro is reset during
+ * the middle of a read transaction. The slave could still be sending data.
+ * Ideally all slaves would be reset to fix this second case, but that control
+ * doesn't exist in AmpliPi hardware. So this function attempts to finish out
+ * the transaction by sending more clocks and verifying SDA is untouched.
+ *
+ * Time required: 44 us to 370 us.
+ * Max time seen in practice: 100 us.
+ */
+void quiesceI2C() {
+  const uint32_t HALF_PERIOD = 2;  // 4 us period = 250 kHz I2C clock
+  // Ensure the I2C peripheral is disabled and pins are set as GPIO
+  // Pins will be configured to HI-Z (pulled up externally)
+  deinitI2C2();
+  configI2C2PinsAsGPIO();
 
-  // Wait for stop flag to be sent and then clear it
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
-  I2C2->ICR = I2C_ICR_STOPCF;
-  return 0;
+  const uint32_t NUM_CONSECUTIVE_ONES = 9;
+  // Require NUM_CONSECUTIVE_ONES on I2C's SDA before proceeding.
+  // As of now all transactions are 8-bits, so 8 clocks plus one more for the
+  // ACK should finish any ongoing transaction.
+  uint32_t tries = 0;
+  uint32_t count = 0;
+  while (tries < 10 && count < NUM_CONSECUTIVE_ONES) {
+    tries++;
+
+    // Produce the SCL clocks. Read SDA while SCL is high since the slave
+    // will not change SDA while SCL is high.
+    // If the I2C SDA line is low, start over and try again.
+    bool success = true;
+    for (count = 0; count < NUM_CONSECUTIVE_ONES && success; count++) {
+      delayUs(HALF_PERIOD);          // Hold clock high
+      success = readPin(i2c2_sda_);  // Start over if SDA low
+      writePin(i2c2_scl_, false);    // Falling edge on the I2C clock line
+      delayUs(HALF_PERIOD);          // Hold clock low
+      writePin(i2c2_scl_, true);     // Rising edge on the I2C clock line
+    }
+  }
+
+  delayUs(HALF_PERIOD);        // Hold time for clock and data high
+  writePin(i2c2_sda_, false);  // Falling edge on SDA while SCL is high: START
+  delayUs(HALF_PERIOD * 2);    // Double hold time for clock high and data low
+  writePin(i2c2_sda_, true);   // Rising edge on SDA while SCL is high: STOP
+  delayUs(HALF_PERIOD);        // Hold time for clock and data high.
+
+  // Initialize the STM32's I2C2 bus as a master and control pins by peripheral
+  initI2C2();
+  configI2C2Pins();
 }
 
 void initInternalI2C() {
-  // Initialize the STM32's I2C2 bus as a master
-  initI2C2();
+  // Make sure any interrupted transactions are cleared out
+  quiesceI2C();
 
   // Set the direction for the power board GPIO
-  // Retry if failed, the bus may be in a bad state if the micro was
-  // reset in the middle of a transaction.
-  uint32_t tries = 255;
-  while (tries--) {
-    uint32_t status = writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
-    if (status == I2C_ISR_NACKF) {
-      // Received a NACK, will try again
-    } else if (status == I2C_ISR_ARLO) {
-      // Arbitation lost (SDA low when master tried to set high).
-      // Reset I2C since the peripheral auto-sets itself into slave mode.
-      // Then, send 9 clocks to finish whichever slave transaction was ongoing.
-
-      // Disable I2C peripheral to reset it if previously enabled
-      I2C_Cmd(I2C2, DISABLE);
-
-      // Config I2C GPIO pins
-      configI2C2PinsAsGPIO();
-
-      // Generate 9 clocks to clear bus
-      writePin(i2c2_scl_, true);
-      writePin(i2c2_sda_, false);  // Keep SDA low even after slave releases it
-      for (size_t i = 0; i < 9; i++) {
-        delayMs(1);
-        writePin(i2c2_scl_, false);
-        delayMs(1);
-        writePin(i2c2_scl_, true);
-      }
-
-      // Stop condition
-      delayMs(1);
-      writePin(i2c2_sda_, true);
-
-      // Re-init I2C2 now that the bus is un-stuck
-      initI2C2();
-      // Reset pin config to I2C
-      configI2CPins();
-
-      /* TODO: Figure out why the below method doesn't work.
-      I2C_TransferHandling(I2C2, 0x00, 0, I2C_AutoEnd_Mode,
-                           I2C_Generate_Start_Write);
-
-      // Wait until the transaction is done then reset I2C again
-      delayMs(1);
-      initI2C2();
-      uint32_t isr = I2C2->ISR;
-      do {
-        if (isr & I2C_ISR_NACKF) {
-          I2C2->ICR = I2C_ICR_NACKCF;
-          break;
-        }
-        if (isr & I2C_ISR_ARLO) {
-          I2C2->ICR = I2C_ICR_ARLOCF;
-          break;
-        }
-        if (isr & I2C_FLAG_STOPF) {
-          I2C2->ICR = I2C_ICR_STOPCF;
-          break;
-        }
-        isr = I2C2->ISR;
-      } while (1);
-      */
-    } else {
-      tries = 0;
-    }
-  }
+  writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
   // Enable power supplies
   set9vEn(true);
   set12vEn(true);
 
   initLeds();
+  initAdc();
   updateInternalI2C();
 }
 
@@ -176,7 +142,7 @@ void updateInternalI2C() {
     // TODO: only write dpot when necessary
     static bool dpot_present = false;
     updateFans(amp_temp_f8, getHV1Temp_f8(), getPiTemp_f8(), dpot_present);
-    dpot_present = writeDpot(getFanDPot()) == 0;
+    dpot_present = writeByteI2C2(dpot_dev_, getFanDPot()) == 0;
   } else {
     // Read the power board's GPIO inputs
     GpioReg pwr_gpio = {.data = readRegI2C2(pwr_io_gpio_)};

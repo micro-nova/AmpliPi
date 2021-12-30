@@ -49,6 +49,8 @@ void mute(size_t zone, bool mute);
 bool muted(size_t zone);
 bool inStandby();
 
+void    enZoneAmp(size_t zone, bool en);
+bool    zoneAmpEnabled(size_t zone);
 void    setZoneVolume(size_t zone, uint8_t vol);
 uint8_t getZoneVolume(size_t zone);
 void    setZoneSource(size_t zone, size_t src);
