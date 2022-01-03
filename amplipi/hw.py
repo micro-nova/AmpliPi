@@ -323,11 +323,14 @@ class Preamps:
     present = preamp.available()
     print(f"{self.unit_num_to_name(unit)}'s old firmware version: {preamp.read_version() if present else 'unknown'}")
 
+    # For now the firmware can only pass through 9600 baud to expanders
+    baud = 9600 if unit > 0 else baud
+
     # Reset into bootloader mode and check if bootloader can be communicated to
     self.reset(unit = unit, bootloader = True)
     if not present:
       present = subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'],
-                                shell=True, check=False).returncode == 0
+                                shell=True, check=False, stdout=subprocess.DEVNULL).returncode == 0
     if not present:
       # Unit not found, give up
       # TODO: retry?
@@ -340,8 +343,6 @@ class Preamps:
       print(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
       self.preamps[p].uart_passthrough(True)
 
-    # For now the firmware can only pass through 9600 baud to expanders
-    baud = 9600 if unit > 0 else baud
     code = subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'],
                               shell=True, check=False).returncode
     if code != 0:
