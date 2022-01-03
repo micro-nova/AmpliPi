@@ -225,6 +225,14 @@ class Preamps:
   def __len__(self) -> int:
     return len(self.preamps)
 
+  def unit_num_to_name(self, unit: int):
+    """ Convert a unit's number to its name """
+    assert 0 <= unit < self.MAX_UNITS
+    if unit == 0:
+      return 'Main Unit'
+    else:
+      return f'Expander {unit}'
+
   def reset(self, unit: int = 0, bootloader: bool = False) -> None:
     """ Resets the master unit's preamp board.
         Any expansion preamps will be reset one-by-one by the previous preamp.
@@ -291,7 +299,6 @@ class Preamps:
       print(ser_err)
       return False
 
-
   def enumerate(self, debug: bool = False) -> None:
     """ Re-enumerate preamp connections """
     self.preamps = []
@@ -314,7 +321,7 @@ class Preamps:
     # If the unit is running print its current version info
     preamp = Preamp(unit, self._bus)
     present = preamp.available()
-    print(f"Unit {unit}'s old firmware version: {preamp.read_version() if present else 'unknown'}")
+    print(f"{self.unit_num_to_name(unit)}'s old firmware version: {preamp.read_version() if present else 'unknown'}")
 
     # Reset into bootloader mode and check if bootloader can be communicated to
     self.reset(unit = unit, bootloader = True)
@@ -324,12 +331,13 @@ class Preamps:
     if not present:
       # Unit not found, give up
       # TODO: retry?
-      print(f"Couldn't communicate with unit {unit}'s bootloader, stopping programming")
+      print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
+      print(f'Assuming only {unit} units are present and stopping programming')
       return False
 
     # Set UART passthrough on any previous units
     for p in range(unit):
-      print(f"Setting unit {p}'s UART as passthrough")
+      print(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
       self.preamps[p].uart_passthrough(True)
 
     # For now the firmware can only pass through 9600 baud to expanders
@@ -338,18 +346,18 @@ class Preamps:
                               shell=True, check=False).returncode
     if code != 0:
       # TODO: Error handling
-      print(f'Error programming unit {unit}, stopping programming')
+      print(f'Error programming {self.unit_num_to_name(unit)}, stopping programming')
 
     # Successfully programmed unit, reset to exit bootloader
     self.reset()
 
     # Verify newly programmed unit communicates
     if preamp.available():
-      print(f"Unit {unit}'s new firmware version: {preamp.read_version()}")
+      print(f"{self.unit_num_to_name(unit)}'s new firmware version: {preamp.read_version()}")
     else:
       # Can't communicate to unit, give up
       # TODO: retry?
-      print(f"Couldn't communicate to unit {unit} after programming, stopping programming")
+      print(f"Couldn't communicate to {self.unit_num_to_name(unit)} after programming, stopping programming")
       return False
 
     # Programming succeeded!
