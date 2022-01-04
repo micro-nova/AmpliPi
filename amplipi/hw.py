@@ -320,36 +320,45 @@ class Preamps:
 
     # If the unit is running print its current version info
     preamp = Preamp(unit, self._bus)
-    present = preamp.available()
-    print(f"{self.unit_num_to_name(unit)}'s old firmware version: {preamp.read_version() if present else 'unknown'}")
+    i2c_present = preamp.available()
+    print(f"{self.unit_num_to_name(unit)}'s old firmware version: {preamp.read_version() if i2c_present else 'unknown'}")
 
     # For now the firmware can only pass through 9600 baud to expanders
     baud = 9600 if unit > 0 else baud
 
-    # Reset into bootloader mode and check if bootloader can be communicated to
+    # Reset the unit to be programmed into bootloader mode
     self.reset(unit = unit, bootloader = True)
-    if not present:
-      present = subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'],
-                                shell=True, check=False, stdout=subprocess.DEVNULL).returncode == 0
-    if not present:
-      # Unit not found, give up
-      # TODO: retry?
-      print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
-      print(f'Assuming only {unit} units are present and stopping programming')
-      return False
 
     # Set UART passthrough on any previous units
     for p in range(unit):
       print(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
       self.preamps[p].uart_passthrough(True)
 
-    code = subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'],
-                              shell=True, check=False).returncode
-    if code != 0:
+    # Before attempting programming, verify the unit even exists.
+    try:
+      subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'], shell=True,
+                      check=True, stdout=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+      # Failed to handshake with the bootloader. Assume unit not present.
+      print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
+      plural = 's are' if unit != 1 else ' is'
+      print(f'Assuming only {unit} unit{plural} present and stopping programming')
+
+      # Reset all units to make sure the UART passthrough and
+      # bootloader modes are cleared.
+      self.reset()
+      return False
+
+    prog_success = False
+    try:
+      subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'],
+                              shell=True, check=True)
+      prog_success = True
+    except subprocess.CalledProcessError:
       # TODO: Error handling
       print(f'Error programming {self.unit_num_to_name(unit)}, stopping programming')
 
-    # Successfully programmed unit, reset to exit bootloader
+    # Done programming unit, reset to exit bootloader
     self.reset()
 
     # Verify newly programmed unit communicates
@@ -361,6 +370,8 @@ class Preamps:
       print(f"Couldn't communicate to {self.unit_num_to_name(unit)} after programming, stopping programming")
       return False
 
+    if not prog_success:
+      return False
     # Programming succeeded!
     return True
 
