@@ -24,7 +24,7 @@ from enum import Enum
 import subprocess
 import sys
 import time
-from typing import List, Union
+from typing import List, Optional
 
 # Third-party imports
 from serial import Serial
@@ -375,7 +375,7 @@ class Preamps:
     # Programming succeeded!
     return True
 
-  def program_all(self, filepath: str, num_units: Union[None, int], baud: int = 115200) -> bool:
+  def program_all(self, filepath: str, num_units: Optional[int] = None, baud: int = 115200) -> bool:
     """ Program all available preamps with a given file
         If num_units is not None, programming will stop after num_units
     """
@@ -383,15 +383,18 @@ class Preamps:
     if baud not in self.BAUD_RATES:
       raise ValueError(f'Baud rate must be one of {self.BAUD_RATES}')
 
-    # Force attempting to program at least 1 unit
-    if num_units is not None and num_units <= 0:
-      num_units = 1
+    # By default assume there could be up to the max number of units.
+    # This is an attempt to never leave any units in a bad firmware state.
+    program_count = self.MAX_UNITS
+    if num_units is not None:
+      # Limit the number of units that will be programmed
+      program_count = num_units
+    if program_count <= 0:
+      # No units requested to be programmed, exit
+      return False
     previous_unit_count = len(self)
-    program_count = self.MAX_UNITS if num_units is None else num_units
     print(f'Programming up to {program_count} AmpliPi Preamps '
           f'({previous_unit_count} currently detected)')
-    if previous_unit_count <= 0:
-      previous_unit_count = 1
 
     # Attempt programming until program_count, but stop if an error occurs
     unit = 0
@@ -402,25 +405,29 @@ class Preamps:
       if success:
         unit += 1
 
-    # Success considerations:
-    #   1. If a failure occured during programming: failure
-    #   2. If num_units were programmed: success
-    #   3. Programmed units is >= the number of previous units that enumerated.
-    #      It is possible, but unlikely, that some units didn't work before
-    #      and didn't get fixed with the program.
-    success_str = f'{unit} AmpliPi preamp'
-    if unit == 0:
-      success_str += 's'
-      fail_str = success_str
-    elif unit == 1:
-      fail_str = success_str
-    elif unit > 1:
-      success_str += 's'
-      fail_str = 'only ' + success_str
-    if unit == program_count or unit >= previous_unit_count:
-      print(f'\nSuccessfully programmed {success_str}.')
+    # By default assume programming failed, then check the multiple
+    # conditions that mean success.
+    success = False
+    if num_units is not None:
+      # A specific number of units were requested to be programmed
+      print(f'\n{unit} of {num_units} AmpliPi preamps programmed.')
+      if unit >= num_units:
+        # At least as many units were programmed as requested, so success!
+        success = True
+    else:
+      # No specific number requested, so take the amount found before
+      # programming as the correct amount.
+      plural = 's' if unit != 1 else ''
+      print(f'\n{unit} AmpliPi preamp{plural} programmed.')
+      if unit >= max(previous_unit_count, 1):
+        # Sucessfully programmed at least as many units as were previously available
+        # or at least 1 if no units were previously found, so success!
+        success = True
+
+    if success:
+      print('Programming succeeded.')
       return True
-    print(f'\nFailed programming, {fail_str} programmed.')
+    print('Programming failed.')
     return False
 
 
