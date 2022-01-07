@@ -19,13 +19,14 @@
 This module contains helper functions are used across the amplipi python library.
 """
 
-import json
-import io
-import os
 import functools
-import subprocess
+import io
+import json
+import math
+import os
 import re
-from typing import List, Dict, Set, Union, Optional, Tuple, TypeVar, Iterable
+import subprocess
+from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 
 import pkg_resources # version
 
@@ -87,6 +88,14 @@ def next_available_id(items: Iterable[BT], default: int = 0) -> int:
 def clamp(xval, xmin, xmax):
   """ Clamp and value between min and max """
   return max(xmin, min(xval, xmax))
+
+def round_sf(x: float, sf: int = 3):
+  """ Round a float to the given number of significant figures """
+  if x == 0:
+    digits = 1
+  else:
+    digits = int(math.floor(math.log10(abs(x))))
+  return round(x, sf - digits - 1)
 
 def compact_str(list_:List):
   """ stringify a compact list"""

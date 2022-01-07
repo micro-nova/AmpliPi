@@ -473,11 +473,14 @@ class Api:
             raise Exception('set zone failed: unable to update zone mute')
 
         def set_vol():
-          vol_f = utils.clamp(vol, models.MIN_VOL, models.MAX_VOL)
+          vol_round = utils.round_sf(vol, 3) # round to 3 significant figures
+          vol_f = utils.clamp(vol_round, models.MIN_VOL, models.MAX_VOL)
+          if vol_round != vol_f:
+            print(f'Clamped {vol_round} to {vol_f}')
           vol_db = round((vol_f - models.MIN_VOL) * (models.MAX_VOL_DB - models.MIN_VOL_DB) / (models.MAX_VOL - models.MIN_VOL) + models.MIN_VOL_DB)
           print(f'Setting volume to {vol_f}: {vol_db} dB')
           if self._rt.update_zone_vol(idx, vol_db):
-            zone.vol = vol
+            zone.vol = vol_f
           else:
             raise Exception('set zone failed: unable to update zone volume')
 
@@ -549,7 +552,8 @@ class Api:
         group.source_id = sources.pop() # TODO: how should we handle different sources in the group?
       else: # multiple sources
         group.source_id = None
-      group.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
+      group.vol_delta = round((vols[0] + vols[-1]) / 2, 3) # group volume is the midpoint between the highest and lowest source
+      print(f'Group volumes: {vols} and new vol_delta: {group.vol_delta}')
 
   def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> ApiResponse:
     """Configures an existing group
@@ -569,26 +573,21 @@ class Api:
     name, _ = utils.updated_val(update.name, group.name)
     zones, _ = utils.updated_val(update.zones, group.zones)
     vol_delta, vol_updated = utils.updated_val(update.vol_delta, group.vol_delta)
-    print(f'vol_updated={vol_updated}, vol_delta={vol_delta}, update.vol_delta={update.vol_delta}, group.vol_delta={group.vol_delta}')
-    if vol_updated and (group.vol_delta is not None and vol_delta is not None):
-      vol_change = vol_delta - group.vol_delta
-    else:
-      vol_change = 0
+    vol_sf = utils.round_sf(vol_delta, sf = 3)
+    print(f' old vol_delta={group.vol_delta}, new vol_delta={vol_delta}, rounded new={vol_sf}')
 
     group.name = name
     group.zones = zones
+    group.vol_delta = vol_sf
 
     # update each of the member zones
     zone_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)
-    if vol_change != 0:
+    if vol_updated and (group.vol_delta is not None and vol_delta is not None):
       # TODO: make this use volume delta adjustment, for now its a fixed group volume
-      zone_update.vol = vol_delta # vol = z.vol + vol_change
+      #vol_change = vol_delta - group.vol_delta
+      zone_update.vol = vol_sf # vol = z.vol + vol_change
     for zone in [self.status.zones[zone] for zone in zones]:
       self.set_zone(zone.id, zone_update, internal=True)
-
-    # save the volume
-    group.vol_delta = vol_delta
-    print(f'vol_delta={vol_delta}, group.vol_delta={group.vol_delta}')
 
     if not internal:
       # update the group stats
