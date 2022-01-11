@@ -335,6 +335,7 @@ $(function() {
     var z = zones[$(this).data("id")];
     console.log(z)
 
+    /* TODO: min and max volumes should be taken from models.py, can we add this to the API? */
     $("#settings-tab-zones-title").text(z.name);
     var html = `
       <input type="hidden" id="edit-zid" name="id" value="${z.id}">
@@ -342,6 +343,18 @@ $(function() {
         <div class="form-group">
           <label for="name">Zone Name</label>
           <input type="text" class="form-control" name="name" value="${z.name}" data-required="true">
+        </div>
+        <div class="form-group">
+          <label for="vol_min_db">Minimum dB</label>
+          <input type="number" class="form-control" name="vol_min_db" value="${z.vol_min_db}" min="-80" max="0" data-required="true">
+        </div>
+        <div class="form-group">
+          <label for="vol_max_db">Maximum dB</label>
+          <input type="number" class="form-control" name="vol_max_db" value="${z.vol_max_db}" min="-80" max="0" data-required="true">
+        </div>
+        <div class="form-group">
+          <label for="vol_offset_db">Volume Offset in dB</label>
+          <input type="number" class="form-control" name="vol_offset_db" value="${z.vol_offset_db}" min="-80" max="80" data-required="true">
         </div>
         <div class="form-group">
           <input type="hidden" value="false" name="disabled">

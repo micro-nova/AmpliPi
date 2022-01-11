@@ -50,6 +50,10 @@ class fields(SimpleNamespace):
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL, le=MAX_VOL, description='Output volume')
+  VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
+  VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
+  VolumeOffset = Field(ge=-(MAX_VOL_DB - MIN_VOL_DB), le=MAX_VOL_DB - MIN_VOL_DB,
+                       description='Volume offset in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
   GroupVolume = Field(ge=MIN_VOL, le=MAX_VOL, description='Average output volume')
   Disabled = Field(description='Set to true if not connected to a speaker')
@@ -71,6 +75,12 @@ class fields_w_default(SimpleNamespace):
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Output volume')
+  VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
+                    description='Min output volume in dB')
+  VolumeMax = Field(default=MAX_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
+                    description='Max output volume in dB')
+  VolumeOffset = Field(default=0, ge=-(MAX_VOL_DB - MIN_VOL_DB), le=MAX_VOL_DB - MIN_VOL_DB,
+                       description='Volume offset in dB')
   GroupMute = Field(default=True, description='Set to true if output is all zones muted')
   GroupVolume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average output volume')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
@@ -198,6 +208,9 @@ class Zone(Base):
   source_id: int = fields_w_default.SourceId
   mute: bool = fields_w_default.Mute
   vol: float = fields_w_default.Volume
+  vol_min_db: int = fields_w_default.VolumeMin
+  vol_max_db: int = fields_w_default.VolumeMax
+  vol_offset_db: int = fields_w_default.VolumeOffset
   disabled: bool = fields_w_default.Disabled
 
   def as_update(self) -> 'ZoneUpdate':
@@ -215,6 +228,9 @@ class Zone(Base):
             'source_id': 1,
             'mute' : False,
             'vol': pcnt2Vol(0.69),
+            'vol_min_db': MIN_VOL_DB,
+            'vol_max_db': MAX_VOL_DB,
+            'vol_offset_db': 0,
             'disabled': False,
           }
         },
@@ -224,6 +240,9 @@ class Zone(Base):
             'source_id': 2,
             'mute' : True,
             'vol': pcnt2Vol(0.19),
+            'vol_min_db': int(0.2 * (MAX_VOL_DB + MIN_VOL_DB)),
+            'vol_max_db': int(0.8 * (MAX_VOL_DB + MIN_VOL_DB)),
+            'vol_offset_db': 0,
             'disabled': False,
           }
         },
@@ -235,6 +254,9 @@ class ZoneUpdate(BaseUpdate):
   source_id: Optional[int] = fields.SourceId
   mute: Optional[bool] = fields.Mute
   vol: Optional[float] = fields.Volume
+  vol_min_db: Optional[int] = fields.VolumeMin
+  vol_max_db: Optional[int] = fields.VolumeMax
+  vol_offset_db: Optional[int] = fields.VolumeOffset
   disabled: Optional[bool] = fields.Disabled
 
   class Config:
@@ -259,6 +281,11 @@ class ZoneUpdate(BaseUpdate):
         'Mute': {
           'value': {
             'mute': True
+          }
+        },
+        'Change Max Volume': {
+          'value': {
+            'vol_max_db': int(0.8 * MAX_VOL_DB)
           }
         }
       },

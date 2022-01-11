@@ -448,6 +448,9 @@ class Api:
       source_id, update_source_id = utils.updated_val(update.source_id, zone.source_id)
       mute, update_mutes = utils.updated_val(update.mute, zone.mute)
       vol, update_vol = utils.updated_val(update.vol, zone.vol)
+      vol_max, update_vol_max = utils.updated_val(update.vol_max_db, zone.vol_max_db)
+      vol_min, update_vol_min = utils.updated_val(update.vol_min_db, zone.vol_min_db)
+      vol_offset, update_vol_offset = utils.updated_val(update.vol_offset_db, zone.vol_offset_db)
       disabled, _ = utils.updated_val(update.disabled, zone.disabled)
       try:
         sid = utils.parse_int(source_id, [0, 1, 2, 3])
@@ -455,6 +458,9 @@ class Api:
         zones = self.status.zones
         # update non hw state
         zone.name = name
+        zone.vol_max_db = vol_max
+        zone.vol_min_db = vol_min
+        zone.vol_offset_db = vol_offset
         zone.disabled = disabled
         if update_source_id or force_update:
           zone_sources = [zone.source_id for zone in zones]
@@ -473,13 +479,13 @@ class Api:
             raise Exception('set zone failed: unable to update zone mute')
 
         def set_vol():
-          vol_round = utils.round_sf(vol, 3) # round to 3 significant figures
-          vol_f = utils.clamp(vol_round, models.MIN_VOL, models.MAX_VOL)
-          if vol_round != vol_f:
-            print(f'Clamped {vol_round} to {vol_f}')
-          vol_db = round((vol_f - models.MIN_VOL) * (models.MAX_VOL_DB - models.MIN_VOL_DB) / (models.MAX_VOL - models.MIN_VOL) + models.MIN_VOL_DB)
-          print(f'Setting volume to {vol_f}: {vol_db} dB')
-          if self._rt.update_zone_vol(idx, vol_db):
+          vol_f = utils.round_sf(vol, 3) # round to 3 significant figures
+          range_api = models.MAX_VOL - models.MIN_VOL
+          range_db = zone.vol_max_db - zone.vol_min_db
+          vol_db = round((vol_f - models.MIN_VOL) * range_db / range_api + zone.vol_min_db) + zone.vol_offset_db
+          vol_db_clamped = utils.clamp(vol_db, models.MIN_VOL_DB, models.MAX_VOL_DB)
+          print(f'Setting volume to {vol_f}: {vol_db_clamped} dB')
+          if self._rt.update_zone_vol(idx, vol_db_clamped):
             zone.vol = vol_f
           else:
             raise Exception('set zone failed: unable to update zone volume')
@@ -487,6 +493,7 @@ class Api:
         # To avoid potential unwanted loud output:
         # If muting, mute before setting volumes
         # If un-muting, set desired volume first
+        update_vol |= update_vol_max or update_vol_min or update_vol_offset
         try:
           if force_update or (update_mutes and update_vol):
             if mute:
