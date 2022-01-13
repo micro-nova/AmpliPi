@@ -108,12 +108,12 @@ class Api:
       {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
-      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
-      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
-      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
-      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
-      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
-      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL},
+      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
+      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
+      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
+      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
+      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
+      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
     ],
     "groups": [
     ],
