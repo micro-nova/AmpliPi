@@ -353,10 +353,6 @@ $(function() {
           <input type="number" class="form-control" name="vol_max_db" value="${z.vol_max_db}" min="-80" max="0" data-required="true">
         </div>
         <div class="form-group">
-          <label for="vol_offset_db">Volume Offset in dB</label>
-          <input type="number" class="form-control" name="vol_offset_db" value="${z.vol_offset_db}" min="-80" max="80" data-required="true">
-        </div>
-        <div class="form-group">
           <input type="hidden" value="false" name="disabled">
           <input type="checkbox" id="disabled_state" name="disabled" value="true"${z.disabled ? " checked" : ""}>
           <label for="disabled_state">Disabled</label>
