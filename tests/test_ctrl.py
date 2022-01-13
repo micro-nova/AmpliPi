@@ -2,7 +2,7 @@
 
 """
 Test amplipi.ctrl
-this file is expected to be run using pytest, ie. pytest tests/test_ethaudio_mock.py
+this file is expected to be run using pytest, ie. pytest tests/test_ctrl.py
 """
 
 import json
@@ -17,7 +17,7 @@ from context import amplipi
 DEFAULT_STATUS = deepcopy(amplipi.ctrl.Api.DEFAULT_CONFIG) # pylint: disable=no-member
 # make a good config string, that has more groups than the default (so we can tell the difference)
 GOOD_STATUS = deepcopy(DEFAULT_STATUS)
-# vol_delta need to be equal to the average volume of  zones 0-5, here it is hardcoded
+# vol_delta need to be equal to the average volume of zones 0-5, here it is hardcoded
 vol = 0
 for zone in GOOD_STATUS['zones']:
   vol += zone['vol']

@@ -109,7 +109,7 @@ class SourceInfo(BaseModel):
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
-  info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
+  info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback)')
 
   def get_stream(self) -> Optional[int]:
     """ Get a source's conneted stream if any """
