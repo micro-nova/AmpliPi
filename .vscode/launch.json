@@ -21,7 +21,7 @@
           "console": "integratedTerminal",
           "cwd": "${workspaceFolder}",
           "module": "amplipi.hw",
-          "args": ["-n 2", "--flash", "/home/pi/amplipi-test/fw/preamp/build/preamp_bd.bin"],
+          "args": ["--flash", "fw/preamp/build/preamp_bd.bin"],
           "justMyCode": false
       }
   ]
