@@ -19,3 +19,13 @@ Initial release
   - Connected FAN_ON from GPIO expander directly to FAN_PWM.
   - DXP1/DXP2 are now connected to thermistors on Amp board.
   - MAX11601 ADC now samples thermistor voltages from amp heatkinks on AN1 and AN3
+
+## Rev 4.A
+* Added connector for PSU fan to allow fan speed control.
+* Removed MAX6644 fan controller (previously DNP).
+* Added option for 8-channel ADC (currently using 4-channel).
+* Swapped physical location of Control Board power and Preamp Board power
+  connectors to facilitate layout.
+* Added connector for Expansion Board power (currently unused).
+* Added chokes on high-voltage inputs to reduce noise.
+* 12V fan power supply is now always enabled.

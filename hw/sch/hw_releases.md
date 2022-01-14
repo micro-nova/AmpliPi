@@ -45,30 +45,28 @@ chip shortage.
 
 | Board      | Version                                         |
 | ---------- | ----------------------------------------------- |
-| Amplifier  | 3.A                                             |
-| Controller | 4.A                                             |
+| Amplifier  | [3.A](amplifier_board/amplifier_board_3a.pdf)   |
+| Controller | [4.A](controller_board/controller_board_4a.pdf) |
 | LED        | [2.A](led_board/led_board_2a.pdf)               |
-| Power      | 4.A                                             |
+| Power      | [4.A](power_board/power_board_4a.pdf)           |
 | Preamp     | [3.A](preamp_board/preamp_board_3a.pdf)         |
 | Preout     | [1.A](preout_board/preout_board_1a.pdf)         |
 
 
-# Expansion Units
-Expansion units add 6 more zones each to an AmpliPi Controller.
+# Zone Expanders
+Zone Expanders add 6 more zones each to an AmpliPi Controller.
 They do not have a control board in them, but rather an expansion board
 that acts as a pass-through for audio and control signals.
-Up to 5 Expansion Units can be added to one Controller.
+Up to 5 Zone Expanders can be added to one Controller.
 
 ### All Kickstarter and Pre-orders
-The new PDFs and changelogs will be available on GitHub
-shortly after this release.
 
 | Board      | Version                                         |
 | ---------- | ----------------------------------------------- |
-| Amplifier  | 3.A                                             |
-| Expansion  | 4.A                                             |
+| Amplifier  | [3.A](amplifier_board/amplifier_board_3a.pdf)   |
+| Expansion  | [3.A](expansion_board/expansion_board_3a.pdf)   |
 | LED        | [2.A](led_board/led_board_2a.pdf)               |
-| Power[^1]  | 4.A                                             |
+| Power[^1]  | [4.A](power_board/power_board_4a.pdf)           |
 | Preamp[^1] | [3.A](preamp_board/preamp_board_3a.pdf)         |
 | Preout     | [1.A](preout_board/preout_board_1a.pdf)         |
 

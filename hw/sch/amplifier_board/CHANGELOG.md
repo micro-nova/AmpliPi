@@ -11,3 +11,7 @@ Initial release
   - R4, R5 replaced with 0ohm resistors
   - C34, C35 fitted with 10uF caps
   - Pin 1 of J12 changed from GND to 3.3VA
+
+## Rev 3.A
+* Re-routed LCD signals.
+* Removed second HV ground connection.
