@@ -50,11 +50,11 @@ const I2CReg zone_right_[NUM_ZONES] = {
 
 // Zone volumes, range is [-80, 0] dB with 0 as the max (no attenuation).
 // Requested volume for each zone, default to  mute (-90 dB)
-uint8_t vol_req_[NUM_ZONES] = {VOL_MUTE};
+uint8_t vol_req_[NUM_ZONES];
 
 // Actual volume (last written via I2C)
 // The TDA7448 volume controller always reports 0x00 on read
-uint8_t vol_[NUM_ZONES] = {0};
+uint8_t vol_[NUM_ZONES] = {};
 
 // If any zone uses only the preout, the amp can be 'disabled' which will
 // remove it from consideration for leaving standby.
@@ -229,6 +229,7 @@ void initAudio() {
     enZoneAmp(zone, true);
     mute(zone, true);
     setZoneSource(zone, DEFAULT_SOURCE);
+    vol_req_[zone] = VOL_MUTE;
   }
 
   /* Initialize each source's analog/digital mux to select digital.
