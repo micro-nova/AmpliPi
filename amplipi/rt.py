@@ -450,7 +450,7 @@ class _Preamps:
     preamp = (int(zone / 6) + 1) * 8
     zone = zone % 6
     regs = self.preamps[preamp]
-    src_types = self.preamps[0x08][_REG_ADDRS['SRC_AD']]
+    src_types = regs[_REG_ADDRS['SRC_AD']]
     src = ((regs[_REG_ADDRS['ZONE456_SRC']] << 8) | regs[_REG_ADDRS['ZONE123_SRC']] >> 2 * zone) & 0b11
     src_type = _SRC_TYPES.get((src_types >> src) & 0b01)
     vol = -regs[_REG_ADDRS['VOL_ZONE1'] + zone]

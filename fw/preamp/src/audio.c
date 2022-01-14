@@ -50,11 +50,11 @@ const I2CReg zone_right_[NUM_ZONES] = {
 
 // Zone volumes, range is [-80, 0] dB with 0 as the max (no attenuation).
 // Requested volume for each zone, default to  mute (-90 dB)
-uint8_t vol_req_[NUM_ZONES] = {VOL_MUTE};
+uint8_t vol_req_[NUM_ZONES];
 
 // Actual volume (last written via I2C)
 // The TDA7448 volume controller always reports 0x00 on read
-uint8_t vol_[NUM_ZONES] = {0};
+uint8_t vol_[NUM_ZONES] = {};
 
 // If any zone uses only the preout, the amp can be 'disabled' which will
 // remove it from consideration for leaving standby.
@@ -229,6 +229,7 @@ void initAudio() {
     enZoneAmp(zone, true);
     mute(zone, true);
     setZoneSource(zone, DEFAULT_SOURCE);
+    vol_req_[zone] = VOL_MUTE;
   }
 
   /* Initialize each source's analog/digital mux to select digital.
@@ -245,16 +246,23 @@ void initAudio() {
 
 void updateAudio() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    // The mute pin only affects the amps, set the volume to mute for preouts
+    // Check if volume update required
+    uint8_t new_vol = vol_[zone];
     if (muted(zone)) {
-      if (vol_[zone] != VOL_MUTE && writeVolume(zone, VOL_MUTE)) {
-        vol_[zone] = VOL_MUTE;
+      // The mute pin only affects the amps, set the volume to mute for preouts
+      new_vol = VOL_MUTE;  // Instantly mute
+    } else {
+      // Only change volume 1 dB at a time to reduce crackling
+      if (vol_[zone] < vol_req_[zone]) {
+        new_vol = vol_[zone] + 1;
+      } else if (vol_[zone] > vol_req_[zone]) {
+        new_vol = vol_[zone] - 1;
       }
-    } else if (vol_[zone] != vol_req_[zone]) {
-      // Actually write the volume to the volume control IC
-      if (writeVolume(zone, vol_req_[zone])) {
-        vol_[zone] = vol_req_[zone];
-      }
+    }
+
+    // Perform volume update if required
+    if (vol_[zone] != new_vol && writeVolume(zone, new_vol)) {
+      vol_[zone] = new_vol;
     }
   }
 }
