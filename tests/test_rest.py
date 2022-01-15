@@ -26,9 +26,9 @@ TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
 
 # add several groups and most of the default streams to the config
 TEST_CONFIG['groups'] = [
-  {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
-  {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
-  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_delta": -79},
+  {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": amplipi.models.MIN_VOL},
+  {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": amplipi.models.MIN_VOL},
+  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_delta": amplipi.models.MIN_VOL},
 ]
 TEST_CONFIG['streams'] = [
   {"id": 1000, "name": "AmpliPi", "type": "shairport"},
