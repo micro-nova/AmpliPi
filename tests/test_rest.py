@@ -759,3 +759,50 @@ def test_zeroconf():
   # check advertisememts
   assert AMPLIPI_ZC_NAME in services_advertised
   assert services_advertised[AMPLIPI_ZC_NAME].port == 9898
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_set_zone_vol(client, zid):
+  """ Try changing a zone's volume in dB """
+  # pick a volume to test
+  vol_f = (amplipi.models.MAX_VOL + amplipi.models.MIN_VOL) / 2
+
+  # get zone info for max and min volume range
+  sb = find(base_config()['zones'], zid)
+  assert sb is not None
+  min_db = sb['vol_min_db']
+  max_db = sb['vol_max_db']
+  assert min_db <= max_db
+
+  # set zone dB volume, expect it to match the above test volume
+  vol_db = amplipi.utils.vol_float_to_db(vol_f, min_db, max_db)
+  rv = client.patch(f'/api/zones/{zid}', json={'vol': vol_db})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['vol'] == vol_db
+  assert s['vol_f'] == vol_f
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_set_zone_vol_float(client, zid):
+  """ Try changing a zone's volume as a floating point number """
+  # pick a volume to test
+  vol_f = (amplipi.models.MAX_VOL + amplipi.models.MIN_VOL) / 2
+
+  # get zone info for max and min volume range
+  sb = find(base_config()['zones'], zid)
+  assert sb is not None
+  min_db = sb['vol_min_db']
+  max_db = sb['vol_max_db']
+  assert min_db <= max_db
+
+  # set zone float volume, expect it to match the calculated volume in dB
+  vol_db = amplipi.utils.vol_float_to_db(vol_f, min_db, max_db)
+  rv = client.patch(f'/api/zones/{zid}', json={'vol_f': vol_f})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['vol'] == vol_db
+  assert s['vol_f'] == vol_f
+

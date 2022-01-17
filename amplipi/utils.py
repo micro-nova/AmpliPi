@@ -242,3 +242,15 @@ def is_amplipi():
     amplipi = False
 
   return amplipi
+
+def vol_float_to_db(vol: float, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> int:
+  """ Convert floating-point volume to dB """
+  # A linear conversion works here because the volume control IC directly takes dB.
+  # Alternatively a logarithmic function or power <1 could be used:
+  # dB = log_{s+1}(s*x+1) where s is a scaling factor
+  # dB = x^0.5
+  range_api = models.MAX_VOL - models.MIN_VOL
+  range_db = db_max - db_min
+  vol_db = round((vol - models.MIN_VOL) * range_db / range_api + db_min)
+  vol_db_clamped = clamp(vol_db, models.MIN_VOL_DB, models.MAX_VOL_DB)
+  return vol_db_clamped

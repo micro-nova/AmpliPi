@@ -476,18 +476,10 @@ class Api:
             raise Exception('set zone failed: unable to update zone mute')
 
         def set_vol():
-          # Conversion from float value to dB. A linear conversion works here
-          # because the volume control IC directly takes dB. Alternatively a
-          # logarithmic function or power <1 could be used:
-          # dB = log_{s+1}(s*x+1) where s is a scaling factor
-          # dB = x^0.5
           vol_f = utils.round_sf(vol, 3) # round to 3 significant figures
-          range_api = models.MAX_VOL - models.MIN_VOL
-          range_db = zone.vol_max_db - zone.vol_min_db
-          vol_db = round((vol_f - models.MIN_VOL) * range_db / range_api + zone.vol_min_db)
-          vol_db_clamped = utils.clamp(vol_db, models.MIN_VOL_DB, models.MAX_VOL_DB)
-          print(f'Setting volume to {vol_f}: {vol_db_clamped} dB')
-          if self._rt.update_zone_vol(idx, vol_db_clamped):
+          vol_db = utils.vol_float_to_db(vol_f, zone.vol_min_db, zone.vol_max_db)
+          print(f'Setting volume to {vol_f}: {vol_db} dB')
+          if self._rt.update_zone_vol(idx, vol_db):
             zone.vol = vol_f
           else:
             raise Exception('set zone failed: unable to update zone volume')
