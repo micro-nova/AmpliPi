@@ -108,12 +108,12 @@ class Api:
       {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
-      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
     ],
     "groups": [
     ],
@@ -481,7 +481,7 @@ class Api:
               vol, vol_f, vol_min, or vol_max.
           """
           # 'vol' (in dB) takes precedence over vol_f
-          if update_vol_f and not update_vol:
+          if update.vol_f is not None and update.vol is None:
             #vol_f = utils.round_sf(vol, 3) # round to 3 significant figures
             vol_db = utils.vol_float_to_db(vol_f, zone.vol_min, zone.vol_max)
             vol_f_new = vol_f
@@ -564,7 +564,8 @@ class Api:
         group.source_id = sources.pop() # TODO: how should we handle different sources in the group?
       else: # multiple sources
         group.source_id = None
-      group.vol_delta = round((vols[0] + vols[-1]) / 2, 3) # group volume is the midpoint between the highest and lowest source
+      group.vol_delta = (vols[0] + vols[-1]) // 2 # group volume is the midpoint between the highest and lowest source
+      #group.vol_delta_f = round((vols[0] + vols[-1]) / 2, 3)
       print(f'Group volumes: {vols} and new vol_delta: {group.vol_delta}')
 
   def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> ApiResponse:
@@ -585,12 +586,13 @@ class Api:
     name, _ = utils.updated_val(update.name, group.name)
     zones, _ = utils.updated_val(update.zones, group.zones)
     vol_delta, vol_updated = utils.updated_val(update.vol_delta, group.vol_delta)
-    vol_sf = utils.round_sf(vol_delta, sf = 3)
-    print(f' old vol_delta={group.vol_delta}, new vol_delta={vol_delta}, rounded new={vol_sf}')
 
     group.name = name
     group.zones = zones
-    group.vol_delta = vol_sf
+    group.vol_delta = vol_delta
+    #vol_sf = utils.round_sf(vol_delta_f, sf = 3)
+    #group.vol_delta_f = vol_sf
+    print(f' old vol_delta={group.vol_delta}, new vol_delta={vol_delta}')#, rounded new={vol_sf}')
 
     # update each of the member zones
     zone_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)

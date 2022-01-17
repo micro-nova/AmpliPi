@@ -41,7 +41,7 @@ MAX_VOL_DB = 0
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """
   assert MIN_VOL <= pcnt <= MAX_VOL
-  return pcnt * (MAX_VOL_DB - MIN_VOL_DB) + MIN_VOL_DB
+  return round(pcnt * (MAX_VOL_DB - MIN_VOL_DB) + MIN_VOL_DB)
 
 class fields(SimpleNamespace):
   """ AmpliPi's field types """

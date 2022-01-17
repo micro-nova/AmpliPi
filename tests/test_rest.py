@@ -763,8 +763,6 @@ def test_zeroconf():
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_set_zone_vol(client, zid):
   """ Try changing a zone's volume in dB """
-  # pick a volume to test
-  vol_f = (amplipi.models.MAX_VOL + amplipi.models.MIN_VOL) / 2
 
   # get zone info for max and min volume range
   sb = find(base_config()['zones'], zid)
@@ -772,37 +770,41 @@ def test_set_zone_vol(client, zid):
   min_db = sb['vol_min']
   max_db = sb['vol_max']
   assert min_db <= max_db
+
+  # pick some volumes to test
+  def pcnt_2_vol_f(pcnt: float) -> float:
+    return pcnt * (amplipi.models.MAX_VOL + amplipi.models.MIN_VOL) + amplipi.models.MIN_VOL
+  vol_p = [0.0, 0.25, 0.5, 0.75, 1.0]
+  vol_f = [pcnt_2_vol_f(p) for p in vol_p]
+  vol_db = [amplipi.utils.vol_float_to_db(f, min_db, max_db) for f in vol_f]
 
   # set zone dB volume, expect it to match the above test volume
-  vol_db = amplipi.utils.vol_float_to_db(vol_f, min_db, max_db)
-  rv = client.patch(f'/api/zones/{zid}', json={'vol': vol_db})
-  assert rv.status_code == HTTPStatus.OK
-  jrv = rv.json()
-  s = find(jrv['zones'], zid)
-  assert s is not None
-  assert s['vol'] == vol_db
-  assert s['vol_f'] == vol_f
-
-@pytest.mark.parametrize('zid', base_zone_ids())
-def test_set_zone_vol_float(client, zid):
-  """ Try changing a zone's volume as a floating point number """
-  # pick a volume to test
-  vol_f = (amplipi.models.MAX_VOL + amplipi.models.MIN_VOL) / 2
-
-  # get zone info for max and min volume range
-  sb = find(base_config()['zones'], zid)
-  assert sb is not None
-  min_db = sb['vol_min']
-  max_db = sb['vol_max']
-  assert min_db <= max_db
+  for i, db in enumerate(vol_db):
+    rv = client.patch(f'/api/zones/{zid}', json={'vol': db})
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    z = find(jrv['zones'], zid)
+    assert z is not None
+    assert z['vol'] == db
+    assert z['vol_f'] == vol_f[i]
 
   # set zone float volume, expect it to match the calculated volume in dB
-  vol_db = amplipi.utils.vol_float_to_db(vol_f, min_db, max_db)
-  rv = client.patch(f'/api/zones/{zid}', json={'vol_f': vol_f})
-  assert rv.status_code == HTTPStatus.OK
-  jrv = rv.json()
-  s = find(jrv['zones'], zid)
-  assert s is not None
-  assert s['vol'] == vol_db
-  assert s['vol_f'] == vol_f
+  for i, fv in enumerate(vol_f):
+    rv = client.patch(f'/api/zones/{zid}', json={'vol_f': fv})
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    z = find(jrv['zones'], zid)
+    assert z is not None
+    assert z['vol'] == vol_db[i]
+    assert z['vol_f'] == fv
 
+  # set zone dB volume and DIFFERENT float volume, expect the dB to override the float
+  for i, db in enumerate(vol_db):
+    fv = vol_f[-i-1] # grab elements in reverse order
+    rv = client.patch(f'/api/zones/{zid}', json={'vol': db, 'vol_f': fv})
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    z = find(jrv['zones'], zid)
+    assert z is not None
+    assert z['vol'] == db
+    assert z['vol_f'] == vol_f[i]
