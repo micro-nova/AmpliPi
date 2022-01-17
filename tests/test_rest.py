@@ -769,8 +769,8 @@ def test_set_zone_vol(client, zid):
   # get zone info for max and min volume range
   sb = find(base_config()['zones'], zid)
   assert sb is not None
-  min_db = sb['vol_min_db']
-  max_db = sb['vol_max_db']
+  min_db = sb['vol_min']
+  max_db = sb['vol_max']
   assert min_db <= max_db
 
   # set zone dB volume, expect it to match the above test volume
@@ -792,8 +792,8 @@ def test_set_zone_vol_float(client, zid):
   # get zone info for max and min volume range
   sb = find(base_config()['zones'], zid)
   assert sb is not None
-  min_db = sb['vol_min_db']
-  max_db = sb['vol_max_db']
+  min_db = sb['vol_min']
+  max_db = sb['vol_max']
   assert min_db <= max_db
 
   # set zone float volume, expect it to match the calculated volume in dB

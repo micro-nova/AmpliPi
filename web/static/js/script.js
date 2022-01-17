@@ -396,7 +396,7 @@ function onGroupVolChange(g, vol) {
 function onZoneVolChange(z, vol) {
   if (vol) {
     let req = {
-      "vol" : Number(vol),
+      "vol_f" : Number(vol),
       "mute" : false
     };
     sendRequest('/zones/' + z, 'PATCH', req);

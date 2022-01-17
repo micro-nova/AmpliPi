@@ -38,9 +38,10 @@ MAX_VOL = 1.0
 MIN_VOL_DB = -80
 MAX_VOL_DB = 0
 
-def pcnt2Vol(pcnt: float) -> float:
+def pcnt2Vol(pcnt: float) -> int:
+  """ Convert a percent to volume in dB """
   assert MIN_VOL <= pcnt <= MAX_VOL
-  return pcnt * (MAX_VOL - MIN_VOL) + MIN_VOL
+  return pcnt * (MAX_VOL_DB - MIN_VOL_DB) + MIN_VOL_DB
 
 class fields(SimpleNamespace):
   """ AmpliPi's field types """
@@ -49,11 +50,12 @@ class fields(SimpleNamespace):
   SourceId = Field(ge=0, le=3, description='id of the connected source')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
-  Volume = Field(ge=MIN_VOL, le=MAX_VOL, description='Output volume')
+  Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
+  VolumeF = Field(ge=MIN_VOL, le=MAX_VOL, description='Output volume as a floating-point number')
   VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
   VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
-  GroupVolume = Field(ge=MIN_VOL, le=MAX_VOL, description='Average output volume')
+  GroupVolume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Average output volume')
   Disabled = Field(description='Set to true if not connected to a speaker')
   Zones = Field(description='Set of zone ids belonging to a group')
   Groups = Field(description='List of group ids')
@@ -72,7 +74,8 @@ class fields_w_default(SimpleNamespace):
   # TODO: less duplication
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
   Mute = Field(default=True, description='Set to true if output is muted')
-  Volume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Output volume')
+  Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
+  VolumeF = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Output volume as a floating-point number')
   VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Min output volume in dB')
   VolumeMax = Field(default=MAX_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
@@ -203,9 +206,10 @@ class Zone(Base):
   """ Audio output to a stereo pair of speakers, typically belonging to a room """
   source_id: int = fields_w_default.SourceId
   mute: bool = fields_w_default.Mute
-  vol: float = fields_w_default.Volume
-  vol_min_db: int = fields_w_default.VolumeMin
-  vol_max_db: int = fields_w_default.VolumeMax
+  vol: int = fields_w_default.Volume
+  vol_f: float = fields_w_default.VolumeF
+  vol_min: int = fields_w_default.VolumeMin
+  vol_max: int = fields_w_default.VolumeMax
   disabled: bool = fields_w_default.Disabled
 
   def as_update(self) -> 'ZoneUpdate':
@@ -223,8 +227,8 @@ class Zone(Base):
             'source_id': 1,
             'mute' : False,
             'vol': pcnt2Vol(0.69),
-            'vol_min_db': MIN_VOL_DB,
-            'vol_max_db': MAX_VOL_DB,
+            'vol_min': MIN_VOL_DB,
+            'vol_max': MAX_VOL_DB,
             'disabled': False,
           }
         },
@@ -234,8 +238,8 @@ class Zone(Base):
             'source_id': 2,
             'mute' : True,
             'vol': pcnt2Vol(0.19),
-            'vol_min_db': int(0.2 * (MAX_VOL_DB + MIN_VOL_DB)),
-            'vol_max_db': int(0.8 * (MAX_VOL_DB + MIN_VOL_DB)),
+            'vol_min': int(0.1 * (MAX_VOL_DB + MIN_VOL_DB)),
+            'vol_max': int(0.8 * (MAX_VOL_DB + MIN_VOL_DB)),
             'disabled': False,
           }
         },
@@ -246,9 +250,10 @@ class ZoneUpdate(BaseUpdate):
   """ Reconfiguration of a Zone """
   source_id: Optional[int] = fields.SourceId
   mute: Optional[bool] = fields.Mute
-  vol: Optional[float] = fields.Volume
-  vol_min_db: Optional[int] = fields.VolumeMin
-  vol_max_db: Optional[int] = fields.VolumeMax
+  vol: Optional[int] = fields.Volume
+  vol_f: Optional[float] = fields.VolumeF
+  vol_min: Optional[int] = fields.VolumeMin
+  vol_max: Optional[int] = fields.VolumeMax
   disabled: Optional[bool] = fields.Disabled
 
   class Config:
@@ -277,7 +282,7 @@ class ZoneUpdate(BaseUpdate):
         },
         'Change Max Volume': {
           'value': {
-            'vol_max_db': int(0.8 * MAX_VOL_DB)
+            'vol_max': int(0.8 * MAX_VOL_DB)
           }
         }
       },
@@ -319,7 +324,7 @@ class Group(Base):
   source_id: Optional[int] = fields.SourceId
   zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
   mute: Optional[bool] = fields.GroupMute
-  vol_delta: Optional[float] = fields.GroupVolume
+  vol_delta: Optional[int] = fields.GroupVolume
 
   def as_update(self) -> 'GroupUpdate':
     """ Convert to GroupUpdate """
@@ -368,7 +373,7 @@ class GroupUpdate(BaseUpdate):
   source_id: Optional[int] = fields.SourceId
   zones: Optional[List[int]] = fields.Zones
   mute: Optional[bool] = fields.GroupMute
-  vol_delta: Optional[float] = fields.GroupVolume
+  vol_delta: Optional[int] = fields.GroupVolume
 
   class Config:
     schema_extra = {

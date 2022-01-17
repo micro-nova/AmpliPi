@@ -108,12 +108,12 @@ class Api:
       {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
-      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
-      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
-      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
-      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
-      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
-      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL, "vol_min_db": models.MIN_VOL_DB, "vol_max_db": models.MAX_VOL_DB},
+      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
     ],
     "groups": [
     ],
@@ -448,16 +448,17 @@ class Api:
       source_id, update_source_id = utils.updated_val(update.source_id, zone.source_id)
       mute, update_mutes = utils.updated_val(update.mute, zone.mute)
       vol, update_vol = utils.updated_val(update.vol, zone.vol)
-      vol_max, update_vol_max = utils.updated_val(update.vol_max_db, zone.vol_max_db)
-      vol_min, update_vol_min = utils.updated_val(update.vol_min_db, zone.vol_min_db)
+      vol_f, update_vol_f = utils.updated_val(update.vol_f, zone.vol_f)
+      vol_min, update_vol_min = utils.updated_val(update.vol_min, zone.vol_min)
+      vol_max, update_vol_max = utils.updated_val(update.vol_max, zone.vol_max)
       disabled, _ = utils.updated_val(update.disabled, zone.disabled)
       try:
         sid = utils.parse_int(source_id, [0, 1, 2, 3])
         zones = self.status.zones
         # update non hw state
         zone.name = name
-        zone.vol_max_db = vol_max
-        zone.vol_min_db = vol_min
+        zone.vol_min = vol_min
+        zone.vol_max = vol_max
         zone.disabled = disabled
         if update_source_id or force_update:
           zone_sources = [zone.source_id for zone in zones]
@@ -476,27 +477,37 @@ class Api:
             raise Exception('set zone failed: unable to update zone mute')
 
         def set_vol():
-          vol_f = utils.round_sf(vol, 3) # round to 3 significant figures
-          vol_db = utils.vol_float_to_db(vol_f, zone.vol_min_db, zone.vol_max_db)
-          print(f'Setting volume to {vol_f}: {vol_db} dB')
+          """ Update the zone's volume. Could be triggered by a change in
+              vol, vol_f, vol_min, or vol_max.
+          """
+          # 'vol' (in dB) takes precedence over vol_f
+          if update_vol_f and not update_vol:
+            #vol_f = utils.round_sf(vol, 3) # round to 3 significant figures
+            vol_db = utils.vol_float_to_db(vol_f, zone.vol_min, zone.vol_max)
+            vol_f_new = vol_f
+          else:
+            vol_db = utils.clamp(vol, zone.vol_min, zone.vol_max)
+            vol_f_new = utils.vol_db_to_float(vol_db, zone.vol_min, zone.vol_max)
+          print(f'Setting volume to {vol_f:0.3}: {vol_db} dB')
           if self._rt.update_zone_vol(idx, vol_db):
-            zone.vol = vol_f
+            zone.vol = vol_db
+            zone.vol_f = vol_f_new
           else:
             raise Exception('set zone failed: unable to update zone volume')
 
         # To avoid potential unwanted loud output:
         # If muting, mute before setting volumes
         # If un-muting, set desired volume first
-        update_vol |= update_vol_max or update_vol_min
+        update_volumes = update_vol or update_vol_f or update_vol_min or update_vol_max
         try:
-          if force_update or (update_mutes and update_vol):
+          if force_update or (update_mutes and update_volumes):
             if mute:
               set_mute()
               set_vol()
             else:
               set_vol()
               set_mute()
-          elif update_vol:
+          elif update_volumes:
             set_vol()
           elif update_mutes:
             set_mute()
@@ -586,7 +597,7 @@ class Api:
     if vol_updated and (group.vol_delta is not None and vol_delta is not None):
       # TODO: make this use volume delta adjustment, for now its a fixed group volume
       #vol_change = vol_delta - group.vol_delta
-      zone_update.vol = vol_sf # vol = z.vol + vol_change
+      zone_update.vol = group.vol_delta # vol = z.vol + vol_change
     for zone in [self.status.zones[zone] for zone in zones]:
       self.set_zone(zone.id, zone_update, internal=True)
 
