@@ -9,7 +9,7 @@ fi
 
 cd "$(dirname ${BASH_SOURCE[0]})/../.." # cd to amplipi root dir
 
-# Program master and 1 expansion unit (forced)
+# Program the latest released firmware
 passed=false
 if ./scripts/program_firmware $nprog fw/bin/preamp_1.4.bin; then
   passed=true

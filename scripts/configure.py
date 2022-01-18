@@ -615,6 +615,7 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
+    ('Program Main', './hw/tests/program_preamps.bash'),
     ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
     ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
     ('Amplifier', './hw/tests/built_in.bash amp'),
@@ -628,6 +629,7 @@ def add_tests(env, progress) -> List[Task]:
     ('USB Ports', './hw/tests/usb.py'),
     ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
     ('Fans and Power', './hw/tests/fans.bash'),
+    ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'), # just for info, not a specific test
   ]
   tasks = []
 
