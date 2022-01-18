@@ -750,7 +750,8 @@ class Api:
       return ApiResponse.error('create group failed: {} already exists'.format(group.name))
 
     # get the new groug's id
-    group.id = self._new_group_id()
+    gid = self._new_group_id()
+    group.id = gid
 
 
     # add the new group
@@ -759,8 +760,8 @@ class Api:
     # update the group stats and populate uninitialized fields of the group
     self._update_groups()
 
-    self.mark_changes()
-    self._changes.mark_add('groups', group.id)
+    self.mark_changes() # TODO: remove mark_changes
+    self._changes.mark_add('groups', gid)
     self._changes.sync()
     return group
 
