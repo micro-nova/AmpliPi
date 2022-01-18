@@ -153,13 +153,13 @@ def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change)
   return ctrl.get_state()
 
-subscribers: Dict[int, 'Queue[models.Status]'] = {}
-def notify_on_change(status: models.Status) -> None:
+subscribers: Dict[int, 'Queue[models.StatusUpdate]'] = {}
+def notify_on_change(status: models.StatusUpdate) -> None:
   """ Notify subscribers that something has changed """
   for msg_que in subscribers.values():
     msg_que.put(status)
 
-# @api.get('/api/subscribe') # TODO: uncomment this to add SSE Support and properly document it
+@api.get('/api/subscribe')
 async def subscribe(req: Request):
   """ Subscribe to SSE events """
   msg_que: Queue = Queue(3)
