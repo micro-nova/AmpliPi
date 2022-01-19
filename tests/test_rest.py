@@ -1,6 +1,6 @@
 """ Test the amplipi rest API """
 
-from typing import List
+from typing import Dict, List
 
 # json utils
 import json
@@ -762,7 +762,7 @@ def test_zeroconf():
 
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_set_zone_vol(client, zid):
-  """ Try changing a zone's volume in dB """
+  """ Try changing a zone's volume """
 
   # get zone info for max and min volume range
   sb = find(base_config()['zones'], zid)
@@ -778,33 +778,72 @@ def test_set_zone_vol(client, zid):
   vol_f = [pcnt_2_vol_f(p) for p in vol_p]
   vol_db = [amplipi.utils.vol_float_to_db(f, min_db, max_db) for f in vol_f]
 
-  # set zone dB volume, expect it to match the above test volume
-  for i, db in enumerate(vol_db):
-    rv = client.patch(f'/api/zones/{zid}', json={'vol': db})
+  def patch_zone(json: Dict):
+    rv = client.patch(f'/api/zones/{zid}', json=json)
     assert rv.status_code == HTTPStatus.OK
     jrv = rv.json()
-    z = find(jrv['zones'], zid)
-    assert z is not None
+    patched_zone = find(jrv['zones'], zid)
+    assert patched_zone is not None
+    return patched_zone
+
+  # set zone dB volume, expect it to match the above test volume
+  for i, db in enumerate(vol_db):
+    z = patch_zone({'vol': db})
     assert z['vol'] == db
     assert z['vol_f'] == vol_f[i]
 
   # set zone float volume, expect it to match the calculated volume in dB
   for i, fv in enumerate(vol_f):
-    rv = client.patch(f'/api/zones/{zid}', json={'vol_f': fv})
-    assert rv.status_code == HTTPStatus.OK
-    jrv = rv.json()
-    z = find(jrv['zones'], zid)
-    assert z is not None
+    z = patch_zone({'vol_f': fv})
     assert z['vol'] == vol_db[i]
     assert z['vol_f'] == fv
 
   # set zone dB volume and DIFFERENT float volume, expect the dB to override the float
   for i, db in enumerate(vol_db):
     fv = vol_f[-i-1] # grab elements in reverse order
-    rv = client.patch(f'/api/zones/{zid}', json={'vol': db, 'vol_f': fv})
-    assert rv.status_code == HTTPStatus.OK
-    jrv = rv.json()
-    z = find(jrv['zones'], zid)
-    assert z is not None
+    z = patch_zone({'vol': db, 'vol_f': fv})
     assert z['vol'] == db
     assert z['vol_f'] == vol_f[i]
+
+  # TODO: Change min/max vol and test
+  # TODO: Test setting below min and above max
+
+@pytest.mark.parametrize('gid', base_group_ids())
+def test_set_group_vol(client, gid):
+  """ Try changing a groups's volume """
+
+  # pick some volumes to test
+  def pcnt_2_vol_f(pcnt: float) -> float:
+    return pcnt * (amplipi.models.MAX_VOL + amplipi.models.MIN_VOL) + amplipi.models.MIN_VOL
+  vol_p = [0.0, 0.25, 0.5, 0.75, 1.0]
+  vol_f = [pcnt_2_vol_f(p) for p in vol_p]
+  vol_db = [amplipi.utils.vol_float_to_db(f) for f in vol_f]
+
+  def patch_group(json: Dict):
+    rv = client.patch(f'/api/groups/{gid}', json=json)
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    patched_group = find(jrv['groups'], gid)
+    assert patched_group is not None
+    return patched_group
+
+  # set zone dB volume, expect it to match the above test volume
+  for i, db in enumerate(vol_db):
+    g = patch_group({'vol_delta': db})
+    assert g['vol_delta'] == db
+    assert g['vol_delta_f'] == vol_f[i]
+
+  # set zone float volume, expect it to match the calculated volume in dB
+  for i, fv in enumerate(vol_f):
+    g = patch_group({'vol_delta_f': fv})
+    assert g['vol_delta'] == vol_db[i]
+    assert g['vol_delta_f'] == fv
+
+  # set zone dB volume and DIFFERENT float volume, expect the dB to override the float
+  for i, db in enumerate(vol_db):
+    fv = vol_f[-i-1] # grab elements in reverse order
+    g = patch_group({'vol_delta': db, 'vol_delta_f': fv})
+    assert g['vol_delta'] == db
+    assert g['vol_delta_f'] == vol_f[i]
+
+  # TODO: Set individual zone volumes and check group vol_delta updates properly
