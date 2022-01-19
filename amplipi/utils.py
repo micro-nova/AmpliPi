@@ -65,7 +65,10 @@ def updated_val(update: Optional[VT], val: VT) -> Tuple[VT, bool]:
 BT = TypeVar("BT", bound='models.Base', covariant=True)
 
 def find(items: Iterable[BT], item_id: int, key='id') -> Union[Tuple[int, BT], Tuple[None, None]]:
-  """ Find an item by id """
+  """ Find an item by id
+
+    returns (index, item) if found otherwise (None, None)
+  """
   for i, item in enumerate(items):
     if item.__dict__[key] == item_id:
       return i, item

@@ -20,7 +20,7 @@ This module provides complete control of the AmpliPi Audio System's sources,
 zones, groups and streams.
 """
 
-from typing import List, Dict, Set, Union, Optional, Callable
+from typing import List, Dict, Set, Tuple, Union, Optional, Callable
 
 from enum import Enum
 
@@ -86,18 +86,20 @@ class Changes():
     self._changes : Dict[str, Set] = {t: set() for t in Changes.CATEGORIES}
     self._notifier = notifier
     self._synced_changes : List[Dict[str, Set]] = []
+    self._saved_status: Optional[models.Status] = None
+    self._sync_mutex = threading.Lock()
 
-  def mark_add(self, typ: str, id: int) -> None:
+  def mark_add(self, typ: str, xid: int) -> None:
     """ Mark a creation """
     self.mark_all()
 
-  def mark_del(self, typ: str, id: int) -> None:
+  def mark_del(self, typ: str, xid: int) -> None:
     """ Mark a deletion """
     self.mark_all()
 
-  def mark_mod(self, typ: str, id: int) -> None:
+  def mark_mod(self, typ: str, xid: int) -> None:
     """ Mark a modification """
-    self._changes[typ].add(id)
+    self._changes[typ].add(xid)
 
   def mark_all(self):
     """ Mark changes to everthing
@@ -105,40 +107,40 @@ class Changes():
     This is typically used for a reset """
     self._changes['needs_full_update'] = frozenset()
 
-  def sync(self) -> None:
+  def sync(self, status: models.Status) -> None:
     """ Synchronize new changes allowing a set of small change to be treated as an update """
+    empty_changes: Dict[str, Set] = {t: set() for t in Changes.CATEGORIES}
     changes = self._changes
-    self._changes = {t: set() for t in Changes.CATEGORIES}
-    self._synced_changes.append(changes)
+    self._changes = empty_changes
+    with self._sync_mutex:
+      self._saved_status = deepcopy(status)
+      self._synced_changes.append(changes)
 
   @staticmethod
   def changes_to_update(all_changes: List[Dict[str, Set]], status: models.Status) -> models.StatusUpdate:
     needs_full_update = True in ['needs_full_update' in c for c in all_changes]
     if needs_full_update:
       return status.as_update()
-    else:
-      update = models.StatusUpdate()
-      for category in Changes.CATEGORIES:
-        changes: Set = set().union(*[c[category] for c in all_changes])
-        if len(changes) > 0:
-          cat_updates = [elem for elem in status.__dict__[category] if elem.id in changes]
-          update.__dict__[category] = cat_updates
-      return update
+    update = models.StatusUpdate()
+    for category in Changes.CATEGORIES:
+      changes: Set = set().union(*[c[category] for c in all_changes])
+      if len(changes) > 0:
+        cat_updates = [elem for elem in status.__dict__[category] if elem.id in changes]
+        update.__dict__[category] = cat_updates
+    return update
 
   def update_ready(self):
-    in_progress_changes = 0
-    for changes in self._changes:
-      in_progress_changes += len(changes)
-    return len(self._synced_changes) > 0 and in_progress_changes == 0
+    return len(self._synced_changes) > 0
 
-  def post_update(self, status: models.Status):
+  def post_update(self):
     if not self.update_ready():
-      update = status.as_update()
-    else:
+      return
+    with self._sync_mutex:
       changes = self._synced_changes
       self._synced_changes = []
-      update = self.changes_to_update(changes, status)
-    # we discard the updates to they don't build up without a notifier
+      update = self.changes_to_update(changes, self._saved_status)
+      self._saved_status = None
+    # we discard the updates so they don't build up without a notifier
     if self._notifier is not None:
       self._notifier(update)
 
@@ -211,7 +213,7 @@ class Api:
     """ Initialize or Reinitialize the controller
 
     Intitializes the system to to base configuration """
-    self._changes._notifier = change_notifier
+    self._changes = Changes(change_notifier)
     self._mock_hw = settings.mock_ctrl
     self._mock_streams = settings.mock_streams
     self._delay_saves = settings.delay_saves
@@ -384,30 +386,13 @@ class Api:
     return inputs
 
   def _watch_changes(self):
-    # TODO: make these stream updates send change updates, but only check for changes when changes are empty or we are ready to sync
-    # the goal: don't push updates when the system is in flux
-    # update the state with the latest stream info
-    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'freq', 'token', 'client_id'] # optional configuration fields
-    streams = []
-    for sid, stream_inst in self.streams.items():
-      # TODO: we should only update a stream if it has been changed, we should be able to inspect the change queue to handle this
-      # TODO: this functionality should be in the streams base class
-      # convert the stream instance info to stream data (serialize its current configuration)
-      st_type = type(stream_inst).__name__.lower()
-      stream = models.Stream(id=sid, name=stream_inst.name, type=st_type)
-      for field in optional_fields:
-        if field in stream_inst.__dict__:
-          stream.__dict__[field] = stream_inst.__dict__[field]
-      streams.append(stream)
-    self.status.streams = streams
     # update source's info
     for src in self.status.sources:
       self._update_src_info(src)
-
+    # post updates as needed
     if self._changes.update_ready():
-      self._changes.post_update(self.status)
-
-    # Let's check for changes again
+      self._changes.post_update()
+    # Let's check for changes again soon
     update_timer = self._timers.get('update')
     if update_timer:
       update_timer.cancel()
@@ -622,7 +607,7 @@ class Api:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
           self._update_groups()
           self.mark_changes() # TODO: remove old change handling
-          self._changes.sync()
+          self._changes.sync(self.status)
 
         return ApiResponse.ok()
       except Exception as exc:
@@ -654,7 +639,7 @@ class Api:
       # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
       self._update_groups()
       self.mark_changes()
-      self._changes.sync()
+      self._changes.sync(self.status)
     return resp
 
   def _update_groups(self) -> None:
@@ -729,15 +714,13 @@ class Api:
       # update the group stats
       self._update_groups()
       self.mark_changes()
-      self._changes.sync()
+      self._changes.sync(self.status)
 
     return ApiResponse.ok()
 
   def _new_group_id(self):
     """ get next available group id """
     return utils.next_available_id(self.status.groups, default=100)
-
-# TODO: below here still needs to have changes integrated!!
 
   def create_group(self, group: models.Group) -> models.Group:
     """Creates a new group with a list of zones
@@ -762,7 +745,7 @@ class Api:
 
     self.mark_changes() # TODO: remove mark_changes
     self._changes.mark_add('groups', gid)
-    self._changes.sync()
+    self._changes.sync(self.status)
     return group
 
   @save_on_success
@@ -773,7 +756,7 @@ class Api:
       if i is not None:
         del self.status.groups[i]
         self._changes.mark_del('groups', gid)
-        self._changes.sync()
+        self._changes.sync(self.status)
         return ApiResponse.ok()
       return ApiResponse.error('delete group failed: {} does not exist'.format(gid))
     except KeyError:
@@ -795,9 +778,12 @@ class Api:
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
+        # add the corresponding stream in status
+        self.status.streams.append(stream.as_data(sid))
+        # update for changes
         self._changes.mark_add('streams', sid)
         if not internal:
-          self._changes.sync()
+          self._changes.sync(self.status)
           self.mark_changes()
         return new_stream
       return ApiResponse.error('create stream failed: no stream created')
@@ -816,8 +802,14 @@ class Api:
     try:
       changes = update.dict(exclude_none=True)
       stream.reconfig(**changes)
+      # update the corresponding stream in status
+      idx, _ = utils.find(self.status.streams, sid)
+      if idx is not None:
+        self.status.streams[idx] = stream.as_data(sid)
+      else:
+        return ApiResponse.error(f'Unable to reconfigure stream {sid}: missing stream data')
       self._changes.mark_mod('streams', sid)
-      self._changes.sync()
+      self._changes.sync(self.status)
       self.mark_changes()
       return ApiResponse.ok()
     except Exception as exc:
@@ -837,7 +829,7 @@ class Api:
         del self.status.streams[i] # delete the cached stream state just in case
         self._changes.mark_mod('streams', sid)
       if not internal:
-        self._changes.sync()
+        self._changes.sync(self.status)
         self.mark_changes()
       return ApiResponse.ok()
     except KeyError:
@@ -906,7 +898,7 @@ class Api:
       self.status.presets.append(preset)
       self._changes.mark_add('presets', pid)
       if not internal:
-        self._changes.sync()
+        self._changes.sync(self.status)
         self.mark_changes()
       return preset
     except Exception as exc:
@@ -925,7 +917,7 @@ class Api:
       for field in changes.keys():
         preset.__dict__[field] = update.__dict__[field]
       self._changes.mark_mod('presets', pid)
-      self._changes.sync()
+      self._changes.sync(self.status)
       return ApiResponse.ok()
     except Exception as exc:
       return ApiResponse.error('Unable to reconfigure preset {}: {}'.format(pid, exc))
@@ -938,7 +930,7 @@ class Api:
       if idx is not None:
         del self.status.presets[idx] # delete the cached preset state just in case
         self._changes.mark_del('presets', pid)
-        self._changes.sync()
+        self._changes.sync(self.status)
         return ApiResponse.ok()
       return ApiResponse.error('delete preset failed: {} does not exist'.format(pid))
     except KeyError:
@@ -1071,7 +1063,7 @@ class Api:
     preset.last_used = int(time.time())
 
     if not internal:
-      self._changes.sync()
+      self._changes.sync(self.status)
       self.mark_changes()
 
     # TODO: release lock
@@ -1119,6 +1111,6 @@ class Api:
     resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
     if resp5.code != ApiCode.OK:
       return resp5
-    self._changes.sync()
+    self._changes.sync(self.status)
     self.mark_changes()
     return resp4
