@@ -112,6 +112,10 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
+  def as_data(self, id: int) -> models.Stream:
+    """ Return the stream data """
+    return models.Stream(id=id, name=self.name, type=self.stype)
+
 class AirPlay(BaseStream):
   """ An AirPlay Stream """
   def __init__(self, name, mock=False):
@@ -455,6 +459,13 @@ class Pandora(BaseStream):
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
     return source
 
+  def as_data(self, id: int) -> models.Stream:
+    s = super().as_data(id)
+    s.user = self.user
+    s.password = self.password
+    s.station = self.station
+    return s
+
   def send_cmd(self, cmd):
     """ Pianobar's commands
       cmd: Command string sent to pianobar's control fifo
@@ -656,6 +667,12 @@ class InternetRadio(BaseStream):
     except Exception:
       pass
 
+  def as_data(self, id) -> models.Stream:
+    s = super().as_data(id)
+    s.url = self.url
+    s.logo = self.logo
+    return s
+
 class Plexamp(BaseStream):
   """ A Plexamp Stream """
   def __init__(self, name, client_id, token, mock=False):
@@ -752,6 +769,12 @@ class Plexamp(BaseStream):
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
 
+  def as_data(self, id) -> models.Stream:
+    s = super().as_data(id)
+    s.client_id = self.client_id
+    s.token = self.token
+    return s
+
 class FilePlayer(BaseStream):
   """ An Single one shot file player - initially intended for use as a part of the PA Announcements """
   def __init__(self, name, url:str, mock=False):
@@ -815,6 +838,11 @@ class FilePlayer(BaseStream):
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
+
+  def as_data(self, id) -> models.Stream:
+    s = super().as_data(id)
+    s.url = self.url
+    return s
 
 class FMRadio(BaseStream):
   """ An FMRadio Stream using RTLSDR """
@@ -903,6 +931,12 @@ class FMRadio(BaseStream):
       pass
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
+
+  def as_data(self, id) -> models.Stream:
+    s = super().as_data(id)
+    s.freq = self.freq
+    s.logo = self.logo
+    return s
 
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
