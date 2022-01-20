@@ -311,7 +311,7 @@ function updateSourceView(status) {
     if (ctrl.dataset.hasOwnProperty('zone')){
       let z = ctrl.dataset.zone;
       const zone = status.zones[z];
-      updateVol(ctrl, zone.mute, zone.vol);
+      updateVol(ctrl, zone.mute, zone.vol_f);
       parent_src = ctrl.dataset.source;
       if (zone.source_id != parent_src) {
         zone_mismatch = true;
@@ -320,7 +320,7 @@ function updateSourceView(status) {
       let gid = ctrl.dataset.group;
       for (const g of status.groups) {
         if (g.id == gid) {
-          updateVol(ctrl, g.mute, g.vol_delta);
+          updateVol(ctrl, g.mute, g.vol_delta_f);
           break;
         }
       }
@@ -387,7 +387,7 @@ async function sendRequestAndReload(path, method, req, src) {
 function onGroupVolChange(g, vol) {
   if (vol) {
     let req = {
-      "vol_delta" : Number(vol),
+      "vol_delta_f" : Number(vol),
       "mute" : false
     };
     sendRequest('/groups/' + g, 'PATCH', req);

@@ -56,6 +56,7 @@ class fields(SimpleNamespace):
   VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
   GroupVolume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Average output volume')
+  GroupVolumeF = Field(ge=MIN_VOL, le=MAX_VOL, description='Average output volume as a floating-point number')
   Disabled = Field(description='Set to true if not connected to a speaker')
   Zones = Field(description='Set of zone ids belonging to a group')
   Groups = Field(description='List of group ids')
@@ -82,6 +83,7 @@ class fields_w_default(SimpleNamespace):
                     description='Max output volume in dB')
   GroupMute = Field(default=True, description='Set to true if output is all zones muted')
   GroupVolume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average output volume')
+  GroupVolumeF = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average output volume as a floating-point number')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
 
 class Base(BaseModel):
@@ -325,6 +327,7 @@ class Group(Base):
   zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
   mute: Optional[bool] = fields.GroupMute
   vol_delta: Optional[int] = fields.GroupVolume
+  vol_delta_f: Optional[float] = fields.GroupVolumeF
 
   def as_update(self) -> 'GroupUpdate':
     """ Convert to GroupUpdate """
@@ -374,6 +377,7 @@ class GroupUpdate(BaseUpdate):
   zones: Optional[List[int]] = fields.Zones
   mute: Optional[bool] = fields.GroupMute
   vol_delta: Optional[int] = fields.GroupVolume
+  vol_delta_f: Optional[float] = fields.GroupVolumeF
 
   class Config:
     schema_extra = {
