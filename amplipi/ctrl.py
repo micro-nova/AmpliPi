@@ -778,11 +778,11 @@ class Api:
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
       self.streams[sid] = stream
+      # add the corresponding stream in status
+      self.status.streams.append(stream.as_data(sid))
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
-        # add the corresponding stream in status
-        self.status.streams.append(stream.as_data(sid))
         # update for changes
         self._changes.mark_add('streams', sid)
         if not internal:
