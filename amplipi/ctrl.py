@@ -505,6 +505,7 @@ class Api:
         if name_updated or input_updated:
           self._changes.mark_mod('sources', sid)
         if not internal: # TODO: remove old change handling
+          self._changes.sync(self.status)
           self.mark_changes()
         return ApiResponse.ok()
       except Exception as exc:
