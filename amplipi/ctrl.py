@@ -322,12 +322,15 @@ class Api:
 
     self._watch_changes()
 
-  def __del__(self):
-    # stop any running timers (stops the future save as well)
+  def shutdown(self):
+    """ Shutdown the system, stopping any running timers """
     for timer in self._timers.values():
       timer.cancel()
     # make sure to save state
     self.save()
+
+  def __del__(self):
+    self.shutdown()
 
   def save(self) -> None:
     """ Saves the system state to json"""

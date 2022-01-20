@@ -113,36 +113,42 @@ def test_no_config():
   use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
+  api.shutdown()
 
 def test_good_config():
   """ Test loading a known good config file by making a copy of it and loading the api with the copy """
   use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(GOOD_CONFIG)
   assert GOOD_STATUS == prune_state(api.get_state())
+  api.shutdown()
 
 def test_corrupted_config():
   """ Test loading a corrupted config file with a good backup """
   use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=GOOD_CONFIG)
   assert GOOD_STATUS == prune_state(api.get_state())
+  api.shutdown()
 
 def test_doubly_corrupted_config():
   """ Test loading a corrupted config file and a corrupted backup """
   use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=CORRUPTED_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
+  api.shutdown()
 
 def test_missing_config():
   """ Test loading a missing config file with a good backup """
   use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(NO_CONFIG, backup_config=GOOD_CONFIG)
   assert GOOD_STATUS == prune_state(api.get_state())
+  api.shutdown()
 
 def test_doubly_missing_config():
   """ Test loading a missing config file and a missing backup """
   use_tmpdir() # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
+  api.shutdown()
 
 if __name__ == '__main__':
   # run tests without pytest
