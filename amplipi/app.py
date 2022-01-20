@@ -67,13 +67,6 @@ TEMPLATE_DIR = os.path.abspath('web/templates')
 STATIC_DIR = os.path.abspath('web/static')
 GENERATED_DIR = os.path.abspath('web/generated')
 
-app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
-templates = Jinja2Templates(TEMPLATE_DIR)
-
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated") # TODO: make this register as a dynamic folder???
-
-
 class SimplifyingRouter(APIRouter):
   """
   Overrides the route decorator logic to:
@@ -121,6 +114,13 @@ def get_ctrl() -> Api:
   """
   return Api(models.AppSettings())
 
+def on_shutdown():
+  """ Tell the controller we are shutting down
+
+  This is needed to stop the controllers background tasks """
+  print("Got shutdown notification, stopping ctrl")
+  get_ctrl().shutdown()
+
 class params(SimpleNamespace):
   """ Describe standard path ID's for each api type """
   # pylint: disable=too-few-public-methods
@@ -135,6 +135,10 @@ class params(SimpleNamespace):
   ImageHeight = Path(..., ge=1, le=500, description="Image Height in pixels")
 
 api = SimplifyingRouter()
+app = FastAPI(openapi_url=None, redoc_url=None, on_shutdown=[on_shutdown]) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
+templates = Jinja2Templates(TEMPLATE_DIR)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated") # TODO: make this register as a dynamic folder???
 
 @api.get('/api', tags=['status'])
 def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
