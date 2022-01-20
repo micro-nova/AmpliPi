@@ -113,7 +113,7 @@ class Changes():
     changes = self._changes
     self._changes = empty_changes
     with self._sync_mutex:
-      self._saved_status = deepcopy(status)
+      self._saved_status = deepcopy(status) # TODO: make this more light weight, maybe pre-convert changes here?
       self._synced_changes.append(changes)
 
   @staticmethod
