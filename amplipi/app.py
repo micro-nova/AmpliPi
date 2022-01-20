@@ -159,9 +159,9 @@ def notify_on_change(status: models.StatusUpdate) -> None:
   for msg_que in subscribers.values():
     msg_que.put(status)
 
-@api.get('/api/subscribe')
-async def subscribe(req: Request):
-  """ Subscribe to SSE events """
+@api.get('/api/subscribe', tags=['status'])
+async def subscribe(req: Request) -> EventSourceResponse:
+  """ Subscribe to Status change events """
   msg_que: Queue = Queue(3)
   next_sub = max(subscribers.keys(), default=0) + 1
   subscribers[next_sub] = msg_que
