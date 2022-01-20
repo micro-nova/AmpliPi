@@ -1,6 +1,6 @@
 """ Test the amplipi rest API """
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 # json utils
 import json
@@ -819,9 +819,15 @@ def test_set_group_vol(client, gid):
   vol_f = [pcnt_2_vol_f(p) for p in vol_p]
   vol_db = [amplipi.utils.vol_float_to_db(f) for f in vol_f]
 
-  def patch_group(json: Dict):
+  def patch_group(json: Dict) -> Optional[Dict]:
+    last_state = status_copy(client)
     rv = client.patch(f'/api/groups/{gid}', json=json)
-    assert rv.status_code == HTTPStatus.OK
+    if find(last_state['groups'], gid):
+      assert rv.status_code == HTTPStatus.OK
+    else:
+      # the group didn't exist, so the patch request should return an error
+      assert rv.status_code != HTTPStatus.OK
+      return None
     jrv = rv.json()
     patched_group = find(jrv['groups'], gid)
     assert patched_group is not None
@@ -830,20 +836,20 @@ def test_set_group_vol(client, gid):
   # set zone dB volume, expect it to match the above test volume
   for i, db in enumerate(vol_db):
     g = patch_group({'vol_delta': db})
-    assert g['vol_delta'] == db
-    assert g['vol_delta_f'] == vol_f[i]
+    assert g is None or g['vol_delta'] == db
+    assert g is None or g['vol_delta_f'] == vol_f[i]
 
   # set zone float volume, expect it to match the calculated volume in dB
   for i, fv in enumerate(vol_f):
     g = patch_group({'vol_delta_f': fv})
-    assert g['vol_delta'] == vol_db[i]
-    assert g['vol_delta_f'] == fv
+    assert g is None or g['vol_delta'] == vol_db[i]
+    assert g is None or g['vol_delta_f'] == fv
 
   # set zone dB volume and DIFFERENT float volume, expect the dB to override the float
   for i, db in enumerate(vol_db):
     fv = vol_f[-i-1] # grab elements in reverse order
     g = patch_group({'vol_delta': db, 'vol_delta_f': fv})
-    assert g['vol_delta'] == db
-    assert g['vol_delta_f'] == vol_f[i]
+    assert g is None or g['vol_delta'] == db
+    assert g is None or g['vol_delta_f'] == vol_f[i]
 
   # TODO: Set individual zone volumes and check group vol_delta updates properly

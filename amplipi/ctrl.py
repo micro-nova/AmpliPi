@@ -108,12 +108,12 @@ class Api:
       {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
-      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": models.MIN_VOL_DB, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
+      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
     ],
     "groups": [
     ],
@@ -592,7 +592,8 @@ class Api:
     group.zones = zones
 
     # determine group volume, 'vol_delta' (in dB) takes precedence over vol_delta_f
-    if vol_updated:
+    # if vol_updated is true vol_delta can't be none but mypy isn't smart enough to know that
+    if vol_updated and vol_delta is not None:
       vol_delta_f = utils.vol_db_to_float(vol_delta)
     #vol_sf = utils.round_sf(vol_delta_f, sf = 3)
     print(f' old vol_delta_f={group.vol_delta_f}, new vol_delta_f={vol_delta_f}')
