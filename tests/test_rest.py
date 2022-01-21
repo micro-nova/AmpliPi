@@ -778,8 +778,11 @@ def test_set_zone_vol(client, zid):
   vol_f = [pcnt_2_vol_f(p) for p in vol_p]
   vol_db = [amplipi.utils.vol_float_to_db(f, min_db, max_db) for f in vol_f]
 
-  def patch_zone(json: Dict):
+  def patch_zone(json: Dict, expect_failure: bool = False) -> Optional[Dict]:
     rv = client.patch(f'/api/zones/{zid}', json=json)
+    if expect_failure:
+      assert rv.status_code != HTTPStatus.OK
+      return None
     assert rv.status_code == HTTPStatus.OK
     jrv = rv.json()
     patched_zone = find(jrv['zones'], zid)
@@ -805,8 +808,90 @@ def test_set_zone_vol(client, zid):
     assert z['vol'] == db
     assert z['vol_f'] == vol_f[i]
 
-  # TODO: Change min/max vol and test
-  # TODO: Test setting below min and above max
+  # set zone dB volume to below minimum, expect failure
+  patch_zone({'vol': amplipi.models.MIN_VOL_DB - 1}, expect_failure=True)
+  patch_zone({'vol': amplipi.models.MAX_VOL_DB + 1}, expect_failure=True)
+  patch_zone({'vol_f': amplipi.models.MIN_VOL - 1}, expect_failure=True)
+  patch_zone({'vol_f': amplipi.models.MAX_VOL + 1}, expect_failure=True)
+
+  # test that changes to 'vol_min' saturate properly
+  z = patch_zone({'vol_f': amplipi.models.MIN_VOL, 'vol_min': amplipi.models.MIN_VOL_DB})
+  assert z['vol'] == amplipi.models.MIN_VOL_DB
+  assert z['vol_f'] == amplipi.models.MIN_VOL
+  assert z['vol_min'] == amplipi.models.MIN_VOL_DB
+  # raise the minimum volume an expect it to saturate
+  new_min_vol = 0.25 * (amplipi.models.MAX_VOL_DB - amplipi.models.MIN_VOL_DB) + amplipi.models.MIN_VOL_DB
+  z = patch_zone({'vol_min': new_min_vol})
+  assert z['vol'] == new_min_vol
+  assert z['vol_f'] == amplipi.models.MIN_VOL
+  assert z['vol_min'] == new_min_vol
+  # set volume below min and expect it to saturate
+  z = patch_zone({'vol': amplipi.models.MIN_VOL_DB})
+  assert z['vol'] == new_min_vol
+  assert z['vol_f'] == amplipi.models.MIN_VOL
+  # set volume to 0% and expect minimum dB
+  z = patch_zone({'vol_f': amplipi.models.MIN_VOL})
+  assert z['vol'] == new_min_vol
+  assert z['vol_f'] == amplipi.models.MIN_VOL
+
+  # test that changes to 'vol_min' update 'vol' properly
+  mid_vol = (amplipi.models.MIN_VOL_DB + amplipi.models.MAX_VOL_DB) / 2
+  mid_vol_f = (amplipi.models.MIN_VOL + amplipi.models.MAX_VOL) / 2
+  # reset vol_min to minimum but vol_f to halfway
+  z = patch_zone({'vol_f': mid_vol_f, 'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MAX_VOL_DB})
+  assert z['vol'] == mid_vol
+  assert z['vol_f'] == mid_vol_f
+  assert z['vol_min'] == amplipi.models.MIN_VOL_DB
+  # set vol_min to halfway, expect vol_f to update to min
+  z = patch_zone({'vol_min': mid_vol})
+  assert z['vol'] == mid_vol                  # vol is still within valid vol range
+  assert z['vol_f'] == amplipi.models.MIN_VOL # vol is at the new min so vol_f is 0
+  assert z['vol_min'] == mid_vol
+  # set vol to the new dB midpoint, expect vol_f to be at half
+  new_mid_vol = (mid_vol + amplipi.models.MAX_VOL_DB) / 2
+  z = patch_zone({'vol': new_mid_vol})
+  assert z['vol'] == new_mid_vol
+  assert z['vol_f'] == mid_vol_f
+  assert z['vol_min'] == mid_vol
+
+  # test that changes to 'vol_max' saturate properly
+  z = patch_zone({'vol_f': amplipi.models.MAX_VOL, 'vol_max': amplipi.models.MAX_VOL_DB})
+  assert z['vol'] == amplipi.models.MAX_VOL_DB
+  assert z['vol_f'] == amplipi.models.MAX_VOL
+  assert z['vol_max'] == amplipi.models.MAX_VOL_DB
+  # raise the maximum volume an expect it to saturate
+  new_max_vol = 0.75 * (amplipi.models.MAX_VOL_DB - amplipi.models.MIN_VOL_DB) + amplipi.models.MIN_VOL_DB
+  z = patch_zone({'vol_max': new_max_vol})
+  assert z['vol'] == new_max_vol
+  assert z['vol_f'] == amplipi.models.MAX_VOL
+  assert z['vol_max'] == new_max_vol
+  # set volume above max and expect it to saturate
+  z = patch_zone({'vol': amplipi.models.MAX_VOL_DB})
+  assert z['vol'] == new_max_vol
+  assert z['vol_f'] == amplipi.models.MAX_VOL
+  # set volume to 100% and expect maximum dB
+  z = patch_zone({'vol_f': amplipi.models.MAX_VOL})
+  assert z['vol'] == new_max_vol
+  assert z['vol_f'] == amplipi.models.MAX_VOL
+
+  # test that changes to 'vol_max' update 'vol' properly
+  # reset vol_max to maximum but vol_f to halfway
+  z = patch_zone({'vol_f': mid_vol_f, 'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MAX_VOL_DB})
+  assert z['vol'] == mid_vol
+  assert z['vol_f'] == mid_vol_f
+  assert z['vol_min'] == amplipi.models.MIN_VOL_DB
+  assert z['vol_max'] == amplipi.models.MAX_VOL_DB
+  # set vol_max to halfway, expect vol_f to update to max
+  z = patch_zone({'vol_max': mid_vol})
+  assert z['vol'] == mid_vol                  # vol is still within valid vol range
+  assert z['vol_f'] == amplipi.models.MAX_VOL # vol is at the new max so vol_f is 1
+  assert z['vol_max'] == mid_vol
+  # set vol to the new dB midpoint, expect vol_f to be at half
+  new_mid_vol = (amplipi.models.MIN_VOL_DB + mid_vol) / 2
+  z = patch_zone({'vol': new_mid_vol})
+  assert z['vol'] == new_mid_vol
+  assert z['vol_f'] == mid_vol_f
+  assert z['vol_max'] == mid_vol
 
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_set_group_vol(client, gid):
@@ -819,10 +904,12 @@ def test_set_group_vol(client, gid):
   vol_f = [pcnt_2_vol_f(p) for p in vol_p]
   vol_db = [amplipi.utils.vol_float_to_db(f) for f in vol_f]
 
+  # check if the group gid exists in the config
+  group_present = find(client.get('/api').json()['groups'], gid)
+
   def patch_group(json: Dict) -> Optional[Dict]:
-    last_state = status_copy(client)
     rv = client.patch(f'/api/groups/{gid}', json=json)
-    if find(last_state['groups'], gid):
+    if group_present:
       assert rv.status_code == HTTPStatus.OK
     else:
       # the group didn't exist, so the patch request should return an error
@@ -833,19 +920,19 @@ def test_set_group_vol(client, gid):
     assert patched_group is not None
     return patched_group
 
-  # set zone dB volume, expect it to match the above test volume
+  # set group dB volume, expect it to match the above test volume
   for i, db in enumerate(vol_db):
     g = patch_group({'vol_delta': db})
     assert g is None or g['vol_delta'] == db
     assert g is None or g['vol_delta_f'] == vol_f[i]
 
-  # set zone float volume, expect it to match the calculated volume in dB
+  # set group float volume, expect it to match the calculated volume in dB
   for i, fv in enumerate(vol_f):
     g = patch_group({'vol_delta_f': fv})
     assert g is None or g['vol_delta'] == vol_db[i]
     assert g is None or g['vol_delta_f'] == fv
 
-  # set zone dB volume and DIFFERENT float volume, expect the dB to override the float
+  # set group dB volume and DIFFERENT float volume, expect the dB to override the float
   for i, db in enumerate(vol_db):
     fv = vol_f[-i-1] # grab elements in reverse order
     g = patch_group({'vol_delta': db, 'vol_delta_f': fv})
