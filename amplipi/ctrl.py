@@ -488,7 +488,6 @@ class Api:
           else:
             vol_db = utils.clamp(vol, zone.vol_min, zone.vol_max)
             vol_f_new = utils.vol_db_to_float(vol_db, zone.vol_min, zone.vol_max)
-          print(f'Setting volume to {vol_f:0.3}: {vol_db} dB')
           if self._rt.update_zone_vol(idx, vol_db):
             zone.vol = vol_db
             zone.vol_f = vol_f_new
@@ -566,7 +565,6 @@ class Api:
         group.source_id = None
       group.vol_delta_f = (vols[0] + vols[-1]) / 2 # group volume is the midpoint between the highest and lowest source
       group.vol_delta = utils.vol_float_to_db(group.vol_delta_f)
-      print(f'Group volumes: {vols} and new vol_delta: {group.vol_delta_f}')
 
   def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> ApiResponse:
     """Configures an existing group
@@ -596,7 +594,6 @@ class Api:
     if vol_updated and vol_delta is not None:
       vol_delta_f = utils.vol_db_to_float(vol_delta)
     #vol_sf = utils.round_sf(vol_delta_f, sf = 3)
-    print(f' old vol_delta_f={group.vol_delta_f}, new vol_delta_f={vol_delta_f}')
 
     # update each of the member zones
     zone_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)
