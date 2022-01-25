@@ -808,7 +808,7 @@ def test_set_zone_vol(client, zid):
     assert z['vol'] == db
     assert z['vol_f'] == vol_f[i]
 
-  # set zone dB volume to below minimum, expect failure
+  # set zone volume to below minimum and above maximum, expect failure
   patch_zone({'vol': amplipi.models.MIN_VOL_DB - 1}, expect_failure=True)
   patch_zone({'vol': amplipi.models.MAX_VOL_DB + 1}, expect_failure=True)
   patch_zone({'vol_f': amplipi.models.MIN_VOL - 1}, expect_failure=True)
@@ -904,17 +904,15 @@ def test_set_group_vol(client, gid):
   vol_f = [pcnt_2_vol_f(p) for p in vol_p]
   vol_db = [amplipi.utils.vol_float_to_db(f) for f in vol_f]
 
-  # check if the group gid exists in the config
-  group_present = find(client.get('/api').json()['groups'], gid)
-
-  def patch_group(json: Dict) -> Optional[Dict]:
+  # check if the group gid exists in the config, if not always expect failure
+  group = find(client.get('/api').json()['groups'], gid)
+  no_groups = group is None
+  def patch_group(json: Dict, expect_failure: bool = no_groups) -> Optional[Dict]:
     rv = client.patch(f'/api/groups/{gid}', json=json)
-    if group_present:
-      assert rv.status_code == HTTPStatus.OK
-    else:
-      # the group didn't exist, so the patch request should return an error
+    if expect_failure:
       assert rv.status_code != HTTPStatus.OK
       return None
+    assert rv.status_code == HTTPStatus.OK
     jrv = rv.json()
     patched_group = find(jrv['groups'], gid)
     assert patched_group is not None
@@ -939,4 +937,33 @@ def test_set_group_vol(client, gid):
     assert g is None or g['vol_delta'] == db
     assert g is None or g['vol_delta_f'] == vol_f[i]
 
-  # TODO: Set individual zone volumes and check group vol_delta updates properly
+  # set group volume to below minimum and above maximum, expect failure
+  patch_group({'vol_delta': amplipi.models.MIN_VOL_DB - 1}, expect_failure=True)
+  patch_group({'vol_delta': amplipi.models.MAX_VOL_DB + 1}, expect_failure=True)
+  patch_group({'vol_delta_f': amplipi.models.MIN_VOL - 1}, expect_failure=True)
+  patch_group({'vol_delta_f': amplipi.models.MAX_VOL + 1}, expect_failure=True)
+
+  # set individual zone volumes and check group vol_delta updates properly
+  num_zones = 0 if group is None else len(group['zones'])
+  zone0_vol = pcnt_2_vol_f(1.0)
+  zone1_vol = pcnt_2_vol_f(0.5)
+  if num_zones > 0:
+    # one zone at full vol, the rest at 0
+    patch_group({'vol_delta_f': amplipi.models.MIN_VOL})
+    zid0 = group['zones'][0]
+    rv = client.patch(f'/api/zones/{zid0}', json={'vol_f': zone0_vol})
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    expected_vol = zone0_vol / len(group['zones'])
+    assert find(jrv['groups'], gid)['vol_delta_f'] == expected_vol
+    if num_zones > 1:
+      # one zone at full vol, one at half, the rest at 0
+      zid1 = group['zones'][1]
+      rv = client.patch(f'/api/zones/{zid1}', json={'vol_f': pcnt_2_vol_f(0.5)})
+      assert rv.status_code == HTTPStatus.OK
+      jrv = rv.json()
+      # The current group volume method only uses the max and min zone volumes,
+      # so if there are more than 2 zones in the group the middle value will be ignored.
+      if num_zones == 2:
+        expected_vol = (zone0_vol + zone1_vol) / 2
+      assert find(jrv['groups'], gid)['vol_delta_f'] == expected_vol
