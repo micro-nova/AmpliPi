@@ -26,9 +26,9 @@ TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
 
 # add several groups and most of the default streams to the config
 TEST_CONFIG['groups'] = [
-  {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": amplipi.models.MIN_VOL},
-  {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": amplipi.models.MIN_VOL},
-  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_delta": amplipi.models.MIN_VOL},
+  {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta_f": amplipi.models.MIN_VOL},
+  {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta_f": amplipi.models.MIN_VOL},
+  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_delta_f": amplipi.models.MIN_VOL},
 ]
 TEST_CONFIG['streams'] = [
   {"id": 1000, "name": "AmpliPi", "type": "shairport"},
@@ -85,6 +85,19 @@ def base_config_no_groups():
   del cfg['groups']
   return cfg
 
+def base_config_vol_db():
+  """ Old AmpliPi configuration with dB volumes only """
+  cfg = base_config_copy()
+  for z in cfg['zones']:
+    del z['vol_f']
+    del z['vol_min']
+    del z['vol_max']
+    z['vol'] = amplipi.models.MIN_VOL_DB
+  for g in cfg['groups']:
+    del g['vol_delta_f']
+    g['vol_delta'] = amplipi.models.MIN_VOL_DB
+  return cfg
+
 def status_copy(client):
   """ Modify-able copy of AmpliPi's status """
   rv = client.get('/api/')
@@ -99,7 +112,7 @@ def find(elements:List, eid:int):
       return i
   return None
 
-@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups()])
+@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups(), base_config_vol_db()])
 def client(request):
   """ AmpliPi instance with mocked ctrl and streams """
   cfg = request.param
