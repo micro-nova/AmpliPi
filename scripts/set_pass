@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# These give serial numbers, but serials are relatively predictable
+# so let's not use them.
+#cat /proc/cpuinfo | sed -n 's/Serial[[:space:]]*:[[:space:]]0*//p'
+#cat /sys/block/mmcblk0/device/cid
+
+confdir="$HOME/.config/amplipi"
+
+# First verify the current user is 'pi'
+if [[ $USER != pi ]]; then
+  echo "ERROR: Not running as pi user."
+  exit 1
+fi
+
+# Next check if a password has already been generated
+#if [[ -f $confdir/default_password.txt &&  ]]; then
+#fi
+
+# Generate a random password and save to file.
+# Use multiples of 3 otherwise the ending is padded with = characters
+# Resultant password length is 4/3 the number of bytes set (9 bytes = 12 chars)
+# 64 base64 chars, so log2(64)=6 bits per character. As of 2020 a ~$22k
+# commercial password cracker setup can do ~58.513 bits per year of SHA512.
+# 12 chars => 12*6/58.513 = 1.23 years to exhaust all password possibilities.
+pass=$(openssl rand -base64 9)
+mkdir -p $confdir
+echo $pass > $confdir/default_password.txt
+
+# Change the pi user's password to the new default password
+if ! echo "pi:$pass" | sudo chpasswd; then
+  echo "ERROR: Setting password failed."
+  exit 2
+fi
+sudo getent shadow pi >> $confdir/default_password.shadow

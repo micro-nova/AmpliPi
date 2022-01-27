@@ -556,6 +556,42 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+def _check_password(env: dict, progress) -> List[Task]:
+  """ If the default password hash is not stored and 'raspberry' is still
+      the password, store the password hash. This is just for older AmpliPi
+      versions that didn't get a random password set at checkout.
+  """
+  def print_progress(tasks):
+    progress(tasks)
+    return tasks
+  tasks = [Task('Store default password hash')]
+  tasks[0].success = True
+  pass_dir = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  pass_file = os.path.join(pass_dir, 'default_password.shadow')
+  if env['user'] != 'pi':
+    tasks[0].output = 'Not storing default password hash: not running as pi user'
+  elif not env['is_amplipi']:
+    tasks[0].output = 'Not storing default password hash: not running on AmpliPi'
+  elif not os.path.exists('/run/sshwarn'):
+    tasks[0].output = 'Not storing default password hash: password is no longer default'
+  elif os.path.exists(pass_file):
+    tasks[0].output = 'Default password hash already stored'
+  else:
+    # at this point the pi default password of 'raspberry' is still set
+    tasks = []
+    tasks += _create_dir(pass_dir)
+    tasks.append(Task('Get default password hash and salt', 'sudo getent shadow pi'.split()).run())
+    phash = tasks[-1].output
+    tasks.append(Task('Store default password hash'))
+    with open(pass_file, 'w') as shadow_file:
+      #num_written = shadow_file.write(phash)
+      if shadow_file.write(phash) > 0:
+        tasks[-1].output = f'Default password hash stored in {pass_file}'
+        tasks[-1].success = True
+
+  progress(tasks)
+  return tasks
+
 def _fw_ver_from_filename(name: str) -> int:
   """ Input: .bin filename, with the pattern 'preamp_X.Y.bin'.
       X = major version, Y = minor version.
@@ -666,6 +702,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   tasks += fix_file_props(env, progress)
   if env['is_amplipi']:
     tasks += add_tests(env, progress)
+  tasks += _check_password(env, progress)
   if failed():
     return False
   if os_deps:
