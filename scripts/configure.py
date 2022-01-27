@@ -14,6 +14,7 @@ from typing import List, Union, Tuple, Dict, Any, Optional
 import time
 import re
 import requests
+import sys
 
 # pylint: disable=broad-except
 # pylint: disable=bare-except
@@ -731,5 +732,7 @@ if __name__ == '__main__':
   has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
   if not has_args:
     print('  WARNING: expected some arguments, check --help for more information')
+  if sys.version_info.major < 3 or sys.version_info.minor < 7:
+    print('  WARNING: minimum python version is 3.7')
   install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
           display=flags.display, firmware=flags.firmware, restart_updater=flags.restart_updater)
