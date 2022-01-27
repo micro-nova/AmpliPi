@@ -25,7 +25,7 @@ from amplipi import formatter
 from amplipi import models
 
 # Display
-import adafruit_rgb_display.ili9341 as ili9341
+from adafruit_rgb_display import ili9341
 from PIL import Image, ImageDraw, ImageFont
 
 # To retrieve system info
@@ -402,6 +402,9 @@ except:
   log.critical(f'Failed to load font {fontname}')
   sys.exit(3)
 
+# Check if 'pi' user's password is still the default
+
+
 # Create a blank image for drawing.
 # Swap height/width to rotate it to landscape
 height = display.width
@@ -426,7 +429,6 @@ zones: List[models.Zone] = []
 
 frame_num = 0
 frame_times = []
-cpu_load = []
 use_debug_port = False
 disp_start_time = time.time()
 _sleep_timer = time.time()
@@ -484,13 +486,11 @@ while frame_num < 10 and run:
     cpu_temp = psutil.sensors_temperatures()['cpu_thermal'][0].current
     cpu_str1 = f'{cpu_pcnt:4.1f}%'
     cpu_str2 = f'{cpu_temp:4.1f}\xb0C'
-    cpu_load.append(cpu_pcnt)
 
     ram_total = int(psutil.virtual_memory().total / (1024*1024))
     ram_used  = int(psutil.virtual_memory().used / (1024*1024))
     ram_pcnt = 100 * ram_used / ram_total
-    ram_str1 = f'{ram_pcnt:4.1f}%'
-    ram_str2 = f'{ram_used}/{ram_total} MB'
+    ram_str = f'{ram_used}/{ram_total} MB'
 
     disk_usage  = psutil.disk_usage('/')
     disk_pcnt = disk_usage.percent
@@ -503,21 +503,24 @@ while frame_num < 10 and run:
     cw = 8    # Character width
     ch = 16   # Character height
     draw.rectangle((0, 0, width-1, height-1), fill=0) # Clear image
-    draw.text((1*cw, 0*ch + 2), 'CPU:',     font=font, fill='#FFFFFF')
-    draw.text((1*cw, 1*ch + 2), 'Mem:',     font=font, fill='#FFFFFF')
-    draw.text((1*cw, 2*ch + 2), 'Disk:',    font=font, fill='#FFFFFF')
-    draw.text((1*cw, 3*ch + 2), 'IP:',      font=font, fill='#FFFFFF')
-
-    draw.text((7*cw, 0*ch + 2), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
-    draw.text((7*cw, 1*ch + 2), ram_str1,   font=font, fill=gradient(ram_pcnt))
-    draw.text((7*cw, 2*ch + 2), disk_str1,  font=font, fill=gradient(disk_pcnt))
-    draw.text((7*cw, 3*ch + 2), ip_str,     font=font, fill='#FFFFFF')
 
     # BCM2837B0 is rated for [-40, 85] C
     # For now show green for anything below room temp
+    draw.text((1*cw,  0*ch + 2), 'CPU:',    font=font, fill='#FFFFFF')
+    draw.text((7*cw,  0*ch + 2), cpu_str1,  font=font, fill=gradient(cpu_pcnt))
     draw.text((14*cw, 0*ch + 2), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
-    draw.text((14*cw, 1*ch + 2), ram_str2,  font=font, fill='#FFFFFF')
-    draw.text((14*cw, 2*ch + 2), disk_str2, font=font, fill='#FFFFFF')
+    draw.text((22*cw, 0*ch + 2), 'Mem:',    font=font, fill='#FFFFFF')
+    draw.text((28*cw, 0*ch + 2), ram_str,   font=font, fill=gradient(ram_pcnt))
+
+    draw.text((1*cw,  1*ch + 2), 'Disk:',   font=font, fill='#FFFFFF')
+    draw.text((7*cw,  1*ch + 2), disk_str1, font=font, fill=gradient(disk_pcnt))
+    draw.text((14*cw, 1*ch + 2), disk_str2, font=font, fill='#FFFFFF')
+
+    draw.text((1*cw,  2*ch + 2), f'IP:   {ip_str}', font=font, fill='#FFFFFF')
+
+    password = 'test'
+    if password is not None:
+      draw.text((1*cw,  3*ch + 2), f'Default password: {password}', font=font, fill='#FFFFFF')
 
     if connected:
       # Show source input names
@@ -552,7 +555,7 @@ while frame_num < 10 and run:
       draw.text((width/2 - 1, text_y), msg, anchor='mm', align='center', font=font, fill=text_c)
       image.paste(ap_logo, box=(0, height - ap_logo.size[1]))
 
-    if time.time() - _sleep_timer > args.sleep_time:
+    if args.sleep_time >  0 and time.time() - _sleep_timer > args.sleep_time:
       # Transition to sleep mode, clear screen
       log.debug('Clearing screen then sleeping')
       backlight(False)
