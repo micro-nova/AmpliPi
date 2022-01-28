@@ -128,8 +128,8 @@ $(function() {
             <small id="plexHelp" class="form-text" style="color: #dee2e6">Click the <b>Request Authentication</b> button to open a Plex authorization page. Signing into Plex will generate a UUID and Token, shown below</small>
           </div>
           <div class="form-group">
-            <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
-            <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
+            <button type="button" class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
+            <button type="button" class="btn btn-warning" onclick="window.location.reload();" style="display: none" id="plexamp-reset">Reset</button>
           </div>
           <div class="form-group">
             <label for="new_plexamp_uuid">UUID</label>
