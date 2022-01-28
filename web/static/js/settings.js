@@ -64,8 +64,8 @@ $(function() {
         </div>
 
         <div class="form-group">
-          <label for="type">Stream Type</label>
-          <select class="form-control" name="type" id="new_type" data-required="true">
+          <label for="new_stream_type">Stream Type</label>
+          <select class="form-control" name="type" id="new_stream_type" data-required="true">
             <option value="0">- Select a Stream Type -</option>
             <option value="airplay">AirPlay Device</option>
             <option value="dlna">DLNA</option>
@@ -77,48 +77,48 @@ $(function() {
           </select>
         </div>
         <div class="form-group">
-          <label for="name">Stream Name</label>
-          <input type="text" class="form-control" name="name" id="str_name" aria-describedby="nameHelp" data-required="true">
+          <label for="new_stream_name">Stream Name</label>
+          <input type="text" class="form-control" name="name" id="new_stream_name" aria-describedby="nameHelp" data-required="true">
           <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
         </div>
 
         <div id="pandora_settings" class="addl_settings" style="display:none;">
           <div class="form-group">
-            <label for="user">Pandora Username</label>
-            <input type="text" class="form-control" name="user" data-required="true">
+            <label for="new_pandora_user">Pandora Username</label>
+            <input type="text" class="form-control" name="user" id="new_pandora_user" data-required="true">
           </div>
           <div class="form-group">
-            <label for="user">Pandora Password</label>
-            <input type="password" class="form-control" name="password" data-required="true">
+            <label for="new_pandora_password">Pandora Password</label>
+            <input type="password" class="form-control" name="password" id="new_pandora_password" data-required="true">
           </div>
           <div class="form-group">
-            <label for="user">Pandora Station ID</label>
-            <input type="text" class="form-control" name="station" aria-describedby="stationHelp" data-required="true">
+            <label for="new_pandora_station">Pandora Station ID</label>
+            <input type="text" class="form-control" name="station" id="new_pandora_station" aria-describedby="stationHelp" data-required="true">
             <small id="stationHelp" class="form-text text-muted">Station ID is the numeric section of a Pandora station link. Example: ID = <b>4610303469018478727</b> from https://www.pandora.com/station/play/<b>4610303469018478727</b></small>
           </div>
         </div>
 
         <div id="internetradio_settings" class="addl_settings" style="display:none;">
           <div class="form-group">
-            <label for="user">Station Audio URL</label>
-            <input type="text" class="form-control" name="url" id="url" aria-describedby="urlHelp" data-required="true">
+            <label for="new_internetradio_url">Station Audio URL</label>
+            <input type="text" class="form-control" name="url" id="new_internetradio_url" aria-describedby="urlHelp" data-required="true">
             <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
           </div>
           <div class="form-group">
-            <label for="user">Station Logo</label>
-            <input type="text" class="form-control" name="logo">
+            <label for="new_internetradio_logo">Station Logo</label>
+            <input type="text" class="form-control" name="logo" id="new_internetradio_logo">
           </div>
         </div>
 
         <div id="fmradio_settings" class="addl_settings" style="display:none;">
           <div class="form-group">
-            <label for="user">FM Frequency</label>
-            <input type="text" class="form-control" name="freq" aria-describedby="freqHelp" data-required="true">
+            <label for="new_fmradio_freq">FM Frequency</label>
+            <input type="text" class="form-control" name="freq" id="new_fmradio_freq" aria-describedby="freqHelp" data-required="true">
             <small id="freqHelp" class="form-text text-muted">Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.</small>
           </div>
           <div class="form-group">
-            <label for="user">Station Logo</label>
-            <input type="text" class="form-control" name="logo" aria-describedby="logoHelp">
+            <label for="new_fmradio_logo">Station Logo</label>
+            <input type="text" class="form-control" name="logo" id="new_fmradio_logo" aria-describedby="logoHelp">
             <small id="logoHelp" class="form-text text-muted">Default built-in logo is: static/imgs/fmradio.png</small>
           </div>
         </div>
@@ -132,12 +132,12 @@ $(function() {
             <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
           </div>
           <div class="form-group">
-            <label for="user">UUID</label>
-            <input type="text" class="form-control" name="client_id" id="client_id" style="background-color: #adb5bd;" value="" data-required="true" readonly>
+            <label for="new_plexamp_uuid">UUID</label>
+            <input type="text" class="form-control" name="client_id" id="new_plexamp_uuid" style="background-color: #adb5bd;" value="" data-required="true" readonly>
           </div>
           <div class="form-group">
-            <label for="user">Authentication Token</label>
-            <input type="text" class="form-control" name="token" id="token" style="background-color: #adb5bd;" value="" data-required="true" readonly>
+            <label for="new_plexamp_token">Authentication Token</label>
+            <input type="text" class="form-control" name="token" id="new_plexamp_token" style="background-color: #adb5bd;" value="" data-required="true" readonly>
           </div>
         </div>
 
@@ -173,8 +173,8 @@ $(function() {
 
       html += `
         <div class="form-group">
-          <label for="name">Stream Name</label>
-          <input type="text" class="form-control" name="name" value="${s.name}" id="str_name" aria-describedby="nameHelp" data-required="true">
+          <label for="stream_name">Stream Name</label>
+          <input type="text" class="form-control" name="name" id="stream_name" value="${s.name}" aria-describedby="nameHelp" data-required="true">
           <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
         </div>
       `;
@@ -182,16 +182,16 @@ $(function() {
       if (s.type == "pandora") {
         html += `
         <div class="form-group">
-          <label for="user">Pandora Username</label>
-          <input type="text" class="form-control" name="user" value="${s.user}" data-required="true">
+          <label for="pandora_user">Pandora Username</label>
+          <input type="text" class="form-control" name="user" id="pandora_user" value="${s.user}" data-required="true">
         </div>
         <div class="form-group">
-          <label for="user">Pandora Password</label>
-          <input type="password" class="form-control" name="password" value="${s.password}" data-required="true">
+          <label for="pandora_password">Pandora Password</label>
+          <input type="password" class="form-control" name="password" id="pandora_password" value="${s.password}" data-required="true">
         </div>
         <div class="form-group">
-          <label for="user">Pandora Station ID</label>
-          <input type="text" class="form-control" name="station" value="${s.station}" aria-describedby="stationHelp" data-required="true">
+          <label for="pandora_station">Pandora Station ID</label>
+          <input type="text" class="form-control" name="station" id="pandora_station" value="${s.station}" aria-describedby="stationHelp" data-required="true">
           <small id="stationHelp" class="form-text text-muted">Station ID is the numeric section of a Pandora station link. Example: ID = <b>4610303469018478727</b> from https://www.pandora.com/station/play/<b>4610303469018478727</b></small>
         </div>
         `;
@@ -200,13 +200,13 @@ $(function() {
       if (s.type == "internetradio") {
         html += `
         <div class="form-group">
-          <label for="user">Station Audio URL</label>
-          <input type="text" class="form-control" name="url" value="${s.url}" aria-describedby="urlHelp" data-required="true">
+          <label for="internetradio_url">Station Audio URL</label>
+          <input type="text" class="form-control" name="url" id="internetradio_url" value="${s.url}" aria-describedby="urlHelp" data-required="true">
           <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
         </div>
         <div class="form-group">
-          <label for="user">Station Logo</label>
-          <input type="text" class="form-control" name="logo" value="${s.logo}">
+          <label for="internetradio_logo">Station Logo</label>
+          <input type="text" class="form-control" name="logo" id="internetradio_logo" value="${s.logo}">
         </div>
         `;
       }
@@ -214,13 +214,13 @@ $(function() {
       if (s.type == "fmradio") {
         html += `
         <div class="form-group">
-          <label for="user">FM Frequency</label>
-          <input type="text" class="form-control" name="freq" value="${s.freq}" aria-describedby="freqHelp" data-required="true">
+          <label for="fmradio_freq">FM Frequency</label>
+          <input type="text" class="form-control" name="freq" id="fmradio_freq" value="${s.freq}" aria-describedby="freqHelp" data-required="true">
           <small id="freqHelp" class="form-text text-muted">Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.</small>
         </div>
         <div class="form-group">
-          <label for="user">Station Logo</label>XS
-          <input type="text" class="form-control" name="logo" value="${s.logo}" aria-describedby="logoHelp">
+          <label for="fmradio_logo">Station Logo</label>XS
+          <input type="text" class="form-control" name="logo" id="fmradio_logo" value="${s.logo}" aria-describedby="logoHelp">
           <small id="logoHelp" class="form-text text-muted">Default built-in logo is: static/imgs/fmradio.png</small>
         </div>
         `;
@@ -236,12 +236,12 @@ $(function() {
           <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
         </div>
         <div class="form-group">
-          <label for="user">UUID</label>
-          <input type="text" class="form-control" name="client_id" id="client_id" style="background-color: #adb5bd;" value="${s.client_id}" data-required="true" readonly>
+          <label for="plexamp_uuid">UUID</label>
+          <input type="text" class="form-control" name="client_id" id="plexamp_uuid" style="background-color: #adb5bd;" value="${s.client_id}" data-required="true" readonly>
         </div>
         <div class="form-group">
-          <label for="user">Authentication Token</label>
-          <input type="text" class="form-control" name="token" id="token" style="background-color: #adb5bd;" value="${s.token}" data-required="true" readonly>
+          <label for="plexamp_token">Authentication Token</label>
+          <input type="text" class="form-control" name="token" id="plexamp_token" style="background-color: #adb5bd;" value="${s.token}" data-required="true" readonly>
         </div>
         `;
       }
@@ -262,7 +262,7 @@ $(function() {
   });
 
   /* Show selected stream settings */
-  $("#settings-tab-inputs-config").on("click", "#new_type", function() {
+  $("#settings-tab-inputs-config").on("click", "#new_stream_type", function() {
     $(".addl_settings").hide(); // Hide all additional settings
     if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
     else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
@@ -410,8 +410,8 @@ $(function() {
     var html = `
       <form id="settings-tab-groups-new-group-form">
         <div class="form-group">
-          <label for="name">Group Name</label>
-          <input type="text" class="form-control" name="name" id="grp_name" data-required="true">
+          <label for="new_group_name">Group Name</label>
+          <input type="text" class="form-control" name="name" id="new_group_name" data-required="true">
         </div>
         <div class="form-group">
           <select class="selectpicker" id="zone-picker" multiple>
@@ -453,8 +453,8 @@ $(function() {
       <input type="hidden" id="edit-gid" name="id" value="${g.id}">
       <form id="editGroupForm">
         <div class="form-group">
-          <label for="name">Group Name</label>
-          <input type="text" class="form-control" name="name" value="${g.name}" data-required="true">
+          <label for="group_name">Group Name</label>
+          <input type="text" class="form-control" name="name" id="group_name" value="${g.name}" data-required="true">
         </div>
         <div class="form-group">
           <select class="selectpicker" id="zone-picker" multiple>
