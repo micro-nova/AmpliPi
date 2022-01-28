@@ -166,7 +166,7 @@ $(function() {
       if (s.type == "fmradio") {
         html += `
         <div class="form-group" style="color: yellow">
-          An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/">RTL SDR</a>
+          An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/" target="_blank">RTL SDR</a>
         </div>
         `;
       }
