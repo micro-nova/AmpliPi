@@ -11,6 +11,7 @@ numpy
 pillow
 psutil
 pydantic
+pylint
 pyserial
 pytest
 pytest-dependency

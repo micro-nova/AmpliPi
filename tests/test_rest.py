@@ -709,11 +709,14 @@ def test_zeroconf():
   from time import sleep
   from multiprocessing import Process, Queue
 
+  # get default network interface
+  iface = ni.gateways()['default'][ni.AF_INET][1]
 
   # first time ni.ifaddresses is called in the CI system it fails
   try:
-    ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+    ni.ifaddresses(iface)[ni.AF_LINK][0]['addr']
   except:
+    print('ni.ifaddresses() failed first time!')
     pass
 
   services_advertised = {}
@@ -740,7 +743,7 @@ def test_zeroconf():
   # figure out what the name will be
   mac_addr = ''
   try:
-    mac_addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+    mac_addr = ni.ifaddresses(iface)[ni.AF_LINK][0]['addr']
   except:
     mac_addr = 'none'
 

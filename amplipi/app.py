@@ -30,6 +30,7 @@ import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
 from typing import List, Dict, Tuple, Set, Any, Optional, Callable, Union, TYPE_CHECKING, get_type_hints
+from enum import Enum
 from types import SimpleNamespace
 
 import urllib.request # For custom album art size
@@ -463,11 +464,11 @@ def add_response_examples(openapi_schema, route: APIRoute) -> None:
       openapi_schema['paths'][route.path]['get']['responses']['200'][
           'content']['application/json']['example'] = {piece: example_status[piece]}
 
-def get_live_examples(tags: List[str]) -> Dict[str, Dict[str, Any]]:
+def get_live_examples(tags: List[Union[str, Enum]]) -> Dict[str, Dict[str, Any]]:
   """ Create a list of examples using the live configuration """
   live_examples = {}
   for tag in tags:
-    for i in get_ctrl().get_items(tag) or []:
+    for i in get_ctrl().get_items(str(tag)) or []:
       if isinstance(i.name, str):
         if isinstance(i, models.Stream):
           live_examples[i.name] = {'value': i.id, 'summary': f'{i.name} - {i.type}'}
