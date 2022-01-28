@@ -426,8 +426,7 @@ $(function() {
     /* Initialize selectpicker */
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
       $('#zone-picker').selectpicker('mobile');
-    }
-    else {
+    } else {
       $('#zone-picker').selectpicker({});
     }
   });
@@ -470,8 +469,7 @@ $(function() {
     /* Initialize selectpicker */
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
       $('#zone-picker').selectpicker('mobile');
-    }
-    else {
+    } else {
       $('#zone-picker').selectpicker({});
     }
   });
