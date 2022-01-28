@@ -350,12 +350,12 @@ $(function() {
         <div class="form-group">
           <label for="volMinDb">Minimum Volume</label>
           <input type="number" class="form-control" name="vol_min" id="volMinDb" value="${z.vol_min}" min="-80" max="0" aria-describedby="minVolHelp" data-required="true">
-          <small id="minVolHelp" class="form-text text-muted">-80 to 0 dB, default -80</small>
+          <small id="minVolHelp" class="form-text text-muted">-80 to 0 dB, default -80. Must be at least 20 dB lower than max volume.</small>
         </div>
         <div class="form-group">
           <label for="volMaxDb">Maximum Volume</label>
           <input type="number" class="form-control" name="vol_max" id="volMaxDb" value="${z.vol_max}" min="-80" max="0" aria-describedby="maxVolHelp" data-required="true">
-          <small id="maxVolHelp" class="form-text text-muted">-80 to 0 dB, default 0</small>
+          <small id="maxVolHelp" class="form-text text-muted">-80 to 0 dB, default 0. Must be at least 20 dB higher than min volume.</small>
         </div>
         <div class="form-group">
           <input type="hidden" value="false" name="disabled">

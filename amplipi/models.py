@@ -30,13 +30,20 @@ from pydantic import BaseSettings, BaseModel, Field
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
 
-# min and max volumes for slider bar. Will be mapped to dB.
 MIN_VOL = 0.0
-MAX_VOL = 1.0
+""" Min volume for slider bar. Will be mapped to dB. """
 
-# min and max volumes in dB. -80 is special and is actually -90 dB (mute).
+MAX_VOL = 1.0
+""" Max volume for slider bar. Will be mapped to dB. """
+
 MIN_VOL_DB = -80
+""" Min volume in dB. -80 is special and is actually -90 dB (mute). """
+
 MAX_VOL_DB = 0
+""" Max volume in dB. """
+
+MIN_DB_RANGE = 20
+""" Smallest allowed difference between a zone's vol_max and vol_min """
 
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """

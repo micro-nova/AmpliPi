@@ -453,13 +453,13 @@ class Api:
       vol_max, update_vol_max = utils.updated_val(update.vol_max, zone.vol_max)
       disabled, _ = utils.updated_val(update.disabled, zone.disabled)
       try:
-        sid = utils.parse_int(source_id, [0, 1, 2, 3])
-        zones = self.status.zones
         # update non hw state
         zone.name = name
-        zone.vol_min = vol_min
-        zone.vol_max = vol_max
         zone.disabled = disabled
+
+        # update the zone's associated source
+        sid = utils.parse_int(source_id, [0, 1, 2, 3])
+        zones = self.status.zones
         if update_source_id or force_update:
           zone_sources = [zone.source_id for zone in zones]
           zone_sources[idx] = sid
@@ -467,6 +467,12 @@ class Api:
             zone.source_id = sid
           else:
             return ApiResponse.error('set zone failed: unable to update zone source')
+
+        # update min/max volumes
+        if vol_max - vol_min < models.MIN_DB_RANGE:
+          return ApiResponse.error(f'set zone failed: max - min volume must be greater than {models.MIN_DB_RANGE}')
+        zone.vol_min = vol_min
+        zone.vol_max = vol_max
 
         def set_mute():
           mutes = [zone.mute for zone in zones]
