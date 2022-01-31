@@ -568,8 +568,8 @@ class Api:
         group.source_id = sources.pop() # TODO: how should we handle different sources in the group?
       else: # multiple sources
         group.source_id = None
-      group.vol_delta_f = (vols[0] + vols[-1]) / 2 # group volume is the midpoint between the highest and lowest source
-      group.vol_delta = utils.vol_float_to_db(group.vol_delta_f)
+      group.vol_f = (vols[0] + vols[-1]) / 2 # group volume is the midpoint between the highest and lowest source
+      group.vol_delta = utils.vol_float_to_db(group.vol_f)
 
   def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> ApiResponse:
     """Configures an existing group
@@ -589,22 +589,22 @@ class Api:
     name, _ = utils.updated_val(update.name, group.name)
     zones, _ = utils.updated_val(update.zones, group.zones)
     vol_delta, vol_updated = utils.updated_val(update.vol_delta, group.vol_delta)
-    vol_delta_f, vol_f_updated = utils.updated_val(update.vol_delta_f, group.vol_delta_f)
+    vol_f, vol_f_updated = utils.updated_val(update.vol_f, group.vol_f)
 
     group.name = name
     group.zones = zones
 
-    # determine group volume, 'vol_delta' (in dB) takes precedence over vol_delta_f
+    # determine group volume, 'vol_delta' (in dB) takes precedence over vol_f
     # if vol_updated is true vol_delta can't be none but mypy isn't smart enough to know that
     if vol_updated and vol_delta is not None:
-      vol_delta_f = utils.vol_db_to_float(vol_delta)
+      vol_f = utils.vol_db_to_float(vol_delta)
 
     # update each of the member zones
     zone_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)
     if vol_updated or vol_f_updated:
       # TODO: make this use volume delta adjustment, for now its a fixed group volume
       # use float value so zone calculates appropriate offsets in dB
-      zone_update.vol_f = vol_delta_f
+      zone_update.vol_f = vol_f
     for zone in [self.status.zones[zone] for zone in zones]:
       self.set_zone(zone.id, zone_update, internal=True)
 

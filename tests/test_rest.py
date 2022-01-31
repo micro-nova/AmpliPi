@@ -26,9 +26,9 @@ TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
 
 # add several groups and most of the default streams to the config
 TEST_CONFIG['groups'] = [
-  {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta_f": amplipi.models.MIN_VOL},
-  {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta_f": amplipi.models.MIN_VOL},
-  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_delta_f": amplipi.models.MIN_VOL},
+  {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL},
+  {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL},
+  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL},
 ]
 TEST_CONFIG['streams'] = [
   {"id": 1000, "name": "AmpliPi", "type": "shairport"},
@@ -94,7 +94,7 @@ def base_config_vol_db():
     del z['vol_max']
     z['vol'] = amplipi.models.MIN_VOL_DB
   for g in cfg['groups']:
-    del g['vol_delta_f']
+    del g['vol_f']
     g['vol_delta'] = amplipi.models.MIN_VOL_DB
   return cfg
 
@@ -942,26 +942,26 @@ def test_set_group_vol(client, gid):
   for i, db in enumerate(vol_db):
     g = patch_group({'vol_delta': db})
     assert g is None or g['vol_delta'] == db
-    assert g is None or g['vol_delta_f'] == vol_f[i]
+    assert g is None or g['vol_f'] == vol_f[i]
 
   # set group float volume, expect it to match the calculated volume in dB
   for i, fv in enumerate(vol_f):
-    g = patch_group({'vol_delta_f': fv})
+    g = patch_group({'vol_f': fv})
     assert g is None or g['vol_delta'] == vol_db[i]
-    assert g is None or g['vol_delta_f'] == fv
+    assert g is None or g['vol_f'] == fv
 
   # set group dB volume and DIFFERENT float volume, expect the dB to override the float
   for i, db in enumerate(vol_db):
     fv = vol_f[-i-1] # grab elements in reverse order
-    g = patch_group({'vol_delta': db, 'vol_delta_f': fv})
+    g = patch_group({'vol_delta': db, 'vol_f': fv})
     assert g is None or g['vol_delta'] == db
-    assert g is None or g['vol_delta_f'] == vol_f[i]
+    assert g is None or g['vol_f'] == vol_f[i]
 
   # set group volume to below minimum and above maximum, expect failure
   patch_group({'vol_delta': amplipi.models.MIN_VOL_DB - 1}, expect_failure=True)
   patch_group({'vol_delta': amplipi.models.MAX_VOL_DB + 1}, expect_failure=True)
-  patch_group({'vol_delta_f': amplipi.models.MIN_VOL - 1}, expect_failure=True)
-  patch_group({'vol_delta_f': amplipi.models.MAX_VOL + 1}, expect_failure=True)
+  patch_group({'vol_f': amplipi.models.MIN_VOL - 1}, expect_failure=True)
+  patch_group({'vol_f': amplipi.models.MAX_VOL + 1}, expect_failure=True)
 
   # set individual zone volumes and check group vol_delta updates properly
   num_zones = 0 if group is None else len(group['zones'])
@@ -969,13 +969,13 @@ def test_set_group_vol(client, gid):
   zone1_vol = pcnt_2_vol_f(0.5)
   if num_zones > 0:
     # one zone at full vol, the rest at 0
-    patch_group({'vol_delta_f': amplipi.models.MIN_VOL})
+    patch_group({'vol_f': amplipi.models.MIN_VOL})
     zid0 = group['zones'][0]
     rv = client.patch(f'/api/zones/{zid0}', json={'vol_f': zone0_vol})
     assert rv.status_code == HTTPStatus.OK
     jrv = rv.json()
     expected_vol = zone0_vol / len(group['zones'])
-    assert find(jrv['groups'], gid)['vol_delta_f'] == expected_vol
+    assert find(jrv['groups'], gid)['vol_f'] == expected_vol
     if num_zones > 1:
       # one zone at full vol, one at half, the rest at 0
       zid1 = group['zones'][1]
@@ -986,4 +986,4 @@ def test_set_group_vol(client, gid):
       # so if there are more than 2 zones in the group the middle value will be ignored.
       if num_zones == 2:
         expected_vol = (zone0_vol + zone1_vol) / 2
-      assert find(jrv['groups'], gid)['vol_delta_f'] == expected_vol
+      assert find(jrv['groups'], gid)['vol_f'] == expected_vol

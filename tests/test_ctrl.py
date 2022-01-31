@@ -21,8 +21,8 @@ GOOD_STATUS = deepcopy(DEFAULT_STATUS)
 vol = 0
 for zone in GOOD_STATUS['zones']:
   vol += zone['vol_f']
-vol_delta_f = vol / len( GOOD_STATUS['zones'])
-GOOD_STATUS['groups'] = [{'id': 100, 'name': 'test group', 'mute': True, 'vol_delta_f': vol_delta_f, 'source_id': 0, 'zones': [0, 1, 2, 3, 4, 5]}]
+vol_f = vol / len( GOOD_STATUS['zones'])
+GOOD_STATUS['groups'] = [{'id': 100, 'name': 'test group', 'mute': True, 'vol_f': vol_f, 'source_id': 0, 'zones': [0, 1, 2, 3, 4, 5]}]
 GOOD_CONFIG = json.dumps(GOOD_STATUS) # make it a json string we can write to a config file
 # corrupt the json string by only taking the first half
 # ( simulating what would happen if the program was terminated while writing the config file)

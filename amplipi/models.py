@@ -334,7 +334,7 @@ class Group(Base):
   zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
   mute: Optional[bool] = fields.GroupMute
   vol_delta: Optional[int] = fields.GroupVolume
-  vol_delta_f: Optional[float] = fields.GroupVolumeF
+  vol_f: Optional[float] = fields.GroupVolumeF
 
   def as_update(self) -> 'GroupUpdate':
     """ Convert to GroupUpdate """
@@ -384,7 +384,7 @@ class GroupUpdate(BaseUpdate):
   zones: Optional[List[int]] = fields.Zones
   mute: Optional[bool] = fields.GroupMute
   vol_delta: Optional[int] = fields.GroupVolume
-  vol_delta_f: Optional[float] = fields.GroupVolumeF
+  vol_f: Optional[float] = fields.GroupVolumeF
 
   class Config:
     schema_extra = {
