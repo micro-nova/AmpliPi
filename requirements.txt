@@ -11,6 +11,7 @@ numpy
 pillow
 psutil
 pydantic
+dbus-python
 pyserial
 pytest
 pytest-dependency

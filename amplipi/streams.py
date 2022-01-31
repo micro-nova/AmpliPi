@@ -865,8 +865,78 @@ class FMRadio(BaseStream):
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
 
+class Bluetooth(BaseStream):
+  def __init__(self, name, device:str, mock=False):
+    super().__init__('Bluetooth', name, mock)
+    self.device = device # mac address of bt device
+    self.bkg_thread=None # thread that bluealsa daemon will be running on
+
+  def __del__(self):
+    self.disconnect()
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs:
+      self.name = kwargs['name']
+    if 'device' in kwargs:
+      self.device = kwargs['device']
+      reconnect_needed = True
+    if reconnect_needed:
+      last_src = self.src
+      self.disconnect()
+      time.sleep(0.1) # delay a bit, is this needed?
+      self.connect(last_src)
+
+  def connect(self, src):
+    print(f'connecting {self.device} to {src} via {self.name}...')
+
+    if self.mock:
+      self._connect(src)
+      # make a thread that waits for a couple of secends and returns after setting info to stopped
+      self.bkg_thread = threading.Thread(target=self.wait_on_proc2)
+      self.bkg_thread.start()
+      return
+
+    bt_daemon_args = f'python {utils.get_folder("streams")}/bluetooth.py start'.split()
+    bt_play_daemon_args = f'python {utils.get_folder("streams")}/bluetooth.py connect ch{src} {self.device}'.split()
+
+    try:
+      self.proc1 = subprocess.Popen(args = bt_daemon_args)
+      self.proc2 = subprocess.Popen(args = bt_play_daemon_args)
+      self._connect(src)
+
+      self.bkg_thread = threading.Thread(target=self.wait_on_proc2)
+      self.bkg_thread.start()
+
+    except Exception as e:
+      print(f'error starting bluetooth: {e}')
+
+    return
+
+  def wait_on_proc2(self):
+    if self.proc2 is not None:
+      self.proc2.wait()
+    else:
+      time.sleep(0.3) # for mock
+    self.state = 'stopped'
+
+  def disconnect(self):
+      if self._is_running():
+        self.proc1.kill()
+        self.proc2.kill()
+        if self.bkg_thread:
+          self.bkg_thread.join()
+      self.proc = None
+      self._disconnect()
+
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    return source
+
+
+
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
+AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio, Bluetooth]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -890,4 +960,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return FilePlayer(args['name'], args['url'], mock=mock)
   elif stream.type == 'fmradio':
     return FMRadio(args['name'], args['freq'], args['logo'], mock=mock)
+  elif stream.type == 'bluetooth':
+    return Bluetooth(args['name'], args['device'], mock=mock)
   raise NotImplementedError(stream.type)

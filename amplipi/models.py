@@ -403,6 +403,7 @@ class Stream(Base):
   freq: Optional[str] = Field(description='FM Frequency (MHz), used for fmradio')
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
+  device: Optional[str] = Field(description='MAC address for bluetooth device')
 
   # add examples for each type of stream
   class Config:
