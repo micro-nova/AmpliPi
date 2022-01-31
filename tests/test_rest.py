@@ -906,6 +906,13 @@ def test_set_zone_vol(client, zid):
   assert z['vol_f'] == mid_vol_f
   assert z['vol_max'] == mid_vol
 
+  # test that 'vol_min' and 'vol_max' can't be set closer than MIN_DB_RANGE
+  z = patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB + amplipi.models.MIN_DB_RANGE})
+  assert z['vol_min'] == amplipi.models.MIN_VOL_DB
+  assert z['vol_max'] == amplipi.models.MIN_VOL_DB + amplipi.models.MIN_DB_RANGE
+  patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB}, expect_failure=True)
+  patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB + amplipi.models.MIN_DB_RANGE / 2}, expect_failure=True)
+
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_set_group_vol(client, gid):
   """ Try changing a groups's volume """
