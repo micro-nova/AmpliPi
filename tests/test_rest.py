@@ -222,6 +222,11 @@ def test_get_source(client, sid):
   assert s is not None
   assert s['name'] == jrv['name']
 
+@pytest.mark.parametrize('sid', [-1, 4, 20, 100])
+def test_get_missing_source(client, sid):
+  rv = client.get(f'/api/sources/{sid}')
+  assert rv.status_code == HTTPStatus.NOT_FOUND
+
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_patch_source(client, sid):
   """ Try changing a source's name """

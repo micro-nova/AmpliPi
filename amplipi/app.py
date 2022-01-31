@@ -188,7 +188,7 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
       # general commands return None to indicate success
       return ctrl.get_state()
     # TODO: refine error codes based on error message
-    raise HTTPException(404, resp.msg)
+    raise HTTPException(400, resp.msg)
   return resp
 
 # sources
@@ -202,7 +202,9 @@ def get_source(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> mod
   """ Get Source with id=**sid** """
   # TODO: add get_X capabilities to underlying API?
   sources = ctrl.get_state().sources
-  return sources[sid]
+  if 0 <= sid < len(sources):
+    return sources[sid]
+  raise HTTPException(404, f'source {sid} not found')
 
 @api.patch('/api/sources/{sid}', tags=['source'])
 def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Status:
