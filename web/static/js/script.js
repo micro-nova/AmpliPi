@@ -424,7 +424,7 @@ function initVolControl(ctrl) {
   const fill = ctrl.querySelector(".bar .bar-fill");
   const zone = ctrl.dataset.hasOwnProperty('zone') ? ctrl.dataset.zone : null;
   const group = ctrl.dataset.hasOwnProperty('group') ? ctrl.dataset.group : null;
-  let req_throttled = false;
+  let last_req_stamp = Date(0); // keep track of request time stamps for throttling (so we don't overload AmpliPi)
 
   const initValue = (value) => {
     const pct = (value - range.min) / (range.max - range.min) * 100.0;
@@ -437,6 +437,8 @@ function initVolControl(ctrl) {
     const val = clamp(range.min, range.max, value);
     initValue(val);
     const vol = Math.round(val);
+    const cur_stamp = Date.now();
+    const req_throttled = (cur_stamp - last_req_stamp) < VOL_REQ_THROTTLE_MS;
     if (!req_throttled){
       if (zone){
         onZoneVolChange(zone, vol);
@@ -445,17 +447,15 @@ function initVolControl(ctrl) {
       } else {
         console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
       }
-      req_throttled = true;
-      setTimeout(() => {
-        req_throttled = false
-      }, VOL_REQ_THROTTLE_MS);
-
+      last_req_stamp = cur_stamp; // only update on a successful request (avoids constant rejection of a stream of user requests)
+    } else {
+      console.debug('volume adjustment rejected, last request made < 50ms ago');
     }
   }
 
   const setPct = (pct) => {
     const delta = range.max - range.min;
-    setValue((pct / 100.0 * delta) + Number(range.min))
+    setValue((pct / 100.0 * delta) + Number(range.min));
   }
 
   initValue(range.value);
