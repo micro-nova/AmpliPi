@@ -336,17 +336,31 @@ $(function() {
     console.log(z)
 
     $("#settings-tab-zones-title").text(z.name);
+
+    /* TODO: min and max volumes should be taken from models.py, can we add this to the API? */
+    /* The checkbox here use a hidden input to send the value of false by default.
+     * The actual checkbox will either send nothing, or send true which overrides the false. */
     var html = `
       <input type="hidden" id="edit-zid" name="id" value="${z.id}">
       <form id="editZoneForm">
         <div class="form-group">
-          <label for="name">Zone Name</label>
-          <input type="text" class="form-control" name="name" value="${z.name}" data-required="true">
+          <label for="zoneName">Zone Name</label>
+          <input type="text" class="form-control" name="name" id="zoneName" value="${z.name}" data-required="true">
+        </div>
+        <div class="form-group">
+          <label for="volMinDb">Minimum Volume</label>
+          <input type="number" class="form-control" name="vol_min" id="volMinDb" value="${z.vol_min}" min="-80" max="0" aria-describedby="minVolHelp" data-required="true">
+          <small id="minVolHelp" class="form-text text-muted">-80 to 0 dB, default -80. Must be at least 20 dB lower than max volume.</small>
+        </div>
+        <div class="form-group">
+          <label for="volMaxDb">Maximum Volume</label>
+          <input type="number" class="form-control" name="vol_max" id="volMaxDb" value="${z.vol_max}" min="-80" max="0" aria-describedby="maxVolHelp" data-required="true">
+          <small id="maxVolHelp" class="form-text text-muted">-80 to 0 dB, default 0. Must be at least 20 dB higher than min volume.</small>
         </div>
         <div class="form-group">
           <input type="hidden" value="false" name="disabled">
-          <input type="checkbox" id="disabled_state" name="disabled" value="true"${z.disabled ? " checked" : ""}>
-          <label for="disabled_state">Disabled</label>
+          <input type="checkbox" id="disabledState" name="disabled" value="true"${z.disabled ? " checked" : ""} aria-describedby="disHelp">
+          <label for="disabledState">Disabled</label>
           <small id="disHelp" class="form-text text-muted">Disabling a zone removes its mute and volume controls. A zone should be disabled if it isn't going to be used, or has no speakers connected to it</small>
         </div>
       `;

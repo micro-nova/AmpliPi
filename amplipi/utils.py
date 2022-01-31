@@ -19,13 +19,14 @@
 This module contains helper functions are used across the amplipi python library.
 """
 
-import json
-import io
-import os
 import functools
-import subprocess
+import io
+import json
+import math
+import os
 import re
-from typing import List, Dict, Set, Union, Optional, Tuple, TypeVar, Iterable
+import subprocess
+from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 
 import pkg_resources # version
 
@@ -233,3 +234,23 @@ def is_amplipi():
     amplipi = False
 
   return amplipi
+
+def vol_float_to_db(vol: float, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> int:
+  """ Convert floating-point volume to dB """
+  # A linear conversion works here because the volume control IC directly takes dB.
+  # Alternatively a logarithmic function or power <1 could be used:
+  # dB = log_{s+1}(s*x+1) where s is a scaling factor
+  # dB = x^0.5
+  range_f = models.MAX_VOL - models.MIN_VOL
+  range_db = db_max - db_min
+  vol_db = round((vol - models.MIN_VOL) * range_db / range_f + db_min)
+  vol_db_clamped = clamp(vol_db, models.MIN_VOL_DB, models.MAX_VOL_DB)
+  return vol_db_clamped
+
+def vol_db_to_float(vol: int, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> float:
+  """ Convert volume in a dB range to floating-point """
+  range_f = models.MAX_VOL - models.MIN_VOL
+  range_db = db_max - db_min
+  vol_f = (vol - db_min) * range_f / range_db + models.MIN_VOL
+  vol_f_clamped = clamp(vol_f, models.MIN_VOL, models.MAX_VOL)
+  return vol_f_clamped

@@ -311,7 +311,7 @@ function updateSourceView(status) {
     if (ctrl.dataset.hasOwnProperty('zone')){
       let z = ctrl.dataset.zone;
       const zone = status.zones[z];
-      updateVol(ctrl, zone.mute, zone.vol);
+      updateVol(ctrl, zone.mute, zone.vol_f);
       parent_src = ctrl.dataset.source;
       if (zone.source_id != parent_src) {
         zone_mismatch = true;
@@ -320,7 +320,7 @@ function updateSourceView(status) {
       let gid = ctrl.dataset.group;
       for (const g of status.groups) {
         if (g.id == gid) {
-          updateVol(ctrl, g.mute, g.vol_delta);
+          updateVol(ctrl, g.mute, g.vol_delta_f);
           break;
         }
       }
@@ -387,7 +387,7 @@ async function sendRequestAndReload(path, method, req, src) {
 function onGroupVolChange(g, vol) {
   if (vol) {
     let req = {
-      "vol_delta" : Number(vol),
+      "vol_delta_f" : Number(vol),
       "mute" : false
     };
     sendRequest('/groups/' + g, 'PATCH', req);
@@ -396,7 +396,7 @@ function onGroupVolChange(g, vol) {
 function onZoneVolChange(z, vol) {
   if (vol) {
     let req = {
-      "vol" : Number(vol),
+      "vol_f" : Number(vol),
       "mute" : false
     };
     sendRequest('/zones/' + z, 'PATCH', req);
@@ -436,14 +436,13 @@ function initVolControl(ctrl) {
   const setValue = (value) => {
     const val = clamp(range.min, range.max, value);
     initValue(val);
-    const vol = Math.round(val);
     const cur_stamp = Date.now();
     const req_throttled = (cur_stamp - last_req_stamp) < VOL_REQ_THROTTLE_MS;
     if (!req_throttled){
       if (zone){
-        onZoneVolChange(zone, vol);
+        onZoneVolChange(zone, val);
       } else if (group) {
-        onGroupVolChange(group, vol);
+        onGroupVolChange(group, val);
       } else {
         console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
       }
