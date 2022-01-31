@@ -488,7 +488,6 @@ class Api:
           """
           # 'vol' (in dB) takes precedence over vol_f
           if update.vol_f is not None and update.vol is None:
-            #vol_f = utils.round_sf(vol, 3) # round to 3 significant figures
             vol_db = utils.vol_float_to_db(vol_f, zone.vol_min, zone.vol_max)
             vol_f_new = vol_f
           else:
@@ -599,7 +598,6 @@ class Api:
     # if vol_updated is true vol_delta can't be none but mypy isn't smart enough to know that
     if vol_updated and vol_delta is not None:
       vol_delta_f = utils.vol_db_to_float(vol_delta)
-    #vol_sf = utils.round_sf(vol_delta_f, sf = 3)
 
     # update each of the member zones
     zone_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)

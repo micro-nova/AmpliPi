@@ -89,14 +89,6 @@ def clamp(xval, xmin, xmax):
   """ Clamp and value between min and max """
   return max(xmin, min(xval, xmax))
 
-def round_sf(x: float, sf: int = 3):
-  """ Round a float to the given number of significant figures """
-  if x == 0:
-    digits = 1
-  else:
-    digits = int(math.floor(math.log10(abs(x))))
-  return round(x, sf - digits - 1)
-
 def compact_str(list_:List):
   """ stringify a compact list"""
   return str(list_).replace(' ', '')

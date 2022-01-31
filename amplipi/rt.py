@@ -523,7 +523,7 @@ class Mock:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[MIN_VOL_DB, 0]
+        vol: int in range[models.MIN_VOL_DB, models.MAX_VOL_DB]
 
       Returns:
         True on success, False on hw failure
@@ -607,7 +607,7 @@ class Rpi:
 
       Args:
         zone: zone to adjust vol
-        vol: int in range[MIN_VOL_DB, 0]
+        vol: int in range[models.MIN_VOL_DB, models.MAX_VOL_DB]
 
       Returns:
         True on success, False on hw failure
