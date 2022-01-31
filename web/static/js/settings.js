@@ -74,6 +74,7 @@ $(function() {
             <option value="pandora">Pandora Station</option>
             <option value="plexamp">Plexamp</option>
             <option value="spotify">Spotify Device</option>
+            <option value="bluetooth">Bluetooth</option>
           </select>
         </div>
         <div class="form-group">
@@ -107,6 +108,13 @@ $(function() {
           <div class="form-group">
             <label for="new_internetradio_logo">Station Logo</label>
             <input type="text" class="form-control" name="logo" id="new_internetradio_logo">
+          </div>
+        </div>
+
+        <div id="bluetooth_settings" class="addl_settings" style="display:none;">
+          <div class="form-group">
+            <label for="user">Bluetooth Device MAC Address</label>
+            <input type="text" class="form-control" name="device" id="device" data-required="true">
           </div>
         </div>
 
@@ -268,6 +276,7 @@ $(function() {
     else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
     else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); $("#fmradio_warning").show(); }
     else if ($(this).val() == "plexamp") { $("#plexamp_settings").show(); }
+    else if ($(this).val() == "bluetooth") { $("#bluetooth_settings").show(); }
 
   });
 

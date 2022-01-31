@@ -394,6 +394,17 @@ def test_create_pandora(client):
   for k, v in m_and_k.items():
     assert jrv[k] == v
 
+def test_create_bluetooth(client):
+  """ Try creating a bluetooth stream """
+  m_and_k = { 'name': 'bt', 'type':'bluetooth', 'device': 'f0:5c:77:c1:e2:55'}
+  rv = client.post('/api/stream', json=m_and_k)
+  assert rv.status_code == HTTPStatus.OK
+
+  jrv = rv.json()
+  sid = jrv['id']
+  rv = client.patch('/api/sources/{}'.format(0), json={'input': f'stream={sid}'})
+  assert rv.status_code == HTTPStatus.OK
+
 # /streams/{streamId} get-stream
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_get_stream(client, sid):

@@ -295,6 +295,13 @@ function updateSourceView(status) {
           play_pause.style.visibility = "visible";
           play_pause.classList.toggle('fa-play', !playing);
           play_pause.classList.toggle('fa-pause', playing);
+        } 
+        else if (stream.type == 'bluetooth') {
+          next.style.visibility = "visible";
+          prev.style.display = "inline-block";
+          play_pause.style.visibility = "visible";
+          play_pause.classList.toggle('fa-play', !playing);
+          play_pause.classList.toggle('fa-pause', playing);
         }
       }
     }

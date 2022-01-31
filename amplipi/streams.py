@@ -865,8 +865,102 @@ class FMRadio(BaseStream):
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
 
+class Bluetooth(BaseStream):
+  def __init__(self, name, device:str, mock=False):
+    super().__init__('Bluetooth', name, mock)
+    self.device = device # mac address of bt device
+    self.process = None
+
+  def __del__(self):
+    self.disconnect()
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs:
+      self.name = kwargs['name']
+    if 'device' in kwargs:
+      self.device = kwargs['device']
+      reconnect_needed = True
+    if reconnect_needed:
+      last_src = self.src
+      self.disconnect()
+      time.sleep(0.1) # delay a bit, is this needed?
+      self.connect(last_src)
+
+  def connect(self, src):
+    bt_output = f'{utils.get_folder("streams")}/btout'
+
+    print(f'connecting {self.device} to {src} via {self.name}...')
+
+    if self.mock:
+      self._connect(src)
+      return
+
+    bt_daemon_args = f'python {utils.get_folder("streams")}/bluetooth.py'.split()
+    try:
+      self.process = subprocess.Popen(args = bt_daemon_args, stdin=subprocess.PIPE, stdout=open(bt_output, 'w'))
+      time.sleep(0.1)
+      self._passcommand(f'start')
+      time.sleep(0.1)
+      self._passcommand(f'connect {self.device} {src}')
+      self.state = "playing"
+    except Exception as e:
+      print(f'error starting bluetooth: {e}')
+
+    return
+
+  def _is_running(self):
+    if self.process is not None:
+      return self.process.poll() is None
+    return False
+
+  def send_cmd(self, cmd):
+    
+    supported_cmds = {
+      'play',
+      'pause',
+      'next',
+      'prev'
+    }
+
+    print(f'bt recieved command "{cmd}"')
+
+    if cmd in supported_cmds:
+      print(f'sending "{cmd} {self.device}"')
+      self._passcommand(f'{cmd} {self.device}')
+      
+      if cmd is "play":
+        self.state = "playing"
+      elif cmd is "pause":
+        self.state = "paused"
+      elif cmd is "prev" and self.status != "paused":
+        self.state = "playing"
+      elif cmd is "next":
+        self.state = "playing"
+
+    else:
+      raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    
+  def disconnect(self):
+    if self._is_running():
+      self._passcommand('disconnect')
+      self.state = "stopped"
+    self._disconnect()
+
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    return source
+
+  def _passcommand(self, com):
+    try:
+      self.process.stdin.write(bytearray(com+'\n', 'utf-8'))
+      self.process.stdin.flush()
+    except Exception as e:
+      print(e)
+
+
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
+AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio, Bluetooth]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -890,4 +984,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return FilePlayer(args['name'], args['url'], mock=mock)
   elif stream.type == 'fmradio':
     return FMRadio(args['name'], args['freq'], args['logo'], mock=mock)
+  elif stream.type == 'bluetooth':
+    return Bluetooth(args['name'], args['device'], mock=mock)
   raise NotImplementedError(stream.type)
