@@ -449,7 +449,7 @@ function initVolControl(ctrl) {
       }
       last_req_stamp = cur_stamp; // only update on a successful request (avoids constant rejection of a stream of user requests)
     } else {
-      console.log('volume adjustment rejected, last request made < 50ms ago')
+      console.debug('volume adjustment rejected, last request made < 50ms ago');
     }
   }
 
