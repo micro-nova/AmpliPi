@@ -28,3 +28,4 @@ types-requests
 uvicorn
 wrapt
 zeroconf
+pyradios

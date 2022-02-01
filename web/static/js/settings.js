@@ -51,6 +51,19 @@ function updateSettings() {
 
 /* On page load, get list of current streams */
 $(function() {
+
+  /* Disable enter key from submitting form, unless search on inetradio */
+  $(window).keydown(function(event){
+    if(event.keyCode == 13) {
+      if (event.target.id == 'inetradio-search-name-txt') { // Intercept enter key for inetradio search
+        $("#inetradio-search-name-btn").trigger('click');
+      }
+
+      event.preventDefault();
+      return false;
+    }
+  });
+
   /* Show new stream options */
   $("#settings-tab-inputs-new-stream").click(function(){
     $("#settings-tab-inputs-stream-selection li").removeClass('active'); // De-select "active" stream on the left menu if had been selected
@@ -76,9 +89,9 @@ $(function() {
             <option value="spotify">Spotify Device</option>
           </select>
         </div>
-        <div class="form-group">
-          <label for="new_stream_name">Stream Name</label>
-          <input type="text" class="form-control" name="name" id="new_stream_name" aria-describedby="nameHelp" data-required="true">
+        <div class="form-group" id="streamNameDiv">
+          <label for="name">Stream Name</label>
+          <input type="text" class="form-control" name="name" id="str_name" aria-describedby="nameHelp" data-required="true">
           <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
         </div>
 
@@ -99,14 +112,39 @@ $(function() {
         </div>
 
         <div id="internetradio_settings" class="addl_settings" style="display:none;">
-          <div class="form-group">
-            <label for="new_internetradio_url">Station Audio URL</label>
-            <input type="text" class="form-control" name="url" id="new_internetradio_url" aria-describedby="urlHelp" data-required="true">
-            <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
-          </div>
-          <div class="form-group">
-            <label for="new_internetradio_logo">Station Logo</label>
-            <input type="text" class="form-control" name="logo" id="new_internetradio_logo">
+          <ul class="nav nav-tabs" id="inetradioTab" role="tablist" style="margin-top:4px;">
+            <li class="nav-item" role="presentation">
+              <a class="nav-link active" href="#inetradio-search-name" id="inetradio-search-name-tab" data-toggle="tab" role="tab" aria-controls="inetradio-search-name" aria-selected="true">Search for Stations</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" href="#inetradio-manual" id="inetradio-manual-tab" data-toggle="tab" role="tab" aria-controls="inetradio-manual" aria-selected="false">Manually Add Station</a>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="inetradioTabContent" style="margin-top:15px;">
+            <div class="tab-pane fade show active" id="inetradio-search-name" role="tabpanel" aria-labelledby="inetradio-search-name-tab">
+              <div class="form-group">
+                <label for="inetradio-search-name-txt">Search by Station Name</label>
+                <input type="text" class="form-control" name="inetradio-search-name-txt" id="inetradio-search-name-txt" data-required="true">
+              </div>
+
+              <button type="button" class="btn btn-secondary" id="inetradio-search-name-btn">Search Stations</button>
+
+              <div id="inetradio-searchNameResults" style="margin-top:15px;"></div>
+
+            </div>
+            <div class="tab-pane fade" id="inetradio-manual" role="tabpanel" aria-labelledby="inetradio-manual-tab">
+              <div class="form-group">
+                <label for="url">Station Audio URL</label>
+                <input type="text" class="form-control" name="url" id="url" aria-describedby="urlHelp" data-required="true">
+                <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
+              </div>
+              <div class="form-group">
+                <label for="logo">Station Logo</label>
+                <input type="text" class="form-control" name="logo">
+              </div>
+
+            </div>
           </div>
         </div>
 
@@ -141,7 +179,7 @@ $(function() {
           </div>
         </div>
 
-        <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Stream</button>
+        <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp" id="addStreamButton">Add Stream</button>
         <small id="submitHelp" class="form-text text-muted"></small>
       </form>
       `;
@@ -264,11 +302,84 @@ $(function() {
   /* Show selected stream settings */
   $("#settings-tab-inputs-config").on("click", "#new_stream_type", function() {
     $(".addl_settings").hide(); // Hide all additional settings
+    $("#addStreamButton").show(); // Make sure this is showing (inetradio may hide it)
+    $("#streamNameDiv").show(); // Make sure this is showing (inetradio may hide it)
     if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
-    else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
+    else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); $("#addStreamButton").hide(); $("#streamNameDiv").hide(); }
     else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); $("#fmradio_warning").show(); }
     else if ($(this).val() == "plexamp") { $("#plexamp_settings").show(); }
 
+  });
+
+  /* Hide some settings on the internet radio page when searching for stations */
+  $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
+    e.target // newly activated tab
+    if (e.target.id == 'inetradio-search-name-tab' || e.target.id == 'inetradio-search-loc-tab') {
+      // Hide Stream Name field and Add Stream button
+      $("#addStreamButton").hide();
+      $("#streamNameDiv").hide();
+    }
+    else {
+      // Show Stream Name field and Add Stream button
+      $("#addStreamButton").show();
+      $("#streamNameDiv").show();
+    }
+  })
+
+  /* Search for inetradio stations */
+  $(document).on('click', '#inetradio-search-name-btn', function () {
+    console.log('Searching for station by name: ' + $("#inetradio-search-name-txt").val());
+    $.ajax({
+      type: "GET",
+      url: '/api/inetradio/search/name/' + $("#inetradio-search-name-txt").val(),
+      contentType: "application/json",
+      success: function(data) {
+        $("#inetradio-searchNameResults").html("<h3>Search Results</h3>");
+        var details = '';
+        var numResults = 0;
+        $.each(data, function(index, value) {
+          ++numResults;
+          if (value.bitrate && value.codec) { details = '(' + value.bitrate + 'kbps ' + value.codec + ')'; }
+          $('#inetradio-searchNameResults').append(
+            '<div style="position: relative; padding:6px;"><b><a href="' +
+            value.homepage +
+            '" target="_blank" title="Station Homepage">' +
+            value.name +
+            '</a></b> ' +
+            details +
+            '<a href="https://www.radio-browser.info/history/' +
+            value.stationuuid +
+            '" target="_blank" class="btn btn-info btn-sm float-right" role="button" style="position: absolute;right: 0;">More Info</a>' +
+            '<a href="#" class="btn btn-success btn-sm float-right addStation" data-stationname="' +
+            value.name.toString().replace('"', '\\"') +
+            '" data-stationurl="' +
+            value.url.toString().replace('"', '\\"') +
+            '" data-stationlogo="' +
+            value.favicon.toString().replace('"', '\\"') +
+            '" role="button" style="position: absolute;right: 90px;">Add Station</button></div>'
+          );
+        });
+        if (!numResults) { $('#inetradio-searchNameResults').append("No stations found."); }
+      }
+    });
+  });
+
+  /* Add an inetradio station from search screen */
+  $(document).on('click', '.addStation', function () {
+    var name = $(this).data('stationname');
+    var url = $(this).data('stationurl');
+    var logo = $(this).data('stationlogo');
+    var formData = {logo: logo, name: name, type: "internetradio", url: url};
+
+    $.ajax({
+      type: "POST",
+      url: '/api/stream',
+      data: JSON.stringify(formData),
+      contentType: "application/json",
+      success: updateSettings
+    });
+
+    return false;
   });
 
   /* Add New Stream and Reload Page */
