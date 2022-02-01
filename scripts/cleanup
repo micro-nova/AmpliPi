@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+
+# This script cleans up an AmpliPi unit before it is sent to a customer
+
+set -e
+
+# get directory that the script exists in
+cd "$( dirname "$0" )"
+
+HELP="Cleanup filesystem on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
+  usage: cleanup [USER@HOST]\n
+\n
+"
+
+user_host='pi@amplipi.local'
+user_host_set=false
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    -h|--help) echo -e $HELP; exit 0 ;;
+    *) if ! $user_host_set; then
+          user_host=$1
+          user_host_set=true
+      else
+          echo "Unknown parameter passed: $1";
+          echo -e $HELP;
+          exit 1
+      fi
+      ;;
+  esac
+  shift
+done
+
+read -p "Cleaning amplipi filesystem on $user_host, press any key to continue (Ctrl-C to quit)" -n 1
+echo "" # newline
+
+# check if amplipi is found
+host=$(echo $user_host | sed 's/.*@//')
+echo "Checking if $host is found"
+ping_loc=$(which ping)
+found=false
+if [[ "$ping_loc" == /c/Windows/system32/ping ]] && ping -n 2 $host; then
+  found=true
+elif ping -c 2 $host; then
+  found=true
+fi
+if ! $found; then
+  echo ""
+  echo "Error: Unable to find $host"
+  echo "  On older versions of windows (< 10) you may need to install an MDNS server like Bonjour: https://support.apple.com/kb/DL999?locale=en_US"
+  echo "  Some users on windows 10 have reported MDNS does not work over Wifi. Try using a wired connection."
+  exit 1;
+fi
+
+# setup ssh access if necessary
+if ! ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"'; then
+  # By default ssh only searches the default keys, lets make sure one of them exist
+  if [[ ! -f ~/.ssh/id_ed25519 ]] && [[ ! -f ~/.ssh/id_ecdsa ]] && [[ ! -f ~/.ssh/id_rsa ]]; then
+    echo ""
+    echo "Generating new ssh key for amplipi"
+    ssh-keygen -P '' -N '' -t ed25519 -f ~/.ssh/id_ed25519
+  fi
+  ssh-copy-id $user_host
+fi
+
+echo -e "reverting amplipi back to stock configuration"
+ssh $user_host "systemctl --user stop amplipi"
+ssh $user_host "rm -f amplipi-dev/house.json*"
+ssh $user_host "systemctl --user start amplipi"
+
+echo -e "removing deployments:"
+ssh $user_host "rm -rf amplipi-*.tar.gz amplipi-dev/amplipi-*"
+
+echo -e "removing any temporary firmware binaries:"
+ssh $user_host "rm -f preamp_*.bin"
+
+echo -e "removing old desktop files:"
+ssh $user_host "rm -f ~/Desktop/*.desktop"
+
+echo -e "\ncleaning up amplipi logs:"
+ssh $user_host "sudo journalctl --rotate && sleep 1 && sudo journalctl --vacuum-time=1s"
+
+echo -e "\nchanging hostname to amplipi:"
+ssh $user_host "sudo sed -i 's/127\.0\.1\.1.*/127.0.1.1       amplipi/' /etc/hosts"
+ssh $user_host "sudo sed -i 's/.*/amplipi/' /etc/hostname"
+
+echo -e "\nremoving ssh key and erasing tracks"
+ssh $user_host "rm -f ~/.ssh/*"
+# || true used to ignore the error ssh returns due to being cut off
+ssh $user_host "cat /dev/null > ~/.bash_history && history -c && sudo systemctl reboot" || true
+
+# verify amplipi.local get request is successful
+echo "Waiting for AmpliPi server to startup"
+printf '.'
+sleep 5
+until $(curl --output /dev/null --silent --fail http://amplipi.local); do
+    printf '.'
+    sleep 5
+done
+echo "" # newline
+
+# remove old known_hosts entries
+echo -e "\nCleaning old ~/.ssh/known_hosts entries on local machine"
+ssh-keygen -f ~/.ssh/known_hosts -R amplipi.local
+if $user_host_set; then
+  ssh-keygen -f ~/.ssh/known_hosts -R $user_host
+fi
+
+# shutdown amplipi
+sleep 5
+echo -e "\nLogging in to shutdown AmpliPi for shipping"
+# || true used to ignore the error ssh returns due to being cut off
+ssh -o PasswordAuthentication=yes pi@amplipi.local "sudo systemctl poweroff" || true
+
+echo -e "\nSUCCESS!"
+echo -e "AmpliPi unit has been powered off"

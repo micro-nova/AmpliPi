@@ -1,0 +1,3 @@
+# Excluse some directories from GH Pages
+exclude:
+  - fw/ # Has a submodule with '.exe' files that generates annoying warnings

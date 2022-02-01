@@ -21,10 +21,12 @@
 #ifndef SYSTICK_H_
 #define SYSTICK_H_
 
-#include "port_defs.h"
+#include <stdint.h>
 
-void systickInit ();
-void delay_ms (uint32_t t);
-uint32_t millis (void);
+#define SYSTICK_FREQ 1000  // 1000 Hz = 1 ms ticks
+
+void     systickInit();
+void     delayMs(uint32_t t);
+uint32_t millis(void);
 
 #endif /* SYSTICK_H_ */

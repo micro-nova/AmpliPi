@@ -11,5 +11,7 @@ pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
 # Lint with mypy, static type checker
 mypy amplipi --ignore-missing-imports
 
-pytest -vvv -k 'not _live'
+# Live tests require some amplipi streams to be setup
+pytest -vvv tests/test_ctrl.py # test control separately to avoid weird shared state issues
+pytest -vvv -k 'not _live' --ignore 'tests/test_ctrl.py'
 pytest -vvv -k '_live'

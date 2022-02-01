@@ -262,6 +262,25 @@ class ZoneUpdateWithId(ZoneUpdate):
     update.pop('id')
     return ZoneUpdate.parse_obj(update)
 
+class MultiZoneUpdate(BaseModel):
+  """ Reconfiguration of multiple zones specified by zone_ids and group_ids """
+
+  zones: Optional[List[int]] = fields.Zones
+  groups: Optional[List[int]] = fields.Groups
+  update: ZoneUpdate
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Connect all zones to source 1': {
+          'value': {
+            'zones': [0,1,2,3,4,5],
+            'update': { 'source_id': 0 }
+          }
+        },
+      },
+    }
+
 class Group(Base):
   """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
 
@@ -363,16 +382,17 @@ class GroupUpdateWithId(GroupUpdate):
     return GroupUpdate.parse_obj(update)
 
 class Stream(Base):
-  """ Digital stream such as Pandora, Airplay or Spotify """
+  """ Digital stream such as Pandora, AirPlay or Spotify """
   type: str = Field(description="""stream type
 
   * pandora
-  * shairport
+  * airplay
   * dlna
   * internetradio
   * spotify
   * plexamp
   * file
+  * fmradio
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
@@ -380,6 +400,7 @@ class Stream(Base):
   station: Optional[str] = Field(description='Radio station identifier')
   url: Optional[str] = Field(description='Stream url, used for internetradio and file')
   logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
+  freq: Optional[str] = Field(description='FM Frequency (MHz), used for fmradio')
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
 
@@ -441,10 +462,10 @@ class Stream(Base):
             'type': 'spotify'
           }
         },
-        'Add Micronova Airplay': {
+        'Add Micronova AirPlay': {
           'value': {
             'name': 'Micronova AP',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
         "Play single file or announcement" : {
@@ -452,7 +473,15 @@ class Stream(Base):
             'name': 'Play NASA Announcement',
             'url': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3'
           }
-        }
+        },
+        'Add FM Radio Station': {
+          'value': {
+            'name': 'WXYZ',
+            'type': 'fmradio',
+            'freq': '100.1',
+            'logo': 'static/imgs/fmradio.png'
+          }
+        },
       },
       'examples': {
         'Regina Spektor Radio': {
@@ -478,22 +507,22 @@ class Stream(Base):
             'user': 'example2@micro-nova.com'
           }
         },
-        'Shairport (connected)': {
+        'AirPlay (connected)': {
           'value': {
             'id': 44590,
             'info': {'details': 'No info available'},
             'name': "Jason's iPhone",
             'status': 'connected',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
-        'Shairport (disconnected)': {
+        'AirPlay (disconnected)': {
           'value': {
             'id': 4894,
             'info': {'details': 'No info available'},
             'name': 'Rnay',
             'status': 'disconnected',
-            'type': 'shairport'
+            'type': 'airplay'
           }
         },
       }
@@ -507,6 +536,7 @@ class StreamUpdate(BaseUpdate):
   station: Optional[str]
   url: Optional[str]
   logo: Optional[str]
+  freq: Optional[str]
 
   class Config:
     schema_extra = {
@@ -639,7 +669,7 @@ class Announcement(BaseModel):
   """
   media : str = Field(description="URL to media to play as the announcement")
   vol: int = Field(default=-40, ge=-79, le=0, description='Output volume in dB')
-  src_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
+  source_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
 
@@ -664,7 +694,7 @@ class Info(BaseModel):
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
-  zones: List[Zone] = [Zone(id=i, name=f'Zone {i}') for i in range(6) ]
+  zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
   streams: List[Stream] = []
   presets: List[Preset] = []
@@ -755,14 +785,14 @@ class Status(BaseModel):
                 'name': "Jason's "
                         'iPhone',
                 'status': 'connected',
-                'type': 'shairport'
+                'type': 'airplay'
               },
               {
                 'id': 4894,
                 'info': {'details': 'No info available'},
                 'name': 'Rnay',
                 'status': 'disconnected',
-                'type': 'shairport'
+                'type': 'airplay'
               }
             ],
             'info': { 'version': '0.0.1'},

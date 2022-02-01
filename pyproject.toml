@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "amplipi"
-version = "0.1.5-alpha.7"
+version = "0.1.7"
 description = "A Pi-based whole house audio controller"
 authors = [
   "Lincoln Lorenz <lincoln@micro-nova.com>",
+  "Michael Lohrer <michael@micro-nova.com>",
   "Jeremy Bowers <jeremy@micro-nova.com>",
   "Mark Bowers <mark@micro-nova.com>",
   "Jason Gorski <jason@micro-nova.com>",
@@ -30,13 +31,19 @@ include = [
   "requirements.txt",
   "AUTHORS",
   "config/*.conf",
+  "config/*.rules",
   "debs/**/*",
-  "fw/preamp_*", # no need to add full source tree
-  "scripts/run_debug_webserver", "scripts/run_debug_updater", "scripts/configure.py", "scripts/install_python_deps.bash", # other scripts only support development
+  "fw/*.sh", # no need to add full source tree
+  "fw/bin/*",
+  "hw/**",
+  "scripts/*",
   "streams/**/*",
   "web/**/*",
   "bin/**",
   "docs/**",
+]
+exclude = [
+  "scripts/deploy", "scripts/bootstrap_pi" # only support development
 ]
 
 [tool.poetry.scripts]

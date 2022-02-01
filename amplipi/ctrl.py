@@ -81,6 +81,7 @@ class Api:
   # pylint: disable=too-many-instance-attributes
   # pylint: disable=too-many-public-methods
 
+  _initialized = False # we need to know when we initialized first
   _mock_hw: bool
   _mock_streams: bool
   _save_timer: Optional[threading.Timer] = None
@@ -104,12 +105,7 @@ class Api:
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
-      # an example for each type of stream
-      {"id": 1000, "name": "AmpliPi", "type": "shairport"},
-      {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
-      {"id": 1002, "name": "AmpliPi", "type": "spotify"},
-      {"id": 1003, "name": "Beatles Radio", "type": "internetradio", "url": "http://www.beatlesradio.com:8000/stream/1/", "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"},
-      {"id": 1004, "name": "AmpliPi", "type": "dlna"}
+      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
@@ -119,11 +115,7 @@ class Api:
       {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
       {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol": -79},
     ],
-    # TODO: make groups a dictionary
-    "groups": [ # this is an array of groups that have been created , each group has a friendly name and an array of member zones
-      {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
-      {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
-      {"id": 102, "name": "Group 3", "zones": [5], "source_id": 0, "mute": True, "vol_delta": -79},
+    "groups": [
     ],
     "presets" : [
       {"id": 10000,
@@ -140,19 +132,6 @@ class Api:
           ]
         }
       },
-      # We need this for testing
-      {"id": 10001,
-        "name": "Play Pandora",
-        "state" : {
-          "sources" : [
-            {"id": 1, "input": "stream=1001"},
-          ],
-          "groups" : [
-            {"id": 100, "source_id": 1},
-            {"id": 101, "source_id": 1},
-          ]
-        }
-      }
     ]
   }
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
@@ -160,8 +139,9 @@ class Api:
   # returning a boolean on whether or not it was successful
   def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     self.reinit(settings, change_notifier)
+    self._initialized = True
 
-  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
+  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None, config: Optional[models.Status] = None):
     """ Initialize or Reinitialize the controller
 
     Intitializes the system to to base configuration """
@@ -170,27 +150,43 @@ class Api:
     self._mock_streams = settings.mock_streams
     self._save_timer = None
     self._delay_saves = settings.delay_saves
-    self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi()
+    self._settings = settings
+
+    # Create firmware interface. If one already exists delete then re-init.
+    if self._initialized:
+      # we need to make sure to mute every zone before resetting the fw
+      zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones], update=models.ZoneUpdate(mute=True))
+      self.set_zones(zones_update, force_update=True, internal=True)
+      try:
+        del self._rt # remove the low level hardware connection
+      except AttributeError:
+        pass
+    self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi() # reset the fw
+
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
     self.config_file_valid = True # initially we assume the config file is valid
-    # try to load the config file or its backup
-    config_paths = [self.config_file, self.backup_config_file]
     errors = []
-    loaded_config = False
-    for cfg_path in config_paths:
-      try:
-        if os.path.exists(cfg_path):
-          self.status = models.Status.parse_file(cfg_path)
-          loaded_config = True
-          break
-        errors.append('config file "{}" does not exist'.format(cfg_path))
-      except Exception as exc:
-        self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
-        errors.append('error loading config file: {}'.format(exc))
+    if config:
+      self.status = config
+      loaded_config = True
+    else:
+      # try to load the config file or its backup
+      config_paths = [self.config_file, self.backup_config_file]
+      loaded_config = False
+      for cfg_path in config_paths:
+        try:
+          if os.path.exists(cfg_path):
+            self.status = models.Status.parse_file(cfg_path)
+            loaded_config = True
+            break
+          errors.append('config file "{}" does not exist'.format(cfg_path))
+        except Exception as exc:
+          self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
+          errors.append('error loading config file: {}'.format(exc))
 
     if not loaded_config:
       print(errors[0])
@@ -205,11 +201,39 @@ class Api:
       version=utils.detect_version()
     )
 
+    # TODO: detect missing sources
+
+    # detect missing zones
+    if self._mock_hw:
+      # only allow 6 zones when mocked to simplify testing
+      # add more if needed by specifying them in the config
+      potential_zones = range(6)
+    else:
+      potential_zones = range(rt.MAX_ZONES)
+    added_zone = False
+    for zid in potential_zones:
+      _, zone = utils.find(self.status.zones, zid)
+      if zone is None and self._rt.exists(zid):
+        added_zone = True
+        self.status.zones.append(models.Zone(id=zid, name=f'Zone {zid+1}'))
+    # save new config if zones were added
+    if added_zone:
+      self.save()
+
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
+    failed_streams: List[int] = []
     for stream in self.status.streams:
       if stream.id:
-        self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams)
+        try:
+          self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams)
+        except Exception as exc:
+          print(f"Failed to create '{stream.name}' stream: {exc}")
+          failed_streams.append(stream.id)
+    # only keep the successful streams, this fixes a common problem of loading a stream that doesn't exist in the current developement
+    # [:] does an in-place modification to the list suggested by https://stackoverflow.com/a/1208792/1110730
+    self.status.streams[:] = [s for s in self.status.streams if s.id not in failed_streams]
+
     # configure all sources so that they are in a known state
     for src in self.status.sources:
       if src.id is not None:
@@ -218,7 +242,8 @@ class Api:
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for zone in self.status.zones:
-      # TODO: disable zones that are not found and add zones that are found
+      # TODO: disable zones that are not found
+      # we likely need an additional field for this, maybe auto-disabled?
       zone_update = models.ZoneUpdate(source_id=zone.source_id, mute=True, vol=zone.vol)
       self.set_zone(zone.id, zone_update, force_update=True, internal=True)
     # configure all of the groups (some fields may need to be updated)
@@ -291,7 +316,7 @@ class Api:
     """ get the system state """
     # update the state with the latest stream info
     # TODO: figure out how to cache stream info
-    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'token', 'client_id'] # optional configuration fields
+    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'freq', 'token', 'client_id'] # optional configuration fields
     streams = []
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
@@ -330,7 +355,7 @@ class Api:
     Args:
       src: An audio source that may have a stream connected
       sid: ID of an audio source
-    Returns
+    Returns:
       a stream, or None if input does not specify a valid stream
     """
     if sid is not None:
@@ -415,7 +440,7 @@ class Api:
         force_update: update source even if no changes have been made (for hw startup)
         internal: called by a higher-level ctrl function
       Returns:
-        'None' on success, otherwise error (dict)
+        ApiResponse
     """
     idx, zone = utils.find(self.status.zones, zid)
     if idx is not None and zone is not None:
@@ -431,7 +456,6 @@ class Api:
         # update non hw state
         zone.name = name
         zone.disabled = disabled
-        # TODO: figure out an order of operations here, like does mute need to be done before changing sources?
         if update_source_id or force_update:
           zone_sources = [zone.source_id for zone in zones]
           zone_sources[idx] = sid
@@ -439,19 +463,39 @@ class Api:
             zone.source_id = sid
           else:
             return ApiResponse.error('set zone failed: unable to update zone source')
-        if update_mutes or force_update:
+
+        def set_mute():
           mutes = [zone.mute for zone in zones]
           mutes[idx] = mute
           if self._rt.update_zone_mutes(idx, mutes):
             zone.mute = mute
           else:
-            return ApiResponse.error('set zone failed: unable to update zone mute')
-        if update_vol or force_update:
+            raise Exception('set zone failed: unable to update zone mute')
+
+        def set_vol():
           real_vol = utils.clamp(vol, -79, 0)
           if self._rt.update_zone_vol(idx, real_vol):
             zone.vol = vol
           else:
-            return ApiResponse.error('set zone failed: unable to update zone volume')
+            raise Exception('set zone failed: unable to update zone volume')
+
+        # To avoid potential unwanted loud output:
+        # If muting, mute before setting volumes
+        # If un-muting, set desired volume first
+        try:
+          if force_update or (update_mutes and update_vol):
+            if mute:
+              set_mute()
+              set_vol()
+            else:
+              set_vol()
+              set_mute()
+          elif update_vol:
+            set_vol()
+          elif update_mutes:
+            set_mute()
+        except Exception as exc:
+          return ApiResponse.error(str(exc))
 
         if not internal:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
@@ -463,6 +507,32 @@ class Api:
         return ApiResponse.error('set zone: '  + str(exc))
     else:
         return ApiResponse.error('set zone: index {} out of bounds'.format(idx))
+
+  def set_zones(self, multi_update: models.MultiZoneUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
+    """Reconfigures a set of zones
+
+      Args:
+        update: changes to apply to embedded zones and groups
+      Returns:
+        ApiResponse
+    """
+    # aggregate all of the zones together
+    all_zids = utils.zones_from_all(self.status, multi_update.zones, multi_update.groups)
+    # update each of the zones
+    resp = ApiResponse.ok()
+    for zid in all_zids:
+      zupdate = multi_update.update.copy() # we potentially need to make changes to the underlying update
+      if zupdate.name:
+        # ensure all zones don't get named the same
+        zupdate.name = f'{zupdate.name} {zid+1}'
+      resp = self.set_zone(zid, zupdate, force_update=force_update, internal=True)
+      if resp.code != ApiResponse.OK:
+        break # the response message is the internal failure
+    if not internal:
+      # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
+      self._update_groups()
+      self.mark_changes()
+    return resp
 
   def _update_groups(self) -> None:
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
@@ -748,7 +818,7 @@ class Api:
 
     # execute changes source by source in increasing order
     for src in preset_state.sources or []:
-      if src.id:
+      if src.id is not None:
         self.set_source(src.id, src.as_update(), internal=True)
       else:
         pass # TODO: support some id-less source concept that allows dynamic source allocation
@@ -849,7 +919,7 @@ class Api:
       return resp0
     stream = resp0
     # create a temporary preset with all zones connected to the announcement stream and load it
-    pa_src = models.SourceUpdateWithId(id=announcement.src_id, input=f'stream={stream.id}') # for now we just use the last source
+    pa_src = models.SourceUpdateWithId(id=announcement.source_id, input=f'stream={stream.id}') # for now we just use the last source
     if announcement.zones is None and announcement.groups is None:
       zones_to_use = {z.id for z in self.status.zones if z.id is not None and not z.disabled}
     else:

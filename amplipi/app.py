@@ -141,6 +141,18 @@ def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Get the system status and configuration """
   return ctrl.get_state()
 
+@api.post('/api/load', tags=['status'])
+def load_config(config: models.Status, ctrl: Api = Depends(get_ctrl)) -> models.Status:
+  """ Load a new configuration (and return the configuration loaded). This will overwrite the current configuration so it is advised to save the previous config from. """
+  ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change, config=config)
+  return ctrl.get_state()
+
+@api.post('/api/reset', tags=['status'])
+def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
+  """ Reload the current configuration, resetting the firmware in the process. """
+  ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change)
+  return ctrl.get_state()
+
 subscribers: Dict[int, 'Queue[models.Status]'] = {}
 def notify_on_change(status: models.Status) -> None:
   """ Notify subscribers that something has changed """
@@ -181,7 +193,6 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
   return resp
 
 # sources
-
 @api.get('/api/sources', tags=['source'])
 def get_sources(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Source]]:
   """ Get all sources """
@@ -266,7 +277,10 @@ def set_zone(zone: models.ZoneUpdate, ctrl: Api = Depends(get_ctrl), zid: int = 
   """ Update a zone's configuration (zone=**zid**) """
   return code_response(ctrl, ctrl.set_zone(zid, zone))
 
-# TODO: add set_zones(ctrl: Api = Depends(get_ctrl), zones:List[int]=[], groups:List[int]=[], update:ZoneUpdate)
+@api.patch('/api/zones', tags=['zone'])
+def set_zones(multi_update: models.MultiZoneUpdate, ctrl: Api = Depends(get_ctrl)) -> models.Status:
+  """ Update a bunch of zones (and groups) with the same configuration changes """
+  return code_response(ctrl, ctrl.set_zones(multi_update))
 
 # groups
 
@@ -513,7 +527,7 @@ def generate_openapi_spec(add_test_docs=True):
       },
       {
         'name': 'stream',
-        'description': 'Digital stream that can be connected to a source, e.g. Pandora, Airplay, Spotify, Internet Radio, DLNA.',
+        'description': 'Digital stream that can be connected to a source, e.g. Pandora, AirPlay, Spotify, Internet Radio, DLNA.',
       },
       {
         'name': 'preset',
@@ -728,7 +742,7 @@ def advertise_service(port, q: Queue):
   # TODO: upgrade to mdns multiinterface support with DCHP address change edge case support similar to one of the following:
   # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/avahi_publisher.py
   # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/zeroconf_publisher.py
-  info = ServiceInfo(
+  info_deprecated = ServiceInfo(
     "_http._tcp.local.",
     "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
     addresses=[inet_aton(ip_addr)],
@@ -746,9 +760,37 @@ def advertise_service(port, q: Queue):
     },
     server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
   )
+
+  mac_addr = ''
+  try:
+    mac_addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    mac_addr = 'none'
+
+
+  info = ServiceInfo(
+    "_amplipi._tcp.local.", # use a custom type to easily support multiple amplipi device enumeration
+    f"amplipi-{mac_addr}._amplipi._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    addresses=[inet_aton(ip_addr)],
+    port=port,
+    properties={
+      # standard info
+      'path': '/api/',
+      # extra info - for interfacing
+      'name': 'AmpliPi',
+      "vendor": 'MicroNova',
+      'version': utils.detect_version(),
+      # extra info - for user
+      'web_app': url,
+      'documentation': f'{url}/doc'
+    },
+    server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
+  )
+
   print(f'AmpliPi zeroconf - registering service: {info}')
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr]) # right now the AmpliPi webserver is ipv4 only
-  zeroconf.register_service(info, cooperating_responders=True)
+  zeroconf.register_service(info_deprecated, cooperating_responders=True)
+  zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
     while q.empty():

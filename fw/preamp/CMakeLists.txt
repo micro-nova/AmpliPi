@@ -14,12 +14,14 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 add_executable(${PROJECT_NAME}.elf
-  src/channel.c
-  src/front_panel.c
+  src/audio_mux.c
+  src/ctrl_i2c.c
+  src/fans.c
+  src/int_i2c.c
   src/main.c
   src/port_defs.c
   src/ports.c
-  src/power_board.c
+  src/serial.c
   src/system_stm32f0xx.c
   src/systick.c
 
@@ -34,7 +36,6 @@ add_executable(${PROJECT_NAME}.elf
 )
 
 target_include_directories(${PROJECT_NAME}.elf PRIVATE
-  inc
   CMSIS/core
   CMSIS/device
   StdPeriph_Driver/inc
@@ -84,6 +85,18 @@ target_link_options(${PROJECT_NAME}.elf PRIVATE
   -Wl,-Map,${PROJECT_NAME}.map
 )
 
+# Generate version.c, which contains version info from the git repo
+set(version_c_file "${CMAKE_CURRENT_BINARY_DIR}/generated/version.c")
+add_custom_target(gitversion COMMAND ${CMAKE_COMMAND}
+  -Dinfile="${CMAKE_CURRENT_SOURCE_DIR}/src/version.c.in"
+  -Doutfile=${version_c_file}
+  -P ${CMAKE_CURRENT_LIST_DIR}/GitVersion.cmake
+  BYPRODUCTS ${version_c_file}
+)
+add_dependencies(${PROJECT_NAME}.elf gitversion)
+target_sources(${PROJECT_NAME}.elf PRIVATE ${version_c_file})
+target_include_directories(${PROJECT_NAME}.elf PRIVATE src)
+
 # Print firmware size
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
   COMMAND ${CMAKE_SIZE_UTIL} -B "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.elf"
@@ -105,8 +118,8 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
 )
 
 add_custom_target(program
-  COMMAND sudo stm32flash -vRb 115200 -i 5,-4,4 -w ${PROJECT_NAME}.bin /dev/serial0 &&
-          printf 'A\\x10\\r\\n' > /dev/serial0 # Set i2c address
+  COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}../../.. &&
+          venv/bin/python -m amplipi.hw --flash ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.bin
   COMMENT "Programming preamp"
   DEPENDS ${PROJECT_NAME}.elf
 )

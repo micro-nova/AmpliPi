@@ -2,6 +2,8 @@
  * AmpliPi Home Audio
  * Copyright (C) 2021 MicroNova LLC
  *
+ * Uses generated version.c file with information pulled from the git repo.
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,13 +21,10 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
-#include "main.h"
+#include "stdint.h"
 
-#define VERSION_MAJOR 0x01 //            Major version, the 1 of 1.0
-#define VERSION_MINOR 0x01 //            Minor version, the 2 of 1.2
-#define GIT_HASH_27_20 0xf4 //           Two leftmost hex digits of the commit hash string, 74 of 0x74568921
-#define GIT_HASH_19_12 0x66 //           Two following hex digits of the commit hash string, 56 of 0x74568921
-#define GIT_HASH_11_04 0x12 //           Two following hex digits of the commit hash string, 89 of 0x74568921
-#define GIT_HASH_03_00_STATUS 0xd0 //    The final hex digit of the commit hash string, as well as the "dirty" flag (LSB). 2 and 1 of 0x74568921
+extern const uint8_t VERSION_MAJOR_;
+extern const uint8_t VERSION_MINOR_;
+extern const uint8_t GIT_HASH_[4];  // GIT_HASH[4] LSB is dirty bit
 
 #endif /* VERSION_H_ */

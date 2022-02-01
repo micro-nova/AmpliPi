@@ -87,7 +87,7 @@ The partitions can be mounted to any directory, but the above commands assume
 `/mnt/pi-boot` and `/mnt/pi-root` exist.
 
 ## Modifying Partitions
-A partition manager can shrink/grow `${loopdev}p2` as required.
+A partition manager such as gparted can shrink/grow `${loopdev}p2` as required.
 If shrinking a partition, the image can be shrunk to fit with `truncate`.
 First find the "End" of `amplipi.img` and the block size:
 ```sh
@@ -105,6 +105,74 @@ truncate --size=$[($end+1)*$bs] amplipi.img
 Once done editing the image, remove the loop device
 ```sh
 sudo losetup -d $loopdev
+```
+
+## Complete Pi Imaging and Shrinking Example
+```bash
+pidev=/dev/sda
+img_file=amplipi.img
+
+# Setup resize2fs on Pi
+ssh pi@amplipi.local
+cmdline=$(cat /boot/cmdline.txt)
+cmdline+=" init=/usr/lib/raspi-config/init_resize.sh"
+echo $cmdline | sudo tee /boot/cmdline.txt
+sudo wget -O /etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
+sudo chmod +x /etc/init.d/resize2fs_once
+sudo systemctl enable resize2fs_once
+cat /dev/null > ~/.bash_history && history -c && exit
+
+# Copy
+sudo dd if=$pidev of=$img_file bs=4MiB status=progress
+sudo chown $USER:$USER $img_file
+
+# Mount
+loopdev=$(sudo losetup --find --show $img_file)
+sudo partprobe $loopdev
+
+# Check filesystem just in case
+sudo e2fsck -f ${loopdev}p2
+
+# Shrink root partition
+sudo resize2fs -pM ${loopdev}p2
+#The filesystem on /dev/loop0p2 is now 1359017 (4k) blocks long.
+new_sectors=$((1359017*4096/512)) # 10872136 in this example
+
+# Delete then re-create the root partition
+# TODO: automate
+sudo fdisk $loopdev
+  p # Print the current partition setup
+  #Device       Boot  Start      End  Sectors  Size Id Type
+  #/dev/loop0p1        8192   532479   524288  256M  c W95 FAT32 (LBA)
+  #/dev/loop0p2      532480 61071359 60538880 28.9G 83 Linux
+
+  d # Delete a partition
+  2 # Delete the root partition
+
+  n # Create a new root partition
+  p # Create a primary partition
+  2 # Use partition number 2
+  532480 # Set the start sector to the same as printed above
+  +10872136 # Set the end to be start + $new_sectos
+  # Partition #2 contains a ext4 signature.
+  N # Don't remove the existing ext4 signature
+
+  w # Write changes
+
+# Verify file system is still good
+sudo e2fsck -f ${loopdev}p2
+
+# Remove loop device
+sudo losetup -d $loopdev
+
+# Verify new partition setup
+fdisk -l $img_file
+#Device       Boot  Start      End  Sectors  Size Id Type
+#amplipi.img1        8192   532479   524288  256M  c W95 FAT32 (LBA)
+#amplipi.img2      532480 11404616 10872137  5.2G 83 Linux
+end=11404616
+bs=512
+truncate --size=$[($end+1)*$bs] $img_file
 ```
 
 # Writing to a Pi

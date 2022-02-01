@@ -1,6 +1,13 @@
 BasedOnStyle: Google
 
 AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: true
 AlignConsecutiveDeclarations: Consecutive
 AlignConsecutiveMacros: AcrossComments
 AllowShortEnumsOnASingleLine: false
+
+# Allow 'while (...) {}' on a single line
+AllowShortBlocksOnASingleLine: true
+AllowShortFunctionsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false

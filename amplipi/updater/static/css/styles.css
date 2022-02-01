@@ -1,42 +1,86 @@
 /*
-	A couple styles to make the demo page look good
+  A couple styles to make the demo page look good
  */
 body {
-	padding-bottom: 2rem;
-	padding-top: 4rem;
+  padding-bottom: 2rem;
+  padding-top: 4rem;
+  color: white;
+  background-color: #2a2a2a;
 }
 .row {
-	margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 [class*="col-"] {
-	padding-top: 1rem;
-	padding-bottom: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
 }
 hr {
-	margin-top: 2rem;
-	margin-bottom: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+#update-log {
+  color: white;
+  background-color: #4a4a4a;
+}
+.list-group-item {
+  color: white;
+  background-color: #4a4a4a;
 }
 #files {
     overflow-y: scroll !important;
     min-height: 320px;
 }
 @media (min-width: 768px) {
-	#files {
-		min-height: 0;
-	}
+  #files {
+    min-height: 0;
+  }
 }
 #debug {
-	overflow-y: scroll !important;
-	min-height: 100px;
-	min-height: 500px;
+  overflow-y: scroll !important;
+  min-height: 100px;
+  min-height: 500px;
 }
 
 .dm-uploader {
-	border: 0.25rem dashed #A5A5C7;
-	text-align: center;
+  border: 0.25rem dashed #A5A5C7;
+  text-align: center;
 }
 .dm-uploader.active {
-	border-color: red;
+  border-color: red;
 
-	border-style: solid;
+  border-style: solid;
+}
+.card {
+  margin-bottom: 12px;
+  -webkit-box-shadow: 6px 7px 19px 6px #000000;
+  box-shadow: 6px 7px 19px 6px #000000;
+}
+.card {
+  background: #2a2a2a;
+  margin-bottom: 10px;
+}
+.card .nav-item {
+  font-size: 0.9rem;
+}
+.card .card-header .nav .nav-item .active {
+  background: #4a4a4a;
+}
+.card .card-header .nav .nav-item a {
+  color: inherit;
+}
+.card .nav-item:hover, .card .nav-link:hover, .card .nav-link.active {
+  border-color: #4a4a4a;
+}
+.card .card-body {
+  background: #4a4a4a;
+}
+
+.fa-circle-notch {
+  animation: fa-spin 1s infinite linear;
+}
+
+/* Make the disabled buttons look more disabled */
+.btn-primary.disabled, .btn-primary:disabled {
+  background-color: #5a6268;
+  border-color: #545b62;
 }

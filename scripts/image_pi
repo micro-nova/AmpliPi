@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Copy an AmpliPi image file to a new Pi via the service port.
+# This script is mainly intended for MicroNova employees to bringup Pi's.
+# This will reset a Pi to its factory state (for a given AmpliPi version).
+
+# Required rpiboot:
+# sudo apt install libusb-1.0-0-dev make gcc
+# git clone --depth=1 https://github.com/raspberrypi/usbboot
+# cd usbboot
+# make
+# sudo make install
+
+helptext="Usage: image_pi [OPTION]... FILE.img
+Write a .img file to a Raspberry Pi for first-time AmpliPi setup.
+
+  FILE.img:        Specify a .img file to write to the Pi.
+  --no-instr:      Skip printing manual instructions. Pi must already be in
+                   bootloader mode before running this script.
+  -h, --help:      Print this help text.
+"
+
+# Example
+# With preconfigured image: ./image_pi --no-instr amplipi_1.4.img
+
+# Constants
+write_speed_mb=6    # MB/s write speed to the Pi's EMMC over USB
+RED='\033[0;31m'
+GRN='\033[0;32m'
+NC='\033[0m'
+
+img_file=''         # ...or use this image file explicitly
+instructions=true   # Skip manual instruction step
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    *.img)
+        img_file=$1
+      ;;
+    --no-instr) instructions=false ;;
+    -h|--help) printf "$helptext"; exit 0 ;;
+    *)  printf "Unknown parameter passed: $1\n\n"
+        printf "$helptext"
+        exit 1
+      ;;
+  esac
+  shift
+done
+
+if [ -z $img_file ]; then
+  printf "Image file required!\n\n"
+  printf "$helptext"
+  exit 1
+fi
+
+# Instruct user on manual boot process
+if $instructions; then
+  read -p "Unplug AmpliPi then press any key to continue." -sn 1
+  echo -e "\nPlug in a usb cable from your computer to the service port of AmpliPi,"
+  read -p "  then press any key to continue." -sn 1
+  echo -e "\nPlug in the AmpliPi.\n"
+fi
+sudo rpiboot
+
+# Delay to ensure Pi disk device has been loaded
+disk_base_path=/dev/disk/by-id/usb-RPi-MSD
+for i in {1..10}; do
+  sleep 0.5
+
+  # Check for Raspberry Pi device path
+  diskpath=$(ls $disk_base_path* 2>/dev/null | head -n1)
+  if [ ! -z $diskpath ]; then
+    echo -e "\nRaspberry Pi device found at $diskpath\n"
+    break
+  fi
+done
+
+if [ -z $diskpath ]; then
+  echo -e "\n${RED}ERROR:${NC} No Raspberry Pi device found at $disk_base_path*"
+  read -p "Press any key to continue..." -sn 1
+  echo "" # newline
+  exit 2
+fi
+
+img_size_mb=$(du -m $img_file | cut -f1)
+# bc truncates, add 0.5 to round
+est_time=$(echo "$img_size_mb/$write_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
+echo "Copying the image to the AmpliPi. This takes about $est_time minutes."
+echo "Go get a coffee or something :)"
+echo "Started at: $(date)"
+sudo dd if=$img_file of=$diskpath bs=4MiB status=progress
+echo "Finished at: $(date)"
+
+echo -e "
+${GRN}Imaging successful!${NC} Please complete the following steps:
+  1. Disconnect the service USB cable.
+  2. Unplug the AmpliPi unit.
+  3. Plug it back in to power it on.
+"
+read -p "Press any key to continue..." -sn 1
+echo "" # newline

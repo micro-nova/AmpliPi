@@ -20,6 +20,7 @@ This module contains helper functions are used across the amplipi python library
 """
 
 import json
+import io
 import os
 import functools
 import subprocess
@@ -196,3 +197,39 @@ def detect_version() -> str:
     except:
       pass
   return version
+
+def is_amplipi():
+  """ Check if the current hardware is an AmpliPi
+
+    Checks if the system is a Raspberry Pi Compute Module 3 Plus
+    with the proper serial port and I2C bus
+
+    Returns:
+      True if current hardware is an AmpliPi, False otherwise
+  """
+  amplipi = True
+
+  # Check for Raspberry Pi
+  try:
+    # Also available in /proc/device-tree/model, and in /proc/cpuinfo's "Model" field
+    with io.open('/sys/firmware/devicetree/base/model', 'r') as model:
+      desired_model = 'Raspberry Pi Compute Module 3 Plus'
+      current_model = model.read()
+      if desired_model.lower() not in current_model.lower():
+        print(f"Device model '{current_model}'' doesn't match '{desired_model}*'")
+        amplipi = False
+  except Exception:
+    print('Not running on a Raspberry Pi')
+    amplipi = False
+
+  # Check for the serial port
+  if not os.path.exists('/dev/serial0'):
+    print('Serial port /dev/serial0 not found')
+    amplipi = False
+
+  # Check for the i2c bus
+  if not os.path.exists('/dev/i2c-1'):
+    print('I2C bus /dev/i2c-1 not found')
+    amplipi = False
+
+  return amplipi

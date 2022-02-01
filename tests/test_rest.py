@@ -17,16 +17,61 @@ from fastapi.testclient import TestClient
 # testing context
 from context import amplipi
 
+import netifaces as ni
+
 # pylint: disable=redefined-outer-name
 # pylint: disable=invalid-name
 
+TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
+
+# add several groups and most of the default streams to the config
+TEST_CONFIG['groups'] = [
+  {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_delta": -79},
+  {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_delta": -79},
+  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_delta": -79},
+]
+TEST_CONFIG['streams'] = [
+  {"id": 1000, "name": "AmpliPi", "type": "shairport"},
+  {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
+  {"id": 1002, "name": "AmpliPi", "type": "spotify"},
+  {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+  {"id": 1004, "name": "AmpliPi", "type": "dlna"},
+]
+TEST_CONFIG['presets'] = [
+  {"id": 10000,
+    "name": "Mute All",
+    "state" : {
+      "zones" : [
+        {"id": 0, "mute": True},
+        {"id": 1, "mute": True},
+        {"id": 2, "mute": True},
+        {"id": 3, "mute": True},
+        {"id": 4, "mute": True},
+        {"id": 5, "mute": True},
+      ]
+    }
+  },
+  {"id": 10001,
+    "name": "Play Pandora",
+    "state" : {
+      "sources" : [
+        {"id": 1, "input": "stream=1001"},
+      ],
+      "groups" : [
+        {"id": 100, "source_id": 1},
+        {"id": 101, "source_id": 1},
+      ]
+    }
+  }
+]
+
 def base_config():
   """ Default Amplipi configuration """
-  return amplipi.ctrl.Api.DEFAULT_CONFIG
+  return TEST_CONFIG
 
 def base_config_copy():
   """ Modify-able Amplipi configuration """
-  return deepcopy(base_config())
+  return deepcopy(TEST_CONFIG)
 
 def base_config_no_presets():
   """ AmpliPi configuration with presets field unpopulated """
@@ -108,27 +153,57 @@ def test_view_changes(client: TestClient):
 
 @pytest.mark.parametrize('path', ['/api', '/api/'])
 def test_base(client, path):
-    """ Start with a basic controller and just check if it gives a real response """
-    rv = client.get(path)
-    assert rv.status_code == HTTPStatus.OK
-    if rv.status_code == HTTPStatus.OK:
-      jrv = rv.json()
-      assert jrv is not None
-      og_config = client.original_config
-      for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
-        if t in og_config:
-          assert len(jrv[t]) == len(og_config[t])
-      # make sure a real version is reported
-      assert 'info' in jrv and 'version' in jrv['info']
-      assert len(jrv['info']['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
-    else:
-      assert path == '/api'
-      assert '/api/' in rv.location
+  """ Start with a basic controller and just check if it gives a real response """
+  rv = client.get(path)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    jrv = rv.json()
+    assert jrv is not None
+    og_config = client.original_config
+    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+      if t in og_config:
+        assert len(jrv[t]) == len(og_config[t])
+    # make sure a real version is reported
+    assert 'info' in jrv and 'version' in jrv['info']
+    assert len(jrv['info']['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
+  else:
+    assert path == '/api'
+    assert '/api/' in rv.location
+
+def test_reset(client):
+  """ Reset the firmware """
+  rv = client.post('/api/reset')
+  assert rv.status_code == HTTPStatus.OK
+
+def test_load_og_config(client):
+  """ Reload the initial configuration """
+  rv = client.post('/api/load', json=client.original_config)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    jrv = rv.json()
+    assert jrv is not None
+    og_config = client.original_config
+    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+      if t in og_config:
+        assert len(jrv[t]) == len(og_config[t])
+
+
+def test_load_null_config(client):
+  """ Load with the basic default configuration """
+  rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    jrv = rv.json()
+    assert jrv is not None
+    og_config = amplipi.models.Status().dict()
+    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+      if t in og_config:
+        assert len(jrv[t]) == len(og_config[t])
 
 def test_open_api_yamlfile(client):
-    """ Check if the openapi yaml doc is available """
-    rv = client.get('/openapi.yaml')
-    assert rv.status_code == HTTPStatus.OK
+  """ Check if the openapi yaml doc is available """
+  rv = client.get('/openapi.yaml')
+  assert rv.status_code == HTTPStatus.OK
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
@@ -195,6 +270,27 @@ def test_patch_zone(client, zid):
   s = find(jrv['zones'], zid)
   assert s is not None
   assert s['name'] == 'patched-name'
+
+@pytest.mark.parametrize('sid', base_source_ids())
+def test_patch_zones(client, sid):
+  """ Try changing multiple zones """
+  rv = client.patch('/api/zones', json={'zones': [z for z in range(6)], 'update': {'source_id': sid}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['source_id'] == sid
+
+def test_patch_zones_duplicate_name(client):
+  """ Try changing multiple zones and setting base name """
+  rv = client.patch('/api/zones', json={'zones': [z for z in range(6)], 'update': {'name': 'test'}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['name'] == f"test {z['id']+1}"
 
 # Test Groups
 def base_group_ids():
@@ -565,8 +661,8 @@ def test_generate(client):
   #   if os.path.exists('{}/{}'.format(fullpath, fn)):
   #     os.remove('{}/{}'.format(fullpath, fn))
 
-def test_zeroconf():
-  """ Unit test for zeroconf advertisement """
+def test_zeroconf_deprecated():
+  """ Unit test for older, deprecated zeroconf advertisement """
   # TODO: migrate this test into its own module
   from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
   from time import sleep
@@ -606,3 +702,57 @@ def test_zeroconf():
   assert AMPLIPI_ZC_NAME in services_advertised
   assert services_advertised[AMPLIPI_ZC_NAME].port == 9898
 
+def test_zeroconf():
+  """ Unit test for zeroconf advertisement """
+  # TODO: migrate this test into its own module
+  from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
+  from time import sleep
+  from multiprocessing import Process, Queue
+
+
+  # first time ni.ifaddresses is called in the CI system it fails
+  try:
+    ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    pass
+
+  services_advertised = {}
+  def on_service_state_change(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
+    if state_change is ServiceStateChange.Added:
+      info = zeroconf.get_service_info(service_type, name)
+      if info and info.port != 80: # ignore the actual amplipi service on your network
+        services_advertised[name] = info
+
+  # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
+  q = Queue()
+  zc_reg = Process(target=amplipi.app.advertise_service, args=(9898,q))
+  zc_reg.start()
+  sleep(4) # wait for a bit to make sure the service is started
+
+  # start listener that adds available services
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
+  services = ["_amplipi._tcp.local."]
+  _ = ServiceBrowser(zeroconf, services, handlers=[on_service_state_change])
+
+  # wait enough time for a response from the serice
+  sleep(2)
+
+  # figure out what the name will be
+  mac_addr = ''
+  try:
+    mac_addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
+  except:
+    mac_addr = 'none'
+
+  AMPLIPI_ZC_NAME = f'amplipi-{mac_addr}._amplipi._tcp.local.'
+
+  # stop the advertiser
+  q.put('done')
+  zc_reg.join()
+
+  # stop the listener
+  zeroconf.close()
+
+  # check advertisememts
+  assert AMPLIPI_ZC_NAME in services_advertised
+  assert services_advertised[AMPLIPI_ZC_NAME].port == 9898

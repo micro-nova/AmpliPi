@@ -1,11 +1,13 @@
 # Developing for the AmpliPi Project
 Thanks for considering developing for AmpliPi. We appreciate your support!
 
-## Developing on a seperate computer
+## Developing on a separate computer
+This allows remote development with the ability to test changes on your AmpliPi
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
 1. Make changes with your favorite editor, we suggest vscode
 1. Use `scripts/deploy` to deploy the latest software.
    The pi must have access to the internet to successfully run this script.
+   #### Congratulations! The Amplipi is now running the software you deployed! You can stop now or continue in order to debug over SSH!
 1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
 1. Change directory to the development root `~/amplipi-dev` (this is where `deploy` put the software)
 1. To run the amplipi server in debug mode over an ssh connection, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
@@ -40,6 +42,7 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
   Supports:
   * Web interface development
   * API testing
+  * Basic Streams testing
 
 * Mocked out controller (with 4 stereo audio channels), needs: something running Raspberry Pi OS (previously called raspbian)
 
@@ -61,10 +64,16 @@ Below are a couple of different ways you can start developing for the AmpliPi wi
   * Group and zone configuration
   * Analog Audio input
 
-## Developing with a mocked out audio and mocked out controller on a debian based os
+## Developing with a mocked out controller on a debian based os
+This is the simplest way to develop new features for AmpliPi without an AmpliPi controller.
+Optionally you can install some streaming sources for partial streaming testing.
 1. Checkout this repo
-1. Install python dependencies with `scripts/configure.py --python-deps`
-1. Use ```scripts/run_debug_webserver --mock-ctrl --mock-streams``` to start the mock server
+1. (Optional) Install streaming os dependencies with `./scripts/configure.py --os-deps`.
+The dependencies will be installed globally with apt.
+This is optional since it installs many packages needed by the various streaming sources.
+It could potentially cause package conflicts on your system.
+1. Install python dependencies to AmpliPi's virtual environment with `./scripts/configure.py --python-deps`
+1. Use ```./scripts/run_debug_webserver``` to start the mock server, if the streaming deps were not installed add the **--mock-streams** flag like ```./scripts/run_debug_webserver --mock-streams```.
 
 ## Developing with a mocked out controller (with 4 stereo channel audio) on something running Raspberry Pi OS
 1. Start with a 32-bit version of Rasberry Pi OS. This needs to be older than december 2020 since our system only supports the ALSA audio backend currently.

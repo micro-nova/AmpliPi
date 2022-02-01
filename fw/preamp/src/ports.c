@@ -19,109 +19,114 @@
  */
 
 #include "ports.h"
+
 #include "stm32f0xx.h"
 
-static GPIO_TypeDef * getPort(Pin pp){
-	switch(pp.port){
-	case 'A':
-		return GPIOA;
-	case 'B':
-		return GPIOB;
-	case 'C':
-		return GPIOC;
-	case 'D':
-		return GPIOD;
-	case 'F':
-		return GPIOF;
-	default:
-		return 0;
-	}
+static GPIO_TypeDef* getPort(Pin pp) {
+  switch (pp.port) {
+    case 'A':
+      return GPIOA;
+    case 'B':
+      return GPIOB;
+    case 'C':
+      return GPIOC;
+    case 'D':
+      return GPIOD;
+    case 'F':
+      return GPIOF;
+    default:
+      return 0;
+  }
 }
 
-void setPin(Pin pp){
-	GPIO_TypeDef * port = getPort(pp);
-	port->BSRR = 1 << pp.pin; // lower 16 bits of BSRR used for setting, upper for clearing
+void writePin(Pin pp, bool set) {
+  GPIO_TypeDef* port = getPort(pp);
+  // getPort(pp)->BSRR = (1 << pp.pin)
+  if (set) {
+    // Lower 16 bits of BSRR used for setting, upper for clearing
+    port->BSRR = 1 << pp.pin;
+  } else {
+    // Lower 16 bits of BRR used for clearing
+    port->BRR = 1 << pp.pin;
+  }
 }
 
-void clearPin(Pin pp){
-	GPIO_TypeDef * port = getPort(pp);
-	port->BRR = 1 << pp.pin; // lower 16 bits of BRR used for clearing
+bool readPin(Pin pp) {
+  GPIO_TypeDef* port = getPort(pp);
+  if (port->ODR & (1 << pp.pin)) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
-bool readPin(Pin pp){
-	GPIO_TypeDef * port = getPort(pp);
-	if(port->ODR & (1 << pp.pin)){
-		return true;
-	}else{
-		return false;
-	}
+uint8_t readI2C2(I2CReg r) {
+  uint8_t data;
+
+  // Wait if I2C2 is busy
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
+
+  // Setup to write start, addr, subaddr
+  I2C_TransferHandling(I2C2, r.dev, 1, I2C_SoftEnd_Mode,
+                       I2C_Generate_Start_Write);
+
+  // Wait for transmit flag
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET) {}
+
+  // Send register address
+  I2C_SendData(I2C2, r.reg);
+
+  // Wait for transfer complete flag
+  while (I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET) {}
+
+  // This is the actual read transfer setup
+  I2C_TransferHandling(I2C2, r.dev, 1, I2C_AutoEnd_Mode,
+                       I2C_Generate_Start_Read);
+
+  // Wait until we get the rx data then read it out
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
+  data = I2C_ReceiveData(I2C2);
+
+  // Wait for stop condition to get sent then clear it
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
+  I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
+
+  // Return data that was read
+  return data;
 }
 
-int readI2C2(I2CReg r){
+uint32_t writeI2C2(I2CReg r, uint8_t data) {
+  // Wait if I2C2 is busy
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
 
-	uint8_t data;
+  // Setup to send start, addr, subaddr
+  I2C_TransferHandling(I2C2, r.dev, 2, I2C_AutoEnd_Mode,
+                       I2C_Generate_Start_Write);
 
-	// wait if I2C2 is busy
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY));
+  // Wait for transmit interrupted flag or an error
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_TXIS));
 
-	// setup to write start, addr, subaddr
-	I2C_TransferHandling(I2C2, r.dev, 1, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
+  // Send subaddress and data
+  I2C_SendData(I2C2, r.reg);
+  I2C_SendData(I2C2, data);
 
-	// wait for transmit flag
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET);
-
-	// send register address
-	I2C_SendData(I2C2, r.reg);
-
-	// wait for transfer complete flag
-	while(I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET);
-
-	// this is the actual read transfer setup
-	I2C_TransferHandling(I2C2, r.dev, 1, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
-
-	// wait until we get the rx data then read it out
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET);
-	data = I2C_ReceiveData(I2C2);
-
-	// wait for stop condition to get sent then clear it
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET);
-	I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
-
-	// Return data that was read
-	return data;
-}
-
-void writeI2C2(I2CReg r,  uint8_t data)
-{
-	// wait if I2C2 is busy
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY));
-
-	// setup to send send start, addr, subaddr
-	I2C_TransferHandling(I2C2, r.dev, 2, I2C_AutoEnd_Mode, I2C_Generate_Start_Write);
-
-	// wait for transmit interrupted flag
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET);
-
-	// send subaddress and data
-	I2C_SendData(I2C2, r.reg);
-	I2C_SendData(I2C2, data);
-
-	// wait for stop flag to be sent and then clear it
-	while(I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET);
-	I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
-}
-
-void writeI2C1(uint8_t data)
-{
-	// Expanded transfer handling that makes more sense as a slave transmitter
-	uint32_t tmpreg = 0;
-	uint8_t Number_Bytes = 1;
-	tmpreg = I2C1->CR2;
-	tmpreg &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_AUTOEND | I2C_CR2_RD_WRN | I2C_CR2_START | I2C_CR2_STOP));
-	tmpreg |= (uint32_t)((((uint32_t)Number_Bytes << 16 ) & I2C_CR2_NBYTES) | \
-	            (uint32_t)I2C_SoftEnd_Mode | (uint32_t)I2C_Generate_Start_Write);
-	I2C1->CR2 = tmpreg;
-
-	// send subaddress and data
-	I2C_SendData(I2C1, data);
+  // Wait for stop flag to be sent and then clear it
+  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
+  I2C2->ICR = I2C_ICR_STOPCF;
+  return 0;
 }

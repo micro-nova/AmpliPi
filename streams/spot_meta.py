@@ -19,7 +19,7 @@ info = {
 'artist': '',
 'album': '',
 'track': '',
-'img_url': ''
+'img_url': None
 }
 
 # Write to currentSong so you clear previous metadata from i.e. shairport or old Spotify instances
@@ -29,26 +29,33 @@ with open(f'{args.cs_loc}/currentSong', 'w') as csi:
 metasocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 metasocket.bind(('', int(args.metaport)))
 prev_state = ''
-while True: # Need to check how to kill the script, look at processing load, etc. NEED TO VERIFY
-  message, address = metasocket.recvfrom(1024)
-  if message:
-    decoded = message.decode('utf-8', 'replace')
-    parsed = re.split('\n|\r', decoded)
-    if 'kSp' not in decoded:
+with open(f'{args.cs_loc}/spot_meta_log.txt', 'w') as log:
+  while True: # Need to check how to kill the script, look at processing load, etc. NEED TO VERIFY
+    message, address = metasocket.recvfrom(1024)
+    if message:
+      decoded = message.decode('utf-8', 'replace')
+      parsed = re.split('\n|\r', decoded)
       data = {}
       for item in parsed:
+        if len(item) == 0:
+          continue
+        if 'vollibrespot v' in item:
+          continue
+        if 'kSp' in item:
+          # ksp data seems to be more accurate than info['state']['status'] data
+          if item == 'kSpSinkInactive':
+            info['state'] = 'paused'
+          elif item == 'kSpSinkActive':
+            info['state'] = 'playing'
+          continue
         try:
           data = json.loads(item)
-        except:
-          pass
-        if 'state' in data:
-          simplestate = str(data['state'])
-          ss = simplestate[11:].strip("'}")
-          if 'play' in ss:
-            info['state'] = 'playing' # JavaScript looks for 'playing', not 'play'
-          else:
-            info['state'] = ss
-        elif 'metadata' in data:
+        except Exception as exc:
+          if args.verbose:
+            log.write(f'Error parsing json: {exc}\n')
+            log.write(f'  from: "{item}"\n')
+        if 'metadata' in data:
+          # if we get song metadata assume it is playing since spotify only gives a state update on state change
           info['artist'] = data['metadata'].get('artist_name') # .get defaults to 'None'
           info['album'] = data['metadata'].get('album_name') # if nothing found
           info['track'] = data['metadata'].get('track_name')
@@ -59,10 +66,8 @@ while True: # Need to check how to kill the script, look at processing load, etc
             info['img_url'] = None
     full_info = f"{info['state']}: {info['track']}"
     if args.verbose:
-      print(decoded)
-    elif full_info != prev_state:
-      prev_state = full_info
-      print(prev_state)
+      log.write(decoded)
+      log.write('\n')
+      log.flush()
     with open(f'{args.cs_loc}/currentSong', 'w') as csi:
       csi.write(str(info))
-    message = None

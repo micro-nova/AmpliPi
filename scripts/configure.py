@@ -12,6 +12,7 @@ import pwd # username
 import glob
 from typing import List, Union, Tuple, Dict, Any, Optional
 import time
+import re
 import requests
 
 # pylint: disable=broad-except
@@ -21,7 +22,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'base' : {
     'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
              'python3-pil', 'libopenjp2-7', # Pillow dependencies
-             'libatlas-base-dev'            # numpy dependencies
+             'libatlas-base-dev',           # numpy dependencies
+             'stm32flash'
             ],
   },
   'web' : {
@@ -37,6 +39,22 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'internet_radio' : {
     'apt' : [ 'vlc' ]
+  },
+  'fmradio' : {
+    'apt' : [ 'rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev' ],
+    'script' : [
+      'if ! which redsea  > /dev/null; then', # TODO: check version
+      '  echo "Installing redsea"',
+      '  cd /tmp',
+      '  git clone --depth 1 https://github.com/windytan/redsea.git',
+      '  cd redsea',
+      '  ./autogen.sh && ./configure && make',
+      '  sudo make install',
+      '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
+      '  sudo udevadm control --reload-rules',
+      '  sudo udevadm trigger',
+      'fi',
+    ]
   },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
@@ -58,12 +76,16 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     ],
   },
   'plexamp' : {
-    'script' : [ './streams/plexamp_nodeinstall.bash' ]
+    # TODO: do a full install of plexamp, the partial install below is not useful
+    # 'script' : [ './streams/plexamp_nodeinstall.bash' ]
   },
   'spotify' : {
     'script' :  [
-      'curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
-      'tar --directory streams -xvf streams/vollibrespot.tar.xz',
+      'if [ ! -e "streams/vollibrespot" ] ; then',
+      '  curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
+      '  tar --directory streams -xvf streams/vollibrespot.tar.xz',
+      '  rm streams/vollibrespot.tar.xz',
+      'fi',
     ]
   }
 }
@@ -89,7 +111,7 @@ def _check_and_setup_platform():
   # Figure out what platform we are on since we expect to be on a raspberry pi or a debian based development system
   if 'linux' in lplatform:
     if 'x86_64' in lplatform:
-      apt = subprocess.run('which apt'.split(), check=True)
+      apt = subprocess.run('which apt-get'.split(), check=True)
       env['arch'] = 'x64'
       if apt:
         env['has_apt'] = True
@@ -121,7 +143,7 @@ class Task:
   def __str__(self):
     desc = f"{self.name} : {self.margs}" if len(self.margs) > 0 else f"{self.name} :"
     for line in self.output.splitlines():
-      if line and not "WARNING: apt does not have a stable CLI interface." in line: # ignore apt warnings so user doesnt get confused
+      if line:
         desc += f'\n  {line}'
     if not self.success:
       desc += '\n  Error: Task Failed'
@@ -146,7 +168,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # TODO: add extra apt repos
   # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
   # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
-  tasks += print_progress([Task('get latest debian packages', 'sudo apt update --allow-releaseinfo-change'.split()).run()])
+  tasks += print_progress([Task('get latest debian packages', 'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
   # organize stuff to install
   packages = set()
@@ -169,7 +191,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _from = f"{env['base_dir']}/{_from}"
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
-    tasks += print_progress([Task(f"copy {_from} to {_to}", f"cp {_from} {_to}".split()).run()])
+    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
     if 'shairport-sync-metadata-reader' in _to:
       # windows messes up permissions
       tasks += print_progress([Task(f"make {_to} executable", f"chmod +x {_to}".split()).run()])
@@ -178,6 +200,19 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     _from = f"{env['base_dir']}/config/asound.conf"
     _to = "/etc/asound.conf"
     tasks += print_progress([Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
+    # fix usb soundcard name
+    usb_audio_rule_path = '/etc/udev/rules.d/85-amplipi-usb-audio.rules'
+    if not os.path.exists(usb_audio_rule_path):
+      _from = f"{env['base_dir']}/config/85-amplipi-usb-audio.rules"
+      _to = usb_audio_rule_path
+      tasks += print_progress([Task('fix usb soundcard id', multiargs=[
+        f"sudo cp {_from} {_to}".split(),
+        'sudo udevadm control --reload-rules'.split(),
+        'sudo udevadm trigger'.split(),
+        f"sudo .{env['base_dir']}/scripts/reload_cmedia".split(),
+      ]).run()])
+    # set usb soundcard to 100% volume
+    tasks += print_progress([Task('set usb soundcard to 100% volume', 'amixer -Dusb71 cset numid=8 100%'.split()).run()])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
@@ -185,7 +220,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       tasks += print_progress([Task("Giving pi serial permission. !!!AmpliPi will need to be restarted after this!!!", "sudo gpasswd -a pi dialout".split()).run()])
       return tasks
   # install debian packages
-  tasks += print_progress([Task('install debian packages', 'sudo apt install -y'.split() + list(packages)).run()])
+  tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
   # Run scripts
   for script in scripts:
@@ -214,6 +249,25 @@ def _install_python_deps(env: dict, deps: List[str]):
     os.chdir(last_dir)
   return tasks
 
+def _add_desktop_icon(env, directory: pathlib.Path, name, command) -> Task:
+  """ Add a desktop icon to the pi """
+  entry = f"""[Desktop Entry]
+Name={name}
+Icon=lxterminal
+Exec=lxterminal -t "{name}" --working-directory={env["base_dir"]} -e {command}
+Type=Application
+Terminal=false
+Categories=Utility;
+"""
+  success = True
+  try:
+    filepath = directory.joinpath(f'{name}.desktop')
+    with open(f'{filepath}', 'w') as icon:
+      icon.write(entry)
+  except Exception:
+    success = False
+  return Task(f'Add desktop icon for {name}', success=success)
+
 def _web_service(directory: str):
   return f"""\
 [Unit]
@@ -224,7 +278,7 @@ After=network.target
 Type=simple
 WorkingDirectory={directory}
 ExecStart=/usr/bin/authbind --deep {directory}/venv/bin/python -m uvicorn --host 0.0.0.0 --port 80 amplipi.asgi:application
-Restart=on-abort
+Restart=always
 
 [Install]
 WantedBy=default.target
@@ -314,9 +368,13 @@ def _disable_service(name: str, system: bool = False) -> List[Task]:
   tasks = [Task(f'Disable {service}', cmd.split()).run()]
   return tasks
 
-def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] = None) -> List[Task]:
   service = f'{name}.service'
-  tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
+  if restart:
+    tasks = [Task(f'Restart {service}', f'systemctl --user restart {service}'.split()).run()]
+  else:
+    # just start
+    tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
 
   # wait a bit, so initial failures are detected before is-active is called
   if tasks[-1].success:
@@ -329,7 +387,7 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
     tasks += task_check
     if test_url and running:
       task = None
-      for _ in range(20): # retry for 10 seconds, giving the server time to start
+      for _ in range(40): # retry for 20 seconds, giving the server time to start
         task = _check_url(test_url)
         if task.success:
           break
@@ -345,10 +403,25 @@ def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
       tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
   return tasks
 
-def _restart_service(name: str, system: bool = False) -> List[Task]:
-  service = f'{name}.service'
-  cmd = f'{systemctl_cmd(system)} restart {service}'
-  tasks = [Task(f'Restart {service}', cmd.split()).run()]
+def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+  return _start_restart_service(name, restart=False, test_url=test_url)
+
+def _restart_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
+  return _start_restart_service(name, restart=True, test_url=test_url)
+
+def _create_dir(directory: str) -> List[Task]:
+  tasks = [Task(f'Create directory {directory}')]
+  path = pathlib.Path(directory)
+  if path.exists():
+    tasks[-1].success = True
+    tasks[-1].output = f'Directory {directory} already exists'
+  else:
+    try:
+      path.mkdir(parents=True)
+      tasks[-1].success = True
+      tasks[-1].output = f'Created {directory}'
+    except:
+      tasks[-1].output = f'Failed to create {directory}'
   return tasks
 
 def _create_service(name: str, config: str) -> List[Task]:
@@ -357,20 +430,12 @@ def _create_service(name: str, config: str) -> List[Task]:
   tasks = []
 
   # create the systemd directory if it doesn't already exist
-  path = pathlib.Path(directory)
-  if not path.exists():
-    tasks.append(Task('Create user systemd directory'))
-    try:
-      path.mkdir(parents=True)
-      tasks[-1].success = True
-      tasks[-1].output = f'Created {directory}'
-    except:
-      tasks[-1].output = f'Failed to create {directory}'
+  tasks += _create_dir(str(directory))
 
   # create the service file, overwriting any existing one
   tasks.append(Task(f'Create {filename}'))
   try:
-    with path.joinpath(filename).open('w+') as svc_file:
+    with directory.joinpath(filename).open('w+') as svc_file:
       svc_file.write(config)
     tasks[-1].success = True
     tasks[-1].output = f'Created {filename}'
@@ -404,6 +469,16 @@ def _configure_authbind() -> List[Task]:
 def _enable_linger(user: str) -> List[Task]:
   return [Task(f'Enable linger for {user} user', f'sudo loginctl enable-linger {user}'.split()).run()]
 
+def _copy_old_config(dest_dir: str) -> None:
+  # try to copy the config of the current running amplipi service into base_dir/house.json
+  # success is not required since the config will be generated from defaults if missing
+  old_dir = subprocess.getoutput('systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
+  if old_dir:
+    try:
+      subprocess.run(['cp', f'{old_dir}/house.json', f'{dest_dir}/house.json'], check=False)
+    except:
+      pass
+
 def _check_url(url) -> Task:
   task = Task(f'Check url {url}')
   try:
@@ -434,6 +509,10 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
     return tasks
+  # try to copy the old config into the potentially new directory
+  # This fixes some potential update issues caused by migrating install to a different directory
+  # (using the web updated the install dir used to be amplipi-dev2 and is now amplipi-dev)
+  _copy_old_config(env['base_dir'])
   tasks = []
   # stop amplipi before reconfiguring authbind
   tasks += print_progress(_stop_service('amplipi'))
@@ -446,6 +525,7 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   tasks += print_progress([_check_version('http://0.0.0.0/api')])
   tasks += print_progress(_create_service('amplipi-updater', _update_service(env['base_dir'])))
   if restart_updater:
+    tasks += print_progress(_stop_service('amplipi-updater'))
     tasks += print_progress(_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
   else:
     # start a second updater service and check if it serves a url
@@ -475,6 +555,44 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+def _fw_ver_from_filename(name: str) -> int:
+  """ Input: .bin filename, with the pattern 'preamp_X.Y.bin'.
+      X = major version, Y = minor version.
+      The result is a single integer 256*X + Y
+  """
+  fw_match = re.search(r'preamp_(\d+)\.(\d+)', name)
+  if fw_match is not None and len(fw_match.groups()) >= 2:
+    major = int(fw_match[1])
+    minor = int(fw_match[2])
+    return (major << 8) + minor
+  # by default return 0 so non-standard file names won't be considered
+  return 0
+
+def _update_firmware(env: dict, progress) -> List[Task]:
+  """ If on AmpliPi hardware, update to the latest firmware """
+  task = Task('Flash latest firmware')
+  latest_ver = 0
+  latest_file = ''
+  for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
+    ver = _fw_ver_from_filename(f)
+    if ver > latest_ver:
+      latest_ver = ver
+      latest_file = f
+  if latest_ver > 0:
+    if env['is_amplipi']:
+      os.chdir(env['base_dir'])
+      task.margs = [f'bash scripts/program_firmware {latest_file}'.split()]
+      task.run()
+    else:
+      task.output = 'Not on AmpliPi'
+      task.success = False
+  else:
+    task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
+    task.success = False
+  progress([task])
+  return [task]
+
+
 def print_task_results(tasks : List[Task]) -> None:
   """ Print out all of the task results """
   for task in tasks:
@@ -494,8 +612,36 @@ def fix_file_props(env, progress) -> List[Task]:
   progress(tasks)
   return tasks
 
+def add_tests(env, progress) -> List[Task]:
+  """ Add test icons """
+  tests = [
+    ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
+    ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
+    ('Amplifier', './hw/tests/built_in.bash amp'),
+    ('LEDs', './hw/tests/built_in.bash led'),
+    ('Preamp', './hw/tests/built_in.bash preamp'),
+    ('Expander Preamp', './hw/tests/built_in.bash preamp --expansion'),
+    ('Inputs', './hw/tests/built_in.bash inputs'),
+    ('Preouts', './hw/tests/built_in.bash preout'),
+    ('Display', './hw/tests/display.bash --wait'),
+    ('Ethernet', './hw/tests/ethernet.bash --wait'),
+    ('USB Ports', './hw/tests/usb.py'),
+    ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
+    ('Fans and Power', './hw/tests/fans.bash'),
+  ]
+  tasks = []
+
+  # create the ~/tests directory if it doesn't already exist
+  directory = pathlib.Path.home().joinpath('Desktop', 'tests')
+  tasks += _create_dir(str(directory))
+
+  for test in tests:
+    tasks += [_add_desktop_icon(env, directory, test[0], test[1])]
+  progress(tasks)
+  return tasks
+
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
-            display=True, progress=print_task_results) -> bool:
+            display=True, firmware=True, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -515,6 +661,8 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if failed():
     return False
   tasks += fix_file_props(env, progress)
+  if env['is_amplipi']:
+    tasks += add_tests(env, progress)
   if failed():
     return False
   if os_deps:
@@ -538,7 +686,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       return False
   if not web and restart_updater: # if web and restart_updater are True this restart happens in the _update_web function
     # The update server needs to restart itself after everything else is successful
-    ssts =_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
+    ssts =_restart_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
     progress(ssts)
     tasks += ssts
     if failed():
@@ -547,6 +695,16 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_display(env, progress)
     if failed():
       return False
+  if firmware:
+    tasks += _update_firmware(env, progress)
+    if failed():
+      return False
+  if web and not restart_updater:
+    # let the user know how to handle a specific failure condition of the old updater
+    UPDATER_MSG = """!!! OLDER UPDATERS CAN MISTAKENLY FAIL AFTER THIS !!!
+
+                     Just go back to AmpliPi http://amplipi.local to check out the new features."""
+    progress([Task(UPDATER_MSG, success=True)])
   return True
 
 if __name__ == '__main__':
@@ -564,10 +722,12 @@ if __name__ == '__main__':
       When this is set False system will need to be restarted to complete update""")
   parser.add_argument('--display', action='store_true', default=False,
     help="Install and run the front-panel display service")
+  parser.add_argument('--firmware', action='store_true', default=False,
+    help="Flash the latest firmware")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
-  has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display
+  has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
   if not has_args:
     print('  WARNING: expected some arguments, check --help for more information')
   install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
-          display=flags.display, restart_updater=flags.restart_updater)
+          display=flags.display, firmware=flags.firmware, restart_updater=flags.restart_updater)
