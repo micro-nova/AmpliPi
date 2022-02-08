@@ -1,28 +1,67 @@
 #!/usr/bin/env bash
 # These give serial numbers, but serials are relatively predictable
-# so let's not use them.
+# so let's not use them to generate a password.
 #cat /proc/cpuinfo | sed -n 's/Serial[[:space:]]*:[[:space:]]0*//p'
 #cat /sys/block/mmcblk0/device/cid
+
+# Password cracking speed: ~2 tps (online, connect via ssh and attempt login)
+#                          ~3 MH/s with 8x NVIDIA RTX 3080s (somehow got hash/salt offline)
+# [linux uses sha512crypt by default: SHA512 with 5000 rounds]
+# https://gist.github.com/Chick3nman/bb22b28ec4ddec0cb5f59df97c994db4
+# Test password cracking speed over SSH to get 'online' tps
+#echo "pi" > users.txt
+#xkcdpass -c 100 -n 4 --min 3 --max 7 -d '' -C first > passwords.txt
+#nmap amplipi.local -p 22 --script ssh-brute --script-args userdb=users.txt,passdb=passwords.txt
+#
+# Number of bits desired = Cracking bits/year + 1 bit for average
+#                        = log2(3*10^6*3600*24*365) + 1 = 47.4 bits
+
+# If AmpliPi is opened to the internet or in general additional security is required,
+# key-based authentication should be used. See
+# https://www.raspberrypi.com/documentation/computers/configuration.html#using-key-based-authentication
 
 confdir="$HOME/.config/amplipi"
 
 # First verify the current user is 'pi'
-if [[ $USER != pi ]]; then
-  echo "ERROR: Not running as pi user."
-  exit 1
-fi
+#if [[ $USER != pi ]]; then
+#  echo "ERROR: Not running as pi user."
+#  exit 1
+#fi
+
+HELP="Set a password on AmpliPi\n
+usage: set_pass [PASSWORD]\n
+If no PASSWORD is given, generate a random passphrase,\n
+otherwise set the pi user's password to PASSWORD.\n"
+
+pass=''
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -h|--help) echo -e $HELP; exit 0 ;;
+    *) pass=$1 ;;
+  esac
+  shift
+done
 
 # Next check if a password has already been generated
 #if [[ -f $confdir/default_password.txt &&  ]]; then
 #fi
 
-# Generate a random password and save to file.
-# Use multiples of 3 otherwise the ending is padded with = characters
-# Resultant password length is 4/3 the number of bytes set (9 bytes = 12 chars)
-# 64 base64 chars, so log2(64)=6 bits per character. As of 2020 a ~$22k
-# commercial password cracker setup can do ~58.513 bits per year of SHA512.
-# 12 chars => 12*6/58.513 = 1.23 years to exhaust all password possibilities.
-pass=$(openssl rand -base64 9)
+if [ -z "$pass" ]; then
+  # Generate a random passphrase and save to file.
+  # Using xkcdpass instead of diceware because it allows setting max word length.
+  # 4440 <=7 length words, so log2(4440)=12.1 bits per character.
+  # 1477 <=5 length words, so log2(1477)=10.5 bits per character.
+  pass=$(xkcdpass -n 4 --min 3 --max 7 -d '' -C first)   # 48.5 bits
+  #pass=$(xkcdpass -n 5 --min 3 --max 5 -d '' -C first)  # 52.6 bits
+
+  # Generate a random password in base64 format and save to file.
+  # Use multiples of 3 bytes otherwise the ending is padded with = characters
+  # Resultant password length is 4/3 the number of bytes set (6 bytes = 8 chars)
+  # 64 base64 chars, so log2(64)=6 bits per character.
+  #pass=$(openssl rand -base64 6) # 48 bits
+fi
+
+# Store new password
 mkdir -p $confdir
 echo $pass > $confdir/default_password.txt
 

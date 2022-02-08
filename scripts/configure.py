@@ -24,7 +24,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
              'python3-pil', 'libopenjp2-7', # Pillow dependencies
              'libatlas-base-dev',           # numpy dependencies
-             'stm32flash'
+             'stm32flash',                  # Programming Preamp Board
+             'xkcdpass'                     # Random passphrase generation
             ],
   },
   'web' : {
