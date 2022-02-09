@@ -14,6 +14,7 @@ import argparse
 import busio
 import cProfile
 import digitalio
+from enum import Enum
 from loguru import logger as log
 import requests
 import signal
@@ -85,6 +86,17 @@ t_irq_pin = board.D6 if args.test_board else board.D38
 # Number of screens to scroll through
 NUM_SCREENS = 1
 _active_screen = 0
+
+class Color(Enum):
+  """ Colors used in the AmpliPi front-panel display """
+  GREEN = '#28a745'
+  YELLOW = '#F0E68C'
+  RED = '#FF0000'
+  BLUE = '#0080ff'
+  BLACK = '#000000'
+  DARKGRAY = '#666666'
+  LIGHTGRAY = '#999999'
+  WHITE = '#FFFFFF'
 
 ################################################################################
 # A note on Raspberry Pi (BCM2837B0) clocks
@@ -187,14 +199,14 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
       yb = y + i*hb + 2*i*sp # Bar starting y-position
 
       # Draw zone name as text
-      draw.text((x, yb), zones[i].name, font=font, fill='#FFFFFF')
+      draw.text((x, yb), zones[i].name, font=font, fill=Color.WHITE.value)
 
       # Draw background of volume bar
-      draw.rectangle(((xb, int(yb+2), xb+wb, int(yb+hb))), fill='#999999')
+      draw.rectangle(((xb, int(yb+2), xb+wb, int(yb+hb))), fill=Color.LIGHTGRAY.value)
 
       # Draw volume bar
       if zones[i].vol > models.MIN_VOL:
-        color = '#666666' if zones[i].mute else '#0080ff'
+        color = Color.DARKGRAY.value if zones[i].mute else Color.BLUE.value
         xv = xb + (wb - round(zones[i].vol * vol2pix))
         draw.rectangle(((xb, int(yb+2), xv, int(yb+hb))), fill=color)
   elif n <= 18: # Draw vertical bars
@@ -209,14 +221,14 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
 
       # Draw zone number as centered text
       draw.text((xb + round(wb/2), y + height - round(ch/2)), str(i+1),
-                anchor='mm', font=small_font, fill='#FFFFFF')
+                anchor='mm', font=small_font, fill=Color.WHITE.value)
 
       # Draw background of volume bar
-      draw.rectangle(((xb, y, xb+wb, yt)), fill='#999999')
+      draw.rectangle(((xb, y, xb+wb, yt)), fill=Color.LIGHTGRAY.value)
 
       # Draw volume bar
       if zones[i].vol > models.MIN_VOL:
-        color = '#666666' if zones[i].mute else '#0080ff'
+        color = Color.DARKGRAY.value if zones[i].mute else Color.BLUE.value
         yv = y + round(zones[i].vol * vol2pix)
         draw.rectangle(((xb, yv, xb+wb, yt)), fill=color)
   else:
@@ -506,17 +518,18 @@ while frame_num < 10 and run:
 
     # BCM2837B0 is rated for [-40, 85] C
     # For now show green for anything below room temp
-    draw.text((1*cw,  0*ch + 2), 'CPU:',    font=font, fill='#FFFFFF')
+    draw.text((1*cw,  0*ch + 2), 'CPU:',    font=font, fill=Color.WHITE.value)
     draw.text((7*cw,  0*ch + 2), cpu_str1,  font=font, fill=gradient(cpu_pcnt))
     draw.text((14*cw, 0*ch + 2), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
-    draw.text((22*cw, 0*ch + 2), 'Mem:',    font=font, fill='#FFFFFF')
+    draw.text((22*cw, 0*ch + 2), 'Mem:',    font=font, fill=Color.WHITE.value)
     draw.text((28*cw, 0*ch + 2), ram_str,   font=font, fill=gradient(ram_pcnt))
 
-    draw.text((1*cw,  1*ch + 2), 'Disk:',   font=font, fill='#FFFFFF')
-    draw.text((7*cw,  1*ch + 2), disk_str1, font=font, fill=gradient(disk_pcnt))
-    draw.text((14*cw, 1*ch + 2), disk_str2, font=font, fill='#FFFFFF')
+    disk_color = gradient(disk_pcnt)
+    draw.text((1*cw,  1*ch + 2), 'Disk:',   font=font, fill=Color.WHITE.value)
+    draw.text((7*cw,  1*ch + 2), disk_str1, font=font, fill=disk_color)
+    draw.text((14*cw, 1*ch + 2), disk_str2, font=font, fill=disk_color)
 
-    draw.text((1*cw,  2*ch + 2), f'IP:   {ip_str}', font=font, fill='#FFFFFF')
+    draw.text((1*cw,  2*ch + 2), f'IP:   {ip_str}', font=font, fill=Color.WHITE.value)
 
     password = 'test'
     if password is not None:
@@ -524,21 +537,21 @@ while frame_num < 10 and run:
 
     if connected:
       # Show source input names
-      draw.text((1*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
+      draw.text((1*cw, int(4.5*ch)), 'Source 1:',font=font, fill=Color.WHITE.value)
+      draw.text((1*cw, int(5.5*ch)), 'Source 2:',font=font, fill=Color.WHITE.value)
+      draw.text((1*cw, int(6.5*ch)), 'Source 3:',font=font, fill=Color.WHITE.value)
+      draw.text((1*cw, int(7.5*ch)), 'Source 4:',font=font, fill=Color.WHITE.value)
       xs = 11*cw
       xp = xs - round(0.5*cw) # Shift playing arrow back a bit
       ys = 4*ch + round(0.5*ch)
-      draw.line(((cw, ys-3), (width-2*cw, ys-3)), width=2, fill='#999999')
+      draw.line(((cw, ys-3), (width-2*cw, ys-3)), width=2, fill=Color.LIGHTGRAY.value)
       for i, src in enumerate(sources):
         sinfo = sources[i].info
         if sinfo is not None:
           if sinfo.state == 'playing':
-            draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
-          draw.text((xs + 1*cw, ys + i*ch), sinfo.name, font=font, fill='#F0E68C')
-      draw.line(((cw, ys+4*ch+2), (width-2*cw, ys+4*ch+2)), width=2, fill='#999999')
+            draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill=Color.GREEN.value)
+          draw.text((xs + 1*cw, ys + i*ch), sinfo.name, font=font, fill=Color.YELLOW.value)
+      draw.line(((cw, ys+4*ch+2), (width-2*cw, ys+4*ch+2)), width=2, fill=Color.LIGHTGRAY.value)
 
       # Show volumes
       # TODO: only update volume bars if a volume changed
@@ -547,10 +560,10 @@ while frame_num < 10 and run:
       # Show an error message on the display, and the AmpliPi logo below
       if not connected_once and connection_retries <= max_connection_retries:
         msg = 'Connecting to the REST API' + '.'*connection_retries
-        text_c = '#FFFFFF'
+        text_c = Color.WHITE.value
       else:
         msg = 'Cannot connect to the REST API at\n' + API_URL
-        text_c = '#FF0000'
+        text_c = Color.RED.value
       text_y = (height - ap_logo.size[1] - 4*ch)//2 + 4*ch
       draw.text((width/2 - 1, text_y), msg, anchor='mm', align='center', font=font, fill=text_c)
       image.paste(ap_logo, box=(0, height - ap_logo.size[1]))
@@ -559,7 +572,7 @@ while frame_num < 10 and run:
       # Transition to sleep mode, clear screen
       log.debug('Clearing screen then sleeping')
       backlight(False)
-      draw.rectangle((0, 0, width-1, height-1), fill='#000000')
+      draw.rectangle((0, 0, width-1, height-1), fill=Color.BLACK.value)
       display.image(image)
       _active_screen = 1
     else:
