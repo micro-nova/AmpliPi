@@ -100,11 +100,6 @@ class Color(Enum):
   LIGHTGRAY = '#999999'
   WHITE = '#FFFFFF'
 
-# Password config location
-PASS_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
-PASS_FILE = os.path.join(PASS_DIR, 'default_password.txt')
-PASS_DEFAULT_PI = 'raspberry'
-
 ################################################################################
 # A note on Raspberry Pi (BCM2837B0) clocks
 ################################################################################
@@ -187,6 +182,59 @@ def get_amplipi_data(base_url: Optional[str]) -> Tuple[bool, List[models.Source]
     log.error('Invalid json in AmpliPi status response')
 
   return success, _sources, _zones
+
+
+class DefaultPass:
+  """Helper class to read and verify the current pi user's password against
+     the stored default AmpliPi password."""
+
+  # Password config location
+  PASS_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  PASS_FILE = os.path.join(PASS_DIR, 'default_password.txt')
+  DEFAULT_PI_PASSWORD = 'raspberry'
+
+  def __init__(self):
+    self.default_password = ''
+    self.pass_file_present = False
+    self.update()
+
+  def update(self) -> Tuple[str, Color]:
+    """Check if the default password file has changed and if so
+       verify if it is the pi user's current password.
+    """
+    old_presence = self.pass_file_present
+    new_default = self.get_default_pw()
+    if self.default_password != new_default or self.pass_file_present != old_presence:
+      self.default_password = new_default
+      self.default_in_use = self.check_pw(self.default_password)
+
+    if self.default_in_use:
+      if self.pass_file_present:
+        # A random password has been set as the default for AmpliPi.
+        return self.default_password, Color.YELLOW
+      # Default Pi password is still in use, this isn't secure.
+      return self.default_password, Color.RED
+    # Current password has been changed from the default
+    return 'User Set', Color.GREEN
+
+  def get_default_pw(self) -> str:
+    if os.path.exists(self.PASS_FILE):
+      with open(self.PASS_FILE, 'r', encoding='utf-8') as pass_file:
+        self.pass_file_present = True
+        return pass_file.readline().rstrip()
+    self.pass_file_present = False
+    return self.DEFAULT_PI_PASSWORD
+
+  @staticmethod
+  def check_pw(pw: str) -> bool:
+    """ Check if the given password is the pi user's current password. """
+    try:
+      subprocess.run(f'sudo python3 amplipi/display/check_pass {pw}', shell=True, check=True)
+      return True
+    except subprocess.CalledProcessError:
+      return False
+
+default_pass = DefaultPass()
 
 # Draw volumes on bars.
 # Draw is a PIL drawing surface
@@ -535,36 +583,9 @@ while frame_num < 10 and run:
 
     draw.text((1*cw,  2*ch + 2), f'IP:   {ip_str}', font=font, fill=Color.WHITE.value)
 
-    # Get password to display.
-    # If the default password in PASS_FILE is still set, display it.
-    # If PASS_FILE doesn't exist check if the default 'raspberry' is still set
-    password = 'User Set'
-    pass_color = Color.GREEN.value
-    if os.path.exists(PASS_FILE):
-      with open(PASS_FILE, 'r') as pass_file:
-        default_password = pass_file.readline()
-        try:
-          subprocess.run(f'sudo python3 amplipi/display/check_pass {default_password}', shell=True, check=True)
-          password = default_password
-          pass_color = Color.YELLOW.value
-        except subprocess.CalledProcessError:
-          # Check if password is still 'raspberry', if so it should be changed!
-          try:
-            res = subprocess.run(f'sudo python3 amplipi/display/check_pass {PASS_DEFAULT_PI}', shell=True, check=True)
-            password = PASS_DEFAULT_PI
-            pass_color = Color.RED.value
-          except subprocess.CalledProcessError:
-            pass
-    else:
-      # Check if password is still 'raspberry', if so it should be changed!
-      try:
-        res = subprocess.run(f'sudo python3 amplipi/display/check_pass {PASS_DEFAULT_PI}', shell=True, check=True)
-        password = PASS_DEFAULT_PI
-        pass_color = Color.RED.value
-      except subprocess.CalledProcessError:
-        pass
+    password, pass_color = default_pass.update()
     draw.text((1*cw,  3*ch + 2), f'Password: ', font=font, fill=Color.WHITE.value)
-    draw.text((11*cw, 3*ch + 2), password,      font=font, fill=pass_color)
+    draw.text((11*cw, 3*ch + 2), password,      font=font, fill=pass_color.value)
 
     if connected:
       # Show source input names
@@ -617,7 +638,7 @@ while frame_num < 10 and run:
 
   end = time.time()
   frame_times.append(end - frame_start_time)
-  #print(f'frame time: {sum(frame_times)/len(frame_times):.3f}s, {sum(cpu_load)/len(cpu_load):.1f}%')
+  log.debug(f'frame time: {sum(frame_times)/len(frame_times):.3f}s')
   sleep_time = 1/args.update_rate - (end - frame_start_time)
   if sleep_time > 0:
     time.sleep(sleep_time)
