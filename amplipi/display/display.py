@@ -16,9 +16,11 @@ import cProfile
 import digitalio
 from enum import Enum
 from loguru import logger as log
+import os
 import requests
 import signal
 import socket
+import subprocess
 import time
 from typing import Any, Dict, List, Tuple, Optional
 
@@ -97,6 +99,11 @@ class Color(Enum):
   DARKGRAY = '#666666'
   LIGHTGRAY = '#999999'
   WHITE = '#FFFFFF'
+
+# Password config location
+PASS_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+PASS_FILE = os.path.join(PASS_DIR, 'default_password.txt')
+PASS_DEFAULT_PI = 'raspberry'
 
 ################################################################################
 # A note on Raspberry Pi (BCM2837B0) clocks
@@ -414,9 +421,6 @@ except:
   log.critical(f'Failed to load font {fontname}')
   sys.exit(3)
 
-# Check if 'pi' user's password is still the default
-
-
 # Create a blank image for drawing.
 # Swap height/width to rotate it to landscape
 height = display.width
@@ -531,9 +535,36 @@ while frame_num < 10 and run:
 
     draw.text((1*cw,  2*ch + 2), f'IP:   {ip_str}', font=font, fill=Color.WHITE.value)
 
-    password = 'test'
-    if password is not None:
-      draw.text((1*cw,  3*ch + 2), f'Default password: {password}', font=font, fill='#FFFFFF')
+    # Get password to display.
+    # If the default password in PASS_FILE is still set, display it.
+    # If PASS_FILE doesn't exist check if the default 'raspberry' is still set
+    password = 'User Set'
+    pass_color = Color.GREEN.value
+    if os.path.exists(PASS_FILE):
+      with open(PASS_FILE, 'r') as pass_file:
+        default_password = pass_file.readline()
+        try:
+          subprocess.run(f'sudo python3 amplipi/display/check_pass {default_password}', shell=True, check=True)
+          password = default_password
+          pass_color = Color.YELLOW.value
+        except subprocess.CalledProcessError:
+          # Check if password is still 'raspberry', if so it should be changed!
+          try:
+            res = subprocess.run(f'sudo python3 amplipi/display/check_pass {PASS_DEFAULT_PI}', shell=True, check=True)
+            password = PASS_DEFAULT_PI
+            pass_color = Color.RED.value
+          except subprocess.CalledProcessError:
+            pass
+    else:
+      # Check if password is still 'raspberry', if so it should be changed!
+      try:
+        res = subprocess.run(f'sudo python3 amplipi/display/check_pass {PASS_DEFAULT_PI}', shell=True, check=True)
+        password = PASS_DEFAULT_PI
+        pass_color = Color.RED.value
+      except subprocess.CalledProcessError:
+        pass
+    draw.text((1*cw,  3*ch + 2), f'Password: ', font=font, fill=Color.WHITE.value)
+    draw.text((11*cw, 3*ch + 2), password,      font=font, fill=pass_color)
 
     if connected:
       # Show source input names

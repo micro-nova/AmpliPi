@@ -15,6 +15,15 @@
           "justMyCode": false
       },
       {
+        "name": "Display",
+        "type": "python",
+        "request": "launch",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}",
+        "module": "amplipi.display.display",
+        "justMyCode": false
+      },
+      {
           "name": "Flash",
           "type": "python",
           "request": "launch",

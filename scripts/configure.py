@@ -557,6 +557,8 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+# General idea: if ~/.config/amplipi/default_password.txt
+# doesn't exist, set password and generate it.
 def _check_password(env: dict, progress) -> List[Task]:
   """ If the default password hash is not stored and 'raspberry' is still
       the password, store the password hash. This is just for older AmpliPi

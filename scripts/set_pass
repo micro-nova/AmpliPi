@@ -20,6 +20,7 @@
 # key-based authentication should be used. See
 # https://www.raspberrypi.com/documentation/computers/configuration.html#using-key-based-authentication
 
+set -e
 confdir="$HOME/.config/amplipi"
 
 # First verify the current user is 'pi'
@@ -70,4 +71,3 @@ if ! echo "pi:$pass" | sudo chpasswd; then
   echo "ERROR: Setting password failed."
   exit 2
 fi
-sudo getent shadow pi >> $confdir/default_password.shadow
