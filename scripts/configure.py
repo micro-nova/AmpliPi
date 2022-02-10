@@ -557,43 +557,31 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
-# General idea: if ~/.config/amplipi/default_password.txt
-# doesn't exist, set password and generate it.
 def _check_password(env: dict, progress) -> List[Task]:
-  """ If the default password hash is not stored and 'raspberry' is still
-      the password, store the password hash. This is just for older AmpliPi
-      versions that didn't get a random password set at checkout.
+  """ If a random default password hasn't been generated, generate, set, and
+      store one. This is just for older AmpliPi versions that didn't get a
+      random password set at checkout.
   """
-  def print_progress(tasks):
-    progress(tasks)
-    return tasks
-  tasks = [Task('Store default password hash')]
-  tasks[0].success = True
+  task = Task('Set a default password')
+  task.success = True
   pass_dir = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
-  pass_file = os.path.join(pass_dir, 'default_password.shadow')
+  pass_file = os.path.join(pass_dir, 'default_password.txt')
   if env['user'] != 'pi':
-    tasks[0].output = 'Not storing default password hash: not running as pi user'
+    task.output = 'Not setting a default password: not running as pi user'
   elif not env['is_amplipi']:
-    tasks[0].output = 'Not storing default password hash: not running on AmpliPi'
-  elif not os.path.exists('/run/sshwarn'):
-    tasks[0].output = 'Not storing default password hash: password is no longer default'
+    task.output = 'Not setting a default password: not running on AmpliPi'
   elif os.path.exists(pass_file):
-    tasks[0].output = 'Default password hash already stored'
+    task.output = 'Default password already generated'
+  elif not os.path.exists('/run/sshwarn'):
+    # no default pass file, but password is not 'raspberry' so already user-set
+    task.margs = [f'mkdir -p {pass_dir}'.split(), f'touch {pass_file}'.split()]
+    task.run()
   else:
     # at this point the pi default password of 'raspberry' is still set
-    tasks = []
-    tasks += _create_dir(pass_dir)
-    tasks.append(Task('Get default password hash and salt', 'sudo getent shadow pi'.split()).run())
-    phash = tasks[-1].output
-    tasks.append(Task('Store default password hash'))
-    with open(pass_file, 'w') as shadow_file:
-      #num_written = shadow_file.write(phash)
-      if shadow_file.write(phash) > 0:
-        tasks[-1].output = f'Default password hash stored in {pass_file}'
-        tasks[-1].success = True
-
-  progress(tasks)
-  return tasks
+    task.margs = [f"{env['base_dir']}/scripts/set_pass"]
+    task.run()
+  progress([task])
+  return [task]
 
 def _fw_ver_from_filename(name: str) -> int:
   """ Input: .bin filename, with the pattern 'preamp_X.Y.bin'.
