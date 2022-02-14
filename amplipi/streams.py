@@ -869,7 +869,7 @@ class Bluetooth(BaseStream):
   def __init__(self, name, device:str, mock=False):
     super().__init__('Bluetooth', name, mock)
     self.device = device # mac address of bt device
-    self.bkg_thread=None # thread that bluealsa daemon will be running on
+    self.process = None
 
   def __del__(self):
     self.disconnect()
@@ -888,51 +888,44 @@ class Bluetooth(BaseStream):
       self.connect(last_src)
 
   def connect(self, src):
+    bt_output = f'{utils.get_folder("streams")}/btout'
+
     print(f'connecting {self.device} to {src} via {self.name}...')
 
     if self.mock:
       self._connect(src)
-      # make a thread that waits for a couple of secends and returns after setting info to stopped
-      self.bkg_thread = threading.Thread(target=self.wait_on_proc2)
-      self.bkg_thread.start()
       return
 
-    bt_daemon_args = f'python {utils.get_folder("streams")}/bluetooth.py start'.split()
-    bt_play_daemon_args = f'python {utils.get_folder("streams")}/bluetooth.py connect ch{src} {self.device}'.split()
-
+    bt_daemon_args = f'python {utils.get_folder("streams")}/bluetooth.py'.split()
     try:
-      self.proc1 = subprocess.Popen(args = bt_daemon_args)
-      self.proc2 = subprocess.Popen(args = bt_play_daemon_args)
-      self._connect(src)
-
-      self.bkg_thread = threading.Thread(target=self.wait_on_proc2)
-      self.bkg_thread.start()
-
+      self.process = subprocess.Popen(args = bt_daemon_args, stdin=subprocess.PIPE, stdout=open(bt_output, 'w'))
+      time.sleep(0.1) # delay a bit, is this needed?
+      self._passcommand(f'connect {self.device} {src}')
     except Exception as e:
       print(f'error starting bluetooth: {e}')
 
     return
 
-  def wait_on_proc2(self):
-    if self.proc2 is not None:
-      self.proc2.wait()
-    else:
-      time.sleep(0.3) # for mock
-    self.state = 'stopped'
+  def _is_running(self):
+    if self.process is not None:
+      return self.process.poll() is None
+    return False
 
   def disconnect(self):
-      if self._is_running():
-        self.proc1.kill()
-        self.proc2.kill()
-        if self.bkg_thread:
-          self.bkg_thread.join()
-      self.proc = None
-      self._disconnect()
+    if self._is_running():
+      self._passcommand('disconnect')
+    self._disconnect()
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
     return source
 
+  def _passcommand(self, com):
+    try:
+      self.process.stdin.write(bytearray(com+'\n', 'utf-8'))
+      self.process.stdin.flush()
+    except Exception as e:
+      print(e)
 
 
 # Simple handling of stream types before we have a type heirarchy

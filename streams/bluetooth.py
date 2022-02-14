@@ -167,10 +167,12 @@ def pair(params):
 
 def connect(params):
   btData.bluealsa_process = subprocess.Popen(["bluealsa-aplay", "-D", params[0], "--pcm", f'ch{params[1]}'])
+  start([])
 
 def disconnect(params):
   if btData.bluealsa_process is not None:
     os.kill(btData.bluealsa_process.pid, signal.SIGTERM)
+    stop([])
     print("disconnected successfully")
   else:
     print("not connected")
