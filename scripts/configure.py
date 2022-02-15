@@ -24,7 +24,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
              'python3-pil', 'libopenjp2-7', # Pillow dependencies
              'libatlas-base-dev',           # numpy dependencies
-             'stm32flash'
+             'stm32flash',                  # Programming Preamp Board
+             'xkcdpass'                     # Random passphrase generation
             ],
   },
   'web' : {
@@ -556,6 +557,32 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+def _check_password(env: dict, progress) -> List[Task]:
+  """ If a random default password hasn't been generated, generate, set, and
+      store one. This is just for older AmpliPi versions that didn't get a
+      random password set at checkout.
+  """
+  task = Task('Set a default password')
+  task.success = True
+  pass_dir = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  pass_file = os.path.join(pass_dir, 'default_password.txt')
+  if env['user'] != 'pi':
+    task.output = 'Not setting a default password: not running as pi user'
+  elif not env['is_amplipi']:
+    task.output = 'Not setting a default password: not running on AmpliPi'
+  elif os.path.exists(pass_file):
+    task.output = 'Default password already generated'
+  elif not os.path.exists('/run/sshwarn'):
+    # no default pass file, but password is not 'raspberry' so already user-set
+    task.margs = [f'mkdir -p {pass_dir}'.split(), f'touch {pass_file}'.split()]
+    task.run()
+  else:
+    # at this point the pi default password of 'raspberry' is still set
+    task.margs = [f"{env['base_dir']}/scripts/set_pass"]
+    task.run()
+  progress([task])
+  return [task]
+
 def _fw_ver_from_filename(name: str) -> int:
   """ Input: .bin filename, with the pattern 'preamp_X.Y.bin'.
       X = major version, Y = minor version.
@@ -666,6 +693,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   tasks += fix_file_props(env, progress)
   if env['is_amplipi']:
     tasks += add_tests(env, progress)
+  tasks += _check_password(env, progress)
   if failed():
     return False
   if os_deps:

@@ -1,5 +1,15 @@
 # AmpliPi Software Releases
 
+## Forthcoming
+* Security
+  * If the password for the `pi` user is still `raspberry`, a new random password will be set
+    and stored in ~/.config/amplipi/default_password.txt.
+  * Newly shipped AmpliPi units will have a random password set already.
+  * If this default password is still in use, it will be shown on the front-panel display.
+    Otherwise the display will show "User Set".
+  * It is still recommended to change this password using the `passwd` utility since the default
+    password is saved in plain-text.
+
 ## 0.1.7
 
 * Audio
