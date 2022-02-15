@@ -29,10 +29,13 @@ confdir="$HOME/.config/amplipi"
 #  exit 1
 #fi
 
-HELP="Set a password on AmpliPi\n
+HELP="Set a default password for AmpliPi SSH access\n
 usage: set_pass [PASSWORD]\n
 If no PASSWORD is given, generate a random passphrase,\n
-otherwise set the pi user's password to PASSWORD.\n"
+otherwise set the pi user's password to PASSWORD.\n
+\n
+WARNING: The default password will be stored in plaintext at\n
+$confdir so it can be shown on AmpliPi's front-panel display.\n"
 
 pass=''
 while [ "$#" -gt 0 ]; do
@@ -43,23 +46,24 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-# Next check if a password has already been generated
-#if [[ -f $confdir/default_password.txt &&  ]]; then
-#fi
+# Generate a random passphrase and save to file.
+# Using xkcdpass instead of diceware because it allows setting max word length.
+# Use `xkcdpass -V` to get verbose output including word counts and entropy
+gen_pass_phrase() {
+  # 4440 <=7 length words, so log2(4440)=12.1 bits per word.
+  pass=$(xkcdpass -n 4 --min 3 --max 7 -d '' -C first) # 48.5 bits
+}
+
+# Generate a random password in base64 format and save to file.
+# Use multiples of 3 bytes otherwise the ending is padded with = characters
+# Resultant password length is 4/3 the number of bytes set (6 bytes = 8 chars)
+gen_pass_base64() {
+  # 64 base64 chars, so log2(64)=6 bits per character.
+  pass=$(openssl rand -base64 6) # 48 bits
+}
 
 if [ -z "$pass" ]; then
-  # Generate a random passphrase and save to file.
-  # Using xkcdpass instead of diceware because it allows setting max word length.
-  # 4440 <=7 length words, so log2(4440)=12.1 bits per character.
-  # 1477 <=5 length words, so log2(1477)=10.5 bits per character.
-  pass=$(xkcdpass -n 4 --min 3 --max 7 -d '' -C first)   # 48.5 bits
-  #pass=$(xkcdpass -n 5 --min 3 --max 5 -d '' -C first)  # 52.6 bits
-
-  # Generate a random password in base64 format and save to file.
-  # Use multiples of 3 bytes otherwise the ending is padded with = characters
-  # Resultant password length is 4/3 the number of bytes set (6 bytes = 8 chars)
-  # 64 base64 chars, so log2(64)=6 bits per character.
-  #pass=$(openssl rand -base64 6) # 48 bits
+  gen_pass_phrase
 fi
 
 # Store new password
