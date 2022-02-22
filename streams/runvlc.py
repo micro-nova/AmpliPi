@@ -154,11 +154,14 @@ while True:
       if args.test:
         log('fail')
         sys.exit(1)
-      log('State: %s' % player.get_state())
+      if latest_info['state'] == "playing":
+        latest_info['state'] = 'stopped'
+        log('State: %s' % player.get_state())
 
   except Exception:
+    log('Error: %s' % sys.exc_info()[1])
     if args.test:
       log('fail')
-    log('Error: %s' % sys.exc_info()[1])
+    sys.exit(1) # TODO: try to recover by restarting vlc every X seconds
 
   time.sleep(1) # throttle metadata
