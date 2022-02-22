@@ -271,33 +271,19 @@ function updateSourceView(status) {
     cover.src = src.info.img_url ? src.info.img_url : icons['none'];
     const playing = src.info.state == "playing";
     playing_indicator.style.visibility = playing ? "visible" : "hidden";
-    if (stream_id) {
-      // find the right stream
-      let stream = undefined;
-      for (const s of status.streams) {
-        if (s.id == stream_id) {
-          stream = s;
-          break;
-        }
-      }
-      if (stream) {
-        // update the player's song info
-        if (stream.type == 'pandora') {
-          next.style.visibility = "visible";
-          like.style.visibility = "visible";
-          dislike.style.visibility = "visible";
-          play_pause.style.visibility = "visible";
-          play_pause.classList.toggle('fa-play', !playing);
-          play_pause.classList.toggle('fa-pause', playing);
-        } else if (stream.type == 'spotify') {
-          next.style.visibility = "visible";
-          prev.style.display = "inline-block";
-          play_pause.style.visibility = "visible";
-          play_pause.classList.toggle('fa-play', !playing);
-          play_pause.classList.toggle('fa-pause', playing);
-        }
-      }
+
+    // update the control buttons
+    supported_cmds = src.info.supported_cmds;
+    next.style.visibility = supported_cmds.includes("next") ? "visible" : "hidden";
+    like.style.visibility = supported_cmds.includes("love") ? "visible" : "hidden";
+    dislike.style.visibility = supported_cmds.includes("ban") ? "visible" : "hidden";
+    prev.style.display = supported_cmds.includes("prev") ? "inline-block" : "none";
+    if (supported_cmds.includes("pause")) {
+      play_pause.style.visibility = "visible";
+      play_pause.classList.toggle('fa-play', !playing);
+      play_pause.classList.toggle('fa-pause', playing);
     }
+
     // update each source's input
     player = $("#s" + src.id + "-player")[0];
     player.dataset.srcInput = src.input;
