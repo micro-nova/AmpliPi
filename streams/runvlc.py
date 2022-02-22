@@ -162,6 +162,17 @@ while True:
     log('Error: %s' % sys.exc_info()[1])
     if args.test:
       log('fail')
-    sys.exit(1) # TODO: try to recover by restarting vlc every X seconds
+      sys.exit(1)
+    else:
+      # try to recover by restarting vlc
+      time.sleep(1)
+      try:
+        del player
+        player = instance.media_player_new()
+        player.set_media(media)
+        player.play()
+      except Exception:
+        log(sys.exc_info())
+        exit(1)
 
   time.sleep(1) # throttle metadata
