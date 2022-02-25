@@ -320,7 +320,7 @@ function updateSourceView(status) {
       let gid = ctrl.dataset.group;
       for (const g of status.groups) {
         if (g.id == gid) {
-          updateVol(ctrl, g.mute, g.vol_delta_f);
+          updateVol(ctrl, g.mute, g.vol_f);
           break;
         }
       }
@@ -387,7 +387,7 @@ async function sendRequestAndReload(path, method, req, src) {
 function onGroupVolChange(g, vol) {
   if (vol) {
     let req = {
-      "vol_delta_f" : Number(vol),
+      "vol_f" : Number(vol),
       "mute" : false
     };
     sendRequest('/groups/' + g, 'PATCH', req);
