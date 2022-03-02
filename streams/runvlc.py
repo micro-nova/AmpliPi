@@ -24,6 +24,7 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301 USA
 
+import os
 import sys
 import time
 import json
@@ -46,6 +47,12 @@ if args.test:
 elif args.output:
   alsa_device = args.output
   config += " --alsa-audio-device {}".format(alsa_device)
+
+if args.log:
+  try:
+    os.remove(args.log)
+  except Exception:
+    pass
 
 def log(info):
   if args.log:
