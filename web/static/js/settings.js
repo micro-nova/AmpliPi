@@ -353,7 +353,7 @@ $(function() {
             '<a href="#" class="btn btn-success btn-sm float-right addStation" data-stationname="' +
             value.name.toString().replace('"', '\\"') +
             '" data-stationurl="' +
-            value.url.toString().replace('"', '\\"') +
+            value.url_resolved.toString().replace('"', '\\"') +
             '" data-stationlogo="' +
             value.favicon.toString().replace('"', '\\"') +
             '" role="button" style="position: absolute;right: 90px;">Add Station</button></div>'
