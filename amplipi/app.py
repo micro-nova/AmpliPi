@@ -62,9 +62,6 @@ import amplipi.utils as utils
 import amplipi.models as models
 from amplipi.ctrl import Api, ApiResponse, ApiCode # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 
-# internet radio
-from pyradios import RadioBrowser
-
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
 STATIC_DIR = os.path.abspath('web/static')
@@ -411,14 +408,6 @@ def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mo
 def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Make an announcement """
   return code_response(ctrl, ctrl.announce(announcement))
-
-# Internet radio catalog search
-
-@api.get('/api/inetradio/search/name/{name}', tags=['stream'])
-def get_inetradio(name):
-  """ Get internet radio station list """
-  rb = RadioBrowser()
-  return rb.search(name=name, name_exact=False)
 
 # include all routes above
 

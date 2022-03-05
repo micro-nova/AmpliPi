@@ -331,7 +331,7 @@ $(function() {
     console.log('Searching for station by name: ' + $("#inetradio-search-name-txt").val());
     $.ajax({
       type: "GET",
-      url: '/api/inetradio/search/name/' + $("#inetradio-search-name-txt").val(),
+      url: 'https://de1.api.radio-browser.info/json/stations/byname/' + $("#inetradio-search-name-txt").val(),
       contentType: "application/json",
       success: function(data) {
         $("#inetradio-searchNameResults").html("<h3>Search Results</h3>");
