@@ -112,16 +112,16 @@ $(function() {
         </div>
 
         <div id="internetradio_settings" class="addl_settings" style="display:none;">
-          <ul class="nav nav-tabs" id="inetradioTab" role="tablist" style="margin-top:4px;">
-            <li class="nav-item" role="presentation">
+          <ul class="nav nav-tabs" id="inetradio_tab" role="tablist" style="margin-top:4px;">
+            <li class="nav-item">
               <a class="nav-link active" href="#inetradio-search-name" id="inetradio-search-name-tab" data-toggle="tab" role="tab" aria-controls="inetradio-search-name" aria-selected="true">Search for Stations</a>
             </li>
-            <li class="nav-item" role="presentation">
+            <li class="nav-item">
               <a class="nav-link" href="#inetradio-manual" id="inetradio-manual-tab" data-toggle="tab" role="tab" aria-controls="inetradio-manual" aria-selected="false">Manually Add Station</a>
             </li>
           </ul>
 
-          <div class="tab-content" id="inetradioTabContent" style="margin-top:15px;">
+          <div class="tab-content" id="inetradio_tab_content" style="padding:15px;">
             <div class="tab-pane fade show active" id="inetradio-search-name" role="tabpanel" aria-labelledby="inetradio-search-name-tab">
               <div class="form-group">
                 <label for="inetradio-search-name-txt">Search by Station Name</label>
@@ -130,7 +130,7 @@ $(function() {
 
               <button type="button" class="btn btn-secondary" id="inetradio-search-name-btn">Search Stations</button>
 
-              <div id="inetradio-searchNameResults" style="margin-top:15px;"></div>
+              <div id="inetradio-search_name_results" style="margin-top:15px;"></div>
 
             </div>
             <div class="tab-pane fade" id="inetradio-manual" role="tabpanel" aria-labelledby="inetradio-manual-tab">
@@ -334,13 +334,13 @@ $(function() {
       url: 'https://de1.api.radio-browser.info/json/stations/byname/' + $("#inetradio-search-name-txt").val(),
       contentType: "application/json",
       success: function(data) {
-        $("#inetradio-searchNameResults").html("<h3>Search Results</h3>");
+        $("#inetradio-search_name_results").html("<h3>Search Results</h3>");
         var details = '';
         var numResults = 0;
         $.each(data, function(index, value) {
           ++numResults;
           if (value.bitrate && value.codec) { details = '(' + value.bitrate + 'kbps ' + value.codec + ')'; }
-          $('#inetradio-searchNameResults').append(
+          $('#inetradio-search_name_results').append(
             '<div style="position: relative; padding:6px;"><b><a href="' +
             value.homepage +
             '" target="_blank" title="Station Homepage">' +
@@ -359,7 +359,7 @@ $(function() {
             '" role="button" style="position: absolute;right: 90px;">Add Station</button></div>'
           );
         });
-        if (!numResults) { $('#inetradio-searchNameResults').append("No stations found."); }
+        if (!numResults) { $('#inetradio-search_name_results').append("No stations found."); }
       }
     });
   });

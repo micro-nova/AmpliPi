@@ -46,6 +46,25 @@ body {
   background: #4a4a4a;
 }
 
+#internetradio_settings .nav-item {
+  font-size: 0.9rem;
+}
+#internetradio_settings .nav-tabs {
+  border-bottom-width: 0px
+}
+#internetradio_settings .nav .nav-item .active {
+  background: #4a4a4a;
+}
+#internetradio_settings .nav .nav-item a {
+  color: inherit;
+}
+#internetradio_settings .nav-item:hover, #internetradio_settings .nav-link:hover, #internetradio_settings .nav-link.active {
+  border-color: #4a4a4a;
+}
+#inetradio_tab_content {
+  background: #4a4a4a;
+}
+
 .group, .preset-list, .settings {
   background: #2a2a2a;
 }
