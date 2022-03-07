@@ -117,6 +117,7 @@ class SourceInfo(BaseModel):
   album: Optional[str]
   station: Optional[str] # name of radio station
   img_url: Optional[str]
+  supported_cmds: List[str] = []
 
 class Source(Base):
   """ An audio source """

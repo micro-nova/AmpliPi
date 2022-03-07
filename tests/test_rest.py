@@ -234,6 +234,7 @@ def test_get_source(client, sid):
   s = find(base_config()['sources'], sid)
   assert s is not None
   assert s['name'] == jrv['name']
+  assert jrv['info']['supported_cmds'] is not None
 
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_patch_source(client, sid):
