@@ -164,6 +164,12 @@ while True:
       if latest_info['state'] == "playing":
         latest_info['state'] = 'stopped'
         log('State: %s' % player.get_state())
+      time.sleep(1)
+      log('Attempting to restart VLC')
+      del player
+      player = instance.media_player_new()
+      player.set_media(media)
+      player.play()
 
   except Exception:
     log('Error: %s' % sys.exc_info()[1])
@@ -173,6 +179,7 @@ while True:
     else:
       # try to recover by restarting vlc
       time.sleep(1)
+      log('Attempting to restart VLC')
       try:
         del player
         player = instance.media_player_new()
