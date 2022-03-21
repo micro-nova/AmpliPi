@@ -30,6 +30,7 @@ import time
 import json
 import vlc
 import argparse
+from typing import List
 
 parser = argparse.ArgumentParser(prog='runvlc', description='play an internet radio station using vlc')
 parser.add_argument('url', type=str, help='internet radio station url')
@@ -57,7 +58,7 @@ if args.log:
 def log(info):
   if args.log:
     try:
-      with open(args.log, 'a') as f:
+      with open(args.log, 'a', encoding='utf-8') as f:
         print(info, file=f)
     except:
       print(f'Error writing to logfile: {args.log}')
@@ -77,7 +78,7 @@ try:
   player.play()
 except Exception:
   log(sys.exc_info())
-  exit(1)
+  sys.exit(1)
 
 if args.song_info:
   try:
@@ -86,7 +87,27 @@ if args.song_info:
     f.close()
   except Exception:
     log(sys.exc_info())
-    exit(1)
+    sys.exit(1)
+
+restarts: List[float] = []
+def restart_vlc():
+  # prune old restarts
+  LAST_HOUR = (time.time() + 60 * 60)
+  while len(restarts) > 0 and restarts[0] < LAST_HOUR:
+    restarts.pop(0)
+  # wait for a bit to restart if we've had too many restarts recently
+  if len(restarts) < 2:
+    time.sleep(5)
+  else:
+    log('VLC restart is delayed, too many recent restarts')
+    time.sleep(60 * 10)
+  # actually restart vlc
+  log('Attempting to restart VLC')
+  del player
+  player = instance.media_player_new()
+  player.set_media(media)
+  player.play()
+  restarts.append(time.time())
 
 # Wait for stream to start playing
 time.sleep(2)
@@ -164,12 +185,7 @@ while True:
       if latest_info['state'] == "playing":
         latest_info['state'] = 'stopped'
         log('State: %s' % player.get_state())
-      time.sleep(1)
-      log('Attempting to restart VLC')
-      del player
-      player = instance.media_player_new()
-      player.set_media(media)
-      player.play()
+      restart_vlc()
 
   except Exception:
     log('Error: %s' % sys.exc_info()[1])
@@ -177,16 +193,10 @@ while True:
       log('fail')
       sys.exit(1)
     else:
-      # try to recover by restarting vlc
-      time.sleep(1)
-      log('Attempting to restart VLC')
       try:
-        del player
-        player = instance.media_player_new()
-        player.set_media(media)
-        player.play()
+        restart_vlc()
       except Exception:
         log(sys.exc_info())
-        exit(1)
+        sys.exit(1)
 
   time.sleep(1) # throttle metadata
