@@ -91,6 +91,7 @@ if args.song_info:
 
 restarts: List[float] = []
 def restart_vlc():
+  global player
   # prune old restarts
   LAST_HOUR = (time.time() + 60 * 60)
   while len(restarts) > 0 and restarts[0] < LAST_HOUR:
@@ -103,7 +104,10 @@ def restart_vlc():
     time.sleep(60 * 10)
   # actually restart vlc
   log('Attempting to restart VLC')
-  del player
+  try:
+    del player
+  except:
+    pass
   player = instance.media_player_new()
   player.set_media(media)
   player.play()
