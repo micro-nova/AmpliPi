@@ -187,7 +187,13 @@ while True:
         log('fail')
         sys.exit(1)
       if latest_info['state'] == "playing":
-        latest_info['state'] = 'stopped'
+        latest_info = {
+          'track':'',
+          'artist':'',
+          'station': '',
+          'state': 'stopped'
+        }
+        cur_info = latest_info
         log('State: %s' % player.get_state())
       restart_vlc()
 
@@ -198,6 +204,13 @@ while True:
       sys.exit(1)
     else:
       try:
+        latest_info = {
+          'track':'',
+          'artist':'',
+          'station': '',
+          'state': 'stopped'
+        }
+        cur_info = latest_info
         restart_vlc()
       except Exception:
         log(sys.exc_info())
