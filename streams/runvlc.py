@@ -32,7 +32,7 @@ import time
 import json
 import vlc
 import argparse
-from typing import List
+from typing import List, Optional, Any, IO
 
 parser = argparse.ArgumentParser(prog='runvlc', description='play an internet radio station using vlc')
 parser.add_argument('url', type=str, help='internet radio station url')
@@ -51,17 +51,19 @@ elif args.output:
   alsa_device = args.output
   config += " --alsa-audio-device {}".format(alsa_device)
 
+log_file : Optional[IO[Any]] = None
 if args.log:
   try:
     os.remove(args.log)
   except Exception:
     pass
+  log_file = open(args.log, 'a', encoding='utf-8')
 
 def log(info):
-  if args.log:
+  if log_file:
     try:
-      with open(args.log, 'a', encoding='utf-8') as f:
-        print(info, file=f)
+      print(info, file=log_file)
+      log_file.flush()
     except:
       print(f'Error writing to logfile: {args.log}')
       print(info)
@@ -70,8 +72,8 @@ def log(info):
 
 def update_info() -> bool:
   try:
-    with open(args.song_info, "wt", encoding='utf-8') as f:
-      f.write(json.dumps(cur_info))
+    with open(args.song_info, "wt", encoding='utf-8') as info_file:
+      info_file.write(json.dumps(cur_info))
     return True
   except Exception:
     log('Error: %s' % sys.exc_info()[1])
@@ -91,6 +93,14 @@ except Exception:
   log(sys.exc_info())
   sys.exit(1)
 
+# Keep track of the current state so we only update on change
+cur_url = ''
+cur_info = {
+  'track':'',
+  'artist':'',
+  'station': '',
+  'state': 'stopped',
+}
 if args.song_info:
   if not update_info():
     sys.exit(1)
@@ -98,6 +108,7 @@ if args.song_info:
 restarts: List[float] = []
 def restart_vlc():
   global player # TODO: This is ugly
+  log('Waiting to restart vlc')
   # prune old restarts
   LAST_HOUR = (time.time() + 60 * 60)
   while len(restarts) > 0 and restarts[0] < LAST_HOUR:
@@ -121,15 +132,6 @@ def restart_vlc():
 
 # Wait for stream to start playing
 time.sleep(2)
-
-# Keep track of the current state so we only update on change
-cur_url = ''
-cur_info = {
-  'track':'',
-  'artist':'',
-  'station': '',
-  'state': 'stopped',
-}
 
 # Monitor track meta data and update currently_playing file if the track changed
 while True:
@@ -188,13 +190,12 @@ while True:
         log('fail')
         sys.exit(1)
       if latest_info['state'] == "playing":
-        latest_info = {
+        curr_info = {
           'track':'',
           'artist':'',
           'station': '',
           'state': 'stopped'
         }
-        cur_info = latest_info
         log('State: %s' % player.get_state())
       restart_vlc()
 
@@ -205,13 +206,12 @@ while True:
       sys.exit(1)
     else:
       try:
-        latest_info = {
+        curr_info = {
           'track':'',
           'artist':'',
           'station': '',
           'state': 'stopped'
         }
-        cur_info = latest_info
         restart_vlc()
       except Exception:
         log(sys.exc_info())
