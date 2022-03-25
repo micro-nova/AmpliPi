@@ -24,6 +24,8 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301 USA
 
+""" Play an internet radio stream using vlc """
+
 import os
 import sys
 import time
@@ -66,6 +68,15 @@ def log(info):
   else:
     print(info)
 
+def update_info() -> bool:
+  try:
+    with open(args.song_info, "wt", encoding='utf-8') as f:
+      f.write(json.dumps(cur_info))
+    return True
+  except Exception:
+    log('Error: %s' % sys.exc_info()[1])
+    return False
+
 instance = vlc.Instance(config.split())
 try:
   media = instance.media_new(args.url)
@@ -81,17 +92,12 @@ except Exception:
   sys.exit(1)
 
 if args.song_info:
-  try:
-    f = open(args.song_info, "wt")
-    f.write(json.dumps({"state": str(player.get_state())}))
-    f.close()
-  except Exception:
-    log(sys.exc_info())
+  if not update_info():
     sys.exit(1)
 
 restarts: List[float] = []
 def restart_vlc():
-  global player
+  global player # TODO: This is ugly
   # prune old restarts
   LAST_HOUR = (time.time() + 60 * 60)
   while len(restarts) > 0 and restarts[0] < LAST_HOUR:
@@ -176,12 +182,7 @@ while True:
           sys.exit(0)
 
         if args.song_info:
-          try:
-            f = open(args.song_info, "wt")
-            f.write(json.dumps(cur_info))
-            f.close()
-          except Exception:
-            log('Error: %s' % sys.exc_info()[1])
+          update_info()
     else:
       if args.test:
         log('fail')
