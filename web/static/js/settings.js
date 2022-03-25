@@ -57,9 +57,8 @@ $(function() {
     if(event.keyCode == 13) {
       if (event.target.id == 'inetradio-search-name-txt') { // Intercept enter key for inetradio search
         $("#inetradio-search-name-btn").trigger('click');
+        event.preventDefault();
       }
-
-      event.preventDefault();
       return false;
     }
   });
@@ -111,40 +110,22 @@ $(function() {
           </div>
         </div>
 
-        <div id="internetradio_settings" class="addl_settings" style="display:none;">
-          <ul class="nav nav-tabs" id="inetradio_tab" role="tablist" style="margin-top:4px;">
-            <li class="nav-item">
-              <a class="nav-link active" href="#inetradio-search-name" id="inetradio-search-name-tab" data-toggle="tab" role="tab" aria-controls="inetradio-search-name" aria-selected="true">Search for Stations</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#inetradio-manual" id="inetradio-manual-tab" data-toggle="tab" role="tab" aria-controls="inetradio-manual" aria-selected="false">Manually Add Station</a>
-            </li>
-          </ul>
-
-          <div class="tab-content" id="inetradio_tab_content" style="padding:15px;">
-            <div class="tab-pane fade show active" id="inetradio-search-name" role="tabpanel" aria-labelledby="inetradio-search-name-tab">
-              <div class="form-group">
-                <label for="inetradio-search-name-txt">Search by Station Name</label>
-                <input type="text" class="form-control" name="inetradio-search-name-txt" id="inetradio-search-name-txt" data-required="true">
-              </div>
-
-              <button type="button" class="btn btn-secondary" id="inetradio-search-name-btn">Search Stations</button>
-
-              <div id="inetradio-search_name_results" style="margin-top:15px;"></div>
-
-            </div>
-            <div class="tab-pane fade" id="inetradio-manual" role="tabpanel" aria-labelledby="inetradio-manual-tab">
-              <div class="form-group">
-                <label for="url">Station Audio URL</label>
-                <input type="text" class="form-control" name="url" id="url" aria-describedby="urlHelp" data-required="true">
-                <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
-              </div>
-              <div class="form-group">
-                <label for="logo">Station Logo</label>
-                <input type="text" class="form-control" name="logo">
-              </div>
-
-            </div>
+        <div id="internetradio_settings" class="addl_settings" style="display:none;padding:15px;">
+          <div class="form-group">
+            <label for="inetradio-search-name-txt">Search by Station Name</label>
+            <input type="text" class="form-control" name="inetradio-search-name-txt" id="inetradio-search-name-txt" data-required="true">
+          </div>
+          <button type="button" class="btn btn-secondary" id="inetradio-search-name-btn">Search Stations</button>
+          <div id="inetradio-search_name_results" style="margin-top:15px;margin-bottom:15px;max-height: 280px;overflow-y: auto;overflow-x: hidden; background: #4a4a4a;"></div>
+          <div class="form-group">
+            <label for="url">Station Audio URL</label>
+            <input type="text" class="form-control" name="url" id="inetradio-url" aria-describedby="urlHelp" data-required="true">
+            <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
+          </div>
+          <div class="form-group">
+            <label for="logo">Station Logo</label>
+            <input type="text" class="form-control" name="logo" id="inetradio-logo">
+          </div>
           </div>
         </div>
 
@@ -305,7 +286,7 @@ $(function() {
     $("#addStreamButton").show(); // Make sure this is showing (inetradio may hide it)
     $("#streamNameDiv").show(); // Make sure this is showing (inetradio may hide it)
     if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
-    else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); $("#addStreamButton").hide(); $("#streamNameDiv").hide(); }
+    else if ($(this).val() == "internetradio") { $("#internetradio_settings").show();}
     else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); $("#fmradio_warning").show(); }
     else if ($(this).val() == "plexamp") { $("#plexamp_settings").show(); }
 
@@ -329,9 +310,10 @@ $(function() {
   /* Search for inetradio stations */
   $(document).on('click', '#inetradio-search-name-btn', function () {
     console.log('Searching for station by name: ' + $("#inetradio-search-name-txt").val());
+    const keywords = $("#inetradio-search-name-txt").val();
     $.ajax({
       type: "GET",
-      url: 'https://de1.api.radio-browser.info/json/stations/byname/' + $("#inetradio-search-name-txt").val(),
+      url: `https://de1.api.radio-browser.info/json/stations/byname/${keywords}?limit=100`,
       contentType: "application/json",
       success: function(data) {
         $("#inetradio-search_name_results").html("<h3>Search Results</h3>");
@@ -356,7 +338,7 @@ $(function() {
             value.url_resolved.toString().replace('"', '\\"') +
             '" data-stationlogo="' +
             value.favicon.toString().replace('"', '\\"') +
-            '" role="button" style="position: absolute;right: 90px;">Add Station</button></div>'
+            '" role="button" style="position: absolute;right: 90px;">Use</button></div>'
           );
         });
         if (!numResults) { $('#inetradio-search_name_results').append("No stations found."); }
@@ -369,16 +351,9 @@ $(function() {
     var name = $(this).data('stationname');
     var url = $(this).data('stationurl');
     var logo = $(this).data('stationlogo');
-    var formData = {logo: logo, name: name, type: "internetradio", url: url};
-
-    $.ajax({
-      type: "POST",
-      url: '/api/stream',
-      data: JSON.stringify(formData),
-      contentType: "application/json",
-      success: updateSettings
-    });
-
+    $('#str_name').val(name);
+    $('#inetradio-url').val(url);
+    $('#inetradio-logo').val(logo);
     return false;
   });
 
