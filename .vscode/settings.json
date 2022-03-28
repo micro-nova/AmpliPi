@@ -19,10 +19,12 @@
     "**/venv/lib/**": true
   },
   "[cpp]": {
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.rulers": [80]
   },
   "[c]": {
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.rulers": [80]
   },
   "files.associations": {
     // The C/C++ extension treats *.h files as "non-standard" C files,
