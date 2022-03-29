@@ -1,6 +1,21 @@
 # Preamp Board Firmware Changelog
 
-## 1.4
+## 1.5
+
+  - Slightly reduce audible popping sound on volume changes.
+  - Improved the I2C initialization to resolve a rare arbitration lost error.
+  - The I2C ADC is now initialized to a known state at startup.
+  - Fixed volume controller dB register values for low volumes.
+  - The preouts now mute with the amps thanks to writing mute (-90 dB) to the
+    volume controllers as well as setting the amps to mute.
+  - Moved auto-standby logic to firmware. STANDBY register is now AMP_ENABLE.
+    See [preamp_i2c_regs.md](../preamp_i2c_regs.md).
+  - Support SMBUS digital potentiometer variant MCP40D17 for fan voltage
+    control. Originally the MCP4017 was used but due to the chip shortage
+    it is not currently available. Both DPots are now supported and
+    function the same.
+
+## 1.4-DB502F6
 
   - Upgrade fan control to PWM for Power Board Rev 3 and Power Board Rev 4
     to utilize their new digital potentiometer for linear voltage fan

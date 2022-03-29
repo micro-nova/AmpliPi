@@ -134,11 +134,11 @@
       <td>FANS</td>
       <td align=center>-</td>
       <td align=center>-</td>
+      <td align=center>SMBUS</td>
       <td align=center>FAILED</td>
       <td align=center>OVR_TMP</td>
-      <td align='center' colspan=2>CTRL_METHOD</td>
       <td align=center>ON</td>
-      <td align=center>OVERRIDE</td>
+      <td align='center' colspan=2>CTRL_METHOD</td>
       <td>0x00</td>
     </tr>
     <tr>
@@ -397,6 +397,17 @@ CTRL_METHOD is read/write, the rest of the bits are read only.
 | 1      | Fans failed |
 
 * Fan failed status only present with MAX6644
+
+| SMBUS | Description                          |
+| ----- | ------------------------------------ |
+| 0     | DPot does not use SMBus command code |
+| 1     | DPot uses SMBus command code         |
+
+* Due to the global chip shortage, support for two types of digital
+  potentiometers was added. Both types perform the same function,
+  but have a slightly different command interface.
+  This field (combined with CTRL_METHOD) simply informs which DPot is present.
+  A 0 in this field could also mean no digital pot is present.
 
 ### LED_CTRL / LED_VAL
 
