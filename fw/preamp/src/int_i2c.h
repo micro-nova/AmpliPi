@@ -26,4 +26,6 @@
 void initInternalI2C();
 void updateInternalI2C();
 
+bool isDPotSMBus();
+
 #endif /* INT_I2C_H_ */

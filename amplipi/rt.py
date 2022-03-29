@@ -311,7 +311,7 @@ class _Preamps:
     return None, None, None, None, None
 
   def read_fan_status(self, preamp: int = 1) -> Tuple[Union[FanCtrl, None],
-    Union[bool, None], Union[bool, None], Union[bool, None]]:
+    Union[bool, None], Union[bool, None], Union[bool, None], Union[bool, None]]:
     """ Read the status of the fans
 
       Returns:
@@ -319,6 +319,7 @@ class _Preamps:
         fans_on:   True if the fans are on
         ovr_tmp:   True if the amplifiers or PSU are overtemp
         failed:    True if the fans failed (only available on developer units)
+        smbus:     True if the digital pot uses SMBus command
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
@@ -327,8 +328,9 @@ class _Preamps:
       fans_on = (fstat & 0x04) != 0
       ovr_tmp = (fstat & 0x08) != 0
       failed = (fstat & 0x10) != 0
-      return ctrl, fans_on, ovr_tmp, failed
-    return None, None, None, None
+      smbus = (fstat & 0x20) != 0
+      return ctrl, fans_on, ovr_tmp, failed, smbus
+    return None, None, None, None, None
 
   def read_fan_duty(self, preamp: int = 1) -> Union[float, None]:
     """ Read the fans' duty cycle
@@ -446,7 +448,7 @@ class _Preamps:
     return preamp_str
 
   def get_zone_state_str(self, zone):
-    assert zone >= 0
+    assert 0 <= zone <= MAX_ZONES
     preamp = (int(zone / 6) + 1) * 8
     zone = zone % 6
     regs = self.preamps[preamp]

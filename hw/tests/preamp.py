@@ -35,6 +35,7 @@ def print_led_state(led: int):
     print(f'    {rg:^10} | {zones[0]} | {zones[1]} | {zones[2]} | {zones[3]} | {zones[4]} | {zones[5]}')
 
 def print_status(p: rt._Preamps, u: int):
+  """ Print the status of a single AmpliPi unit """
   print(f'Status of unit {u}:')
 
   # Version
@@ -46,24 +47,8 @@ def print_status(p: rt._Preamps, u: int):
 
   # Power - note: failed only exists on Rev2 Power Board
   pg_9v, en_9v, pg_12v, en_12v, v12 = p.read_power_status(u)
-  print('  Power Board Status')
-  print(f'     9V:  EN={en_9v}, PG={pg_9v}')
-  print(f'    12V:  EN={en_12v}, PG={pg_12v}, {v12} V')
-
-  # Fans
-  ctrl, fans_on, ovr_tmp, failed = p.read_fan_status(u)
-  fan_duty = p.read_fan_duty(u)
-  print('  Fan Status')
-  if ctrl == rt.FanCtrl.MAX6644:
-    fan_str = f', Failed={failed}'
-  elif ctrl == rt.FanCtrl.PWM:
-    fan_str = f', Duty={fan_duty}'
-  elif ctrl == rt.FanCtrl.LINEAR:
-    fan_str = f', On={fans_on}'
-  elif ctrl == rt.FanCtrl.FORCED:
-    fan_str = ' ON'
-  print(f'    Fans: Control={ctrl.name}{fan_str}')
-  print(f'    Overtemp: {ovr_tmp}')
+  print(f'   9V: EN={en_9v}, PG={pg_9v}')
+  print(f'  12V: EN={en_12v}, PG={pg_12v}, {v12} V')
 
   # 24V and temp
   hv1 = p.read_hv(u)
@@ -71,10 +56,24 @@ def print_status(p: rt._Preamps, u: int):
   print(f'  HV1: {hv1:5.2f}V, {temp2str(hv1_tmp)}')
   print(f'  Amp Temps: {temp2str(amp1_tmp)}, {temp2str(amp2_tmp)}')
 
+  # Fans
+  ctrl, fans_on, ovr_tmp, failed, smbus = p.read_fan_status(u)
+  fan_duty = p.read_fan_duty(u)
+  if ctrl == rt.FanCtrl.MAX6644:
+    fan_str = f'Failed={failed}, '
+  elif ctrl == rt.FanCtrl.PWM:
+    fan_str = f'Duty={fan_duty}, '
+  elif ctrl == rt.FanCtrl.LINEAR:
+    fan_str = f'{"On" if fans_on else "Off"}, '
+  elif ctrl == rt.FanCtrl.FORCED:
+    fan_str = 'On, '
+  print(f'  Fans: {fan_str}Control={ctrl.name}, Overtemp={ovr_tmp}, SMBus={smbus}')
+
   # LEDs
   print_led_state(p.read_leds(u))
 
 def self_check(p: rt._Preamps):
+  """ Perform a self-check of voltage and temperature on every AmpliPi Unit """
   def unit_to_name(u: int):
     if u == 0:
       return 'Main'
@@ -195,9 +194,9 @@ if not args.bootload:
 
     if not args.quiet:
       time.sleep(0.1)       # Wait a bit to make sure internal I2C writes have finished
-      print(f'{preamps}\n') # Print zone info for main unit
+      # Useless until rt.py reads from micro directly
+      #print(f'{preamps}\n') # Print zone info for main unit
       for u in range(len(preamps.preamps)):
-        print()
         print_status(preamps, u + 1)
 
 if args.self_test:

@@ -35,12 +35,13 @@ typedef union {
 
 typedef union {
   struct {
-    uint8_t ctrl : 2;      // R/W - Fan control method currently in use.
-                           //       0b11 = force fans on.
-    uint8_t on       : 1;  // R   - Fans status
-    uint8_t ovr_tmp  : 1;  // R   - Unit over dangerous temperature threshold
-    uint8_t fail     : 1;  // R   - Fan fail detection (Power Board 2.A only)
-    uint8_t reserved : 3;
+    uint8_t ctrl : 2;        // R/W - Fan control method currently in use.
+                             //       0b11 = force fans on.
+    uint8_t on         : 1;  // R   - Fans status
+    uint8_t ovr_tmp    : 1;  // R   - Unit over dangerous temperature threshold
+    uint8_t fail       : 1;  // R   - Fan fail detection (Power Board 2.A only)
+    uint8_t smbus_dpot : 1;  // R   - DPot uses SMBus command
+    uint8_t reserved   : 2;
   };
   uint8_t data;
 } FanReg;

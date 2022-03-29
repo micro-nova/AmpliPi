@@ -38,8 +38,11 @@ const I2CReg pwr_io_dir_  = {0x42, 0x00};
 const I2CReg pwr_io_gpio_ = {0x42, 0x09};
 const I2CReg pwr_io_olat_ = {0x42, 0x0A};
 
-// DPOT register (no registers)
+// DPOT address (no registers)
 const I2CDev dpot_dev_ = 0x5E;
+// DPOT with a mandatory SMBUS command
+const I2CReg dpot_cmd_  = {0x5C, 0x00};
+DPotType     dpot_type_ = DPOT_NONE;
 
 static void delayUs(uint32_t us) {
   for (uint32_t i = 0; i < us; i++) {
@@ -106,6 +109,51 @@ void quiesceI2C() {
   configI2C2Pins();
 }
 
+bool isDPotSMBus() {
+  return dpot_type_ == DPOT_MCP40D17;
+}
+
+static void updateDPot(uint8_t dpot_val_new) {
+  // Unfortunately multiple types of DPots exist. Keep track of what's
+  // present and what's been tried.
+  static uint8_t dpot_val = DEFAULT_DPOT_VAL;
+
+  // If a DPot hasn't been found, check for one. Try the MCP4017 first.
+  static DPotType dpot_check = DPOT_MCP4017;
+
+  bool update = dpot_val != dpot_val_new;  // Only write when necessary
+  if ((dpot_type_ == DPOT_MCP4017 && update) || dpot_check == DPOT_MCP4017) {
+    uint32_t err = writeByteI2C2(dpot_dev_, dpot_val_new);
+    if (err) {
+      // Couldn't communicate to MCP4017, assume it's not present
+      // and try MCP40D17 next.
+      dpot_type_ = DPOT_NONE;
+      dpot_check = DPOT_MCP40D17;
+      dpot_val   = DEFAULT_DPOT_VAL;
+    } else {
+      // Updated MCP4017! We know it's present now.
+      dpot_type_ = DPOT_MCP4017;
+      dpot_check = DPOT_NONE;
+      dpot_val   = dpot_val_new;
+    }
+  } else if ((dpot_type_ == DPOT_MCP40D17 && update) ||
+             dpot_check == DPOT_MCP40D17) {
+    uint32_t err = writeRegI2C2(dpot_cmd_, dpot_val_new);
+    if (err) {
+      // Couldn't communicate to MCP40D17, assume it's not present
+      // and try MCP4017 next.
+      dpot_type_ = DPOT_NONE;
+      dpot_check = DPOT_MCP4017;
+      dpot_val   = DEFAULT_DPOT_VAL;
+    } else {
+      // Updated MCP40D17! We know it's present now.
+      dpot_type_ = DPOT_MCP40D17;
+      dpot_check = DPOT_NONE;
+      dpot_val   = dpot_val_new;
+    }
+  }
+}
+
 void initInternalI2C() {
   // Make sure any interrupted transactions are cleared out
   quiesceI2C();
@@ -139,10 +187,10 @@ void updateInternalI2C() {
     int16_t amp2t       = getAmp2Temp_f8();
     int16_t amp_temp_f8 = amp1t > amp2t ? amp1t : amp2t;
 
-    // TODO: only write dpot when necessary
-    static bool dpot_present = false;
-    updateFans(amp_temp_f8, getHV1Temp_f8(), getPiTemp_f8(), dpot_present);
-    dpot_present = writeByteI2C2(dpot_dev_, getFanDPot()) == 0;
+    // Update fans based on temps. Ideally use a DPot for linear control.
+    uint8_t dpot_val = updateFans(amp_temp_f8, getHV1Temp_f8(), getPiTemp_f8(),
+                                  dpot_type_ != DPOT_NONE);
+    updateDPot(dpot_val);
   } else {
     // Read the power board's GPIO inputs
     GpioReg pwr_gpio = {.data = readRegI2C2(pwr_io_gpio_)};
