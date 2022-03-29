@@ -130,6 +130,13 @@ def restart_vlc():
   player.set_media(media)
   player.play()
   restarts.append(time.time())
+  # wait for vlc to start playing
+  delay = 0
+  while str(player.get_state()) != 'State.Playing' and delay <= MAX_DELAY_S:
+    time.sleep(1)
+    delay += 1
+  if delay >= MAX_DELAY_S:
+    raise Exception('Waited too long for VLC to start playing')
 
 # Wait for stream to start playing
 time.sleep(2)
