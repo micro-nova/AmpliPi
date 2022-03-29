@@ -58,11 +58,11 @@ def print_status(p: rt._Preamps, u: int):
 
   # Fans
   ctrl, fans_on, ovr_tmp, failed, smbus = p.read_fan_status(u)
-  fan_duty = p.read_fan_duty(u)
+  fan_duty = 100 * p.read_fan_duty(u) # Percent
   if ctrl == rt.FanCtrl.MAX6644:
     fan_str = f'Failed={failed}, '
   elif ctrl == rt.FanCtrl.PWM:
-    fan_str = f'Duty={fan_duty}, '
+    fan_str = f'Duty={fan_duty:.0f}%, '
   elif ctrl == rt.FanCtrl.LINEAR:
     fan_str = f'{"On" if fans_on else "Off"}, '
   elif ctrl == rt.FanCtrl.FORCED:
