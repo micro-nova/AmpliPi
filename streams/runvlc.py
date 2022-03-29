@@ -108,9 +108,10 @@ if args.song_info:
 restarts: List[float] = []
 def restart_vlc():
   global player # TODO: This is ugly
+  MAX_DELAY_S = 10
   log('Waiting to restart vlc')
-  # prune old restarts
-  LAST_HOUR = (time.time() + 60 * 60)
+  # prune old restarts from over an hour ago
+  LAST_HOUR = time.time() - 3600
   while len(restarts) > 0 and restarts[0] < LAST_HOUR:
     restarts.pop(0)
   # wait for a bit to restart if we've had too many restarts recently
