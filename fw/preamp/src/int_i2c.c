@@ -161,10 +161,6 @@ void initInternalI2C() {
   // Set the direction for the power board GPIO
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
-  // Enable power supplies
-  set9vEn(true);
-  set12vEn(true);
-
   initLeds();
   initAdc();
   updateInternalI2C();
