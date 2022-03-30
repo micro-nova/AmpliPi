@@ -201,8 +201,6 @@ static FanCtrl updateFanCtrlMethod(FanCtrl current_control,
  *    amp_temp: Temperature of the amplifier heatsinks
  *    psu_temp: Temperature of the high-voltage PSU
  *    pi_temp:  Temperature of the Raspberry Pi
- *
- * Returns the new fan control method.
  */
 static void updateFanOutput(FanCtrl ctrl, int16_t amp_temp, int16_t psu_temp,
                             int16_t rpi_temp) {
@@ -279,6 +277,7 @@ uint8_t updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
                    bool linear) {
   // Determine appropriate control method
   ctrl_ = updateFanCtrlMethod(ctrl_, amp_temp > 0, linear);
+  // TODO: replace temps and flags with a hw_state struct
 
   /* Fan temp -> duty regions:
    *        T <= Toff | duty = 0

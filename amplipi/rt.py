@@ -310,8 +310,8 @@ class _Preamps:
       return pg_9v, en_9v, pg_12v, en_12v, v12
     return None, None, None, None, None
 
-  def read_fan_status(self, preamp: int = 1) -> Tuple[Union[FanCtrl, None],
-    Union[bool, None], Union[bool, None], Union[bool, None], Union[bool, None]]:
+  def read_fan_status(self, preamp: int = 1) -> Union[Tuple[FanCtrl,
+    bool, bool, bool, bool], Tuple[None, None, None, None, None]]:
     """ Read the status of the fans
 
       Returns:

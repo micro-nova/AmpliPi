@@ -113,7 +113,7 @@ bool isDPotSMBus() {
   return dpot_type_ == DPOT_MCP40D17;
 }
 
-static void updateDPot(uint8_t dpot_val_new) {
+static void updateDPot(uint8_t val) {
   // Unfortunately multiple types of DPots exist. Keep track of what's
   // present and what's been tried.
   static uint8_t dpot_val = DEFAULT_DPOT_VAL;
@@ -121,9 +121,9 @@ static void updateDPot(uint8_t dpot_val_new) {
   // If a DPot hasn't been found, check for one. Try the MCP4017 first.
   static DPotType dpot_check = DPOT_MCP4017;
 
-  bool update = dpot_val != dpot_val_new;  // Only write when necessary
+  bool update = dpot_val != val;  // Only write when necessary
   if ((dpot_type_ == DPOT_MCP4017 && update) || dpot_check == DPOT_MCP4017) {
-    uint32_t err = writeByteI2C2(dpot_dev_, dpot_val_new);
+    uint32_t err = writeByteI2C2(dpot_dev_, val);
     if (err) {
       // Couldn't communicate to MCP4017, assume it's not present
       // and try MCP40D17 next.
@@ -134,11 +134,11 @@ static void updateDPot(uint8_t dpot_val_new) {
       // Updated MCP4017! We know it's present now.
       dpot_type_ = DPOT_MCP4017;
       dpot_check = DPOT_NONE;
-      dpot_val   = dpot_val_new;
+      dpot_val   = val;
     }
   } else if ((dpot_type_ == DPOT_MCP40D17 && update) ||
              dpot_check == DPOT_MCP40D17) {
-    uint32_t err = writeRegI2C2(dpot_cmd_, dpot_val_new);
+    uint32_t err = writeRegI2C2(dpot_cmd_, val);
     if (err) {
       // Couldn't communicate to MCP40D17, assume it's not present
       // and try MCP4017 next.
@@ -149,7 +149,7 @@ static void updateDPot(uint8_t dpot_val_new) {
       // Updated MCP40D17! We know it's present now.
       dpot_type_ = DPOT_MCP40D17;
       dpot_check = DPOT_NONE;
-      dpot_val   = dpot_val_new;
+      dpot_val   = val;
     }
   }
 }
