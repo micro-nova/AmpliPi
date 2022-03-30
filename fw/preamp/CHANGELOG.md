@@ -1,6 +1,6 @@
 # Preamp Board Firmware Changelog
 
-## 1.5
+## 1.5-6A685FC
 
   - Slightly reduce audible popping sound on volume changes.
   - Improved the I2C initialization to resolve a rare arbitration lost error.
