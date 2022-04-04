@@ -947,7 +947,11 @@ class Api:
     else:
       unique_zones = utils.zones_from_all(self.status, announcement.zones, announcement.groups)
       zones_to_use = utils.enabled_zones(self.status, unique_zones)
-    pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False, vol=announcement.vol) for zid in zones_to_use]
+    # Set the volume of the announcement, forcing db only if it is specified
+    if announcement.vol is not None:
+      pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False, vol=announcement.vol) for zid in zones_to_use]
+    else:
+      pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False, vol_f=announcement.vol_f) for zid in zones_to_use]
     resp1 = self.create_preset(models.Preset(name='PA - announcement', state=models.PresetState(sources=[pa_src], zones=pa_zones)))
     if isinstance(resp1, ApiResponse):
       return resp1
