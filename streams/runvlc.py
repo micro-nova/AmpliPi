@@ -107,7 +107,7 @@ if args.song_info:
 
 restarts: List[float] = []
 def restart_vlc():
-  global player # TODO: This is ugly
+  global player, media, instance# TODO: This is ugly
   MAX_DELAY_S = 10
   log('Waiting to restart vlc')
   # prune old restarts from over an hour ago
@@ -122,10 +122,8 @@ def restart_vlc():
     time.sleep(60 * 10)
   # actually restart vlc
   log('Attempting to restart VLC')
-  try:
-    del player
-  except:
-    pass
+  instance = vlc.Instance(config.split())
+  media = instance.media_new(args.url)
   player = instance.media_player_new()
   player.set_media(media)
   player.play()
