@@ -693,7 +693,6 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   tasks += fix_file_props(env, progress)
   if env['is_amplipi']:
     tasks += add_tests(env, progress)
-  tasks += _check_password(env, progress)
   if failed():
     return False
   if os_deps:
@@ -701,6 +700,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     if failed():
       print('OS dependency install step failed, exiting...')
       return False
+  tasks += _check_password(env, progress)
   if python_deps:
     with open(os.path.join(env['base_dir'], 'requirements.txt')) as req:
       deps = req.read().splitlines()
