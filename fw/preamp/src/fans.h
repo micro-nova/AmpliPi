@@ -24,6 +24,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define DEFAULT_DPOT_VAL 0x3F
+
 // Possible fan control methods:
 // - MAX6644 (5 developer units with Power Board 2.A)
 // - Thermistors with FAN_ON PWM control (Power Board 3.A)
@@ -37,6 +39,13 @@ typedef enum
   FAN_CTRL_FORCED,
 } FanCtrl;
 
+typedef enum
+{
+  DPOT_NONE,
+  DPOT_MCP4017,
+  DPOT_MCP40D17,
+} DPotType;
+
 void    setFanCtrl(FanCtrl ctrl);
 FanCtrl getFanCtrl();
 uint8_t getFanDuty();
@@ -45,8 +54,8 @@ uint8_t getFanVolts();
 bool    overTemp();
 bool    fansOn();
 
-void updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                bool linear);
-bool getFanOnFromDuty();
+uint8_t updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
+                   bool linear);
+bool    getFanOnFromDuty();
 
 #endif /* FANS_H_ */

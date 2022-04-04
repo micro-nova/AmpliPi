@@ -129,10 +129,11 @@ static constexpr float   DPOT_VOLTS[] = {6.24, 8.11, 11.99};
 // 7-bit I2C addresses, in bits 6 downto 0
 enum SlaveAddr : uint8_t
 {
-  due  = 0x0F,
-  gpio = 0x21,
-  dpot = 0x2F,
-  adc  = 0x64,
+  due   = 0x0F,
+  gpio  = 0x21,
+  dpots = 0x2E,  // DPot that required SMBus byte-write command 0x00
+  dpot  = 0x2F,
+  adc   = 0x64,
 };
 
 // I2C1 slave RX callback
@@ -451,8 +452,14 @@ void loop() {
     if (dpot_val_idx >= sizeof(DPOT_VALS)) {
       dpot_val_idx = 0;
     }
+    // Try MCP4017
     Wire.beginTransmission(SlaveAddr::dpot);
-    Wire.write((uint8_t)0x00);            // Instruction byte
+    Wire.write(DPOT_VALS[dpot_val_idx]);  // Value
+    Wire.endTransmission();
+
+    // Try MCP40D17
+    Wire.beginTransmission(SlaveAddr::dpots);
+    Wire.write((uint8_t)0x00);            // SMBus command byte
     Wire.write(DPOT_VALS[dpot_val_idx]);  // Value
     Wire.endTransmission();
 

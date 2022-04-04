@@ -58,9 +58,9 @@
 #define TEMP_RPI_THRESH_HIGH_Q7_8 C_TO_Q7_8(TEMP_RPI_THRESH_HIGH_C)
 #define TEMP_RPI_THRESH_OVR_Q7_8  C_TO_Q7_8(TEMP_RPI_THRESH_OVR_C)
 
-FanCtrl ctrl_;             // Control method currently in use
-uint8_t duty_f7_  = 0;     // Fan duty cycle in the range [0,1] in UQ1.7 format
-uint8_t dpot_val_ = 0x3F;  // Digital pot setting that controls fan voltage
+FanCtrl ctrl_;          // Control method currently in use
+uint8_t duty_f7_  = 0;  // Fan duty cycle in the range [0,1] in UQ1.7 format
+uint8_t dpot_val_ = DEFAULT_DPOT_VAL;  // DPot setting that controls fan voltage
 uint8_t volts_f4_ = 12 << 4;  // Fan power supply voltage in UQ4.4 format
 bool    ovr_temp_;            // Temp too high
 
@@ -165,6 +165,102 @@ uint8_t dpotValFromPercent(int16_t pcnt_f8) {
   return (uint8_t)(dpot_val_f4 >> 4);
 }
 
+/* Determines the fan control method to be used.
+ *
+ * Inputs
+ *    current_control:  Current fan control method.
+ *    amp_temp_present: True if amp board temp sensors are readable.
+ *    dpot_present:     True if a digital potentiometer was found.
+ *
+ * Returns the new fan control method.
+ */
+static FanCtrl updateFanCtrlMethod(FanCtrl current_control,
+                                   bool amp_temp_present, bool dpot_present) {
+  if (current_control == FAN_CTRL_FORCED) {
+    // Fans forced on 100% by the Pi
+    return FAN_CTRL_FORCED;
+  }
+  if (dpot_present) {
+    // The digital potentiometer (DPot) can adjust the fan voltage
+    return FAN_CTRL_LINEAR;
+  }
+  if (amp_temp_present) {
+    // No DPot, but temp sensors still present. PWM fan voltage.
+    return FAN_CTRL_PWM;
+  }
+  // Power Board 2.A uses MAX6644 but has no HV2/NTC2.
+  // If neither of those inputs measures a valid temp, then assume
+  // a MAX6644 fan control IC is controlling the fans.
+  return FAN_CTRL_MAX6644;
+}
+
+/* Updates the fan voltage and duty cycle.
+ *
+ * Inputs
+ *    control:  Fan control method.
+ *    amp_temp: Temperature of the amplifier heatsinks
+ *    psu_temp: Temperature of the high-voltage PSU
+ *    pi_temp:  Temperature of the Raspberry Pi
+ */
+static void updateFanOutput(FanCtrl ctrl, int16_t amp_temp, int16_t psu_temp,
+                            int16_t rpi_temp) {
+#define FAN_DUTY_ON    (1 << 7)  // 1.0 in UQ1.7, 100% duty cycle
+#define FAN_DUTY_OFF   0         // 0% duty cycle
+#define DPOT_MAX_VOLTS 0         // Min resistance = max voltage
+#define DPOT_MIN_VOLTS 127       // Max resistance = min voltage
+
+  switch (ctrl) {
+    case FAN_CTRL_MAX6644:
+      dpot_val_ = DPOT_MAX_VOLTS;  // Max in case a dpot is detected later
+      duty_f7_  = FAN_DUTY_OFF;    // Release control to MAX6644.
+      break;
+
+    case FAN_CTRL_LINEAR:
+    case FAN_CTRL_PWM:
+      if (amp_temp <= TEMP_AMP_THRESH_OFF_Q7_8 &&
+          psu_temp <= TEMP_PSU_THRESH_OFF_Q7_8 &&
+          rpi_temp <= TEMP_RPI_THRESH_OFF_Q7_8) {
+        // Cool enough that fans can be left off
+        dpot_val_ = DPOT_MIN_VOLTS;
+        duty_f7_  = FAN_DUTY_OFF;
+      } else {
+        // Fans on at some percentage, update duty cycle or voltage
+        int16_t pcnt_f8 = fanPercentFromTemps(amp_temp, psu_temp, rpi_temp);
+        if (pcnt_f8 > (1 << 8)) {  // 1.0 in Q7.8
+          // Temp high, max fan voltage and duty cycle
+          dpot_val_ = DPOT_MAX_VOLTS;
+          duty_f7_  = FAN_DUTY_ON;
+        } else {
+          if (ctrl == FAN_CTRL_LINEAR) {
+            if (pcnt_f8 > 0) {
+              dpot_val_ = dpotValFromPercent(pcnt_f8);
+            } else {
+              // Hysteresis region, use old duty cycle and min dpot value
+              dpot_val_ = DPOT_MIN_VOLTS;
+            }
+            duty_f7_ = FAN_DUTY_ON;
+          } else {  // PWM
+            if (pcnt_f8 > 0) {
+              duty_f7_ = dutyFromPercent(pcnt_f8);
+            } else {
+              // Hysteresis region, use old duty cycle (but cap at 30%)
+              const uint8_t min_f8 = 0.3 * (1 << 7);
+              duty_f7_             = duty_f7_ > min_f8 ? min_f8 : duty_f7_;
+            }
+            dpot_val_ = DPOT_MAX_VOLTS;
+          }
+        }
+      }
+      break;
+
+    case FAN_CTRL_FORCED:
+    default:
+      dpot_val_ = DPOT_MAX_VOLTS;  // Max voltage if dpot is present
+      duty_f7_  = FAN_DUTY_ON;     // 100% fan
+      break;
+  }
+}
+
 /* Updates the fan state based on the current temp
  *
  * Inputs
@@ -175,21 +271,13 @@ uint8_t dpotValFromPercent(int16_t pcnt_f8) {
  *    linear:   Digital potentiometer for linear voltage control is available
  * All temps are in Q7.8 fixed-point format.
  *
- * Returns the current fan state.
+ * Returns the desired DPot value.
  */
-void updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                bool linear) {
-#define FAN_DUTY_ON    (1 << 7)  // 1.0 in UQ1.7, 100% duty cycle
-#define FAN_DUTY_OFF   0         // 0% duty cycle
-#define DPOT_MAX_VOLTS 0         // Min resistance = max voltage
-#define DPOT_MIN_VOLTS 127       // Max resistance = min voltage
-
-  // Leave at max by default in case a dpot is detected later
-  dpot_val_ = DPOT_MAX_VOLTS;
-
-  ovr_temp_ = amp_temp > TEMP_AMP_THRESH_OVR_Q7_8 ||
-              psu_temp > TEMP_PSU_THRESH_OVR_Q7_8 ||
-              rpi_temp > TEMP_RPI_THRESH_OVR_Q7_8;
+uint8_t updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
+                   bool linear) {
+  // Determine appropriate control method
+  ctrl_ = updateFanCtrlMethod(ctrl_, amp_temp > 0, linear);
+  // TODO: replace temps and flags with a hw_state struct
 
   /* Fan temp -> duty regions:
    *        T <= Toff | duty = 0
@@ -198,52 +286,17 @@ void updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
    * Tmax < T         | duty = 128 (1.0 in Q1.7)
    */
 
-  // Determine appropriate control method
-  if (ctrl_ == FAN_CTRL_FORCED) {
-    duty_f7_ = FAN_DUTY_ON;
-  } else if (!amp_temp) {
-    // Power Board 2.A uses MAX6644 but has no HV2/NTC2.
-    // If neither of those inputs measures a valid temp, then assume
-    // a MAX6644 fan control IC is controlling the fans.
-    ctrl_    = FAN_CTRL_MAX6644;
-    duty_f7_ = FAN_DUTY_OFF;  // Release control to MAX6644.
-  } else {
-    ctrl_ = linear ? FAN_CTRL_LINEAR : FAN_CTRL_PWM;
-    if (amp_temp <= TEMP_AMP_THRESH_OFF_Q7_8 &&
-        psu_temp <= TEMP_PSU_THRESH_OFF_Q7_8 &&
-        rpi_temp <= TEMP_RPI_THRESH_OFF_Q7_8) {
-      // Cool enough that fans can be left off
-      duty_f7_  = FAN_DUTY_OFF;
-      dpot_val_ = DPOT_MIN_VOLTS;
-    } else {
-      // Fans on at some percentage, update duty cycle or voltage
-      int16_t pcnt_f8 = fanPercentFromTemps(amp_temp, psu_temp, rpi_temp);
-      if (pcnt_f8 > (1 << 8)) {  // 1.0 in Q7.8
-        // Temp high, max fan voltage and duty cycle
-        duty_f7_ = FAN_DUTY_ON;
-      } else if (linear) {
-        if (pcnt_f8 > 0) {
-          dpot_val_ = dpotValFromPercent(pcnt_f8);
-          duty_f7_  = FAN_DUTY_ON;
-        } else {
-          // Hysteresis region, use old duty cycle and min dpot value
-          dpot_val_ = DPOT_MIN_VOLTS;
-        }
-      } else {
-        if (pcnt_f8 > 0) {
-          duty_f7_ = dutyFromPercent(pcnt_f8);
-        } else {
-          // Hysteresis region, use old duty cycle (but cap at 30%)
-          const uint8_t min_f8 = 0.3 * (1 << 7);
-          duty_f7_             = duty_f7_ > min_f8 ? min_f8 : duty_f7_;
-        }
-      }
-    }
-  }
+  // Update fan output based on current control method
+  updateFanOutput(ctrl_, amp_temp, psu_temp, rpi_temp);
+
+  // Determine if the AmpliPi unit is too hot
+  ovr_temp_ = amp_temp > TEMP_AMP_THRESH_OVR_Q7_8 ||
+              psu_temp > TEMP_PSU_THRESH_OVR_Q7_8 ||
+              rpi_temp > TEMP_RPI_THRESH_OVR_Q7_8;
 
   // Determine fan power supply voltage based on dpot value
   // If no dpot present, fans nominally receive 12V.
-  if (linear) {
+  if (ctrl_ == FAN_CTRL_LINEAR) {
     // V = 100,000 / (10,000 / 127 * DPOT_VAL + 9,100) + 1
     uint32_t volts_f12 =
         (100000 << 12) / (10000 * dpot_val_ / 127 + 9100) + (1 << 12);
@@ -251,6 +304,8 @@ void updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
   } else {
     volts_f4_ = 12 << 4;
   }
+
+  return dpot_val_;
 }
 
 /* Determines the GPIO expander's FAN_ON pin state.

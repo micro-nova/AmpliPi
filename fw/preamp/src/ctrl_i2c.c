@@ -27,6 +27,7 @@
 #include "adc.h"
 #include "audio.h"
 #include "fans.h"
+#include "int_i2c.h"
 #include "leds.h"
 #include "pins.h"
 #include "pwr_gpio.h"
@@ -164,11 +165,12 @@ uint8_t readReg(uint8_t addr) {
 
     case REG_FANS: {
       FanReg msg = {
-          .ctrl     = getFanCtrl(),
-          .on       = fansOn(),
-          .ovr_tmp  = overTempMax6644() || overTemp(),
-          .fail     = fanFailMax6644(),
-          .reserved = 0,
+          .ctrl       = getFanCtrl(),
+          .on         = fansOn(),
+          .ovr_tmp    = overTempMax6644() || overTemp(),
+          .fail       = fanFailMax6644(),
+          .smbus_dpot = isDPotSMBus(),
+          .reserved   = 0,
       };
       out_msg = msg.data;
       break;
