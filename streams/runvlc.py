@@ -70,10 +70,10 @@ def log(info):
   else:
     print(info)
 
-def update_info() -> bool:
+def update_info(info) -> bool:
   try:
     with open(args.song_info, "wt", encoding='utf-8') as info_file:
-      info_file.write(json.dumps(cur_info))
+      info_file.write(json.dumps(info))
     return True
   except Exception:
     log('Error: %s' % sys.exc_info()[1])
@@ -102,7 +102,7 @@ cur_info = {
   'state': 'stopped',
 }
 if args.song_info:
-  if not update_info():
+  if not update_info(cur_info):
     sys.exit(1)
 
 restarts: List[float] = []
@@ -190,7 +190,7 @@ while True:
           sys.exit(0)
 
         if args.song_info:
-          update_info()
+          update_info(cur_info)
     else:
       if args.test:
         log('fail')
@@ -202,6 +202,8 @@ while True:
           'station': '',
           'state': 'stopped'
         }
+        if args.song_info:
+          update_info(cur_info)
         log('State: %s' % player.get_state())
       restart_vlc()
 
@@ -218,6 +220,8 @@ while True:
           'station': '',
           'state': 'stopped'
         }
+        if args.song_info:
+          update_info(cur_info)
         restart_vlc()
       except Exception:
         log(sys.exc_info())
