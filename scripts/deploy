@@ -10,14 +10,20 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
   usage: deploy [USER@HOST] [--mock-ctrl]\n
 \n
   --dev: add info to version showing the current git hash and branch\n
+  --fw:  program the latest preamp firmware\n
+  --pw:  generate and set a new random password\n
 "
 
 user_host='pi@amplipi.local'
 user_host_set=false
 dev=false
+fw=false
+pw=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --dev) dev=true ;;
+    --fw) fw=true ;;
+    --pw) pw=true ;;
     -h|--help) echo -e $HELP; exit 0 ;;
     *) if ! $user_host_set; then
           user_host=$1
@@ -32,8 +38,18 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-read -p "Deploying amplipi project (development build) to $user_host, press any key to continue (Ctrl-C to quit)" -n 1
-echo "" # newline
+printf "Deploying amplipi project "
+$dev && printf "(development build) "
+printf "to $user_host.\n"
+printf "Preamp firmware will "
+$fw || printf "NOT "
+printf "be programmed.\n"
+printf "A new password will "
+$pw || printf "NOT "
+printf "be generated.\n"
+#to $user_host
+read -p "Press any key to continue (Ctrl-C to quit)" -n 1
+printf "\n"
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
 # check if amplipi is found
@@ -142,4 +158,7 @@ echo "Extracting folder into $user_host:~/amplipi-dev"
 ssh $user_host "cd amplipi-dev && tar -xvf ../${release_name}.tar.gz && cp -af ${release_name}/* . && rm -r ${release_name}"
 echo "Configuring installation"
 ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
-ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display"
+opts=""
+$fw && opts="$opts --firmware"
+$pw && opts="$opts --password"
+ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display$opts"

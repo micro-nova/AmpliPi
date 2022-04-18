@@ -671,7 +671,7 @@ def add_tests(env, progress) -> List[Task]:
   return tasks
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
-            display=True, firmware=True, progress=print_task_results) -> bool:
+            display=True, firmware=True, password=True, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -700,7 +700,6 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     if failed():
       print('OS dependency install step failed, exiting...')
       return False
-  tasks += _check_password(env, progress)
   if python_deps:
     with open(os.path.join(env['base_dir'], 'requirements.txt')) as req:
       deps = req.read().splitlines()
@@ -730,6 +729,10 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_firmware(env, progress)
     if failed():
       return False
+  if password:
+    tasks += _check_password(env, progress)
+    if failed():
+      return False
   if web and not restart_updater:
     # let the user know how to handle a specific failure condition of the old updater
     UPDATER_MSG = """!!! OLDER UPDATERS CAN MISTAKENLY FAIL AFTER THIS !!!
@@ -755,6 +758,8 @@ if __name__ == '__main__':
     help="Install and run the front-panel display service")
   parser.add_argument('--firmware', action='store_true', default=False,
     help="Flash the latest firmware")
+  parser.add_argument('--password', action='store_true', default=False,
+    help="Generate and set a new default password for the pi user.")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
   has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
@@ -763,4 +768,5 @@ if __name__ == '__main__':
   if sys.version_info.major < 3 or sys.version_info.minor < 7:
     print('  WARNING: minimum python version is 3.7')
   install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
-          display=flags.display, firmware=flags.firmware, restart_updater=flags.restart_updater)
+          display=flags.display, firmware=flags.firmware, password=flags.password,
+          restart_updater=flags.restart_updater)
