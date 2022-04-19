@@ -716,7 +716,8 @@ class Announcement(BaseModel):
   IF no zones or groups are specified, all available zones are used
   """
   media : str = Field(description="URL to media to play as the announcement")
-  vol: float = Field(default=pcnt2Vol(0.5), ge=MIN_VOL, le=MAX_VOL, description='Output volume in dB')
+  vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB, overrides vol_f')
+  vol_f: float = Field(default=0.5, ge=MIN_VOL, le=MAX_VOL, description="Output Volume (float)")
   source_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
