@@ -25,7 +25,10 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'python3-pil', 'libopenjp2-7', # Pillow dependencies
              'libatlas-base-dev',           # numpy dependencies
              'stm32flash',                  # Programming Preamp Board
-             'xkcdpass'                     # Random passphrase generation
+             'xkcdpass',                    # Random passphrase generation
+             # kernel updates
+             'libraspberrypi0', 'raspberrypi-bootloader', 'raspberrypi-kernel',
+             'libraspberrypi-bin', 'libraspberrypi-dev', 'libraspberrypi-doc',
             ],
   },
   'web' : {
@@ -715,10 +718,9 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     if failed():
       return False
   if not web and restart_updater: # if web and restart_updater are True this restart happens in the _update_web function
-    # The update server needs to restart itself after everything else is successful
-    ssts =_restart_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
-    progress(ssts)
-    tasks += ssts
+    # Reboot OS to finish potential kernel upgrade, also restarting the updater
+    progress([Task('Reboot os', success=True)])
+    subprocess.run('sudo reboot now', shell=True, check=False)
     if failed():
       return False
   if display:
@@ -751,7 +753,7 @@ if __name__ == '__main__':
   parser.add_argument('--web','--webserver', action='store_true', default=False,
     help="Install and configure webserver")
   parser.add_argument('--restart-updater', action='store_true', default=False,
-    help="""Stop the updater if it is running and start the updated one. \
+    help="""Restart AmpliPis OS and the updater itself. \
       Only do this if you are running this from the command line. \
       When this is set False system will need to be restarted to complete update""")
   parser.add_argument('--display', action='store_true', default=False,
