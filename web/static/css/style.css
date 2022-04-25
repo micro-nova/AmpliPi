@@ -46,11 +46,6 @@ body {
   background: #4a4a4a;
 }
 
-/* TODO: add source on/outputting audio feature, for now the play indicator is hidden */
-.fa-play {
-  visibility: hidden;
-}
-
 .group, .preset-list, .settings {
   background: #2a2a2a;
 }
@@ -225,12 +220,14 @@ body {
   text-transform: uppercase;
   color: white;
   cursor: default;
+  overflow: hidden;
 }
 .pandora-player .album {
   font-family: 'Open Sans', sans-serif;
   font-size: 8pt;
   font-weight: 400;
   cursor: default;
+  overflow: hidden;
 }
 .pandora-player .song {
   font-family: 'Open Sans', sans-serif;
@@ -238,6 +235,7 @@ body {
   font-weight: 300;
   color: white;
   cursor: default;
+  overflow: hidden;
 }
 .pandora-player .cover {
   float: left;
@@ -249,22 +247,36 @@ body {
 }
 .pandora-player .info-controls {
   float: left;
+  position: relative;
 }
 .pandora-player .controls {
   display: inline-block;
+  position: absolute;
+  top: 72px;
+  height: 30px;
+  width: max-content
 }
-.pandora-player .play-pause {
+.play-pause {
   font-size: 20pt;
 }
-.pandora-player .step-forward, .pandora-player .like, .pandora-player .dislike {
+.step-forward, .like, .dislike {
   font-size: 20pt;
   margin-left: 15pt;
 }
-.pandora-player .step-backward {
+.step-backward {
   font-size: 20pt;
   margin-right: 15pt;
 }
-.pandora-player .play-pause:hover, .pandora-player .step-forward:hover, .pandora-player .step-backward:hover, .pandora-player .like:hover, .pandora-player .dislike:hover {
+.play-pause, .step-forward, .step-backward, .like, .dislike {
+  cursor: pointer;
+  color: #FFF;
+}
+.play-pause.disabled, .step-forward.disabled, .step-backward.disabled, .like.disabled, .dislike.disabled {
+  pointer-events: none;
+  cursor: default;
+  color: #666;
+}
+.play-pause:hover, .step-forward:hover, .step-backward:hover, .like:hover, .dislike:hover {
   cursor: pointer;
   color: #dc3545;
 }
