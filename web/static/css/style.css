@@ -220,14 +220,14 @@ body {
   text-transform: uppercase;
   color: white;
   cursor: default;
-  overflow: hidden;
+  overflow: clip;
 }
 .pandora-player .album {
   font-family: 'Open Sans', sans-serif;
   font-size: 8pt;
   font-weight: 400;
   cursor: default;
-  overflow: hidden;
+  overflow: clip;
 }
 .pandora-player .song {
   font-family: 'Open Sans', sans-serif;
@@ -235,7 +235,9 @@ body {
   font-weight: 300;
   color: white;
   cursor: default;
-  overflow: hidden;
+  max-height: 13pt;
+  overflow: clip;
+  margin-bottom: 40px; /* HACK: add extra space for controls below this */
 }
 .pandora-player .cover {
   float: left;
