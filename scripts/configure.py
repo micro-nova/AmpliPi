@@ -717,12 +717,6 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_web(env, restart_updater, progress)
     if failed():
       return False
-  if not web and restart_updater: # if web and restart_updater are True this restart happens in the _update_web function
-    # Reboot OS to finish potential kernel upgrade, also restarting the updater
-    progress([Task('Reboot os', success=True)])
-    subprocess.run('sudo reboot now', shell=True, check=False)
-    if failed():
-      return False
   if display:
     tasks += _update_display(env, progress)
     if failed():
@@ -735,6 +729,11 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _check_password(env, progress)
     if failed():
       return False
+  if restart_updater:
+    # Reboot OS to finish potential kernel upgrade, also restarting the updater
+    progress([Task('Reboot os', success=True)])
+    subprocess.run('sudo reboot now', shell=True, check=False)
+    # updater will not return from here
   if web and not restart_updater:
     # let the user know how to handle a specific failure condition of the old updater
     UPDATER_MSG = """!!! OLDER UPDATERS CAN MISTAKENLY FAIL AFTER THIS !!!
@@ -752,10 +751,11 @@ if __name__ == '__main__':
     help='Install os dependencies using apt')
   parser.add_argument('--web','--webserver', action='store_true', default=False,
     help="Install and configure webserver")
-  parser.add_argument('--restart-updater', action='store_true', default=False,
-    help="""Restart AmpliPis OS and the updater itself. \
+  parser.add_argument('--restart-updater', '--reboot', action='store_true', default=False,
+    help="""Restart AmpliPis OS, rebooting all of Ampli's services \
       Only do this if you are running this from the command line. \
-      When this is set False system will need to be restarted to complete update""")
+      When this is set False system will need to be restarted to complete an update""")
+  # --restart-updater is needed by the web updater and hasn't been changed to --reboot to simplify updgrade/downgrade logic
   parser.add_argument('--display', action='store_true', default=False,
     help="Install and run the front-panel display service")
   parser.add_argument('--firmware', action='store_true', default=False,
