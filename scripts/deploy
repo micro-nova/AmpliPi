@@ -161,4 +161,29 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
-ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display$opts"
+ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display$opts" || echo ""
+
+echo -e "Waiting for AmpliPi to restart\n"
+restart_finished=false
+for i in {1..30}; do
+  sleep 2
+  printf "."
+  if [[ "$ping_loc" == /c/Windows/system32/ping ]] && ping -n 2 $host; then
+    restart_finished=true;
+    break;
+  elif ping -c 2 $host 1>/dev/null 2>/dev/null; then
+    restart_finished=true;
+    break;
+  fi
+done
+if $restart_finished; then
+  echo -e "\nRestart successful, waiting for amplipi service\n";
+  for i in {1..20}; do
+    printf "."
+    sleep 1
+  done
+  echo ""
+  curl -X GET "${host}/api"  -H "Accept: application/json"  1>/dev/null 2>/dev/null  && echo "Update finished" || echo "Failed to detect ${host}/api"
+else
+  echo "Restart failed";
+fi
