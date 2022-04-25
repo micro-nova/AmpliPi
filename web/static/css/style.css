@@ -278,6 +278,8 @@ body {
 }
 .play-pause:hover, .step-forward:hover, .step-backward:hover, .like:hover, .dislike:hover {
   cursor: pointer;
+}
+.play-pause:active, .step-forward:active, .step-backward:active, .like:active, .dislike:active {
   color: #dc3545;
 }
 .dropdown-menu.show{
