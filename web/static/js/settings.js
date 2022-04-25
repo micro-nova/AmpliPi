@@ -58,8 +58,8 @@ $(function() {
       if (event.target.id == 'inetradio-search-name-txt') { // Intercept enter key for inetradio search
         $("#inetradio-search-name-btn").trigger('click');
         event.preventDefault();
+        return false;
       }
-      return false;
     }
   });
 
