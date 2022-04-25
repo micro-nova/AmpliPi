@@ -220,11 +220,13 @@ function onLoadPreset(ctrl) {
   // TODO: updated last-used time
 }
 
-function onPlayPause(ctrl) {
+function onPlayPauseStop(ctrl) {
   if (ctrl.classList.contains('fa-play')) {
     sendStreamCommand(ctrl, 'play');
-  } else {
+  } else if (ctrl.classList.contains('fa-pause')) {
     sendStreamCommand(ctrl, 'pause');
+  } else if (ctrl.classList.contains('fa-stop')) {
+    sendStreamCommand(ctrl, 'stop');
   }
 }
 
@@ -282,6 +284,12 @@ function updateSourceView(status) {
       play_pause.style.visibility = "visible";
       play_pause.classList.toggle('fa-play', !playing);
       play_pause.classList.toggle('fa-pause', playing);
+      play_pause.classList.toggle('fa-stop', false);
+    } else if (supported_cmds.includes("stop")) {
+      play_pause.style.visibility = "visible";
+      play_pause.classList.toggle('fa-play', !playing);
+      play_pause.classList.toggle('fa-stop', playing);
+      play_pause.classList.toggle('fa-pause', false);
     }
 
     // update each source's input

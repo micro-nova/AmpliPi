@@ -83,11 +83,11 @@
                 <h6 class="song">{{ info['track'] }}</h6>
               </div>
               <div class="controls">
-                <i class="step-backward fas fa-backward" onclick="onPrev(this)"       style="display: {% if 'prev' in src['info']['supported_cmds'] %} inline-block; {% else %} none; {% endif %}"></i>
-                <i class="play-pause fas fa-pause"       onclick="onPlayPause(this)"  style="visibility: {% if 'pause' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
-                <i class="step-forward fas fa-forward"   onclick="onNext(this)"       style="visibility: {% if 'next' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
-                <i class="like fas fa-heart"             onclick="onLike(this)"       style="visibility: {% if 'love' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
-                <i class="dislike fas fa-thumbs-down"    onclick="onDislike(this)"    style="visibility: {% if 'ban' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
+                <i class="step-backward fas fa-backward" onclick="onPrev(this)"          style="display: {% if 'prev' in src['info']['supported_cmds'] %} inline-block; {% else %} none; {% endif %}"></i>
+                <i class="play-pause fas fa-pause"       onclick="onPlayPauseStop(this)" style="visibility: {% if 'pause' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
+                <i class="step-forward fas fa-forward"   onclick="onNext(this)"          style="visibility: {% if 'next' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
+                <i class="like fas fa-heart"             onclick="onLike(this)"          style="visibility: {% if 'love' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
+                <i class="dislike fas fa-thumbs-down"    onclick="onDislike(this)"       style="visibility: {% if 'ban' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
               </div>
             </div>
           </div>
