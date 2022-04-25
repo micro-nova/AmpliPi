@@ -78,17 +78,17 @@
             <div class="cover"><img src="{{ art_url }}"/></div>
             <div class="info-controls">
               <div class="info">
-                <h6 class="artist">{{ info['artist'] }}</h6>
-                <h6 class="album">{{ info['album'] }}</h6>
-                <h6 class="song">{{ info['track'] }}</h6>
+                <h6 class="artist">{{ info['artist'] if info['artist'] else ''}}</h6>
+                <h6 class="album">{{ info['album'] if info['album'] else '' }}</h6>
+                <h6 class="song">{{ info['track']  if info['track'] else 'None'}}</h6>
               </div>
-              <div class="controls">
-                <i class="step-backward fas fa-backward" onclick="onPrev(this)"       style="display: {% if 'prev' in src['info']['supported_cmds'] %} inline-block; {% else %} none; {% endif %}"></i>
-                <i class="play-pause fas fa-pause"       onclick="onPlayPause(this)"  style="visibility: {% if 'pause' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
-                <i class="step-forward fas fa-forward"   onclick="onNext(this)"       style="visibility: {% if 'next' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
-                <i class="like fas fa-heart"             onclick="onLike(this)"       style="visibility: {% if 'love' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
-                <i class="dislike fas fa-thumbs-down"    onclick="onDislike(this)"    style="visibility: {% if 'ban' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
-              </div>
+              <span class="controls">
+                <i class="step-backward fas fa-backward disabled" onclick="onPrev(this)"></i>
+                <i class="play-pause fas fa-pause disabled"       onclick="onPlayPauseStop(this)"></i>
+                <i class="step-forward fas fa-forward disabled"   onclick="onNext(this)"></i>
+                <i class="like fas fa-heart"                      onclick="onLike(this)"    style="visibility: {% if 'love' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
+                <i class="dislike fas fa-thumbs-down"             onclick="onDislike(this)" style="visibility: {% if 'ban' in src['info']['supported_cmds'] %} visible; {% else %} hidden; {% endif %}"></i>
+              </span>
             </div>
           </div>
           {% endfor %}

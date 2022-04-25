@@ -220,11 +220,13 @@ function onLoadPreset(ctrl) {
   // TODO: updated last-used time
 }
 
-function onPlayPause(ctrl) {
+function onPlayPauseStop(ctrl) {
   if (ctrl.classList.contains('fa-play')) {
     sendStreamCommand(ctrl, 'play');
-  } else {
+  } else if (ctrl.classList.contains('fa-pause')) {
     sendStreamCommand(ctrl, 'pause');
+  } else if (ctrl.classList.contains('fa-stop')) {
+    sendStreamCommand(ctrl, 'stop');
   }
 }
 
@@ -258,12 +260,6 @@ function updateSourceView(status) {
     let like = $('#s' + src.id + '-player .like')[0];
     let dislike = $('#s' + src.id + '-player .dislike')[0];
     let playing_indicator = $('#s' + src.id + ' i')[0];
-    // defaults
-    like.style.visibility = "hidden";
-    dislike.style.visibility = "hidden";
-    play_pause.style.visibility = "hidden";
-    next.style.visibility = "hidden";
-    prev.style.display = "none";
 
     track.innerHTML = src.info.track ? src.info.track : src.info.name;
     artist.innerHTML = src.info.artist ? src.info.artist : '';
@@ -274,14 +270,24 @@ function updateSourceView(status) {
 
     // update the control buttons
     supported_cmds = src.info.supported_cmds;
-    next.style.visibility = supported_cmds.includes("next") ? "visible" : "hidden";
+    next.classList.toggle('disabled', !supported_cmds.includes("next"));
+    prev.classList.toggle('disabled', !supported_cmds.includes("prev"));
+
     like.style.visibility = supported_cmds.includes("love") ? "visible" : "hidden";
     dislike.style.visibility = supported_cmds.includes("ban") ? "visible" : "hidden";
-    prev.style.display = supported_cmds.includes("prev") ? "inline-block" : "none";
+
     if (supported_cmds.includes("pause")) {
-      play_pause.style.visibility = "visible";
+      play_pause.classList.toggle('disabled', false);
       play_pause.classList.toggle('fa-play', !playing);
       play_pause.classList.toggle('fa-pause', playing);
+      play_pause.classList.toggle('fa-stop', false);
+    } else if (supported_cmds.includes("stop")) {
+      play_pause.classList.toggle('disabled', false);
+      play_pause.classList.toggle('fa-play', !playing);
+      play_pause.classList.toggle('fa-stop', playing);
+      play_pause.classList.toggle('fa-pause', false);
+    } else {
+      play_pause.classList.toggle('disabled', true);
     }
 
     // update each source's input

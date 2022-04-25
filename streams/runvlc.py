@@ -24,11 +24,15 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301 USA
 
+""" Play an internet radio stream using vlc """
+
+import os
 import sys
 import time
 import json
 import vlc
 import argparse
+from typing import List, Optional, Any, IO
 
 parser = argparse.ArgumentParser(prog='runvlc', description='play an internet radio station using vlc')
 parser.add_argument('url', type=str, help='internet radio station url')
@@ -47,16 +51,33 @@ elif args.output:
   alsa_device = args.output
   config += " --alsa-audio-device {}".format(alsa_device)
 
+log_file : Optional[IO[Any]] = None
+if args.log:
+  try:
+    os.remove(args.log)
+  except Exception:
+    pass
+  log_file = open(args.log, 'a', encoding='utf-8')
+
 def log(info):
-  if args.log:
+  if log_file:
     try:
-      with open(args.log, 'a') as f:
-        print(info, file=f)
+      print(info, file=log_file)
+      log_file.flush()
     except:
       print(f'Error writing to logfile: {args.log}')
       print(info)
   else:
     print(info)
+
+def update_info(info) -> bool:
+  try:
+    with open(args.song_info, "wt", encoding='utf-8') as info_file:
+      info_file.write(json.dumps(info))
+    return True
+  except Exception:
+    log('Error: %s' % sys.exc_info()[1])
+    return False
 
 instance = vlc.Instance(config.split())
 try:
@@ -70,19 +91,7 @@ try:
   player.play()
 except Exception:
   log(sys.exc_info())
-  exit(1)
-
-if args.song_info:
-  try:
-    f = open(args.song_info, "wt")
-    f.write(json.dumps({"state": str(player.get_state())}))
-    f.close()
-  except Exception:
-    log(sys.exc_info())
-    exit(1)
-
-# Wait for stream to start playing
-time.sleep(2)
+  sys.exit(1)
 
 # Keep track of the current state so we only update on change
 cur_url = ''
@@ -92,6 +101,43 @@ cur_info = {
   'station': '',
   'state': 'stopped',
 }
+if args.song_info:
+  if not update_info(cur_info):
+    sys.exit(1)
+
+restarts: List[float] = []
+def restart_vlc():
+  global player, media, instance# TODO: This is ugly
+  MAX_DELAY_S = 10
+  log('Waiting to restart vlc')
+  # prune old restarts from over an hour ago
+  LAST_HOUR = time.time() - 3600
+  while len(restarts) > 0 and restarts[0] < LAST_HOUR:
+    restarts.pop(0)
+  # wait for a bit to restart if we've had too many restarts recently
+  if len(restarts) < 2:
+    time.sleep(5)
+  else:
+    log('VLC restart is delayed, too many recent restarts')
+    time.sleep(60 * 10)
+  # actually restart vlc
+  log('Attempting to restart VLC')
+  instance = vlc.Instance(config.split())
+  media = instance.media_new(args.url)
+  player = instance.media_player_new()
+  player.set_media(media)
+  player.play()
+  restarts.append(time.time())
+  # wait for vlc to start playing
+  delay = 0
+  while str(player.get_state()) != 'State.Playing' and delay <= MAX_DELAY_S:
+    time.sleep(1)
+    delay += 1
+  if delay >= MAX_DELAY_S:
+    raise Exception('Waited too long for VLC to start playing')
+
+# Wait for stream to start playing
+time.sleep(2)
 
 # Monitor track meta data and update currently_playing file if the track changed
 while True:
@@ -144,21 +190,41 @@ while True:
           sys.exit(0)
 
         if args.song_info:
-          try:
-            f = open(args.song_info, "wt")
-            f.write(json.dumps(cur_info))
-            f.close()
-          except Exception:
-            log('Error: %s' % sys.exc_info()[1])
+          update_info(cur_info)
     else:
       if args.test:
         log('fail')
         sys.exit(1)
-      log('State: %s' % player.get_state())
+      if latest_info['state'] == "playing":
+        curr_info = {
+          'track':'',
+          'artist':'',
+          'station': '',
+          'state': 'stopped'
+        }
+        if args.song_info:
+          update_info(cur_info)
+        log('State: %s' % player.get_state())
+      restart_vlc()
 
   except Exception:
+    log('Error: %s' % sys.exc_info()[1])
     if args.test:
       log('fail')
-    log('Error: %s' % sys.exc_info()[1])
+      sys.exit(1)
+    else:
+      try:
+        curr_info = {
+          'track':'',
+          'artist':'',
+          'station': '',
+          'state': 'stopped'
+        }
+        if args.song_info:
+          update_info(cur_info)
+        restart_vlc()
+      except Exception:
+        log(sys.exc_info())
+        sys.exit(1)
 
   time.sleep(1) # throttle metadata

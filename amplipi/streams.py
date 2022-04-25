@@ -559,6 +559,7 @@ class InternetRadio(BaseStream):
     super().__init__('internet radio', name, mock)
     self.url = url
     self.logo = logo
+    self.supported_cmds = ['play', 'stop']
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -614,7 +615,10 @@ class InternetRadio(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url=self.logo)
+    source = models.SourceInfo(name=self.full_name(),
+                              state=self.state,
+                              img_url=self.logo,
+                              supported_cmds=self.supported_cmds)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
@@ -625,6 +629,28 @@ class InternetRadio(BaseStream):
     except Exception:
       pass
     return source
+
+  def send_cmd(self, cmd):
+    try:
+      if cmd in self.supported_cmds and self.src != None:
+        if cmd == 'play':
+          if not self._is_running():
+            self.connect(self.src)
+        elif cmd == 'stop':
+          if self._is_running():
+            try:
+              self.proc.kill()
+              self.proc = None
+              src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+              song_info_path = f'{src_config_folder}/currentSong'
+              os.system(f'rm {song_info_path}')
+            except Exception:
+              pass
+          self.state = 'stopped'
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception:
+      pass
 
 class Plexamp(BaseStream):
   """ A Plexamp Stream """
