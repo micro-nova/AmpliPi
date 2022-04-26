@@ -52,11 +52,11 @@ function updateSettings() {
 /* On page load, get list of current streams */
 $(function() {
 
-  /* Disable enter key from submitting form, unless search on inetradio */
+  /* Disable enter key from submitting form when on internet radio search */
   $(window).keydown(function(event){
     if(event.keyCode == 13) {
-      if (event.target.id == 'inetradio-search-name-txt') { // Intercept enter key for inetradio search
-        $("#inetradio-search-name-btn").trigger('click');
+      if (event.target.id == 'internetradio_search_name_txt') { // Intercept enter key for internet radio search
+        $("#internetradio_search_name_btn").trigger('click');
         event.preventDefault();
         return false;
       }
@@ -88,9 +88,9 @@ $(function() {
             <option value="spotify">Spotify Device</option>
           </select>
         </div>
-        <div class="form-group" id="streamNameDiv">
-          <label for="name">Stream Name</label>
-          <input type="text" class="form-control" name="name" id="str_name" aria-describedby="nameHelp" data-required="true">
+        <div class="form-group">
+          <label for="new_stream_name">Stream Name</label>
+          <input type="text" class="form-control" name="name" id="new_stream_name" aria-describedby="nameHelp" data-required="true">
           <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
         </div>
 
@@ -110,22 +110,23 @@ $(function() {
           </div>
         </div>
 
-        <div id="internetradio_settings" class="addl_settings" style="display:none;padding:15px;">
-          <div class="form-group">
-            <label for="inetradio-search-name-txt">Search by Station Name</label>
-            <input type="text" class="form-control" name="inetradio-search-name-txt" id="inetradio-search-name-txt" data-required="true">
+        <div id="internetradio_settings" class="addl_settings" style="display:none;">
+          <div style="padding:15px;">
+            <div class="form-group">
+              <label for="internetradio_search_name_txt">Search by Station Name</label>
+              <input type="text" class="form-control" name="search_name" id="internetradio_search_name_txt">
+            </div>
+            <button type="button" class="btn btn-secondary" id="internetradio_search_name_btn">Search Stations</button>
           </div>
-          <button type="button" class="btn btn-secondary" id="inetradio-search-name-btn">Search Stations</button>
-          <div id="inetradio-search_name_results" style="margin-top:15px;margin-bottom:15px;max-height: 280px;overflow-y: auto;overflow-x: hidden; background: #4a4a4a;"></div>
+          <div id="internetradio_search_name_results" style="margin-top:15px;margin-bottom:15px;max-height: 280px;overflow-y: auto;overflow-x: hidden; background: #4a4a4a;"></div>
           <div class="form-group">
-            <label for="url">Station Audio URL</label>
-            <input type="text" class="form-control" name="url" id="inetradio-url" aria-describedby="urlHelp" data-required="true">
+            <label for="new_internetradio_url">Station Audio URL</label>
+            <input type="text" class="form-control" name="url" id="new_internetradio_url" aria-describedby="urlHelp" data-required="true">
             <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
           </div>
           <div class="form-group">
-            <label for="logo">Station Logo</label>
-            <input type="text" class="form-control" name="logo" id="inetradio-logo">
-          </div>
+            <label for="new_internetradio_logo">Station Logo</label>
+            <input type="text" class="form-control" name="logo" id="new_internetradio_logo">
           </div>
         </div>
 
@@ -160,7 +161,7 @@ $(function() {
           </div>
         </div>
 
-        <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp" id="addStreamButton">Add Stream</button>
+        <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Stream</button>
         <small id="submitHelp" class="form-text text-muted"></small>
       </form>
       `;
@@ -283,46 +284,29 @@ $(function() {
   /* Show selected stream settings */
   $("#settings-tab-inputs-config").on("click", "#new_stream_type", function() {
     $(".addl_settings").hide(); // Hide all additional settings
-    $("#addStreamButton").show(); // Make sure this is showing (inetradio may hide it)
-    $("#streamNameDiv").show(); // Make sure this is showing (inetradio may hide it)
     if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
-    else if ($(this).val() == "internetradio") { $("#internetradio_settings").show();}
+    else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
     else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); $("#fmradio_warning").show(); }
     else if ($(this).val() == "plexamp") { $("#plexamp_settings").show(); }
 
   });
 
-  /* Hide some settings on the internet radio page when searching for stations */
-  $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
-    e.target // newly activated tab
-    if (e.target.id == 'inetradio-search-name-tab' || e.target.id == 'inetradio-search-loc-tab') {
-      // Hide Stream Name field and Add Stream button
-      $("#addStreamButton").hide();
-      $("#streamNameDiv").hide();
-    }
-    else {
-      // Show Stream Name field and Add Stream button
-      $("#addStreamButton").show();
-      $("#streamNameDiv").show();
-    }
-  })
-
-  /* Search for inetradio stations */
-  $(document).on('click', '#inetradio-search-name-btn', function () {
-    console.log('Searching for station by name: ' + $("#inetradio-search-name-txt").val());
-    const keywords = $("#inetradio-search-name-txt").val();
+  /* Search for internet radio stations */
+  $(document).on('click', '#internetradio_search_name_btn', function () {
+    console.log('Searching for station by name: ' + $("#internetradio_search_name_txt").val());
+    const keywords = $("#internetradio_search_name_txt").val();
     $.ajax({
       type: "GET",
       url: `https://de1.api.radio-browser.info/json/stations/byname/${keywords}?limit=100`,
       contentType: "application/json",
       success: function(data) {
-        $("#inetradio-search_name_results").html("<h3>Search Results</h3>");
+        $("#internetradio_search_name_results").html("<h3>Search Results</h3>");
         var details = '';
         var numResults = 0;
         $.each(data, function(index, value) {
           ++numResults;
           if (value.bitrate && value.codec) { details = '(' + value.bitrate + 'kbps ' + value.codec + ')'; }
-          $('#inetradio-search_name_results').append(
+          $('#internetradio_search_name_results').append(
             '<div style="position: relative; padding:6px;"><b><a href="' +
             value.homepage +
             '" target="_blank" title="Station Homepage">' +
@@ -341,19 +325,19 @@ $(function() {
             '" role="button" style="position: absolute;right: 90px;">Use</button></div>'
           );
         });
-        if (!numResults) { $('#inetradio-search_name_results').append("No stations found."); }
+        if (!numResults) { $('#internetradio_search_name_results').append("No stations found."); }
       }
     });
   });
 
-  /* Add an inetradio station from search screen */
+  /* Add an internet radio station from search screen */
   $(document).on('click', '.addStation', function () {
     var name = $(this).data('stationname');
     var url = $(this).data('stationurl');
     var logo = $(this).data('stationlogo');
-    $('#str_name').val(name);
-    $('#inetradio-url').val(url);
-    $('#inetradio-logo').val(logo);
+    $('#new_stream_name').val(name);
+    $('#new_internetradio_url').val(url);
+    $('#new_internetradio_logo').val(logo);
     return false;
   });
 
