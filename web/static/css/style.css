@@ -44,6 +44,7 @@ body {
 }
 .source .source-body {
   background: #4a4a4a;
+  min-height: 210px;
 }
 
 .group, .preset-list, .settings {
@@ -235,8 +236,8 @@ body {
   font-weight: 300;
   color: white;
   cursor: default;
-  max-height: 13pt;
   overflow: clip;
+  max-height: 16pt;
   margin-bottom: 40px; /* HACK: add extra space for controls below this */
 }
 .pandora-player .cover {

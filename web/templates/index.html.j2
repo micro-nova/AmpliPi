@@ -47,7 +47,7 @@
         <ol class="nav nav-tabs nav-fill card-header-tabs">
           {% for src in sources %}
           <li class="nav-item">
-            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['id'] + 1 }} <i class="fa fa-play text-success" ></i></a>
+            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['id'] + 1 }} <i class="fa text-success" ></i></a>
           </li>
           {% endfor %}
           <li class="nav-item">
