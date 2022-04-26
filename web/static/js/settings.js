@@ -233,8 +233,8 @@ $(function() {
         html = `
           <div id="fmradio_warning" class="form-group" style="color: yellow;">
             An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/">RTL SDR</a>
-          </div>` + name_html +
-          `<div class="form-group">
+          </div>` + name_html + `
+          <div class="form-group">
             <label for="new_fmradio_freq">FM Frequency</label>
             <input type="text" class="form-control" name="freq" id="new_fmradio_freq" aria-describedby="freqHelp" data-required="true">
             <small id="freqHelp" class="form-text text-muted">Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.</small>
@@ -246,15 +246,15 @@ $(function() {
           </div>`;
         break;
       case STREAM_TYPES_.internetradio:
-        html += `
-          <div style="padding:15px;">
-            <div class="form-group">
-              <label for="internetradio_search_name_txt">Search by Station Name</label>
-              <input type="text" class="form-control" name="search_name" id="internetradio_search_name_txt">
-            </div>
-            <button type="button" class="btn btn-secondary" id="internetradio_search_name_btn">Search Stations</button>
+        html = `
+          <div class="form-group">
+            <label for="internetradio_search_name_txt">Search by Station Name</label>
+            <input type="text" class="form-control" name="search_name" id="internetradio_search_name_txt" aria-describedby="searchHelp">
+            <small id="searchHelp" class="form-text text-muted">Optional. Searches <a href="https://www.radio-browser.info/" target="_blank">radio-browser</a> for internet radio stations.</small>
           </div>
-          <div id="internetradio_search_name_results" style="margin-top:15px;margin-bottom:15px;max-height: 280px;overflow-y: auto;overflow-x: hidden; background: #4a4a4a;"></div>
+          <button type="button" class="btn btn-secondary" id="internetradio_search_name_btn">Search Stations</button>
+          <div id="internetradio_search_name_results" style="margin-top:15px;margin-bottom:15px;max-height: 280px;overflow-y: auto;overflow-x: hidden; background: #4a4a4a;">
+          </div>` + name_html + `
           <div class="form-group">
             <label for="new_internetradio_url">Station Audio URL</label>
             <input type="text" class="form-control" name="url" id="new_internetradio_url" aria-describedby="urlHelp" data-required="true">
@@ -262,7 +262,8 @@ $(function() {
           </div>
           <div class="form-group">
             <label for="new_internetradio_logo">Station Logo</label>
-            <input type="text" class="form-control" name="logo" id="new_internetradio_logo">
+            <input type="text" class="form-control" name="logo" id="new_internetradio_logo" aria-describedby="logoHelp">
+            <small id="logoHelp" class="form-text text-muted">Optionally provide an image URL for the station.</small>
           </div>`;
         break;
       case STREAM_TYPES_.pandora:
