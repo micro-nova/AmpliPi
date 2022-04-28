@@ -76,7 +76,7 @@
             {% set info = song_info[src['id']] %}
             {% set art_url = 'static/imgs/rca_inputs.svg' if '' == info['img_url'] else info['img_url'] %}
             <div class="cover"><img src="{{ art_url }}"/></div>
-            <div class="info-controls clear-fix">
+            <div class="info-controls">
               <div class="info">
                 <h6 class="artist">{{ info['artist'] if info['artist'] else ''}}</h6>
                 <h6 class="album">{{ info['album'] if info['album'] else '' }}</h6>
