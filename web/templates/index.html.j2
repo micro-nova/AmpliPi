@@ -14,7 +14,7 @@
                 onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.18/dist/css/bootstrap-select.min.css"
                 onerror="this.onerror=null;this.href='static/css/libs/bootstrap-select/1.13.18/bootstrap-select.min.css';">
-  <link rel="stylesheet" href="static/css/style.css">
+  <link rel="stylesheet" href="static/css/style.css?{{version}}">
   <link rel="apple-touch-icon" href="static/imgs/amplipi-small-logo.png">
 </head>
 <body>
@@ -352,9 +352,9 @@
   <!-- Bootstrap-select JS local fallback -->
   <script>(typeof($.fn.modal) === 'undefined') && document.write('<script src="static/js/libs/bootstrap-select/1.13.18/bootstrap-select.min.js"><\/script>')</script>
   <!-- Local application script -->
-  <script src="static/js/script.js"></script>
+  <script src="static/js/script.js?{{version}}"></script>
   <!-- Additional local script - Stream/Zone/Group Settings -->
-  <script src='static/js/settings.js'></script>
+  <script src="static/js/settings.js?{{version}}"></script>
   <script>
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
       $('.selectpicker').selectpicker('mobile');
