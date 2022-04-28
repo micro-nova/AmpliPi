@@ -102,8 +102,6 @@ $(function() {
     $("#settings-tab-inputs-config").html(html);
   });
 
-
-
   /* Show selected stream settings */
   $("#settings-tab-inputs-stream-selection").on("click", ".stream", function() {
     $('#settings-tab-inputs-stream-selection li').removeClass('active');
@@ -210,7 +208,7 @@ $(function() {
     $("#settings-tab-inputs-config").html(html);
   });
 
-  /* Show selected stream settings */
+  /* Show new stream settings */
   $("#settings-tab-inputs-config").on("click", "#new_stream_type", function() {
     var name_html = `
           <div class="form-group">
@@ -308,13 +306,21 @@ $(function() {
     $("#new_stream_settings").html(html);
   });
 
+  /* Get random radio-browser server */
+  // TODO: Handle errors
+  let radiobrowser_base_url = ''
+  fetch('http://all.api.radio-browser.info/json/servers')
+    .then(response => response.json())
+    .then(hosts => radiobrowser_base_url = "https://" + hosts[Math.floor(Math.random() * hosts.length)].name);
+
   /* Search for internet radio stations */
   $(document).on('click', '#internetradio_search_name_btn', function () {
     console.log('Searching for station by name: ' + $("#internetradio_search_name_txt").val());
     const keywords = $("#internetradio_search_name_txt").val();
+    console.log("Using radio-browser server ", radiobrowser_base_url);
     $.ajax({
       type: "GET",
-      url: `https://de1.api.radio-browser.info/json/stations/byname/${keywords}?limit=100`,
+      url: `${radiobrowser_base_url}/json/stations/byname/${keywords}?limit=100`,
       contentType: "application/json",
       success: function(data) {
         $("#internetradio_search_name_results").html("<h3>Search Results</h3>");
