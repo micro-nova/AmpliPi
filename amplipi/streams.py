@@ -292,7 +292,6 @@ class Spotify(BaseStream):
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      supported_cmds=list(self.supported_cmds.keys()),
       img_url='static/imgs/spotify.png'
     )
     try:
@@ -303,10 +302,14 @@ class Spotify(BaseStream):
             d = ast.literal_eval(line)
           except Exception as exc:
             print(f'Error parsing currentSong: {exc}')
-        source.state = d['state']
-        source.artist = ', '.join(d['artist'])
-        source.track = d['track']
-        source.album = d['album']
+        if d['state'] and d['state'] != 'stopped':
+          source.state = d['state']
+          source.artist = ', '.join(d['artist'])
+          source.track = d['track']
+          source.album = d['album']
+          source.supported_cmds=list(self.supported_cmds.keys())
+        else:
+          source.track = f'connect to {self.name}'
         if d['img_url']: # report generic spotify image in place of unspecified album art
           source.img_url = d['img_url']
     except Exception:
