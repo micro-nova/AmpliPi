@@ -88,7 +88,7 @@ $(document).ready(function(){
     }
     if (new_src != "settings-nav") {
       $('#' + new_src + '-input')[0].style.display = "block";
-      $('#' + new_src + '-player')[0].style.display = "block";
+      $('#' + new_src + '-player')[0].style.display = "flex";
     } else {
       $('#settings-sel')[0].style.display = "block";
       updateSettings();
