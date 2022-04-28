@@ -221,6 +221,7 @@ body {
   color: white;
   cursor: default;
   overflow: clip;
+  max-height: 13pt;
 }
 .pandora-player .album {
   font-family: 'Open Sans', sans-serif;
@@ -228,6 +229,7 @@ body {
   font-weight: 400;
   cursor: default;
   overflow: clip;
+  max-height: 9pt;
 }
 .pandora-player .song {
   font-family: 'Open Sans', sans-serif;
@@ -235,8 +237,8 @@ body {
   font-weight: 300;
   color: white;
   cursor: default;
-  max-height: 13pt;
   overflow: clip;
+  max-height: 16pt;
   margin-bottom: 40px; /* HACK: add extra space for controls below this */
 }
 .pandora-player .cover {
@@ -263,11 +265,11 @@ body {
 }
 .step-forward, .like, .dislike {
   font-size: 20pt;
-  margin-left: 15pt;
+  margin-left: 12pt;
 }
 .step-backward {
   font-size: 20pt;
-  margin-right: 15pt;
+  margin-right: 12pt;
 }
 .play-pause, .step-forward, .step-backward, .like, .dislike {
   cursor: pointer;

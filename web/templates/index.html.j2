@@ -47,7 +47,7 @@
         <ol class="nav nav-tabs nav-fill card-header-tabs">
           {% for src in sources %}
           <li class="nav-item">
-            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['id'] + 1 }} <i class="fa fa-play text-success" ></i></a>
+            <a id="s{{ src['id'] }}" class="nav-link {% if src['id'] == cur_src %} active {% endif %}" data-toggle="tab" role="tab" href="#s{{ src['id'] }}-groups">{{ src['id'] + 1 }} <i class="fa text-success" ></i></a>
           </li>
           {% endfor %}
           <li class="nav-item">
@@ -72,7 +72,7 @@
         {% endfor %}
         <div class="player-wrapper">
           {% for src in sources %}
-          <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} block; {% else %} none; {% endif %}">
+          <div id="s{{  src['id'] }}-player" class="pandora-player" data-src="{{ src['id'] }}" data-src-input="{{ src['input'] }}" style="display: {% if src['id'] == cur_src %} flex; {% else %} none; {% endif %}">
             {% set info = song_info[src['id']] %}
             {% set art_url = 'static/imgs/rca_inputs.svg' if '' == info['img_url'] else info['img_url'] %}
             <div class="cover"><img src="{{ art_url }}"/></div>
