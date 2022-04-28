@@ -21,11 +21,40 @@
 
 #include "adc.h"
 
+#include <assert.h>
+
 #include "i2c.h"
 #include "stm32f0xx_i2c.h"
 
-// Power Board I2C ADC device
-const I2CDev adc_dev_ = 0xC8;
+typedef union {
+  struct {
+    uint8_t hv1;
+    uint8_t amp_temp1;
+    uint8_t hv1_temp;
+    uint8_t amp_temp2;
+    uint8_t hv2;
+    uint8_t hv2_temp;
+  };
+  uint8_t chan[6];
+} AdcVals;
+static_assert(sizeof(AdcVals) == 6, "AdcVals not packed.");
+
+typedef struct {
+  I2CDev  dev;     // I2C address
+  uint8_t nchans;  // Number of ADC channels to read
+} AdcDev;
+
+// Power Board I2C ADC device with 4 channels (1 HV power supply)
+AdcDev adc4_ = {
+    .dev    = 0xC8,  // MAX11601
+    .nchans = 4,
+};
+
+// Power Board I2C ADC device with 6 channels (2 HV power supplies)
+AdcDev adc6_ = {
+    .dev    = 0xDA,  // MAX11603
+    .nchans = 6,     // Last two channels of MAX11603 unused.
+};
 
 // NCP21XV103J03RA - 0805 SMD, R0 = 10k @ 25 degC, B = 3900K
 const uint8_t THERM_LUT_[] = {
@@ -53,13 +82,6 @@ const uint8_t THERM_LUT_[] = {
     0xFF, 0xFF, 0xFF, 0xFF,
 };
 
-typedef struct {
-  uint8_t hv1;
-  uint8_t amp_temp1;
-  uint8_t hv1_temp;
-  uint8_t amp_temp2;
-} AdcVals;
-
 typedef union {
   // All temps in UQ7.1 + 20 degC format
   struct {
@@ -78,13 +100,14 @@ void initAdc() {
   // Write ADC setup byte
   // REG=1 (setup byte), SEL[2:0] = 000 (VDD), CLK = 0 (internal),
   // BIP/UNI=0 (unipolar), RST=0 (reset config register), X=0 (don't care)
-  uint32_t result = writeByteI2C2(adc_dev_, 0x80);
+  uint32_t result = writeByteI2C2(adc4_.dev, 0x80);  // TODO
   // TODO: Handle errors here
   (void)result;
 }
 
 // TODO: Make standard i2c function
-AdcVals readAdc() {
+// TODO: Error handling
+bool readAdc(const AdcDev* adc, AdcVals* vals) {
   /****************************************************************************
    *  Configure ADC to scan all 4 channels
    ****************************************************************************/
@@ -92,44 +115,38 @@ AdcVals readAdc() {
   // Wait if I2C2 is busy
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
 
-  // Setup to send send start, addr, subaddr
-  I2C_TransferHandling(I2C2, adc_dev_, 1, I2C_SoftEnd_Mode,
+  // Setup to send start condition, slave address, and write bit.
+  I2C_TransferHandling(I2C2, adc->dev, 1, I2C_SoftEnd_Mode,
                        I2C_Generate_Start_Write);
 
   // Wait for transmit interrupted flag
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET) {}
 
-  // Configuration byte = { config=0b0, scan=0b11, cs=0b00XX, sgl=0b1 }
+  // Configuration byte = { config=0b0, scan=0b00, cs=0b0XXX, sgl=0b1 }
   // Scan all 4 channels in single-ended mode
-  I2C_SendData(I2C2, 0x01 | (3 << 1));
+  uint8_t config = ((adc->nchans - 1) << 1) | 0x01;
+  I2C_SendData(I2C2, config);
 
   // Wait for transfer complete flag
   while (I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET) {}
 
   /****************************************************************************
-   *  Read all 4 channels
+   *  Read all channels
    ****************************************************************************/
-  AdcVals vals = {};
   // Restart and setup a read transfer
-  I2C_TransferHandling(I2C2, adc_dev_, 4, I2C_AutoEnd_Mode,
+  I2C_TransferHandling(I2C2, adc->dev, adc->nchans, I2C_AutoEnd_Mode,
                        I2C_Generate_Start_Read);
 
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  vals.hv1 = I2C_ReceiveData(I2C2);
+  for (uint32_t i = 0; i < adc->nchans; i++) {
+    while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
+    vals->chan[i] = I2C_ReceiveData(I2C2);
+  }
 
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  vals.amp_temp1 = I2C_ReceiveData(I2C2);
-
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  vals.hv1_temp = I2C_ReceiveData(I2C2);
-
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  vals.amp_temp2 = I2C_ReceiveData(I2C2);
-
+  // Wait for stop condition to occur
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
   I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
 
-  return vals;
+  return true;
 }
 
 void updateAdc() {
@@ -137,20 +154,24 @@ void updateAdc() {
 #define ADC_PD_KOHMS  4700
 #define ADC_PU_KOHMS  100000
   // TODO: low-pass filter after initial reading
-  AdcVals adc = readAdc();
+  static const AdcDev* adc = &adc4_;
+  AdcVals              vals;
+  readAdc(adc, &vals);
 
   // Convert HV1 to Volts (multiply by 4 to add 2 fractional bits)
   uint32_t num     = 4 * ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
   uint32_t den     = UINT8_MAX * ADC_PD_KOHMS;
-  uint32_t hv1_raw = num * adc.hv1 / den;
+  uint32_t hv1_raw = num * vals.hv1 / den;
   hv1_f2_          = (uint8_t)(hv1_raw > UINT8_MAX ? UINT8_MAX : hv1_raw);
 
   // Convert HV1 thermocouple to degC
-  temps_.hv1_f1 = THERM_LUT_[adc.hv1_temp];
+  temps_.hv1_f1 = THERM_LUT_[vals.hv1_temp];
 
   // Convert amplifier thermocouples to degC
-  temps_.amp1_f1 = THERM_LUT_[adc.amp_temp1];
-  temps_.amp2_f1 = THERM_LUT_[adc.amp_temp2];
+  temps_.amp1_f1 = THERM_LUT_[vals.amp_temp1];
+  temps_.amp2_f1 = THERM_LUT_[vals.amp_temp2];
+
+  // TODO: HV2
 }
 
 uint8_t getHV1_f2() {
