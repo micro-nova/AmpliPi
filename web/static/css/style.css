@@ -44,7 +44,6 @@ body {
 }
 .source .source-body {
   background: #4a4a4a;
-  min-height: 210px;
 }
 
 .group, .preset-list, .settings {
