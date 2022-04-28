@@ -307,7 +307,8 @@ class Spotify(BaseStream):
         source.artist = ', '.join(d['artist'])
         source.track = d['track']
         source.album = d['album']
-        source.img_url = d['img_url']
+        if d['img_url']: # report generic spotify image in place of unspecified album art
+          source.img_url = d['img_url']
     except Exception:
       pass
     return source
