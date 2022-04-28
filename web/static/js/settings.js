@@ -2,6 +2,7 @@
 var streams = [];
 var zones = [];
 var groups = [];
+var radiobrowser_base_url = '';
 
 class Stream {
   constructor(name, description) {
@@ -304,14 +305,14 @@ $(function() {
           <small id="submitHelp" class="form-text text-muted"></small>
         `;
     $("#new_stream_settings").html(html);
-  });
 
-  /* Get random radio-browser server */
-  // TODO: Handle errors
-  let radiobrowser_base_url = ''
-  fetch('http://all.api.radio-browser.info/json/servers')
-    .then(response => response.json())
-    .then(hosts => radiobrowser_base_url = "https://" + hosts[Math.floor(Math.random() * hosts.length)].name);
+    /* Try to Get a random radio-browser server */
+    if (!radiobrowser_base_url) {
+      fetch('http://all.api.radio-browser.info/json/servers')
+      .then(response => response.json())
+      .then(hosts => radiobrowser_base_url = "https://" + hosts[Math.floor(Math.random() * hosts.length)].name);
+    }
+  });
 
   /* Search for internet radio stations */
   $(document).on('click', '#internetradio_search_name_btn', function () {
