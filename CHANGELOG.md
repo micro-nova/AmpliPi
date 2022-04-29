@@ -13,8 +13,9 @@
   * Add Play/Stop functionality to internet radio
   * Make internet radio retry on failure
   * Fix internet radio lockup condition
-  Audio:
-  * Reduce the chance of audio pops improved reset handling
+* Audio:
+  * Reduce the chance of audio pops during volume changes
+  * Make the preouts mute when a zone is muted
 * Security
   * If the password for the `pi` user is still `raspberry`, a new random password will be set
     and stored in ~/.config/amplipi/default_password.txt.
