@@ -113,7 +113,7 @@ $(function() {
   });
 
   /* Show selected stream settings */
-  $("#settings-tab-inputs-stream-selection").on("click", ".stream", function() {
+  $("#settings-tab-inputs-stream-selection").on("change", ".stream", function() {
     $('#settings-tab-inputs-stream-selection li').removeClass('active');
     $("#settings-tab-inputs-new-stream").removeClass('active');
     $(this).addClass('active');
@@ -219,7 +219,7 @@ $(function() {
   });
 
   /* Show new stream settings */
-  $("#settings-tab-inputs-config").on("click", "#new_stream_type", function() {
+  $("#settings-tab-inputs-config").on("change", "#new_stream_type", function() {
     var name_html = `
           <div class="form-group">
             <label for="new_stream_name">Stream Name</label>
