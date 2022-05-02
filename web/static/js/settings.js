@@ -66,6 +66,15 @@ function updateSettings() {
   });
 };
 
+
+function cache_internetradio_server(reset_cache=false) {
+  /* Try to Get a random radio-browser server */
+  if (!radiobrowser_base_url || reset_cache) {
+    fetch('http://all.api.radio-browser.info/json/servers')
+    .then(response => response.json())
+    .then(hosts => radiobrowser_base_url = "https://" + hosts[Math.floor(Math.random() * hosts.length)].name);
+  }
+}
 /* On page load, get list of current streams */
 $(function() {
 
@@ -199,7 +208,7 @@ $(function() {
         break;
     }
 
-    // Analog RCA input, can't be deleted.
+    // Analog RCA input, can't be deleted. TODO: make RCA inputs disable-able
     hide_del = s.type == null ? 'style="display:none"' : '';
     html += `
         <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Save Changes</button>
@@ -251,7 +260,10 @@ $(function() {
             <input type="text" class="form-control" name="search_name" id="internetradio_search_name_txt" aria-describedby="searchHelp">
             <small id="searchHelp" class="form-text text-muted">Optional. Searches <a href="https://www.radio-browser.info/" target="_blank">radio-browser</a> for internet radio stations.</small>
           </div>
-          <button type="button" class="btn btn-secondary" id="internetradio_search_name_btn">Search Stations</button>
+          <div class="internet-radio-search-button">
+            <button type="button" class="btn btn-secondary" id="internetradio_search_name_btn">Search Stations</button>
+            <i class="fa" style="margin-left: 8px"></i>
+          </div>
           <div id="internetradio_search_name_results" style="margin-top:15px;margin-bottom:15px;max-height: 280px;overflow-y: auto;overflow-x: hidden; background: #4a4a4a;">
           </div>` + name_html + `
           <div class="form-group">
@@ -306,24 +318,25 @@ $(function() {
         `;
     $("#new_stream_settings").html(html);
 
-    /* Try to Get a random radio-browser server */
-    if (!radiobrowser_base_url) {
-      fetch('http://all.api.radio-browser.info/json/servers')
-      .then(response => response.json())
-      .then(hosts => radiobrowser_base_url = "https://" + hosts[Math.floor(Math.random() * hosts.length)].name);
-    }
+    cache_internetradio_server();
   });
 
   /* Search for internet radio stations */
   $(document).on('click', '#internetradio_search_name_btn', function () {
     console.log('Searching for station by name: ' + $("#internetradio_search_name_txt").val());
+    search_indicator = $(".internet-radio-search-button i");
+    search_indicator.toggleClass('fa-circle-notch', true);
+    search_indicator.toggleClass('fa-exclamation-triangle', false);
     const keywords = $("#internetradio_search_name_txt").val();
     console.log("Using radio-browser server ", radiobrowser_base_url);
     $.ajax({
       type: "GET",
       url: `${radiobrowser_base_url}/json/stations/byname/${keywords}?limit=100`,
       contentType: "application/json",
+      timeout: 2500,
       success: function(data) {
+        search_indicator.toggleClass('fa-circle-notch', false);
+        search_indicator.toggleClass('fa-exclamation-triangle', false);
         $("#internetradio_search_name_results").html("<h3>Search Results</h3>");
         var details = '';
         var numResults = 0;
@@ -350,6 +363,14 @@ $(function() {
           );
         });
         if (!numResults) { $('#internetradio_search_name_results').append("No stations found."); }
+      },
+      error: function () {
+        // set the indicator to failed
+        search_indicator.toggleClass('fa-circle-notch', false);
+        search_indicator.toggleClass('fa-exclamation-triangle', true);
+        $('#internetradio_search_name_results').html("<h3>Search Results</h3>Error searching for stations. Check your internet access and try again.");
+        // try to get a new internet radio server, do this at the end since it can take several seconds
+        cache_internetradio_server(true);
       }
     });
   });

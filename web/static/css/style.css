@@ -78,22 +78,6 @@ body {
   font-size: 1.5rem;
 }
 
-.preset .status .fa-exclamation-triangle {
-  color: orange
-}
-
-.preset .status .fa-check-circle {
-  color: green;
-}
-
-.preset .status .fa-circle {
-  color: white;
-}
-.preset .status .fa-circle-notch {
-  color: white;
-  animation: fa-spin 1s infinite linear;
-}
-
 .preset .last-used {
   color: #aaa;
 }
@@ -102,6 +86,21 @@ body {
   font-weight: bolder;
   text-shadow: 1px 1px 4px #6a6a6a;
   font-size: 1rem;
+}
+
+/* Spinner/Error/Success indicators are used in several places */
+
+.fa-exclamation-triangle {
+  color: orange
+}
+
+.fa-circle-notch {
+  color: white;
+  animation: fa-spin 1s infinite linear;
+}
+
+.fa-check-circle {
+  color: green;
 }
 
 .zone, .ungrouped-zone {
