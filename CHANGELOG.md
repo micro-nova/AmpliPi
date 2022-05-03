@@ -6,6 +6,7 @@
   * Per zone min and max volume configuration, make it easy to restrict volume levels in a room or not blast the music accidentally
   * Add internet radio search (thanks @kjk2010)
   * Fix misc settings bugs
+  * Cache on version to force js/css update on refresh
 * API
   * 0.0 to 1.0 volume controls (using vol_f)
   * Sources report the commands currently supported (play/pause/...)
