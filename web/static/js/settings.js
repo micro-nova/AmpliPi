@@ -212,6 +212,7 @@ $(function() {
     html += `
         <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Save Changes</button>
         <button type="button" class="btn btn-danger" ${hide_del} id="delete" data-id="${s.id}">Delete</button>
+        <small id="submitHelp" class="form-text text-muted"></small>
       </form>
     `;
     $("#settings-tab-inputs-config").html(html);
