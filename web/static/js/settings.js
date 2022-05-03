@@ -112,8 +112,7 @@ $(function() {
     $("#settings-tab-inputs-config").html(html);
   });
 
-  /* Show editable stream settings for the selected stream */
-  $("#settings-tab-inputs-stream-selection").on("click", ".stream", function() {
+  function show_editable_stream_settings() {
     $('#settings-tab-inputs-stream-selection li').removeClass('active');
     $("#settings-tab-inputs-new-stream").removeClass('active');
     $(this).addClass('active');
@@ -216,7 +215,10 @@ $(function() {
       </form>
     `;
     $("#settings-tab-inputs-config").html(html);
-  });
+  }
+
+  $("#settings-tab-inputs-stream-selection").on("click", ".stream", show_editable_stream_settings);
+  $("#settings-tab-inputs-stream-selection").on("change", ".stream", show_editable_stream_settings);
 
   /* Show new stream settings */
   $("#settings-tab-inputs-config").on("change", "#new_stream_type", function() {
