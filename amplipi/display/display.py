@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
+
+# AmpliPi Home Audio
+# Copyright (C) 2022 MicroNova LLC
 #
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # Requirements:
 # pip: adafruit-circuitpython-rgb-display pillow numpy
 #      loguru requests rpi.gpio netifaces psutil
@@ -14,52 +30,29 @@ import argparse
 import busio
 import cProfile
 import digitalio
+from enum import Enum
 from loguru import logger as log
+import os
 import requests
 import signal
 import socket
+import subprocess
 import time
 from typing import Any, Dict, List, Tuple, Optional
 
-import amplipi.models as models
+from amplipi import formatter
+from amplipi import models
 
 # Display
-import adafruit_rgb_display.ili9341 as ili9341
+from adafruit_rgb_display import ili9341
 from PIL import Image, ImageDraw, ImageFont
 
 # To retrieve system info
 import netifaces as ni    # network interfaces
 import psutil             # CPU, RAM, etc.
 
-# Remove duplicate metavars
-# https://stackoverflow.com/a/23941599/8055271
-class AmpliPiHelpFormatter(argparse.HelpFormatter):
-  def _format_action_invocation(self, action):
-    if not action.option_strings:
-      metavar, = self._metavar_formatter(action, action.dest)(1)
-      return metavar
-    else:
-      parts = []
-      if action.nargs == 0:                   # -s, --long
-        parts.extend(action.option_strings)
-      else:                                   # -s, --long ARGS
-        args_string = self._format_args(action, action.dest.upper())
-        for option_string in action.option_strings:
-          parts.append('%s' % option_string)
-        parts[-1] += ' %s' % args_string
-      return ', '.join(parts)
-
-  def _get_help_string(self, action):
-    help_str = action.help
-    if '%(default)' not in action.help:
-      if action.default is not argparse.SUPPRESS and action.default is not None:
-        defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
-        if action.option_strings or action.nargs in defaulting_nargs:
-          help_str += ' (default: %(default)s)'
-    return help_str
-
 parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
-                                 formatter_class=AmpliPiHelpFormatter)
+                                 formatter_class=formatter.AmpliPiHelpFormatter)
 parser.add_argument('-u', '--url', default='localhost', help="the AmpliPi's URL to contact")
 parser.add_argument('-r', '--update-rate', metavar='HZ', type=float, default=1.0,
                     help="the display's update rate in Hz")
@@ -111,6 +104,17 @@ t_irq_pin = board.D6 if args.test_board else board.D38
 # Number of screens to scroll through
 NUM_SCREENS = 1
 _active_screen = 0
+
+class Color(Enum):
+  """ Colors used in the AmpliPi front-panel display """
+  GREEN = '#28a745'
+  YELLOW = '#F0E68C'
+  RED = '#FF0000'
+  BLUE = '#0080ff'
+  BLACK = '#000000'
+  DARKGRAY = '#666666'
+  LIGHTGRAY = '#999999'
+  WHITE = '#FFFFFF'
 
 ################################################################################
 # A note on Raspberry Pi (BCM2837B0) clocks
@@ -195,6 +199,59 @@ def get_amplipi_data(base_url: Optional[str]) -> Tuple[bool, List[models.Source]
 
   return success, _sources, _zones
 
+
+class DefaultPass:
+  """Helper class to read and verify the current pi user's password against
+     the stored default AmpliPi password."""
+
+  # Password config location
+  PASS_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  PASS_FILE = os.path.join(PASS_DIR, 'default_password.txt')
+  DEFAULT_PI_PASSWORD = 'raspberry'
+
+  def __init__(self):
+    self.default_password = ''
+    self.pass_file_present = False
+    self.update()
+
+  def update(self) -> Tuple[str, Color]:
+    """Check if the default password file has changed and if so
+       verify if it is the pi user's current password.
+    """
+    old_presence = self.pass_file_present
+    new_default = self.get_default_pw()
+    if self.default_password != new_default or self.pass_file_present != old_presence:
+      self.default_password = new_default
+      self.default_in_use = self.check_pw(self.default_password)
+
+    if self.default_in_use:
+      if self.pass_file_present:
+        # A random password has been set as the default for AmpliPi.
+        return self.default_password, Color.YELLOW
+      # Default Pi password is still in use, this isn't secure.
+      return self.default_password, Color.RED
+    # Current password has been changed from the default
+    return 'User Set', Color.GREEN
+
+  def get_default_pw(self) -> str:
+    if os.path.exists(self.PASS_FILE):
+      with open(self.PASS_FILE, 'r', encoding='utf-8') as pass_file:
+        self.pass_file_present = True
+        return pass_file.readline().rstrip()
+    self.pass_file_present = False
+    return self.DEFAULT_PI_PASSWORD
+
+  @staticmethod
+  def check_pw(pw: str) -> bool:
+    """ Check if the given password is the pi user's current password. """
+    try:
+      subprocess.run(f'sudo python3 amplipi/display/check_pass {pw}', shell=True, check=True)
+      return True
+    except subprocess.CalledProcessError:
+      return False
+
+default_pass = DefaultPass()
+
 # Draw volumes on bars.
 # Draw is a PIL drawing surface
 # zones is a list of (names, volumes) of size [6, 12, 18, 24, 30, 36]
@@ -213,14 +270,14 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
       yb = y + i*hb + 2*i*sp # Bar starting y-position
 
       # Draw zone name as text
-      draw.text((x, yb), zones[i].name, font=font, fill='#FFFFFF')
+      draw.text((x, yb), zones[i].name, font=font, fill=Color.WHITE.value)
 
       # Draw background of volume bar
-      draw.rectangle(((xb, int(yb+2), xb+wb, int(yb+hb))), fill='#999999')
+      draw.rectangle(((xb, int(yb+2), xb+wb, int(yb+hb))), fill=Color.LIGHTGRAY.value)
 
       # Draw volume bar
-      if zones[i].vol > -79:
-        color = '#666666' if zones[i].mute else '#0080ff'
+      if zones[i].vol > models.MIN_VOL:
+        color = Color.DARKGRAY.value if zones[i].mute else Color.BLUE.value
         xv = xb + (wb - round(zones[i].vol * vol2pix))
         draw.rectangle(((xb, int(yb+2), xv, int(yb+hb))), fill=color)
   elif n <= 18: # Draw vertical bars
@@ -235,14 +292,14 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
 
       # Draw zone number as centered text
       draw.text((xb + round(wb/2), y + height - round(ch/2)), str(i+1),
-                anchor='mm', font=small_font, fill='#FFFFFF')
+                anchor='mm', font=small_font, fill=Color.WHITE.value)
 
       # Draw background of volume bar
-      draw.rectangle(((xb, y, xb+wb, yt)), fill='#999999')
+      draw.rectangle(((xb, y, xb+wb, yt)), fill=Color.LIGHTGRAY.value)
 
       # Draw volume bar
-      if zones[i].vol > -79:
-        color = '#666666' if zones[i].mute else '#0080ff'
+      if zones[i].vol > models.MIN_VOL:
+        color = Color.DARKGRAY.value if zones[i].mute else Color.BLUE.value
         yv = y + round(zones[i].vol * vol2pix)
         draw.rectangle(((xb, yv, xb+wb, yt)), fill=color)
   else:
@@ -452,7 +509,6 @@ zones: List[models.Zone] = []
 
 frame_num = 0
 frame_times = []
-cpu_load = []
 use_debug_port = False
 disp_start_time = time.time()
 _sleep_timer = time.time()
@@ -510,13 +566,11 @@ while frame_num < 10 and run:
     cpu_temp = psutil.sensors_temperatures()['cpu_thermal'][0].current
     cpu_str1 = f'{cpu_pcnt:4.1f}%'
     cpu_str2 = f'{cpu_temp:4.1f}\xb0C'
-    cpu_load.append(cpu_pcnt)
 
     ram_total = int(psutil.virtual_memory().total / (1024*1024))
     ram_used  = int(psutil.virtual_memory().used / (1024*1024))
     ram_pcnt = 100 * ram_used / ram_total
-    ram_str1 = f'{ram_pcnt:4.1f}%'
-    ram_str2 = f'{ram_used}/{ram_total} MB'
+    ram_str = f'{ram_used}/{ram_total} MB'
 
     disk_usage  = psutil.disk_usage('/')
     disk_pcnt = disk_usage.percent
@@ -529,39 +583,43 @@ while frame_num < 10 and run:
     cw = 8    # Character width
     ch = 16   # Character height
     draw.rectangle((0, 0, width-1, height-1), fill=0) # Clear image
-    draw.text((1*cw, 0*ch + 2), 'CPU:',     font=font, fill='#FFFFFF')
-    draw.text((1*cw, 1*ch + 2), 'Mem:',     font=font, fill='#FFFFFF')
-    draw.text((1*cw, 2*ch + 2), 'Disk:',    font=font, fill='#FFFFFF')
-    draw.text((1*cw, 3*ch + 2), 'IP:',      font=font, fill='#FFFFFF')
-
-    draw.text((7*cw, 0*ch + 2), cpu_str1,   font=font, fill=gradient(cpu_pcnt))
-    draw.text((7*cw, 1*ch + 2), ram_str1,   font=font, fill=gradient(ram_pcnt))
-    draw.text((7*cw, 2*ch + 2), disk_str1,  font=font, fill=gradient(disk_pcnt))
-    draw.text((7*cw, 3*ch + 2), ip_str,     font=font, fill='#FFFFFF')
 
     # BCM2837B0 is rated for [-40, 85] C
     # For now show green for anything below room temp
+    draw.text((1*cw,  0*ch + 2), 'CPU:',    font=font, fill=Color.WHITE.value)
+    draw.text((7*cw,  0*ch + 2), cpu_str1,  font=font, fill=gradient(cpu_pcnt))
     draw.text((14*cw, 0*ch + 2), cpu_str2,  font=font, fill=gradient(cpu_temp, min_val=20, max_val=85))
-    draw.text((14*cw, 1*ch + 2), ram_str2,  font=font, fill='#FFFFFF')
-    draw.text((14*cw, 2*ch + 2), disk_str2, font=font, fill='#FFFFFF')
+    draw.text((22*cw, 0*ch + 2), 'Mem:',    font=font, fill=Color.WHITE.value)
+    draw.text((28*cw, 0*ch + 2), ram_str,   font=font, fill=gradient(ram_pcnt))
+
+    disk_color = gradient(disk_pcnt)
+    draw.text((1*cw,  1*ch + 2), 'Disk:',   font=font, fill=Color.WHITE.value)
+    draw.text((7*cw,  1*ch + 2), disk_str1, font=font, fill=disk_color)
+    draw.text((14*cw, 1*ch + 2), disk_str2, font=font, fill=disk_color)
+
+    draw.text((1*cw,  2*ch + 2), f'IP:   {ip_str}', font=font, fill=Color.WHITE.value)
+
+    password, pass_color = default_pass.update()
+    draw.text((1*cw,  3*ch + 2), f'Password: ', font=font, fill=Color.WHITE.value)
+    draw.text((11*cw, 3*ch + 2), password,      font=font, fill=pass_color.value)
 
     if connected:
       # Show source input names
-      draw.text((1*cw, int(4.5*ch)), 'Source 1:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(5.5*ch)), 'Source 2:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(6.5*ch)), 'Source 3:',font=font, fill='#FFFFFF')
-      draw.text((1*cw, int(7.5*ch)), 'Source 4:',font=font, fill='#FFFFFF')
+      draw.text((1*cw, int(4.5*ch)), 'Source 1:',font=font, fill=Color.WHITE.value)
+      draw.text((1*cw, int(5.5*ch)), 'Source 2:',font=font, fill=Color.WHITE.value)
+      draw.text((1*cw, int(6.5*ch)), 'Source 3:',font=font, fill=Color.WHITE.value)
+      draw.text((1*cw, int(7.5*ch)), 'Source 4:',font=font, fill=Color.WHITE.value)
       xs = 11*cw
       xp = xs - round(0.5*cw) # Shift playing arrow back a bit
       ys = 4*ch + round(0.5*ch)
-      draw.line(((cw, ys-3), (width-2*cw, ys-3)), width=2, fill='#999999')
+      draw.line(((cw, ys-3), (width-2*cw, ys-3)), width=2, fill=Color.LIGHTGRAY.value)
       for i, src in enumerate(sources):
         sinfo = sources[i].info
         if sinfo is not None:
           if sinfo.state == 'playing':
-            draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill='#28a745')
-          draw.text((xs + 1*cw, ys + i*ch), sinfo.name, font=font, fill='#F0E68C')
-      draw.line(((cw, ys+4*ch+2), (width-2*cw, ys+4*ch+2)), width=2, fill='#999999')
+            draw.polygon([(xp, ys + i*ch + 3), (xp + cw-3, ys + round((i+0.5)*ch)), (xp, ys + (i+1)*ch - 3)], fill=Color.GREEN.value)
+          draw.text((xs + 1*cw, ys + i*ch), sinfo.name, font=font, fill=Color.YELLOW.value)
+      draw.line(((cw, ys+4*ch+2), (width-2*cw, ys+4*ch+2)), width=2, fill=Color.LIGHTGRAY.value)
 
       # Show volumes
       # TODO: only update volume bars if a volume changed
@@ -570,19 +628,19 @@ while frame_num < 10 and run:
       # Show an error message on the display, and the AmpliPi logo below
       if not connected_once and connection_retries <= max_connection_retries:
         msg = 'Connecting to the REST API' + '.'*connection_retries
-        text_c = '#FFFFFF'
+        text_c = Color.WHITE.value
       else:
         msg = 'Cannot connect to the REST API at\n' + API_URL
-        text_c = '#FF0000'
+        text_c = Color.RED.value
       text_y = (height - ap_logo.size[1] - 4*ch)//2 + 4*ch
       draw.text((width/2 - 1, text_y), msg, anchor='mm', align='center', font=font, fill=text_c)
       image.paste(ap_logo, box=(0, height - ap_logo.size[1]))
 
-    if time.time() - _sleep_timer > args.sleep_time:
+    if args.sleep_time >  0 and time.time() - _sleep_timer > args.sleep_time:
       # Transition to sleep mode, clear screen
       log.debug('Clearing screen then sleeping')
       backlight(False)
-      draw.rectangle((0, 0, width-1, height-1), fill='#000000')
+      draw.rectangle((0, 0, width-1, height-1), fill=Color.BLACK.value)
       display.image(image)
       _active_screen = 1
     else:
@@ -596,7 +654,7 @@ while frame_num < 10 and run:
 
   end = time.time()
   frame_times.append(end - frame_start_time)
-  #print(f'frame time: {sum(frame_times)/len(frame_times):.3f}s, {sum(cpu_load)/len(cpu_load):.1f}%')
+  log.debug(f'frame time: {sum(frame_times)/len(frame_times):.3f}s')
   sleep_time = 1/args.update_rate - (end - frame_start_time)
   if sleep_time > 0:
     time.sleep(sleep_time)

@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# These give serial numbers, but serials are relatively predictable
+# so let's not use them to generate a password.
+#cat /proc/cpuinfo | sed -n 's/Serial[[:space:]]*:[[:space:]]0*//p'
+#cat /sys/block/mmcblk0/device/cid
+
+# Password cracking speed: ~2 tps (online, connect via ssh and attempt login)
+#                          ~3 MH/s with 8x NVIDIA RTX 3080s (somehow got hash/salt offline)
+# [linux uses sha512crypt by default: SHA512 with 5000 rounds]
+# https://gist.github.com/Chick3nman/bb22b28ec4ddec0cb5f59df97c994db4
+# Test password cracking speed over SSH to get 'online' tps
+#echo "pi" > users.txt
+#xkcdpass -c 100 -n 4 --min 3 --max 7 -d '' -C first > passwords.txt
+#nmap amplipi.local -p 22 --script ssh-brute --script-args userdb=users.txt,passdb=passwords.txt
+#
+# Number of bits desired = Cracking bits/year + 1 bit for average
+#                        = log2(3*10^6*3600*24*365) + 1 = 47.4 bits
+
+# If AmpliPi is opened to the internet or in general additional security is required,
+# key-based authentication should be used. See
+# https://www.raspberrypi.com/documentation/computers/configuration.html#using-key-based-authentication
+
+set -e
+confdir="$HOME/.config/amplipi"
+
+# First verify the current user is 'pi'
+#if [[ $USER != pi ]]; then
+#  echo "ERROR: Not running as pi user."
+#  exit 1
+#fi
+
+HELP="Set a default password for AmpliPi SSH access\n
+usage: set_pass [PASSWORD]\n
+If no PASSWORD is given, generate a random passphrase,\n
+otherwise set the pi user's password to PASSWORD.\n
+\n
+WARNING: The default password will be stored in plaintext at\n
+$confdir so it can be shown on AmpliPi's front-panel display.\n"
+
+pass=''
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -h|--help) echo -e $HELP; exit 0 ;;
+    *) pass=$1 ;;
+  esac
+  shift
+done
+
+# Generate a random passphrase and save to file.
+# Using xkcdpass instead of diceware because it allows setting max word length.
+# Use `xkcdpass -V` to get verbose output including word counts and entropy
+gen_pass_phrase() {
+  # 4440 <=7 length words, so log2(4440)=12.1 bits per word.
+  pass=$(xkcdpass -n 4 --min 3 --max 7 -d '' -C first) # 48.5 bits
+}
+
+# Generate a random password in base64 format and save to file.
+# Use multiples of 3 bytes otherwise the ending is padded with = characters
+# Resultant password length is 4/3 the number of bytes set (6 bytes = 8 chars)
+gen_pass_base64() {
+  # 64 base64 chars, so log2(64)=6 bits per character.
+  pass=$(openssl rand -base64 6) # 48 bits
+}
+
+if [ -z "$pass" ]; then
+  gen_pass_phrase
+fi
+
+# Store new password
+mkdir -p $confdir
+echo $pass > $confdir/default_password.txt
+
+# Change the pi user's password to the new default password
+if ! echo "pi:$pass" | sudo chpasswd; then
+  echo "ERROR: Setting password failed."
+  exit 2
+fi

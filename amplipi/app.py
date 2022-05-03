@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # AmpliPi Home Audio
-# Copyright (C) 2021 MicroNova LLC
+# Copyright (C) 2022 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,11 +29,11 @@ DEBUG_API = False
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Dict, Set, Any, Optional, Callable, Union, TYPE_CHECKING, get_type_hints
+from typing import List, Dict, Tuple, Set, Any, Optional, Callable, Union, TYPE_CHECKING, get_type_hints
+from enum import Enum
 from types import SimpleNamespace
 
 import urllib.request # For custom album art size
-from queue import Queue
 from functools import lru_cache
 import asyncio
 import json
@@ -464,11 +464,11 @@ def add_response_examples(openapi_schema, route: APIRoute) -> None:
       openapi_schema['paths'][route.path]['get']['responses']['200'][
           'content']['application/json']['example'] = {piece: example_status[piece]}
 
-def get_live_examples(tags: List[str]) -> Dict[str, Dict[str, Any]]:
+def get_live_examples(tags: List[Union[str, Enum]]) -> Dict[str, Dict[str, Any]]:
   """ Create a list of examples using the live configuration """
   live_examples = {}
   for tag in tags:
-    for i in get_ctrl().get_items(tag) or []:
+    for i in get_ctrl().get_items(str(tag)) or []:
       if isinstance(i.name, str):
         if isinstance(i, models.Stream):
           live_examples[i.name] = {'value': i.id, 'summary': f'{i.name} - {i.type}'}
@@ -694,6 +694,8 @@ def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
     'ungrouped_zones': [ungrouped_zones(ctrl, src.id) for src in state.sources if src.id is not None],
     'song_info': [src.info for src in state.sources if src.info is not None], # src.info should never be None
     'version': state.info.version if state.info else 'unknown',
+    'min_vol': models.MIN_VOL,
+    'max_vol': models.MAX_VOL,
   }
   return templates.TemplateResponse('index.html.j2', context, media_type='text/html')
 
@@ -711,14 +713,15 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app
 
-def get_ip_addr(iface: str = 'eth0') -> Optional[str]:
+def get_ip_info(iface: str = 'eth0') -> Tuple[Optional[str], Optional[str]]:
   """ Get the IP address of interface @iface """
   try:
-    return ni.ifaddresses(iface)[ni.AF_INET][0]['addr']
+    info = ni.ifaddresses(iface)
+    return info[ni.AF_INET][0].get('addr'), info[ni.AF_LINK][0].get('addr')
   except:
-    return None
+    return None, None
 
-def advertise_service(port, q: Queue):
+def advertise_service(port, que: Queue):
   """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar'
       Expected to be run as a seperate process, eg:
 
@@ -731,20 +734,32 @@ def advertise_service(port, q: Queue):
   """
   hostname = f'{gethostname()}.local'
   url = f'http://{hostname}'
-  iface = 'eth0' # TODO: support usb wifi mdns advertisement if needed
-  ip_addr = get_ip_addr(iface)
+
+  # search for the best interface to advertise on
+  ifaces = ['eth0', 'wlan0'] # default pi interfaces
+  try:
+    for iface in ni.interfaces():
+      if iface.startswith('w') or iface.startswith('e'):
+        ifaces.append(iface)
+  except:
+    pass
+  ip_addr, mac_addr = None, None
+  for iface in ifaces:
+    ip_addr, mac_addr = get_ip_info(iface)
+    if ip_addr and mac_addr:
+      break # take the first good interface found
+
   if not ip_addr:
-    print(f'AmpliPi zeroconf - unable to register service on {iface}, it is either not available or has no IP address.')
+    print(f'AmpliPi zeroconf - unable to register service on one of {ifaces}, \
+            they all are either not available or have no IP address.')
     print(f'AmpliPi zeroconf - is this running on AmpliPi?')
     ip_addr = '0.0.0.0' # Any hosted ip on this device
   if port != 80:
     url += f':{port}'
-  # TODO: upgrade to mdns multiinterface support with DCHP address change edge case support similar to one of the following:
-  # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/avahi_publisher.py
-  # - https://github.com/Xpra-org/xpra/blob/master/xpra/net/mdns/zeroconf_publisher.py
   info_deprecated = ServiceInfo(
-    "_http._tcp.local.",
-    "amplipi-api._http._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    '_http._tcp.local.',
+    # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    'amplipi-api._http._tcp.local.',
     addresses=[inet_aton(ip_addr)],
     port=port,
     properties={
@@ -752,7 +767,7 @@ def advertise_service(port, q: Queue):
       'path': '/api/',
       # extra info - for interfacing
       'name': 'AmpliPi',
-      "vendor": 'MicroNova',
+      'vendor': 'MicroNova',
       'version': utils.detect_version(),
       # extra info - for user
       'web_app': url,
@@ -761,16 +776,11 @@ def advertise_service(port, q: Queue):
     server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
   )
 
-  mac_addr = ''
-  try:
-    mac_addr = ni.ifaddresses('eth0')[ni.AF_LINK][0]['addr']
-  except:
-    mac_addr = 'none'
-
-
   info = ServiceInfo(
-    "_amplipi._tcp.local.", # use a custom type to easily support multiple amplipi device enumeration
-    f"amplipi-{mac_addr}._amplipi._tcp.local.", # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    # use a custom type to easily support multiple amplipi device enumeration
+    '_amplipi._tcp.local.',
+    # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
+    f'amplipi-{str(mac_addr).lower()}._amplipi._tcp.local.',
     addresses=[inet_aton(ip_addr)],
     port=port,
     properties={
@@ -778,7 +788,7 @@ def advertise_service(port, q: Queue):
       'path': '/api/',
       # extra info - for interfacing
       'name': 'AmpliPi',
-      "vendor": 'MicroNova',
+      'vendor': 'MicroNova',
       'version': utils.detect_version(),
       # extra info - for user
       'web_app': url,
@@ -788,23 +798,24 @@ def advertise_service(port, q: Queue):
   )
 
   print(f'AmpliPi zeroconf - registering service: {info}')
-  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr]) # right now the AmpliPi webserver is ipv4 only
+  # right now the AmpliPi webserver is ipv4 only
+  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr])
   zeroconf.register_service(info_deprecated, cooperating_responders=True)
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
-    while q.empty():
+    while que.empty():
       sleep(0.1)
   except:
     pass
   finally:
-    print("AmpliPi zeroconf - unregistering service")
+    print('AmpliPi zeroconf - unregistering service')
     zeroconf.unregister_service(info)
     zeroconf.close()
 
-if __name__ == "__main__":
-  # Generate the openapi schema file in yaml
-  parser = argparse.ArgumentParser(description='Create the openapi yaml file describing the AmpliPi API')
+if __name__ == '__main__':
+  """ Create the openapi yaml file describing the AmpliPi API """
+  parser = argparse.ArgumentParser(description="Create AmpliPi's openapi spec in YAML")
   parser.add_argument('file', type=argparse.FileType('w'))
   args = parser.parse_args()
   with args.file as file:

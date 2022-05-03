@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2021 MicroNova LLC
+ * Copyright (C) 2022 MicroNova LLC
  *
  * Fan control based on temperatures
  *
@@ -24,6 +24,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define DEFAULT_DPOT_VAL 0x3F
+
 // Possible fan control methods:
 // - MAX6644 (5 developer units with Power Board 2.A)
 // - Thermistors with FAN_ON PWM control (Power Board 3.A)
@@ -37,16 +39,23 @@ typedef enum
   FAN_CTRL_FORCED,
 } FanCtrl;
 
-typedef struct {
-  FanCtrl ctrl;      // Control method currently in use
-  bool    ovr_temp;  // Temp too high
-  uint8_t duty_f7;   // Fan duty cycle in the range [0,1] in UQ1.7 format
-  uint8_t dpot_val;  // Digital pot setting that controls power supply voltage
-  uint8_t volts_f4;  // Fan power supply voltage in UQ4.4 format
-} FanState;
+typedef enum
+{
+  DPOT_NONE,
+  DPOT_MCP4017,
+  DPOT_MCP40D17,
+} DPotType;
 
-FanState* updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                     bool force, bool thermistors, bool linear);
-bool      getFanOnFromDuty(uint8_t duty_f7);
+void    setFanCtrl(FanCtrl ctrl);
+FanCtrl getFanCtrl();
+uint8_t getFanDuty();
+uint8_t getFanDPot();
+uint8_t getFanVolts();
+bool    overTemp();
+bool    fansOn();
+
+uint8_t updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
+                   bool linear);
+bool    getFanOnFromDuty();
 
 #endif /* FANS_H_ */

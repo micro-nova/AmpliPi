@@ -13,19 +13,25 @@ function onSrcInputChange(obj) {
 }
 
 function onSrcAdd(obj) {
-  const src = Number(obj.id.substring(1,2));
-  const to_add = obj.value;
-  if (to_add) {
-    const type = to_add.substring(0,1);
-    const id = Number(to_add.substring(1));
-    let req = { 'source_id' : src };
+  const src = Number(obj[0].id.substring(1,2));
+  const to_add = obj.val();
+
+  zones = []
+  groups = []
+
+  for(i of to_add){
+    const type = i.substring(0,1);
+    const id = Number(i.substring(1));
     if (type == 'z'){
-      path =  '/zones/' + id;
+      zones.push(id);
     } else if (type == 'g') {
-      path = '/groups/' + id;
+      groups.push(id);
     }
-    sendRequestAndReload(path, 'PATCH', req, src);
   }
+
+  let req = {zones: zones, groups: groups, update: {source_id: src}}
+
+  if(groups.length > 0 || zones.length > 0) sendRequestAndReload("/zones/", 'PATCH', req, src);
 }
 
 function onMuteToggle(icon) {
@@ -57,6 +63,13 @@ function debounce(ms, fun){
 function refresh() {
   get();
 }
+current_src = 's0'; // this needs to be set base on the URL path
+for (var i = 0; i < 4; i++) {
+  if (window.location.href.endsWith(`/${i}`)) {
+    current_src = `s${i}`;
+    break;
+  }
+}
 
 $(document).ready(function(){
   // Some things are not part of the automatic tab-content switching
@@ -75,14 +88,25 @@ $(document).ready(function(){
     }
     if (new_src != "settings-nav") {
       $('#' + new_src + '-input')[0].style.display = "block";
-      $('#' + new_src + '-player')[0].style.display = "block";
+      $('#' + new_src + '-player')[0].style.display = "flex";
     } else {
       $('#settings-sel')[0].style.display = "block";
       updateSettings();
     }
+    current_src = new_src;
   });
   // Refresh the page sequentially in place of SSE
   setInterval(refresh, 2000);
+
+  // Make all zone/group multiselectors multiselectors and configures them
+  $('[id^=s][id$=-add-input]').multiselect({
+    onDropdownHide: function(e){
+      // Yeah I know this is a gross way to get the multiselector's id but it's all I could find.
+      onSrcAdd($('#'+e.target.previousSibling.id))
+    },
+    buttonTextAlignment: "left"
+  })
+
   // hook file selected event
   $('#settings-config-file-selector')[0].addEventListener('change', (event) => {
     $('#settings-config-load')[0].classList.remove('disabled');
@@ -196,11 +220,13 @@ function onLoadPreset(ctrl) {
   // TODO: updated last-used time
 }
 
-function onPlayPause(ctrl) {
+function onPlayPauseStop(ctrl) {
   if (ctrl.classList.contains('fa-play')) {
     sendStreamCommand(ctrl, 'play');
-  } else {
+  } else if (ctrl.classList.contains('fa-pause')) {
     sendStreamCommand(ctrl, 'pause');
+  } else if (ctrl.classList.contains('fa-stop')) {
+    sendStreamCommand(ctrl, 'stop');
   }
 }
 
@@ -234,12 +260,6 @@ function updateSourceView(status) {
     let like = $('#s' + src.id + '-player .like')[0];
     let dislike = $('#s' + src.id + '-player .dislike')[0];
     let playing_indicator = $('#s' + src.id + ' i')[0];
-    // defaults
-    like.style.visibility = "hidden";
-    dislike.style.visibility = "hidden";
-    play_pause.style.visibility = "hidden";
-    next.style.visibility = "hidden";
-    prev.style.display = "none";
 
     track.innerHTML = src.info.track ? src.info.track : src.info.name;
     artist.innerHTML = src.info.artist ? src.info.artist : '';
@@ -247,33 +267,29 @@ function updateSourceView(status) {
     cover.src = src.info.img_url ? src.info.img_url : icons['none'];
     const playing = src.info.state == "playing";
     playing_indicator.style.visibility = playing ? "visible" : "hidden";
-    if (stream_id) {
-      // find the right stream
-      let stream = undefined;
-      for (const s of status.streams) {
-        if (s.id == stream_id) {
-          stream = s;
-          break;
-        }
-      }
-      if (stream) {
-        // update the player's song info
-        if (stream.type == 'pandora') {
-          next.style.visibility = "visible";
-          like.style.visibility = "visible";
-          dislike.style.visibility = "visible";
-          play_pause.style.visibility = "visible";
-          play_pause.classList.toggle('fa-play', !playing);
-          play_pause.classList.toggle('fa-pause', playing);
-        } else if (stream.type == 'spotify') {
-          next.style.visibility = "visible";
-          prev.style.display = "inline-block";
-          play_pause.style.visibility = "visible";
-          play_pause.classList.toggle('fa-play', !playing);
-          play_pause.classList.toggle('fa-pause', playing);
-        }
-      }
+
+    // update the control buttons
+    supported_cmds = src.info.supported_cmds;
+    next.classList.toggle('disabled', !supported_cmds.includes("next"));
+    prev.classList.toggle('disabled', !supported_cmds.includes("prev"));
+
+    like.style.visibility = supported_cmds.includes("love") ? "visible" : "hidden";
+    dislike.style.visibility = supported_cmds.includes("ban") ? "visible" : "hidden";
+
+    if (supported_cmds.includes("pause")) {
+      play_pause.classList.toggle('disabled', false);
+      play_pause.classList.toggle('fa-play', !playing);
+      play_pause.classList.toggle('fa-pause', playing);
+      play_pause.classList.toggle('fa-stop', false);
+    } else if (supported_cmds.includes("stop")) {
+      play_pause.classList.toggle('disabled', false);
+      play_pause.classList.toggle('fa-play', !playing);
+      play_pause.classList.toggle('fa-stop', playing);
+      play_pause.classList.toggle('fa-pause', false);
+    } else {
+      play_pause.classList.toggle('disabled', true);
     }
+
     // update each source's input
     player = $("#s" + src.id + "-player")[0];
     player.dataset.srcInput = src.input;
@@ -281,16 +297,22 @@ function updateSourceView(status) {
   }
 
   // update volumes
+  zone_mismatch = false; // detect when a zone's audio source is displayed wrong
   const controls = document.querySelectorAll(".volume");
   for (const ctrl of controls) {
     if (ctrl.dataset.hasOwnProperty('zone')){
       let z = ctrl.dataset.zone;
-      updateVol(ctrl, status.zones[z].mute, status.zones[z].vol);
+      const zone = status.zones[z];
+      updateVol(ctrl, zone.mute, zone.vol_f);
+      parent_src = ctrl.dataset.source;
+      if (zone.source_id != parent_src) {
+        zone_mismatch = true;
+      }
     } else if (ctrl.dataset.hasOwnProperty('group')) {
       let gid = ctrl.dataset.group;
       for (const g of status.groups) {
         if (g.id == gid) {
-          updateVol(ctrl, g.mute, g.vol_delta);
+          updateVol(ctrl, g.mute, g.vol_f);
           break;
         }
       }
@@ -311,8 +333,12 @@ function updateSourceView(status) {
       last_used.innerHTML = 'never';
     }
   }
-  // TODO: add/remove groups and zones?
-  // TODO: for now can we detect a group/zone change and force an update?
+  // detect a group/zone change and force an update // TODO: zone changes shouldn't need a refresh
+  // current_source can be ['s0', 's1', 's2', 's3', 'settings-nav']
+  if (zone_mismatch && current_src != "settings-nav") {
+    const selected_src = current_src.replace('s', '');
+    window.location.assign('/' + selected_src);
+  }
 }
 
 // basic request handling
@@ -353,7 +379,7 @@ async function sendRequestAndReload(path, method, req, src) {
 function onGroupVolChange(g, vol) {
   if (vol) {
     let req = {
-      "vol_delta" : Number(vol),
+      "vol_f" : Number(vol),
       "mute" : false
     };
     sendRequest('/groups/' + g, 'PATCH', req);
@@ -362,7 +388,7 @@ function onGroupVolChange(g, vol) {
 function onZoneVolChange(z, vol) {
   if (vol) {
     let req = {
-      "vol" : Number(vol),
+      "vol_f" : Number(vol),
       "mute" : false
     };
     sendRequest('/zones/' + z, 'PATCH', req);
@@ -390,7 +416,7 @@ function initVolControl(ctrl) {
   const fill = ctrl.querySelector(".bar .bar-fill");
   const zone = ctrl.dataset.hasOwnProperty('zone') ? ctrl.dataset.zone : null;
   const group = ctrl.dataset.hasOwnProperty('group') ? ctrl.dataset.group : null;
-  let req_throttled = false;
+  let last_req_stamp = Date(0); // keep track of request time stamps for throttling (so we don't overload AmpliPi)
 
   const initValue = (value) => {
     const pct = (value - range.min) / (range.max - range.min) * 100.0;
@@ -402,26 +428,25 @@ function initVolControl(ctrl) {
   const setValue = (value) => {
     const val = clamp(range.min, range.max, value);
     initValue(val);
-    const vol = Math.round(val);
+    const cur_stamp = Date.now();
+    const req_throttled = (cur_stamp - last_req_stamp) < VOL_REQ_THROTTLE_MS;
     if (!req_throttled){
       if (zone){
-        onZoneVolChange(zone, vol);
+        onZoneVolChange(zone, val);
       } else if (group) {
-        onGroupVolChange(group, vol);
+        onGroupVolChange(group, val);
       } else {
         console.log('volume control ' + ctrl.id + ' not bound to any zone or group');
       }
-      req_throttled = true;
-      setTimeout(() => {
-        req_throttled = false
-      }, VOL_REQ_THROTTLE_MS);
-
+      last_req_stamp = cur_stamp; // only update on a successful request (avoids constant rejection of a stream of user requests)
+    } else {
+      console.debug('volume adjustment rejected, last request made < 50ms ago');
     }
   }
 
   const setPct = (pct) => {
     const delta = range.max - range.min;
-    setValue((pct / 100.0 * delta) + Number(range.min))
+    setValue((pct / 100.0 * delta) + Number(range.min));
   }
 
   initValue(range.value);

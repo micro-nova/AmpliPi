@@ -1,8 +1,8 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2021 MicroNova LLC
+ * Copyright (C) 2022 MicroNova LLC
  *
- * Port usage and functions for GPIO
+ * Power Board GPIO status and control
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,26 +18,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PORTS_H_
-#define PORTS_H_
+#include "pwr_gpio.h"
 
-#include <stdbool.h>
-#include <stdint.h>
+GpioReg gpio_ = {0};
 
-typedef struct {
-  char    port;  // Valid ports in our case are A,B,C,D,F
-  uint8_t pin : 4;
-} Pin;
+void setPwrGpio(GpioReg val) {
+  gpio_ = val;
+}
 
-void writePin(Pin pp, bool set);
-bool readPin(Pin pp);
+GpioReg getPwrGpio() {
+  return gpio_;
+}
 
-typedef struct {
-  uint8_t dev;
-  uint8_t reg;
-} I2CReg;
+bool pg9v() {
+  return gpio_.pg_9v;
+}
 
-uint8_t  readI2C2(I2CReg r);
-uint32_t writeI2C2(I2CReg r, uint8_t data);
+bool pg12v() {
+  return gpio_.pg_12v;
+}
 
-#endif /* PORTS_H_ */
+bool overTempMax6644() {
+  return !gpio_.fan_fail_n;
+}
+
+bool fanFailMax6644() {
+  return !gpio_.ovr_tmp_n;
+}
+
+void set9vEn(bool en) {
+  gpio_.en_9v = en;
+}
+
+bool get9vEn() {
+  return gpio_.en_9v;
+}
+
+void set12vEn(bool en) {
+  gpio_.en_12v = en;
+}
+
+bool get12vEn() {
+  return gpio_.en_12v;
+}
+
+void setFanOn(bool on) {
+  gpio_.fan_on = on;
+}

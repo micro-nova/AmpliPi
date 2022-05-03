@@ -26,7 +26,7 @@ Most of these digital streaming services are provided by other open-source proje
 |Spotify|Yes|Yes|Yes|[Librespot](https://github.com/librespot-org/librespot)|Requires Spotify Premium, one account per stream. See [disclaimer](https://github.com/librespot-org/librespot#disclaimer)|
 |DLNA|Yes|Yes|Yes|[gmrender-resurrect](https://github.com/hzeller/gmrender-resurrect)||
 |Internet Radio|Yes|Yes|Yes|[VLC](https://github.com/videolan/vlc)||
-|Plexamp|Yes|No|No|[Plexamp](https://plexamp.com/)||
+|Plexamp|No|No|No|[Plexamp](https://plexamp.com/)|See [#200](http://github.com/micro-nova/AmpliPi/issues/200)|
 |FM Radio|Yes|No|Yes|[rtl-sdr](https://osmocom.org/projects/rtl-sdr/wiki/Rtl-sdr)/[redsea](https://github.com/windytan/redsea)|Requires [RTL SDR](https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/) compatible USB device|
 |Google Cast|No||||Need to investigate|
 |Offline Music|No||||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|

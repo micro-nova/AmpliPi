@@ -14,6 +14,7 @@ from typing import List, Union, Tuple, Dict, Any, Optional
 import time
 import re
 import requests
+import sys
 
 # pylint: disable=broad-except
 # pylint: disable=bare-except
@@ -23,7 +24,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
              'python3-pil', 'libopenjp2-7', # Pillow dependencies
              'libatlas-base-dev',           # numpy dependencies
-             'stm32flash'
+             'stm32flash',                  # Programming Preamp Board
+             'xkcdpass',                    # Random passphrase generation
+             # kernel updates
+             'libraspberrypi0', 'raspberrypi-bootloader', 'raspberrypi-kernel',
+             'libraspberrypi-bin', 'libraspberrypi-dev', 'libraspberrypi-doc',
             ],
   },
   'web' : {
@@ -555,6 +560,32 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+def _check_password(env: dict, progress) -> List[Task]:
+  """ If a random default password hasn't been generated, generate, set, and
+      store one. This is just for older AmpliPi versions that didn't get a
+      random password set at checkout.
+  """
+  task = Task('Set a default password')
+  task.success = True
+  pass_dir = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  pass_file = os.path.join(pass_dir, 'default_password.txt')
+  if env['user'] != 'pi':
+    task.output = 'Not setting a default password: not running as pi user'
+  elif not env['is_amplipi']:
+    task.output = 'Not setting a default password: not running on AmpliPi'
+  elif os.path.exists(pass_file):
+    task.output = 'Default password already generated'
+  elif not os.path.exists('/run/sshwarn'):
+    # no default pass file, but password is not 'raspberry' so already user-set
+    task.margs = [f'mkdir -p {pass_dir}'.split(), f'touch {pass_file}'.split()]
+    task.run()
+  else:
+    # at this point the pi default password of 'raspberry' is still set
+    task.margs = [f"{env['base_dir']}/scripts/set_pass"]
+    task.run()
+  progress([task])
+  return [task]
+
 def _fw_ver_from_filename(name: str) -> int:
   """ Input: .bin filename, with the pattern 'preamp_X.Y.bin'.
       X = major version, Y = minor version.
@@ -615,6 +646,7 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
+    ('Program Main', './hw/tests/program_preamps.bash'),
     ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
     ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
     ('Amplifier', './hw/tests/built_in.bash amp'),
@@ -628,6 +660,7 @@ def add_tests(env, progress) -> List[Task]:
     ('USB Ports', './hw/tests/usb.py'),
     ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
     ('Fans and Power', './hw/tests/fans.bash'),
+    ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'), # just for info, not a specific test
   ]
   tasks = []
 
@@ -641,7 +674,7 @@ def add_tests(env, progress) -> List[Task]:
   return tasks
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
-            display=True, firmware=True, progress=print_task_results) -> bool:
+            display=True, firmware=True, password=True, progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -684,13 +717,6 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_web(env, restart_updater, progress)
     if failed():
       return False
-  if not web and restart_updater: # if web and restart_updater are True this restart happens in the _update_web function
-    # The update server needs to restart itself after everything else is successful
-    ssts =_restart_service('amplipi-updater', test_url='http://0.0.0.0:5001/update')
-    progress(ssts)
-    tasks += ssts
-    if failed():
-      return False
   if display:
     tasks += _update_display(env, progress)
     if failed():
@@ -699,6 +725,15 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_firmware(env, progress)
     if failed():
       return False
+  if password:
+    tasks += _check_password(env, progress)
+    if failed():
+      return False
+  if restart_updater:
+    # Reboot OS to finish potential kernel upgrade, also restarting the updater
+    progress([Task('Reboot os', success=True)])
+    subprocess.run('sudo reboot now', shell=True, check=False)
+    # updater will not return from here
   if web and not restart_updater:
     # let the user know how to handle a specific failure condition of the old updater
     UPDATER_MSG = """!!! OLDER UPDATERS CAN MISTAKENLY FAIL AFTER THIS !!!
@@ -716,18 +751,24 @@ if __name__ == '__main__':
     help='Install os dependencies using apt')
   parser.add_argument('--web','--webserver', action='store_true', default=False,
     help="Install and configure webserver")
-  parser.add_argument('--restart-updater', action='store_true', default=False,
-    help="""Stop the updater if it is running and start the updated one. \
+  parser.add_argument('--restart-updater', '--reboot', action='store_true', default=False,
+    help="""Restart AmpliPis OS, rebooting all of Ampli's services \
       Only do this if you are running this from the command line. \
-      When this is set False system will need to be restarted to complete update""")
+      When this is set False system will need to be restarted to complete an update""")
+  # --restart-updater is needed by the web updater and hasn't been changed to --reboot to simplify updgrade/downgrade logic
   parser.add_argument('--display', action='store_true', default=False,
     help="Install and run the front-panel display service")
   parser.add_argument('--firmware', action='store_true', default=False,
     help="Flash the latest firmware")
+  parser.add_argument('--password', action='store_true', default=False,
+    help="Generate and set a new default password for the pi user.")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
   has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
   if not has_args:
     print('  WARNING: expected some arguments, check --help for more information')
+  if sys.version_info.major < 3 or sys.version_info.minor < 7:
+    print('  WARNING: minimum python version is 3.7')
   install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
-          display=flags.display, firmware=flags.firmware, restart_updater=flags.restart_updater)
+          display=flags.display, firmware=flags.firmware, password=flags.password,
+          restart_updater=flags.restart_updater)

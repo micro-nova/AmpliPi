@@ -1,5 +1,31 @@
 # AmpliPi Software Releases
 
+## 0.1.8
+* Web App
+  * Add consistent play/pause/prev/next controls
+  * Per zone min and max volume configuration, make it easy to restrict volume levels in a room or not blast the music accidentally
+  * Add internet radio search (thanks @kjk2010)
+  * Fix misc settings bugs
+  * Cache on version to force js/css update on refresh
+* API
+  * 0.0 to 1.0 volume controls (using vol_f)
+  * Sources report the commands currently supported (play/pause/...)
+* Streams
+  * Add Play/Stop functionality to internet radio
+  * Make internet radio retry on failure
+  * Fix internet radio lockup condition
+* Audio:
+  * Reduce the chance of audio pops during volume changes
+  * Make the preouts mute when a zone is muted
+* Security
+  * If the password for the `pi` user is still `raspberry`, a new random password will be set
+    and stored in ~/.config/amplipi/default_password.txt.
+  * Newly shipped AmpliPi units will have a random password set already.
+  * If this default password is still in use, it will be shown on the front-panel display.
+    Otherwise the display will show "User Set".
+  * It is still recommended to change this password using the `passwd` utility since the default
+    password is saved in plain-text.
+
 ## 0.1.7
 
 * Audio

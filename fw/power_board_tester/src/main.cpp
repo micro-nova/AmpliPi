@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2021 MicroNova LLC
+ * Copyright (C) 2022 MicroNova LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,6 +70,8 @@
  *         Unused | J9 pin 3: TACH1   (out)
  *         Unused | J9 pin 6: TACH2   (out)
  *    A7   Input  | J9 pin 4: FAN_PWM (out)
+ *    A8   Input  | J10 pin 1: +12VD
+ *    A9   Input  | J10 pin 2: FAN_GND
  *  +-------------+------------------------+
  *
  *    Arduino Due | LCD Screen
@@ -127,10 +129,11 @@ static constexpr float   DPOT_VOLTS[] = {6.24, 8.11, 11.99};
 // 7-bit I2C addresses, in bits 6 downto 0
 enum SlaveAddr : uint8_t
 {
-  due  = 0x0F,
-  gpio = 0x21,
-  dpot = 0x2F,
-  adc  = 0x64,
+  due   = 0x0F,
+  gpio  = 0x21,
+  dpots = 0x2E,  // DPot that required SMBus byte-write command 0x00
+  dpot  = 0x2F,
+  adc   = 0x64,
 };
 
 // I2C1 slave RX callback
@@ -166,8 +169,9 @@ bool adcToTempStr(uint8_t ntc_adc, float min, float max, char* str) {
     sprintf(str, "%s", "SHORT");
     return false;
   } else {
-    float rt   = 4.7 * (255 / (float)ntc_adc - 1);
-    float temp = 1.0 / (log(rt / 10) / 3900 + 1.0 / (25.0 + 273.5)) - 273.15;
+    float rt   = 4.7f * 255 / ntc_adc - 4.7f;
+    float c    = 1.0f / (25.0f + 273.5f);
+    float temp = 1.0f / (logf(rt / 10) / 3900 + c) - 273.15f;
     sprintf(str, "%5.1fC", temp);
     return min < temp && temp < max;
   }
@@ -320,6 +324,7 @@ void setup() {
   // Setup GPIO
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(A7, INPUT);
+  pinMode(A9, INPUT);
 
   // Setup ADC
   analogReadResolution(12);
@@ -407,8 +412,8 @@ void loop() {
     drawTest<4>("I2C ADC HV", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
                 hv1_ntc_ok);
 
-    bool temp1_ok = adcToTempStr(amp_ntc1_adc, 24, 26, strbuf1);
-    bool temp2_ok = adcToTempStr(amp_ntc2_adc, 24, 26, strbuf2);
+    bool temp1_ok = adcToTempStr(amp_ntc1_adc, 25 * 0.9, 25 * 1.1, strbuf1);
+    bool temp2_ok = adcToTempStr(amp_ntc2_adc, 25 * 0.9, 25 * 1.1, strbuf2);
     drawTest<5>("I2C ADC temp", strbuf1, temp1_ok, strbuf2, temp2_ok);
 
     // Check the 12V power supply
@@ -418,26 +423,43 @@ void loop() {
     drawTest<6>("PG_12V/PG_5V", pg_12v ? " PASS" : " FAIL", pg_12v,
                 pg_5va ? " PASS" : " FAIL", pg_5va);
 
-    // Check the 12V fan power supply and that the fan control output works
-    float fan12v = adcToVolts(readAna16(A6), 16, 3.3, 10, 100);
+    // Check the 12V fan power supply from both J9 and J10 is ok
+    float fan12v     = adcToVolts(readAna16(A6), 16, 3.3, 10, 100);
+    float psu_fan12v = adcToVolts(readAna16(A8), 16, 3.3, 10, 100);
     sprintf(strbuf1, "%5.2fV", fan12v);
+    sprintf(strbuf2, "%5.2fV", psu_fan12v);
     ok1 = fan12v < DPOT_VOLTS[dpot_val_idx] * 1.1 &&
           fan12v > DPOT_VOLTS[dpot_val_idx] * 0.9;
-    writeI2CGPIO(true);
-    delay(1);
-    ok2 = digitalRead(A7) == HIGH;
+    ok2 = psu_fan12v < DPOT_VOLTS[dpot_val_idx] * 1.1 &&
+          psu_fan12v > DPOT_VOLTS[dpot_val_idx] * 0.9;
+    drawTest<7>("12V J9/J10", strbuf1, ok1, strbuf2, ok2);
+
+    // Check that the fan control output works.
+    // Leave output high for ADC reading.
     writeI2CGPIO(false);
     delay(1);
-    ok2 &= digitalRead(A7) == LOW;
-    drawTest<7>("12V/FAN_ON", strbuf1, ok1, ok2 ? " PASS" : " FAIL", ok2);
+    ok1 = digitalRead(A7) == LOW;   // J9
+    ok2 = digitalRead(A9) == HIGH;  // J10
+    writeI2CGPIO(true);
+    delay(1);
+    ok1 &= digitalRead(A7) == HIGH;
+    ok2 &= digitalRead(A9) == LOW;
+    drawTest<8>("FAN_ON J9/10", ok1 ? " PASS" : " FAIL", ok1,
+                ok2 ? " PASS" : " FAIL", ok2);
 
     // Adjust DPOT to control +12V
     dpot_val_idx += 1;
     if (dpot_val_idx >= sizeof(DPOT_VALS)) {
       dpot_val_idx = 0;
     }
+    // Try MCP4017
     Wire.beginTransmission(SlaveAddr::dpot);
-    Wire.write((uint8_t)0x00);            // Instruction byte
+    Wire.write(DPOT_VALS[dpot_val_idx]);  // Value
+    Wire.endTransmission();
+
+    // Try MCP40D17
+    Wire.beginTransmission(SlaveAddr::dpots);
+    Wire.write((uint8_t)0x00);            // SMBus command byte
     Wire.write(DPOT_VALS[dpot_val_idx]);  // Value
     Wire.endTransmission();
 
@@ -454,7 +476,7 @@ void loop() {
     SerialUSB.println(" ms");
     sprintf(strbuf1, "%6d", elapsedTime);
     ok1 = elapsedTime < TEST_PERIOD_MS;
-    drawTest<8>("Test time ms", strbuf1, ok1, "", true);
+    drawTest<9>("Test time ms", strbuf1, ok1, "", true);
 #endif
     test_timer += TEST_PERIOD_MS;
   }

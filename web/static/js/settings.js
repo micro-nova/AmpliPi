@@ -2,6 +2,23 @@
 var streams = [];
 var zones = [];
 var groups = [];
+var radiobrowser_base_url = '';
+
+class Stream {
+  constructor(name, description) {
+    this.name = name;
+    this.description = description;
+  }
+}
+const STREAM_TYPES_ = {
+  airplay:        new Stream("airplay", "AirPlay Device"),
+  dlna:           new Stream("dlna", "DLNA"),
+  fmradio:        new Stream("fmradio", "FM Radio Station"),
+  internetradio:  new Stream("internetradio", "Internet Radio Station"),
+  pandora:        new Stream("pandora", "Pandora Station"),
+  plexamp:        new Stream("plexamp", "Plexamp"),
+  spotify:        new Stream("spotify", "Spotify Device"),
+};
 
 /* updateSettings clears out the previous API information and shows the current state */
 function updateSettings() {
@@ -49,81 +66,128 @@ function updateSettings() {
   });
 };
 
+
+function cache_internetradio_server(reset_cache=false) {
+  /* Try to Get a random radio-browser server */
+  if (!radiobrowser_base_url || reset_cache) {
+    fetch('http://all.api.radio-browser.info/json/servers')
+    .then(response => response.json())
+    .then(hosts => radiobrowser_base_url = "https://" + hosts[Math.floor(Math.random() * hosts.length)].name);
+  }
+}
 /* On page load, get list of current streams */
 $(function() {
+
+  /* Disable enter key from submitting form when on internet radio search */
+  $(window).keydown(function(event){
+    if(event.keyCode == 13) {
+      if (event.target.id == 'internetradio_search_name_txt') { // Intercept enter key for internet radio search
+        $("#internetradio_search_name_btn").trigger('click');
+        event.preventDefault();
+        return false;
+      }
+    }
+  });
+
   /* Show new stream options */
   $("#settings-tab-inputs-new-stream").click(function(){
     $("#settings-tab-inputs-stream-selection li").removeClass('active'); // De-select "active" stream on the left menu if had been selected
     $(this).addClass('active');
     $("#settings-tab-inputs-stream-title").text("Add a new stream to AmpliPi");
+    let options = '';
+    for (stream in STREAM_TYPES_) {
+      options += '<option value="' + stream + '">' + STREAM_TYPES_[stream].description + '</option>';
+    }
     var html = `
       <form id="settings-tab-inputs-new-stream-form">
-
-        <div id="fmradio_warning" class="form-group addl_settings" style="color: yellow; display:none;">
-          An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/">RTL SDR</a>
-        </div>
-
         <div class="form-group">
-          <label for="type">Stream Type</label>
-          <select class="form-control" name="type" id="new_type" data-required="true">
-            <option value="0">- Select a Stream Type -</option>
-            <option value="airplay">AirPlay Device</option>
-            <option value="dlna">DLNA</option>
-            <option value="fmradio">FM Radio Station</option>
-            <option value="internetradio">Internet Radio Station</option>
-            <option value="pandora">Pandora Station</option>
-            <option value="plexamp">Plexamp</option>
-            <option value="spotify">Spotify Device</option>
+          <label for="new_stream_type">Stream Type</label>
+          <select class="form-control" name="type" id="new_stream_type" data-required="true">
+            <option value="0">- Select a Stream Type -</option>` + options + `
           </select>
         </div>
-        <div class="form-group">
-          <label for="name">Stream Name</label>
-          <input type="text" class="form-control" name="name" id="str_name" aria-describedby="nameHelp" data-required="true">
-          <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
-        </div>
+        <div id="new_stream_settings"></div>
+      </form>
+      `;
+    $("#settings-tab-inputs-config").html(html);
+  });
 
-        <div id="pandora_settings" class="addl_settings" style="display:none;">
-          <div class="form-group">
-            <label for="user">Pandora Username</label>
-            <input type="text" class="form-control" name="user" data-required="true">
-          </div>
-          <div class="form-group">
-            <label for="user">Pandora Password</label>
-            <input type="password" class="form-control" name="password" data-required="true">
-          </div>
-          <div class="form-group">
-            <label for="user">Pandora Station ID</label>
-            <input type="text" class="form-control" name="station" aria-describedby="stationHelp" data-required="true">
-            <small id="stationHelp" class="form-text text-muted">Station ID is the numeric section of a Pandora station link. Example: ID = <b>4610303469018478727</b> from https://www.pandora.com/station/play/<b>4610303469018478727</b></small>
-          </div>
-        </div>
+  function show_editable_stream_settings() {
+    $('#settings-tab-inputs-stream-selection li').removeClass('active');
+    $("#settings-tab-inputs-new-stream").removeClass('active');
+    $(this).addClass('active');
+    var s = streams[$(this).data("id")];
+    var stream_type = s.type ? STREAM_TYPES_[s.type] : `rca ${s.id+1}`;
 
-        <div id="internetradio_settings" class="addl_settings" style="display:none;">
-          <div class="form-group">
-            <label for="user">Station Audio URL</label>
-            <input type="text" class="form-control" name="url" id="url" aria-describedby="urlHelp" data-required="true">
-            <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
-          </div>
-          <div class="form-group">
-            <label for="user">Station Logo</label>
-            <input type="text" class="form-control" name="logo">
-          </div>
-        </div>
+    $("#settings-tab-inputs-stream-title").text(s.name + " (" + stream_type.name + ")");
+    var html = `
+      <input type="hidden" id="edit-sid" name="id" value="${s.id}">
+      <form id="editStreamForm">
+    `;
 
-        <div id="fmradio_settings" class="addl_settings" style="display:none;">
+    if (stream_type == STREAM_TYPES_.fmradio) {
+      html += `
+        <div class="form-group" style="color: yellow">
+          An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/" target="_blank">RTL SDR</a>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="form-group">
+        <label for="stream_name">Stream Name</label>
+        <input type="text" class="form-control" name="name" id="stream_name" value="${s.name}" aria-describedby="nameHelp" data-required="true">
+        <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
+      </div>
+    `;
+
+    switch (stream_type) {
+      case STREAM_TYPES_.fmradio:
+        html += `
           <div class="form-group">
-            <label for="user">FM Frequency</label>
-            <input type="text" class="form-control" name="freq" aria-describedby="freqHelp" data-required="true">
+            <label for="fmradio_freq">FM Frequency</label>
+            <input type="text" class="form-control" name="freq" id="fmradio_freq" value="${s.freq}" aria-describedby="freqHelp" data-required="true">
             <small id="freqHelp" class="form-text text-muted">Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.</small>
           </div>
           <div class="form-group">
-            <label for="user">Station Logo</label>
-            <input type="text" class="form-control" name="logo" aria-describedby="logoHelp">
+            <label for="fmradio_logo">Station Logo</label>
+            <input type="text" class="form-control" name="logo" id="fmradio_logo" value="${s.logo}" aria-describedby="logoHelp">
             <small id="logoHelp" class="form-text text-muted">Default built-in logo is: static/imgs/fmradio.png</small>
           </div>
-        </div>
-
-        <div id="plexamp_settings" class="addl_settings" style="display:none;">
+        `;
+        break;
+      case STREAM_TYPES_.internetradio:
+        html += `
+          <div class="form-group">
+            <label for="internetradio_url">Station Audio URL</label>
+            <input type="text" class="form-control" name="url" id="internetradio_url" value="${s.url}" aria-describedby="urlHelp" data-required="true">
+            <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
+          </div>
+          <div class="form-group">
+            <label for="internetradio_logo">Station Logo</label>
+            <input type="text" class="form-control" name="logo" id="internetradio_logo" value="${s.logo}">
+          </div>
+        `;
+        break;
+      case STREAM_TYPES_.pandora:
+        html += `
+          <div class="form-group">
+            <label for="pandora_user">Pandora Username</label>
+            <input type="text" class="form-control" name="user" id="pandora_user" value="${s.user}" data-required="true">
+          </div>
+          <div class="form-group">
+            <label for="pandora_password">Pandora Password</label>
+            <input type="password" class="form-control" name="password" id="pandora_password" value="${s.password}" data-required="true">
+          </div>
+          <div class="form-group">
+            <label for="pandora_station">Pandora Station ID</label>
+            <input type="text" class="form-control" name="station" id="pandora_station" value="${s.station}" aria-describedby="stationHelp" data-required="true">
+            <small id="stationHelp" class="form-text text-muted">Station ID is the numeric section of a Pandora station link. Example: ID = <b>4610303469018478727</b> from https://www.pandora.com/station/play/<b>4610303469018478727</b></small>
+          </div>
+        `;
+        break;
+      case STREAM_TYPES_.plexamp:
+        html += `
           <div class="form-group">
             <small id="plexHelp" class="form-text" style="color: #dee2e6">Click the <b>Request Authentication</b> button to open a Plex authorization page. Signing into Plex will generate a UUID and Token, shown below</small>
           </div>
@@ -132,143 +196,197 @@ $(function() {
             <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
           </div>
           <div class="form-group">
-            <label for="user">UUID</label>
-            <input type="text" class="form-control" name="client_id" id="client_id" style="background-color: #adb5bd;" value="" data-required="true" readonly>
+            <label for="plexamp_uuid">UUID</label>
+            <input type="text" class="form-control" name="client_id" id="plexamp_uuid" style="background-color: #adb5bd;" value="${s.client_id}" data-required="true" readonly>
           </div>
           <div class="form-group">
-            <label for="user">Authentication Token</label>
-            <input type="text" class="form-control" name="token" id="token" style="background-color: #adb5bd;" value="" data-required="true" readonly>
+            <label for="plexamp_token">Authentication Token</label>
+            <input type="text" class="form-control" name="token" id="plexamp_token" style="background-color: #adb5bd;" value="${s.token}" data-required="true" readonly>
           </div>
-        </div>
-
-        <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Stream</button>
-        <small id="submitHelp" class="form-text text-muted"></small>
-      </form>
-      `;
-    $("#settings-tab-inputs-config").html(html);
-  });
-
-  /* Show selected stream settings */
-  $("#settings-tab-inputs-stream-selection").on("click", ".stream", function() {
-    $('#settings-tab-inputs-stream-selection li').removeClass('active');
-    $("#settings-tab-inputs-new-stream").removeClass('active');
-    $(this).addClass('active');
-    var s = streams[$(this).data("id")];
-    console.log(s)
-    var stream_type = s.type ? s.type : `rca ${s.id+1}`
-
-    $("#settings-tab-inputs-stream-title").text(s.name + " (" + stream_type + ")");
-    var html = `
-      <input type="hidden" id="edit-sid" name="id" value="${s.id}">
-      <form id="editStreamForm">
-      `;
-
-      if (s.type == "fmradio") {
-        html += `
-        <div class="form-group" style="color: yellow">
-          An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/">RTL SDR</a>
-        </div>
         `;
-      }
+        break;
+    }
 
-      html += `
-        <div class="form-group">
-          <label for="name">Stream Name</label>
-          <input type="text" class="form-control" name="name" value="${s.name}" id="str_name" aria-describedby="nameHelp" data-required="true">
-          <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
-        </div>
-      `;
-
-      if (s.type == "pandora") {
-        html += `
-        <div class="form-group">
-          <label for="user">Pandora Username</label>
-          <input type="text" class="form-control" name="user" value="${s.user}" data-required="true">
-        </div>
-        <div class="form-group">
-          <label for="user">Pandora Password</label>
-          <input type="password" class="form-control" name="password" value="${s.password}" data-required="true">
-        </div>
-        <div class="form-group">
-          <label for="user">Pandora Station ID</label>
-          <input type="text" class="form-control" name="station" value="${s.station}" aria-describedby="stationHelp" data-required="true">
-          <small id="stationHelp" class="form-text text-muted">Station ID is the numeric section of a Pandora station link. Example: ID = <b>4610303469018478727</b> from https://www.pandora.com/station/play/<b>4610303469018478727</b></small>
-        </div>
-        `;
-      }
-
-      if (s.type == "internetradio") {
-        html += `
-        <div class="form-group">
-          <label for="user">Station Audio URL</label>
-          <input type="text" class="form-control" name="url" value="${s.url}" aria-describedby="urlHelp" data-required="true">
-          <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
-        </div>
-        <div class="form-group">
-          <label for="user">Station Logo</label>
-          <input type="text" class="form-control" name="logo" value="${s.logo}">
-        </div>
-        `;
-      }
-
-      if (s.type == "fmradio") {
-        html += `
-        <div class="form-group">
-          <label for="user">FM Frequency</label>
-          <input type="text" class="form-control" name="freq" value="${s.freq}" aria-describedby="freqHelp" data-required="true">
-          <small id="freqHelp" class="form-text text-muted">Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.</small>
-        </div>
-        <div class="form-group">
-          <label for="user">Station Logo</label>XS
-          <input type="text" class="form-control" name="logo" value="${s.logo}" aria-describedby="logoHelp">
-          <small id="logoHelp" class="form-text text-muted">Default built-in logo is: static/imgs/fmradio.png</small>
-        </div>
-        `;
-      }
-
-      if (s.type == "plexamp") {
-        html += `
-        <div class="form-group">
-          <small id="plexHelp" class="form-text" style="color: #dee2e6">Click the <b>Request Authentication</b> button to open a Plex authorization page. Signing into Plex will generate a UUID and Token, shown below</small>
-        </div>
-        <div class="form-group">
-          <button class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
-          <button class="btn btn-warning" onclick="window.location.reload();"style="display: none" id="plexamp-reset">Reset</button>
-        </div>
-        <div class="form-group">
-          <label for="user">UUID</label>
-          <input type="text" class="form-control" name="client_id" id="client_id" style="background-color: #adb5bd;" value="${s.client_id}" data-required="true" readonly>
-        </div>
-        <div class="form-group">
-          <label for="user">Authentication Token</label>
-          <input type="text" class="form-control" name="token" id="token" style="background-color: #adb5bd;" value="${s.token}" data-required="true" readonly>
-        </div>
-        `;
-      }
-
-      if (s.type == null) {
-        del = '<button type="button" class="btn btn-danger" style="display:none" id="delete" data-id="${s.id}">Delete</button>'
-      } else {
-        del = '<button type="button" class="btn btn-danger" id="delete" data-id="${s.id}">Delete</button>'
-      }
-
-      html += `
+    // Analog RCA input, can't be deleted. TODO: make RCA inputs disable-able
+    hide_del = s.type == null ? 'style="display:none"' : '';
+    html += `
         <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Save Changes</button>
-        ${del}
+        <button type="button" class="btn btn-danger" ${hide_del} id="delete" data-id="${s.id}">Delete</button>
         <small id="submitHelp" class="form-text text-muted"></small>
       </form>
-      `;
+    `;
     $("#settings-tab-inputs-config").html(html);
+  }
+
+  $("#settings-tab-inputs-stream-selection").on("click", ".stream", show_editable_stream_settings);
+  $("#settings-tab-inputs-stream-selection").on("change", ".stream", show_editable_stream_settings);
+
+  /* Show new stream settings */
+  $("#settings-tab-inputs-config").on("change", "#new_stream_type", function() {
+    var name_html = `
+          <div class="form-group">
+            <label for="new_stream_name">Stream Name</label>
+            <input type="text" class="form-control" name="name" id="new_stream_name" aria-describedby="nameHelp" data-required="true">
+            <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
+          </div>`;
+    var stream_type = '';
+    try {
+      stream_type = STREAM_TYPES_[$(this).val()];
+    } catch (e) {
+      // Ignore TypeErrors which occur with the dummy "select a stream" option.
+      if (!(e instanceof TypeError)) {
+        throw e;
+      }
+    }
+    var html = name_html;
+    switch (stream_type) {
+      case STREAM_TYPES_.fmradio:
+        html = `
+          <div id="fmradio_warning" class="form-group" style="color: yellow;">
+            An extra USB dongle is needed to support FM Radio see <a href="https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/">RTL SDR</a>
+          </div>` + name_html + `
+          <div class="form-group">
+            <label for="new_fmradio_freq">FM Frequency</label>
+            <input type="text" class="form-control" name="freq" id="new_fmradio_freq" aria-describedby="freqHelp" data-required="true">
+            <small id="freqHelp" class="form-text text-muted">Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.</small>
+          </div>
+          <div class="form-group">
+            <label for="new_fmradio_logo">Station Logo</label>
+            <input type="text" class="form-control" name="logo" id="new_fmradio_logo" aria-describedby="logoHelp">
+            <small id="logoHelp" class="form-text text-muted">Default built-in logo is: static/imgs/fmradio.png</small>
+          </div>`;
+        break;
+      case STREAM_TYPES_.internetradio:
+        html = `
+          <div class="form-group">
+            <label for="internetradio_search_name_txt">Search by Station Name</label>
+            <input type="text" class="form-control" name="search_name" id="internetradio_search_name_txt" aria-describedby="searchHelp">
+            <small id="searchHelp" class="form-text text-muted">Optional. Searches <a href="https://www.radio-browser.info/" target="_blank">radio-browser</a> for internet radio stations.</small>
+          </div>
+          <div class="internet-radio-search-button">
+            <button type="button" class="btn btn-secondary" id="internetradio_search_name_btn">Search Stations</button>
+            <i class="fa" style="margin-left: 8px"></i>
+          </div>
+          <div id="internetradio_search_name_results" style="margin-top:15px;margin-bottom:15px;max-height: 280px;overflow-y: auto;overflow-x: hidden; background: #4a4a4a;">
+          </div>` + name_html + `
+          <div class="form-group">
+            <label for="new_internetradio_url">Station Audio URL</label>
+            <input type="text" class="form-control" name="url" id="new_internetradio_url" aria-describedby="urlHelp" data-required="true">
+            <small id="urlHelp" class="form-text text-muted">Audio URL must be supported by <a href="https://www.videolan.org/" target="_blank">VLC</a>.</small>
+          </div>
+          <div class="form-group">
+            <label for="new_internetradio_logo">Station Logo</label>
+            <input type="text" class="form-control" name="logo" id="new_internetradio_logo" aria-describedby="logoHelp">
+            <small id="logoHelp" class="form-text text-muted">Optionally provide an image URL for the station.</small>
+          </div>`;
+        break;
+      case STREAM_TYPES_.pandora:
+        html += `
+          <div class="form-group">
+            <label for="new_pandora_user">Pandora Username</label>
+            <input type="text" class="form-control" name="user" id="new_pandora_user" data-required="true">
+          </div>
+          <div class="form-group">
+            <label for="new_pandora_password">Pandora Password</label>
+            <input type="password" class="form-control" name="password" id="new_pandora_password" data-required="true">
+          </div>
+          <div class="form-group">
+            <label for="new_pandora_station">Pandora Station ID</label>
+            <input type="text" class="form-control" name="station" id="new_pandora_station" aria-describedby="stationHelp" data-required="true">
+            <small id="stationHelp" class="form-text text-muted">Station ID is the numeric section of a Pandora station link. Example: ID = <b>4610303469018478727</b> from https://www.pandora.com/station/play/<b>4610303469018478727</b></small>
+          </div>`;
+        break;
+      case STREAM_TYPES_.plexamp:
+        html += `
+          <div class="form-group">
+            <small id="plexHelp" class="form-text" style="color: #dee2e6">Click the <b>Request Authentication</b> button to open a Plex authorization page. Signing into Plex will generate a UUID and Token, shown below</small>
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-success" onclick="plexamp_create_stream();" id="plexamp-connect">Request Authentication</button>
+            <button type="button" class="btn btn-warning" onclick="window.location.reload();" style="display: none" id="plexamp-reset">Reset</button>
+          </div>
+          <div class="form-group">
+            <label for="new_plexamp_uuid">UUID</label>
+            <input type="text" class="form-control" name="client_id" id="new_plexamp_uuid" style="background-color: #adb5bd;" value="" data-required="true" readonly>
+          </div>
+          <div class="form-group">
+            <label for="new_plexamp_token">Authentication Token</label>
+            <input type="text" class="form-control" name="token" id="new_plexamp_token" style="background-color: #adb5bd;" value="" data-required="true" readonly>
+          </div>`;
+        break;
+    }
+    html += `
+          <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Stream</button>
+          <small id="submitHelp" class="form-text text-muted"></small>
+        `;
+    $("#new_stream_settings").html(html);
+
+    cache_internetradio_server();
   });
 
-  /* Show selected stream settings */
-  $("#settings-tab-inputs-config").on("click", "#new_type", function() {
-    $(".addl_settings").hide(); // Hide all additional settings
-    if ($(this).val() == "pandora") { $("#pandora_settings").show(); }
-    else if ($(this).val() == "internetradio") { $("#internetradio_settings").show(); }
-    else if ($(this).val() == "fmradio") { $("#fmradio_settings").show(); $("#fmradio_warning").show(); }
-    else if ($(this).val() == "plexamp") { $("#plexamp_settings").show(); }
+  /* Search for internet radio stations */
+  $(document).on('click', '#internetradio_search_name_btn', function () {
+    console.log('Searching for station by name: ' + $("#internetradio_search_name_txt").val());
+    search_indicator = $(".internet-radio-search-button i");
+    search_indicator.toggleClass('fa-circle-notch', true);
+    search_indicator.toggleClass('fa-exclamation-triangle', false);
+    const keywords = $("#internetradio_search_name_txt").val();
+    console.log("Using radio-browser server ", radiobrowser_base_url);
+    $.ajax({
+      type: "GET",
+      url: `${radiobrowser_base_url}/json/stations/byname/${keywords}?limit=100`,
+      contentType: "application/json",
+      timeout: 2500,
+      success: function(data) {
+        search_indicator.toggleClass('fa-circle-notch', false);
+        search_indicator.toggleClass('fa-exclamation-triangle', false);
+        $("#internetradio_search_name_results").html("<h3>Search Results</h3>");
+        var details = '';
+        var numResults = 0;
+        $.each(data, function(index, value) {
+          ++numResults;
+          if (value.bitrate && value.codec) { details = '(' + value.bitrate + 'kbps ' + value.codec + ')'; }
+          $('#internetradio_search_name_results').append(
+            '<div style="position: relative; padding:6px;"><b><a href="' +
+            value.homepage +
+            '" target="_blank" title="Station Homepage">' +
+            value.name +
+            '</a></b> ' +
+            details +
+            '<a href="https://www.radio-browser.info/history/' +
+            value.stationuuid +
+            '" target="_blank" class="btn btn-info btn-sm float-right" role="button" style="position: absolute;right: 0;">More Info</a>' +
+            '<a href="#" class="btn btn-success btn-sm float-right addStation" data-stationname="' +
+            value.name.toString().replace('"', '\\"') +
+            '" data-stationurl="' +
+            value.url_resolved.toString().replace('"', '\\"') +
+            '" data-stationlogo="' +
+            value.favicon.toString().replace('"', '\\"') +
+            '" role="button" style="position: absolute;right: 90px;">Use</button></div>'
+          );
+        });
+        if (!numResults) { $('#internetradio_search_name_results').append("No stations found."); }
+      },
+      error: function () {
+        // set the indicator to failed
+        search_indicator.toggleClass('fa-circle-notch', false);
+        search_indicator.toggleClass('fa-exclamation-triangle', true);
+        $('#internetradio_search_name_results').html("<h3>Search Results</h3>Error searching for stations. Check your internet access and try again.");
+        // try to get a new internet radio server, do this at the end since it can take several seconds
+        cache_internetradio_server(true);
+      }
+    });
+  });
 
+  /* Add an internet radio station from search screen */
+  $(document).on('click', '.addStation', function () {
+    var name = $(this).data('stationname');
+    var url = $(this).data('stationurl');
+    var logo = $(this).data('stationlogo');
+    $('#new_stream_name').val(name);
+    $('#new_internetradio_url').val(url);
+    $('#new_internetradio_logo').val(logo);
+    return false;
   });
 
   /* Add New Stream and Reload Page */
@@ -277,7 +395,6 @@ $(function() {
 
     var $form = $("#settings-tab-inputs-new-stream-form");
     var validation = checkFormData($("#settings-tab-inputs-new-stream-form :input"))
-    console.log(validation);
     if (!validation) { return; }
 
     var formData = getFormData($form);
@@ -336,17 +453,31 @@ $(function() {
     console.log(z)
 
     $("#settings-tab-zones-title").text(z.name);
+
+    /* TODO: min and max volumes should be taken from models.py, can we add this to the API? */
+    /* The checkbox here use a hidden input to send the value of false by default.
+     * The actual checkbox will either send nothing, or send true which overrides the false. */
     var html = `
       <input type="hidden" id="edit-zid" name="id" value="${z.id}">
       <form id="editZoneForm">
         <div class="form-group">
-          <label for="name">Zone Name</label>
-          <input type="text" class="form-control" name="name" value="${z.name}" data-required="true">
+          <label for="zoneName">Zone Name</label>
+          <input type="text" class="form-control" name="name" id="zoneName" value="${z.name}" data-required="true">
+        </div>
+        <div class="form-group">
+          <label for="volMinDb">Minimum Volume</label>
+          <input type="number" class="form-control" name="vol_min" id="volMinDb" value="${z.vol_min}" min="-80" max="0" aria-describedby="minVolHelp" data-required="true">
+          <small id="minVolHelp" class="form-text text-muted">-80 to 0 dB, default -80. Must be at least 20 dB lower than max volume.</small>
+        </div>
+        <div class="form-group">
+          <label for="volMaxDb">Maximum Volume</label>
+          <input type="number" class="form-control" name="vol_max" id="volMaxDb" value="${z.vol_max}" min="-80" max="0" aria-describedby="maxVolHelp" data-required="true">
+          <small id="maxVolHelp" class="form-text text-muted">-80 to 0 dB, default 0. Must be at least 20 dB higher than min volume.</small>
         </div>
         <div class="form-group">
           <input type="hidden" value="false" name="disabled">
-          <input type="checkbox" id="disabled_state" name="disabled" value="true"${z.disabled ? " checked" : ""}>
-          <label for="disabled_state">Disabled</label>
+          <input type="checkbox" id="disabledState" name="disabled" value="true"${z.disabled ? " checked" : ""} aria-describedby="disHelp">
+          <label for="disabledState">Disabled</label>
           <small id="disHelp" class="form-text text-muted">Disabling a zone removes its mute and volume controls. A zone should be disabled if it isn't going to be used, or has no speakers connected to it</small>
         </div>
       `;
@@ -396,8 +527,8 @@ $(function() {
     var html = `
       <form id="settings-tab-groups-new-group-form">
         <div class="form-group">
-          <label for="name">Group Name</label>
-          <input type="text" class="form-control" name="name" id="grp_name" data-required="true">
+          <label for="new_group_name">Group Name</label>
+          <input type="text" class="form-control" name="name" id="new_group_name" data-required="true">
         </div>
         <div class="form-group">
           <select class="selectpicker" id="zone-picker" multiple>
@@ -412,8 +543,7 @@ $(function() {
     /* Initialize selectpicker */
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
       $('#zone-picker').selectpicker('mobile');
-    }
-    else {
+    } else {
       $('#zone-picker').selectpicker({});
     }
   });
@@ -439,8 +569,8 @@ $(function() {
       <input type="hidden" id="edit-gid" name="id" value="${g.id}">
       <form id="editGroupForm">
         <div class="form-group">
-          <label for="name">Group Name</label>
-          <input type="text" class="form-control" name="name" value="${g.name}" data-required="true">
+          <label for="group_name">Group Name</label>
+          <input type="text" class="form-control" name="name" id="group_name" value="${g.name}" data-required="true">
         </div>
         <div class="form-group">
           <select class="selectpicker" id="zone-picker" multiple>
@@ -456,8 +586,7 @@ $(function() {
     /* Initialize selectpicker */
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
       $('#zone-picker').selectpicker('mobile');
-    }
-    else {
+    } else {
       $('#zone-picker').selectpicker({});
     }
   });
@@ -520,7 +649,7 @@ $(function() {
     var isValid = true;
     var sub_text = document.getElementById('submitHelp');
     sub_text.textContent = "";
-    $form.each(function() {console.log($(this).data("required"));
+    $form.each(function() {
       if ($(this).data("required") == true && $(this).val() === '' && $(this).is(':visible')) {
         isValid = false;
         sub_text.textContent = "Please fill out all required fields.";

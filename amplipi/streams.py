@@ -1,5 +1,5 @@
 # AmpliPi Home Audio
-# Copyright (C) 2021 MicroNova LLC
+# Copyright (C) 2022 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -220,6 +220,12 @@ class Spotify(BaseStream):
     self.proc2 = None
     self.metaport = None
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.supported_cmds = {
+      'play': [0x05],
+      'pause': [0x04],
+      'next': [0x07],
+      'prev': [0x08]
+    }
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -283,7 +289,11 @@ class Spotify(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/spotify.png')
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url='static/imgs/spotify.png'
+    )
     try:
       with open(loc, 'r') as file:
         d = {}
@@ -292,11 +302,16 @@ class Spotify(BaseStream):
             d = ast.literal_eval(line)
           except Exception as exc:
             print(f'Error parsing currentSong: {exc}')
-        source.state = d['state']
-        source.artist = ', '.join(d['artist'])
-        source.track = d['track']
-        source.album = d['album']
-        source.img_url = d['img_url']
+        if d['state'] and d['state'] != 'stopped':
+          source.state = d['state']
+          source.artist = ', '.join(d['artist'])
+          source.track = d['track']
+          source.album = d['album']
+          source.supported_cmds=list(self.supported_cmds.keys())
+        else:
+          source.track = f'connect to {self.name}'
+        if d['img_url']: # report generic spotify image in place of unspecified album art
+          source.img_url = d['img_url']
     except Exception:
       pass
     return source
@@ -306,18 +321,12 @@ class Spotify(BaseStream):
     Commands include play, pause, next, and previous
     Takes src as an input so that it knows which UDP port to send on
     """
-    supported_cmds = {
-      'play': [0x05],
-      'pause': [0x04],
-      'next': [0x07],
-      'prev': [0x08]
-    }
     udp_ip = "127.0.0.1" # AmpliPi's IP
     udp_port = self.metaport + 1 # Adding 1 to the 'metaport' variable used in connect()
 
     try:
-      if cmd in supported_cmds:
-        self.socket.sendto(bytes(supported_cmds[cmd]), (udp_ip, udp_port))
+      if cmd in self.supported_cmds:
+        self.socket.sendto(bytes(self.supported_cmds[cmd]), (udp_ip, udp_port))
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as exc:
@@ -333,6 +342,15 @@ class Pandora(BaseStream):
     #if station is None:
     #  raise ValueError("station must be specified") # TODO: handle getting station list (it looks like you have to play a song before the station list gets updated through eventcmd)
     self.ctrl = '' # control fifo location
+    self.supported_cmds = {
+      'play':   {'cmd': 'P\n', 'state': 'playing'},
+      'pause':  {'cmd': 'S\n', 'state': 'paused'},
+      'stop':   {'cmd': 'q\n', 'state': 'stopped'},
+      'next':   {'cmd': 'n\n', 'state': 'playing'},
+      'love':   {'cmd': '+\n', 'state': None}, # love does not change state
+      'ban':    {'cmd': '-\n', 'state': 'playing'},
+      'shelve': {'cmd': 't\n', 'state': 'playing'},
+    }
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -411,7 +429,12 @@ class Pandora(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
     loc = f'{src_config_folder}/.config/pianobar/currentSong'
-    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/pandora.png')
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      supported_cmds=list(self.supported_cmds.keys()),
+      img_url='static/imgs/pandora.png'
+    )
     try:
       with open(loc, 'r') as file:
         for line in file.readlines():
@@ -437,22 +460,12 @@ class Pandora(BaseStream):
       cmd: Command string sent to pianobar's control fifo
       state: Expected state after successful command execution
     """
-    supported_cmds = {
-      'play':   {'cmd': 'P\n', 'state': 'playing'},
-      'pause':  {'cmd': 'S\n', 'state': 'paused'},
-      'stop':   {'cmd': 'q\n', 'state': 'stopped'},
-      'next':   {'cmd': 'n\n', 'state': 'playing'},
-      'love':   {'cmd': '+\n', 'state': None}, # love does not change state
-      'ban':    {'cmd': '-\n', 'state': 'playing'},
-      'shelve': {'cmd': 't\n', 'state': 'playing'},
-    }
-
     try:
-      if cmd in supported_cmds:
+      if cmd in self.supported_cmds:
         with open(self.ctrl, 'w') as file:
-          file.write(supported_cmds[cmd]['cmd'])
+          file.write(self.supported_cmds[cmd]['cmd'])
           file.flush()
-        expected_state = supported_cmds[cmd]['state']
+        expected_state = self.supported_cmds[cmd]['state']
         if expected_state is not None:
           self.state = expected_state
       elif 'station' in cmd:
@@ -550,6 +563,7 @@ class InternetRadio(BaseStream):
     super().__init__('internet radio', name, mock)
     self.url = url
     self.logo = logo
+    self.supported_cmds = ['play', 'stop']
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -605,7 +619,10 @@ class InternetRadio(BaseStream):
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
     loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url=self.logo)
+    source = models.SourceInfo(name=self.full_name(),
+                              state=self.state,
+                              img_url=self.logo,
+                              supported_cmds=self.supported_cmds)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
@@ -616,6 +633,28 @@ class InternetRadio(BaseStream):
     except Exception:
       pass
     return source
+
+  def send_cmd(self, cmd):
+    try:
+      if cmd in self.supported_cmds and self.src != None:
+        if cmd == 'play':
+          if not self._is_running():
+            self.connect(self.src)
+        elif cmd == 'stop':
+          if self._is_running():
+            try:
+              self.proc.kill()
+              self.proc = None
+              src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+              song_info_path = f'{src_config_folder}/currentSong'
+              os.system(f'rm {song_info_path}')
+            except Exception:
+              pass
+          self.state = 'stopped'
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception:
+      pass
 
 class Plexamp(BaseStream):
   """ A Plexamp Stream """

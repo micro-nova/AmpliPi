@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2021 MicroNova LLC
+ * Copyright (C) 2022 MicroNova LLC
  *
  * Internal I2C bus control/status
  *
@@ -21,11 +21,11 @@
 #ifndef INT_I2C_H_
 #define INT_I2C_H_
 
-#include <stdint.h>
+#include <stdbool.h>
 
-#include "ctrl_i2c.h"
+void initInternalI2C();
+void updateInternalI2C();
 
-void initInternalI2C(AmpliPiState* state);
-void updateInternalI2C(AmpliPiState* state);
+bool isDPotSMBus();
 
 #endif /* INT_I2C_H_ */

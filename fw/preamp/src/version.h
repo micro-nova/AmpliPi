@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2021 MicroNova LLC
+ * Copyright (C) 2022 MicroNova LLC
  *
  * Uses generated version.c file with information pulled from the git repo.
  *

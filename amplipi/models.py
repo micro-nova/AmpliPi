@@ -1,5 +1,5 @@
 # AmpliPi Home Audio
-# Copyright (C) 2021 MicroNova LLC
+# Copyright (C) 2022 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,6 +30,26 @@ from pydantic import BaseSettings, BaseModel, Field
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
 
+MIN_VOL = 0.0
+""" Min volume for slider bar. Will be mapped to dB. """
+
+MAX_VOL = 1.0
+""" Max volume for slider bar. Will be mapped to dB. """
+
+MIN_VOL_DB = -80
+""" Min volume in dB. -80 is special and is actually -90 dB (mute). """
+
+MAX_VOL_DB = 0
+""" Max volume in dB. """
+
+MIN_DB_RANGE = 20
+""" Smallest allowed difference between a zone's vol_max and vol_min """
+
+def pcnt2Vol(pcnt: float) -> int:
+  """ Convert a percent to volume in dB """
+  assert MIN_VOL <= pcnt <= MAX_VOL
+  return round(pcnt * (MAX_VOL_DB - MIN_VOL_DB) + MIN_VOL_DB)
+
 class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
@@ -37,9 +57,13 @@ class fields(SimpleNamespace):
   SourceId = Field(ge=0, le=3, description='id of the connected source')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
-  Volume = Field(ge=-79, le=0, description='Output volume in dB')
+  Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
+  VolumeF = Field(ge=MIN_VOL, le=MAX_VOL, description='Output volume as a floating-point number')
+  VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
+  VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
-  GroupVolume = Field(ge=-79, le=0, description='Average input volume in dB')
+  GroupVolume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Average output volume')
+  GroupVolumeF = Field(ge=MIN_VOL, le=MAX_VOL, description='Average output volume as a floating-point number')
   Disabled = Field(description='Set to true if not connected to a speaker')
   Zones = Field(description='Set of zone ids belonging to a group')
   Groups = Field(description='List of group ids')
@@ -58,9 +82,15 @@ class fields_w_default(SimpleNamespace):
   # TODO: less duplication
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
   Mute = Field(default=True, description='Set to true if output is muted')
-  Volume = Field(default=-79, ge=-79, le=0, description='Output volume in dB')
+  Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
+  VolumeF = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Output volume as a floating-point number')
+  VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
+                    description='Min output volume in dB')
+  VolumeMax = Field(default=MAX_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
+                    description='Max output volume in dB')
   GroupMute = Field(default=True, description='Set to true if output is all zones muted')
-  GroupVolume = Field(default=-79, ge=-79, le=0, description='Average utput volume in dB')
+  GroupVolume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average output volume')
+  GroupVolumeF = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average output volume as a floating-point number')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
 
 class Base(BaseModel):
@@ -87,11 +117,12 @@ class SourceInfo(BaseModel):
   album: Optional[str]
   station: Optional[str] # name of radio station
   img_url: Optional[str]
+  supported_cmds: List[str] = []
 
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
-  info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback')
+  info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback)')
 
   def get_stream(self) -> Optional[int]:
     """ Get a source's conneted stream if any """
@@ -186,6 +217,9 @@ class Zone(Base):
   source_id: int = fields_w_default.SourceId
   mute: bool = fields_w_default.Mute
   vol: int = fields_w_default.Volume
+  vol_f: float = fields_w_default.VolumeF
+  vol_min: int = fields_w_default.VolumeMin
+  vol_max: int = fields_w_default.VolumeMax
   disabled: bool = fields_w_default.Disabled
 
   def as_update(self) -> 'ZoneUpdate':
@@ -202,7 +236,9 @@ class Zone(Base):
             'name': 'Living Room',
             'source_id': 1,
             'mute' : False,
-            'vol':-25,
+            'vol': pcnt2Vol(0.69),
+            'vol_min': MIN_VOL_DB,
+            'vol_max': MAX_VOL_DB,
             'disabled': False,
           }
         },
@@ -211,7 +247,9 @@ class Zone(Base):
             'name': 'Dining Room',
             'source_id': 2,
             'mute' : True,
-            'vol':-65,
+            'vol': pcnt2Vol(0.19),
+            'vol_min': int(0.1 * (MAX_VOL_DB + MIN_VOL_DB)),
+            'vol_max': int(0.8 * (MAX_VOL_DB + MIN_VOL_DB)),
             'disabled': False,
           }
         },
@@ -223,6 +261,9 @@ class ZoneUpdate(BaseUpdate):
   source_id: Optional[int] = fields.SourceId
   mute: Optional[bool] = fields.Mute
   vol: Optional[int] = fields.Volume
+  vol_f: Optional[float] = fields.VolumeF
+  vol_min: Optional[int] = fields.VolumeMin
+  vol_max: Optional[int] = fields.VolumeMax
   disabled: Optional[bool] = fields.Disabled
 
   class Config:
@@ -241,12 +282,17 @@ class ZoneUpdate(BaseUpdate):
         },
         'Increase Volume': {
           'value': {
-            'vol': -45
+            'vol': pcnt2Vol(0.44)
           }
         },
         'Mute': {
           'value': {
             'mute': True
+          }
+        },
+        'Change Max Volume': {
+          'value': {
+            'vol_max': int(0.8 * MAX_VOL_DB)
           }
         }
       },
@@ -289,6 +335,7 @@ class Group(Base):
   zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
   mute: Optional[bool] = fields.GroupMute
   vol_delta: Optional[int] = fields.GroupVolume
+  vol_f: Optional[float] = fields.GroupVolumeF
 
   def as_update(self) -> 'GroupUpdate':
     """ Convert to GroupUpdate """
@@ -318,7 +365,7 @@ class Group(Base):
             'id': 101,
             'name': 'Upstairs',
             'zones': [1, 2, 3, 4, 5],
-            'vol_delta': -65
+            'vol_delta': pcnt2Vol(0.19)
           }
         },
         'Downstairs Group': {
@@ -326,7 +373,7 @@ class Group(Base):
             'id': 102,
             'name': 'Downstairs',
             'zones': [6,7,8,9],
-            'vol_delta': -30
+            'vol_delta': pcnt2Vol(0.63)
           }
         }
       },
@@ -338,6 +385,7 @@ class GroupUpdate(BaseUpdate):
   zones: Optional[List[int]] = fields.Zones
   mute: Optional[bool] = fields.GroupMute
   vol_delta: Optional[int] = fields.GroupVolume
+  vol_f: Optional[float] = fields.GroupVolumeF
 
   class Config:
     schema_extra = {
@@ -360,7 +408,7 @@ class GroupUpdate(BaseUpdate):
         },
         'Increase Volume': {
           'value': {
-            'vol_delta': -45
+            'vol_delta': pcnt2Vol(0.44)
           }
         },
         'Mute': {
@@ -668,7 +716,8 @@ class Announcement(BaseModel):
   IF no zones or groups are specified, all available zones are used
   """
   media : str = Field(description="URL to media to play as the announcement")
-  vol: int = Field(default=-40, ge=-79, le=0, description='Output volume in dB')
+  vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB, overrides vol_f')
+  vol_f: float = Field(default=0.5, ge=MIN_VOL, le=MAX_VOL, description="Output Volume (float)")
   source_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
@@ -711,7 +760,7 @@ class Status(BaseModel):
                 'mute': False,
                 'name': 'Whole House',
                 'source_id': None,
-                'vol_delta': -44,
+                'vol_delta': pcnt2Vol(0.45),
                 'zones': [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11]
               },
               {
@@ -719,7 +768,7 @@ class Status(BaseModel):
                 'mute': True,
                 'name': 'KitchLivDining',
                 'source_id': 0,
-                'vol_delta': -49,
+                'vol_delta': pcnt2Vol(0.39),
                 'zones': [3, 9, 10, 11]
               }
             ],
@@ -797,18 +846,18 @@ class Status(BaseModel):
             ],
             'info': { 'version': '0.0.1'},
             'zones': [
-              {'disabled': False, 'id': 0,  'mute': False, 'name': 'Local', 'source_id': 1, 'vol': -35},
-              {'disabled': False, 'id': 1,  'mute': False, 'name': 'Office', 'source_id': 0, 'vol': -41},
-              {'disabled': False, 'id': 2,  'mute': True,  'name': 'Laundry Room', 'source_id': 0, 'vol': -48},
-              {'disabled': False, 'id': 3,  'mute': True,  'name': 'Dining Room', 'source_id': 0, 'vol': -44},
-              {'disabled': True,  'id': 4,  'mute': True,  'name': 'BROKEN', 'source_id': 0, 'vol': -50},
-              {'disabled': False, 'id': 5,  'mute': True,  'name': 'Guest Bedroom', 'source_id': 0, 'vol': -48},
-              {'disabled': False, 'id': 6,  'mute': True,  'name': 'Main Bedroom', 'source_id': 0, 'vol': -40},
-              {'disabled': False, 'id': 7,  'mute': True,  'name': 'Main Bathroom', 'source_id': 0, 'vol': -44},
-              {'disabled': False, 'id': 8,  'mute': True,  'name': 'Master Bathroom', 'source_id': 0, 'vol': -41},
-              {'disabled': False, 'id': 9,  'mute': True,  'name': 'Kitchen High', 'source_id': 0, 'vol': -53},
-              {'disabled': False, 'id': 10, 'mute': True,  'name': 'kitchen Low', 'source_id': 0, 'vol': -52},
-              {'disabled': False, 'id': 11, 'mute': True,  'name': 'Living Room', 'source_id': 0, 'vol': -46}
+              {'disabled': False, 'id': 0,  'mute': False, 'name': 'Local', 'source_id': 1, 'vol': pcnt2Vol(0.56)},
+              {'disabled': False, 'id': 1,  'mute': False, 'name': 'Office', 'source_id': 0, 'vol': pcnt2Vol(0.79)},
+              {'disabled': False, 'id': 2,  'mute': True,  'name': 'Laundry Room', 'source_id': 0, 'vol': pcnt2Vol(0.40)},
+              {'disabled': False, 'id': 3,  'mute': True,  'name': 'Dining Room', 'source_id': 0, 'vol': pcnt2Vol(0.45)},
+              {'disabled': True,  'id': 4,  'mute': True,  'name': 'BROKEN', 'source_id': 0, 'vol': pcnt2Vol(0.38)},
+              {'disabled': False, 'id': 5,  'mute': True,  'name': 'Guest Bedroom', 'source_id': 0, 'vol': pcnt2Vol(0.40)},
+              {'disabled': False, 'id': 6,  'mute': True,  'name': 'Main Bedroom', 'source_id': 0, 'vol': pcnt2Vol(0.50)},
+              {'disabled': False, 'id': 7,  'mute': True,  'name': 'Main Bathroom', 'source_id': 0, 'vol': pcnt2Vol(0.45)},
+              {'disabled': False, 'id': 8,  'mute': True,  'name': 'Master Bathroom', 'source_id': 0, 'vol': pcnt2Vol(0.49)},
+              {'disabled': False, 'id': 9,  'mute': True,  'name': 'Kitchen High', 'source_id': 0, 'vol': pcnt2Vol(0.79)},
+              {'disabled': False, 'id': 10, 'mute': True,  'name': 'kitchen Low', 'source_id': 0, 'vol': pcnt2Vol(0.35)},
+              {'disabled': False, 'id': 11, 'mute': True,  'name': 'Living Room', 'source_id': 0, 'vol': pcnt2Vol(0.42)}
             ]
           }
         }

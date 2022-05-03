@@ -8,7 +8,6 @@
 | rev |           |             |              |              |           |                  |
 |  QC |           |             |              |              |           |                  |
 
-- [ ] Image New Pi OR Service USB (if already imaged)
 - [ ] Desktop: (Manual) Plug in mouse, keyboard, and monitor (1080p@60hz). Verify they all work.
 
     ____Monitor  ____Keyboard  ____Mouse
@@ -73,3 +72,5 @@
 |   | Fans Off | Fans On | PG_12V | 12V Supply | HV1 Temp | AMP1 Temp | AMP2 Temp | Temp Rise |
 |---|----------|---------|--------|------------|----------|-----------|-----------|-----------|
 | ✓ |          |         |        |            |          |           |           |           |
+
+- [ ] Service USB

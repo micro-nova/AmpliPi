@@ -3,9 +3,12 @@
  */
 body {
   padding-bottom: 2rem;
-  padding-top: 4rem;
+  padding-top: 1rem;
   color: white;
   background-color: #2a2a2a;
+}
+h1 {
+  font-size: 3rem;
 }
 .row {
   margin-bottom: 1rem;

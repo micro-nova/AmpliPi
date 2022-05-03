@@ -1,5 +1,5 @@
 # AmpliPi Home Audio
-# Copyright (C) 2021 MicroNova LLC
+# Copyright (C) 2022 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ Additional AmpliPi methods
 from amplipi import models
 from amplipi import utils
 
-def vol_string(vol, min_vol=-79, max_vol=0):
+def vol_string(vol, min_vol=models.MIN_VOL, max_vol=models.MAX_VOL):
   """ Make a visual representation of a volume """
   vol_range = max_vol - min_vol + 1
   vol_str_len = 20
