@@ -112,8 +112,8 @@ $(function() {
     $("#settings-tab-inputs-config").html(html);
   });
 
-  /* Show selected stream settings */
-  $("#settings-tab-inputs-stream-selection").on("change", ".stream", function() {
+  /* Show editable stream settings for the selected stream */
+  $("#settings-tab-inputs-stream-selection").on("click", ".stream", function() {
     $('#settings-tab-inputs-stream-selection li').removeClass('active');
     $("#settings-tab-inputs-new-stream").removeClass('active');
     $(this).addClass('active');
