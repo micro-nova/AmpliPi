@@ -22,12 +22,14 @@
 #include "adc.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 #include "i2c.h"
 #include "stm32f0xx_i2c.h"
 
 typedef union {
   struct {
+    // The order here must match the order of ADC channels in hardware.
     uint8_t hv1;
     uint8_t amp_temp1;
     uint8_t hv1_temp;
@@ -55,6 +57,9 @@ AdcDev adc6_ = {
     .dev    = 0xDA,  // MAX11603
     .nchans = 6,     // Last two channels of MAX11603 unused.
 };
+
+// Currently detected ADC (if any)
+AdcDev* adc_ = NULL;
 
 // NCP21XV103J03RA - 0805 SMD, R0 = 10k @ 25 degC, B = 3900K
 const uint8_t THERM_LUT_[] = {
@@ -85,16 +90,25 @@ const uint8_t THERM_LUT_[] = {
 typedef union {
   // All temps in UQ7.1 + 20 degC format
   struct {
-    uint8_t hv1_f1;   // PSU temp
+    uint8_t hv1_f1;   // PSU 1 temp (always present)
+    uint8_t hv2_f1;   // PSU 2 temp (only present on high-power units)
     uint8_t amp1_f1;  // Amp heatsink 1 temp
     uint8_t amp2_f1;  // Amp heatsink 2 temp
     uint8_t pi_f1;    // Control board Raspberry Pi temp
   };
-  uint8_t temps[4];  // All temperatures in 1 array
+  uint8_t temps[5];  // All temperatures in 1 array
 } Temps;
-Temps temps_ = {0};
+Temps temps_ = {};
 
-uint8_t hv1_f2_ = 0;
+typedef union {
+  // All voltages in UQ6.2 format
+  struct {
+    uint8_t hv1_f2;  // PSU 1 voltage (always present)
+    uint8_t hv2_f2;  // PSU 2 voltage (only present on high-power units)
+  };
+  uint8_t voltages[5];  // All voltages in 1 array
+} Voltages;
+Voltages voltages_ = {};
 
 void initAdc() {
   // Write ADC setup byte
@@ -107,28 +121,58 @@ void initAdc() {
 
 // TODO: Make standard i2c function
 // TODO: Error handling
-bool readAdc(const AdcDev* adc, AdcVals* vals) {
+uint32_t readAdc(const AdcDev* adc, AdcVals* vals) {
   /****************************************************************************
    *  Configure ADC to scan all 4 channels
    ****************************************************************************/
 
   // Wait if I2C2 is busy
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
 
   // Setup to send start condition, slave address, and write bit.
   I2C_TransferHandling(I2C2, adc->dev, 1, I2C_SoftEnd_Mode,
                        I2C_Generate_Start_Write);
 
-  // Wait for transmit interrupted flag
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET) {}
+  // Wait for transmit interrupted flag or an error
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_TXIS));
 
   // Configuration byte = { config=0b0, scan=0b00, cs=0b0XXX, sgl=0b1 }
   // Scan all 4 channels in single-ended mode
   uint8_t config = ((adc->nchans - 1) << 1) | 0x01;
-  I2C_SendData(I2C2, config);
+  I2C2->TXDR     = config;
 
-  // Wait for transfer complete flag
-  while (I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET) {}
+  // Wait for transmit complete flag or an error
+  isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_TC));
 
   /****************************************************************************
    *  Read all channels
@@ -138,15 +182,47 @@ bool readAdc(const AdcDev* adc, AdcVals* vals) {
                        I2C_Generate_Start_Read);
 
   for (uint32_t i = 0; i < adc->nchans; i++) {
-    while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-    vals->chan[i] = I2C_ReceiveData(I2C2);
+    // Wait for receive data register not empty or an error
+    isr = I2C2->ISR;
+    do {
+      if (isr & I2C_ISR_NACKF) {
+        I2C2->ICR = I2C_ICR_NACKCF;
+        return I2C_ISR_NACKF;
+      }
+      if (isr & I2C_ISR_BERR) {
+        I2C2->ICR = I2C_ICR_BERRCF;
+        return I2C_ISR_BERR;
+      }
+      if (isr & I2C_ISR_ARLO) {
+        I2C2->ICR = I2C_ICR_ARLOCF;
+        return I2C_ISR_ARLO;
+      }
+      isr = I2C2->ISR;
+    } while (!(isr & I2C_ISR_RXNE));
+
+    // Read data
+    vals->chan[i] = I2C2->RXDR;
   }
 
-  // Wait for stop condition to occur
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
-  I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
-
-  return true;
+  // Wait for stop condition to occur or an error
+  isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_STOPF));
+  I2C2->ICR = I2C_ICR_STOPCF;
+  return 0;
 }
 
 void updateAdc() {
@@ -162,7 +238,7 @@ void updateAdc() {
   uint32_t num     = 4 * ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
   uint32_t den     = UINT8_MAX * ADC_PD_KOHMS;
   uint32_t hv1_raw = num * vals.hv1 / den;
-  hv1_f2_          = (uint8_t)(hv1_raw > UINT8_MAX ? UINT8_MAX : hv1_raw);
+  voltages_.hv1_f2 = (uint8_t)(hv1_raw > UINT8_MAX ? UINT8_MAX : hv1_raw);
 
   // Convert HV1 thermocouple to degC
   temps_.hv1_f1 = THERM_LUT_[vals.hv1_temp];
@@ -175,7 +251,7 @@ void updateAdc() {
 }
 
 uint8_t getHV1_f2() {
-  return hv1_f2_;
+  return voltages_.hv1_f2;
 }
 
 uint8_t getHV1Temp_f1() {
