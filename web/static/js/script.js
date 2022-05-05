@@ -498,17 +498,55 @@ function initVolControl(ctrl) {
   }, true);
 }
 
+function indicator_show_inprogress(ctrl) {
+  ctrl.style.visibility = "visible";
+  ctrl.classList.toggle('fa-circle-notch', true);
+  ctrl.classList.toggle('fa-exclamation-triangle', false);
+  ctrl.classList.toggle('fa-check-circle', false);
+}
+function indicator_show_error(ctrl) {
+  ctrl.style.visibility = "visible";
+  ctrl.classList.toggle('fa-circle-notch', false);
+  ctrl.classList.toggle('fa-exclamation-triangle', true);
+  ctrl.classList.toggle('fa-check-circle', false);
+}
+function indicator_show_done(ctrl) {
+  ctrl.style.visibility = "visible";
+  ctrl.classList.toggle('fa-circle-notch', false);
+  ctrl.classList.toggle('fa-exclamation-triangle', false);
+  ctrl.classList.toggle('fa-check-circle', true);
+}
+function indicator_hide(ctrl) {
+  ctrl.style.visibility = "hidden";
+  ctrl.classList.toggle('fa-circle-notch', false);
+  ctrl.classList.toggle('fa-exclamation-triangle', false);
+  ctrl.classList.toggle('fa-check-circle', false);
+}
+
+function uploadConfigReady() {
+  indicator = $("#settings-config-upload-indicator")[0];
+  indicator_hide(indicator);
+}
+
 function uploadConfig() {
   const reader = new FileReader();
-  // TODO: disable button (it should have been enabled by the change event on the file selector)
   selector = $('#settings-config-file-selector')[0];
+  loader = $('#settings-config-load')[0];
+  indicator = $("#settings-config-upload-indicator")[0];
   reader.addEventListener('load', (event) => {
     const config = event.target.result;
-    // TODO: parse the json config??
-    // config_str = JSON.stringify(config)
-    // load the new config
-    fetch('/api/load', {method: 'POST', headers: { 'Content-Type': 'application/json;charset=utf-8'}, body: config});
-    // TODO: show success or fail
+    loader.classList.toggle('disabled', true);
+    indicator_show_inprogress(indicator);
+    fetch('/api/load', {method: 'POST', headers: { 'Content-Type': 'application/json;charset=utf-8'}, body: config})
+    .then((response) => {
+      indicator_show_done(indicator);
+    })
+    .catch((e) => {
+      indicator_show_error(indicator);
+    })
+    .finally(() => {
+      loader.classList.toggle('disabled', false);
+    });
   });
   reader.readAsText(selector.files[0]);
 }
@@ -528,6 +566,78 @@ async function downloadConfig(){
 }
 
 async function resetDevice() {
-  let response = await fetch('/api/reset', {method: 'POST'});
-  // TODO: validate response (and potentially change button color)
+  button = $('#settings-config-reset')[0];
+  indicator = $("#settings-config-reset-indicator")[0];
+  button.classList.toggle('disabled', true);
+  indicator_show_inprogress(indicator);
+  fetch('/api/reset', {method: 'POST'})
+  .then((response) => {
+    indicator_show_done(indicator);
+  })
+  .catch((e) => {
+    indicator_show_error(indicator);
+  })
+  .finally(() => {
+    button.classList.toggle('disabled', false);
+  });
+}
+
+async function rebootDevice() {
+  button = $('#settings-config-reset')[0];
+  indicator = $("#settings-config-reboot-indicator")[0];
+  button.classList.toggle('disabled', true);
+  indicator_show_inprogress(indicator);
+  fetch('/api/restart', {method: 'POST'})
+  .then((response) => {
+    setTimeout(checkAfterReboot, 5000, 2 * 60 / 5 - 1); // wait for 2 minutes since a restart can take awhile
+  })
+  .catch((e) => {
+    indicator_show_error(indicator);
+    button.classList.toggle('disabled', false);
+  });
+}
+
+function checkAfterReboot(retry_check_ct) {
+  indicator = $("#settings-config-reboot-indicator")[0];
+  // poll the api waiting for a valid response
+  r = fetch("api").then(function (response) {
+    response.json().then(function(json) {
+      indicator_show_done(indicator);
+      button.classList.toggle('disabled', false);
+    }).catch( err => {
+      console.log('Error talking to AmpliPi: ' + err.message);
+      if (retry_check_ct > 0) {
+        console.log('Waiting for the AmpliPi to start');
+        setTimeout(checkAfterReboot, 5000, retry_check_ct - 1);
+      } else {
+        indicator_show_error(indicator);
+        button.classList.toggle('disabled', false);
+      }
+    });
+  }).catch( err => {
+    if (retry_check_ct > 0) {
+      console.log('Waiting for the AmpliPi to start');
+      setTimeout(checkAfterReboot, 5000, retry_check_ct - 1); // don't continue to retry forever
+    } else {
+      console.log('Unable to communicate with AmpliPi after reboot: ' + err.message);
+      indicator_show_error(indicator);
+    }
+  });
+}
+
+async function shutdownDevice() {
+  button = $('#settings-config-shutdown')[0];
+  indicator = $("#settings-config-shutdown-indicator")[0];
+  button.classList.toggle('disabled', true);
+  indicator_show_inprogress(indicator);
+  fetch('/api/shutdown', {method: 'POST'})
+  .then((response) => {
+    indicator_show_done(indicator);
+  })
+  .catch((e) => {
+    indicator_show_error(indicator);
+  })
+  .finally(() => {
+    button.classList.toggle('disabled', false);
+  });
 }

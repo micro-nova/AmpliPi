@@ -184,8 +184,9 @@
               <h6 class="card-header">Upload a Configuration</h6>
               <div class="card-body">
                 <div class="text-center">
-                  <input type="file" id="settings-config-file-selector" accept=".json">
+                  <input type="file" id="settings-config-file-selector" accept=".json" onchange="uploadConfigReady();">
                   <button class="btn btn-success disabled" onclick="if (!this.classList.contains('disabled')) { this.classList.add('disabled'); uploadConfig(); }" id="settings-config-load">Load</button>
+                  <i id="settings-config-upload-indicator" class="fa" style="visibility: hidden;"></i>
                 </div>
               </div>
             </div>
@@ -202,6 +203,25 @@
               <div class="card-body">
                 <div class="text-center">
                   <button title="Resets the preamp hardware and controller software (does not reboot the pi-based controller)" class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
+                  <i id="settings-config-reset-indicator" class="fa" style="visibility: hidden;"></i>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Hardware Reboot (restart OS and reload configuration)</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <button title="Reboots the pi-based controller" class="btn btn-success" onclick="rebootDevice()" id="settings-config-reboot">Reboot</button>
+                  <i id="settings-config-reboot-indicator" class="fa" style="visibility: hidden;"></i>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Hardware Shutdown (Power down device)</h6>
+              <div class="card-body">
+                <div class="text-center">
+                  <button title="Trigger a shutdown" class="btn btn-success" onclick="shutdownDevice()" id="settings-config-shutdown">Shutdown</button>
+                  <i id="settings-config-shutdown-indicator" class="fa" style="visibility: hidden;"></i>
                 </div>
               </div>
             </div>

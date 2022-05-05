@@ -38,6 +38,7 @@ from functools import lru_cache
 import asyncio
 import json
 import yaml
+from subprocess import Popen
 from time import sleep
 
 from PIL import Image # For custom album art size
@@ -408,6 +409,37 @@ def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mo
 def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Make an announcement """
   return code_response(ctrl, ctrl.announce(announcement))
+
+# OS/System Reboot and Shutdown
+
+@api.post('/api/restart', tags=['status'],
+  response_class=Response,
+  responses = {
+      200: {}
+  }
+)
+def restart() -> int:
+  """ Restart the OS and all of the AmpliPi services.
+
+  """
+  # start the restart, and return immediately (hopefully before the restart process begins)
+  Popen(f'sudo systemctl reboot now'.split())
+  return 200
+
+@api.post('/api/shutdown', tags=['status'],
+  response_class=Response,
+  responses = {
+      200: {}
+  }
+)
+def shutdown() -> int:
+  """ Shutdown AmpliPi and its OS.
+
+  This allows for a clean shutdown before pulling the power plug.
+  """
+  # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
+  Popen(f'sudo systemctl poweroff now'.split())
+  return 200
 
 # include all routes above
 
