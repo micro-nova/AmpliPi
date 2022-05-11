@@ -412,13 +412,13 @@ def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -
 
 # OS/System Reboot and Shutdown
 
-@api.post('/api/restart', tags=['status'],
+@api.post('/api/reboot', tags=['status'],
   response_class=Response,
   responses = {
       200: {}
   }
 )
-def restart() -> int:
+def reboot() -> int:
   """ Restart the OS and all of the AmpliPi services.
 
   """

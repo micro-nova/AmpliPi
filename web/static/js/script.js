@@ -587,9 +587,9 @@ async function rebootDevice() {
   indicator = $("#settings-config-reboot-indicator")[0];
   button.classList.toggle('disabled', true);
   indicator_show_inprogress(indicator);
-  fetch('/api/restart', {method: 'POST'})
+  fetch('/api/reboot', {method: 'POST'})
   .then((response) => {
-    setTimeout(checkAfterReboot, 5000, 2 * 60 / 5 - 1); // wait for 2 minutes since a restart can take awhile
+    setTimeout(checkAfterReboot, 5000, 2 * 60 / 5 - 1); // wait for 2 minutes since a reboot can take awhile
   })
   .catch((e) => {
     indicator_show_error(indicator);
