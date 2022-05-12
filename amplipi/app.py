@@ -418,14 +418,13 @@ def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -
       200: {}
   }
 )
-def reboot() -> int:
+def reboot():
   """ Restart the OS and all of the AmpliPi services.
 
   """
   # start the restart, and return immediately (hopefully before the restart process begins)
   # TODO: reset the preamp, putting it in an uninitialized state?
   Popen('sleep 1 && sudo systemctl reboot', shell=True)
-  return 200
 
 @api.post('/api/shutdown', tags=['status'],
   response_class=Response,
@@ -433,15 +432,14 @@ def reboot() -> int:
       200: {}
   }
 )
-def shutdown() -> int:
+def shutdown():
   """ Shutdown AmpliPi and its OS.
 
   This allows for a clean shutdown before pulling the power plug.
   """
   # TODO: reset the preamp, putting it in an uninitialized state?
   # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
-  Popen('sleep 1 && sudo systemctl shutdown', shell=True)
-  return 200
+  Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
 # include all routes above
 
