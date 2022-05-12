@@ -749,6 +749,7 @@ def on_shutdown():
   print('Shutting down AmpliPi')
   # gracefully shutdown the underlying controller
   _ctrl = get_ctrl()
+  get_ctrl.cache_clear()
   del _ctrl
 
 # MDNS
