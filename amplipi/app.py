@@ -423,7 +423,8 @@ def reboot() -> int:
 
   """
   # start the restart, and return immediately (hopefully before the restart process begins)
-  Popen(f'sudo systemctl reboot now'.split())
+  # TODO: reset the preamp, putting it in an uninitialized state?
+  Popen('sleep 1 && sudo systemctl reboot', shell=True)
   return 200
 
 @api.post('/api/shutdown', tags=['status'],
@@ -437,8 +438,9 @@ def shutdown() -> int:
 
   This allows for a clean shutdown before pulling the power plug.
   """
+  # TODO: reset the preamp, putting it in an uninitialized state?
   # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
-  Popen(f'sudo systemctl poweroff now'.split())
+  Popen('sleep 1 && sudo systemctl shutdown', shell=True)
   return 200
 
 # include all routes above
