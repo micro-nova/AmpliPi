@@ -747,6 +747,17 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
   get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app
 
+# Shutdown
+
+@app.on_event('shutdown')
+def on_shutdown():
+  print('Shutting down AmpliPi')
+  # gracefully shutdown the underlying controller
+  _ctrl = get_ctrl()
+  del _ctrl
+
+# MDNS
+
 def get_ip_info(iface: str = 'eth0') -> Tuple[Optional[str], Optional[str]]:
   """ Get the IP address of interface @iface """
   try:
