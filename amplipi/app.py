@@ -154,6 +154,34 @@ def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change)
   return ctrl.get_state()
 
+@api.post('/api/reboot', tags=['status'],
+  response_class=Response,
+  responses = {
+      200: {}
+  }
+)
+def reboot():
+  """ Restart the OS and all of the AmpliPi services.
+
+  """
+  # start the restart, and return immediately (hopefully before the restart process begins)
+  Popen('sleep 1 && sudo systemctl reboot', shell=True)
+
+@api.post('/api/shutdown', tags=['status'],
+  response_class=Response,
+  responses = {
+      200: {}
+  }
+)
+def shutdown():
+  """ Shutdown AmpliPi and its OS.
+
+  This allows for a clean shutdown before pulling the power plug.
+  """
+  # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
+  Popen('sleep 1 && sudo systemctl poweroff', shell=True)
+
+
 subscribers: Dict[int, 'Queue[models.Status]'] = {}
 def notify_on_change(status: models.Status) -> None:
   """ Notify subscribers that something has changed """
@@ -409,37 +437,6 @@ def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mo
 def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Make an announcement """
   return code_response(ctrl, ctrl.announce(announcement))
-
-# OS/System Reboot and Shutdown
-
-@api.post('/api/reboot', tags=['status'],
-  response_class=Response,
-  responses = {
-      200: {}
-  }
-)
-def reboot():
-  """ Restart the OS and all of the AmpliPi services.
-
-  """
-  # start the restart, and return immediately (hopefully before the restart process begins)
-  # TODO: reset the preamp, putting it in an uninitialized state?
-  Popen('sleep 1 && sudo systemctl reboot', shell=True)
-
-@api.post('/api/shutdown', tags=['status'],
-  response_class=Response,
-  responses = {
-      200: {}
-  }
-)
-def shutdown():
-  """ Shutdown AmpliPi and its OS.
-
-  This allows for a clean shutdown before pulling the power plug.
-  """
-  # TODO: reset the preamp, putting it in an uninitialized state?
-  # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
-  Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
 # include all routes above
 
