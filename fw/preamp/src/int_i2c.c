@@ -20,8 +20,7 @@
 
 #include "int_i2c.h"
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <stdio.h>
 
 #include "adc.h"
 #include "audio.h"
@@ -30,6 +29,7 @@
 #include "leds.h"
 #include "pins.h"
 #include "pwr_gpio.h"
+#include "serial.h"
 #include "stm32f0xx.h"
 #include "systick.h"
 
@@ -154,9 +154,83 @@ static void updateDPot(uint8_t val) {
   }
 }
 
+uint8_t i2c_dev_present_[16] = {};
+
+uint8_t isInternalI2CDevPresent(uint8_t addr) {
+  return i2c_dev_present_[addr];
+}
+
 void initInternalI2C() {
   // Make sure any interrupted transactions are cleared out
   quiesceI2C();
+
+//#define SCAN_I2C
+#ifdef SCAN_I2C
+  // Scan I2C1 for devices, 0x10-0x7F
+  // static char str[64] = {};
+
+  writePin(exp_nrst_, false);
+  debug_print("Starting I2C scan\r\n");
+  for (uint8_t i = 0x10; i < 0x12; i++) {
+    // uint32_t isr = I2C2->ISR;
+    //  sprintf(str, "Waiting for bus to be free, isr=0x%lX\r\n", isr);
+    //  debug_print(str);
+    writePin(exp_boot0_, false);
+    while (I2C2->ISR & I2C_ISR_BUSY) {}
+    writePin(exp_boot0_, true);
+    // sprintf(str, "Starting transfer to 0x%X\r\n", i);
+    // debug_print(str);
+    I2C_TransferHandling(I2C2, i << 1, 1, I2C_AutoEnd_Mode,
+                         I2C_Generate_Start_Write);
+    // debug_print("Waiting for tx complete\r\n");
+    uint32_t start_time   = millis();
+    uint32_t current_time = start_time;
+    uint32_t isr          = I2C2->ISR;
+    bool     error        = false;
+    do {
+      isr = I2C2->ISR;
+      if (isr & I2C_ISR_NACKF) {
+        I2C2->ICR = I2C_ICR_NACKCF;
+        error     = true;
+        // debug_print("NACKF\r\n");
+        break;
+      }
+      if (isr & I2C_ISR_BERR) {
+        I2C2->ICR = I2C_ICR_BERRCF;
+        error     = true;
+        // debug_print("BERR\r\n");
+        break;
+      }
+      if (isr & I2C_ISR_ARLO) {
+        I2C2->ICR = I2C_ICR_ARLOCF;
+        error     = true;
+        // debug_print("ARLO\r\n");
+        break;
+      }
+      current_time = millis();
+    } while (!(isr & I2C_ISR_STOPF) && current_time - start_time < 100);
+    I2C2->ICR = I2C_ICR_STOPCF;
+    if (current_time - start_time >= 100) {
+      // snprintf(str, sizeof(str), "Timed out, isr=0x%lX\r\n", isr);
+      // itoa(isr, str, 16);
+      // debug_print(str);
+      error = true;
+    } else {
+      // debug_print("Tx done\r\n");
+    }
+    if (!error) {
+      // snprintf(str, sizeof(str), "Found device with addr=%X\r\n", i << 1);
+      // debug_print(str);
+      i2c_dev_present_[i >> 3] |= (1 << (i & 0x7));
+      // while (!(isr & I2C_ISR_STOPF)) {}
+      //  debug_print("Clearing stop status\r\n");
+      // I2C2->ICR = I2C_ICR_STOPCF;
+    }
+  }
+  debug_print("Finished I2C scan\r\n");
+  writePin(exp_nrst_, true);
+  while (1) {}
+#endif  // SCAN_I2C
 
   // Set the direction for the power board GPIO
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input

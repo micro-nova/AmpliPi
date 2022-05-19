@@ -66,6 +66,9 @@ typedef enum
   REG_HV2_VOLTAGE = 0x17,  // Volts in UQ6.2 format (0.25 volt resolution)
   REG_HV2_TEMP    = 0x18,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
 
+  // 0x20-0x2F
+  REG_INT_I2C = 0x20,  // Device on internal I2C bus detected
+
   // Version info
   REG_VERSION_MAJOR = 0xFA,
   REG_VERSION_MINOR = 0xFB,
@@ -250,6 +253,9 @@ uint8_t readReg(uint8_t addr) {
     default:
       // Return 0xFF if a non-existent register is selected
       out_msg = 0xFF;
+  }
+  if (addr >= REG_INT_I2C && addr < REG_INT_I2C + 16) {
+    out_msg = isInternalI2CDevPresent(addr - REG_INT_I2C);
   }
   return out_msg;
 }
