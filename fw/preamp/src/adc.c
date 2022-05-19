@@ -23,8 +23,10 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "i2c.h"
+#include "pins.h"
 #include "stm32f0xx_i2c.h"
 
 typedef union {
@@ -55,14 +57,16 @@ AdcDev adc4_ = {
     .nchans = 4,
 };
 
-// Power Board I2C ADC device with 6 channels (2 HV power supplies)
-AdcDev adc6_ = {
+// Power Board I2C ADC device with 6 channels (2 HV power supplies).
+// Either an 8-channel or 12-channel (pin compatible) IC is used.
+AdcDev adc8_ = {
     .dev    = 0xDA,  // MAX11603
     .nchans = 6,     // Last two channels of MAX11603 unused.
 };
-
-// Currently detected ADC (if any)
-AdcDev* adc_ = NULL;
+AdcDev adc12_ = {
+    .dev    = 0xCA,  // MAX11605
+    .nchans = 6,     // Last two channels of MAX11603 unused.
+};
 
 // NCP21XV103J03RA - 0805 SMD, R0 = 10k @ 25 degC, B = 3900K
 const uint8_t THERM_LUT_[] = {
@@ -90,18 +94,14 @@ const uint8_t THERM_LUT_[] = {
     0xFF, 0xFF, 0xFF, 0xFF,
 };
 
-void initAdc() {
-  // Write ADC setup byte
-  // REG=1 (setup byte), SEL[2:0] = 000 (VDD), CLK = 0 (internal),
-  // BIP/UNI=0 (unipolar), RST=0 (reset config register), X=0 (don't care)
-  uint32_t result = writeByteI2C2(adc4_.dev, 0x80);  // TODO
-  // TODO: Handle errors here
-  (void)result;
-}
+// Exponential Moving Average filter:
+// O3dB = 2*pi*f_3dB/Fs
+// alpha = cos(O3dB) + sqrt[cos(O3dB)^2 - 4cos(O3dB) + 3] - 1
+// y[n] = (1 - alpha)*y[n-1] + alpha*x[n]
 
 // TODO: Make standard i2c function
-// TODO: Error handling
-uint32_t readAdc(const AdcDev* adc, AdcVals* vals) {
+// TODO: Timeouts
+uint32_t readAdcI2C2(const AdcDev* adc, AdcVals* vals) {
   /****************************************************************************
    *  Configure ADC to scan all 4 channels
    ****************************************************************************/
@@ -205,27 +205,55 @@ uint32_t readAdc(const AdcDev* adc, AdcVals* vals) {
   return 0;
 }
 
+AdcVals* readAdc() {
+  static bool    adc_found = false;
+  static AdcDev* adc       = &adc4_;
+  static AdcVals vals;
+  memset(&vals, 0, sizeof(vals));
+  if (adc_found) {
+    // Read the ADC. If an error occurs assume the ADC is missing.
+    adc_found = readAdcI2C2(adc, &vals) == 0;
+  } else {
+    // Check for ADC presence by attempting to send the ADC setup byte
+    // REG=1 (setup byte), SEL[2:0] = 000 (VDD), CLK = 0 (internal),
+    // BIP/UNI=0 (unipolar), RST=0 (reset config register), X=0 (don't care)
+    uint32_t error = writeByteI2C2(adc->dev, 0x80);
+    if (error == 0) {
+      // Success! Found an ADC.
+      adc_found = true;
+    } else if (adc == &adc4_) {
+      // Failed to communicate to the 4-channel ADC, try the 8-channel ADC next
+      adc = &adc8_;
+    } else if (adc == &adc8_) {
+      // Failed to communicate to the 8-channel ADC, try the 12-channel ADC next
+      adc = &adc12_;
+    } else if (adc == &adc12_) {
+      // Failed to communicate to the 12-channel ADC, try the 4-channel ADC next
+      adc = &adc4_;
+    }
+  }
+  return &vals;
+}
+
 void updateAdc() {
 #define ADC_REF_VOLTS 3.3
 #define ADC_PD_KOHMS  4700
 #define ADC_PU_KOHMS  100000
   // TODO: low-pass filter after initial reading
-  static const AdcDev* adc = &adc4_;
-  AdcVals              vals;
-  readAdc(adc, &vals);
+  AdcVals* vals = readAdc();
 
   // Convert HV1 to Volts (multiply by 4 to add 2 fractional bits)
   uint32_t num     = 4 * ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
   uint32_t den     = UINT8_MAX * ADC_PD_KOHMS;
-  uint32_t hv1_raw = num * vals.hv1 / den;
+  uint32_t hv1_raw = num * vals->hv1 / den;
   voltages_.hv1_f2 = (uint8_t)(hv1_raw > UINT8_MAX ? UINT8_MAX : hv1_raw);
 
   // Convert HV1 thermocouple to degC
-  temps_.hv1_f1 = THERM_LUT_[vals.hv1_temp];
+  temps_.hv1_f1 = THERM_LUT_[vals->hv1_temp];
 
   // Convert amplifier thermocouples to degC
-  temps_.amp1_f1 = THERM_LUT_[vals.amp_temp1];
-  temps_.amp2_f1 = THERM_LUT_[vals.amp_temp2];
+  temps_.amp1_f1 = THERM_LUT_[vals->amp_temp1];
+  temps_.amp2_f1 = THERM_LUT_[vals->amp_temp2];
 
   // TODO: HV2
 }

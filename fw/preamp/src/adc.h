@@ -45,7 +45,6 @@ typedef union {
   uint8_t voltages[5];  // All voltages in 1 array
 } Voltages;
 
-void initAdc();
 void updateAdc();
 
 uint8_t getHV1_f2();

@@ -236,7 +236,6 @@ void initInternalI2C() {
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
   initLeds();
-  initAdc();
   updateInternalI2C();
 }
 
