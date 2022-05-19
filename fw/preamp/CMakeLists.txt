@@ -86,6 +86,10 @@ target_link_options(${PROJECT_NAME}.elf PRIVATE
   -T${CMAKE_CURRENT_LIST_DIR}/LinkerScript.ld
   -Wl,--gc-sections
   -Wl,-Map,${PROJECT_NAME}.map
+
+  # nosys adds _sbrk() for sprintf(), nano reduces the code size
+  #-specs=nosys.specs
+  #-specs=nano.specs
 )
 
 # Generate version.c, which contains version info from the git repo

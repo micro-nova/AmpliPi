@@ -22,10 +22,14 @@
 #define SERIAL_H_
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // Uncomment the line below to use the debugger
 //#define DEBUG_OVER_UART2
+
+// Uncomment the line below to enabling debug messages on UART1 to the Pi
+//#define DEBUG_PRINT
 
 void setUartPassthrough(bool passthrough);
 bool getUartPassthrough();
@@ -35,5 +39,13 @@ void initUart2(uint16_t brr);
 // Returns new I2C address if one was received via USART1, otherwise 0
 bool    checkForNewAddress();
 uint8_t getI2C1Address();
+
+#ifdef DEBUG_PRINT
+void debug_putchar(char c);
+void debug_print(char* str);
+#else
+#define debug_putchar(c)
+#define debug_print(str)
+#endif
 
 #endif /* SERIAL_H_ */
