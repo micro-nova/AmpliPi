@@ -24,16 +24,42 @@
 
 #include <stdint.h>
 
+typedef union {
+  // All temps in UQ7.1 + 20 degC format
+  struct {
+    uint8_t hv1_f1;   // PSU 1 temp (always present)
+    uint8_t hv2_f1;   // PSU 2 temp (only present on high-power units)
+    uint8_t amp1_f1;  // Amp heatsink 1 temp
+    uint8_t amp2_f1;  // Amp heatsink 2 temp
+    uint8_t pi_f1;    // Control board Raspberry Pi temp
+  };
+  uint8_t temps[5];  // All temperatures in 1 array
+} Temps;
+
+typedef union {
+  // All voltages in UQ6.2 format
+  struct {
+    uint8_t hv1_f2;  // PSU 1 voltage (always present)
+    uint8_t hv2_f2;  // PSU 2 voltage (only present on high-power units)
+  };
+  uint8_t voltages[5];  // All voltages in 1 array
+} Voltages;
+
 void initAdc();
 void updateAdc();
 
 uint8_t getHV1_f2();
+uint8_t getHV2_f2();
 uint8_t getHV1Temp_f1();
 int16_t getHV1Temp_f8();
+uint8_t getHV2Temp_f1();
+int16_t getHV2Temp_f8();
+
 uint8_t getAmp1Temp_f1();
 int16_t getAmp1Temp_f8();
 uint8_t getAmp2Temp_f1();
 int16_t getAmp2Temp_f8();
+
 uint8_t getPiTemp_f1();
 int16_t getPiTemp_f8();
 void    setPiTemp_f1(uint8_t temp_f1);

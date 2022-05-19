@@ -63,6 +63,8 @@ typedef enum
   REG_PI_TEMP     = 0x14,  // RPi's temp sent to the micro, in UQ7.1 + 20 format
   REG_FAN_DUTY    = 0x15,  // Fan PWM duty, [0.0,1.0] in UQ1.7 format
   REG_FAN_VOLTS   = 0x16,  // Fan voltage in UQ4.3 format
+  REG_HV2_VOLTAGE = 0x17,  // Volts in UQ6.2 format (0.25 volt resolution)
+  REG_HV2_TEMP    = 0x18,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
 
   // Version info
   REG_VERSION_MAJOR = 0xFA,
@@ -220,6 +222,14 @@ uint8_t readReg(uint8_t addr) {
 
     case REG_FAN_VOLTS:
       out_msg = getFanVolts();
+      break;
+
+    case REG_HV2_VOLTAGE:
+      out_msg = getHV2_f2();
+      break;
+
+    case REG_HV2_TEMP:
+      out_msg = getHV2Temp_f1();
       break;
 
     case REG_VERSION_MAJOR:
