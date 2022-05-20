@@ -239,23 +239,25 @@ void updateAdc() {
 #define ADC_REF_VOLTS 3.3
 #define ADC_PD_KOHMS  4700
 #define ADC_PU_KOHMS  100000
+#define ADC_BITS      8
   // TODO: low-pass filter after initial reading
   AdcVals* vals = readAdc();
 
-  // Convert HV1 to Volts (multiply by 4 to add 2 fractional bits)
-  uint32_t num     = 4 * ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
-  uint32_t den     = UINT8_MAX * ADC_PD_KOHMS;
+  // Convert HV1 and HV2 to Volts (multiply by 4 to add 2 fractional bits)
+  uint32_t num     = ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
+  uint32_t den     = (1 << (ADC_BITS - 2)) * ADC_PD_KOHMS;
   uint32_t hv1_raw = num * vals->hv1 / den;
   voltages_.hv1_f2 = (uint8_t)(hv1_raw > UINT8_MAX ? UINT8_MAX : hv1_raw);
+  uint32_t hv2_raw = num * vals->hv2 / den;
+  voltages_.hv2_f2 = (uint8_t)(hv2_raw > UINT8_MAX ? UINT8_MAX : hv2_raw);
 
-  // Convert HV1 thermocouple to degC
+  // Convert HV1 and HV2 thermocouples to degC
   temps_.hv1_f1 = THERM_LUT_[vals->hv1_temp];
+  temps_.hv2_f1 = THERM_LUT_[vals->hv2_temp];
 
   // Convert amplifier thermocouples to degC
   temps_.amp1_f1 = THERM_LUT_[vals->amp_temp1];
   temps_.amp2_f1 = THERM_LUT_[vals->amp_temp2];
-
-  // TODO: HV2
 }
 
 uint8_t getHV1_f2() {
