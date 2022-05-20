@@ -51,9 +51,11 @@ def print_status(p: rt._Preamps, u: int):
   print(f'  12V: EN={en_12v}, PG={pg_12v}, {v12} V')
 
   # 24V and temp
-  hv1 = p.read_hv(u)
-  hv1_tmp, amp1_tmp, amp2_tmp = p.read_temps(u)
+  hv1, hv2 = p.read_hv(u)
+  hv1_tmp, hv2_tmp, amp1_tmp, amp2_tmp = p.read_temps(u)
   print(f'  HV1: {hv1:5.2f}V, {temp2str(hv1_tmp)}')
+  if (hv2 > 0):
+    print(f'  HV2: {hv2:5.2f}V, {temp2str(hv2_tmp)}')
   print(f'  Amp Temps: {temp2str(amp1_tmp)}, {temp2str(amp2_tmp)}')
 
   # Fans
@@ -87,12 +89,22 @@ def self_check(p: rt._Preamps):
     success &= pg_12v and v12_ok
     print_cond(u, pg_12v, f'PG_12V {"ok" if pg_12v else "bad"}')
     print_cond(u, v12_ok, f'12V supply {"ok" if v12_ok else "bad"} - {v12:.2f}V')
-    hv1_tmp, amp1_tmp, amp2_tmp = p.read_temps(u + 1)
+    hv1_tmp, hv2_tmp, amp1_tmp, amp2_tmp = p.read_temps(u + 1)
     hv1_ok = -19 <= hv1_tmp <= 106
+    if -19 < hv2_tmp <= 106:
+      hv2_color = 2 # Green
+      hv2_ok = True
+    elif hv2_tmp == -math.inf:
+      hv2_color = 3 # Yellow
+      hv2_ok = True
+    else:
+      hv2_color = 1 # Red
+      hv2_ok = False
     amp1_ok = -19 < amp1_tmp <= 106
     amp2_ok = -19 < amp2_tmp <= 106
-    success &= hv1_ok and amp1_ok and amp2_ok
+    success &= hv1_ok and hv2_ok and amp1_ok and amp2_ok
     print_cond(u, hv1_ok, f'HV1 Temp {"ok" if hv1_ok else "bad"}   - {temp2str(hv1_tmp)}')
+    print(f'\033[0;3{hv2_color}m{unit_to_name(u)}: HV2 Temp {"ok" if hv2_ok else "bad"}   - {temp2str(hv2_tmp)}\033[0m')
     print_cond(u, amp1_ok, f'AMP1 Temp {"ok" if amp1_ok else "bad"}  - {temp2str(amp1_tmp)}')
     print_cond(u, amp2_ok, f'AMP2 Temp {"ok" if amp2_ok else "bad"}  - {temp2str(amp2_tmp)}')
     print()
@@ -106,14 +118,14 @@ def heat_test(p: rt._Preamps, timeout: int):
   a1t_s = []
   a2t_s = []
   for u in range(len(p.preamps)):
-    _, a1t_temp, a2t_temp = p.read_temps(u + 1)
+    _, _, a1t_temp, a2t_temp = p.read_temps(u + 1)
     a1t_s.append(a1t_temp)
     a2t_s.append(a2t_temp)
   start_time = time.time()
   success = False
   while not success and time.time() < start_time + timeout:
     for u in range(len(p.preamps)):
-      _, a1t, a2t = p.read_temps(u + 1)
+      _, _, a1t, a2t = p.read_temps(u + 1)
       if a1t > a1t_s[u] + 5:
         success = True
       if a2t > a2t_s[u] + 5:
@@ -169,7 +181,7 @@ preamps = rt._Preamps(reset = reset, set_addr = args.address,
 # Used for temperature recording
 if args.temps:
   fan_duty = preamps.read_fan_duty(args.unit)
-  hv1_tmp, amp1_tmp, amp2_tmp = preamps.read_temps(args.unit)
+  hv1_tmp, hv2_tmp, amp1_tmp, amp2_tmp = preamps.read_temps(args.unit)
   with open('/sys/class/thermal/thermal_zone0/temp') as f:
     pi_tmp = int(f.read()) / 1000
   time = datetime.now().strftime('%H:%M:%S')

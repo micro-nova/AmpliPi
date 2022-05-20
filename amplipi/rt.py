@@ -57,6 +57,8 @@ _REG_ADDRS = {
   'PI_TEMP'         : 0x14,
   'FAN_DUTY'        : 0x15,
   'FAN_VOLTS'       : 0x16,
+  'HV2_VOLTAGE'     : 0x17,
+  'HV2_TEMP'        : 0x18,
   'VERSION_MAJOR'   : 0xFA,
   'VERSION_MINOR'   : 0xFB,
   'GIT_HASH_27_20'  : 0xFC,
@@ -355,7 +357,7 @@ class _Preamps:
       temp = fval/2 - 20
     return temp
 
-  def read_temps(self, preamp: int = 1) -> Tuple[Union[float, None], Union[float, None], Union[float, None]]:
+  def read_temps(self, preamp: int = 1) -> Union[Tuple[float, float, float, float], Tuple[None, None, None, None]]:
     """ Measure the temperature of the power supply and both amp heatsinks
 
       Args:
@@ -363,20 +365,23 @@ class _Preamps:
 
       Returns:
         hv1:  Temperature of the HV1 power supply in degrees C
+        hv2:  Temperature of the HV2 power supply in degrees C
         amp1: Temperature of the heatsink over zones 1-3 in degrees C
         amp2: Temperature of the heatsink over zones 4-6 in degrees C
     """
     if self.bus is not None:
       temp_hv1_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV1_TEMP'])
+      temp_hv2_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV2_TEMP'])
       temp_amp1_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['AMP_TEMP1'])
       temp_amp2_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['AMP_TEMP2'])
       temp_hv1 = self._fix2temp(temp_hv1_f)
+      temp_hv2 = self._fix2temp(temp_hv2_f)
       temp_amp1 = self._fix2temp(temp_amp1_f)
       temp_amp2 = self._fix2temp(temp_amp2_f)
-      return temp_hv1, temp_amp1, temp_amp2
-    return None, None, None
+      return temp_hv1, temp_hv2, temp_amp1, temp_amp2
+    return None, None, None, None
 
-  def read_hv(self, preamp: int = 1) -> Union[float, None]:
+  def read_hv(self, preamp: int = 1) -> Union[Tuple[float, float], Tuple[None, None]]:
     """ Measure the High-Voltage power supply voltage
 
       Args:
@@ -384,13 +389,16 @@ class _Preamps:
 
       Returns:
         hv1:  Voltage of the HV1 rail in Volts
+        hv2:  Voltage of the HV2 rail in Volts
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
       hv1_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV1_VOLTAGE'])
+      hv2_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV2_VOLTAGE'])
       hv1 = hv1_f / 4 # Convert from UQ6.2 format
-      return hv1
-    return None
+      hv2 = hv2_f / 4 # Convert from UQ6.2 format
+      return hv1, hv2
+    return None, None
 
   def force_fans(self, preamp: int = 1, force: bool = True):
     assert 1 <= preamp <= 6
