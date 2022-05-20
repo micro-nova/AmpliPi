@@ -200,23 +200,23 @@ uint8_t readReg(uint8_t addr) {
     }
 
     case REG_HV1_VOLTAGE:
-      out_msg = getHV1_f2();
+      out_msg = getVoltages()->hv1_f2;
       break;
 
     case REG_HV1_TEMP:
-      out_msg = getHV1Temp_f1();
+      out_msg = getTemps()->hv1_f1;
       break;
 
     case REG_AMP_TEMP1:
-      out_msg = getAmp1Temp_f1();
+      out_msg = getTemps()->amp1_f1;
       break;
 
     case REG_AMP_TEMP2:
-      out_msg = getAmp2Temp_f1();
+      out_msg = getTemps()->amp2_f1;
       break;
 
     case REG_PI_TEMP:
-      out_msg = getPiTemp_f1();
+      out_msg = getTemps()->pi_f1;
       break;
 
     case REG_FAN_DUTY:
@@ -228,11 +228,11 @@ uint8_t readReg(uint8_t addr) {
       break;
 
     case REG_HV2_VOLTAGE:
-      out_msg = getHV2_f2();
+      out_msg = getVoltages()->hv2_f2;
       break;
 
     case REG_HV2_TEMP:
-      out_msg = getHV2Temp_f1();
+      out_msg = getTemps()->hv2_f1;
       break;
 
     case REG_VERSION_MAJOR:

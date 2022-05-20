@@ -260,56 +260,23 @@ void updateAdc() {
   temps_.amp2_f1 = THERM_LUT_[vals->amp_temp2];
 }
 
-uint8_t getHV1_f2() {
-  return voltages_.hv1_f2;
+Temps* getTemps() {
+  return &temps_;
 }
 
-uint8_t getHV2_f2() {
-  return voltages_.hv2_f2;
+Temps16* getTemps16() {
+#define F1_TO_F8(f1) (((int16_t)f1 - (20 << 1)) << 7)
+  static Temps16 temps;
+  temps.hv1_f8  = F1_TO_F8(temps_.hv1_f1);
+  temps.hv2_f8  = F1_TO_F8(temps_.hv2_f1);
+  temps.amp1_f8 = F1_TO_F8(temps_.amp1_f1);
+  temps.amp2_f8 = F1_TO_F8(temps_.amp2_f1);
+  temps.pi_f8   = F1_TO_F8(temps_.pi_f1);
+  return &temps;
 }
 
-uint8_t getHV1Temp_f1() {
-  return temps_.hv1_f1;
-}
-
-int16_t getHV1Temp_f8() {
-  // TODO: Filter
-  return ((int16_t)temps_.hv1_f1 - (20 << 1)) << 7;
-}
-
-uint8_t getHV2Temp_f1() {
-  return temps_.hv2_f1;
-}
-
-int16_t getHV2Temp_f8() {
-  // TODO: Filter
-  return ((int16_t)temps_.hv2_f1 - (20 << 1)) << 7;
-}
-
-uint8_t getAmp1Temp_f1() {
-  return temps_.amp1_f1;
-}
-
-int16_t getAmp1Temp_f8() {
-  // TODO: Filter
-  return ((int16_t)temps_.amp1_f1 - (20 << 1)) << 7;
-}
-
-uint8_t getAmp2Temp_f1() {
-  return temps_.amp2_f1;
-}
-
-int16_t getAmp2Temp_f8() {
-  // TODO: Filter
-  return ((int16_t)temps_.amp2_f1 - (20 << 1)) << 7;
-}
-
-uint8_t getPiTemp_f1() {
-  return temps_.pi_f1;
-}
-
-int16_t getPiTemp_f8() {
-  return ((int16_t)temps_.pi_f1 - (20 << 1)) << 7;
+Voltages* getVoltages() {
+  return &voltages_;
 }
 
 void setPiTemp_f1(uint8_t temp_f1) {

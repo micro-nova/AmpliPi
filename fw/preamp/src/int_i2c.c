@@ -251,14 +251,8 @@ void updateInternalI2C() {
     // Read ADC and update fans every 8 ms
     updateAdc();
 
-    // The two amp heatsinks can be combined by simply taking the max
-    int16_t amp1t       = getAmp1Temp_f8();
-    int16_t amp2t       = getAmp2Temp_f8();
-    int16_t amp_temp_f8 = amp1t > amp2t ? amp1t : amp2t;
-
     // Update fans based on temps. Ideally use a DPot for linear control.
-    uint8_t dpot_val = updateFans(amp_temp_f8, getHV1Temp_f8(), getPiTemp_f8(),
-                                  dpot_type_ != DPOT_NONE);
+    uint8_t dpot_val = updateFans(dpot_type_ != DPOT_NONE);
     updateDPot(dpot_val);
   } else {
     // Read the power board's GPIO inputs

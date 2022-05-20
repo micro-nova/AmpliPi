@@ -54,8 +54,7 @@ uint8_t getFanVolts();
 bool    overTemp();
 bool    fansOn();
 
-uint8_t updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                   bool linear);
+uint8_t updateFans(bool linear);
 bool    getFanOnFromDuty();
 
 #endif /* FANS_H_ */

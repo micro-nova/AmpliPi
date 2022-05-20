@@ -20,6 +20,7 @@
 
 #include "fans.h"
 
+#include "adc.h"
 #include "systick.h"
 
 // 2-wire fan control PWM works well around 30 Hz
@@ -264,17 +265,22 @@ static void updateFanOutput(FanCtrl ctrl, int16_t amp_temp, int16_t psu_temp,
 /* Updates the fan state based on the current temp
  *
  * Inputs
- *    amp_temp: Temperature of the amplifier heatsinks
- *    psu_temp: Temperature of the high-voltage PSU
- *    pi_temp:  Temperature of the Raspberry Pi
  *    force:    Force fans on 100%
  *    linear:   Digital potentiometer for linear voltage control is available
  * All temps are in Q7.8 fixed-point format.
  *
  * Returns the desired DPot value.
  */
-uint8_t updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
-                   bool linear) {
+uint8_t updateFans(bool linear) {
+  // Get latest temps
+  Temps16* tmp = getTemps16();
+
+  // The two amp heatsinks can be combined by simply taking the max
+  int16_t amp_temp = tmp->amp1_f8 > tmp->amp2_f8 ? tmp->amp1_f8 : tmp->amp2_f8;
+
+  // The two PSU temps can be combined by simply taking the max
+  int16_t psu_temp = tmp->hv1_f8 > tmp->hv2_f8 ? tmp->hv1_f8 : tmp->hv2_f8;
+
   // Determine appropriate control method
   ctrl_ = updateFanCtrlMethod(ctrl_, amp_temp > 0, linear);
   // TODO: replace temps and flags with a hw_state struct
@@ -287,12 +293,12 @@ uint8_t updateFans(int16_t amp_temp, int16_t psu_temp, int16_t rpi_temp,
    */
 
   // Update fan output based on current control method
-  updateFanOutput(ctrl_, amp_temp, psu_temp, rpi_temp);
+  updateFanOutput(ctrl_, amp_temp, psu_temp, tmp->pi_f8);
 
   // Determine if the AmpliPi unit is too hot
   ovr_temp_ = amp_temp > TEMP_AMP_THRESH_OVR_Q7_8 ||
               psu_temp > TEMP_PSU_THRESH_OVR_Q7_8 ||
-              rpi_temp > TEMP_RPI_THRESH_OVR_Q7_8;
+              tmp->pi_f8 > TEMP_RPI_THRESH_OVR_Q7_8;
 
   // Determine fan power supply voltage based on dpot value
   // If no dpot present, fans nominally receive 12V.
