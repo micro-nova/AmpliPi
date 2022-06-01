@@ -82,7 +82,7 @@ class Changes():
 
   CATEGORIES = frozenset(['groups', 'presets', 'sources', 'streams', 'zones'])
 
-  def __init__(self,  notifier: Optional[Callable[[models.StatusUpdate], None]] = None):
+  def __init__(self,  notifier: Optional[Callable[[models.StatusUpdate, models.Status], None]] = None):
     self._changes : Dict[str, Set] = {t: set() for t in Changes.CATEGORIES}
     self._notifier = notifier
     self._synced_changes : List[Dict[str, Set]] = []
@@ -142,7 +142,7 @@ class Changes():
       self._saved_status = None
     # we discard the updates so they don't build up without a notifier
     if self._notifier is not None:
-      self._notifier(update)
+      self._notifier(update, self._saved_status)
 
 class Api:
   """ Amplipi Controller API"""
@@ -205,11 +205,11 @@ class Api:
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
   # with this reinit will be called connect and will attempt to load the configutation and connect to an AmpliPi (mocked or real)
   # returning a boolean on whether or not it was successful
-  def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.StatusUpdate], None]] = None):
+  def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.StatusUpdate, models.Status], None]] = None):
     self.reinit(settings, change_notifier)
     self._initialized = True
 
-  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.StatusUpdate], None]] = None, config: Optional[models.Status] = None):
+  def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.StatusUpdate, models.Status], None]] = None, config: Optional[models.Status] = None):
     """ Initialize or Reinitialize the controller
 
     Intitializes the system to to base configuration """
