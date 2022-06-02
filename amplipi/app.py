@@ -158,15 +158,18 @@ def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
 
 subscribers: Dict[int, 'Queue[str]'] = {}
-def notify_on_change(status: models.StatusUpdate, full_status: models.Status) -> None:
+def notify_on_change(status: models.StatusUpdate, full_status: Optional[models.Status]) -> None:
   """ Notify subscribers that something has changed """
   msg_ques = subscribers.values()
   if len(msg_ques) == 0:
     return
   # TODO: add option for partial notifications via StatusUpdate
-  json = full_status.json()
-  for msg_que in msg_ques:
-    msg_que.put(json)
+  if full_status:
+    json = full_status.json()
+    for msg_que in msg_ques:
+      msg_que.put(json)
+  else:
+    print('empty status given')
 
 @api.get('/api/subscribe', tags=['status'])
 # TODO: return type annotation fails here, why doesn't pydantic like EventSourceResponse?
