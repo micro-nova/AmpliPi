@@ -192,7 +192,8 @@ async def subscribe(req: Request):
     except asyncio.CancelledError as exc:
       print(f"Disconnected from client (via refresh/close) {req.client}")
       # Do any other cleanup, if any
-      raise exc
+      # raise exc
+      return
   return EventSourceResponse(stream())
 
 def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
