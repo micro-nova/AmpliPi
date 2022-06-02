@@ -96,7 +96,11 @@ $(document).ready(function(){
     current_src = new_src;
   });
   // Refresh the page sequentially in place of SSE
-  setInterval(refresh, 2000);
+  //setInterval(refresh, 2000);
+  let changeSource = new EventSource("api/subscribe");
+  changeSource.onmessage = function(event) {
+    onResponse(JSON.parse(event.data));
+  };
 
   // Make all zone/group multiselectors multiselectors and configures them
   $('[id^=s][id$=-add-input]').multiselect({
