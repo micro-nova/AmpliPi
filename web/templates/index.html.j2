@@ -94,8 +94,9 @@
           {% endfor %}
         </div>
         <!-- TODO: can this be a nav dropdown with the same styling as the custom-select? This would probably  simplify the integration and allow individual tabs to hook into a tab shown event-->
-        <select id="settings-sel" class="custom-select" onchange="$(this.value).siblings('div').removeClass('active');
-        $(this.value).addClass('active');" style="display: none">
+        <!-- autocomplete="off" disables Firefox from remembering the 'select' selection on manual refresh. -->
+        <select id="settings-sel" class="custom-select" style="display: none" autocomplete="off"
+                onchange="$(this.value).siblings('div').removeClass('active'); $(this.value).addClass('active');">
           <option value="#settings-tab-inputs">Inputs</option>
           <option value="#settings-tab-zones">Zones</option>
           <option value="#settings-tab-groups">Groups</option>
