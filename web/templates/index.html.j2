@@ -202,8 +202,9 @@
             <div class="card settings">
               <h6 class="card-header">Hardware Reset (reloads current configuration)</h6>
               <div class="card-body">
-                <div class="text-center">
-                  <button title="Resets the preamp hardware and controller software (does not reboot the pi-based controller)" class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
+                <p class="card-text text-muted">Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)</p>
+                <div class="card-text text-center">
+                  <button class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
                   <i id="settings-config-reset-indicator" class="fa" style="visibility: hidden;"></i>
                 </div>
               </div>
@@ -211,8 +212,9 @@
             <div class="card settings">
               <h6 class="card-header">Hardware Reboot (restart OS and reload configuration)</h6>
               <div class="card-body">
-                <div class="text-center">
-                  <button title="Reboots the pi-based controller" class="btn btn-success" onclick="rebootDevice()" id="settings-config-reboot">Reboot</button>
+                <p class="card-text text-muted">Reboots the Raspberry Pi-based controller</p>
+                <div class="card-text text-center">
+                  <button class="btn btn-success" onclick="rebootDevice()" id="settings-config-reboot">Reboot</button>
                   <i id="settings-config-reboot-indicator" class="fa" style="visibility: hidden;"></i>
                 </div>
               </div>
@@ -220,8 +222,9 @@
             <div class="card settings">
               <h6 class="card-header">Hardware Shutdown (Power down device)</h6>
               <div class="card-body">
-                <div class="text-center">
-                  <button title="Trigger a shutdown" class="btn btn-success" onclick="shutdownDevice()" id="settings-config-shutdown">Shutdown</button>
+                <p class="card-text text-muted">Trigger a shutdown of the Raspberry Pi-based controller</p>
+                <div class="card-text text-center">
+                  <button class="btn btn-success" onclick="shutdownDevice()" id="settings-config-shutdown">Shutdown</button>
                   <i id="settings-config-shutdown-indicator" class="fa" style="visibility: hidden;"></i>
                 </div>
               </div>
