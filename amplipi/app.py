@@ -115,6 +115,7 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   return [zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
 
 # add a default controller (this is overriden below in create_app)
+# TODO: this get_ctrl Singleton needs to be removed and the API converted to be instantiated by a class with ctrl state
 @lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
   """ Get the controller
@@ -164,6 +165,8 @@ def reboot():
   """ Restart the OS and all of the AmpliPi services.
 
   """
+  # preemptively save the state (just in case the shutdown procedure doesn't invoke a save)
+  get_ctrl().save()
   # start the restart, and return immediately (hopefully before the restart process begins)
   Popen('sleep 1 && sudo systemctl reboot', shell=True)
 
@@ -178,6 +181,8 @@ def shutdown():
 
   This allows for a clean shutdown before pulling the power plug.
   """
+  # preemptively save the state (just in case the shutdown procedure doesn't invoke a save)
+  get_ctrl().save()
   # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
   Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
