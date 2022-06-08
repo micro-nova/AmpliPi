@@ -632,12 +632,37 @@ async function shutdownDevice() {
   indicator_show_inprogress(indicator);
   fetch('/api/shutdown', {method: 'POST'})
   .then((response) => {
-    indicator_show_done(indicator);
+    setTimeout(checkForShutown, 2000, 60 / 2 - 1); // wait for 1 minutes since a shutdown can take awhile
   })
   .catch((e) => {
     indicator_show_error(indicator);
-  })
-  .finally(() => {
+    button.classList.toggle('disabled', false);
+  });
+}
+
+async function checkForShutown(retry_check_ct) {
+  button = $('#settings-config-shutdown')[0];
+  indicator = $("#settings-config-shutdown-indicator")[0];
+  button.classList.toggle('disabled', true);
+  // poll the api waiting for a failure
+  r = fetch("api").then(function (response) {
+    response.json().then(function(json) {
+      if (retry_check_ct > 0) {
+        console.log('Waiting for the AmpliPi to shutdown');
+        setTimeout(checkForShutown, 2000, retry_check_ct - 1);
+      } else {
+        console.log('Error: AmpliPi failed to shutdown, time out reached.');
+        indicator_show_error(indicator);
+        button.classList.toggle('disabled', false);
+      }
+    }).catch( err => {
+      console.log('Failed to communicate, it is probably shutting down: ' + err.message);
+      indicator_show_done(indicator);
+      button.classList.toggle('disabled', false);
+    });
+  }).catch( err => {
+    console.log('Failed to communicate, it is probably shutting down: ' + err.message);
+    indicator_show_done(indicator);
     button.classList.toggle('disabled', false);
   });
 }
