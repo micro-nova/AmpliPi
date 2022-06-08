@@ -37,8 +37,8 @@ and to improve fan control.
 | Preamp     | [3.A](preamp_board/preamp_board_3a.pdf)         |
 | Preout     | [1.A](preout_board/preout_board_1a.pdf)         |
 
-### Final Kickstarter Units and Pre-orders
-The rest of the Kickstarter Campaign backers as well as any pre-orders.
+### CURRENT HARDWARE RELEASE - serial numbers >= 129
+This is the currently shipping hardware release.
 The overall goal of these hardware changes was to further reduce audio noise,
 add quieter fan control, and replace parts unavailable due to the global
 chip shortage.
@@ -59,7 +59,7 @@ They do not have a control board in them, but rather an expansion board
 that acts as a pass-through for audio and control signals.
 Up to 5 Zone Expanders can be added to one Controller.
 
-### All Kickstarter and Pre-orders
+### CURRENT HARDWARE RELEASE - serial numbers >= 100
 
 | Board      | Version                                         |
 | ---------- | ----------------------------------------------- |
