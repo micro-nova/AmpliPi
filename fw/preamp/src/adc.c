@@ -68,6 +68,9 @@ AdcDev adc12_ = {
     .nchans = 6,     // Last two channels of MAX11603 unused.
 };
 
+// Detected ADC. Assume 4-channel to begin.
+AdcDev* adc_ = &adc4_;
+
 // NCP21XV103J03RA - 0805 SMD, R0 = 10k @ 25 degC, B = 3900K
 const uint8_t THERM_LUT_[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -207,29 +210,28 @@ uint32_t readAdcI2C2(const AdcDev* adc, AdcVals* vals) {
 
 AdcVals* readAdc() {
   static bool    adc_found = false;
-  static AdcDev* adc       = &adc4_;
   static AdcVals vals;
   memset(&vals, 0, sizeof(vals));
   if (adc_found) {
     // Read the ADC. If an error occurs assume the ADC is missing.
-    adc_found = readAdcI2C2(adc, &vals) == 0;
+    adc_found = readAdcI2C2(adc_, &vals) == 0;
   } else {
     // Check for ADC presence by attempting to send the ADC setup byte
     // REG=1 (setup byte), SEL[2:0] = 000 (VDD), CLK = 0 (internal),
     // BIP/UNI=0 (unipolar), RST=0 (reset config register), X=0 (don't care)
-    uint32_t error = writeByteI2C2(adc->dev, 0x80);
+    uint32_t error = writeByteI2C2(adc_->dev, 0x80);
     if (error == 0) {
       // Success! Found an ADC.
       adc_found = true;
-    } else if (adc == &adc4_) {
+    } else if (adc_ == &adc4_) {
       // Failed to communicate to the 4-channel ADC, try the 8-channel ADC next
-      adc = &adc8_;
-    } else if (adc == &adc8_) {
+      adc_ = &adc8_;
+    } else if (adc_ == &adc8_) {
       // Failed to communicate to the 8-channel ADC, try the 12-channel ADC next
-      adc = &adc12_;
-    } else if (adc == &adc12_) {
+      adc_ = &adc12_;
+    } else if (adc_ == &adc12_) {
       // Failed to communicate to the 12-channel ADC, try the 4-channel ADC next
-      adc = &adc4_;
+      adc_ = &adc4_;
     }
   }
   return &vals;
@@ -277,6 +279,10 @@ Temps16* getTemps16() {
 
 Voltages* getVoltages() {
   return &voltages_;
+}
+
+bool isHV2Present() {
+  return adc_ != &adc4_;
 }
 
 void setPiTemp_f1(uint8_t temp_f1) {

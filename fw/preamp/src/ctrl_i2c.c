@@ -35,8 +35,7 @@
 #include "stm32f0xx.h"
 #include "version.h"
 
-typedef enum
-{
+typedef enum {
   // Audio control
   REG_SRC_AD    = 0x00,
   REG_ZONE321   = 0x01,
@@ -162,6 +161,7 @@ uint8_t readReg(uint8_t addr) {
           .en_9v    = get9vEn(),
           .pg_12v   = pg12v(),
           .en_12v   = get12vEn(),
+          .hv2      = isHV2Present(),
           .reserved = 0,
       };
       out_msg = msg.data;

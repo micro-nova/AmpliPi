@@ -22,6 +22,7 @@
 #ifndef ADC_H_
 #define ADC_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef union {
@@ -61,6 +62,7 @@ void      updateAdc();
 Temps*    getTemps();    // UQ7.1 + 20 degC format
 Temps16*  getTemps16();  // Q7.8 format
 Voltages* getVoltages();
+bool      isHV2Present();
 
 void setPiTemp_f1(uint8_t temp_f1);
 

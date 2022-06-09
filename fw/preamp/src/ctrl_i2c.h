@@ -25,10 +25,11 @@
 typedef union {
   struct {
     uint8_t pg_9v    : 1;  // R
-    uint8_t en_9v    : 1;  // R/W
+    uint8_t en_9v    : 1;  // R
     uint8_t pg_12v   : 1;  // R
-    uint8_t en_12v   : 1;  // R/W
-    uint8_t reserved : 4;
+    uint8_t en_12v   : 1;  // R
+    uint8_t reserved : 3;
+    uint8_t hv2      : 1;  // R
   };
   uint8_t data;
 } PwrReg;
