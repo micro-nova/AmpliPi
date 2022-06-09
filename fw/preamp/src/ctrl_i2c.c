@@ -307,11 +307,6 @@ void writeReg(uint8_t addr, uint8_t data) {
       break;
     }
 
-    case REG_POWER:
-      set9vEn(((PwrReg)data).en_9v);
-      set12vEn(((PwrReg)data).en_12v);
-      break;
-
     case REG_FANS:
       setFanCtrl((FanCtrl)data);
       break;

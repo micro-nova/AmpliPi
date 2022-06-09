@@ -46,16 +46,8 @@ bool fanFailMax6644() {
   return !gpio_.ovr_tmp_n;
 }
 
-void set9vEn(bool en) {
-  gpio_.en_9v = en;
-}
-
 bool get9vEn() {
   return gpio_.en_9v;
-}
-
-void set12vEn(bool en) {
-  gpio_.en_12v = en;
 }
 
 bool get12vEn() {
