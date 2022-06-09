@@ -756,6 +756,7 @@ def on_shutdown():
   _ctrl = get_ctrl()
   get_ctrl.cache_clear()
   del _ctrl
+  print('webserver shutdown complete')
 
 # MDNS
 
