@@ -22,7 +22,6 @@
 #define SERIAL_H_
 
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 
 // Uncomment the line below to use the debugger
