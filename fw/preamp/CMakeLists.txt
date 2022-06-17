@@ -88,6 +88,7 @@ target_link_options(${PROJECT_NAME}.elf PRIVATE
   -Wl,-Map,${PROJECT_NAME}.map
 
   # nosys adds _sbrk() for sprintf(), nano reduces the code size
+  # Needed if DEBUG_PRINT is defined
   #-specs=nosys.specs
   #-specs=nano.specs
 )

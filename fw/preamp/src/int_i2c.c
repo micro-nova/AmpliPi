@@ -20,8 +20,6 @@
 
 #include "int_i2c.h"
 
-#include <stdio.h>
-
 #include "adc.h"
 #include "audio.h"
 #include "fans.h"
@@ -160,77 +158,82 @@ uint8_t isInternalI2CDevPresent(uint8_t addr) {
   return i2c_dev_present_[addr];
 }
 
+//#define SCAN_I2C
+#ifdef SCAN_I2C
+
+#ifdef DEBUG_PRINT
+#include <stdio.h>
+#else
+// TODO: The I2C scanning only works if DEBUG_PRINT is enabled. Timing issue?
+#error "SCAN_I2C enabled but DEBUG_PRINT not enabled"
+#endif
+
+// Devices used in AmpliPi so far: (address are in LSB position)
+// MCP23008 GPIO: 0x20-0x27
+// MCP4017  DPOT: 0x2E-0x2F
+// TDA7448   VOL: 0x44-0x45
+// MAX1160X ADC : 0x64-0x65, 0x6D
+bool scan_i2c() {
+  // Scan I2C1 for valid device addresses 0x08-0x77
+  // (0x00-0x07 and 0x78-0x7F are reserved)
+  // TODO: When set to 0x08 something is found at 0x0D and then this crashes...
+  static uint8_t a = 0x20;
+
+  // Wait for bus free
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Send a start condition, the address (0 bytes of data), and a stop condition
+  I2C2->CR2 = I2C_CR2_AUTOEND | I2C_CR2_STOP | I2C_CR2_START | (a << 1);
+
+  // Wait for stop condition
+  uint32_t isr   = I2C2->ISR;
+  bool     error = false;
+  do {
+    isr = I2C2->ISR;
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      error     = true;
+      break;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      error     = true;
+      debug_print("BERR\r\n");
+      break;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      error     = true;
+      debug_print("ARLO\r\n");
+      break;
+    }
+  } while (!(isr & I2C_ISR_STOPF));
+
+  // Clear detected stop condition
+  I2C2->ICR = I2C_ICR_STOPCF;
+
+  if (!error) {
+    // ACK was received, a device must be present
+    i2c_dev_present_[a >> 3] |= (1 << (a & 0x7));
+#ifdef DEBUG_PRINT
+    static char str[32] = {};
+    snprintf(str, sizeof(str), "Found I2C dev @0x%02X\r\n", a << 1);
+    debug_print(str);
+#endif
+  }
+
+  a++;
+  if (a < 0x78) {
+    return false;
+  }
+  debug_print("Finished I2C scan\r\n");
+  return true;
+}
+#endif  // SCAN_I2C
+
 void initInternalI2C() {
   // Make sure any interrupted transactions are cleared out
   quiesceI2C();
-
-//#define SCAN_I2C
-#ifdef SCAN_I2C
-  // Scan I2C1 for devices, 0x10-0x7F
-  // static char str[64] = {};
-
-  writePin(exp_nrst_, false);
-  debug_print("Starting I2C scan\r\n");
-  for (uint8_t i = 0x10; i < 0x12; i++) {
-    // uint32_t isr = I2C2->ISR;
-    //  sprintf(str, "Waiting for bus to be free, isr=0x%lX\r\n", isr);
-    //  debug_print(str);
-    writePin(exp_boot0_, false);
-    while (I2C2->ISR & I2C_ISR_BUSY) {}
-    writePin(exp_boot0_, true);
-    // sprintf(str, "Starting transfer to 0x%X\r\n", i);
-    // debug_print(str);
-    I2C_TransferHandling(I2C2, i << 1, 1, I2C_AutoEnd_Mode,
-                         I2C_Generate_Start_Write);
-    // debug_print("Waiting for tx complete\r\n");
-    uint32_t start_time   = millis();
-    uint32_t current_time = start_time;
-    uint32_t isr          = I2C2->ISR;
-    bool     error        = false;
-    do {
-      isr = I2C2->ISR;
-      if (isr & I2C_ISR_NACKF) {
-        I2C2->ICR = I2C_ICR_NACKCF;
-        error     = true;
-        // debug_print("NACKF\r\n");
-        break;
-      }
-      if (isr & I2C_ISR_BERR) {
-        I2C2->ICR = I2C_ICR_BERRCF;
-        error     = true;
-        // debug_print("BERR\r\n");
-        break;
-      }
-      if (isr & I2C_ISR_ARLO) {
-        I2C2->ICR = I2C_ICR_ARLOCF;
-        error     = true;
-        // debug_print("ARLO\r\n");
-        break;
-      }
-      current_time = millis();
-    } while (!(isr & I2C_ISR_STOPF) && current_time - start_time < 100);
-    I2C2->ICR = I2C_ICR_STOPCF;
-    if (current_time - start_time >= 100) {
-      // snprintf(str, sizeof(str), "Timed out, isr=0x%lX\r\n", isr);
-      // itoa(isr, str, 16);
-      // debug_print(str);
-      error = true;
-    } else {
-      // debug_print("Tx done\r\n");
-    }
-    if (!error) {
-      // snprintf(str, sizeof(str), "Found device with addr=%X\r\n", i << 1);
-      // debug_print(str);
-      i2c_dev_present_[i >> 3] |= (1 << (i & 0x7));
-      // while (!(isr & I2C_ISR_STOPF)) {}
-      //  debug_print("Clearing stop status\r\n");
-      // I2C2->ICR = I2C_ICR_STOPCF;
-    }
-  }
-  debug_print("Finished I2C scan\r\n");
-  writePin(exp_nrst_, true);
-  while (1) {}
-#endif  // SCAN_I2C
 
   // Set the direction for the power board GPIO
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
@@ -279,4 +282,11 @@ void updateInternalI2C() {
   }
 
   updateAudio();
+
+#ifdef SCAN_I2C
+  static bool i2c_scan_done = false;
+  if (!i2c_scan_done) {
+    i2c_scan_done = scan_i2c();
+  }
+#endif  // SCAN_I2C
 }

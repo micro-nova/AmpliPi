@@ -235,7 +235,7 @@ void debug_print(char* str) {
 }
 
 void debug_putchar(char c) {
-  while (!(USART2->ISR & USART_ISR_TXE)) {}
+  while (!(USART1->ISR & USART_ISR_TXE)) {}
   USART1->TDR = c;
 }
 #endif
