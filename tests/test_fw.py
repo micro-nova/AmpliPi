@@ -56,20 +56,20 @@ if not amplipi.utils.is_amplipi():
 @pytest.mark.dependency(depends=['test_fw_build'])
 def test_flash_master(fw_bin_path):
   preamps = amplipi.hw.Preamps()
-  preamps.flash(fw_bin_path, num_units=1)
+  preamps.program(fw_bin_path, unit=0)
   ver = preamps[0].read_version()
   print(ver)
-  assert ver[0] == 1
+  assert ver.major == 1
 
 @pytest.mark.dependency(depends=['test_flash_master'])
 def test_set_address():
   preamps = amplipi.hw.Preamps()
   for i in range(10):
-    preamps._reset_master(bootloader = False)
-    if not preamps.send_i2c_address():
+    preamps.reset(unit=0, bootloader = False)
+    if len(preamps) < 1:
       pytest.fail(f'Failed resetting then setting address after {i} tries.')
   for i in range(10):
-    if not preamps.send_i2c_address():
+    if not preamps.set_i2c_address():
       pytest.fail(f'Failed setting address after {i} tries.')
     #ver = preamps[0].read_version()
 
