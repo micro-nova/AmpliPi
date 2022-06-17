@@ -139,34 +139,16 @@ sudo chown $USER:$USER $img_file
 loopdev=$(sudo losetup --find --show $img_file)
 sudo partprobe $loopdev
 
-# Check filesystem just in case
+# Check filesystem just in case (run until no errors occur)
 sudo e2fsck -f ${loopdev}p2
 
-# Shrink root partition
+# Shrink root partition (partition 2)
 sudo resize2fs -pM ${loopdev}p2
-#The filesystem on /dev/loop0p2 is now 1359017 (4k) blocks long.
-new_sectors=$((1359017*4096/512)) # 10872136 in this example
-
-# Delete then re-create the root partition
-# TODO: automate
-sudo fdisk $loopdev
-  p # Print the current partition setup
-  #Device       Boot  Start      End  Sectors  Size Id Type
-  #/dev/loop0p1        8192   532479   524288  256M  c W95 FAT32 (LBA)
-  #/dev/loop0p2      532480 61071359 60538880 28.9G 83 Linux
-
-  d # Delete a partition
-  2 # Delete the root partition
-
-  n # Create a new root partition
-  p # Create a primary partition
-  2 # Use partition number 2
-  532480 # Set the start sector to the same as printed above
-  +10872136 # Set the end to be start + $new_sectos
-  # Partition #2 contains a ext4 signature.
-  N # Don't remove the existing ext4 signature
-
-  w # Write changes
+block_count=$(sudo tune2fs -l ${loopdev}p2 | grep "Block count" | sed "s/^Block count: *//g")
+block_size=$(sudo tune2fs -l ${loopdev}p2 | grep "Block size" | sed "s/^Block size: *//g")
+sector_size=512 # fdisk uses 512-byte sectors
+new_sectors=$(($block_count*$block_size/512))
+echo ",$new_sectors" | sudo sfdisk -N2 $loopdev
 
 # Verify file system is still good
 sudo e2fsck -f ${loopdev}p2
@@ -180,8 +162,7 @@ fdisk -l $img_file
 #amplipi.img1        8192   532479   524288  256M  c W95 FAT32 (LBA)
 #amplipi.img2      532480 11404616 10872137  5.2G 83 Linux
 end=11404616
-bs=512
-truncate --size=$[($end+1)*$bs] $img_file
+truncate --size=$[($end+1)*$sector_size] $img_file
 ```
 
 # Writing to a Pi

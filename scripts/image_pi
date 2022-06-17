@@ -11,9 +11,12 @@
 # sudo make install
 
 helptext="Usage: image_pi [OPTION]... FILE.img
-Write a .img file to a Raspberry Pi for first-time AmpliPi setup.
+Write a .img file to a Raspberry Pi for first-time AmpliPi setup,
+or read from the Pi to create a .img file for later use.
 
-  FILE.img:        Specify a .img file to write to the Pi.
+  FILE.img:        Specify the .img file to write to or read from the Pi.
+  -w, --write:     Write FILE.img to the Pi
+  -r, --read:      Read from the Pi to FILE.img
   --no-instr:      Skip printing manual instructions. Pi must already be in
                    bootloader mode before running this script.
   -h, --help:      Print this help text.
@@ -79,6 +82,11 @@ if [ -z $diskpath ]; then
   echo "" # newline
   exit 2
 fi
+
+# READING
+sudo dd if=$diskpath of=$img_file bs=4MiB status=progress
+sudo chown $USER:$USER $img_file
+# DONE READING
 
 img_size_mb=$(du -m $img_file | cut -f1)
 # bc truncates, add 0.5 to round
