@@ -54,7 +54,7 @@ def print_status(p: rt._Preamps, u: int):
   hv1, hv2 = p.read_hv(u)
   hv1_tmp, hv2_tmp, amp1_tmp, amp2_tmp = p.read_temps(u)
   print(f'  HV1: {hv1:5.2f}V, {temp2str(hv1_tmp)}')
-  if (hv2 > 0):
+  if (hv2 is not None):
     print(f'  HV2: {hv2:5.2f}V, {temp2str(hv2_tmp)}')
   print(f'  Amp Temps: {temp2str(amp1_tmp)}, {temp2str(amp2_tmp)}')
 
@@ -90,23 +90,19 @@ def self_check(p: rt._Preamps):
     print_cond(u, pg_12v, f'PG_12V {"ok" if pg_12v else "bad"}')
     print_cond(u, v12_ok, f'12V supply {"ok" if v12_ok else "bad"} - {v12:.2f}V')
     hv1_tmp, hv2_tmp, amp1_tmp, amp2_tmp = p.read_temps(u + 1)
+    hv2_present = hv2_tmp is not None
     hv1_ok = -19 <= hv1_tmp <= 106
-    if -19 < hv2_tmp <= 106:
-      hv2_color = 2 # Green
-      hv2_ok = True
-    elif hv2_tmp == -math.inf:
-      hv2_color = 3 # Yellow
-      hv2_ok = True
-    else:
-      hv2_color = 1 # Red
-      hv2_ok = False
+    hv2_ok = True
+    if hv2_present:
+      hv2_ok = -19 <= hv2_tmp <= 106
     amp1_ok = -19 < amp1_tmp <= 106
     amp2_ok = -19 < amp2_tmp <= 106
     success &= hv1_ok and hv2_ok and amp1_ok and amp2_ok
-    print_cond(u, hv1_ok, f'HV1 Temp {"ok" if hv1_ok else "bad"}   - {temp2str(hv1_tmp)}')
-    print(f'\033[0;3{hv2_color}m{unit_to_name(u)}: HV2 Temp {"ok" if hv2_ok else "bad"}   - {temp2str(hv2_tmp)}\033[0m')
     print_cond(u, amp1_ok, f'AMP1 Temp {"ok" if amp1_ok else "bad"}  - {temp2str(amp1_tmp)}')
     print_cond(u, amp2_ok, f'AMP2 Temp {"ok" if amp2_ok else "bad"}  - {temp2str(amp2_tmp)}')
+    print_cond(u, hv1_ok, f'HV1 Temp {"ok" if hv1_ok else "bad"}   - {temp2str(hv1_tmp)}')
+    if hv2_present:
+      print_cond(u, hv2_ok, f'HV2 Temp {"ok" if hv2_ok else "bad"}   - {temp2str(hv2_tmp)}')
     print()
   return success
 
