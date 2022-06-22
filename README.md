@@ -47,6 +47,16 @@ In the future we plan to integrate with several home automation systems. Below i
 If you are one of the lucky few to have a pre-release version of the AmpliPi,
 see [docs/QUICK_START.md](docs/QUICK_START.md) to get started.
 
+## Wall Panel
+
+Check out our open source wall panel [here](https://github.com/micro-nova/AmpliPiWallPanel)!
+
+<p align="center">
+  <img alt="Official Wallpanel"
+      src="https://github.com/micro-nova/AmpliPiWallPanel/blob/main/images/home_page_on_display_transparent.png" width="250">
+  </img>
+</p>
+
 ## Speakers
 
 Notes on picking and installing speakers for whole house audio can be found [here](docs/SPEAKERS.md).
