@@ -29,6 +29,14 @@
 #include "pins.h"
 #include "stm32f0xx_i2c.h"
 
+#define ADC_REF_VOLTS 3.3
+#define ADC_PD_KOHMS  4700
+#define ADC_PU_KOHMS  100000
+#define ADC_BITS      8
+
+// Convert a fixed-point temperature from 1 to 8 bits of fractional component.
+#define TEMP_F1_TO_F8(f1) (((int16_t)f1 - (20 << 1)) << 7)
+
 typedef union {
   struct {
     // The order here must match the order of ADC channels in hardware.
@@ -47,29 +55,29 @@ Temps    temps_    = {};
 Voltages voltages_ = {};
 
 typedef struct {
-  I2CDev  dev;     // I2C address
-  uint8_t nchans;  // Number of ADC channels to read
+  const I2CDev  dev;     // I2C address
+  const uint8_t nchans;  // Number of ADC channels to read
 } AdcDev;
 
 // Power Board I2C ADC device with 4 channels (1 HV power supply)
-AdcDev adc4_ = {
+const AdcDev adc4_ = {
     .dev    = 0xC8,  // MAX11601
     .nchans = 4,
 };
 
 // Power Board I2C ADC device with 6 channels (2 HV power supplies).
 // Either an 8-channel or 12-channel (pin compatible) IC is used.
-AdcDev adc8_ = {
+const AdcDev adc8_ = {
     .dev    = 0xDA,  // MAX11603
     .nchans = 6,     // Last two channels of MAX11603 unused.
 };
-AdcDev adc12_ = {
+const AdcDev adc12_ = {
     .dev    = 0xCA,  // MAX11605
-    .nchans = 6,     // Last two channels of MAX11603 unused.
+    .nchans = 6,     // Last six channels of MAX11605 unused.
 };
 
 // Detected ADC. Assume 4-channel to begin.
-AdcDev* adc_ = &adc4_;
+const AdcDev* adc_ = &adc4_;
 
 // NCP21XV103J03RA - 0805 SMD, R0 = 10k @ 25 degC, B = 3900K
 const uint8_t THERM_LUT_[] = {
@@ -238,10 +246,6 @@ AdcVals* readAdc() {
 }
 
 void updateAdc() {
-#define ADC_REF_VOLTS 3.3
-#define ADC_PD_KOHMS  4700
-#define ADC_PU_KOHMS  100000
-#define ADC_BITS      8
   // TODO: low-pass filter after initial reading
   AdcVals* vals = readAdc();
 
@@ -267,13 +271,12 @@ Temps* getTemps() {
 }
 
 Temps16* getTemps16() {
-#define F1_TO_F8(f1) (((int16_t)f1 - (20 << 1)) << 7)
   static Temps16 temps;
-  temps.hv1_f8  = F1_TO_F8(temps_.hv1_f1);
-  temps.hv2_f8  = F1_TO_F8(temps_.hv2_f1);
-  temps.amp1_f8 = F1_TO_F8(temps_.amp1_f1);
-  temps.amp2_f8 = F1_TO_F8(temps_.amp2_f1);
-  temps.pi_f8   = F1_TO_F8(temps_.pi_f1);
+  temps.hv1_f8  = TEMP_F1_TO_F8(temps_.hv1_f1);
+  temps.hv2_f8  = TEMP_F1_TO_F8(temps_.hv2_f1);
+  temps.amp1_f8 = TEMP_F1_TO_F8(temps_.amp1_f1);
+  temps.amp2_f8 = TEMP_F1_TO_F8(temps_.amp2_f1);
+  temps.pi_f8   = TEMP_F1_TO_F8(temps_.pi_f1);
   return &temps;
 }
 
