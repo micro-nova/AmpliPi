@@ -20,9 +20,6 @@
 
 #include "int_i2c.h"
 
-#include <stdbool.h>
-#include <stdint.h>
-
 #include "adc.h"
 #include "audio.h"
 #include "fans.h"
@@ -30,6 +27,7 @@
 #include "leds.h"
 #include "pins.h"
 #include "pwr_gpio.h"
+#include "serial.h"
 #include "stm32f0xx.h"
 #include "systick.h"
 
@@ -154,6 +152,85 @@ static void updateDPot(uint8_t val) {
   }
 }
 
+uint8_t i2c_dev_present_[16] = {};
+
+uint8_t isInternalI2CDevPresent(uint8_t addr) {
+  return i2c_dev_present_[addr];
+}
+
+//#define SCAN_I2C
+#ifdef SCAN_I2C
+
+#ifdef DEBUG_PRINT
+#include <stdio.h>
+#else
+// TODO: The I2C scanning only works if DEBUG_PRINT is enabled. Timing issue?
+#error "SCAN_I2C enabled but DEBUG_PRINT not enabled"
+#endif
+
+// Devices used in AmpliPi so far: (address are in LSB position)
+// MCP23008 GPIO: 0x20-0x27
+// MCP4017  DPOT: 0x2E-0x2F
+// TDA7448   VOL: 0x44-0x45
+// MAX1160X ADC : 0x64-0x65, 0x6D
+bool scan_i2c() {
+  // Scan I2C1 for valid device addresses 0x08-0x77
+  // (0x00-0x07 and 0x78-0x7F are reserved)
+  // TODO: When set to 0x08 something is found at 0x0D and then this crashes...
+  static uint8_t a = 0x20;
+
+  // Wait for bus free
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Send a start condition, the address (0 bytes of data), and a stop condition
+  I2C2->CR2 = I2C_CR2_AUTOEND | I2C_CR2_STOP | I2C_CR2_START | (a << 1);
+
+  // Wait for stop condition
+  uint32_t isr   = I2C2->ISR;
+  bool     error = false;
+  do {
+    isr = I2C2->ISR;
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      error     = true;
+      break;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      error     = true;
+      debug_print("BERR\r\n");
+      break;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      error     = true;
+      debug_print("ARLO\r\n");
+      break;
+    }
+  } while (!(isr & I2C_ISR_STOPF));
+
+  // Clear detected stop condition
+  I2C2->ICR = I2C_ICR_STOPCF;
+
+  if (!error) {
+    // ACK was received, a device must be present
+    i2c_dev_present_[a >> 3] |= (1 << (a & 0x7));
+#ifdef DEBUG_PRINT
+    static char str[32] = {};
+    snprintf(str, sizeof(str), "Found I2C dev @0x%02X\r\n", a << 1);
+    debug_print(str);
+#endif
+  }
+
+  a++;
+  if (a < 0x78) {
+    return false;
+  }
+  debug_print("Finished I2C scan\r\n");
+  return true;
+}
+#endif  // SCAN_I2C
+
 void initInternalI2C() {
   // Make sure any interrupted transactions are cleared out
   quiesceI2C();
@@ -162,7 +239,6 @@ void initInternalI2C() {
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
   initLeds();
-  initAdc();
   updateInternalI2C();
 }
 
@@ -178,14 +254,8 @@ void updateInternalI2C() {
     // Read ADC and update fans every 8 ms
     updateAdc();
 
-    // The two amp heatsinks can be combined by simply taking the max
-    int16_t amp1t       = getAmp1Temp_f8();
-    int16_t amp2t       = getAmp2Temp_f8();
-    int16_t amp_temp_f8 = amp1t > amp2t ? amp1t : amp2t;
-
     // Update fans based on temps. Ideally use a DPot for linear control.
-    uint8_t dpot_val = updateFans(amp_temp_f8, getHV1Temp_f8(), getPiTemp_f8(),
-                                  dpot_type_ != DPOT_NONE);
+    uint8_t dpot_val = updateFans(dpot_type_ != DPOT_NONE);
     updateDPot(dpot_val);
   } else {
     // Read the power board's GPIO inputs
@@ -212,4 +282,11 @@ void updateInternalI2C() {
   }
 
   updateAudio();
+
+#ifdef SCAN_I2C
+  static bool i2c_scan_done = false;
+  if (!i2c_scan_done) {
+    i2c_scan_done = scan_i2c();
+  }
+#endif  // SCAN_I2C
 }

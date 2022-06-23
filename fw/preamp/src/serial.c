@@ -223,3 +223,19 @@ void USART2_IRQHandler(void) {
     USART_SendData(USART1, m);
   }
 }
+
+#ifdef DEBUG_PRINT
+void debug_print(char* str) {
+  size_t i = 0;
+  while (str[i] != 0) {
+    while (!(USART1->ISR & USART_ISR_TXE)) {}
+    USART1->TDR = str[i];
+    i++;
+  }
+}
+
+void debug_putchar(char c) {
+  while (!(USART1->ISR & USART_ISR_TXE)) {}
+  USART1->TDR = c;
+}
+#endif

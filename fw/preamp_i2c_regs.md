@@ -119,7 +119,7 @@
     <tr>
       <td>0x0B</td>
       <td>POWER</td>
-      <td align=center>-</td>
+      <td align=center>HV2</td>
       <td align=center>-</td>
       <td align=center>-</td>
       <td align=center>-</td>
@@ -188,7 +188,7 @@
     </tr>
     <tr>
       <td>0x11</td>
-      <td>AMP_TEMP1</td>
+      <td>AMP1_TEMP</td>
       <td align='center' colspan=8>Temperature of heatsink over amps 1-3 in degrees C, unsigned with 1 fractional bit</td>
       <td>N/A</td>
     </tr>
@@ -200,7 +200,7 @@
     </tr>
     <tr>
       <td>0x13</td>
-      <td>AMP_TEMP2</td>
+      <td>AMP2_TEMP</td>
       <td align='center' colspan=8>Temperature of heatsink over amps 4-6 in degrees C, unsigned with 1 fractional bit</td>
       <td>N/A</td>
     </tr>
@@ -221,6 +221,18 @@
       <td>FAN_VOLTS</td>
       <td align='center' colspan=8>Fan power supply in Volts, unsigned with 4 fractional bits</td>
       <td>0xC0</td>
+    </tr>
+    <tr>
+      <td>0x17</td>
+      <td>HV2_VOLTAGE</td>
+      <td align='center' colspan=8>Second power supply voltage, if present. Unsigned with 2 fractional bits</td>
+      <td>N/A</td>
+    </tr>
+    <tr>
+      <td>0x18</td>
+      <td>HV2_TEMP</td>
+      <td align='center' colspan=8>Temperature of second power supply in degrees C, if present. Unsigned with 1 fractional bit</td>
+      <td>N/A</td>
     </tr>
     <tr><td align=center colspan=100%><b>Version Info</b></td></tr>
     <tr>
@@ -328,12 +340,13 @@ Values outside this will be saturated to the range [0, 79].
 
 ### POWER
 
-Check the status of the two power supplies.
-The 12 V supply runs the fans, while 9 V is used for audio power.
+Check the status of the 9V, 12V, and HV2 supplies.
+The 12 V supply runs the fans, 9 V is used for audio power, and HV2
+is the second high-voltage power supply for high-power AmpliPi Units.
+All bits are read-only.
 
-EN_xV are read/write, PG_xV are read-only.
 EN_9V/PG_9V is only present on prototype power boards, on all others
-the 9 V supply is always on.
+the 9 V supply is always on and these two bits are undefined values.
 
 | PG_9V | Description |
 | ----- | ----------- |
@@ -354,6 +367,16 @@ the 9 V supply is always on.
 | ------ | ----------- |
 | 0      | 12 V on     |
 | 1      | 12 V off    |
+
+| HV2 | Description     |
+| --- | --------------- |
+| 0   | HV2 not present |
+| 1   | HV2 present     |
+
+HV2 presence is determined by checking for an 8 or 12-channel ADC,
+of which 6 channels are used. The first 4 are used by all AmpliPi
+units but the last two are used only if a second high-voltage
+power supply is used.
 
 ### FANS
 
@@ -434,16 +457,25 @@ If UART_PASS is set any data received on UART1 is forwarded to UART2 and vice-ve
 This enables programming of expansion units by setting all previous units
 as pass-through.
 
-### HV1_VOLTAGE
+### HV[1:2]_VOLTAGE
 
-Measures the 24V high-voltage power supply voltage.
+Measures the high-voltage power supply voltage(s).
+Standard AmpliPi units use a single 24V power supply,
+and HV2_VOLTAGE will read as 0.
+High-power AmpliPi units use dual 36V power supplies and
+both HV1_VOLTAGE and HV2_VOLTAGE will be reported.
+
 The value is reported as an unsigned fixed-point number with 2 fractional bits,
 with units of Volts.
-So a value of 0x63 equates to a voltage of 0x63 / 4 = 24.75 V
+A value of 0x63 equates to a voltage of 0x63 / 4 = 24.75 V.
 
-### HV1_TEMP
+### HV[1:2]_TEMP
 
-Measures the thermistor attached to the 24V high-voltage power supply.
+Measures the high-voltage power supply temperature(s) with a thermistor.
+Standard AmpliPi units use a single power supply, and HV2_TEMP will read as 0.
+High-power AmpliPi units use dual power supplies and
+both HV1_TEMP and HV2_TEMP will be reported.
+
 The value is reported as an unsigned fixed-point number with 1 fractional bit,
 with units of &deg;C.
 There is also a 20 &deg;C offset added to keep the value positive.
@@ -454,16 +486,16 @@ The values 0x00 and 0xFF are both invalid as temperatures:
 a value of 0x00 represents a disconnected thermistor, and
 a value of 0xFF represents a short.
 
-If the power supply exceeds 40 &deg;C the fans will turn
+If either power supply exceeds 40 &deg;C the fans will turn
 on at their minimum value.
 The fan speed will increase with temperature until above 55 &deg;C
 when the fans will turn on 100%.
 
-### AMP_TEMP[1:2]
+### AMP[1:2]_TEMP
 
 Measures the thermistors under the amplifier heatsinks.
-AMP_TEMP1 measures the heatsink for amplifiers 1-3 and
-AMP_TEMP2 measures the heatsink for amplifiers 4-6.
+AMP1_TEMP measures the heatsink for amplifiers 1-3 and
+AMP2_TEMP measures the heatsink for amplifiers 4-6.
 The value is reported the same as for the HV1_TEMP register:
 an unsigned fixed-point number with 1 fractional bit with units of &deg;C.
 
@@ -480,7 +512,7 @@ At 80 &deg;C the fans will be at 100%.
 The value is sent the same as for the HV1_TEMP register:
 an unsigned fixed-point number with 1 fractional bit with units of &deg;C.
 
-The highest fan speed demanded by each of the four temperatures measured (HV1_TEMP, AMP_TEMP1, AMP_TEMP2,
+The highest fan speed demanded by each of the four temperatures measured (HV1_TEMP, AMP1_TEMP, AMP2_TEMP,
 and PI_TEMP) is chosen to be the final fan speed that is set.
 
 ### FAN_DUTY

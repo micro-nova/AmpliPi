@@ -21,11 +21,63 @@
 
 #include "adc.h"
 
+#include <assert.h>
+#include <stddef.h>
+#include <string.h>
+
 #include "i2c.h"
+#include "pins.h"
 #include "stm32f0xx_i2c.h"
 
-// Power Board I2C ADC device
-const I2CDev adc_dev_ = 0xC8;
+#define ADC_REF_VOLTS 3.3
+#define ADC_PD_KOHMS  4700
+#define ADC_PU_KOHMS  100000
+#define ADC_BITS      8
+
+// Convert a fixed-point temperature from 1 to 8 bits of fractional component.
+#define TEMP_F1_TO_F8(f1) (((int16_t)f1 - (20 << 1)) << 7)
+
+typedef union {
+  struct {
+    // The order here must match the order of ADC channels in hardware.
+    uint8_t hv1;
+    uint8_t amp_temp1;
+    uint8_t hv1_temp;
+    uint8_t amp_temp2;
+    uint8_t hv2;
+    uint8_t hv2_temp;
+  };
+  uint8_t chan[6];
+} AdcVals;
+static_assert(sizeof(AdcVals) == 6, "AdcVals not packed.");
+
+Temps    temps_    = {};
+Voltages voltages_ = {};
+
+typedef struct {
+  const I2CDev  dev;     // I2C address
+  const uint8_t nchans;  // Number of ADC channels to read
+} AdcDev;
+
+// Power Board I2C ADC device with 4 channels (1 HV power supply)
+const AdcDev adc4_ = {
+    .dev    = 0xC8,  // MAX11601
+    .nchans = 4,
+};
+
+// Power Board I2C ADC device with 6 channels (2 HV power supplies).
+// Either an 8-channel or 12-channel (pin compatible) IC is used.
+const AdcDev adc8_ = {
+    .dev    = 0xDA,  // MAX11603
+    .nchans = 6,     // Last two channels of MAX11603 unused.
+};
+const AdcDev adc12_ = {
+    .dev    = 0xCA,  // MAX11605
+    .nchans = 6,     // Last six channels of MAX11605 unused.
+};
+
+// Detected ADC. Assume 4-channel to begin.
+const AdcDev* adc_ = &adc4_;
 
 // NCP21XV103J03RA - 0805 SMD, R0 = 10k @ 25 degC, B = 3900K
 const uint8_t THERM_LUT_[] = {
@@ -53,143 +105,187 @@ const uint8_t THERM_LUT_[] = {
     0xFF, 0xFF, 0xFF, 0xFF,
 };
 
-typedef struct {
-  uint8_t hv1;
-  uint8_t amp_temp1;
-  uint8_t hv1_temp;
-  uint8_t amp_temp2;
-} AdcVals;
-
-typedef union {
-  // All temps in UQ7.1 + 20 degC format
-  struct {
-    uint8_t hv1_f1;   // PSU temp
-    uint8_t amp1_f1;  // Amp heatsink 1 temp
-    uint8_t amp2_f1;  // Amp heatsink 2 temp
-    uint8_t pi_f1;    // Control board Raspberry Pi temp
-  };
-  uint8_t temps[4];  // All temperatures in 1 array
-} Temps;
-Temps temps_ = {0};
-
-uint8_t hv1_f2_ = 0;
-
-void initAdc() {
-  // Write ADC setup byte
-  // REG=1 (setup byte), SEL[2:0] = 000 (VDD), CLK = 0 (internal),
-  // BIP/UNI=0 (unipolar), RST=0 (reset config register), X=0 (don't care)
-  uint32_t result = writeByteI2C2(adc_dev_, 0x80);
-  // TODO: Handle errors here
-  (void)result;
-}
+// Exponential Moving Average filter:
+// O3dB = 2*pi*f_3dB/Fs
+// alpha = cos(O3dB) + sqrt[cos(O3dB)^2 - 4cos(O3dB) + 3] - 1
+// y[n] = (1 - alpha)*y[n-1] + alpha*x[n]
 
 // TODO: Make standard i2c function
-AdcVals readAdc() {
+// TODO: Timeouts
+uint32_t readAdcI2C2(const AdcDev* adc, AdcVals* vals) {
   /****************************************************************************
    *  Configure ADC to scan all 4 channels
    ****************************************************************************/
 
   // Wait if I2C2 is busy
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
 
-  // Setup to send send start, addr, subaddr
-  I2C_TransferHandling(I2C2, adc_dev_, 1, I2C_SoftEnd_Mode,
+  // Setup to send start condition, slave address, and write bit.
+  I2C_TransferHandling(I2C2, adc->dev, 1, I2C_SoftEnd_Mode,
                        I2C_Generate_Start_Write);
 
-  // Wait for transmit interrupted flag
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET) {}
+  // Wait for transmit interrupted flag or an error
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_TXIS));
 
-  // Configuration byte = { config=0b0, scan=0b11, cs=0b00XX, sgl=0b1 }
+  // Configuration byte = { config=0b0, scan=0b00, cs=0b0XXX, sgl=0b1 }
   // Scan all 4 channels in single-ended mode
-  I2C_SendData(I2C2, 0x01 | (3 << 1));
+  uint8_t config = ((adc->nchans - 1) << 1) | 0x01;
+  I2C2->TXDR     = config;
 
-  // Wait for transfer complete flag
-  while (I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET) {}
+  // Wait for transmit complete flag or an error
+  isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_TC));
 
   /****************************************************************************
-   *  Read all 4 channels
+   *  Read all channels
    ****************************************************************************/
-  AdcVals vals = {};
   // Restart and setup a read transfer
-  I2C_TransferHandling(I2C2, adc_dev_, 4, I2C_AutoEnd_Mode,
+  I2C_TransferHandling(I2C2, adc->dev, adc->nchans, I2C_AutoEnd_Mode,
                        I2C_Generate_Start_Read);
 
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  vals.hv1 = I2C_ReceiveData(I2C2);
+  for (uint32_t i = 0; i < adc->nchans; i++) {
+    // Wait for receive data register not empty or an error
+    isr = I2C2->ISR;
+    do {
+      if (isr & I2C_ISR_NACKF) {
+        I2C2->ICR = I2C_ICR_NACKCF;
+        return I2C_ISR_NACKF;
+      }
+      if (isr & I2C_ISR_BERR) {
+        I2C2->ICR = I2C_ICR_BERRCF;
+        return I2C_ISR_BERR;
+      }
+      if (isr & I2C_ISR_ARLO) {
+        I2C2->ICR = I2C_ICR_ARLOCF;
+        return I2C_ISR_ARLO;
+      }
+      isr = I2C2->ISR;
+    } while (!(isr & I2C_ISR_RXNE));
 
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  vals.amp_temp1 = I2C_ReceiveData(I2C2);
+    // Read data
+    vals->chan[i] = I2C2->RXDR;
+  }
 
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  vals.hv1_temp = I2C_ReceiveData(I2C2);
+  // Wait for stop condition to occur or an error
+  isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_STOPF));
+  I2C2->ICR = I2C_ICR_STOPCF;
+  return 0;
+}
 
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
-  vals.amp_temp2 = I2C_ReceiveData(I2C2);
-
-  while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
-  I2C_ClearFlag(I2C2, I2C_FLAG_STOPF);
-
-  return vals;
+AdcVals* readAdc() {
+  static bool    adc_found = false;
+  static AdcVals vals;
+  memset(&vals, 0, sizeof(vals));
+  if (adc_found) {
+    // Read the ADC. If an error occurs assume the ADC is missing.
+    adc_found = readAdcI2C2(adc_, &vals) == 0;
+  } else {
+    // Check for ADC presence by attempting to send the ADC setup byte
+    // REG=1 (setup byte), SEL[2:0] = 000 (VDD), CLK = 0 (internal),
+    // BIP/UNI=0 (unipolar), RST=0 (reset config register), X=0 (don't care)
+    uint32_t error = writeByteI2C2(adc_->dev, 0x80);
+    if (error == 0) {
+      // Success! Found an ADC.
+      adc_found = true;
+    } else if (adc_ == &adc4_) {
+      // Failed to communicate to the 4-channel ADC, try the 8-channel ADC next
+      adc_ = &adc8_;
+    } else if (adc_ == &adc8_) {
+      // Failed to communicate to the 8-channel ADC, try the 12-channel ADC next
+      adc_ = &adc12_;
+    } else if (adc_ == &adc12_) {
+      // Failed to communicate to the 12-channel ADC, try the 4-channel ADC next
+      adc_ = &adc4_;
+    }
+  }
+  return &vals;
 }
 
 void updateAdc() {
-#define ADC_REF_VOLTS 3.3
-#define ADC_PD_KOHMS  4700
-#define ADC_PU_KOHMS  100000
   // TODO: low-pass filter after initial reading
-  AdcVals adc = readAdc();
+  AdcVals* vals = readAdc();
 
-  // Convert HV1 to Volts (multiply by 4 to add 2 fractional bits)
-  uint32_t num     = 4 * ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
-  uint32_t den     = UINT8_MAX * ADC_PD_KOHMS;
-  uint32_t hv1_raw = num * adc.hv1 / den;
-  hv1_f2_          = (uint8_t)(hv1_raw > UINT8_MAX ? UINT8_MAX : hv1_raw);
+  // Convert HV1 and HV2 to Volts (multiply by 4 to add 2 fractional bits)
+  uint32_t num     = ADC_REF_VOLTS * (ADC_PU_KOHMS + ADC_PD_KOHMS);
+  uint32_t den     = (1 << (ADC_BITS - 2)) * ADC_PD_KOHMS;
+  uint32_t hv1_raw = num * vals->hv1 / den;
+  voltages_.hv1_f2 = (uint8_t)(hv1_raw > UINT8_MAX ? UINT8_MAX : hv1_raw);
+  uint32_t hv2_raw = num * vals->hv2 / den;
+  voltages_.hv2_f2 = (uint8_t)(hv2_raw > UINT8_MAX ? UINT8_MAX : hv2_raw);
 
-  // Convert HV1 thermocouple to degC
-  temps_.hv1_f1 = THERM_LUT_[adc.hv1_temp];
+  // Convert HV1 and HV2 thermocouples to degC
+  temps_.hv1_f1 = THERM_LUT_[vals->hv1_temp];
+  temps_.hv2_f1 = THERM_LUT_[vals->hv2_temp];
 
   // Convert amplifier thermocouples to degC
-  temps_.amp1_f1 = THERM_LUT_[adc.amp_temp1];
-  temps_.amp2_f1 = THERM_LUT_[adc.amp_temp2];
+  temps_.amp1_f1 = THERM_LUT_[vals->amp_temp1];
+  temps_.amp2_f1 = THERM_LUT_[vals->amp_temp2];
 }
 
-uint8_t getHV1_f2() {
-  return hv1_f2_;
+Temps* getTemps() {
+  return &temps_;
 }
 
-uint8_t getHV1Temp_f1() {
-  return temps_.hv1_f1;
+Temps16* getTemps16() {
+  static Temps16 temps;
+  temps.hv1_f8  = TEMP_F1_TO_F8(temps_.hv1_f1);
+  temps.hv2_f8  = TEMP_F1_TO_F8(temps_.hv2_f1);
+  temps.amp1_f8 = TEMP_F1_TO_F8(temps_.amp1_f1);
+  temps.amp2_f8 = TEMP_F1_TO_F8(temps_.amp2_f1);
+  temps.pi_f8   = TEMP_F1_TO_F8(temps_.pi_f1);
+  return &temps;
 }
 
-int16_t getHV1Temp_f8() {
-  // TODO: Filter
-  return ((int16_t)temps_.hv1_f1 - (20 << 1)) << 7;
+Voltages* getVoltages() {
+  return &voltages_;
 }
 
-uint8_t getAmp1Temp_f1() {
-  return temps_.amp1_f1;
-}
-
-int16_t getAmp1Temp_f8() {
-  // TODO: Filter
-  return ((int16_t)temps_.amp1_f1 - (20 << 1)) << 7;
-}
-
-uint8_t getAmp2Temp_f1() {
-  return temps_.amp2_f1;
-}
-
-int16_t getAmp2Temp_f8() {
-  // TODO: Filter
-  return ((int16_t)temps_.amp2_f1 - (20 << 1)) << 7;
-}
-
-uint8_t getPiTemp_f1() {
-  return temps_.pi_f1;
-}
-
-int16_t getPiTemp_f8() {
-  return ((int16_t)temps_.pi_f1 - (20 << 1)) << 7;
+bool isHV2Present() {
+  return adc_ != &adc4_;
 }
 
 void setPiTemp_f1(uint8_t temp_f1) {

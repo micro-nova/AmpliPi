@@ -22,20 +22,54 @@
 #ifndef ADC_H_
 #define ADC_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
-void initAdc();
-void updateAdc();
+typedef union {
+  // All temps in UQ7.1 + 20 degC format
+  struct {
+    uint8_t hv1_f1;   // PSU 1 temp (always present)
+    uint8_t hv2_f1;   // PSU 2 temp (only present on high-power units)
+    uint8_t amp1_f1;  // Amp heatsink 1 temp
+    uint8_t amp2_f1;  // Amp heatsink 2 temp
+    uint8_t pi_f1;    // Control board Raspberry Pi temp
+  };
+  uint8_t temps[5];  // All temperatures in 1 array
+} Temps;
 
-uint8_t getHV1_f2();
-uint8_t getHV1Temp_f1();
+typedef union {
+  // All temps in Q7.8 format
+  struct {
+    int16_t hv1_f8;   // PSU 1 temp (always present)
+    int16_t hv2_f8;   // PSU 2 temp (only present on high-power units)
+    int16_t amp1_f8;  // Amp heatsink 1 temp
+    int16_t amp2_f8;  // Amp heatsink 2 temp
+    int16_t pi_f8;    // Control board Raspberry Pi temp
+  };
+  int16_t temps[5];  // All temperatures in 1 array
+} Temps16;
+
+typedef union {
+  // All voltages in UQ6.2 format
+  struct {
+    uint8_t hv1_f2;  // PSU 1 voltage (always present)
+    uint8_t hv2_f2;  // PSU 2 voltage (only present on high-power units)
+  };
+  uint8_t voltages[2];  // All voltages in 1 array
+} Voltages;
+
+void      updateAdc();
+Temps*    getTemps();    // UQ7.1 + 20 degC format
+Temps16*  getTemps16();  // Q7.8 format
+Voltages* getVoltages();
+bool      isHV2Present();
+
+void setPiTemp_f1(uint8_t temp_f1);
+
 int16_t getHV1Temp_f8();
-uint8_t getAmp1Temp_f1();
+int16_t getHV2Temp_f8();
 int16_t getAmp1Temp_f8();
-uint8_t getAmp2Temp_f1();
 int16_t getAmp2Temp_f8();
-uint8_t getPiTemp_f1();
 int16_t getPiTemp_f8();
-void    setPiTemp_f1(uint8_t temp_f1);
 
 #endif /* ADC_H_ */

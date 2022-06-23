@@ -31,6 +31,7 @@ int main(void) {
   // TODO: Setup watchdog
 
   // RESET AND PIN SETUP
+  initPins();                   // UART and I2C require GPIO pins
   writePin(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are
                                 // reset by the controller board
   writePin(exp_boot0_, false);  // Needs to be low so the subsequent preamp
@@ -39,7 +40,6 @@ int main(void) {
   // INIT
   systickInit();  // Initialize the clock ticks for delay_ms and other timing
                   // functionality
-  initPins();     // UART and I2C require GPIO pins
   initAudio();    // Initialize audio mux, volumes, mute and standby
   initUart1();    // The preamp will receive its I2C network address via UART
   initUart2(9600);

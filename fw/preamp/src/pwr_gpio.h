@@ -51,9 +51,7 @@ bool overTempMax6644();
 
 // Outputs
 // TODO: Are all of these necessary?
-void set9vEn(bool en);
 bool get9vEn();
-void set12vEn(bool en);
 bool get12vEn();
 void setFanOn(bool on);
 bool getFanOn();

@@ -22,10 +22,12 @@
 #define INT_I2C_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
 void initInternalI2C();
 void updateInternalI2C();
 
-bool isDPotSMBus();
+bool    isDPotSMBus();
+uint8_t isInternalI2CDevPresent(uint8_t addr);
 
 #endif /* INT_I2C_H_ */

@@ -35,8 +35,7 @@
 #include "stm32f0xx.h"
 #include "version.h"
 
-typedef enum
-{
+typedef enum {
   // Audio control
   REG_SRC_AD    = 0x00,
   REG_ZONE321   = 0x01,
@@ -63,6 +62,12 @@ typedef enum
   REG_PI_TEMP     = 0x14,  // RPi's temp sent to the micro, in UQ7.1 + 20 format
   REG_FAN_DUTY    = 0x15,  // Fan PWM duty, [0.0,1.0] in UQ1.7 format
   REG_FAN_VOLTS   = 0x16,  // Fan voltage in UQ4.3 format
+  REG_HV2_VOLTAGE = 0x17,  // Volts in UQ6.2 format (0.25 volt resolution)
+  REG_HV2_TEMP    = 0x18,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
+
+  // Internal I2C bus detected devices
+  REG_INT_I2C     = 0x20,  // Each bit flag represents one I2C address
+  REG_INT_I2C_MAX = 0x2F,  // Check I2C_ADDR/8 + REG_INT_I2C bit I2C_ADDR & 0x3
 
   // Version info
   REG_VERSION_MAJOR = 0xFA,
@@ -157,6 +162,7 @@ uint8_t readReg(uint8_t addr) {
           .en_9v    = get9vEn(),
           .pg_12v   = pg12v(),
           .en_12v   = get12vEn(),
+          .hv2      = isHV2Present(),
           .reserved = 0,
       };
       out_msg = msg.data;
@@ -195,23 +201,23 @@ uint8_t readReg(uint8_t addr) {
     }
 
     case REG_HV1_VOLTAGE:
-      out_msg = getHV1_f2();
+      out_msg = getVoltages()->hv1_f2;
       break;
 
     case REG_HV1_TEMP:
-      out_msg = getHV1Temp_f1();
+      out_msg = getTemps()->hv1_f1;
       break;
 
     case REG_AMP_TEMP1:
-      out_msg = getAmp1Temp_f1();
+      out_msg = getTemps()->amp1_f1;
       break;
 
     case REG_AMP_TEMP2:
-      out_msg = getAmp2Temp_f1();
+      out_msg = getTemps()->amp2_f1;
       break;
 
     case REG_PI_TEMP:
-      out_msg = getPiTemp_f1();
+      out_msg = getTemps()->pi_f1;
       break;
 
     case REG_FAN_DUTY:
@@ -220,6 +226,14 @@ uint8_t readReg(uint8_t addr) {
 
     case REG_FAN_VOLTS:
       out_msg = getFanVolts();
+      break;
+
+    case REG_HV2_VOLTAGE:
+      out_msg = getVoltages()->hv2_f2;
+      break;
+
+    case REG_HV2_TEMP:
+      out_msg = getTemps()->hv2_f1;
       break;
 
     case REG_VERSION_MAJOR:
@@ -240,6 +254,9 @@ uint8_t readReg(uint8_t addr) {
     default:
       // Return 0xFF if a non-existent register is selected
       out_msg = 0xFF;
+  }
+  if (addr >= REG_INT_I2C && addr <= REG_INT_I2C_MAX) {
+    out_msg = isInternalI2CDevPresent(addr - REG_INT_I2C);
   }
   return out_msg;
 }
@@ -290,11 +307,6 @@ void writeReg(uint8_t addr, uint8_t data) {
       setZoneVolume(zone, data);
       break;
     }
-
-    case REG_POWER:
-      set9vEn(((PwrReg)data).en_9v);
-      set12vEn(((PwrReg)data).en_12v);
-      break;
 
     case REG_FANS:
       setFanCtrl((FanCtrl)data);
