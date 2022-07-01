@@ -658,11 +658,15 @@ async function checkForShutown(retry_check_ct) {
     }).catch( err => {
       console.log('Failed to communicate, it is probably shutting down: ' + err.message);
       indicator_show_done(indicator);
-      button.classList.toggle('disabled', false);
+      button.innerHTML = "Safe to unplug"
+      button.classList.toggle('btn-success', false);
+      button.classList.toggle('btn-primary', true);
     });
   }).catch( err => {
     console.log('Failed to communicate, it is probably shutting down: ' + err.message);
     indicator_show_done(indicator);
-    button.classList.toggle('disabled', false);
+    button.innerHTML = "Safe to unplug"
+    button.classList.toggle('btn-success', false);
+    button.classList.toggle('btn-primary', true);
   });
 }
