@@ -632,7 +632,7 @@ async function shutdownDevice() {
   indicator_show_inprogress(indicator);
   fetch('/api/shutdown', {method: 'POST'})
   .then((response) => {
-    setTimeout(checkForShutown, 2000, 60 / 2 - 1); // wait for 1 minutes since a shutdown can take awhile
+    setTimeout(checkForShutdown, 2000, 60 / 2 - 1); // wait for 1 minute since a shutdown can take awhile
   })
   .catch((e) => {
     indicator_show_error(indicator);
@@ -640,7 +640,7 @@ async function shutdownDevice() {
   });
 }
 
-async function checkForShutown(retry_check_ct) {
+async function checkForShutdown(retry_check_ct) {
   button = $('#settings-config-shutdown')[0];
   indicator = $("#settings-config-shutdown-indicator")[0];
   button.classList.toggle('disabled', true);
@@ -649,7 +649,7 @@ async function checkForShutown(retry_check_ct) {
     response.json().then(function(json) {
       if (retry_check_ct > 0) {
         console.log('Waiting for the AmpliPi to shutdown');
-        setTimeout(checkForShutown, 2000, retry_check_ct - 1);
+        setTimeout(checkForShutdown, 2000, retry_check_ct - 1);
       } else {
         console.log('Error: AmpliPi failed to shutdown, time out reached.');
         indicator_show_error(indicator);
