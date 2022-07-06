@@ -110,14 +110,16 @@ async def download_update(info: ReleaseInfo ):
     print(e)
     return 500
 
-@app.get('/update/restart')
+@app.get('/update/restart') # an old version accidentally used get instead of post
+@app.post('/update/restart')
 def restart():
-  """ Restart the update service
+  """ Restart the OS and all of the AmpliPi services including the updater.
 
   This is typically done at the end of an update
   """
+  # start the restart, and return immediately (hopefully before the restart process begins)
   subprocess.Popen(f'python3 {HOME}/scripts/configure.py --restart-updater'.split())
-  return {}
+  return 200
 
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
 

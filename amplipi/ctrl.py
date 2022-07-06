@@ -251,10 +251,17 @@ class Api:
 
   def __del__(self):
     # stop save in the future so we can save right away
+    # we save before shutting everything down to avoid saving disconnected state
     if self._save_timer:
       self._save_timer.cancel()
       self._save_timer = None
     self.save()
+    # stop any streams
+    for stream in self.streams.values():
+      stream.disconnect()
+    # put the firmware in a reset state (should mute all audio)
+    self._rt.reset()
+    print('controller shutdown complete')
 
   def save(self) -> None:
     """ Saves the system state to json"""

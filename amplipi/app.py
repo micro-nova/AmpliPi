@@ -38,6 +38,7 @@ from functools import lru_cache
 import asyncio
 import json
 import yaml
+from subprocess import Popen
 from time import sleep
 
 from PIL import Image # For custom album art size
@@ -114,6 +115,7 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   return [zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
 
 # add a default controller (this is overriden below in create_app)
+# TODO: this get_ctrl Singleton needs to be removed and the API converted to be instantiated by a class with ctrl state
 @lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
   """ Get the controller
@@ -152,6 +154,38 @@ def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Reload the current configuration, resetting the firmware in the process. """
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change)
   return ctrl.get_state()
+
+@api.post('/api/reboot', tags=['status'],
+  response_class=Response,
+  responses = {
+      200: {}
+  }
+)
+def reboot():
+  """ Restart the OS and all of the AmpliPi services.
+
+  """
+  # preemptively save the state (just in case the shutdown procedure doesn't invoke a save)
+  get_ctrl().save()
+  # start the restart, and return immediately (hopefully before the restart process begins)
+  Popen('sleep 1 && sudo systemctl reboot', shell=True)
+
+@api.post('/api/shutdown', tags=['status'],
+  response_class=Response,
+  responses = {
+      200: {}
+  }
+)
+def shutdown():
+  """ Shutdown AmpliPi and its OS.
+
+  This allows for a clean shutdown before pulling the power plug.
+  """
+  # preemptively save the state (just in case the shutdown procedure doesn't invoke a save)
+  get_ctrl().save()
+  # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
+  Popen('sleep 1 && sudo systemctl poweroff', shell=True)
+
 
 subscribers: Dict[int, 'Queue[models.Status]'] = {}
 def notify_on_change(status: models.Status) -> None:
@@ -712,6 +746,19 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
     settings.delay_saves = delay_saves
   get_ctrl().reinit(settings, change_notifier=notify_on_change)
   return app
+
+# Shutdown
+
+@app.on_event('shutdown')
+def on_shutdown():
+  print('Shutting down AmpliPi')
+  # gracefully shutdown the underlying controller
+  _ctrl = get_ctrl()
+  get_ctrl.cache_clear()
+  del _ctrl
+  print('webserver shutdown complete')
+
+# MDNS
 
 def get_ip_info(iface: str = 'eth0') -> Tuple[Optional[str], Optional[str]]:
   """ Get the IP address of interface @iface """

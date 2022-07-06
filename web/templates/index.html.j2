@@ -94,8 +94,9 @@
           {% endfor %}
         </div>
         <!-- TODO: can this be a nav dropdown with the same styling as the custom-select? This would probably  simplify the integration and allow individual tabs to hook into a tab shown event-->
-        <select id="settings-sel" class="custom-select" onchange="$(this.value).siblings('div').removeClass('active');
-        $(this.value).addClass('active');" style="display: none">
+        <!-- autocomplete="off" disables Firefox from remembering the 'select' selection on manual refresh. -->
+        <select id="settings-sel" class="custom-select" style="display: none" autocomplete="off"
+                onchange="$(this.value).siblings('div').removeClass('active'); $(this.value).addClass('active');">
           <option value="#settings-tab-inputs">Inputs</option>
           <option value="#settings-tab-zones">Zones</option>
           <option value="#settings-tab-groups">Groups</option>
@@ -184,8 +185,9 @@
               <h6 class="card-header">Upload a Configuration</h6>
               <div class="card-body">
                 <div class="text-center">
-                  <input type="file" id="settings-config-file-selector" accept=".json">
+                  <input type="file" id="settings-config-file-selector" accept=".json" onchange="uploadConfigReady();">
                   <button class="btn btn-success disabled" onclick="if (!this.classList.contains('disabled')) { this.classList.add('disabled'); uploadConfig(); }" id="settings-config-load">Load</button>
+                  <i id="settings-config-upload-indicator" class="fa" style="visibility: hidden;"></i>
                 </div>
               </div>
             </div>
@@ -200,8 +202,30 @@
             <div class="card settings">
               <h6 class="card-header">Hardware Reset (reloads current configuration)</h6>
               <div class="card-body">
-                <div class="text-center">
-                  <button title="Resets the preamp hardware and controller software (does not reboot the pi-based controller)" class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
+                <p class="card-text text-muted">Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)</p>
+                <div class="card-text text-center">
+                  <button class="btn btn-success" onclick="resetDevice()" id="settings-config-reset">Reset</button>
+                  <i id="settings-config-reset-indicator" class="fa" style="visibility: hidden;"></i>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Hardware Reboot (restart OS and reload configuration)</h6>
+              <div class="card-body">
+                <p class="card-text text-muted">Reboots the Raspberry Pi-based controller</p>
+                <div class="card-text text-center">
+                  <button class="btn btn-success" onclick="rebootDevice()" id="settings-config-reboot">Reboot</button>
+                  <i id="settings-config-reboot-indicator" class="fa" style="visibility: hidden;"></i>
+                </div>
+              </div>
+            </div>
+            <div class="card settings">
+              <h6 class="card-header">Hardware Shutdown (Power down device)</h6>
+              <div class="card-body">
+                <p class="card-text text-muted">Trigger a shutdown of the Raspberry Pi-based controller</p>
+                <div class="card-text text-center">
+                  <button class="btn btn-success" onclick="shutdownDevice()" id="settings-config-shutdown">Shutdown</button>
+                  <i id="settings-config-shutdown-indicator" class="fa" style="visibility: hidden;"></i>
                 </div>
               </div>
             </div>

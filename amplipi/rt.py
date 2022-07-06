@@ -493,6 +493,9 @@ class Mock:
   def __init__(self):
     pass
 
+  def reset(self):
+    pass
+
   def update_sources(self, digital):
     """ modify all of the 4 system sources
 
@@ -576,6 +579,10 @@ class Rpi:
 
   def __del__(self):
     del self._bus
+
+  def reset(self):
+    """ Reset the firmware """
+    self._bus.reset_preamps()
 
   def update_zone_mutes(self, zone, mutes):
     """ Update the mute level to all of the zones

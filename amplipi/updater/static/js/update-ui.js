@@ -92,8 +92,13 @@ function ui_check_after_reboot(retry_check_ct) {
       ui_show_done();
       setTimeout(ui_redirect_to_amplipi, 5000);
     }).catch( err => {
-      ui_add_log('Error checking version: ' + err.message, 'danger');
-      ui_show_failure();
+      if (retry_check_ct > 0) {
+        setTimeout(ui_check_after_reboot, 5000, retry_check_ct - 1); // don't continue to retry forever
+        ui_add_log('Waiting for the updater to start', 'info');
+      } else {
+        ui_add_log('Error checking version: ' + err.message, 'danger');
+        ui_show_failure();
+      }
     });
   }).catch( err => {
     if (retry_check_ct > 0) {
@@ -220,6 +225,7 @@ fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) =>
       ui_show_offline_message();
       return
     }
+    // TODO: actually populate this with the latest non-prelease version
     // show the latest release
     latest_release = releases[0];
     if (latest_release.tag_name == version) {
@@ -235,6 +241,7 @@ fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) =>
       $('#latest-update').attr('data-version', latest_release.tag_name);
     }
     // populate release selector
+    // TODO: indicate difference between pre-releases and full-releases
     for (const release of releases) {
       console.log(`found "${release.name}" - ${release.tarball_url}`);
       $('#older-update-sel').append(`<option value="${release.tarball_url}"
