@@ -37,7 +37,7 @@ In the future we plan to integrate with several home automation systems. Below i
 
 |Integrations|Supported|Notes|
 |--|--:|--|
-|Home Assistant|No|Future integration planned|
+|Home Assistant|Yes|See https://github.com/brianhealey/hacs_amplipi|
 |openHAB|Yes|See https://next.openhab.org/addons/bindings/amplipi/|
 |Alexa|No|See [#25](http://github.com/micro-nova/AmpliPi/issues/25)|
 |Google Assistant|No|See [#69](http://github.com/micro-nova/AmpliPi/issues/69)|
@@ -46,6 +46,16 @@ In the future we plan to integrate with several home automation systems. Below i
 
 If you are one of the lucky few to have a pre-release version of the AmpliPi,
 see [docs/QUICK_START.md](docs/QUICK_START.md) to get started.
+
+## Wall Panel
+
+Check out our open source wall panel [here](https://github.com/micro-nova/AmpliPiWallPanel)!
+
+<p align="center">
+  <img alt="Official Wallpanel"
+      src="https://github.com/micro-nova/AmpliPiWallPanel/blob/main/images/home_page_on_display_transparent.png" width="250">
+  </img>
+</p>
 
 ## Speakers
 
