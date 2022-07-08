@@ -260,12 +260,11 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
   n = len(zones)
   if n == 0: # No zone info from AmpliPi server
     pass
-  elif n <= 6: # Draw horizonal bars
+  elif n <= 6: # Draw horizonal bars and full zone names
     wb = int(width / 2)                   # Each bar's full width
     hb = 12                               # Each bar's height
     sp = int((height - n*hb) / (2*(n-1))) # Spacing between bars
-    xb = width - wb
-    vol2pix = wb / -78
+    xb = width - wb                       # Bar starting (left) x coordinate
     for i in range(n):
       yb = y + i*hb + 2*i*sp # Bar starting y-position
 
@@ -273,20 +272,20 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
       draw.text((x, yb), zones[i].name, font=font, fill=Color.WHITE.value)
 
       # Draw background of volume bar
-      draw.rectangle(((xb, int(yb+2), xb+wb, int(yb+hb))), fill=Color.LIGHTGRAY.value)
+      draw.rectangle((xb, int(yb+2), xb+wb, int(yb+hb)), fill=Color.LIGHTGRAY.value)
 
       # Draw volume bar
-      if zones[i].vol > models.MIN_VOL:
+      if zones[i].vol_f > models.MIN_VOL_F:
         color = Color.DARKGRAY.value if zones[i].mute else Color.BLUE.value
-        xv = xb + (wb - round(zones[i].vol * vol2pix))
-        draw.rectangle(((xb, int(yb+2), xv, int(yb+hb))), fill=color)
-  elif n <= 18: # Draw vertical bars
+        xv = xb + round(zones[i].vol_f * wb)
+        draw.rectangle((xb, int(yb+2), xv, int(yb+hb)), fill=color)
+  else: # Draw vertical bars and zone number
     # Get the pixel height of a character, and add vertical margins
     ch = small_font.getbbox('0', anchor='lt')[3] + 4
     wb = 12                               # Each bar's width
+    hb = height - ch                      # Each bar's full height
     sp = int((width - n*wb) / (2*(n-1)))  # Spacing between bars
-    yt = y + height - ch                  # Text top y-position
-    vol2pix = (height - ch) / -78         # dB to pixels conversion factor
+    yb = y + hb                           # Bar starting (bottom) y coordinate
     for i in range(n):
       xb = x + i*wb + 2*i*sp # Bar starting x-position
 
@@ -295,15 +294,14 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
                 anchor='mm', font=small_font, fill=Color.WHITE.value)
 
       # Draw background of volume bar
-      draw.rectangle(((xb, y, xb+wb, yt)), fill=Color.LIGHTGRAY.value)
+      draw.rectangle((xb, yb, xb+wb, y), fill=Color.LIGHTGRAY.value)
 
       # Draw volume bar
-      if zones[i].vol > models.MIN_VOL:
+      if zones[i].vol_f > models.MIN_VOL_F:
         color = Color.DARKGRAY.value if zones[i].mute else Color.BLUE.value
-        yv = y + round(zones[i].vol * vol2pix)
-        draw.rectangle(((xb, yv, xb+wb, yt)), fill=color)
-  else:
-    log.error("Can't display more than 18 volumes")
+        yv = yb - round(zones[i].vol_f * hb)
+        draw.rectangle((xb, yb, xb+wb, yv), fill=color)
+  #TODO: For more than 18 zones, show on multiple screens.
 
 
 # Pins
