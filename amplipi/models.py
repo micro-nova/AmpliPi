@@ -30,10 +30,10 @@ from pydantic import BaseSettings, BaseModel, Field
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
 
-MIN_VOL = 0.0
+MIN_VOL_F = 0.0
 """ Min volume for slider bar. Will be mapped to dB. """
 
-MAX_VOL = 1.0
+MAX_VOL_F = 1.0
 """ Max volume for slider bar. Will be mapped to dB. """
 
 MIN_VOL_DB = -80
@@ -47,7 +47,7 @@ MIN_DB_RANGE = 20
 
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """
-  assert MIN_VOL <= pcnt <= MAX_VOL
+  assert MIN_VOL_F <= pcnt <= MAX_VOL_F
   return round(pcnt * (MAX_VOL_DB - MIN_VOL_DB) + MIN_VOL_DB)
 
 class fields(SimpleNamespace):
@@ -58,12 +58,12 @@ class fields(SimpleNamespace):
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
-  VolumeF = Field(ge=MIN_VOL, le=MAX_VOL, description='Output volume as a floating-point number')
+  VolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point number')
   VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
   VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
   GroupVolume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Average output volume')
-  GroupVolumeF = Field(ge=MIN_VOL, le=MAX_VOL, description='Average output volume as a floating-point number')
+  GroupVolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number')
   Disabled = Field(description='Set to true if not connected to a speaker')
   Zones = Field(description='Set of zone ids belonging to a group')
   Groups = Field(description='List of group ids')
@@ -83,14 +83,14 @@ class fields_w_default(SimpleNamespace):
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
-  VolumeF = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Output volume as a floating-point number')
+  VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point number')
   VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Min output volume in dB')
   VolumeMax = Field(default=MAX_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Max output volume in dB')
   GroupMute = Field(default=True, description='Set to true if output is all zones muted')
-  GroupVolume = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average output volume')
-  GroupVolumeF = Field(default=MIN_VOL, ge=MIN_VOL, le=MAX_VOL, description='Average output volume as a floating-point number')
+  GroupVolume = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume')
+  GroupVolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
 
 class Base(BaseModel):
@@ -717,7 +717,7 @@ class Announcement(BaseModel):
   """
   media : str = Field(description="URL to media to play as the announcement")
   vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB, overrides vol_f')
-  vol_f: float = Field(default=0.5, ge=MIN_VOL, le=MAX_VOL, description="Output Volume (float)")
+  vol_f: float = Field(default=0.5, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
   source_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups

@@ -275,7 +275,7 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
       draw.rectangle((xb, int(yb+2), xb+wb, int(yb+hb)), fill=Color.LIGHTGRAY.value)
 
       # Draw volume bar
-      if zones[i].vol_f > models.MIN_VOL:
+      if zones[i].vol_f > models.MIN_VOL_F:
         color = Color.DARKGRAY.value if zones[i].mute else Color.BLUE.value
         xv = xb + round(zones[i].vol_f * wb)
         draw.rectangle((xb, int(yb+2), xv, int(yb+hb)), fill=color)
@@ -297,7 +297,7 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
       draw.rectangle((xb, yb, xb+wb, y), fill=Color.LIGHTGRAY.value)
 
       # Draw volume bar
-      if zones[i].vol_f > models.MIN_VOL:
+      if zones[i].vol_f > models.MIN_VOL_F:
         color = Color.DARKGRAY.value if zones[i].mute else Color.BLUE.value
         yv = yb - round(zones[i].vol_f * hb)
         draw.rectangle((xb, yb, xb+wb, yv), fill=color)

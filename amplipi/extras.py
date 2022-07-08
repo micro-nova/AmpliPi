@@ -22,7 +22,7 @@ Additional AmpliPi methods
 from amplipi import models
 from amplipi import utils
 
-def vol_string(vol, min_vol=models.MIN_VOL, max_vol=models.MAX_VOL):
+def vol_string(vol, min_vol=models.MIN_VOL_F, max_vol=models.MAX_VOL_F):
   """ Make a visual representation of a volume """
   vol_range = max_vol - min_vol + 1
   vol_str_len = 20
