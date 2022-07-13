@@ -556,7 +556,8 @@ async function downloadConfig(){
   // get the current config
   let response = await fetch('/api');
   let config = await response.json();
-  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config));
+  // format the config similar to AmpliPi to make it human readable and version controllable
+  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2).concat('\n'));
   var downloadAnchorNode = document.createElement('a');
   downloadAnchorNode.setAttribute("href",     dataStr);
   downloadAnchorNode.setAttribute("download", "config.json");
