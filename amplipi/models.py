@@ -734,11 +734,16 @@ class Announcement(BaseModel):
     }
 
 class Info(BaseModel):
-  """ Information about the settings used by the controller """
-  config_file: str = 'Uknown'
-  version: str = 'Unknown'
-  mock_ctrl: bool = False
-  mock_streams: bool = False
+  """ AmpliPi System information """
+  version: str = Field(description="software version")
+  config_file: str = Field(default='unknown', description='config file location')
+  mock_ctrl: bool = Field(default=False, description='Is the controller being mocked? Indicates AmpliPi hardware is not connected')
+  mock_streams: bool = Field(default=False, description='Are streams being faked? Used for testing.')
+  sw_hash: str = Field(default='unknown', description="git hash of the commit the system is from")
+  fw_version: str = Field(default='unknown', description="firmware version")
+  fw_hash: str = Field(default='unknown', description="short git hash of firmware")
+  offline: bool = Field(default=True, description='can the system connect to the internet?')
+  new_release: bool = Field(default=False, description='Is a new, better release available?')
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """

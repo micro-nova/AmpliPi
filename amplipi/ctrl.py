@@ -341,6 +341,12 @@ class Api:
       self._update_src_info(src)
     return self.status
 
+  def get_info(self) -> models.Info:
+    """ Get the system information """
+    if self.status.info is None:
+      raise Exception("No info generated, system in a bad state")
+    return self.status.info
+
   def get_items(self, tag: str) -> Optional[List[models.Base]]:
     """ Gets one of the lists of elements contained in status named by @t (or t's plural
 
