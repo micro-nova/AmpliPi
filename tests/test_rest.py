@@ -227,6 +227,17 @@ def test_open_api_yamlfile(client):
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
+# Test Status
+def test_info(client):
+  """ Check the system information """
+  rv = client.get(f'/api/info')
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  for val in jrv.values():
+    assert val is not None
+    if isinstance(val, str):
+      assert val.lower() != 'unknown', "Unpopulated info field"
+
 # Test Sources
 def base_source_ids():
   """ Default Source ids """
