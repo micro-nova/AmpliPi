@@ -9,19 +9,16 @@ cd "$( dirname "$0" )"
 HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
   usage: deploy [USER@HOST] [--mock-ctrl]\n
 \n
-  --dev: add info to version showing the current git hash and branch\n
   --fw:  program the latest preamp firmware\n
   --pw:  generate and set a new random password\n
 "
 
 user_host='pi@amplipi.local'
 user_host_set=false
-dev=false
 fw=false
 pw=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
-    --dev) dev=true ;;
     --fw) fw=true ;;
     --pw) pw=true ;;
     -h|--help) echo -e $HELP; exit 0 ;;
@@ -39,7 +36,6 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 printf "Deploying amplipi project "
-$dev && printf "(development build) "
 printf "to $user_host.\n"
 printf "Preamp firmware will "
 $fw || printf "NOT "
@@ -118,18 +114,19 @@ if ! $mock_ctrl; then
   sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
 fi
 
-if $dev; then
-  old_version=$(poetry version -s)
-  # git_info="$(git describe --always --dirty)-$(git rev-parse --abbrev-ref HEAD)"
-  # TODO: write extra git info to the pyproject.toml file since poetry complains about non-standard versions
-  poetry version prerelease
-fi
+# use a new version for the build but hide it from git since it isn't a real release
+old_version=$(poetry version -s)
+# parse the git info into: VERSION+GIT_HASH-BRANCH_NAME-DIRTY?
+# git describe gets us close to this: VERSION-NUM_COMMITS_SINCE-GIT-HASH-DIRTY?
+#  but we need to change it a bit to remove NUM_COMMITS and add BRANCH_NAME
+git_info=$(git describe --always --tags --dirty | sed -E s/-[0-9]*-*/+/ | sed s/-/-$(git rev-parse --abbrev-ref HEAD)-/)
+poetry version ${git_info}
+
 # build release file (put in dist/)
 poetry build
 
-if $dev; then
-  poetry version $old_version
-fi
+# revert to the old version so we don't modify extra files (the modified version info is in the build already)
+poetry version $old_version
 
 # exit virtual environment
 deactivate
