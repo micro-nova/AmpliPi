@@ -3,7 +3,9 @@
 ## 0.1.X Upcoming
 * Web App
   * Add link for text log
+  * Add shutdown and reboot buttons in Settings->Configuration and Reset
 * API
+  * Add `api/shutdown` and `api/reboot` endpoints
 * Streams
 * Storage
   * Only log to RAM, drastically reducing disk writes
