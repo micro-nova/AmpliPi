@@ -224,6 +224,7 @@ def test_open_api_yamlfile(client):
   """ Check if the openapi yaml doc is available """
   rv = client.get('/openapi.yaml')
   assert rv.status_code == HTTPStatus.OK
+
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
@@ -234,7 +235,7 @@ def test_info(client):
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   for val in jrv.values():
-    assert val is not None
+    assert val is not None, "Unpopulated info field, expected value got 'None'"
     if isinstance(val, str):
       assert val.lower() != 'unknown', "Unpopulated info field"
 
