@@ -26,7 +26,8 @@
  *  - Preamp 9V/5V: must be within (8.5, 9.5) and (4.5, 5.5) V, respectively.
  *  - Preout 9V   : must be within (8.5, 9.5) V.
  *  - I2C loopback: 3.3v must be within (3, 3.6) V and I2C out must work.
- *  - I2C ADC HV  : HV1 must be within (15, 30) V and temp within (20, 28) C
+ *  - I2C ADC HV1 : HV1 must be within (15, 30) V and temp within (20, 28) C
+ *  - I2C ADC HV2 : HV2 must be within (15, 30) V and temp within (20, 28) C
  *  - I2C ADC temp: both amp temps must be within (22.5, 27.5) C
  *  - PG_12V/PG_5V: verifies both power good signals are high
  *  - 12V J9/J10  : both fan outputs must be within +/-10% the desired values.
@@ -156,25 +157,59 @@ uint16_t rgb565(float red, float green, float blue) {
   return (r5 << 11) | (g6 << 5) | b5;
 }
 
-bool readI2CADC(uint8_t* ch0, uint8_t* ch1, uint8_t* ch2, uint8_t* ch3) {
-  Wire.beginTransmission(SlaveAddr::adc4);
+struct AdcData {
+  union {
+    struct {
+      uint8_t hv1_volts;
+      uint8_t amp1_temp;
+      uint8_t hv1_temp;
+      uint8_t amp2_temp;
+      uint8_t hv2_volts;
+      uint8_t hv2_temp;
+    };
+    uint8_t vals[6];
+  };
+  uint8_t num_chans;
+};
+
+bool i2cDevPresent(uint8_t addr) {
+  Wire.beginTransmission(addr);
+  return Wire.endTransmission() == 0;
+}
+
+bool readI2CADC(AdcData* data) {
+  memset(data, 0, sizeof(data));
+
+  // Figure out which ADC is present
+  uint8_t addr = SlaveAddr::adc4;
+  if (i2cDevPresent(SlaveAddr::adc4)) {
+    addr            = SlaveAddr::adc4;
+    data->num_chans = 4;
+  } else if (i2cDevPresent(SlaveAddr::adc8)) {
+    addr            = SlaveAddr::adc8;
+    data->num_chans = 6;
+  } else if (i2cDevPresent(SlaveAddr::adc12)) {
+    addr            = SlaveAddr::adc12;
+    data->num_chans = 6;
+  } else {
+    // No ADC present
+    return false;
+  }
+
+  Wire.beginTransmission(addr);
   Wire.write((uint8_t)0b00000111);  // Send configuration byte, set CS=0x2
   Wire.endTransmission();
 
-  Wire.requestFrom(SlaveAddr::adc4, 4);
-  if (Wire.available() >= 4) {
-    *ch0 = (uint8_t)Wire.read();
-    *ch1 = (uint8_t)Wire.read();
-    *ch2 = (uint8_t)Wire.read();
-    *ch3 = (uint8_t)Wire.read();
-    return true;
-  } else {
-    *ch0 = 0;
-    *ch1 = 0;
-    *ch2 = 0;
-    *ch3 = 0;
+  Wire.requestFrom(addr, data->num_chans);
+  if (Wire.available() < data->num_chans) {
+    // Not enough data was read
     return false;
   }
+
+  for (size_t i = 0; i < data->num_chans; i++) {
+    data->vals[i] = Wire.read();
+  }
+  return true;
 }
 
 void writeI2CGPIO(bool fan_on) {
@@ -365,28 +400,11 @@ void loop() {
     drawTest<3>("I2C out (J3)", strbuf1, i2c3v3 < 3.6 && i2c3v3 > 3.0,
                 i2c_loopback_ok_ ? " PASS" : " FAIL", i2c_loopback_ok_);
 
-    // TODO: Don't lock up on I2C failure
-    // Read I2C ADC
-    uint8_t hv1_adc;
-    uint8_t hv1_ntc_adc;
-    uint8_t amp_ntc1_adc;
-    uint8_t amp_ntc2_adc;
-    readI2CADC(&hv1_adc, &amp_ntc1_adc, &hv1_ntc_adc, &amp_ntc2_adc);
-    float hv1 = adcToVolts(hv1_adc, 8, 3.3, 4.7, 100);
-    sprintf(strbuf1, "%5.2fV", hv1);
-    bool hv1_ntc_ok = adcToTempStr(hv1_ntc_adc, 15, 30, strbuf2);
-    drawTest<4>("I2C ADC HV", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
-                hv1_ntc_ok);
-
-    bool temp1_ok = adcToTempStr(amp_ntc1_adc, 25 * 0.9, 25 * 1.1, strbuf1);
-    bool temp2_ok = adcToTempStr(amp_ntc2_adc, 25 * 0.9, 25 * 1.1, strbuf2);
-    drawTest<5>("I2C ADC temp", strbuf1, temp1_ok, strbuf2, temp2_ok);
-
     // Check the 12V power supply
     bool pg_12v;
     bool pg_5va;
     bool i2c_success = readI2CGPIO(pg_12v, pg_5va);
-    drawTest<6>("PG_12V/PG_5V", pg_12v ? " PASS" : " FAIL", pg_12v,
+    drawTest<4>("PG_12V/PG_5V", pg_12v ? " PASS" : " FAIL", pg_12v,
                 pg_5va ? " PASS" : " FAIL", pg_5va);
 
     // Check the 12V fan power supply from both J9 and J10 is ok
@@ -398,7 +416,7 @@ void loop() {
           fan12v > DPOT_VOLTS[dpot_val_idx] * 0.9;
     ok2 = psu_fan12v < DPOT_VOLTS[dpot_val_idx] * 1.1 &&
           psu_fan12v > DPOT_VOLTS[dpot_val_idx] * 0.9;
-    drawTest<7>("12V J9/J10", strbuf1, ok1, strbuf2, ok2);
+    drawTest<5>("12V J9/J10", strbuf1, ok1, strbuf2, ok2);
 
     // Check that the fan control output works.
     // Leave output high for ADC reading.
@@ -410,7 +428,7 @@ void loop() {
     delay(1);                        // Wait a bit to make sure output settles
     ok1 &= digitalRead(A7) == HIGH;  // J9 - direct connection
     ok2 &= digitalRead(A9) == LOW;   // J10 - mosfet active, output grounded
-    drawTest<8>("FAN_ON J9/10", ok1 ? " PASS" : " FAIL", ok1,
+    drawTest<6>("FAN_ON J9/10", ok1 ? " PASS" : " FAIL", ok1,
                 ok2 ? " PASS" : " FAIL", ok2);
 
     // Adjust DPOT to control +12V
@@ -429,6 +447,25 @@ void loop() {
     Wire.write(DPOT_VALS[dpot_val_idx]);  // Value
     Wire.endTransmission();
 
+    // Read I2C ADC
+    AdcData adc_data;
+    readI2CADC(&adc_data);
+    bool t1_ok = adcToTempStr(adc_data.amp1_temp, 25 * 0.9, 25 * 1.1, strbuf1);
+    bool t2_ok = adcToTempStr(adc_data.amp2_temp, 25 * 0.9, 25 * 1.1, strbuf2);
+    drawTest<7>("I2C ADC temp", strbuf1, t1_ok, strbuf2, t2_ok);
+
+    float hv1 = adcToVolts(adc_data.hv1_volts, 8, 3.3, 4.7, 100);
+    sprintf(strbuf1, "%5.2fV", hv1);
+    bool hv1_ntc_ok = adcToTempStr(adc_data.hv1_temp, 15, 30, strbuf2);
+    drawTest<8>("I2C ADC HV1", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
+                hv1_ntc_ok);
+
+    float hv2 = adcToVolts(adc_data.hv2_volts, 8, 3.3, 4.7, 100);
+    sprintf(strbuf1, "%5.2fV", hv2);
+    bool hv2_ntc_ok = adcToTempStr(adc_data.hv2_temp, 15, 30, strbuf2);
+    drawTest<9>("I2C ADC HV2", strbuf1, hv2 < 28 && hv2 > 20, strbuf2,
+                hv2_ntc_ok);
+
     // Start a new transmission
     i2c_loopback_ok_ = false;
     Wire.beginTransmission(SlaveAddr::due);
@@ -436,13 +473,14 @@ void loop() {
     Wire.endTransmission();
 
 #ifdef DEBUG
+    // TODO: this is off the screen currently
     uint32_t elapsedTime = millis() - loopStartTime;
     SerialUSB.print("Test took ");
     SerialUSB.print(elapsedTime);
     SerialUSB.println(" ms");
     sprintf(strbuf1, "%6d", elapsedTime);
     ok1 = elapsedTime < TEST_PERIOD_MS;
-    drawTest<9>("Test time ms", strbuf1, ok1, "", true);
+    drawTest<10>("Test time ms", strbuf1, ok1, "", true);
 #endif
     test_timer += TEST_PERIOD_MS;
   }
