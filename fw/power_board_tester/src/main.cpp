@@ -18,76 +18,41 @@
 /*
  * Power Board Tester
  *
- * Designed to run on an Arduino Due.
- * This project verifies Power Board functionality independent of the rest of
- * the AmpliPi unit.
- * The 4 power rails are checked:
- *    +5VD, +12VD
- *    +5VA, +9VA
+ * Designed to run on an Arduino Due. This project verifies Power Board
+ * functionality independent of the rest of the AmpliPi unit.
+ *
+ * Tests:
+ *  - Ctrl 5VA/5VD: must be within (4.5, 5.5) V.
+ *  - Preamp 9V/5V: must be within (8.5, 9.5) and (4.5, 5.5) V, respectively.
+ *  - Preout 9V   : must be within (8.5, 9.5) V.
+ *  - I2C loopback: 3.3v must be within (3, 3.6) V and I2C out must work.
+ *  - I2C ADC HV  : HV1 must be within (15, 30) V and temp within (20, 28) C
+ *  - I2C ADC temp: both amp temps must be within (22.5, 27.5) C
+ *  - PG_12V/PG_5V: verifies both power good signals are high
+ *  - 12V J9/J10  : both fan outputs must be within +/-10% the desired values.
+ *                  The DPOT control is cycled through 3 values.
+ *  - FAN_ON J9/10: check that the fan on/off control works.
  * All I2C devices are verified:
- *    MAX11601 (0x64): 4-channel ADC measures HV1/2 and up to 2 thermistors
- *    MCP23008 (0x21): 8-channel GPIO expander. Currently only GP4/5/7 are used
- *    Future: MCP4017  (0x2F): Digital potentiometer controlling +12VD
+ *  - MAX11601 (0x64), MAX11603 (0x6D), or MAX11605 (0x65): 4-channel MAX11601
+ *    ADC measures HV1 voltage and temp, and measures both amp temp sensors.
+ *    MAX11603/5 also measure HV2 voltage and temp.
+ *  - MCP23008 (0x21): 8-channel GPIO expander. Currently only GP2/3/7 are used
+ *  - MCP4017 (0x2F) or MCP40D17 (0x2E) : Digital potentiometer controlling +12V
+ *  - I2C Bus connector for the LED board is tested as a loopback to the Due.
  * Slave addresses in parenthesis are 7-bit right-aligned, so will be shifted
  * left one bit when sent on the wire.
  *
- * I2C Bus connector for the LED board is tested as a loopback.
- *
  * Hardware required:
- *    Arduino Due
- *    +24V power supply
- *    +24/+9 DC/DC converter (using an old power board)
- *    LCD Display
- *    10k, 33k, and 100k resistors
+ *  - Arduino Due
+ *  - +24V power supply
+ *  - +24/+9 DC/DC converter (using an old power board)
+ *  - LCD Display
+ *  - 10k, 33k, and 100k resistors
+ * See power_board_tester_sch.drawio.pdf for the full schematic.
  *
- * Connections
- *  +24V -+-> <24/9 DC/DC> -> Arduino Due barrel jack
- *        |
- *        +-> Power Board J1 Pin 1 and 3
- *
- *    Arduino Due | Power Board
- *  +-------------+------------------------+ Power
- *    GND         | GND/AGND*
- *    A0          | J4 pin 1: +5VA
- *    A1          | J4 pin 3: +5VD
- *    A2          | J5 pin 1: +9VA
- *    A3          | J5 pin 3: +5VA
- *    A4          | J8 pin 1: +9VA
- *  +-------------+------------------------+ I2C
- *    +3.3V       | J3 pin 1: +3.3VA
- *    SCL         | J3 pin 2: SCL
- *    SDA         | J3 pin 3: SDA
- *    GND         | J3 pin 4: AGND
- *    A5          | J2 pin 1: +3.3VA
- *    SCL1        | J2 pin 2: SCL     (out)
- *    SDA1        | J2 pin 3: SDA     (out)
- *    GND         | J2 pin 4: AGND
- *  +-------------+------------------------+ Fans
- *         10k    | J9 pin 2: DXP1    (in)
- *         10k    | J9 pin 7: DXP2    (in)
- *         Pullup | J9 pin 1: +3.3VA  (out)
- *    A6   Input  | J9 pin 5: +12VD   (out)
- *         Unused | J9 pin 3: TACH1   (out)
- *         Unused | J9 pin 6: TACH2   (out)
- *    A7   Input  | J9 pin 4: FAN_PWM (out)
- *    A8   Input  | J10 pin 1: +12VD
- *    A9   Input  | J10 pin 2: FAN_GND
- *  +-------------+------------------------+
- *
- *    Arduino Due | LCD Screen
- *  +-------------+------------+
- *    +3.3V       | VCC
- *    GND         | GND
- *    10          | CS
- *    +3.3V       | RESET
- *    11          | D/C
- *    MOSI        | MOSI
- *    SPCK        | SCK
- *    +3.3V       | LED
- *    MISO        | MISO
- *  +-------------+------------+
- *    * This doesn't independently test all GND connections.
- *      Possibly differential measurements would solve that?
+ *  TODO: A global ground is used for measurements, so individual ground
+ *        connectors are not actually tested. Possibly differential analog
+ *        measurements would solve that?
  *
  *  TODO: Protection against shorts on power board
  */
@@ -127,13 +92,14 @@ static constexpr uint8_t DPOT_VALS[]  = {0x7F, 0x3F, 0x00};
 static constexpr float   DPOT_VOLTS[] = {6.24, 8.11, 11.99};
 
 // 7-bit I2C addresses, in bits 6 downto 0
-enum SlaveAddr : uint8_t
-{
+enum SlaveAddr : uint8_t {
   due   = 0x0F,
   gpio  = 0x21,
-  dpots = 0x2E,  // DPot that required SMBus byte-write command 0x00
+  dpots = 0x2E,  // DPot that requires SMBus byte-write command 0x00
   dpot  = 0x2F,
-  adc   = 0x64,
+  adc4  = 0x64,  // MAX11601 4-channel ADC
+  adc8  = 0x6D,  // MAX11603 8-channel ADC
+  adc12 = 0x65,  // MAX11605 12-channel ADC
 };
 
 // I2C1 slave RX callback
@@ -191,11 +157,11 @@ uint16_t rgb565(float red, float green, float blue) {
 }
 
 bool readI2CADC(uint8_t* ch0, uint8_t* ch1, uint8_t* ch2, uint8_t* ch3) {
-  Wire.beginTransmission(SlaveAddr::adc);
+  Wire.beginTransmission(SlaveAddr::adc4);
   Wire.write((uint8_t)0b00000111);  // Send configuration byte, set CS=0x2
   Wire.endTransmission();
 
-  Wire.requestFrom(SlaveAddr::adc, 4);
+  Wire.requestFrom(SlaveAddr::adc4, 4);
   if (Wire.available() >= 4) {
     *ch0 = (uint8_t)Wire.read();
     *ch1 = (uint8_t)Wire.read();
@@ -436,14 +402,14 @@ void loop() {
 
     // Check that the fan control output works.
     // Leave output high for ADC reading.
-    writeI2CGPIO(false);
-    delay(1);
-    ok1 = digitalRead(A7) == LOW;   // J9
-    ok2 = digitalRead(A9) == HIGH;  // J10
-    writeI2CGPIO(true);
-    delay(1);
-    ok1 &= digitalRead(A7) == HIGH;
-    ok2 &= digitalRead(A9) == LOW;
+    writeI2CGPIO(false);             // Set low FAN_ON signal
+    delay(1);                        // Wait a bit to make sure output settles
+    ok1 = digitalRead(A7) == LOW;    // J9 - direct connection
+    ok2 = digitalRead(A9) == HIGH;   // J10 - pulled up external to power board
+    writeI2CGPIO(true);              // Set high FAN_ON signal
+    delay(1);                        // Wait a bit to make sure output settles
+    ok1 &= digitalRead(A7) == HIGH;  // J9 - direct connection
+    ok2 &= digitalRead(A9) == LOW;   // J10 - mosfet active, output grounded
     drawTest<8>("FAN_ON J9/10", ok1 ? " PASS" : " FAIL", ok1,
                 ok2 ? " PASS" : " FAIL", ok2);
 
