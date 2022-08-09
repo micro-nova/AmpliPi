@@ -72,6 +72,10 @@ app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc in
 templates = Jinja2Templates(TEMPLATE_DIR)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# This will get generated as a tmpfs on AmpliPi,
+# but won't exist if testing on another machine.
+os.makedirs(GENERATED_DIR, exist_ok=True)
 app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated") # TODO: make this register as a dynamic folder???
 
 

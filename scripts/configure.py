@@ -131,7 +131,7 @@ def _check_and_setup_platform():
 
 class Task:
   """ Task runner for scripted installation tasks """
-  def __init__(self, name: str, args:Optional[List[str]]=None, multiargs=None, output='', success=False, wd=None):
+  def __init__(self, name: str, args:Optional[List[str]]=None, multiargs=None, output='', success=False, wd=None, shell=False):
     # pylint: disable=too-many-arguments
     self.name = name
     if multiargs:
@@ -144,6 +144,7 @@ class Task:
     self.output = output
     self.success = success
     self.wd = wd
+    self.shell = shell
 
   def __str__(self):
     desc = f"{self.name} : {self.margs}" if len(self.margs) > 0 else f"{self.name} :"
@@ -157,7 +158,8 @@ class Task:
   def run(self):
     """ Run the command line task or tasks sequentially and keep track of failures, stops at the first failure"""
     for args in self.margs:
-      out = subprocess.run(args, cwd=self.wd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+      out = subprocess.run(args, cwd=self.wd, shell=self.shell, check=False,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
       self.output += out.stdout.decode()
       self.success = out.returncode == 0
       if not self.success:
@@ -224,6 +226,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     if not tasks[-1].success:
       tasks += print_progress([Task("Giving pi serial permission. !!!AmpliPi will need to be restarted after this!!!", "sudo gpasswd -a pi dialout".split()).run()])
       return tasks
+    # setup tmpfs (ram disk)
+    tasks += print_progress(_setup_tmpfs(env['base_dir']))
   # install debian packages
   tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
@@ -272,6 +276,22 @@ Categories=Utility;
   except Exception:
     success = False
   return Task(f'Add desktop icon for {name}', success=success)
+
+def _setup_tmpfs(base_dir):
+  """ Adds tmpfs entries used by AmpliPi to /etc/fstab """
+  # Warning: these hide the existing filesystem,
+  # if anything is already present at the path created.
+  tmpfs_opts = 'defaults,noatime,uid=pi,gid=pi,size=100M'
+  conf_entry = f'amplipi/config {base_dir}/config/srcs tmpfs {tmpfs_opts} 0 0'
+  web_entry = f'amplipi/web {base_dir}/web/generated tmpfs {tmpfs_opts} 0 0'
+  tasks = [Task('Add tmpfs entries to fstab.', multiargs=[
+        'sudo sed -i "/^amplipi/d" /etc/fstab',
+        f'echo {conf_entry} | sudo tee -a /etc/fstab',
+        f'echo {web_entry} | sudo tee -a /etc/fstab',
+        f'mkdir -p {base_dir}/config/srcs {base_dir}/web/generated',
+        f'sudo mount -a',
+      ], shell=True).run()]
+  return tasks
 
 def _web_service(directory: str):
   return f"""\
