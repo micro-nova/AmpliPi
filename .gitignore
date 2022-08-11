@@ -158,3 +158,6 @@ web/uploads/*
 # Firmware builds
 fw/preamp/Debug
 fw/preamp/Release
+
+# RCA input audio detector
+rca_status

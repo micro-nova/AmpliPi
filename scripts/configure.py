@@ -429,6 +429,23 @@ Restart=on-abort
 WantedBy=default.target
 """
 
+def _audiodetector_service(directory: str):
+  return f"""\
+[Unit]
+Description=Amplipi RCA Input Audio Detector
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={directory}
+ExecStart={directory}/amplipi/audiodetector/audiodetector
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+"""
+
 def systemctl_cmd(system: bool) -> str:
   """ Get the relevant systemctl command based on @system {True: system, False: user} """
   if system:
@@ -668,6 +685,23 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+def _update_audiodetector(env: dict, progress) -> List[Task]:
+  """ Create and run the RCA input audio detector service if on AmpliPi hardware """
+  def print_progress(tasks):
+    progress(tasks)
+    return tasks
+  if not env['is_amplipi']:
+    return [Task(name='Update Audio Detector', output = 'Not on AmpliPi', success=False)]
+  tasks = []
+  tasks += print_progress([Task('Build audiodetector', 'make -C amplipi/audiodetector'.split()).run()])
+  tasks += print_progress(_create_service('amplipi-audiodetector', _audiodetector_service(env['base_dir'])))
+  tasks += print_progress(_restart_service('amplipi-audiodetector'))
+  tasks += print_progress(_enable_service('amplipi-audiodetector'))
+  # start the user manager at boot, instead of after first login
+  # this is needed so the user systemd services start at boot
+  tasks += print_progress(_enable_linger(env['user']))
+  return tasks
+
 def _check_password(env: dict, progress) -> List[Task]:
   """ If a random default password hasn't been generated, generate, set, and
       store one. This is just for older AmpliPi versions that didn't get a
@@ -782,7 +816,8 @@ def add_tests(env, progress) -> List[Task]:
   return tasks
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
-            display=True, firmware=True, password=True, progress=print_task_results) -> bool:
+            display=True, audiodetector=True, firmware=True, password=True,
+            progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -829,6 +864,10 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_display(env, progress)
     if failed():
       return False
+  if audiodetector:
+    tasks += _update_audiodetector(env, progress)
+    if failed():
+      return False
   if firmware:
     tasks += _update_firmware(env, progress)
     if failed():
@@ -866,6 +905,8 @@ if __name__ == '__main__':
   # --restart-updater is needed by the web updater and hasn't been changed to --reboot to simplify updgrade/downgrade logic
   parser.add_argument('--display', action='store_true', default=False,
     help="Install and run the front-panel display service")
+  parser.add_argument('--audiodetector', action='store_true', default=False,
+    help="Install and run the RCA input audio detector service")
   parser.add_argument('--firmware', action='store_true', default=False,
     help="Flash the latest firmware")
   parser.add_argument('--password', action='store_true', default=False,
@@ -878,5 +919,6 @@ if __name__ == '__main__':
   if sys.version_info.major < 3 or sys.version_info.minor < 7:
     print('  WARNING: minimum python version is 3.7')
   install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
-          display=flags.display, firmware=flags.firmware, password=flags.password,
+          display=flags.display, audiodetector=flags.audiodetector,
+          firmware=flags.firmware, password=flags.password,
           restart_updater=flags.restart_updater)
