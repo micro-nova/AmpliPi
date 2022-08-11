@@ -125,7 +125,7 @@ class Source(Base):
   info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback)')
 
   def get_stream(self) -> Optional[int]:
-    """ Get a source's conneted stream if any """
+    """ Get a source's connected stream if any """
     try:
       sinput = str(self.input)
       if 'stream=' in sinput:
