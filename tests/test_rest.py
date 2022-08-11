@@ -21,6 +21,7 @@ import netifaces as ni
 
 # pylint: disable=redefined-outer-name
 # pylint: disable=invalid-name
+# pylint: disable=too-many-locals
 
 TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
 
@@ -85,6 +86,12 @@ def base_config_no_groups():
   del cfg['groups']
   return cfg
 
+def base_config_no_streams():
+  """ AmpliPi configuration with streams field unpopulated """
+  cfg = base_config_copy()
+  del cfg['streams']
+  return cfg
+
 def base_config_vol_db():
   """ Old AmpliPi configuration with dB volumes only """
   cfg = base_config_copy()
@@ -112,7 +119,7 @@ def find(elements:List, eid:int):
       return i
   return None
 
-@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups(), base_config_vol_db()])
+@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups(), base_config_no_streams(), base_config_vol_db()])
 def client(request):
   """ AmpliPi instance with mocked ctrl and streams """
   cfg = request.param
