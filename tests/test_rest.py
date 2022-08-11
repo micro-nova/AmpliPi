@@ -406,8 +406,13 @@ def test_create_pandora(client):
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_get_stream(client, sid):
   """ Try getting a default stream """
+  last_state = status_copy(client)
   rv = client.get('/api/streams/{}'.format(sid))
-  assert rv.status_code == HTTPStatus.OK
+  if find(last_state['streams'], sid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
   jrv = rv.json()
   s = find(base_config()['streams'], sid)
   assert s is not None
@@ -417,8 +422,13 @@ def test_get_stream(client, sid):
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_patch_stream_rename(client, sid):
   """ Try renaming a stream """
+  last_state = status_copy(client)
   rv = client.patch('/api/streams/{}'.format(sid), json={'name': 'patched-name'})
-  assert rv.status_code == HTTPStatus.OK
+  if find(last_state['streams'], sid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
   jrv = rv.json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
@@ -430,8 +440,13 @@ def test_patch_stream_rename(client, sid):
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_delete_stream(client, sid):
   """ Try deleting a stream  """
+  last_state = status_copy(client)
   rv = client.delete('/api/streams/{}'.format(sid))
-  assert rv.status_code == HTTPStatus.OK
+  if find(last_state['streams'], sid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
   jrv = rv.json() # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was deleted
@@ -445,8 +460,13 @@ def test_delete_stream(client, sid):
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_delete_connected_stream(client, sid):
   """ Delete a connected stream and make sure it gets disconnected from the source it is connected to"""
+  last_state = status_copy(client)
   rv = client.patch('/api/sources/0', json={'input': f'stream={sid}'})
-  assert rv.status_code == HTTPStatus.OK
+  if find(last_state['streams'], sid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
   rv = client.delete(f'/api/streams/{sid}')
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json() # get the system state returned
