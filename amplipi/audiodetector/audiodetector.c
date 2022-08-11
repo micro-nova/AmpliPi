@@ -114,10 +114,16 @@ bool write_data(int fd, AudioStatus *status) {
   return true;
 }
 
-bool close_storage(int fd) {
+bool close_storage(const char *path, int fd) {
   int result = close(fd);
   if (result < 0) {
     perror("close(file)");
+    return false;
+  }
+  // Delete output file so AmpliPi knows no status is available.
+  result = remove(path);
+  if (result < 0) {
+    perror("remove(file)");
     return false;
   }
   return true;
@@ -223,15 +229,10 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    AdcData processed_data;
-    for (size_t i = 0; i < sizeof(raw_data) / sizeof(raw_data.vals[0]); i++) {
-      processed_data.vals[i] = raw_data.vals[i] - baseline.vals[i];
-    }
-    // print_data(&processed_data);
     sleep(1);  // TODO: Timer
     if (abort_) {
-      // TODO: delete file and/or write 0x00
-      return close_storage(status_fd) ? EXIT_SUCCESS : EXIT_FAILURE;
+      bool result = close_storage(STATUS_FILE_PATH, status_fd);
+      return result ? EXIT_SUCCESS : EXIT_FAILURE;
     }
   };
   return EXIT_FAILURE;  // Should never reach here
