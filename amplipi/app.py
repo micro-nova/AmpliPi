@@ -149,6 +149,11 @@ def load_config(config: models.Status, ctrl: Api = Depends(get_ctrl)) -> models.
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change, config=config)
   return ctrl.get_state()
 
+@api.post('/api/factory_reset', tags=['status'])
+def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
+  """ Load the "factory" configuration (and return the configuration loaded). This will overwrite the current configuration so it is advised to save the previous config from. """
+  return load_config(models.Status(**ctrl.DEFAULT_CONFIG), ctrl)
+
 @api.post('/api/reset', tags=['status'])
 def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Reload the current configuration, resetting the firmware in the process. """
