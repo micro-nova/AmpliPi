@@ -583,6 +583,23 @@ async function resetDevice() {
   });
 }
 
+async function factoryResetDevice() {
+  button = $('#settings-config-factory-reset')[0];
+  indicator = $("#settings-config-factory-reset-indicator")[0];
+  button.classList.toggle('disabled', true);
+  indicator_show_inprogress(indicator);
+  fetch('/api/factory_reset', {method: 'POST'})
+  .then((response) => {
+    indicator_show_done(indicator);
+  })
+  .catch((e) => {
+    indicator_show_error(indicator);
+  })
+  .finally(() => {
+    button.classList.toggle('disabled', false);
+  });
+}
+
 async function rebootDevice() {
   button = $('#settings-config-reset')[0];
   indicator = $("#settings-config-reboot-indicator")[0];
