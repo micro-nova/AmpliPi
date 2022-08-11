@@ -437,14 +437,29 @@ class Api:
       return self.streams.get(idx, None)
     return None
 
-  def _update_src_info(self, src):
+  def _get_rca_info(self, src: models.Source) -> models.SourceInfo:
+      # RCA, name mimics the steam's formatting
+    src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='stopped')
+    playing = False
+    status_file = 'rca_status'
+    try:
+      with open(status_file, mode='rb') as file:
+        status_all = file.read()[0]
+        playing = (status_all & (0b11 << (src.id * 2))) != 0
+    except FileNotFoundError as error:
+      print(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
+    except Exception as error:
+      print(f'Error getting RCA audio status:\n  {error}')
+    src_info.state = "playing" if playing else "stopped"
+    return src_info
+
+  def _update_src_info(self, src: models.Source):
     """ Update a source's status and song metadata """
     stream_inst = self.get_stream(src)
     if stream_inst is not None:
       src.info = stream_inst.info()
     elif src.input == 'local' and src.id is not None:
-      # RCA, name mimics the steam's formatting
-      src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='unknown')
+      src.info = self._get_rca_info(src)
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
@@ -452,7 +467,7 @@ class Api:
     """Modifes the configuration of one of the 4 system sources
 
       Args:
-        id (int): source id [0,3]
+        sid (int): source id [0,3]
         update: changes to source
         force_update: bool, update source even if no changes have been made (for hw startup)
         internal: called by a higher-level ctrl function:

@@ -227,9 +227,10 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < sizeof(raw_data) / sizeof(raw_data.vals[0]); i++) {
       processed_data.vals[i] = raw_data.vals[i] - baseline.vals[i];
     }
-    print_data(&processed_data);
+    // print_data(&processed_data);
     sleep(1);  // TODO: Timer
     if (abort_) {
+      // TODO: delete file and/or write 0x00
       return close_storage(status_fd) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
   };
