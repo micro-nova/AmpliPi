@@ -662,7 +662,7 @@ class Api:
       return ApiResponse.error('delete group failed: {} does not exist'.format(gid))
 
   def _new_stream_id(self):
-    stream: Optional[models.Stream] = max(self.status.streams, key=lambda stream: stream.id)
+    stream: Optional[models.Stream] = max(self.status.streams, key=lambda stream: stream.id, default=None)
     if stream and stream.id:
       return stream.id + 1
     return 1000
