@@ -421,6 +421,9 @@ class Api:
               other_src.input = ''
             stream.disconnect()
             stream.connect(idx)
+          elif src.input and 'stream=' in src.input:
+            # TODO: should this stream id validation happen in the Source model?
+            raise Exception(f'StreamID specified by "{src.input}" not found')
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
           if rt_needs_update or force_update:
             # get the current underlying type of each of the sources, for configuration of the runtime
