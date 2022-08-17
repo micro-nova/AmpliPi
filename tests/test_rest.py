@@ -613,6 +613,15 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
     for g in effected_groups:
       if not find(last_state['groups'], g):
         missing = True
+    # check for streams that are used but unavailable
+    effected_source_inputs = { s.get('input', None) for s in p['state'].get('sources', [])}
+    for _input in effected_source_inputs:
+      if _input in ['', 'local']:
+        pass
+      elif 'stream=' in _input:
+        stream_id = int(_input.split('stream=')[1])
+        if not find(last_state['streams'], stream_id):
+          missing = True
     if missing:
       assert rv.status_code != HTTPStatus.OK
       return
