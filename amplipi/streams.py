@@ -288,6 +288,8 @@ class Spotify(BaseStream):
     if self._is_running():
       self.proc.kill()
     self._disconnect()
+      self.connect_port = None
+      self.mpris = None
     self.proc = None
 
   def info(self) -> models.SourceInfo:
