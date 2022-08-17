@@ -244,7 +244,7 @@ def test_get_source(client, sid):
   assert jrv['info']['supported_cmds'] is not None
 
 @pytest.mark.parametrize('sid', base_source_ids())
-def test_patch_source(client, sid):
+def test_patch_source_name(client, sid):
   """ Try changing a source's name """
   rv = client.patch('/api/sources/{}'.format(sid), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
@@ -252,6 +252,30 @@ def test_patch_source(client, sid):
   s = find(jrv['sources'], sid)
   assert s is not None
   assert s['name'] == 'patched-name'
+
+@pytest.mark.parametrize('src_id', base_source_ids())
+@pytest.mark.parametrize('_input', ['stream=1001', 'stream=-1', 'local', '']) # add a non-existent stream
+def test_patch_source_input(client, src_id, _input):
+  """ Try changing a source's input """
+  last_state = status_copy(client)
+  stream_id = int(_input.split('stream=')[1]) if _input and 'stream=' in _input else -1
+  rv = client.patch('/api/sources/{}'.format(src_id), json={'input': _input})
+  if _input == 'local' or _input == '' or find(last_state['streams'], stream_id):
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    s = find(jrv['sources'], src_id)
+    assert s is not None
+    assert s['input'] == _input
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    # now lets verify nothing changed
+    last_src = find(last_state['sources'], src_id)
+    rv = client.get('/api/')
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    s = find(jrv['sources'], src_id)
+    assert s is not None
+    assert s['input'] == last_src['input'], 'input modified on failed patch'
 
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_get_source_image(client, sid):
