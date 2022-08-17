@@ -77,7 +77,7 @@ class fields(SimpleNamespace):
 class fields_w_default(SimpleNamespace):
   """ AmpliPi's field types that need a default value
 
-  These are needed because there is ambiguity where and optional field has a default value
+  These are needed because there is ambiguity where an optional field has a default value
   """
   # TODO: less duplication
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
@@ -280,7 +280,7 @@ class ZoneUpdate(BaseUpdate):
             'source-id': 3
           }
         },
-        'Increase Volume': {
+        'Change Volume': {
           'value': {
             'vol': pcnt2Vol(0.44)
           }
@@ -328,7 +328,7 @@ class MultiZoneUpdate(BaseModel):
     }
 
 class Group(Base):
-  """ A group of zones that can share the same audio input and be controlled as a group ie. Updstairs.
+  """ A group of zones that can share the same audio input and be controlled as a group ie. Upstairs.
 
   Volume, mute, and source_id fields are aggregates of the member zones."""
   source_id: Optional[int] = fields.SourceId
