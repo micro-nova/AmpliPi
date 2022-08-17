@@ -288,15 +288,15 @@ class Spotify(BaseStream):
     if self._is_running():
       self.proc.kill()
     self._disconnect()
-      self.connect_port = None
-      self.mpris = None
+    self.connect_port = None
+    self.mpris = None
     self.proc = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      img_url='static/imgs/spotify.png'
+      img_url='static/imgs/spotify.png' # report generic spotify image in place of unspecified album art
     )
 
     try:
@@ -307,7 +307,7 @@ class Spotify(BaseStream):
       source.track = md.title
       source.album = md.album
       source.supported_cmds=list(self.supported_cmds.keys())
-      if md.art_url: # report generic spotify image in place of unspecified album art
+      if md.art_url:
         source.img_url = md.art_url
     except Exception:
       pass
