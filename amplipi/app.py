@@ -151,7 +151,10 @@ def load_config(config: models.Status, ctrl: Api = Depends(get_ctrl)) -> models.
 
 @api.post('/api/factory_reset', tags=['status'])
 def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
-  """ Load the "factory" configuration (and return the configuration loaded). This will overwrite the current configuration so it is advised to save the previous config from. """
+  """ Load the "factory" configuration (and return the configuration loaded).
+  This will reset all zone names and streams back to their original configuration.
+  We recommend downloading the current configuration beforehand.
+  """
   return load_config(models.Status(**ctrl.DEFAULT_CONFIG), ctrl)
 
 @api.post('/api/reset', tags=['status'])

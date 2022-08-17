@@ -202,7 +202,11 @@
             <div class="card settings">
               <h6 class="card-header">Reset AmpliPi to Factory Default configuration</h6>
               <div class="card-body">
-                <p class="card-text text-muted">Resets the preamp hardware and controller software using the default configuration file. This will reset all zone names and streams back to their original configuration. We recommend downloading the current configuration beforehand.</p>
+                <p class="card-text text-muted">
+                  Resets the preamp hardware and controller software using the default configuration file.
+                  This will reset all zone names and streams back to their original configuration.
+                  We recommend downloading the current configuration beforehand.
+                </p>
                 <div class="text-center">
                   <button class="btn btn-success" onclick="if (!this.classList.contains('disabled')) { this.classList.add('disabled'); factoryResetDevice(); }" id="settings-config-factory-reset">Factory Reset</button>
                   <i id="settings-config-factory-reset-indicator" class="fa" style="visibility: hidden;"></i>
