@@ -421,8 +421,9 @@ class Api:
               other_src.input = ''
             stream.disconnect()
             stream.connect(idx)
-          elif src.input and 'stream=' in src.input:
+          elif src.input and 'stream=' in src.input: # invalid stream id?
             # TODO: should this stream id validation happen in the Source model?
+            src.input = last_input
             raise Exception(f'StreamID specified by "{src.input}" not found')
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
           if rt_needs_update or force_update:
