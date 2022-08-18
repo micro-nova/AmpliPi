@@ -455,17 +455,17 @@ class Api:
       Returns:
         ApiResponse
     """
-    idx, zone = utils.find(self.status.zones, zid)
-    if idx is not None and zone is not None:
-      name, _ = utils.updated_val(update.name, zone.name)
-      source_id, update_source_id = utils.updated_val(update.source_id, zone.source_id)
-      mute, update_mutes = utils.updated_val(update.mute, zone.mute)
-      vol, update_vol = utils.updated_val(update.vol, zone.vol)
-      vol_f, update_vol_f = utils.updated_val(update.vol_f, zone.vol_f)
-      vol_min, update_vol_min = utils.updated_val(update.vol_min, zone.vol_min)
-      vol_max, update_vol_max = utils.updated_val(update.vol_max, zone.vol_max)
-      disabled, _ = utils.updated_val(update.disabled, zone.disabled)
-      try:
+    try:
+      idx, zone = utils.find(self.status.zones, zid)
+      if idx is not None and zone is not None:
+        name, _ = utils.updated_val(update.name, zone.name)
+        source_id, update_source_id = utils.updated_val(update.source_id, zone.source_id)
+        mute, update_mutes = utils.updated_val(update.mute, zone.mute)
+        vol, update_vol = utils.updated_val(update.vol, zone.vol)
+        vol_f, update_vol_f = utils.updated_val(update.vol_f, zone.vol_f)
+        vol_min, update_vol_min = utils.updated_val(update.vol_min, zone.vol_min)
+        vol_max, update_vol_max = utils.updated_val(update.vol_max, zone.vol_max)
+        disabled, _ = utils.updated_val(update.disabled, zone.disabled)
         # update non hw state
         zone.name = name
         zone.disabled = disabled
@@ -479,11 +479,11 @@ class Api:
           if self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
-            return ApiResponse.error('set zone failed: unable to update zone source')
+            raise Exception('unable to update zone source')
 
         # update min/max volumes
         if vol_max - vol_min < models.MIN_DB_RANGE:
-          return ApiResponse.error(f'set zone failed: max - min volume must be greater than {models.MIN_DB_RANGE}')
+          raise Exception(f'max - min volume must be greater than {models.MIN_DB_RANGE}')
         zone.vol_min = vol_min
         zone.vol_max = vol_max
 
@@ -493,7 +493,7 @@ class Api:
           if self._rt.update_zone_mutes(idx, mutes):
             zone.mute = mute
           else:
-            raise Exception('set zone failed: unable to update zone mute')
+            raise Exception('unable to update zone mute')
 
         def set_vol():
           """ Update the zone's volume. Could be triggered by a change in
@@ -510,37 +510,34 @@ class Api:
             zone.vol = vol_db
             zone.vol_f = vol_f_new
           else:
-            raise Exception('set zone failed: unable to update zone volume')
+            raise Exception('unable to update zone volume')
 
         # To avoid potential unwanted loud output:
         # If muting, mute before setting volumes
         # If un-muting, set desired volume first
         update_volumes = update_vol or update_vol_f or update_vol_min or update_vol_max
-        try:
-          if force_update or (update_mutes and update_volumes):
-            if mute:
-              set_mute()
-              set_vol()
-            else:
-              set_vol()
-              set_mute()
-          elif update_volumes:
-            set_vol()
-          elif update_mutes:
+        if force_update or (update_mutes and update_volumes):
+          if mute:
             set_mute()
-        except Exception as exc:
-          return ApiResponse.error(str(exc))
+            set_vol()
+          else:
+            set_vol()
+            set_mute()
+        elif update_volumes:
+          set_vol()
+        elif update_mutes:
+          set_mute()
 
         if not internal:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
           self._update_groups()
           self.mark_changes()
-
-        return ApiResponse.ok()
-      except Exception as exc:
-        return ApiResponse.error('set zone: '  + str(exc))
+    except Exception as exc:
+      if internal:
+        raise exc
+      return ApiResponse.error(f'set zone failed: {exc}')
     else:
-        return ApiResponse.error('set zone: index {} out of bounds'.format(idx))
+      return ApiResponse.ok()
 
   def set_zones(self, multi_update: models.MultiZoneUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Reconfigures a set of zones
@@ -550,23 +547,25 @@ class Api:
       Returns:
         ApiResponse
     """
-    # aggregate all of the zones together
-    all_zids = utils.zones_from_all(self.status, multi_update.zones, multi_update.groups)
-    # update each of the zones
-    resp = ApiResponse.ok()
-    for zid in all_zids:
-      zupdate = multi_update.update.copy() # we potentially need to make changes to the underlying update
-      if zupdate.name:
-        # ensure all zones don't get named the same
-        zupdate.name = f'{zupdate.name} {zid+1}'
-      resp = self.set_zone(zid, zupdate, force_update=force_update, internal=True)
-      if resp.code != ApiResponse.OK:
-        break # the response message is the internal failure
-    if not internal:
-      # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
-      self._update_groups()
-      self.mark_changes()
-    return resp
+    try:
+      # aggregate all of the zones together
+      all_zids = utils.zones_from_all(self.status, multi_update.zones, multi_update.groups)
+      # update each of the zones
+      for zid in all_zids:
+        zupdate = multi_update.update.copy() # we potentially need to make changes to the underlying update
+        if zupdate.name:
+          # ensure all zones don't get named the same
+          zupdate.name = f'{zupdate.name} {zid+1}'
+        self.set_zone(zid, zupdate, force_update=force_update, internal=True)
+      if not internal:
+        # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
+        self._update_groups()
+        self.mark_changes()
+    except Exception as exc:
+      if internal:
+        raise exc
+      return ApiResponse.error(f'set_zones failed: {exc}')
+    return ApiResponse.ok()
 
   def _update_groups(self) -> None:
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
@@ -596,36 +595,40 @@ class Api:
         Returns:
           'None' on success, otherwise error (dict)
     """
-    _, group = utils.find(self.status.groups, gid)
-    if group is None:
-      return ApiResponse.error('set group failed, group {} not found'.format(gid))
-    name, _ = utils.updated_val(update.name, group.name)
-    zones, _ = utils.updated_val(update.zones, group.zones)
-    vol_delta, vol_updated = utils.updated_val(update.vol_delta, group.vol_delta)
-    vol_f, vol_f_updated = utils.updated_val(update.vol_f, group.vol_f)
+    try:
+      _, group = utils.find(self.status.groups, gid)
+      if group is None:
+        raise Exception(f'group {gid} not found')
+      name, _ = utils.updated_val(update.name, group.name)
+      zones, _ = utils.updated_val(update.zones, group.zones)
+      vol_delta, vol_updated = utils.updated_val(update.vol_delta, group.vol_delta)
+      vol_f, vol_f_updated = utils.updated_val(update.vol_f, group.vol_f)
 
-    group.name = name
-    group.zones = zones
+      group.name = name
+      group.zones = zones
 
-    # determine group volume, 'vol_delta' (in dB) takes precedence over vol_f
-    # if vol_updated is true vol_delta can't be none but mypy isn't smart enough to know that
-    if vol_updated and vol_delta is not None:
-      vol_f = utils.vol_db_to_float(vol_delta)
+      # determine group volume, 'vol_delta' (in dB) takes precedence over vol_f
+      # if vol_updated is true vol_delta can't be none but mypy isn't smart enough to know that
+      if vol_updated and vol_delta is not None:
+        vol_f = utils.vol_db_to_float(vol_delta)
 
-    # update each of the member zones
-    zone_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)
-    if vol_updated or vol_f_updated:
-      # TODO: make this use volume delta adjustment, for now its a fixed group volume
-      # use float value so zone calculates appropriate offsets in dB
-      zone_update.vol_f = vol_f
-    for zone in [self.status.zones[zone] for zone in zones]:
-      self.set_zone(zone.id, zone_update, internal=True)
+      # update each of the member zones
+      zone_update = models.ZoneUpdate(source_id=update.source_id, mute=update.mute)
+      if vol_updated or vol_f_updated:
+        # TODO: make this use volume delta adjustment, for now its a fixed group volume
+        # use float value so zone calculates appropriate offsets in dB
+        zone_update.vol_f = vol_f
+      for zone in [self.status.zones[zone] for zone in zones]:
+        self.set_zone(zone.id, zone_update, internal=True)
 
-    if not internal:
-      # update the group stats
-      self._update_groups()
-      self.mark_changes()
-
+      if not internal:
+        # update the group stats
+        self._update_groups()
+        self.mark_changes()
+    except Exception as exc:
+      if internal:
+        raise exc
+      return ApiResponse.error(f'set_group failed: {exc}')
     return ApiResponse.ok()
 
   def _new_group_id(self):
@@ -686,9 +689,11 @@ class Api:
         if not internal:
           self.mark_changes()
         return new_stream
-      return ApiResponse.error('create stream failed: no stream created')
+      raise Exception('no stream created')
     except Exception as exc:
-      return ApiResponse.error('create stream failed: {}'.format(exc))
+      if internal:
+        raise exc
+      return ApiResponse.error(f'create stream failed: {exc}')
 
   @save_on_success
   def set_stream(self, sid: int, update: models.StreamUpdate) -> ApiResponse:
@@ -721,8 +726,11 @@ class Api:
       if not internal:
         self.mark_changes()
       return ApiResponse.ok()
-    except KeyError:
-      return ApiResponse.error('delete stream failed: {} does not exist'.format(sid))
+    except KeyError as exc:
+      msg = f'delete stream failed: {sid} does not exist'
+      if internal:
+        raise Exception(msg) from exc
+      return ApiResponse.error(msg)
 
   @save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> ApiResponse:
@@ -789,6 +797,8 @@ class Api:
         self.mark_changes()
       return preset
     except Exception as exc:
+      if internal:
+        raise exc
       return ApiResponse.error('create preset failed: {}'.format(exc))
 
   @save_on_success
@@ -907,42 +917,48 @@ class Api:
     6. Execute any stream commands
     7. Release system mutex, future requests are successful after this
     """
-    # Get the preset to load
-    i, preset = utils.find(self.status.presets, pid)
-    if i is None or preset is None:
-      return ApiResponse.error('load preset failed: {} does not exist'.format(pid))
+    try:
+      # Get the preset to load
+      i, preset = utils.find(self.status.presets, pid)
+      if i is None or preset is None:
+        raise Exception(f'{pid} does not exist')
 
-    # TODO: acquire lock (all api methods that change configuration will need this)
+      # TODO: acquire lock (all api methods that change configuration will need this)
 
-    # update last config preset for restore capabilities (creating if missing)
-    # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
-    last_pid, _ = utils.find(self.status.presets, self._LAST_PRESET_ID)
-    status = self.status
-    last_config = models.Preset(
-      id=9999,
-      name='Restore last config',
-      last_used=None, # this need to be in javascript time format
-      state=models.PresetState(
-        sources=deepcopy(status.sources),
-        zones=deepcopy(status.zones),
-        groups=deepcopy(status.groups)
+      # update last config preset for restore capabilities (creating if missing)
+      # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
+      last_pid, _ = utils.find(self.status.presets, self._LAST_PRESET_ID)
+      status = self.status
+      last_config = models.Preset(
+        id=9999,
+        name='Restore last config',
+        last_used=None, # this need to be in javascript time format
+        state=models.PresetState(
+          sources=deepcopy(status.sources),
+          zones=deepcopy(status.zones),
+          groups=deepcopy(status.groups)
+        )
       )
-    )
-    if last_pid is None:
-      self.status.presets.append(last_config)
-    else:
-      self.status.presets[last_pid] = last_config
 
-    if preset.state is not None:
-      try:
-        self._load_preset_state(preset.state)
-      except Exception as exc:
-        return ApiResponse.error(str(exc))
+      if preset.state is not None:
+        try:
+          self._load_preset_state(preset.state)
+        except Exception as exc:
+          # TODO: revert to old state and rollback last config
+          raise exc
+        else:
+          if last_pid is None:
+            self.status.presets.append(last_config)
+          else:
+            self.status.presets[last_pid] = last_config
 
-    # TODO: execute stream commands
+      # TODO: execute stream commands
 
-    preset.last_used = int(time.time())
-
+      preset.last_used = int(time.time())
+    except Exception as exc:
+      if internal:
+        raise exc
+      return ApiResponse.error(f'load_preset failed: {exc}')
     # TODO: release lock
     return ApiResponse.ok()
 
