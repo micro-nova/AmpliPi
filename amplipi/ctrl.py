@@ -397,11 +397,11 @@ class Api:
       Returns:
         'None' on success, otherwise error (dict)
     """
-    idx, src = utils.find(self.status.sources, sid)
-    if idx is not None and src is not None:
-      name, _ = utils.updated_val(update.name, src.name)
-      input_, input_updated = utils.updated_val(update.input, src.input)
-      try:
+    try:
+      idx, src = utils.find(self.status.sources, sid)
+      if idx is not None and src is not None:
+        name, _ = utils.updated_val(update.name, src.name)
+        input_, input_updated = utils.updated_val(update.input, src.input)
         # update the name
         src.name = str(name)
         if input_updated or force_update:
@@ -432,15 +432,17 @@ class Api:
             # update this source
             src_cfg[idx] = self._is_digital(input_)
             if not self._rt.update_sources(src_cfg):
-              return ApiResponse.error('failed to set source')
+              raise Exception('failed to set source')
           self._update_src_info(src) # synchronize the source's info
         if not internal:
           self.mark_changes()
-        return ApiResponse.ok()
-      except Exception as exc:
-        return ApiResponse.error('failed to set source: ' + str(exc))
-    else:
-      return ApiResponse.error('failed to set source: index {} out of bounds'.format(idx))
+      else:
+        raise Exception(f'failed to set source: index {idx} out of bounds')
+    except Exception as exc:
+      if internal:
+        raise exc
+      return ApiResponse.error(f'failed to set source: {exc}')
+    return ApiResponse.ok()
 
   def set_zone(self, zid, update: models.ZoneUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Reconfigures a zone
