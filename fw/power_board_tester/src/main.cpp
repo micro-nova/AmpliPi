@@ -178,8 +178,6 @@ bool i2cDevPresent(uint8_t addr) {
 }
 
 bool readI2CADC(AdcData* data) {
-  memset(data, 0, sizeof(data));
-
   // Figure out which ADC is present
   uint8_t addr = SlaveAddr::adc4;
   if (i2cDevPresent(SlaveAddr::adc4)) {
@@ -377,7 +375,7 @@ void loop() {
     sprintf(strbuf1, "%5.2fV", ctrl5va);
     sprintf(strbuf2, "%5.2fV", ctrl5vd);
     bool ok1 = ctrl5va < 5.5 && ctrl5va > 4.5;
-    bool ok2 = ctrl5vd < 5.5 && ctrl5va > 4.5;
+    bool ok2 = ctrl5vd < 5.5 && ctrl5vd > 4.5;
     drawTest<0>("Ctrl 5VA/5VD", strbuf1, ok1, strbuf2, ok2);
 
     float preamp9v = adcToVolts(readAna16(A2), 16, 3.3, 33, 100);
@@ -448,7 +446,7 @@ void loop() {
     Wire.endTransmission();
 
     // Read I2C ADC
-    AdcData adc_data;
+    AdcData adc_data = {};
     readI2CADC(&adc_data);
     bool t1_ok = adcToTempStr(adc_data.amp1_temp, 25 * 0.9, 25 * 1.1, strbuf1);
     bool t2_ok = adcToTempStr(adc_data.amp2_temp, 25 * 0.9, 25 * 1.1, strbuf2);
@@ -460,11 +458,15 @@ void loop() {
     drawTest<8>("I2C ADC HV1", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
                 hv1_ntc_ok);
 
-    float hv2 = adcToVolts(adc_data.hv2_volts, 8, 3.3, 4.7, 100);
-    sprintf(strbuf1, "%5.2fV", hv2);
-    bool hv2_ntc_ok = adcToTempStr(adc_data.hv2_temp, 15, 30, strbuf2);
-    drawTest<9>("I2C ADC HV2", strbuf1, hv2 < 28 && hv2 > 20, strbuf2,
-                hv2_ntc_ok);
+    if (adc_data.num_chans > 4) {
+      float hv2 = adcToVolts(adc_data.hv2_volts, 8, 3.3, 4.7, 100);
+      sprintf(strbuf1, "%5.2fV", hv2);
+      bool hv2_ntc_ok = adcToTempStr(adc_data.hv2_temp, 15, 30, strbuf2);
+      drawTest<9>("I2C ADC HV2", strbuf1, hv2 < 28 && hv2 > 20, strbuf2,
+                  hv2_ntc_ok);
+    } else {
+      drawTest<9>("I2C ADC HV2", " NONE", false, "", false);
+    }
 
     // Start a new transmission
     i2c_loopback_ok_ = false;
