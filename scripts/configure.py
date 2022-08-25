@@ -13,8 +13,8 @@ import glob
 from typing import List, Union, Tuple, Dict, Any, Optional
 import time
 import re
-import requests
 import sys
+import requests
 
 # pylint: disable=broad-except
 # pylint: disable=bare-except
@@ -32,6 +32,20 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             ],
   },
   'web' : {
+  },
+  'logging' : {
+    'script' : [
+      # stop and disable the secondary logging utility rsyslog
+      'sudo systemctl stop rsyslog.service',
+      'sudo systemctl disable rsyslog.service',
+      # reconfigure journald to only log to RAM
+      'echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\n" | sudo tee /etc/systemd/journald.conf',
+      'sudo systemctl restart systemd-journald.service',
+      # delete some old logs
+      'sudo journalctl --rotate',
+      'sudo journalctl --vacuum-time=10m',
+      'sudo rm /var/log/daemon* /var/log/syslog* /var/log/messages* /var/log/user*',
+    ]
   },
   # streams
   # TODO: can stream dependencies be aggregated from the streams themselves?
@@ -180,14 +194,15 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # organize stuff to install
   packages = set()
   files = []
-  scripts = []
+  scripts: Dict[str, List[str]] = {}
   for dep in deps:
-    if 'copy' in _os_deps[dep]:
-      files += _os_deps[dep]['copy']
-    if 'apt' in _os_deps[dep]:
-      packages.update(_os_deps[dep]['apt'])
-    if 'script' in _os_deps[dep]:
-      scripts.append(_os_deps[dep]['script'])
+    install_steps = _os_deps[dep]
+    if 'copy' in install_steps:
+      files += install_steps['copy']
+    if 'apt' in install_steps:
+      packages.update(install_steps['apt'])
+    if 'script' in install_steps:
+      scripts[dep] = install_steps['script']
 
   # copy files
   for file in files:
@@ -232,15 +247,15 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
   # Run scripts
-  for script in scripts:
-    sh_loc = f'{env["base_dir"]}/install{scripts.index(script)}.sh'
+  for dep, script in scripts.items():
+    sh_loc = f'{env["base_dir"]}/install_{dep}.sh'
     with open(sh_loc, 'a') as sh:
       for scrap in script:
         sh.write(scrap + '\n')
     shargs = f'sh {sh_loc}'.split()
     clean = f'rm {sh_loc}'.split()
-    tasks += print_progress([Task('run install script', args=shargs, wd=env['base_dir']).run()])
-    tasks += print_progress([Task('rm generic script', args=clean, wd=env['base_dir']).run()])
+    tasks += print_progress([Task(f'run {dep} install script', args=shargs, wd=env['base_dir']).run()])
+    tasks += print_progress([Task(f'remove {dep} temporary script', args=clean, wd=env['base_dir']).run()])
 
   # cleanup
   # shairport-sync install sets up a daemon we need to stop, remove it
