@@ -4,7 +4,6 @@ dasbus
 deepdiff
 fastapi
 fastapi_utils
-pygobject
 jinja2
 loguru
 mypy
@@ -13,6 +12,7 @@ numpy
 pillow
 psutil
 pydantic
+pygobject
 pylint
 pyserial
 pytest
