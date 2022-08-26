@@ -39,7 +39,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'sudo systemctl stop rsyslog.service',
       'sudo systemctl disable rsyslog.service',
       # reconfigure journald to only log to RAM
-      'echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\n" | sudo tee /etc/systemd/journald.conf',
+      r'echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
       'sudo systemctl restart systemd-journald.service',
       # delete some old logs
       'sudo journalctl --rotate',
@@ -255,7 +255,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     with open(sh_loc, 'a') as sh:
       for scrap in script:
         sh.write(scrap + '\n')
-    shargs = f'sh {sh_loc}'.split()
+    shargs = f'bash {sh_loc}'.split()
     clean = f'rm {sh_loc}'.split()
     tasks += print_progress([Task(f'run {dep} install script', args=shargs, wd=env['base_dir']).run()])
     tasks += print_progress([Task(f'remove {dep} temporary script', args=clean, wd=env['base_dir']).run()])
