@@ -10,31 +10,46 @@
 # make
 # sudo make install
 
-helptext="Usage: image_pi [OPTION]... FILE.img
+# To run rpiboot without root permissions add
+# SUBSYSTEM=="usb", ATTRS{idVendor}=="0a5c", ATTR{idProduct}=="2711", MODE="0666"
+# to /etc/udev/rules.d/99-rpiboot.rules
+# and either unplug and plug back in the Pi or run
+# sudo udevadm control --reload; sudo udevadm trigger
+
+# To run dd without root permissions one option is to add the current user to
+# the `disk` group:
+# sudo usermod -a -G disk $USER
+
+helptext="Usage: image_pi (-w|-r) [options] FILE.img
 Write a .img file to a Raspberry Pi for first-time AmpliPi setup,
 or read from the Pi to create a .img file for later use.
 
-  FILE.img:        Specify the .img file to write to or read from the Pi.
+  FILE.img:        Specify the .img file to read or write from.
   -w, --write:     Write FILE.img to the Pi
-  -r, --read:      Read from the Pi to FILE.img
+  -r, --read:      Read from the Pi to FILE.img.
   --no-instr:      Skip printing manual instructions. Pi must already be in
                    bootloader mode before running this script.
   -h, --help:      Print this help text.
 "
 
 # Example
-# With preconfigured image: ./image_pi --no-instr amplipi_1.4.img
+# With preconfigured image: ./image_pi -w amplipi_1.7.img
 
 # Constants
 write_speed_mb=6    # MB/s write speed to the Pi's EMMC over USB
+read_speed_mb=9.2   # MB/s read speed
 RED='\033[0;31m'
 GRN='\033[0;32m'
 NC='\033[0m'
 
 img_file=''         # ...or use this image file explicitly
 instructions=true   # Skip manual instruction step
+write_img=false
+read_img=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
+    -w|--write) write_img=true ;;
+    -r|--read) read_img=true ;;
     *.img)
         img_file=$1
       ;;
@@ -47,6 +62,16 @@ while [[ "$#" -gt 0 ]]; do
   esac
   shift
 done
+
+if $write_img && $read_img; then
+  printf "Can't both write and read an image to/from AmpliPi...\n\n"
+  printf "$helptext"
+  exit 1
+elif ! $write_img && ! $read_img; then
+  printf "Must choose to either write or read an image.\n\n"
+  printf "$helptext"
+  exit 1
+fi
 
 if [ -z $img_file ]; then
   printf "Image file required!\n\n"
@@ -69,33 +94,90 @@ for i in {1..10}; do
   sleep 0.5
 
   # Check for Raspberry Pi device path
-  diskpath=$(ls $disk_base_path* 2>/dev/null | head -n1)
-  if [ ! -z $diskpath ]; then
-    echo -e "\nRaspberry Pi device found at $diskpath\n"
+  pi_path=$(ls $disk_base_path* 2>/dev/null | head -n1)
+  if [ ! -z $pi_path ]; then
+    echo -e "\nRaspberry Pi device found at $pi_path\n"
     break
   fi
 done
 
-if [ -z $diskpath ]; then
+if [ -z $pi_path ]; then
   echo -e "\n${RED}ERROR:${NC} No Raspberry Pi device found at $disk_base_path*"
   read -p "Press any key to continue..." -sn 1
   echo "" # newline
   exit 2
 fi
 
-# READING
-sudo dd if=$diskpath of=$img_file bs=4MiB status=progress
-sudo chown $USER:$USER $img_file
-# DONE READING
+if $write_img; then
+  img_size_mb=$(du -m $img_file | cut -f1)
+  # bc truncates, add 0.5 to round
+  est_time=$(echo "$img_size_mb/$write_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
+  echo "Copying the image to the AmpliPi. This will take about $est_time minutes."
+  dd_opts="if=$img_file of=$pi_path"
+else
+  emmc_size_mb=29820 # Taken from a CM3+ 32 GB model
+  est_time=$(echo "$emmc_size_mb/$read_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
+  echo "Reading the image from the AmpliPi. This will take about $est_time minutes."
+  dd_opts="if=$pi_path of=$img_file"
+fi
 
-img_size_mb=$(du -m $img_file | cut -f1)
-# bc truncates, add 0.5 to round
-est_time=$(echo "$img_size_mb/$write_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
-echo "Copying the image to the AmpliPi. This takes about $est_time minutes."
+# Actually do read/write
 echo "Go get a coffee or something :)"
 echo "Started at: $(date)"
-sudo dd if=$img_file of=$diskpath bs=4MiB status=progress
+sudo dd $dd_opts bs=4MiB status=progress
 echo "Finished at: $(date)"
+
+if $read_img; then
+  # Set permissions on new image file to be $USER instead of root
+  sudo chown $USER:$USER $img_file
+
+  echo "Done! Exiting."
+  exit 0
+  # TODO: optionally shrink image and set to expand on first boot.
+  # Mount
+  loopdev=$(sudo losetup --find --show $img_file)
+  sudo partprobe $loopdev
+
+  # Check filesystem just in case (run until no errors occur)
+  # TODO: sudo necessary?
+  sudo e2fsck -f ${loopdev}p1
+  sudo e2fsck -f ${loopdev}p2
+
+  # Mount boot partition
+  boot_dir=$(mktemp -d)
+  root_dir=$(mktemp -d)
+  sudo mount ${loopdev}p1 $boot_dir
+  sudo mount ${loopdev}p2 $root_dir
+
+  # Setup resize2fs on Pi
+  sudo sed -i 's@$@ init=/usr/lib/raspi-config/init_resize.sh@' $boot_dir/cmdline.txt
+  sudo wget -O $root_dir/etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
+  sudo chmod +x $root_dir/etc/init.d/resize2fs_once
+  sudo systemctl enable resize2fs_once
+  cat /dev/null > ~/.bash_history && history -c && exit
+
+  # Shrink root partition (partition 2)
+  sudo resize2fs -pM ${loopdev}p2
+  block_count=$(sudo tune2fs -l ${loopdev}p2 | grep "Block count" | sed "s/^Block count: *//g")
+  block_size=$(sudo tune2fs -l ${loopdev}p2 | grep "Block size" | sed "s/^Block size: *//g")
+  sector_size=512 # fdisk uses 512-byte sectors
+  new_sectors=$(($block_count*$block_size/512))
+  echo ",$new_sectors" | sudo sfdisk -N2 $loopdev
+
+  # Verify file system is still good
+  sudo e2fsck -f ${loopdev}p2
+
+  # Remove loop device
+  sudo losetup -d $loopdev
+
+  # Verify new partition setup
+  fdisk -l $img_file
+  #Device       Boot  Start      End  Sectors  Size Id Type
+  #amplipi.img1        8192   532479   524288  256M  c W95 FAT32 (LBA)
+  #amplipi.img2      532480 11404616 10872137  5.2G 83 Linux
+  end=11404616
+  truncate --size=$[($end+1)*$sector_size] $img_file
+fi
 
 echo -e "
 ${GRN}Imaging successful!${NC} Please complete the following steps:
