@@ -342,7 +342,7 @@ class Spotify(BaseStream):
     spotify_args = [f'{utils.get_folder("streams")}/spotifyd', '--no-daemon', '--config-path', './config.toml']
 
     try:
-      self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
+      self.proc = subprocess.Popen(args=spotify_args, preexec_fn=os.setpgrp, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
       self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)

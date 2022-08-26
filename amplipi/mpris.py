@@ -77,6 +77,10 @@ class MPRIS:
     """Playing?"""
     return self.mpris.PlaybackStatus.strip("'") == 'Playing'
 
+  def is_stopped(self) -> bool:
+    """Stopped?"""
+    return self.mpris.PlaybackStatus.strip("'") == 'Stopped'
+
   def get_capabilities(self) -> List[CommandTypes]:
     """Returns a list of supported commands."""
     capabilities = []
