@@ -191,6 +191,9 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
   tasks += print_progress([Task('get latest debian packages', 'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
+  # Upgrade current packages
+  tasks += print_progress([Task('upgrade debian packages', 'sudo apt-get upgrade'.split()).run()])
+
   # organize stuff to install
   packages = set()
   files = []
