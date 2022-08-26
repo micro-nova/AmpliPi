@@ -258,6 +258,10 @@ class Spotify(BaseStream):
 
     toml_template = f'{utils.get_folder("streams")}/spot_config.toml'
     toml_useful = f'{src_config_folder}/config.toml'
+
+    # make source folder
+    os.system(f'mkdir -p {src_config_folder}')
+
     # Copy the config template
     os.system(f'cp {toml_template} {toml_useful}')
 
