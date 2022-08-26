@@ -44,7 +44,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       # delete some old logs
       'sudo journalctl --rotate',
       'sudo journalctl --vacuum-time=10m',
-      'sudo rm /var/log/daemon* /var/log/syslog* /var/log/messages* /var/log/user*',
+      'sudo rm /var/log/daemon* /var/log/syslog* /var/log/messages* /var/log/user* || echo ok',
     ]
   },
   # streams
@@ -192,7 +192,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   tasks += print_progress([Task('get latest debian packages', 'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
   # Upgrade current packages
-  tasks += print_progress([Task('upgrade debian packages', 'sudo apt-get upgrade'.split()).run()])
+  tasks += print_progress([Task('upgrade debian packages', 'sudo apt-get upgrade --assume-yes'.split()).run()])
 
   # organize stuff to install
   packages = set()
