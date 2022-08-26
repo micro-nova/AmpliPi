@@ -262,7 +262,7 @@ class Spotify(BaseStream):
     os.system(f'cp {toml_template} {toml_useful}')
 
     # Input the proper values
-    self.connect_port = 4070 + 2*src
+    self.connect_port = 4070 + 10*src
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
       data = data.replace('device_name_in_spotify_connect', f'{self.name}')
@@ -275,7 +275,7 @@ class Spotify(BaseStream):
     spotify_args = [f'{utils.get_folder("streams")}/spotifyd', '--config-path', './config.toml']
 
     try:
-      self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
+      self.proc = subprocess.Popen(args=spotify_args, preexec_fn=os.setpgrp, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
       self.mpris = MPRIS(f'spotifyd_{self.name}')
@@ -285,8 +285,10 @@ class Spotify(BaseStream):
       print(f'error starting spotify: {exc}')
 
   def disconnect(self):
-    if self._is_running():
-      self.proc.kill()
+    try:
+      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+    except Exception:
+      pass
     self._disconnect()
     self.connect_port = None
     self.mpris = None
@@ -302,13 +304,16 @@ class Spotify(BaseStream):
     try:
       md = self.mpris.metadata()
 
-      source.state = 'playing' if self.mpris.is_playing() else 'paused'
-      source.artist = md.artist
-      source.track = md.title
-      source.album = md.album
-      source.supported_cmds=list(self.supported_cmds.keys())
-      if md.art_url:
-        source.img_url = md.art_url
+
+      if not self.mpris.is_stopped():
+        source.state = 'playing' if self.mpris.is_playing() else 'paused'
+        source.artist = md.artist
+        source.track = md.title
+        source.album = md.album
+        source.supported_cmds=list(self.supported_cmds.keys())
+        if md.art_url:
+          source.img_url = md.art_url
+
     except Exception:
       pass
 
