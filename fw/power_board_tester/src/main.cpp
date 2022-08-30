@@ -80,6 +80,14 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 #define TFT_FONT_HEIGHT 8
 #define TEXT_MARGIN     4
 
+// Acceptable ranges for tested values
+constexpr float HV_MIN   = 24 * 0.8;
+constexpr float HV_MAX   = 24 * 1.2;
+constexpr float NTC_MIN  = 15;  // These are measuring real temperature, which
+constexpr float NTC_MAX  = 30;  // can vary widely in the testing environment.
+constexpr float TEMP_MIN = 25 * 0.8;
+constexpr float TEMP_MAX = 25 * 1.2;
+
 // I2C loopback test
 static constexpr uint8_t I2C_TEST_VAL = 0xA4;
 
@@ -171,6 +179,7 @@ struct AdcData {
   };
   uint8_t num_chans;
 };
+static_assert(sizeof(AdcData) == 7, "Error, AdcData wrong size");
 
 bool i2cDevPresent(uint8_t addr) {
   Wire.beginTransmission(addr);
@@ -178,6 +187,8 @@ bool i2cDevPresent(uint8_t addr) {
 }
 
 bool readI2CADC(AdcData* data) {
+  memset(data, 0, sizeof(data));
+
   // Figure out which ADC is present
   uint8_t addr = SlaveAddr::adc4;
   if (i2cDevPresent(SlaveAddr::adc4)) {
@@ -194,18 +205,20 @@ bool readI2CADC(AdcData* data) {
     return false;
   }
 
+  // Set the number of channels to read and single-ended mode
+  uint8_t config = ((data->num_chans - 1) << 1) | 0x01;
+
   Wire.beginTransmission(addr);
-  Wire.write((uint8_t)0b00000111);  // Send configuration byte, set CS=0x2
+  Wire.write(config);
   Wire.endTransmission();
 
   Wire.requestFrom(addr, data->num_chans);
-  if (Wire.available() < data->num_chans) {
-    // Not enough data was read
-    return false;
-  }
-
   for (size_t i = 0; i < data->num_chans; i++) {
-    data->vals[i] = Wire.read();
+    int val = Wire.read();
+    if (val < 0) {
+      return false;  // Not enough data was read
+    }
+    data->vals[i] = (uint8_t)val;
   }
   return true;
 }
@@ -447,23 +460,26 @@ void loop() {
 
     // Read I2C ADC
     AdcData adc_data = {};
-    readI2CADC(&adc_data);
-    bool t1_ok = adcToTempStr(adc_data.amp1_temp, 25 * 0.9, 25 * 1.1, strbuf1);
-    bool t2_ok = adcToTempStr(adc_data.amp2_temp, 25 * 0.9, 25 * 1.1, strbuf2);
-    drawTest<7>("I2C ADC temp", strbuf1, t1_ok, strbuf2, t2_ok);
+    bool    adc_ok   = readI2CADC(&adc_data);
+    // These "temps" are really just 10k +/-10% resistors.
+    // Also assume some error in the 3.3V supply acting as ADC reference
+    bool t1_ok = adcToTempStr(adc_data.amp1_temp, TEMP_MIN, TEMP_MAX, strbuf1);
+    bool t2_ok = adcToTempStr(adc_data.amp2_temp, TEMP_MIN, TEMP_MAX, strbuf2);
+    drawTest<7>("I2C ADC temp", strbuf1, t1_ok && adc_ok, strbuf2,
+                t2_ok && adc_ok);
 
     float hv1 = adcToVolts(adc_data.hv1_volts, 8, 3.3, 4.7, 100);
     sprintf(strbuf1, "%5.2fV", hv1);
-    bool hv1_ntc_ok = adcToTempStr(adc_data.hv1_temp, 15, 30, strbuf2);
-    drawTest<8>("I2C ADC HV1", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
-                hv1_ntc_ok);
+    bool ntc1_ok = adcToTempStr(adc_data.hv1_temp, NTC_MIN, NTC_MAX, strbuf2);
+    bool hv1_ok  = hv1 > HV_MIN && hv1 < HV_MAX && adc_ok;
+    drawTest<8>("I2C ADC HV1", strbuf1, hv1_ok, strbuf2, ntc1_ok && adc_ok);
 
     if (adc_data.num_chans > 4) {
       float hv2 = adcToVolts(adc_data.hv2_volts, 8, 3.3, 4.7, 100);
       sprintf(strbuf1, "%5.2fV", hv2);
-      bool hv2_ntc_ok = adcToTempStr(adc_data.hv2_temp, 15, 30, strbuf2);
-      drawTest<9>("I2C ADC HV2", strbuf1, hv2 < 28 && hv2 > 20, strbuf2,
-                  hv2_ntc_ok);
+      bool ntc2_ok = adcToTempStr(adc_data.hv2_temp, NTC_MIN, NTC_MAX, strbuf2);
+      bool hv2_ok  = hv2 > HV_MIN && hv2 < HV_MAX && adc_ok;
+      drawTest<9>("I2C ADC HV2", strbuf1, hv2_ok, strbuf2, ntc2_ok && adc_ok);
     } else {
       drawTest<9>("I2C ADC HV2", " NONE", false, "", false);
     }
