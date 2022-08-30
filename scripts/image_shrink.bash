@@ -27,6 +27,7 @@ for i in {1..10}; do
   fi
 done
 
+# Error out if no Pi found
 if [ -z $pi_path ]; then
   echo -e "\n${RED}ERROR:${NC} No Raspberry Pi device found at $disk_base_path*"
   read -p "Press any key to continue..." -sn 1
@@ -34,8 +35,23 @@ if [ -z $pi_path ]; then
   exit 2
 fi
 
-sudo fsck -f $pi_path-part2
-sudo e2fsck -f $pi_path-part2
+# Pi found! Mount boot partition and ensure init_resize.sh is configured to run
+boot_dir=$(mktemp -d)
+sudo mount $pi_path-part1 $boot_dir
+sudo sed -i "/^.*init=/! s@\(^.*$\)@\1 init=/usr/lib/raspi-config/init_resize.sh@" $boot_dir/cmdline.txt
+sudo umount $boot_dir
+
+root_dir=$(mktemp -d)
+sudo mount $pi_path-part1 $root_dir
+#rm /home/pi/.config/amplipi/default_password.txt
+#sudo wget -O /etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
+#sudo chmod +x /etc/init.d/resize2fs_once
+#sudo systemctl enable resize2fs_once
+#cat /dev/null > ~/.bash_history
+# Any files in /var/log that can be removed? /var/log/apt/*?
+sudo umount $root_dir
+
+sudo fsck -f $pi_path-part2 #e2fsck
 sudo resize2fs -pM $pi_path-part2
 block_count=$(sudo tune2fs -l $pi_path-part2 | grep "Block count" | sed "s/^Block count: *//g")
 block_size=$(sudo tune2fs -l $pi_path-part2 | grep "Block size" | sed "s/^Block size: *//g")
