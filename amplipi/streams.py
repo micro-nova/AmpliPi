@@ -282,7 +282,7 @@ class Spotify(BaseStream):
       self.proc = subprocess.Popen(args=spotify_args, preexec_fn=os.setpgrp, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd_{self.name}')
+      self.mpris = MPRIS(f'spotifyd_{self.name}', src)
 
       self._connect(src)
     except Exception as exc:
@@ -290,6 +290,7 @@ class Spotify(BaseStream):
 
   def disconnect(self):
     try:
+      print(f"killing PID {self.proc.pid}")
       os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
     except Exception:
       pass
@@ -308,7 +309,6 @@ class Spotify(BaseStream):
     try:
       md = self.mpris.metadata()
 
-
       if not self.mpris.is_stopped():
         source.state = 'playing' if self.mpris.is_playing() else 'paused'
         source.artist = md.artist
@@ -318,23 +318,26 @@ class Spotify(BaseStream):
         if md.art_url:
           source.img_url = md.art_url
 
-    except Exception:
-      pass
+    except Exception as e:
+      print(f"error in spotify: {e}")
 
     return source
 
   def send_cmd(self, cmd):
-    if cmd in self.supported_cmds:
-      if cmd == 'play':
-        self.mpris.play()
-      elif cmd == 'pause':
-        self.mpris.pause()
-      elif cmd == 'next':
-        self.mpris.next()
-      elif cmd == 'prev':
-        self.mpris.previous()
-    else:
-      raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    try:
+      if cmd in self.supported_cmds:
+        if cmd == 'play':
+          self.mpris.play()
+        elif cmd == 'pause':
+          self.mpris.pause()
+        elif cmd == 'next':
+          self.mpris.next()
+        elif cmd == 'prev':
+          self.mpris.previous()
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception as e:
+      print(f"error in spotify: {e}")
 
 class Pandora(BaseStream):
   """ A Pandora Stream """
