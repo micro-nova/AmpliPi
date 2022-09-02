@@ -1,5 +1,8 @@
 # Preamp Board Firmware Changelog
 
+## 1.6-DE0F8EB
+  - Added support for high-power AmpliPis which use 2 power supplies at 36V.
+
 ## 1.5-6A685FC
 
   - Slightly reduce audible popping sound on volume changes.

@@ -3,15 +3,20 @@
 
 # If any argument was passed, assume it's the number of units to program.
 nprog=''
-if [[ $# > 0 ]]; then
+if [[ $# -gt 0 ]]; then
   nprog="--num-units $1"
 fi
 
-cd "$(dirname ${BASH_SOURCE[0]})/../.." # cd to amplipi root dir
+# cd to amplipi root dir, exit on failure
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
+
+# Get latest firmware binary
+bin_file="$(find fw/bin -type f | sort | tail -1)"
 
 # Program the latest released firmware
 passed=false
-if ./scripts/program_firmware $nprog fw/bin/preamp_1.5.bin; then
+prog_args="$nprog $bin_file"
+if ./scripts/program_firmware "$prog_args"; then
   passed=true
 fi
 
@@ -25,4 +30,4 @@ else
 fi
 
 echo "Press any key to exit..."
-read -sn 1
+read -rsn 1
