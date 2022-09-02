@@ -18,76 +18,42 @@
 /*
  * Power Board Tester
  *
- * Designed to run on an Arduino Due.
- * This project verifies Power Board functionality independent of the rest of
- * the AmpliPi unit.
- * The 4 power rails are checked:
- *    +5VD, +12VD
- *    +5VA, +9VA
+ * Designed to run on an Arduino Due. This project verifies Power Board
+ * functionality independent of the rest of the AmpliPi unit.
+ *
+ * Tests:
+ *  - Ctrl 5VA/5VD: must be within (4.5, 5.5) V.
+ *  - Preamp 9V/5V: must be within (8.5, 9.5) and (4.5, 5.5) V, respectively.
+ *  - Preout 9V   : must be within (8.5, 9.5) V.
+ *  - I2C loopback: 3.3v must be within (3, 3.6) V and I2C out must work.
+ *  - I2C ADC HV1 : HV1 must be within (15, 30) V and temp within (20, 28) C
+ *  - I2C ADC HV2 : HV2 must be within (15, 30) V and temp within (20, 28) C
+ *  - I2C ADC temp: both amp temps must be within (22.5, 27.5) C
+ *  - PG_12V/PG_5V: verifies both power good signals are high
+ *  - 12V J9/J10  : both fan outputs must be within +/-10% the desired values.
+ *                  The DPOT control is cycled through 3 values.
+ *  - FAN_ON J9/10: check that the fan on/off control works.
  * All I2C devices are verified:
- *    MAX11601 (0x64): 4-channel ADC measures HV1/2 and up to 2 thermistors
- *    MCP23008 (0x21): 8-channel GPIO expander. Currently only GP4/5/7 are used
- *    Future: MCP4017  (0x2F): Digital potentiometer controlling +12VD
+ *  - MAX11601 (0x64), MAX11603 (0x6D), or MAX11605 (0x65): 4-channel MAX11601
+ *    ADC measures HV1 voltage and temp, and measures both amp temp sensors.
+ *    MAX11603/5 also measure HV2 voltage and temp.
+ *  - MCP23008 (0x21): 8-channel GPIO expander. Currently only GP2/3/7 are used
+ *  - MCP4017 (0x2F) or MCP40D17 (0x2E) : Digital potentiometer controlling +12V
+ *  - I2C Bus connector for the LED board is tested as a loopback to the Due.
  * Slave addresses in parenthesis are 7-bit right-aligned, so will be shifted
  * left one bit when sent on the wire.
  *
- * I2C Bus connector for the LED board is tested as a loopback.
- *
  * Hardware required:
- *    Arduino Due
- *    +24V power supply
- *    +24/+9 DC/DC converter (using an old power board)
- *    LCD Display
- *    10k, 33k, and 100k resistors
+ *  - Arduino Due
+ *  - +24V power supply
+ *  - +24/+9 DC/DC converter (using an old power board)
+ *  - LCD Display
+ *  - 10k, 33k, and 100k resistors
+ * See power_board_tester_sch.drawio.pdf for the full schematic.
  *
- * Connections
- *  +24V -+-> <24/9 DC/DC> -> Arduino Due barrel jack
- *        |
- *        +-> Power Board J1 Pin 1 and 3
- *
- *    Arduino Due | Power Board
- *  +-------------+------------------------+ Power
- *    GND         | GND/AGND*
- *    A0          | J4 pin 1: +5VA
- *    A1          | J4 pin 3: +5VD
- *    A2          | J5 pin 1: +9VA
- *    A3          | J5 pin 3: +5VA
- *    A4          | J8 pin 1: +9VA
- *  +-------------+------------------------+ I2C
- *    +3.3V       | J3 pin 1: +3.3VA
- *    SCL         | J3 pin 2: SCL
- *    SDA         | J3 pin 3: SDA
- *    GND         | J3 pin 4: AGND
- *    A5          | J2 pin 1: +3.3VA
- *    SCL1        | J2 pin 2: SCL     (out)
- *    SDA1        | J2 pin 3: SDA     (out)
- *    GND         | J2 pin 4: AGND
- *  +-------------+------------------------+ Fans
- *         10k    | J9 pin 2: DXP1    (in)
- *         10k    | J9 pin 7: DXP2    (in)
- *         Pullup | J9 pin 1: +3.3VA  (out)
- *    A6   Input  | J9 pin 5: +12VD   (out)
- *         Unused | J9 pin 3: TACH1   (out)
- *         Unused | J9 pin 6: TACH2   (out)
- *    A7   Input  | J9 pin 4: FAN_PWM (out)
- *    A8   Input  | J10 pin 1: +12VD
- *    A9   Input  | J10 pin 2: FAN_GND
- *  +-------------+------------------------+
- *
- *    Arduino Due | LCD Screen
- *  +-------------+------------+
- *    +3.3V       | VCC
- *    GND         | GND
- *    10          | CS
- *    +3.3V       | RESET
- *    11          | D/C
- *    MOSI        | MOSI
- *    SPCK        | SCK
- *    +3.3V       | LED
- *    MISO        | MISO
- *  +-------------+------------+
- *    * This doesn't independently test all GND connections.
- *      Possibly differential measurements would solve that?
+ *  TODO: A global ground is used for measurements, so individual ground
+ *        connectors are not actually tested. Possibly differential analog
+ *        measurements would solve that?
  *
  *  TODO: Protection against shorts on power board
  */
@@ -114,6 +80,14 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 #define TFT_FONT_HEIGHT 8
 #define TEXT_MARGIN     4
 
+// Acceptable ranges for tested values
+constexpr float HV_MIN   = 24 * 0.8;
+constexpr float HV_MAX   = 24 * 1.2;
+constexpr float NTC_MIN  = 15;  // These are measuring real temperature, which
+constexpr float NTC_MAX  = 30;  // can vary widely in the testing environment.
+constexpr float TEMP_MIN = 25 * 0.8;
+constexpr float TEMP_MAX = 25 * 1.2;
+
 // I2C loopback test
 static constexpr uint8_t I2C_TEST_VAL = 0xA4;
 
@@ -127,13 +101,14 @@ static constexpr uint8_t DPOT_VALS[]  = {0x7F, 0x3F, 0x00};
 static constexpr float   DPOT_VOLTS[] = {6.24, 8.11, 11.99};
 
 // 7-bit I2C addresses, in bits 6 downto 0
-enum SlaveAddr : uint8_t
-{
+enum SlaveAddr : uint8_t {
   due   = 0x0F,
   gpio  = 0x21,
-  dpots = 0x2E,  // DPot that required SMBus byte-write command 0x00
+  dpots = 0x2E,  // DPot that requires SMBus byte-write command 0x00
   dpot  = 0x2F,
-  adc   = 0x64,
+  adc4  = 0x64,  // MAX11601 4-channel ADC
+  adc8  = 0x6D,  // MAX11603 8-channel ADC
+  adc12 = 0x65,  // MAX11605 12-channel ADC
 };
 
 // I2C1 slave RX callback
@@ -190,25 +165,62 @@ uint16_t rgb565(float red, float green, float blue) {
   return (r5 << 11) | (g6 << 5) | b5;
 }
 
-bool readI2CADC(uint8_t* ch0, uint8_t* ch1, uint8_t* ch2, uint8_t* ch3) {
-  Wire.beginTransmission(SlaveAddr::adc);
-  Wire.write((uint8_t)0b00000111);  // Send configuration byte, set CS=0x2
-  Wire.endTransmission();
+struct AdcData {
+  union {
+    struct {
+      uint8_t hv1_volts;
+      uint8_t amp1_temp;
+      uint8_t hv1_temp;
+      uint8_t amp2_temp;
+      uint8_t hv2_volts;
+      uint8_t hv2_temp;
+    };
+    uint8_t vals[6];
+  };
+  uint8_t num_chans;
+};
+static_assert(sizeof(AdcData) == 7, "Error, AdcData wrong size");
 
-  Wire.requestFrom(SlaveAddr::adc, 4);
-  if (Wire.available() >= 4) {
-    *ch0 = (uint8_t)Wire.read();
-    *ch1 = (uint8_t)Wire.read();
-    *ch2 = (uint8_t)Wire.read();
-    *ch3 = (uint8_t)Wire.read();
-    return true;
+bool i2cDevPresent(uint8_t addr) {
+  Wire.beginTransmission(addr);
+  return Wire.endTransmission() == 0;
+}
+
+bool readI2CADC(AdcData* data) {
+  memset(data, 0, sizeof(data));
+
+  // Figure out which ADC is present
+  uint8_t addr = SlaveAddr::adc4;
+  if (i2cDevPresent(SlaveAddr::adc4)) {
+    addr            = SlaveAddr::adc4;
+    data->num_chans = 4;
+  } else if (i2cDevPresent(SlaveAddr::adc8)) {
+    addr            = SlaveAddr::adc8;
+    data->num_chans = 6;
+  } else if (i2cDevPresent(SlaveAddr::adc12)) {
+    addr            = SlaveAddr::adc12;
+    data->num_chans = 6;
   } else {
-    *ch0 = 0;
-    *ch1 = 0;
-    *ch2 = 0;
-    *ch3 = 0;
+    // No ADC present
     return false;
   }
+
+  // Set the number of channels to read and single-ended mode
+  uint8_t config = ((data->num_chans - 1) << 1) | 0x01;
+
+  Wire.beginTransmission(addr);
+  Wire.write(config);
+  Wire.endTransmission();
+
+  Wire.requestFrom(addr, data->num_chans);
+  for (size_t i = 0; i < data->num_chans; i++) {
+    int val = Wire.read();
+    if (val < 0) {
+      return false;  // Not enough data was read
+    }
+    data->vals[i] = (uint8_t)val;
+  }
+  return true;
 }
 
 void writeI2CGPIO(bool fan_on) {
@@ -376,7 +388,7 @@ void loop() {
     sprintf(strbuf1, "%5.2fV", ctrl5va);
     sprintf(strbuf2, "%5.2fV", ctrl5vd);
     bool ok1 = ctrl5va < 5.5 && ctrl5va > 4.5;
-    bool ok2 = ctrl5vd < 5.5 && ctrl5va > 4.5;
+    bool ok2 = ctrl5vd < 5.5 && ctrl5vd > 4.5;
     drawTest<0>("Ctrl 5VA/5VD", strbuf1, ok1, strbuf2, ok2);
 
     float preamp9v = adcToVolts(readAna16(A2), 16, 3.3, 33, 100);
@@ -399,28 +411,11 @@ void loop() {
     drawTest<3>("I2C out (J3)", strbuf1, i2c3v3 < 3.6 && i2c3v3 > 3.0,
                 i2c_loopback_ok_ ? " PASS" : " FAIL", i2c_loopback_ok_);
 
-    // TODO: Don't lock up on I2C failure
-    // Read I2C ADC
-    uint8_t hv1_adc;
-    uint8_t hv1_ntc_adc;
-    uint8_t amp_ntc1_adc;
-    uint8_t amp_ntc2_adc;
-    readI2CADC(&hv1_adc, &amp_ntc1_adc, &hv1_ntc_adc, &amp_ntc2_adc);
-    float hv1 = adcToVolts(hv1_adc, 8, 3.3, 4.7, 100);
-    sprintf(strbuf1, "%5.2fV", hv1);
-    bool hv1_ntc_ok = adcToTempStr(hv1_ntc_adc, 15, 30, strbuf2);
-    drawTest<4>("I2C ADC HV", strbuf1, hv1 < 28 && hv1 > 20, strbuf2,
-                hv1_ntc_ok);
-
-    bool temp1_ok = adcToTempStr(amp_ntc1_adc, 25 * 0.9, 25 * 1.1, strbuf1);
-    bool temp2_ok = adcToTempStr(amp_ntc2_adc, 25 * 0.9, 25 * 1.1, strbuf2);
-    drawTest<5>("I2C ADC temp", strbuf1, temp1_ok, strbuf2, temp2_ok);
-
     // Check the 12V power supply
     bool pg_12v;
     bool pg_5va;
     bool i2c_success = readI2CGPIO(pg_12v, pg_5va);
-    drawTest<6>("PG_12V/PG_5V", pg_12v ? " PASS" : " FAIL", pg_12v,
+    drawTest<4>("PG_12V/PG_5V", pg_12v ? " PASS" : " FAIL", pg_12v,
                 pg_5va ? " PASS" : " FAIL", pg_5va);
 
     // Check the 12V fan power supply from both J9 and J10 is ok
@@ -432,19 +427,19 @@ void loop() {
           fan12v > DPOT_VOLTS[dpot_val_idx] * 0.9;
     ok2 = psu_fan12v < DPOT_VOLTS[dpot_val_idx] * 1.1 &&
           psu_fan12v > DPOT_VOLTS[dpot_val_idx] * 0.9;
-    drawTest<7>("12V J9/J10", strbuf1, ok1, strbuf2, ok2);
+    drawTest<5>("12V J9/J10", strbuf1, ok1, strbuf2, ok2);
 
     // Check that the fan control output works.
     // Leave output high for ADC reading.
-    writeI2CGPIO(false);
-    delay(1);
-    ok1 = digitalRead(A7) == LOW;   // J9
-    ok2 = digitalRead(A9) == HIGH;  // J10
-    writeI2CGPIO(true);
-    delay(1);
-    ok1 &= digitalRead(A7) == HIGH;
-    ok2 &= digitalRead(A9) == LOW;
-    drawTest<8>("FAN_ON J9/10", ok1 ? " PASS" : " FAIL", ok1,
+    writeI2CGPIO(false);             // Set low FAN_ON signal
+    delay(1);                        // Wait a bit to make sure output settles
+    ok1 = digitalRead(A7) == LOW;    // J9 - direct connection
+    ok2 = digitalRead(A9) == HIGH;   // J10 - pulled up external to power board
+    writeI2CGPIO(true);              // Set high FAN_ON signal
+    delay(1);                        // Wait a bit to make sure output settles
+    ok1 &= digitalRead(A7) == HIGH;  // J9 - direct connection
+    ok2 &= digitalRead(A9) == LOW;   // J10 - mosfet active, output grounded
+    drawTest<6>("FAN_ON J9/10", ok1 ? " PASS" : " FAIL", ok1,
                 ok2 ? " PASS" : " FAIL", ok2);
 
     // Adjust DPOT to control +12V
@@ -463,6 +458,32 @@ void loop() {
     Wire.write(DPOT_VALS[dpot_val_idx]);  // Value
     Wire.endTransmission();
 
+    // Read I2C ADC
+    AdcData adc_data = {};
+    bool    adc_ok   = readI2CADC(&adc_data);
+    // These "temps" are really just 10k +/-10% resistors.
+    // Also assume some error in the 3.3V supply acting as ADC reference
+    bool t1_ok = adcToTempStr(adc_data.amp1_temp, TEMP_MIN, TEMP_MAX, strbuf1);
+    bool t2_ok = adcToTempStr(adc_data.amp2_temp, TEMP_MIN, TEMP_MAX, strbuf2);
+    drawTest<7>("I2C ADC temp", strbuf1, t1_ok && adc_ok, strbuf2,
+                t2_ok && adc_ok);
+
+    float hv1 = adcToVolts(adc_data.hv1_volts, 8, 3.3, 4.7, 100);
+    sprintf(strbuf1, "%5.2fV", hv1);
+    bool ntc1_ok = adcToTempStr(adc_data.hv1_temp, NTC_MIN, NTC_MAX, strbuf2);
+    bool hv1_ok  = hv1 > HV_MIN && hv1 < HV_MAX && adc_ok;
+    drawTest<8>("I2C ADC HV1", strbuf1, hv1_ok, strbuf2, ntc1_ok && adc_ok);
+
+    if (adc_data.num_chans > 4) {
+      float hv2 = adcToVolts(adc_data.hv2_volts, 8, 3.3, 4.7, 100);
+      sprintf(strbuf1, "%5.2fV", hv2);
+      bool ntc2_ok = adcToTempStr(adc_data.hv2_temp, NTC_MIN, NTC_MAX, strbuf2);
+      bool hv2_ok  = hv2 > HV_MIN && hv2 < HV_MAX && adc_ok;
+      drawTest<9>("I2C ADC HV2", strbuf1, hv2_ok, strbuf2, ntc2_ok && adc_ok);
+    } else {
+      drawTest<9>("I2C ADC HV2", " NONE", false, "", false);
+    }
+
     // Start a new transmission
     i2c_loopback_ok_ = false;
     Wire.beginTransmission(SlaveAddr::due);
@@ -470,13 +491,14 @@ void loop() {
     Wire.endTransmission();
 
 #ifdef DEBUG
+    // TODO: this is off the screen currently
     uint32_t elapsedTime = millis() - loopStartTime;
     SerialUSB.print("Test took ");
     SerialUSB.print(elapsedTime);
     SerialUSB.println(" ms");
     sprintf(strbuf1, "%6d", elapsedTime);
     ok1 = elapsedTime < TEST_PERIOD_MS;
-    drawTest<9>("Test time ms", strbuf1, ok1, "", true);
+    drawTest<10>("Test time ms", strbuf1, ok1, "", true);
 #endif
     test_timer += TEST_PERIOD_MS;
   }
