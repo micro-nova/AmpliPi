@@ -42,17 +42,23 @@ sudo sed -i "/^.*init=/! s@\(^.*$\)@\1 init=/usr/lib/raspi-config/init_resize.sh
 sudo umount $boot_dir
 
 root_dir=$(mktemp -d)
-sudo mount $pi_path-part1 $root_dir
-#rm /home/pi/.config/amplipi/default_password.txt
-#sudo wget -O /etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
-#sudo chmod +x /etc/init.d/resize2fs_once
-#sudo systemctl enable resize2fs_once
-#cat /dev/null > ~/.bash_history
-# Any files in /var/log that can be removed? /var/log/apt/*?
+sudo mount $pi_path-part2 $root_dir
+
+# Setup resize2fs_once
+sudo wget -O $root_dir/etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
+sudo chmod +x $root_dir/etc/init.d/resize2fs_once
+sudo ln -s $root_dir/etc/init.d/resize2fs_once $root_dir/etc/rc3.d/S01resize2fs_once
+
+# Remove all log files
+sudo find . -type f -exec rm {} \;
+
+# Cleanup home
+rm $root_dir/home/pi/.config/amplipi/default_password.txt
+cat /dev/null > ~/.bash_history
 sudo umount $root_dir
 
 sudo fsck -f $pi_path-part2 #e2fsck
-sudo resize2fs -pM $pi_path-part2
+sudo resize2fs -pM $pi_path-part2 # TODO: Run multiple times?
 block_count=$(sudo tune2fs -l $pi_path-part2 | grep "Block count" | sed "s/^Block count: *//g")
 block_size=$(sudo tune2fs -l $pi_path-part2 | grep "Block size" | sed "s/^Block size: *//g")
 new_sectors=$(($block_count*$block_size/512))
