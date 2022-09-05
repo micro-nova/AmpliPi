@@ -250,7 +250,10 @@ class Spotify(BaseStream):
       self._connect(src)
       return
 
+    # Make the (per-source) config directory
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'mkdir -p {src_config_folder}')
+
     toml_template = f'{utils.get_folder("streams")}/spot_config.toml'
     toml_useful = f'{src_config_folder}/config.toml'
     # Copy the config template
@@ -519,7 +522,10 @@ class DLNA(BaseStream):
     self.uuid = uuid_gen()
     portnum = 49494 + int(src)
 
+    # Make the (per-source) config directory
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'mkdir -p {src_config_folder}')
+
     meta_args = [f'{utils.get_folder("streams")}/dlna_metadata.bash', f'{src_config_folder}']
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
                 '--gstout-audiodevice', utils.output_device(src), '--gstout-initial-volume-db',
