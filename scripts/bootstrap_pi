@@ -162,16 +162,17 @@ fi
 
 if [[ -z $img_file ]]; then
   if $lite; then
-    release=2020-08-20-raspios-buster-armhf-lite
-    url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+    release=2022-04-04-raspios-bullseye-armhf-lite
+    url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2022-04-07/$release.img.xz
   else
-    release=2020-08-20-raspios-buster-armhf
-    url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2020-08-24/$release.zip
+    release=2022-04-04-raspios-bullseye-armhf
+    url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2022-04-07/$release.img.xz
   fi
-  zip_file=$HOME/Downloads/$release.zip
-  if [[ ! -f $zip_file ]]; then
+  xz_file=$HOME/Downloads/$release.img.xz
+
+  if [[ ! -f $xz_file ]]; then
     echo "Downloading Raspberry Pi OS"
-    wget $url -O $zip_file # save for later
+    wget $url -O $xz_file # save for later
   fi
   mkdir $release
   pushd $release
@@ -223,6 +224,9 @@ config_boot () {
 
   # Added to cmdline.txt between 'quiet' and 'splash' to resize on next boot
   #init=/usr/lib/raspi-config/init_resize.sh
+
+  echo "Adding pi user with password raspberry"
+  echo 'pi:$6$87Mln3RLiwQ2WE.4$gfQTVnr.tofvcCrReixA8xMAzT3dm68PTMMs28wOFDGx5IB1TJ9oQRM0JwHap378eJuEhKQh2NnaMpcRKhb9Y1' | sudo tee userconf.txt
 
   popd # /mnt/pi-boot
 }
