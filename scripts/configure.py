@@ -272,7 +272,7 @@ def _check_and_setup_platform():
       if apt:
         env['has_apt'] = True
         env['platform_supported'] = True
-    elif 'armv7l' in lplatform and 'debian' in lplatform:
+    elif 'armv7l' in lplatform:
       env['arch'] = 'arm'
       env['platform_supported'] = True
       env['has_apt'] = True
