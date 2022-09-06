@@ -94,7 +94,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'logging' : {
     'script' : [
       'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
-      f"echo '{RSYSLOG_CFG}' | sudo tee /etc/syslog.conf",
+      f"echo '{RSYSLOG_CFG}' | sudo tee /etc/rsyslog.conf",
       'sudo systemctl enable rsyslog.service', # just in case it was disabled...
       'sudo systemctl restart rsyslog.service',
 
