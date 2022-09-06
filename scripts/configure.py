@@ -24,25 +24,56 @@ RSYSLOG_CFG = """# /etc/rsyslog.conf configuration file for rsyslog
 # Created by AmpliPi installer
 #  Drastically limits logging to any local files while maintaining
 # remote logging capabilities.
+#
+# For more information install rsyslog-doc and see
+# /usr/share/doc/rsyslog-doc/html/configuration/index.html
+
+
+#################
+#### MODULES ####
+#################
 
 module(load="imuxsock") # provides support for local system logging
 module(load="imklog")   # provides kernel logging support
 
-# Use traditional timestamp format
+###########################
+#### GLOBAL DIRECTIVES ####
+###########################
+
+#
+# Use traditional timestamp format.
+# To enable high precision timestamps, comment out the following line.
+#
 $ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
 
+#
 # Set the default permissions for all log files.
+#
 $FileOwner root
 $FileGroup adm
 $FileCreateMode 0640
 $DirCreateMode 0755
 $Umask 0022
 
+#
 # Where to place spool and state files
+#
 $WorkDirectory /var/spool/rsyslog
 
+#
 # Include all config files in /etc/rsyslog.d/
+#
 $IncludeConfig /etc/rsyslog.d/*.conf
+
+
+###############
+#### RULES ####
+###############
+
+# Emergencies are sent to everybody logged in.
+#
+*.emerg                         :omusrmsg:*
+
 """
 
 _os_deps: Dict[str, Dict[str, Any]] = {
