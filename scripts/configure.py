@@ -19,6 +19,32 @@ import requests
 # pylint: disable=broad-except
 # pylint: disable=bare-except
 
+
+RSYSLOG_CFG = """# /etc/rsyslog.conf configuration file for rsyslog
+# Created by AmpliPi installer
+#  Drastically limits logging to any local files while maintaining
+# remote logging capabilities.
+
+module(load="imuxsock") # provides support for local system logging
+module(load="imklog")   # provides kernel logging support
+
+# Use traditional timestamp format
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+
+# Set the default permissions for all log files.
+$FileOwner root
+$FileGroup adm
+$FileCreateMode 0640
+$DirCreateMode 0755
+$Umask 0022
+
+# Where to place spool and state files
+$WorkDirectory /var/spool/rsyslog
+
+# Include all config files in /etc/rsyslog.d/
+$IncludeConfig /etc/rsyslog.d/*.conf
+"""
+
 _os_deps: Dict[str, Dict[str, Any]] = {
   'base' : {
     'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
@@ -26,6 +52,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'libatlas-base-dev',           # numpy dependencies
              'stm32flash',                  # Programming Preamp Board
              'xkcdpass',                    # Random passphrase generation
+             'systemd-journal-remote',      # Remote/web based log access
              # kernel updates
              'libraspberrypi0', 'raspberrypi-bootloader', 'raspberrypi-kernel',
              'libraspberrypi-bin', 'libraspberrypi-dev', 'libraspberrypi-doc',
@@ -35,16 +62,27 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'logging' : {
     'script' : [
-      # stop and disable the secondary logging utility rsyslog
-      'sudo systemctl stop rsyslog.service',
-      'sudo systemctl disable rsyslog.service',
-      # reconfigure journald to only log to RAM
+      'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
+      f"echo '{RSYSLOG_CFG}' | sudo tee /etc/syslog.conf",
+      'sudo systemctl enable rsyslog.service', # just in case it was disabled...
+      'sudo systemctl restart rsyslog.service',
+
+      'echo "reconfiguring journald to only log to RAM"',
       r'echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
+      'sudo systemctl enable systemd-journald.service',
       'sudo systemctl restart systemd-journald.service',
-      # delete some old logs
+
+      'echo "enable socket to the journald server to allow easy access to system logs"',
+      'sudo systemctl enable systemd-journal-gatewayd.socket',
+      'sudo systemctl restart systemd-journal-gatewayd.socket',
+
+      'echo "deleting some old logs"',
       'sudo journalctl --rotate',
       'sudo journalctl --vacuum-time=10m',
-      'sudo rm /var/log/daemon* /var/log/syslog* /var/log/messages* /var/log/user* || echo ok',
+      'sudo rm /var/log/daemon*   && echo "removed daemon logs" || echo ok',
+      'sudo rm /var/log/syslog*   && echo "removed syslogs"     || echo ok',
+      'sudo rm /var/log/messages* && echo "removed messages"    || echo ok',
+      'sudo rm /var/log/user*     && echo "removed user logs"   || echo ok',
     ]
   },
   # streams
