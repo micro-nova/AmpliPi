@@ -335,6 +335,7 @@ class Api:
           stream.__dict__[field] = stream_inst.__dict__[field]
       streams.append(stream)
     self.status.streams = streams
+    # TODO: update systeminfo
     # update source's info
     # TODO: stream/source info should be updated in a background thread
     for src in self.status.sources:
