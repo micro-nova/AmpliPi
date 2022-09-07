@@ -1,5 +1,14 @@
 # AmpliPi Software Releases
 
+## 0.1.X Upcoming
+* Web App
+  * Add link for text log
+* API
+* Streams
+* Storage
+  * Only log to RAM, drastically reducing disk writes
+  * Use ram disks for temporary stream configration and metadata storage
+
 ## 0.1.8
 * Web App
   * Add consistent play/pause/prev/next controls

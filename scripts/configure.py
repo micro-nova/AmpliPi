@@ -13,11 +13,68 @@ import glob
 from typing import List, Union, Tuple, Dict, Any, Optional
 import time
 import re
-import requests
 import sys
+import requests
 
 # pylint: disable=broad-except
 # pylint: disable=bare-except
+
+
+RSYSLOG_CFG = """# /etc/rsyslog.conf configuration file for rsyslog
+# Created by AmpliPi installer
+#  Drastically limits logging to any local files while maintaining
+# remote logging capabilities.
+#
+# For more information install rsyslog-doc and see
+# /usr/share/doc/rsyslog-doc/html/configuration/index.html
+
+
+#################
+#### MODULES ####
+#################
+
+module(load="imuxsock") # provides support for local system logging
+module(load="imklog")   # provides kernel logging support
+
+###########################
+#### GLOBAL DIRECTIVES ####
+###########################
+
+#
+# Use traditional timestamp format.
+# To enable high precision timestamps, comment out the following line.
+#
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+
+#
+# Set the default permissions for all log files.
+#
+$FileOwner root
+$FileGroup adm
+$FileCreateMode 0640
+$DirCreateMode 0755
+$Umask 0022
+
+#
+# Where to place spool and state files
+#
+$WorkDirectory /var/spool/rsyslog
+
+#
+# Include all config files in /etc/rsyslog.d/
+#
+$IncludeConfig /etc/rsyslog.d/*.conf
+
+
+###############
+#### RULES ####
+###############
+
+# Emergencies are sent to everybody logged in.
+#
+*.emerg                         :omusrmsg:*
+
+"""
 
 _os_deps: Dict[str, Dict[str, Any]] = {
   'base' : {
@@ -26,12 +83,38 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'libatlas-base-dev',           # numpy dependencies
              'stm32flash',                  # Programming Preamp Board
              'xkcdpass',                    # Random passphrase generation
+             'systemd-journal-remote',      # Remote/web based log access
              # kernel updates
              'libraspberrypi0', 'raspberrypi-bootloader', 'raspberrypi-kernel',
              'libraspberrypi-bin', 'libraspberrypi-dev', 'libraspberrypi-doc',
             ],
   },
   'web' : {
+  },
+  'logging' : {
+    'script' : [
+      'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
+      f"echo '{RSYSLOG_CFG}' | sudo tee /etc/rsyslog.conf",
+      'sudo systemctl enable rsyslog.service', # just in case it was disabled...
+      'sudo systemctl restart rsyslog.service',
+
+      'echo "reconfiguring journald to only log to RAM"',
+      r'echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
+      'sudo systemctl enable systemd-journald.service',
+      'sudo systemctl restart systemd-journald.service',
+
+      'echo "enable socket to the journald server to allow easy access to system logs"',
+      'sudo systemctl enable systemd-journal-gatewayd.socket',
+      'sudo systemctl restart systemd-journal-gatewayd.socket',
+
+      'echo "deleting some old logs"',
+      'sudo journalctl --rotate',
+      'sudo journalctl --vacuum-time=10m',
+      'sudo rm /var/log/daemon*   && echo "removed daemon logs" || echo ok',
+      'sudo rm /var/log/syslog*   && echo "removed syslogs"     || echo ok',
+      'sudo rm /var/log/messages* && echo "removed messages"    || echo ok',
+      'sudo rm /var/log/user*     && echo "removed user logs"   || echo ok',
+    ]
   },
   # streams
   # TODO: can stream dependencies be aggregated from the streams themselves?
@@ -177,17 +260,22 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
   tasks += print_progress([Task('get latest debian packages', 'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
+  # Upgrade current packages
+  print_progress([Task("upgrading debian packages, this will take 10+ minutes", success=True)])
+  tasks += print_progress([Task('upgrade debian packages', 'sudo apt-get upgrade --assume-yes'.split()).run()])
+
   # organize stuff to install
   packages = set()
   files = []
-  scripts = []
+  scripts: Dict[str, List[str]] = {}
   for dep in deps:
-    if 'copy' in _os_deps[dep]:
-      files += _os_deps[dep]['copy']
-    if 'apt' in _os_deps[dep]:
-      packages.update(_os_deps[dep]['apt'])
-    if 'script' in _os_deps[dep]:
-      scripts.append(_os_deps[dep]['script'])
+    install_steps = _os_deps[dep]
+    if 'copy' in install_steps:
+      files += install_steps['copy']
+    if 'apt' in install_steps:
+      packages.update(install_steps['apt'])
+    if 'script' in install_steps:
+      scripts[dep] = install_steps['script']
 
   # copy files
   for file in files:
@@ -232,15 +320,15 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
   # Run scripts
-  for script in scripts:
-    sh_loc = f'{env["base_dir"]}/install{scripts.index(script)}.sh'
+  for dep, script in scripts.items():
+    sh_loc = f'{env["base_dir"]}/install_{dep}.sh'
     with open(sh_loc, 'a') as sh:
       for scrap in script:
         sh.write(scrap + '\n')
-    shargs = f'sh {sh_loc}'.split()
+    shargs = f'bash {sh_loc}'.split()
     clean = f'rm {sh_loc}'.split()
-    tasks += print_progress([Task('run install script', args=shargs, wd=env['base_dir']).run()])
-    tasks += print_progress([Task('rm generic script', args=clean, wd=env['base_dir']).run()])
+    tasks += print_progress([Task(f'run {dep} install script', args=shargs, wd=env['base_dir']).run()])
+    tasks += print_progress([Task(f'remove {dep} temporary script', args=clean, wd=env['base_dir']).run()])
 
   # cleanup
   # shairport-sync install sets up a daemon we need to stop, remove it

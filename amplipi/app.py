@@ -281,6 +281,8 @@ async def get_image(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, h
     uri = uri.replace('static/', STATIC_DIR + '/')
     uri = uri.replace('rca_inputs.svg', 'rca_inputs.jpg')  # pillow can't handle svg files for our use case
 
+  # TODO: writing images to /tmp adds file system pressure
+  # we should write only a couple to RAM disk instead and manage a small amount of garbage collection
   img_tmp = f'/tmp/{os.path.basename(uri)}'
   img_tmp_jpg = f'{img_tmp}-{height}x{width}.jpg'
 
