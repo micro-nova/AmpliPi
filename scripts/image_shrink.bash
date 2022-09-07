@@ -1,20 +1,36 @@
 #!/usr/bin/env bash
 
+img_file=$HOME/mn/images/amplipi_1.8-2.img
+disk_base_path=/dev/disk/by-id/usb-RPi-MSD
+
+function check_for_pi() {
+  # Check for Raspberry Pi device path
+  local path=$(ls $disk_base_path* 2>/dev/null | head -n1)
+  if [ ! -z $path ]; then
+    # Check for boot and root partition
+    if [[ -e $path-part1 ]] && [[ -e $path-part2 ]]; then
+      echo "$path"
+      return 0
+    fi
+  fi
+  return 1
+}
+
 # Connect to amplipi eMMC.
 # The Pi must have been powered on with the service USB plugged in.
 # TODO: Check for already-booted Pi
-sudo rpiboot
-disk_base_path=/dev/disk/by-id/usb-RPi-MSD
-for i in {1..10}; do
-  sleep 0.5
-
-  # Check for Raspberry Pi device path
-  pi_path=$(ls $disk_base_path* 2>/dev/null | head -n1)
-  if [ ! -z $pi_path ]; then
-    echo -e "\nRaspberry Pi device found at $pi_path"
-    break
-  fi
-done
+if ! pi_path=$(check_for_pi); then
+  sudo rpiboot
+  printf "\nWaiting for the Pi's eMMC to show up"
+  for i in {1..10}; do
+    printf "."
+    sleep 0.5
+    if pi_path=$(check_for_pi); then
+      break
+    fi
+  done
+  printf "\n"
+fi
 
 # Error out if no Pi found
 if [ -z $pi_path ]; then
@@ -22,6 +38,8 @@ if [ -z $pi_path ]; then
   read -p "Press any key to continue..." -sn 1
   echo "" # newline
   exit 2
+else
+  echo -e "Raspberry Pi device found at $pi_path"
 fi
 
 # Pi found! Mount root directory.
@@ -73,26 +91,29 @@ echo -e "\nShrinking root filesystem."
 sudo resize2fs -pM $pi_path-part2
 sudo resize2fs -pM $pi_path-part2
 
+# Resize the root partition
+fs_blk_cnt=$(sudo tune2fs -l $pi_path-part2 | grep "Block count" | sed "s/^Block count: *//g")
+fs_blk_size=$(sudo tune2fs -l $pi_path-part2 | grep "Block size" | sed "s/^Block size: *//g")
+if [[ -z $fs_blk_cnt ]] || [[ -z $fs_blk_size ]]; then
+  echo -e "\n${RED}ERROR:${NC} Couldn't read block count or size."
+  exit 5
+fi
+fs_kib=$(($fs_blk_cnt*$fs_blk_size/1024))
+
 # Wait for filesystem changes to be complete (timeout after 10s)
-#while ! sudo blockdev --rereadpt /dev/sda 2>/dev/null; do
 reread=false
 for i in {1..100}; do
-  sleep 0.1;
-  if sudo blockdev --rereadpt /dev/sda 2>/dev/null; then
+  sleep 0.1
+  if sudo blockdev --rereadpt $pi_path 2>/dev/null; then
     reread=true
     break
   fi
 done
-
 if ! $reread; then
   echo -e "\n${RED}ERROR:${NC} Timeout waiting for filesystem shrink."
-  exit 5
+  exit 6
 fi
 
-# Resize the root partition
-fs_blk_cnt=$(sudo tune2fs -l $pi_path-part2 | grep "Block count" | sed "s/^Block count: *//g")
-fs_blk_size=$(sudo tune2fs -l $pi_path-part2 | grep "Block size" | sed "s/^Block size: *//g")
-fs_kib=$(($fs_blk_cnt*$fs_blk_size/1024))
 echo -e "\nShrinking root partition to $fs_kib KiB."
 echo ",${fs_kib}KiB" | sudo sfdisk -N2 $pi_path
 
@@ -100,8 +121,8 @@ echo ",${fs_kib}KiB" | sudo sfdisk -N2 $pi_path
 end_sector=$(sudo fdisk -l $pi_path | tail -1 | tr -s ' ' | cut -d ' ' -f 3)
 sector_size=512
 mb_chunks=$(($end_sector*$sector_size/1024**2 + 1)) # +1 because this math truncates
-echo $mb_chunks
 
-img_file=$HOME/mn/images/amplipi_1.8.img
+echo -e "\nCopying $mb_chunks MiB from $pi_path"
+echo " to $img_file"
 sudo dd if=$pi_path of=$img_file bs=1MiB count=$mb_chunks status=progress
 sudo chown $USER:$USER $img_file
