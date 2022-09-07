@@ -119,7 +119,7 @@ old_version=$(poetry version -s)
 # parse the git info into: VERSION+GIT_HASH-BRANCH_NAME-DIRTY?
 # git describe gets us close to this: VERSION-NUM_COMMITS_SINCE-GIT-HASH-DIRTY?
 #  but we need to change it a bit to remove NUM_COMMITS and add BRANCH_NAME
-git_info=$(git describe --always --tags --dirty | sed -E s/-[0-9]*-*/+/ | sed s/-/-$(git rev-parse --abbrev-ref HEAD)-/)
+git_info=$(git describe --always --tags --dirty --match '*.*.*' | sed -E s/-[0-9]*-*/+/ | sed s/-/-$(git rev-parse --abbrev-ref HEAD)-/)
 poetry version ${git_info}
 
 # build release file (put in dist/)

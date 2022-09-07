@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Update the offline/online state
+set -e
+
+# get directory that the script exists in
+cd "$( dirname "$0" )"
+
+# add file if needed
+if [ ! -e ../config/status/online ]; then
+  mkdir -p ../config/status
+  touch ../config/status/online
+fi
+
+# Check if we can reach the internet without dns
+last_online=`cat ../config/status/online`
+online=`nc -w 5 -z 1.1.1.1 53 >/dev/null 2>&1 && echo online || echo offline`
+
+# only update online state as needed
+if [ "$last_online" != "$online" ]; then
+  echo "$online" > ../config/status/online
+fi

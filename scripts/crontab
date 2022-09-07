@@ -1,0 +1,5 @@
+# Recurring os tasks handled by cron
+# installed by amplipi when a release
+# m   h  dom mon dow   command
+  0   5  *   *   *     SCRIPTS_DIR/check-release
+  */2 *  *   *   *     SCRIPTS_DIR/check-online
