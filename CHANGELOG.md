@@ -8,6 +8,10 @@
 * Storage
   * Only log to RAM, drastically reducing disk writes
   * Use ram disks for temporary stream configration and metadata storage
+* Docs:
+  * Use latest rapidoc viewer
+* Updates:
+  * Upgrade system packages on update
 
 ## 0.1.8
 * Web App
