@@ -98,6 +98,7 @@ class MPRIS:
     except Exception as e:
       print(f"mpris loading metadata at {self.metadata_path} failed: {e}")
 
+
   def metadata(self) -> Metadata:
     """Returns metadata from MPRIS."""
     return self._load_metadata()
@@ -131,7 +132,7 @@ class MPRIS:
 
   def __del__(self):
     try:
-      self.metadata_process.terminate()
+      self.metadata_process.kill()
     except:
       pass
 
@@ -146,6 +147,7 @@ class MPRIS:
 
     m = Metadata()
     m.state = 'Stopped'
+
     last_sent = m.__dict__
 
     while True:
