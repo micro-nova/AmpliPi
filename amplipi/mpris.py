@@ -199,6 +199,7 @@ class MPRIS:
     return None
 
 
+
   def metadata(self) -> Metadata:
     """Returns metadata from MPRIS."""
     return self._load_metadata()
