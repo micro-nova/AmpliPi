@@ -22,6 +22,7 @@ a consistent interface.
 """
 
 import os
+from re import sub
 import sys
 import subprocess
 import time
@@ -221,6 +222,7 @@ class Spotify(BaseStream):
 
     self.connect_port = None
     self.mpris = None
+    self.proc_pid = None
 
     self.supported_cmds = {
       'play': [0x05],
@@ -276,13 +278,16 @@ class Spotify(BaseStream):
       TOML.write(data)
 
     # PROCESS
-    spotify_args = [f'{utils.get_folder("streams")}/spotifyd', '--config-path', './config.toml']
+    spotify_args = [f'{utils.get_folder("streams")}/spotifyd', '--no-daemon', '--config-path', './config.toml']
 
     try:
-      self.proc = subprocess.Popen(args=spotify_args, preexec_fn=os.setpgrp, cwd=f'{src_config_folder}')
+      self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd_{self.name}', src)
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)
+
+      # with open(f'{src_config_folder}/pid', 'r', encoding='utf-8') as f:
+      #   self.proc_pid = int(f.read())
 
       self._connect(src)
     except Exception as exc:
@@ -290,8 +295,7 @@ class Spotify(BaseStream):
 
   def disconnect(self):
     try:
-      print(f"killing PID {self.proc.pid}")
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      self.proc.kill()
     except Exception:
       pass
     self._disconnect()
