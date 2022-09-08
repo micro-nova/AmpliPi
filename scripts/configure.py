@@ -301,10 +301,9 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _from = f"{env['base_dir']}/config/85-amplipi-usb-audio.rules"
       _to = usb_audio_rule_path
       tasks += print_progress([Task('fix usb soundcard id', multiargs=[
-        f"sudo cp {_from} {_to}".split(),
-        'sudo udevadm control --reload-rules'.split(),
-        'sudo udevadm trigger'.split(),
-        f"sudo .{env['base_dir']}/scripts/reload_cmedia".split(),
+        f"sudo cp {_from} {_to}".split(),               # add new rule (udev watches this directory for changes)
+        'sudo udevadm trigger -s sound -c add'.split(), # trigger an 'add' action on the 'sound' subsystem
+        'udevadm settle'.split(),                       # wait for udev rules to fire and settle
       ]).run()])
     # set usb soundcard to 100% volume
     tasks += print_progress([Task('set usb soundcard to 100% volume', 'amixer -Dusb71 cset numid=8 100%'.split()).run()])
