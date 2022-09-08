@@ -229,15 +229,15 @@ def test_open_api_yamlfile(client):
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
 # Test Status
-def test_info(client):
+def test_get_info(client):
   """ Check the system information """
   rv = client.get(f'/api/info')
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
-  for val in jrv.values():
-    assert val is not None, "Unpopulated info field, expected value got 'None'"
+  for key, val in jrv.items():
+    assert val is not None, f"Unpopulated info field {key}, expected value got 'None'"
     if isinstance(val, str):
-      assert val.lower() != 'unknown', "Unpopulated info field"
+      assert val.lower() != 'unknown', f"Unpopulated info field {key}"
 
 # Test Sources
 def base_source_ids():

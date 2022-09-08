@@ -459,7 +459,7 @@ def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -
 
 # Info
 
-@api.post('/api/info', tags=['info'])
+@api.get('/api/info', tags=['status'])
 def get_info(ctrl: Api = Depends(get_ctrl)) -> models.Info:
   """ Get additional information """
   return code_response(ctrl, ctrl.get_info())

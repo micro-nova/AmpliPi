@@ -194,14 +194,19 @@ class Api:
       self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
 
+    # TODO: detect missing sources
+
+    # populate system info
     self.status.info = models.Info(
       mock_ctrl=self._mock_hw,
       mock_streams=self._mock_streams,
       config_file=self.config_file,
-      version=utils.detect_version()
+      version=utils.detect_version(),
     )
-
-    # TODO: detect missing sources
+    for major, minor, ghash, _ in self._rt.read_versions():
+      fw_info = models.FirmwareInfo(version=f'{major}.{minor}.', git_hash=f'{ghash:x}')
+      self.status.info.fw.append(fw_info)
+    self._update_sys_info()
 
     # detect missing zones
     if self._mock_hw:
@@ -321,8 +326,10 @@ class Api:
 
   def _update_sys_info(self) -> None:
     """Update current system information"""
+    if self.status.info is None:
+      raise Exception("No info generated, system in a bad state")
     self.status.info.online = utils.is_online()
-    self.status.info.new_release = utils.latest_release()
+    self.status.info.latest_release = utils.latest_release()
 
   def get_state(self) -> models.Status:
     """ get the system state """
