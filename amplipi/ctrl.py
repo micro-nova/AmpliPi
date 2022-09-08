@@ -319,6 +319,11 @@ class Api:
       inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
     return inputs
 
+  def _update_sys_info(self) -> None:
+    """Update current system information"""
+    self.status.info.online = utils.is_online()
+    self.status.info.new_release = utils.latest_release()
+
   def get_state(self) -> models.Status:
     """ get the system state """
     # update the state with the latest stream info
@@ -335,7 +340,7 @@ class Api:
           stream.__dict__[field] = stream_inst.__dict__[field]
       streams.append(stream)
     self.status.streams = streams
-    # TODO: update systeminfo
+    self._update_sys_info()
     # update source's info
     # TODO: stream/source info should be updated in a background thread
     for src in self.status.sources:
@@ -344,6 +349,7 @@ class Api:
 
   def get_info(self) -> models.Info:
     """ Get the system information """
+    self._update_sys_info()
     if self.status.info is None:
       raise Exception("No info generated, system in a bad state")
     return self.status.info

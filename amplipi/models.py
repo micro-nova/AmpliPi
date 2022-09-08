@@ -742,8 +742,8 @@ class Info(BaseModel):
   sw_hash: str = Field(default='unknown', description="git hash of the commit the system is from")
   fw_version: str = Field(default='unknown', description="firmware version")
   fw_hash: str = Field(default='unknown', description="short git hash of firmware")
-  offline: bool = Field(default=True, description='can the system connect to the internet?')
-  new_release: bool = Field(default=False, description='Is a new, better release available?')
+  online: bool = Field(default=True, description='can the system connect to the internet?')
+  latest_release: str = Field(default='unknown', description='Latest software release available from GitHub')
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """

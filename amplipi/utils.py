@@ -22,7 +22,7 @@ This module contains helper functions are used across the amplipi python library
 import functools
 import io
 import json
-import math
+import time
 import os
 import re
 import subprocess
@@ -234,6 +234,34 @@ def is_amplipi():
     amplipi = False
 
   return amplipi
+
+_is_online = False
+_last_online_check = time.time()
+def is_online():
+  """Throttled check if the system is conencted to the internet, throttle allows for simple polling by controller"""
+  if time.time() > _last_online_check + 2:
+    status_dir = f"{get_folder('config')}/status"
+    _is_online = False
+    try:
+      with open(os.path.join(status_dir,'online'), encoding='utf-8') as fonline:
+        _is_online = 'online' in fonline.readline()
+    except Exception:
+      pass
+  return _is_online
+
+_latest_release = 'unknown'
+_last_release_check = time.time()
+def latest_release():
+  """Throttled check for latest release, throttle allows for simple polling by controller"""
+  if time.time() > _last_release_check + 60:
+    status_dir = f"{get_folder('config')}/status"
+    _latest_release = 'unknown'
+    try:
+      with open(os.path.join(status_dir,'latest_release'), encoding='utf-8') as flatest:
+        _latest_release = flatest.readline()
+    except Exception:
+      pass
+  return _latest_release
 
 def vol_float_to_db(vol: float, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> int:
   """ Convert floating-point volume to dB """
