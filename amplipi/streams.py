@@ -271,7 +271,7 @@ class Spotify(BaseStream):
     self.connect_port = 4070 + 10*src
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
-      data = data.replace('device_name_in_spotify_connect', f'{self.name}')
+      data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
       data = data.replace("alsa_audio_device", f"ch{src}")
       data = data.replace('1234', f'{self.connect_port}')
     with open(toml_useful, 'w') as TOML:
@@ -285,9 +285,6 @@ class Spotify(BaseStream):
       time.sleep(0.1) # Delay a bit
 
       self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)
-
-      # with open(f'{src_config_folder}/pid', 'r', encoding='utf-8') as f:
-      #   self.proc_pid = int(f.read())
 
       self._connect(src)
     except Exception as exc:
