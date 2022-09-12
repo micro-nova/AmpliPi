@@ -236,6 +236,7 @@ def test_open_api_yamlfile(client):
 def test_get_info(client):
   """ Check the system information """
   rv = client.get(f'/api/info')
+  print('getting info')
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   for key, val in jrv.items():

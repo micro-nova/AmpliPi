@@ -256,15 +256,20 @@ _last_release_check = 0
 def latest_release():
   """Throttled check for latest release, throttle allows for simple polling by controller"""
   global _latest_release, _last_release_check
-  if time.time() > _last_release_check + 60:
+  now = time.time()
+  if now > _last_release_check + 60:
     status_dir = f"{get_folder('config')}/status"
     _latest_release = 'unknown'
     _last_release_check = time.time()
     try:
+      print('checking latest release')
       with open(os.path.join(status_dir,'latest_release'), encoding='utf-8') as flatest:
         _latest_release = flatest.readline().strip()
-    except Exception:
+    except Exception as exc:
+      print(f'Error getting latest_release: {exc}')
       pass
+  else:
+    print(f'using cached latest release {now} (now) <= {_last_release_check} + 60')
   return _latest_release
 
 def vol_float_to_db(vol: float, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> int:
