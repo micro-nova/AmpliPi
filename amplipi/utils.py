@@ -236,7 +236,7 @@ def is_amplipi():
   return amplipi
 
 _is_online = False
-_last_online_check = time.time()
+_last_online_check = 0
 def is_online():
   """Throttled check if the system is conencted to the internet, throttle allows for simple polling by controller"""
   global _is_online, _last_online_check
@@ -252,7 +252,7 @@ def is_online():
   return _is_online
 
 _latest_release = 'unknown'
-_last_release_check = time.time()
+_last_release_check = 0
 def latest_release():
   """Throttled check for latest release, throttle allows for simple polling by controller"""
   global _latest_release, _last_release_check
