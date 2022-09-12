@@ -247,10 +247,10 @@ class TimeBasedCache:
     self._val = self._updater()
     self._last_check = time.time()
 
-  def get(self):
+  def get(self, throttled=True):
     """ Get the potentially cached value """
     now = time.time()
-    if now > self._last_check + self._keep_for:
+    if not throttled or now > self._last_check + self._keep_for:
       print(f'updating cach for {self.name}')
       self._update()
     else:
@@ -268,9 +268,9 @@ def _get_online() -> bool:
   return online
 
 _online_cache = TimeBasedCache(_get_online, 5, 'online')
-def is_online() -> bool:
+def is_online(throttled=True) -> bool:
   """Throttled check if the system is conencted to the internet, throttle allows for simple polling by controller"""
-  return _online_cache.get()
+  return _online_cache.get(throttled)
 
 def _get_latest_release() -> str:
   release = 'unknown'
@@ -284,9 +284,9 @@ def _get_latest_release() -> str:
 
 _latest_release_cache = TimeBasedCache(_get_latest_release, 3600, 'latest release')
 
-def latest_release():
+def latest_release(throttled=True):
   """Throttled check for latest release, throttle allows for simple polling by controller"""
-  return _latest_release_cache.get()
+  return _latest_release_cache.get(throttled)
 
 def vol_float_to_db(vol: float, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> int:
   """ Convert floating-point volume to dB """

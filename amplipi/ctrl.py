@@ -206,7 +206,7 @@ class Api:
     for major, minor, ghash, _ in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}.', git_hash=f'{ghash:x}')
       self.status.info.fw.append(fw_info)
-    self._update_sys_info()
+    self._update_sys_info(throttled=False) # force update
 
     # detect missing zones
     if self._mock_hw:
@@ -324,12 +324,12 @@ class Api:
       inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
     return inputs
 
-  def _update_sys_info(self) -> None:
+  def _update_sys_info(self, throttled=True) -> None:
     """Update current system information"""
     if self.status.info is None:
       raise Exception("No info generated, system in a bad state")
-    self.status.info.online = utils.is_online()
-    self.status.info.latest_release = utils.latest_release()
+    self.status.info.online = utils.is_online(throttled)
+    self.status.info.latest_release = utils.latest_release(throttled)
 
   def get_state(self) -> models.Status:
     """ get the system state """
