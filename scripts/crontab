@@ -1,5 +1,7 @@
 # Recurring os tasks handled by cron
 # installed by amplipi when a release
 # m   h  dom mon dow   command
-  0   5  *   *   *     SCRIPTS_DIR/check-release
-  */2 *  *   *   *     SCRIPTS_DIR/check-online
+#                      avoid overloading GitHub
+  0   5  *   *   *     sleep ${RANDOM:0:2}m; SCRIPTS_DIR/check-release
+#                      avoid exact period
+  */5 *  *   *   *     sleep 0.${RANDOM:0:2}s; SCRIPTS_DIR/check-online
