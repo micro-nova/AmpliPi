@@ -124,7 +124,7 @@ def client(request):
   """ AmpliPi instance with mocked ctrl and streams """
   cfg = request.param
   config_dir = tempfile.mkdtemp()
-  status_dir = os.path.join(config_dir,'status')
+  status_dir = os.path.join(config_dir,'config', 'status')
   os.makedirs(status_dir)
   with open(os.path.join(status_dir, 'latest_release'), 'w', encoding='utf-8') as version_file:
     version_file.write('0.1.8\n')
@@ -142,7 +142,7 @@ def clientnm(request):# Non-mock systems should use this client - mock_ctrl and 
   cfg = request.param
   config_dir = tempfile.mkdtemp()
   config_file = os.path.join(config_dir, 'house.json')
-  status_dir = os.path.join(config_dir,'status')
+  status_dir = os.path.join(config_dir,'config', 'status')
   os.makedirs(status_dir)
   with open(os.path.join(status_dir, 'latest_release'), 'w', encoding='utf-8') as version_file:
     version_file.write('0.1.8\n')

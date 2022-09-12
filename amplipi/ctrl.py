@@ -169,7 +169,7 @@ class Api:
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
     self.config_file_valid = True # initially we assume the config file is valid
-    self.config_dir = os.path.dirname(self.config_file)
+    self.config_dir = os.path.join(os.path.dirname(self.config_file), 'config') # oddly the config file is outside the config directory
     errors = []
     if config:
       self.status = config
