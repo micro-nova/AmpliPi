@@ -333,8 +333,8 @@ class Api:
       status_dir = os.path.join(self.config_dir, 'status')
       with open(os.path.join(status_dir,'online'), encoding='utf-8') as fonline:
         online = 'online' in fonline.readline()
-    except Exception:
-      pass
+    except Exception as exc:
+      print(exc)
     return online
 
   def _check_latest_release(self) -> str:
@@ -345,8 +345,8 @@ class Api:
       with open(os.path.join(status_dir,'latest_release'), encoding='utf-8') as flatest:
         release = flatest.readline().strip()
         print(release)
-    except Exception:
-      pass
+    except Exception as exc:
+      print(exc)
     return release
 
   def _update_sys_info(self, throttled = True) -> None:
