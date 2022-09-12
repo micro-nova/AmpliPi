@@ -124,6 +124,10 @@ def client(request):
   """ AmpliPi instance with mocked ctrl and streams """
   cfg = request.param
   config_dir = tempfile.mkdtemp()
+  status_dir = os.path.join(config_dir,'status')
+  os.makedirs(status_dir)
+  with open(os.path.join(status_dir, 'latest_version'), 'w') as version_file:
+    version_file.write('0.1.8\n')
   config_file = os.path.join(config_dir, 'house.json')
   with open(config_file, 'w') as cfg_file:
     cfg_file.write(json.dumps(cfg))
