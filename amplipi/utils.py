@@ -251,42 +251,8 @@ class TimeBasedCache:
     """ Get the potentially cached value """
     now = time.time()
     if not throttled or now > self._last_check + self._keep_for:
-      print(f'updating cach for {self.name}')
       self._update()
-    else:
-      print(f'using cached value for {self.name}')
     return self._val
-
-def _get_online() -> bool:
-  online = False
-  try:
-    status_dir = os.path.join(get_folder('config'),'status')
-    with open(os.path.join(status_dir,'online'), encoding='utf-8') as fonline:
-      online = 'online' in fonline.readline()
-  except Exception:
-    pass
-  return online
-
-_online_cache = TimeBasedCache(_get_online, 5, 'online')
-def is_online(throttled=True) -> bool:
-  """Throttled check if the system is conencted to the internet, throttle allows for simple polling by controller"""
-  return _online_cache.get(throttled)
-
-def _get_latest_release() -> str:
-  release = 'unknown'
-  try:
-    status_dir = os.path.join(get_folder('config'),'status')
-    with open(os.path.join(status_dir,'latest_release'), encoding='utf-8') as flatest:
-      release = flatest.readline().strip()
-  except Exception:
-    pass
-  return release
-
-_latest_release_cache = TimeBasedCache(_get_latest_release, 3600, 'latest release')
-
-def latest_release(throttled=True):
-  """Throttled check for latest release, throttle allows for simple polling by controller"""
-  return _latest_release_cache.get(throttled)
 
 def vol_float_to_db(vol: float, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> int:
   """ Convert floating-point volume to dB """

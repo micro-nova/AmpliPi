@@ -169,6 +169,7 @@ class Api:
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
     self.config_file_valid = True # initially we assume the config file is valid
+    self.config_dir = os.path.dirname(self.config_file)
     errors = []
     if config:
       self.status = config
@@ -197,6 +198,8 @@ class Api:
     # TODO: detect missing sources
 
     # populate system info
+    self._online_cache = utils.TimeBasedCache(self._check_is_online, 5, 'online')
+    self._latest_release_cache = utils.TimeBasedCache(self._check_latest_release, 3600, 'latest release')
     self.status.info = models.Info(
       mock_ctrl=self._mock_hw,
       mock_streams=self._mock_streams,
@@ -206,7 +209,7 @@ class Api:
     for major, minor, ghash, _ in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}.', git_hash=f'{ghash:x}')
       self.status.info.fw.append(fw_info)
-    self._update_sys_info(throttled=False) # force update
+    self._update_sys_info() # TODO: does sys info need to be updated at init time?
 
     # detect missing zones
     if self._mock_hw:
@@ -324,12 +327,34 @@ class Api:
       inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
     return inputs
 
-  def _update_sys_info(self, throttled=True) -> None:
+  def _check_is_online(self) -> bool:
+    online = False
+    try:
+      status_dir = os.path.join(self.config_dir, 'status')
+      with open(os.path.join(status_dir,'online'), encoding='utf-8') as fonline:
+        online = 'online' in fonline.readline()
+    except Exception:
+      pass
+    return online
+
+  def _check_latest_release(self) -> str:
+    release = 'unknown'
+    try:
+      status_dir = os.path.join(self.config_dir, 'status')
+      print(f'reading from status_dir={status_dir}')
+      with open(os.path.join(status_dir,'latest_release'), encoding='utf-8') as flatest:
+        release = flatest.readline().strip()
+        print(release)
+    except Exception:
+      pass
+    return release
+
+  def _update_sys_info(self, throttled = True) -> None:
     """Update current system information"""
     if self.status.info is None:
       raise Exception("No info generated, system in a bad state")
-    self.status.info.online = utils.is_online(throttled)
-    self.status.info.latest_release = utils.latest_release(throttled)
+    self.status.info.online = self._online_cache.get(throttled)
+    self.status.info.latest_release = self._latest_release_cache.get(throttled)
 
   def get_state(self) -> models.Status:
     """ get the system state """
