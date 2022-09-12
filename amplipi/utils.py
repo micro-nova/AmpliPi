@@ -235,42 +235,54 @@ def is_amplipi():
 
   return amplipi
 
-_is_online = False
-_last_online_check = 0
-def is_online():
-  """Throttled check if the system is conencted to the internet, throttle allows for simple polling by controller"""
-  global _is_online, _last_online_check
-  if time.time() > _last_online_check + 2:
-    status_dir = f"{get_folder('config')}/status"
-    _is_online = False
-    _last_online_check = time.time()
-    try:
-      with open(os.path.join(status_dir,'online'), encoding='utf-8') as fonline:
-        _is_online = 'online' in fonline.readline()
-    except Exception:
-      pass
-  return _is_online
+class TimeBasedCache:
+  """ Cache the value of a timely but costly method, @updater, for @keep_for s """
+  def __init__(self,  updater, keep_for:float):
+    self._updater = updater
+    self._keep_for = keep_for
+    self._update()
 
-_latest_release = 'unknown'
-_last_release_check = 0
+  def _update(self):
+    self._val = self._updater()
+    self._last_check = time.time()
+
+  def get(self):
+    """ Get the potentially cached value """
+    now = time.time()
+    if now > self._last_check + self._keep_for:
+      self._update()
+    return self._val
+
+def _get_online() -> bool:
+  online = False
+  try:
+    status_dir = os.path.join(get_folder('config'),'status')
+    with open(os.path.join(status_dir,'online'), encoding='utf-8') as fonline:
+      online = 'online' in fonline.readline()
+  except Exception:
+    pass
+  return online
+
+_online_cache = TimeBasedCache(_get_online, 5)
+def is_online() -> bool:
+  """Throttled check if the system is conencted to the internet, throttle allows for simple polling by controller"""
+  return _online_cache.get()
+
+def _get_latest_release() -> str:
+  release = 'unknown'
+  try:
+    status_dir = os.path.join(get_folder('config'),'status')
+    with open(os.path.join(status_dir,'latest_release'), encoding='utf-8') as flatest:
+      release = flatest.readline().strip()
+  except Exception:
+    pass
+  return release
+
+_latest_release_cache = TimeBasedCache(_get_latest_release, 3600)
+
 def latest_release():
   """Throttled check for latest release, throttle allows for simple polling by controller"""
-  global _latest_release, _last_release_check
-  now = time.time()
-  if now > _last_release_check + 60:
-    status_dir = f"{get_folder('config')}/status"
-    _latest_release = 'unknown'
-    _last_release_check = time.time()
-    try:
-      print('checking latest release')
-      with open(os.path.join(status_dir,'latest_release'), encoding='utf-8') as flatest:
-        _latest_release = flatest.readline().strip()
-    except Exception as exc:
-      print(f'Error getting latest_release: {exc}')
-      pass
-  else:
-    print(f'using cached latest release {now} (now) <= {_last_release_check} + 60')
-  return _latest_release
+  return _latest_release_cache.get()
 
 def vol_float_to_db(vol: float, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> int:
   """ Convert floating-point volume to dB """
