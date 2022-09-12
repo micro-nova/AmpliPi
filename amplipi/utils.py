@@ -166,7 +166,7 @@ def enabled_zones(status: models.Status, zones: Set[int]) -> Set[int]:
 @functools.lru_cache(maxsize=8)
 def get_folder(folder):
   """ Get a directory
-  Abstracts the directory structure """
+  Abstracts the directory structure. TODO: This does not find the correct directory when testing. """
   if not os.path.exists(folder):
     try:
       os.mkdir(folder)
