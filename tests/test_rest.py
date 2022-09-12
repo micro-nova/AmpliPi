@@ -136,7 +136,7 @@ def client(request):
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
-@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups()])
+@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups(), base_config_no_streams(), base_config_vol_db()])
 def clientnm(request):# Non-mock systems should use this client - mock_ctrl and mock_streams are False here
   """ AmpliPi instance connected to a real AmpliPi controller """
   cfg = request.param

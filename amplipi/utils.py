@@ -237,7 +237,8 @@ def is_amplipi():
 
 class TimeBasedCache:
   """ Cache the value of a timely but costly method, @updater, for @keep_for s """
-  def __init__(self,  updater, keep_for:float):
+  def __init__(self,  updater, keep_for:float, name):
+    self.name = name
     self._updater = updater
     self._keep_for = keep_for
     self._update()
@@ -250,7 +251,10 @@ class TimeBasedCache:
     """ Get the potentially cached value """
     now = time.time()
     if now > self._last_check + self._keep_for:
+      print(f'updating cach for {self.name}')
       self._update()
+    else:
+      print(f'using cached value for {self.name}')
     return self._val
 
 def _get_online() -> bool:
@@ -263,7 +267,7 @@ def _get_online() -> bool:
     pass
   return online
 
-_online_cache = TimeBasedCache(_get_online, 5)
+_online_cache = TimeBasedCache(_get_online, 5, 'online')
 def is_online() -> bool:
   """Throttled check if the system is conencted to the internet, throttle allows for simple polling by controller"""
   return _online_cache.get()
@@ -278,7 +282,7 @@ def _get_latest_release() -> str:
     pass
   return release
 
-_latest_release_cache = TimeBasedCache(_get_latest_release, 3600)
+_latest_release_cache = TimeBasedCache(_get_latest_release, 3600, 'latest release')
 
 def latest_release():
   """Throttled check for latest release, throttle allows for simple polling by controller"""
