@@ -65,7 +65,9 @@ if ! $found; then
   echo "  Some users on windows 10 have reported MDNS does not work over Wifi. Try using a wired connection."
   exit 1;
 fi
+
 # install dependencies as necessary
+echo -e "\nChecking dependencies"
 inst=false
 python='python'
 if which dpkg; then
@@ -93,9 +95,9 @@ else
     exit 1;
   fi
 fi
+
 # create a virtual environment and install pip dependencies
-if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate
-]]; then
+if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate ]]; then
   echo  ""
   echo "Setting up virtual environment"
   mkdir -p ../venv
@@ -108,6 +110,7 @@ else
 fi
 $python -m pip install --upgrade pip
 $python -m pip install poetry
+echo -e "Finished checking dependencies\n"
 
 if ! $mock_ctrl; then
   # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
@@ -121,11 +124,11 @@ old_version=$(poetry version -s)
 # The only guaranteed output is the 7-character short commit hash of the current commit,
 # but typically git describe outputs VERSION-N-gHASH[-dirty].
 # --always means even if no tag was found still generate an output: HASH[-dirty]
-# --tags causes all tags to match, not just annotated
 # --dirty appends -dirty if there are changes to tracked files or stashed changes
 # --long forces -N-gHASH to be printed even if tagged commit is checked out
 # --match '*.*.*' matches tags with *.*.* format (rules out fw/*)
-git_description=$(git describe --always --tags --dirty --long --match '*.*.*' 2>/dev/null)
+# || true effectively ignores the exit condition of git describe
+git_description=$(git describe --always --dirty --long --match '*.*.*' 2>/dev/null) || true
 if [[ -z $git_description ]]; then
   # not a git repo, use poetry version and indicate unkown development state
   git_info="$old_version+unknown"
