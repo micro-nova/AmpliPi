@@ -12,8 +12,8 @@ if [ ! -e ../config/status/latest_release ]; then
 fi
 
 # update the latest release if new
-previous_release=`cat ../config/status/latest_release`
-latest_release=`curl -s https://api.github.com/repos/micro-nova/AmpliPi/releases/latest | jq -r ".tag_name"`
+previous_release=$(cat ../config/status/latest_release)
+latest_release=$(curl -s https://api.github.com/repos/micro-nova/AmpliPi/releases/latest | jq -r ".tag_name")
 if [ "$latest_release" != "" ] && [ "$latest_release" != "null" ] && [ "$latest_release" != "$previous_release" ]; then
    mkdir -p ../config/status
    echo "$latest_release" > ../config/status/latest_release

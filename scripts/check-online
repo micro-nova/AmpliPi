@@ -12,8 +12,8 @@ if [ ! -e ../config/status/online ]; then
 fi
 
 # Check if we can reach the internet without dns
-last_online=`cat ../config/status/online`
-online=`nc -w 5 -z 1.1.1.1 53 >/dev/null 2>&1 && echo online || echo offline`
+last_online=$(cat ../config/status/online)
+online=$(nc -w 5 -z 1.1.1.1 53 >/dev/null 2>&1 && echo online || echo offline)
 
 # only update online state as needed
 if [ "$last_online" != "$online" ]; then
