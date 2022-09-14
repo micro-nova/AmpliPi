@@ -38,6 +38,8 @@ import amplipi.utils as utils
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
+USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.cache', 'amplipi')
+
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
   """ Check if a ctrl API call is successful and saves the state if so """
@@ -169,7 +171,6 @@ class Api:
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
     self.config_file_valid = True # initially we assume the config file is valid
-    self.config_dir = os.path.join(os.path.dirname(self.config_file), 'config') # oddly the config file is outside the config directory
     errors = []
     if config:
       self.status = config
@@ -330,23 +331,21 @@ class Api:
   def _check_is_online(self) -> bool:
     online = False
     try:
-      status_dir = os.path.join(self.config_dir, 'status')
+      status_dir = os.path.join(USER_CONFIG_DIR, 'status')
       with open(os.path.join(status_dir,'online'), encoding='utf-8') as fonline:
         online = 'online' in fonline.readline()
     except Exception as exc:
-      print(exc)
+      pass
     return online
 
   def _check_latest_release(self) -> str:
     release = 'unknown'
     try:
-      status_dir = os.path.join(self.config_dir, 'status')
-      print(f'reading from status_dir={status_dir}')
+      status_dir = os.path.join(USER_CONFIG_DIR, 'status')
       with open(os.path.join(status_dir,'latest_release'), encoding='utf-8') as flatest:
         release = flatest.readline().strip()
-        print(release)
     except Exception as exc:
-      print(exc)
+      pass
     return release
 
   def _update_sys_info(self, throttled = True) -> None:
