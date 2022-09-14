@@ -734,9 +734,10 @@ class Announcement(BaseModel):
     }
 
 class FirmwareInfo(BaseModel):
-  """ Firmware Info for an AmpliPi controller or expansion unit """
-  version: str = Field(default='unknown', description="firmware version")
+  """ Firmware Info for an AmpliPi controller or expansion unit's preamp board """
+  version: str = Field(default='unknown', description="preamp firmware version")
   git_hash: str = Field(default='unknown', description="short git hash of firmware")
+  git_dirty: bool = Field(default=False, description="True if local changes were made. Used for development.")
 
 class Info(BaseModel):
   """ AmpliPi System information """
@@ -761,8 +762,9 @@ class Info(BaseModel):
             'latest_release': '0.1.8',
             'fw': [
               {
-                "version": "1.6.",
-                "git_hash": "de0f8eb"
+                "version": "1.6",
+                "git_hash": "de0f8eb",
+                "git_dirty": False,
               }
             ]
           }

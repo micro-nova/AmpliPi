@@ -207,8 +207,8 @@ class Api:
       config_file=self.config_file,
       version=utils.detect_version(),
     )
-    for major, minor, ghash, _ in self._rt.read_versions():
-      fw_info = models.FirmwareInfo(version=f'{major}.{minor}.', git_hash=f'{ghash:x}')
+    for major, minor, ghash, dirty in self._rt.read_versions():
+      fw_info = models.FirmwareInfo(version=f'{major}.{minor}', git_hash=f'{ghash:x}', git_dirty=dirty)
       self.status.info.fw.append(fw_info)
     self._update_sys_info() # TODO: does sys info need to be updated at init time?
 
