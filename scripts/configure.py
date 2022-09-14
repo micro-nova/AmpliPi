@@ -84,9 +84,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'stm32flash',                  # Programming Preamp Board
              'xkcdpass',                    # Random passphrase generation
              'systemd-journal-remote',      # Remote/web based log access
-             # kernel updates
-             'libraspberrypi0', 'raspberrypi-bootloader', 'raspberrypi-kernel',
-             'libraspberrypi-bin', 'libraspberrypi-dev', 'libraspberrypi-doc',
+             'jq',                          # JSON parser used in check-release script
             ],
   },
   'web' : {
