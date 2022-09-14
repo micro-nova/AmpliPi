@@ -1,10 +1,7 @@
 # Recurring os tasks handled by cron
 # installed by amplipi
-
-SHELL=/bin/bash
-
 # m   h  dom mon dow   command
-#                      avoid overloading GitHub
-  0   5  *   *   *     sleep ${RANDOM:0:2}m; SCRIPTS_DIR/check-release
-#                      avoid exact period
-  */5 *  *   *   *     sleep 0.${RANDOM:0:2}s; SCRIPTS_DIR/check-online
+#                      Check for new release, add jitter to avoid overloading GitHub.
+  0   5  *   *   *     sleep $(tr -cd 0-9 </dev/urandom | head -c 3)s; SCRIPTS_DIR/check-release
+#                      Check for internet access.
+  */5 *  *   *   *     SCRIPTS_DIR/check-online
