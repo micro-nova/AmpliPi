@@ -2,18 +2,18 @@
 # Update the latest release
 set -e
 
-USER_CACHE_DIR="$HOME/.cache/amplipi"
+USER_CACHE_DIR="${HOME}/.cache/amplipi"
+LATEST_RELEASE_FILE="${USER_CACHE_DIR}/latest_release"
 
 # add file if needed
-if [ ! -e $USER_CACHE_DIR/latest_release ]; then
-  mkdir -p $USER_CACHE_DIR
-  touch $USER_CACHE_DIR/latest_release
+if [ ! -e "${LATEST_RELEASE_FILE}" ]; then
+  mkdir -p "${USER_CACHE_DIR}"
+  touch "${LATEST_RELEASE_FILE}"
 fi
 
 # update the latest release if new
-previous_release=$(cat $USER_CACHE_DIR/latest_release)
-latest_release=$(curl -s https://api.github.com/repos/micro-nova/AmpliPi/releases/latest | jq -r ".tag_name")
-if [ "$latest_release" != "" ] && [ "$latest_release" != "null" ] && [ "$latest_release" != "$previous_release" ]; then
-   mkdir -p $USER_CACHE_DIR
-   echo "$latest_release" > $USER_CACHE_DIR/latest_release
+prev_release=$(cat "${LATEST_RELEASE_FILE}")
+cur_release=$(curl -s https://api.github.com/repos/micro-nova/AmpliPi/releases/latest | jq -r ".tag_name")
+if [ "${cur_release}" != "" ] && [ "${cur_release}" != "null" ] && [ "${cur_release}" != "${prev_release}" ]; then
+   echo "${cur_release}" > "${LATEST_RELEASE_FILE}"
 fi

@@ -2,19 +2,20 @@
 # Update the offline/online state
 set -e
 
-USER_CACHE_DIR="$HOME/.cache/amplipi"
+USER_CACHE_DIR="${HOME}/.cache/amplipi"
+ONLINE_FILE="${USER_CACHE_DIR}/online"
 
 # add file if needed
-if [ ! -e $USER_CACHE_DIR/online ]; then
-  mkdir -p $USER_CACHE_DIR
-  touch $USER_CACHE_DIR/online
+if [ ! -e "${ONLINE_FILE}" ]; then
+  mkdir -p "${USER_CACHE_DIR}"
+  touch "${ONLINE_FILE}"
 fi
 
 # Check if we can reach the internet without dns
-last_online=$(cat $USER_CACHE_DIR/online)
+last_online=$(cat "${ONLINE_FILE}")
 online=$(nc -w 5 -z 1.1.1.1 53 >/dev/null 2>&1 && echo online || echo offline)
 
 # only update online state as needed
-if [ "$last_online" != "$online" ]; then
-  echo "$online" > $USER_CACHE_DIR/online
+if [ "${last_online}" != "${online}" ]; then
+  echo "${online}" > "${ONLINE_FILE}"
 fi
