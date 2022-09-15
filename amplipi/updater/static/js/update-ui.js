@@ -213,43 +213,63 @@ fetch('/update/version').then((resp) => {
   });
 });
 
-// fetch the GH Releases and populate the release selector and latest release
-fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) => {
+function show_latest_release(latest_release) {
+  if (latest_release.tag_name == version) {
+    console.log('already up to date');
+    $('#latest-update-name').empty().append('Your system is up to date  <i class="fas fa-check-circle text-success"></i>')
+  } else {
+    // show the release info with its markdown from GH
+    $('#submit-latest-update').removeClass('d-none');
+    $('#latest-update-name').text(latest_release.name);
+    $('#latest-update-desc').append(md.render(latest_release.body));
+    // embedd the url and version so it can be passed on click
+    $('#latest-update').attr('data-url', latest_release.tarball_url);
+    $('#latest-update').attr('data-version', latest_release.tag_name);
+  }
+}
+
+function populate_available_releases(releases) {
+  // TODO: indicate difference between pre-releases and full-releases
+  for (const release of releases) {
+    console.log(`found "${release.name}" - ${release.tarball_url}`);
+    $('#older-update-sel').append(`<option value="${release.tarball_url}"
+                                           data-version="${release.tag_name}"
+                                           data-name="${release.name}"
+                                           data-desc="${release.body}">
+                                           ${release.name}
+                                   </option>`);
+  }
+}
+
+// Fetch the GitHub Releases and populate the release selector and latest release
+// We use releases/latest to make the decision on what the latest release is,
+//  avoiding having to sort the raw releases endpoint.
+// Note: we use the failure of the releases/latest fetch to populate the offline messages
+//  since the related tab is where the offline messages are shown.
+fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases/latest').then((resp) => {
   console.log(resp);
   if (resp.status != 200) {
     ui_show_offline_message();
+    return;
+  }
+  resp.json().then((release) => {
+    if (release.name) {
+      show_latest_release(release);
+    } else {
+      ui_show_offline_message();
+    }
+  }).catch((err) => { return; });
+}).catch((err) => { return; });
+
+fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) => {
+  console.log(resp);
+  if (resp.status != 200) {
     return
   }
   resp.json().then((releases) => {
     if (releases.length == 0) {
-      ui_show_offline_message();
-      return
+      return;
     }
-    // TODO: actually populate this with the latest non-prelease version
-    // show the latest release
-    latest_release = releases[0];
-    if (latest_release.tag_name == version) {
-      console.log('already up to date');
-      $('#latest-update-name').empty().append('Your system is up to date  <i class="fas fa-check-circle text-success"></i>')
-    } else {
-      // show the release info with its markdown from GH
-      $('#submit-latest-update').removeClass('d-none');
-      $('#latest-update-name').text(latest_release.name);
-      $('#latest-update-desc').append(md.render(latest_release.body));
-      // embedd the url and version so it can be passed on click
-      $('#latest-update').attr('data-url', latest_release.tarball_url);
-      $('#latest-update').attr('data-version', latest_release.tag_name);
-    }
-    // populate release selector
-    // TODO: indicate difference between pre-releases and full-releases
-    for (const release of releases) {
-      console.log(`found "${release.name}" - ${release.tarball_url}`);
-      $('#older-update-sel').append(`<option value="${release.tarball_url}"
-                                             data-version="${release.tag_name}"
-                                             data-name="${release.name}"
-                                             data-desc="${release.body}">
-                                             ${release.name}
-                                     </option>`);
-    }
+    populate_available_releases(releases);
   }).catch((err) => { ui_show_offline_message(); });
 }).catch((err) => { ui_show_offline_message(); });
