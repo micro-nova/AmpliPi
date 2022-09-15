@@ -1,22 +1,23 @@
 # AmpliPi Software Releases
 
 ## 0.1.X Upcoming
+
+## 0.1.9
 * Web App
   * Add link for text log
   * Add shutdown and reboot buttons in Settings->Configuration and Reset
 * API
   * Add `api/shutdown` and `api/reboot` endpoints
   * Add `api/info` endpoint for version, release, and other system information
-* Streams
 * Storage
   * Only log to RAM, drastically reducing disk writes
   * Use ram disks for temporary stream configration and metadata storage
 * Docs:
-  * Use latest rapidoc viewer
+  * Use latest rapidoc viewer, fixes several api rendering issues
 * Updates:
   * Upgrade system packages on update
 * System Status
-  * Detect if internet access is available (check 1.1.1.1 every 2 mins)
+  * Detect if internet access is available (check 1.1.1.1 every 5 mins)
   * Check in the background for available updates (once per day)
 * Developing:
   * Show git hash and branch info for tests deployed by scripts/deploy
