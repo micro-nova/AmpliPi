@@ -125,7 +125,7 @@ def client(request):
   cfg = request.param
   config_dir = tempfile.mkdtemp()
   # write a valid version to the cache directory, needed by test_get_info
-  status_dir = amplipi.ctrl.USER_CACHE_DIR
+  status_dir = amplipi.ctrl.USER_CONFIG_DIR
   os.makedirs(status_dir, exist_ok=True)
   with open(os.path.join(status_dir, 'latest_release'), 'w', encoding='utf-8') as version_file:
     version_file.write('0.1.8\n')
@@ -144,7 +144,7 @@ def clientnm(request):# Non-mock systems should use this client - mock_ctrl and 
   config_dir = tempfile.mkdtemp()
   config_file = os.path.join(config_dir, 'house.json')
   # write a valid version to the cache directory, needed by test_get_info
-  status_dir = amplipi.ctrl.USER_CACHE_DIR
+  status_dir = amplipi.ctrl.USER_CONFIG_DIR
   os.makedirs(status_dir, exist_ok=True)
   with open(os.path.join(status_dir, 'latest_release'), 'w', encoding='utf-8') as version_file:
     version_file.write('0.1.8\n')

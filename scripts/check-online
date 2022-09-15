@@ -2,12 +2,12 @@
 # Update the offline/online state
 set -e
 
-USER_CACHE_DIR="${HOME}/.cache/amplipi"
-ONLINE_FILE="${USER_CACHE_DIR}/online"
+USER_CONFIG_DIR="${HOME}/.config/amplipi"
+ONLINE_FILE="${USER_CONFIG_DIR}/online"
 
 # add file if needed
 if [ ! -e "${ONLINE_FILE}" ]; then
-  mkdir -p "${USER_CACHE_DIR}"
+  mkdir -p "${USER_CONFIG_DIR}"
   touch "${ONLINE_FILE}"
 fi
 

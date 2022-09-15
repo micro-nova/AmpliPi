@@ -38,7 +38,7 @@ import amplipi.utils as utils
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
-USER_CACHE_DIR = os.path.join(os.path.expanduser('~'), '.cache', 'amplipi')
+USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
@@ -331,7 +331,7 @@ class Api:
   def _check_is_online(self) -> bool:
     online = False
     try:
-      with open(os.path.join(USER_CACHE_DIR, 'online'), encoding='utf-8') as fonline:
+      with open(os.path.join(USER_CONFIG_DIR, 'online'), encoding='utf-8') as fonline:
         online = 'online' in fonline.readline()
     except Exception as exc:
       pass
@@ -340,7 +340,7 @@ class Api:
   def _check_latest_release(self) -> str:
     release = 'unknown'
     try:
-      with open(os.path.join(USER_CACHE_DIR, 'latest_release'), encoding='utf-8') as flatest:
+      with open(os.path.join(USER_CONFIG_DIR, 'latest_release'), encoding='utf-8') as flatest:
         release = flatest.readline().strip()
     except Exception as exc:
       pass

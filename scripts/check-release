@@ -2,12 +2,12 @@
 # Update the latest release
 set -e
 
-USER_CACHE_DIR="${HOME}/.cache/amplipi"
-LATEST_RELEASE_FILE="${USER_CACHE_DIR}/latest_release"
+USER_CONFIG_DIR="${HOME}/.config/amplipi"
+LATEST_RELEASE_FILE="${USER_CONFIG_DIR}/latest_release"
 
 # add file if needed
 if [ ! -e "${LATEST_RELEASE_FILE}" ]; then
-  mkdir -p "${USER_CACHE_DIR}"
+  mkdir -p "${USER_CONFIG_DIR}"
   touch "${LATEST_RELEASE_FILE}"
 fi
 
