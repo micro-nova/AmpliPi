@@ -496,6 +496,10 @@ class Mock:
   def reset(self):
     pass
 
+  def read_versions(self) -> List[Tuple[int, int, int, bool]]:
+    """ Read the firmware information for all preamps (major, minor, hash, dirty?)"""
+    return []
+
   def update_sources(self, digital):
     """ modify all of the 4 system sources
 
@@ -583,6 +587,19 @@ class Rpi:
   def reset(self):
     """ Reset the firmware """
     self._bus.reset_preamps()
+
+  def read_versions(self) -> List[Tuple[int, int, int, bool]]:
+    """ Read the firmware information for all preamps (major, minor, hash, dirty?)"""
+    fw_versions: List[Tuple[int, int, int, bool]] = []
+    for i in range(1,6):
+      try:
+        infos = self._bus.read_version(i)
+        if infos[0] is None:
+          break
+        fw_versions.append(infos)
+      except:
+        break
+    return fw_versions
 
   def update_zone_mutes(self, zone, mutes):
     """ Update the mute level to all of the zones

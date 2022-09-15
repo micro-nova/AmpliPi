@@ -84,9 +84,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'stm32flash',                  # Programming Preamp Board
              'xkcdpass',                    # Random passphrase generation
              'systemd-journal-remote',      # Remote/web based log access
-             # kernel updates
-             'libraspberrypi0', 'raspberrypi-bootloader', 'raspberrypi-kernel',
-             'libraspberrypi-bin', 'libraspberrypi-dev', 'libraspberrypi-doc',
+             'jq',                          # JSON parser used in check-release script
             ],
   },
   'web' : {
@@ -262,7 +260,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
 
   # Upgrade current packages
   print_progress([Task("upgrading debian packages, this will take 10+ minutes", success=True)])
-  tasks += print_progress([Task('upgrade debian packages', 'sudo apt-get upgrade --assume-yes'.split()).run()])
+  tasks += print_progress([Task('upgrade debian packages', 'sudo apt upgrade --assume-yes'.split()).run()])
 
   # organize stuff to install
   packages = set()
@@ -315,6 +313,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       return tasks
     # setup tmpfs (ram disk)
     tasks += print_progress(_setup_tmpfs(env['base_dir']))
+    # setup crontab
+    tasks += print_progress([Task("Setting up crontab", [f"cat {env['base_dir']}/scripts/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts@' | crontab"], shell=True).run()])
   # install debian packages
   tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 

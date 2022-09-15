@@ -22,7 +22,7 @@ This module contains helper functions are used across the amplipi python library
 import functools
 import io
 import json
-import math
+import time
 import os
 import re
 import subprocess
@@ -166,7 +166,7 @@ def enabled_zones(status: models.Status, zones: Set[int]) -> Set[int]:
 @functools.lru_cache(maxsize=8)
 def get_folder(folder):
   """ Get a directory
-  Abstracts the directory structure """
+  Abstracts the directory structure. TODO: This does not find the correct directory when testing. """
   if not os.path.exists(folder):
     try:
       os.mkdir(folder)
@@ -234,6 +234,25 @@ def is_amplipi():
     amplipi = False
 
   return amplipi
+
+class TimeBasedCache:
+  """ Cache the value of a timely but costly method, @updater, for @keep_for s """
+  def __init__(self,  updater, keep_for:float, name):
+    self.name = name
+    self._updater = updater
+    self._keep_for = keep_for
+    self._update()
+
+  def _update(self):
+    self._val = self._updater()
+    self._last_check = time.time()
+
+  def get(self, throttled=True):
+    """ Get the potentially cached value """
+    now = time.time()
+    if not throttled or now > self._last_check + self._keep_for:
+      self._update()
+    return self._val
 
 def vol_float_to_db(vol: float, db_min: int = models.MIN_VOL_DB, db_max: int = models.MAX_VOL_DB) -> int:
   """ Convert floating-point volume to dB """

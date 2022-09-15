@@ -3,7 +3,10 @@
 ## 0.1.X Upcoming
 * Web App
   * Add link for text log
+  * Add shutdown and reboot buttons in Settings->Configuration and Reset
 * API
+  * Add `api/shutdown` and `api/reboot` endpoints
+  * Add `api/info` endpoint for version, release, and other system information
 * Streams
 * Storage
   * Only log to RAM, drastically reducing disk writes
@@ -12,6 +15,11 @@
   * Use latest rapidoc viewer
 * Updates:
   * Upgrade system packages on update
+* System Status
+  * Detect if internet access is available (check 1.1.1.1 every 2 mins)
+  * Check in the background for available updates (once per day)
+* Developing:
+  * Show git hash and branch info for tests deployed by scripts/deploy
 
 ## 0.1.8
 * Web App

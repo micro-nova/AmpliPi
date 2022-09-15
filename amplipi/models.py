@@ -733,12 +733,44 @@ class Announcement(BaseModel):
       }
     }
 
+class FirmwareInfo(BaseModel):
+  """ Firmware Info for an AmpliPi controller or expansion unit's preamp board """
+  version: str = Field(default='unknown', description="preamp firmware version")
+  git_hash: str = Field(default='unknown', description="short git hash of firmware")
+  git_dirty: bool = Field(default=False, description="True if local changes were made. Used for development.")
+
 class Info(BaseModel):
-  """ Information about the settings used by the controller """
-  config_file: str = 'Uknown'
-  version: str = 'Unknown'
-  mock_ctrl: bool = False
-  mock_streams: bool = False
+  """ AmpliPi System information """
+  version: str = Field(description="software version")
+  config_file: str = Field(default='unknown', description='config file location')
+  mock_ctrl: bool = Field(default=False, description='Is the controller being mocked? Indicates AmpliPi hardware is not connected')
+  mock_streams: bool = Field(default=False, description='Are streams being faked? Used for testing.')
+  online: bool = Field(default=False, description='can the system connect to the internet?')
+  latest_release: str = Field(default='unknown', description='Latest software release available from GitHub')
+  fw: List[FirmwareInfo] = Field(default=[], description='firmware information for each connected controller or expansion unit')
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        "System info": {
+          'value': {
+            'config_file': 'house.json',
+            'version': '0.1.8',
+            'mock_ctrl': False,
+            'mock_streams': False,
+            'online': True,
+            'latest_release': '0.1.8',
+            'fw': [
+              {
+                "version": "1.6",
+                "git_hash": "de0f8eb",
+                "git_dirty": False,
+              }
+            ]
+          }
+        }
+      }
+    }
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """

@@ -9,19 +9,16 @@ cd "$( dirname "$0" )"
 HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
   usage: deploy [USER@HOST] [--mock-ctrl]\n
 \n
-  --dev: add info to version showing the current git hash and branch\n
   --fw:  program the latest preamp firmware\n
   --pw:  generate and set a new random password\n
 "
 
 user_host='pi@amplipi.local'
 user_host_set=false
-dev=false
 fw=false
 pw=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
-    --dev) dev=true ;;
     --fw) fw=true ;;
     --pw) pw=true ;;
     -h|--help) echo -e $HELP; exit 0 ;;
@@ -39,7 +36,6 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 printf "Deploying amplipi project "
-$dev && printf "(development build) "
 printf "to $user_host.\n"
 printf "Preamp firmware will "
 $fw || printf "NOT "
@@ -69,7 +65,9 @@ if ! $found; then
   echo "  Some users on windows 10 have reported MDNS does not work over Wifi. Try using a wired connection."
   exit 1;
 fi
+
 # install dependencies as necessary
+echo -e "\nChecking dependencies"
 inst=false
 python='python'
 if which dpkg; then
@@ -97,9 +95,9 @@ else
     exit 1;
   fi
 fi
+
 # create a virtual environment and install pip dependencies
-if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate
-]]; then
+if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate ]]; then
   echo  ""
   echo "Setting up virtual environment"
   mkdir -p ../venv
@@ -112,24 +110,45 @@ else
 fi
 $python -m pip install --upgrade pip
 $python -m pip install poetry
+echo -e "Finished checking dependencies\n"
 
 if ! $mock_ctrl; then
   # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
   sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
 fi
 
-if $dev; then
-  old_version=$(poetry version -s)
-  # git_info="$(git describe --always --dirty)-$(git rev-parse --abbrev-ref HEAD)"
-  # TODO: write extra git info to the pyproject.toml file since poetry complains about non-standard versions
-  poetry version prerelease
+# use a new version for the build but hide it from git since it isn't a real release
+old_version=$(poetry version -s)
+# parse the git info into: VERSION+GIT_HASH-BRANCH_NAME[-dirty]
+# 'git describe' searches the git commit tree for the latest version tag.
+# The only guaranteed output is the 7-character short commit hash of the current commit,
+# but typically git describe outputs VERSION-N-gHASH[-dirty].
+# --always means even if no tag was found still generate an output: HASH[-dirty]
+# --dirty appends -dirty if there are changes to tracked files or stashed changes
+# --long forces -N-gHASH to be printed even if tagged commit is checked out
+# --match '*.*.*' matches tags with *.*.* format (rules out fw/*)
+# || true effectively ignores the exit condition of git describe
+git_description=$(git describe --always --dirty --long --match '*.*.*' 2>/dev/null) || true
+if [[ -z $git_description ]]; then
+  # not a git repo, use poetry version and indicate unkown development state
+  git_info="$old_version+unknown"
+else
+  git_version=$(echo "$git_description" | sed -nE 's/([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')
+  # anything before the first tag will be an empty string, so define that as ver 0.0.0
+  [[ -z $git_version ]] && git_version=0.0.0
+  # the hash is by default 7 hex chars, but could be more if required to avoid collisions
+  git_hash=$(echo "$git_description" | sed -E 's/.*([0-9a-f]{7,}).*/\1/')
+  git_branch=$(git symbolic-ref --short HEAD 2>/dev/null) && git_branch="-$git_branch"
+  git_dirty=$(echo "$git_description" | sed -n 's/.*-dirty/-dirty/p')
+  git_info="$git_version+$git_hash$git_branch$git_dirty"
 fi
+poetry version ${git_info}
+
 # build release file (put in dist/)
 poetry build
 
-if $dev; then
-  poetry version $old_version
-fi
+# revert to the old version so we don't modify extra files (the modified version info is in the build already)
+poetry version $old_version
 
 # exit virtual environment
 deactivate

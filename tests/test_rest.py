@@ -124,20 +124,30 @@ def client(request):
   """ AmpliPi instance with mocked ctrl and streams """
   cfg = request.param
   config_dir = tempfile.mkdtemp()
+  # write a valid version to the cache directory, needed by test_get_info
+  status_dir = amplipi.ctrl.USER_CACHE_DIR
+  os.makedirs(status_dir, exist_ok=True)
+  with open(os.path.join(status_dir, 'latest_release'), 'w', encoding='utf-8') as version_file:
+    version_file.write('0.1.8\n')
   config_file = os.path.join(config_dir, 'house.json')
-  with open(config_file, 'w') as cfg_file:
+  with open(config_file, 'w', encoding='utf') as cfg_file:
     cfg_file.write(json.dumps(cfg))
   app = amplipi.app.create_app(mock_ctrl=True, mock_streams=True, config_file=config_file, delay_saves=False)
   c = TestClient(app)
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
-@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups()])
+@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups(), base_config_no_streams(), base_config_vol_db()])
 def clientnm(request):# Non-mock systems should use this client - mock_ctrl and mock_streams are False here
   """ AmpliPi instance connected to a real AmpliPi controller """
   cfg = request.param
   config_dir = tempfile.mkdtemp()
   config_file = os.path.join(config_dir, 'house.json')
+  # write a valid version to the cache directory, needed by test_get_info
+  status_dir = amplipi.ctrl.USER_CACHE_DIR
+  os.makedirs(status_dir, exist_ok=True)
+  with open(os.path.join(status_dir, 'latest_release'), 'w', encoding='utf-8') as version_file:
+    version_file.write('0.1.8\n')
   with open(config_file, 'w') as cfg_file:
     cfg_file.write(json.dumps(cfg))
   app = amplipi.app.create_app(mock_ctrl=False, mock_streams=False, config_file=config_file, delay_saves=False)
@@ -224,8 +234,21 @@ def test_open_api_yamlfile(client):
   """ Check if the openapi yaml doc is available """
   rv = client.get('/openapi.yaml')
   assert rv.status_code == HTTPStatus.OK
+
 # To reduce the amount of boilerplate we use test parameters.
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
+
+# Test Status
+def test_get_info(client):
+  """ Check the system information """
+  rv = client.get(f'/api/info')
+  print('getting info')
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  for key, val in jrv.items():
+    assert val is not None, f"Unpopulated info field {key}, expected value got 'None'"
+    if isinstance(val, str):
+      assert val.lower() != 'unknown', f"Unpopulated info field {key}"
 
 # Test Sources
 def base_source_ids():
