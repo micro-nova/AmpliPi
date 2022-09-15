@@ -260,7 +260,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
 
   # Upgrade current packages
   print_progress([Task("upgrading debian packages, this will take 10+ minutes", success=True)])
-  tasks += print_progress([Task('upgrade debian packages', 'sudo apt upgrade --assume-yes'.split()).run()])
+  tasks += print_progress([Task('upgrade debian packages', 'sudo apt-get dist-upgrade --assume-yes'.split()).run()])
 
   # organize stuff to install
   packages = set()
