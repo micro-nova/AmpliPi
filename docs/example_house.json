@@ -1,0 +1,785 @@
+{
+  "sources": [
+    {
+      "id": 0,
+      "name": "TV",
+      "input": "",
+      "info": {
+        "name": "None",
+        "state": "stopped",
+        "img_url": "static/imgs/disconnected.png",
+        "supported_cmds": []
+      }
+    },
+    {
+      "id": 1,
+      "name": "Record Player",
+      "input": "",
+      "info": {
+        "name": "None",
+        "state": "stopped",
+        "img_url": "static/imgs/disconnected.png",
+        "supported_cmds": []
+      }
+    },
+    {
+      "id": 2,
+      "name": "Input 3",
+      "input": "stream=1006",
+      "info": {
+        "name": "Blackmill Radio - pandora",
+        "state": "playing",
+        "artist": "The Glitch Mob",
+        "track": "Fortune Days X We Can Make the World Stop (revision)",
+        "album": "Revisions",
+        "station": "Blackmill Radio",
+        "img_url": "http://cont-2.p-cdn.us/images/9e/f4/2f/71/1af94446bb248907ef8ff7aa/1080W_1080H.jpg",
+        "supported_cmds": [
+          "play",
+          "pause",
+          "stop",
+          "next",
+          "love",
+          "ban",
+          "shelve"
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "name": "Input 4",
+      "input": "stream=1005",
+      "info": {
+        "name": "Classical - pandora",
+        "state": "playing",
+        "artist": "Camerata Romana & Antonio Lucio",
+        "track": "Violin Concerto No. 2 in E Major, BWV 1042: II. Adagio",
+        "album": "Bach: Concerto for 2 Violins & Violin Concertos Nos. 1, 2",
+        "station": "Antonio Vivaldi Radio",
+        "img_url": "http://cont.p-cdn.us/images/6e/22/4f/26/958244ae94802788ac2c54c3/1080W_1080H.jpg",
+        "supported_cmds": [
+          "play",
+          "pause",
+          "stop",
+          "next",
+          "love",
+          "ban",
+          "shelve"
+        ]
+      }
+    }
+  ],
+  "zones": [
+    {
+      "id": 0,
+      "name": "Software Office",
+      "source_id": 2,
+      "mute": false,
+      "vol": -56,
+      "vol_f": 0.2825278810408922,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 1,
+      "name": "Upstairs Living Room",
+      "source_id": 3,
+      "mute": true,
+      "vol": -49,
+      "vol_f": 0.42,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 2,
+      "name": "Upstairs Dining",
+      "source_id": 0,
+      "mute": true,
+      "vol": -66,
+      "vol_f": 0.08,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 3,
+      "name": "Upstairs Laundry",
+      "source_id": 0,
+      "mute": true,
+      "vol": -66,
+      "vol_f": 0.08,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 4,
+      "name": "Upstairs Kitchen High",
+      "source_id": 0,
+      "mute": true,
+      "vol": -45,
+      "vol_f": 0.5073529411764706,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 5,
+      "name": "Upstairs Master Bath",
+      "source_id": 0,
+      "mute": true,
+      "vol": -23,
+      "vol_f": 0.9368029739776952,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 6,
+      "name": "Upstairs Kitchen Low HV",
+      "source_id": 0,
+      "mute": true,
+      "vol": -66,
+      "vol_f": 0.1,
+      "vol_min": -70,
+      "vol_max": -30,
+      "disabled": false
+    },
+    {
+      "id": 7,
+      "name": "Hardware Office HV",
+      "source_id": 0,
+      "mute": true,
+      "vol": -51,
+      "vol_f": 0.38602941176470584,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 8,
+      "name": "Basement Workshop HV",
+      "source_id": 0,
+      "mute": true,
+      "vol": -13,
+      "vol_f": 0.9446494464944649,
+      "vol_min": -70,
+      "vol_max": -10,
+      "disabled": false
+    },
+    {
+      "id": 9,
+      "name": "Screened Room HV",
+      "source_id": 1,
+      "mute": true,
+      "vol": -43,
+      "vol_f": 0.4909090909090909,
+      "vol_min": -70,
+      "vol_max": -15,
+      "disabled": false
+    },
+    {
+      "id": 10,
+      "name": "Upstairs Deck Living HV",
+      "source_id": 1,
+      "mute": true,
+      "vol": -43,
+      "vol_f": 0.4909090909090909,
+      "vol_min": -70,
+      "vol_max": -15,
+      "disabled": false
+    },
+    {
+      "id": 11,
+      "name": "Upstairs Main Bedroom HV",
+      "source_id": 0,
+      "mute": true,
+      "vol": -66,
+      "vol_f": 0.08,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 12,
+      "name": "Downstairs Living Room",
+      "source_id": 1,
+      "mute": true,
+      "vol": -48,
+      "vol_f": 0.44,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 13,
+      "name": "Downstairs Dining",
+      "source_id": 1,
+      "mute": true,
+      "vol": -48,
+      "vol_f": 0.44,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 14,
+      "name": "Downstairs Bath",
+      "source_id": 1,
+      "mute": true,
+      "vol": -64,
+      "vol_f": 0.12,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 15,
+      "name": "Downstairs Laundry",
+      "source_id": 1,
+      "mute": true,
+      "vol": -48,
+      "vol_f": 0.44,
+      "vol_min": -70,
+      "vol_max": -20,
+      "disabled": false
+    },
+    {
+      "id": 16,
+      "name": "Upstairs Main Bath",
+      "source_id": 0,
+      "mute": true,
+      "vol": -66,
+      "vol_f": 0.1,
+      "vol_min": -70,
+      "vol_max": -30,
+      "disabled": false
+    },
+    {
+      "id": 17,
+      "name": "Downstairs Bedroom",
+      "source_id": 1,
+      "mute": true,
+      "vol": -52,
+      "vol_f": 0.45,
+      "vol_min": -70,
+      "vol_max": -30,
+      "disabled": false
+    }
+  ],
+  "groups": [
+    {
+      "id": 100,
+      "name": "Upstairs",
+      "zones": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        16
+      ],
+      "mute": false,
+      "vol_delta": -39,
+      "vol_f": 0.5084014869888476
+    },
+    {
+      "id": 102,
+      "name": "Outside",
+      "source_id": 1,
+      "zones": [
+        9,
+        10
+      ],
+      "mute": true,
+      "vol_delta": -41,
+      "vol_f": 0.4909090909090909
+    },
+    {
+      "id": 103,
+      "name": "Offices",
+      "zones": [
+        0,
+        7
+      ],
+      "mute": false,
+      "vol_delta": -53,
+      "vol_f": 0.33427864640279903
+    },
+    {
+      "id": 104,
+      "name": "Downstairs",
+      "source_id": 1,
+      "zones": [
+        12,
+        13,
+        14,
+        15,
+        17
+      ],
+      "mute": true,
+      "vol_delta": -57,
+      "vol_f": 0.28500000000000003
+    },
+    {
+      "id": 105,
+      "name": "Main Unit",
+      "zones": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "mute": false,
+      "vol_delta": -39,
+      "vol_f": 0.5084014869888476
+    },
+    {
+      "id": 106,
+      "name": "Expander 1 (HV)",
+      "zones": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "mute": true,
+      "vol_delta": -39,
+      "vol_f": 0.5123247232472324
+    },
+    {
+      "id": 107,
+      "name": "Expander 2",
+      "zones": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "mute": true,
+      "vol_delta": -58,
+      "vol_f": 0.275
+    }
+  ],
+  "streams": [
+    {
+      "id": 1000,
+      "name": "Groove Salad",
+      "type": "internetradio",
+      "url": "http://ice6.somafm.com/groovesalad-32-aac",
+      "logo": "https://somafm.com/img3/groovesalad-400.jpg"
+    },
+    {
+      "id": 1001,
+      "name": "Jason's House",
+      "type": "airplay"
+    },
+    {
+      "id": 1002,
+      "name": "Jasons House",
+      "type": "spotify"
+    },
+    {
+      "id": 1003,
+      "name": "Jason's House",
+      "type": "dlna"
+    },
+    {
+      "id": 1004,
+      "name": "Matt and Kim Radio",
+      "type": "pandora",
+      "user": "example@micro-nova.com",
+      "password": "",
+      "station": "135242131387190035"
+    },
+    {
+      "id": 1005,
+      "name": "Classical",
+      "type": "pandora",
+      "user": "example@micro-nova.com",
+      "password": "",
+      "station": "134892486689565953"
+    },
+    {
+      "id": 1006,
+      "name": "Blackmill Radio",
+      "type": "pandora",
+      "user": "example@micro-nova.com",
+      "password": "",
+      "station": "91717963601693449"
+    },
+    {
+      "id": 1007,
+      "name": "Beatles Radio",
+      "type": "internetradio",
+      "url": "http://www.beatlesradio.com:8000/stream/1/",
+      "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"
+    },
+    {
+      "id": 1008,
+      "name": "Michael",
+      "type": "spotify"
+    }
+  ],
+  "presets": [
+    {
+      "id": 10000,
+      "name": "Mute All",
+      "state": {
+        "zones": [
+          {
+            "mute": true,
+            "id": 0
+          },
+          {
+            "mute": true,
+            "id": 1
+          },
+          {
+            "mute": true,
+            "id": 2
+          },
+          {
+            "mute": true,
+            "id": 3
+          },
+          {
+            "mute": true,
+            "id": 4
+          },
+          {
+            "mute": true,
+            "id": 5
+          }
+        ]
+      },
+      "last_used": 1658242203
+    },
+    {
+      "id": 9999,
+      "name": "Restore last config",
+      "state": {
+        "sources": [
+          {
+            "name": "Input 1",
+            "input": "stream=1000",
+            "id": 0
+          },
+          {
+            "name": "Input 2",
+            "input": "stream=1002",
+            "id": 1
+          },
+          {
+            "name": "Input 3",
+            "input": "None",
+            "id": 2
+          },
+          {
+            "name": "Input 4",
+            "input": "None",
+            "id": 3
+          }
+        ],
+        "zones": [
+          {
+            "name": "Software Office",
+            "source_id": 0,
+            "mute": true,
+            "vol": -51,
+            "vol_f": 0.475,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 0
+          },
+          {
+            "name": "Upstairs Living Room",
+            "source_id": 0,
+            "mute": true,
+            "vol": -58,
+            "vol_f": 0.3,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 1
+          },
+          {
+            "name": "Upstairs Dining",
+            "source_id": 0,
+            "mute": true,
+            "vol": -58,
+            "vol_f": 0.3,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 2
+          },
+          {
+            "name": "Upstairs Laundry",
+            "source_id": 0,
+            "mute": true,
+            "vol": -58,
+            "vol_f": 0.3,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 3
+          },
+          {
+            "name": "Upstairs Kitchen High",
+            "source_id": 0,
+            "mute": true,
+            "vol": -58,
+            "vol_f": 0.3,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 4
+          },
+          {
+            "name": "Upstairs Master Bath",
+            "source_id": 0,
+            "mute": true,
+            "vol": -58,
+            "vol_f": 0.3,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 5
+          },
+          {
+            "name": "Upstairs Kitchen Low HV",
+            "source_id": 0,
+            "mute": false,
+            "vol": -58,
+            "vol_f": 0.3,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 6
+          },
+          {
+            "name": "Hardware Office HV",
+            "source_id": 0,
+            "mute": false,
+            "vol": -51,
+            "vol_f": 0.475,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 7
+          },
+          {
+            "name": "Basement Workshop HV",
+            "source_id": 0,
+            "mute": true,
+            "vol": -40,
+            "vol_f": 0.5,
+            "vol_min": -70,
+            "vol_max": -10,
+            "disabled": false,
+            "id": 8
+          },
+          {
+            "name": "Screened Room HV",
+            "source_id": 0,
+            "mute": true,
+            "vol": -38,
+            "vol_f": 0.8,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 9
+          },
+          {
+            "name": "Upstairs Deck Living HV",
+            "source_id": 0,
+            "mute": true,
+            "vol": -38,
+            "vol_f": 0.8,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 10
+          },
+          {
+            "name": "Upstairs Main Bedroom HV",
+            "source_id": 0,
+            "mute": false,
+            "vol": -58,
+            "vol_f": 0.3,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 11
+          },
+          {
+            "name": "Downstairs Living Room",
+            "source_id": 1,
+            "mute": true,
+            "vol": -70,
+            "vol_f": 0,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 12
+          },
+          {
+            "name": "Downstairs Dining",
+            "source_id": 1,
+            "mute": true,
+            "vol": -70,
+            "vol_f": 0,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 13
+          },
+          {
+            "name": "Downstairs Bath",
+            "source_id": 1,
+            "mute": true,
+            "vol": -70,
+            "vol_f": 0,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 14
+          },
+          {
+            "name": "Downstairs Laundry",
+            "source_id": 1,
+            "mute": true,
+            "vol": -70,
+            "vol_f": 0,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 15
+          },
+          {
+            "name": "Upstairs Main Bath",
+            "source_id": 0,
+            "mute": true,
+            "vol": -62,
+            "vol_f": 0.20817843866171004,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 16
+          },
+          {
+            "name": "Downstairs Bedroom",
+            "source_id": 1,
+            "mute": true,
+            "vol": -70,
+            "vol_f": 0,
+            "vol_min": -70,
+            "vol_max": -30,
+            "disabled": false,
+            "id": 17
+          }
+        ],
+        "groups": [
+          {
+            "name": "Upstairs",
+            "source_id": 0,
+            "zones": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              11,
+              16
+            ],
+            "mute": false,
+            "vol_delta": -53,
+            "vol_f": 0.341589219330855,
+            "id": 100
+          },
+          {
+            "name": "Downstairs",
+            "source_id": 1,
+            "zones": [
+              12,
+              13,
+              14,
+              15,
+              17
+            ],
+            "mute": true,
+            "vol_delta": -80,
+            "vol_f": 0,
+            "id": 101
+          },
+          {
+            "name": "Outside",
+            "source_id": 0,
+            "zones": [
+              9,
+              10
+            ],
+            "mute": true,
+            "vol_delta": -16,
+            "vol_f": 0.8,
+            "id": 102
+          },
+          {
+            "name": "Offices",
+            "source_id": 0,
+            "zones": [
+              0,
+              7
+            ],
+            "mute": false,
+            "vol_delta": -42,
+            "vol_f": 0.475,
+            "id": 103
+          }
+        ]
+      }
+    }
+  ],
+  "info": {
+    "version": "0.1.9+e65e368-0.1.9-prerelease-dirty",
+    "config_file": "house.json",
+    "mock_ctrl": false,
+    "mock_streams": false,
+    "online": true,
+    "latest_release": "0.1.8",
+    "fw": [
+      {
+        "version": "1.6",
+        "git_hash": "de0f8eb",
+        "git_dirty": false
+      },
+      {
+        "version": "1.6",
+        "git_hash": "de0f8eb",
+        "git_dirty": false
+      },
+      {
+        "version": "1.6",
+        "git_hash": "de0f8eb",
+        "git_dirty": false
+      }
+    ]
+  }
+}

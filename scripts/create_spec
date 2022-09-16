@@ -1,9 +1,27 @@
 #!/bin/bash
+# Create the docs/amplipi_api.yaml API specification used on AmpliPi's example API page hosted on GitHub
+
 # get directory that the script exists in
 cd "$( dirname "$0" )/.."
 source venv/bin/activate
 
 rm docs/amplipi_api.yaml
 
+# stop amplipi so we can overwite its config
+was_on=false
+if systemctl --user is-active amplipi; then
+  systemctl stop --user amplipi  && echo "Stopped AmpliPi service"
+  was_on=true
+fi
+
+# save the config and change it to our example config
+mv house.json house.json.saved
+cp docs/example_house.json house.json
+
 # Generate the simplified version of the api doc, current version spits out a couple of useless errors so hide them
 python3 -m amplipi.app docs/amplipi_api.yaml > /dev/null && echo "Generated open API spec to docs/amplipi_api.yaml" || echo "Failed, debug issue with 'python3 -m amplipi.app docs/amplipi_api.yaml'"
+
+# revert the config and restart amplipi if needed
+mv house.json.saved house.json
+
+$was_on && systemctl --user start amplipi && echo "Restarted AmpliPi service"
