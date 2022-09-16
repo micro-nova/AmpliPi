@@ -58,7 +58,7 @@ class fields(SimpleNamespace):
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
-  VolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point number')
+  VolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
   VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
   VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
@@ -83,7 +83,7 @@ class fields_w_default(SimpleNamespace):
   SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
-  VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point number')
+  VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
   VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Min output volume in dB')
   VolumeMax = Field(default=MAX_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
@@ -280,7 +280,12 @@ class ZoneUpdate(BaseUpdate):
             'source-id': 3
           }
         },
-        'Change Volume': {
+        'Change Volume in relative to min/max volume': {
+          'value': {
+            'vol': 0.44
+          }
+        },
+        'Change Volume in absolute decibels': {
           'value': {
             'vol': pcnt2Vol(0.44)
           }
@@ -322,6 +327,12 @@ class MultiZoneUpdate(BaseModel):
           'value': {
             'zones': [0,1,2,3,4,5],
             'update': { 'source_id': 0 }
+          }
+        },
+        'Change the relative volume on all zones': {
+          'value': {
+            'zones': [0,1,2,3,4,5],
+            'update': { 'vol_f': 0.5, "mute": False }
           }
         },
       },
