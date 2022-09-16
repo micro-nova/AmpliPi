@@ -237,6 +237,7 @@ class Zone(Base):
             'source_id': 1,
             'mute' : False,
             'vol': pcnt2Vol(0.69),
+            'vol_f': 0.69,
             'vol_min': MIN_VOL_DB,
             'vol_max': MAX_VOL_DB,
             'disabled': False,
@@ -248,6 +249,7 @@ class Zone(Base):
             'source_id': 2,
             'mute' : True,
             'vol': pcnt2Vol(0.19),
+            'vol_f': 0.19,
             'vol_min': int(0.1 * (MAX_VOL_DB + MIN_VOL_DB)),
             'vol_max': int(0.8 * (MAX_VOL_DB + MIN_VOL_DB)),
             'disabled': False,
@@ -376,7 +378,8 @@ class Group(Base):
             'id': 101,
             'name': 'Upstairs',
             'zones': [1, 2, 3, 4, 5],
-            'vol_delta': pcnt2Vol(0.19)
+            'vol_delta': pcnt2Vol(0.19),
+            'vol_f': 0.19,
           }
         },
         'Downstairs Group': {
@@ -384,7 +387,8 @@ class Group(Base):
             'id': 102,
             'name': 'Downstairs',
             'zones': [6,7,8,9],
-            'vol_delta': pcnt2Vol(0.63)
+            'vol_delta': pcnt2Vol(0.63),
+            'vol_f': 0.63,
           }
         }
       },
@@ -417,7 +421,12 @@ class GroupUpdate(BaseUpdate):
             'source-id': 3
           }
         },
-        'Increase Volume': {
+        'Increase Volume relative to each zones min and max settings': {
+          'value': {
+            'vol_f': 0.44
+          }
+        },
+        'Increase Volume in absolute decibels': {
           'value': {
             'vol_delta': pcnt2Vol(0.44)
           }
