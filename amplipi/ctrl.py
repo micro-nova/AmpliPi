@@ -39,6 +39,7 @@ import amplipi.utils as utils
 _DEBUG_API = False # print out a graphical state of the api after each call
 
 USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+MUTE_ALL_ID = 10000
 
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
@@ -120,8 +121,8 @@ class Api:
     "groups": [
     ],
     "presets" : [
-      {"id": 10000,
-        # TODO: generate the mute all preset based on # of zones
+      {"id": MUTE_ALL_ID,
+        # NOTE: additional zones are added automatically to this preset
         "name": "Mute All",
         "state" : {
           "zones" : [
@@ -228,6 +229,15 @@ class Api:
     # save new config if zones were added
     if added_zone:
       self.save()
+
+    # populate mute_all preset with all zones
+    _, mute_all_pst = utils.find(self.status.presets, MUTE_ALL_ID)
+    if mute_all_pst and mute_all_pst.name == 'Mute All':
+      if mute_all_pst.state and mute_all_pst.state.zones:
+        muted_zones = { z.id for z in mute_all_pst.state.zones }
+        for z in self.status.zones:
+          if z.id not in muted_zones:
+            mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
