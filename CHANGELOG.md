@@ -6,23 +6,28 @@
 * Web App
   * Add link for text log
   * Add shutdown and reboot buttons in Settings->Configuration and Reset
+  * Add factory reset button in Settings->Configuration and Reset
 * API
   * Add `api/shutdown` and `api/reboot` endpoints
   * Add `api/info` endpoint for version, release, and other system information
 * Storage
   * Only log to RAM, drastically reducing disk writes
   * Use ram disks for temporary stream configration and metadata storage
-- Streams:
+* Streams
   * Fix stream creation issue, when no streams exist
-* Docs:
+* Docs
   * Use latest rapidoc viewer, fixes several api rendering issues
-* Updates:
+* Updates
   * Upgrade system packages on update
 * System Status
   * Detect if internet access is available (check 1.1.1.1 every 5 mins)
   * Check in the background for available updates (once per day)
-* Developing:
+* Developing
   * Show git hash and branch info for tests deployed by scripts/deploy
+* Hardware
+  * Updated to Preamp Board firmware 1.6: support high-power AmpliPi units.
+* Front-Panel Display
+  * Fix bug that caused volumes to not display
 
 ## 0.1.8
 * Web App
@@ -38,7 +43,7 @@
   * Add Play/Stop functionality to internet radio
   * Make internet radio retry on failure
   * Fix internet radio lockup condition
-* Audio:
+* Audio
   * Reduce the chance of audio pops during volume changes
   * Make the preouts mute when a zone is muted
 * Security
@@ -59,11 +64,11 @@
   * Simplified initial configuration.
   * Renamed the Shairport stream to AirPlay.
   * Added link to community forums.
-* Documentation:
+* Documentation
   * Added better web app documentation and updated examples.
   * Improved high-level hardware diagrams and updated them to match the shipped hardware.
   * Added new hardware schematics and changelogs.
-* Updater:
+* Updater
   * Show up-to-date status.
   * Update directly from releases on Github.
   * Programs latest firmware.
