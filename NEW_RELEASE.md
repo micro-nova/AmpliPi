@@ -37,7 +37,7 @@ So you think you are ready to make a release, eh? Follow the steps below :)
 Alright so the release is tested and it actually works! Nice!
 - [ ] merge the prerelease branch into develop and merge that into the main branch
 - [ ] use poetry to bump the version `poetry version ${VERSION} && git add pyproject.toml && git commit -m "Bump release"`
-- [ ] use git to delete any prelease tags `git push origin -d $(git tag -l '${VERSION}-alpha*') && git tag -d $(git tag -l '${VERSION}-alpha*')`
+- [ ] use git to delete any prelease tags `git push origin -d $(git tag -l "${VERSION}-alpha*") && git tag -d $(git tag -l "${VERSION}-alpha*")`
 - [ ] Tag the changes so we can make a release on GitHub `git tag -as ${VERSION} -m '' && git push --follow-tags`
 - [ ] Make a release using the GitHub interface, add notes from the CHANGELOG.md
 - [ ] Make a new Raspberry Pi image to program onto units before shipping.
