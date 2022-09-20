@@ -12,6 +12,8 @@
 * Storage
   * Only log to RAM, drastically reducing disk writes
   * Use ram disks for temporary stream configration and metadata storage
+- Streams:
+  * Fix stream creation issue, when no streams exist
 * Docs:
   * Use latest rapidoc viewer, fixes several api rendering issues
 * Updates:
