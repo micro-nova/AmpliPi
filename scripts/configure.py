@@ -313,8 +313,9 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       return tasks
     # setup tmpfs (ram disk)
     tasks += print_progress(_setup_tmpfs(env['base_dir']))
-    # setup crontab
-    tasks += print_progress([Task("Setting up crontab", [f"cat {env['base_dir']}/config/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts@' | crontab"], shell=True).run()])
+    # setup crontab - Replace the entire Pi user's crontab with AmpliPi's config/crontab
+    # and point it to the AmpliPi install location's script directory.
+    tasks += print_progress([Task("Setting up crontab", [f"cat {env['base_dir']}/config/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts@' | crontab -"], shell=True).run()])
   # install debian packages
   tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
