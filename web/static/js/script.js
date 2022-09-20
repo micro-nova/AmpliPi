@@ -346,7 +346,14 @@ function updateSourceView(status) {
 function onRequest(req) {
 }
 function onResponse(resp) {
-  updateSourceView(resp);
+  // all successful responses contain the updated system status
+  // use that to update the ui
+  if (resp && resp.sources) {
+    updateSourceView(resp);
+  } else {
+    // This is probably an error message
+    console.log(resp);
+  }
 }
 async function get() {
   let response = await fetch('/api');
