@@ -271,7 +271,7 @@ class ZoneUpdate(BaseUpdate):
   class Config:
     schema_extra = {
       'examples': {
-        'Change Name': {
+        'Change name': {
           'value': {
             'name':
             'Bedroom'
@@ -282,12 +282,12 @@ class ZoneUpdate(BaseUpdate):
             'source-id': 3
           }
         },
-        'Change Volume in relative to min/max volume': {
+        'Change volume relative to min/max volume': {
           'value': {
             'vol': 0.44
           }
         },
-        'Change Volume in absolute decibels': {
+        'Change volume in absolute decibels': {
           'value': {
             'vol': pcnt2Vol(0.44)
           }
@@ -297,7 +297,7 @@ class ZoneUpdate(BaseUpdate):
             'mute': True
           }
         },
-        'Change Max Volume': {
+        'Change max volume': {
           'value': {
             'vol_max': int(0.8 * MAX_VOL_DB)
           }
@@ -405,13 +405,13 @@ class GroupUpdate(BaseUpdate):
   class Config:
     schema_extra = {
       'examples': {
-        'Rezone Group': {
+        'Rezone group': {
           'value': {
             'name': 'Upstairs',
             'zones': [3,4,5]
           }
         },
-        'Change Name': {
+        'Change name': {
           'value': {
             'name': 'Upstairs'
           }
@@ -421,12 +421,12 @@ class GroupUpdate(BaseUpdate):
             'source-id': 3
           }
         },
-        'Increase Volume relative to each zones min and max settings': {
+        "Set volume relative to each zone's min/max volume": {
           'value': {
             'vol_f': 0.44
           }
         },
-        'Increase Volume in absolute decibels': {
+        'Set volume of each zone in absolute decibels': {
           'value': {
             'vol_delta': pcnt2Vol(0.44)
           }
@@ -524,15 +524,15 @@ class Stream(Base):
             'user': 'test@micro-nova.com'
           }
         },
-        'Add MicroNova Spotify': {
+        'Add Spotify Connect': {
           'value': {
-            'name': 'MicroNova Spotify',
+            'name': 'AmpliPi',
             'type': 'spotify'
           }
         },
-        'Add Micronova AirPlay': {
+        'Add AirPlay': {
           'value': {
-            'name': 'Micronova AP',
+            'name': 'AmpliPi',
             'type': 'airplay'
           }
         },
@@ -852,11 +852,19 @@ class Status(BaseModel):
                           'zones': [12, 13, 14, 15, 16, 17]}
                       ],
             'info': { 'config_file': 'house.json',
-                      'fw': [],
-                      'latest_release': 'unknown',
+                      'fw': [ { 'git_dirty': False,
+                                'git_hash': 'de0f8eb',
+                                'version': '1.6'},
+                              { 'git_dirty': False,
+                                'git_hash': 'de0f8eb',
+                                'version': '1.6'},
+                              { 'git_dirty': False,
+                                'git_hash': 'de0f8eb',
+                                'version': '1.6'}],
+                      'latest_release': '0.1.9',
                       'mock_ctrl': False,
                       'mock_streams': False,
-                      'online': False,
+                      'online': True,
                       'version': '0.1.9'},
             'presets': [ { 'id': 10000,
                           'last_used': 1658242203,
@@ -949,8 +957,7 @@ class Status(BaseModel):
                           'logo': 'http://www.beatlesradio.com/content/images/thumbs/0000587.gif',
                           'name': 'Beatles Radio',
                           'type': 'internetradio',
-                          'url': 'http://www.beatlesradio.com:8000/stream/1/'},
-                        {'id': 1008, 'name': 'Michael', 'type': 'spotify'}],
+                          'url': 'http://www.beatlesradio.com:8000/stream/1/'}],
             'zones': [ { 'disabled': False,
                         'id': 0,
                         'mute': True,

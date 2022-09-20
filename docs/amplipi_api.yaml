@@ -181,11 +181,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -322,9 +331,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -589,11 +595,20 @@ paths:
                     - 17
                   info:
                     config_file: house.json
-                    fw: []
-                    latest_release: unknown
+                    fw:
+                    - git_dirty: false
+                      git_hash: de0f8eb
+                      version: '1.6'
+                    - git_dirty: false
+                      git_hash: de0f8eb
+                      version: '1.6'
+                    - git_dirty: false
+                      git_hash: de0f8eb
+                      version: '1.6'
+                    latest_release: 0.1.9
                     mock_ctrl: false
                     mock_streams: false
-                    online: false
+                    online: true
                     version: 0.1.9
                   presets:
                   - id: 10000
@@ -730,9 +745,6 @@ paths:
                     name: Beatles Radio
                     type: internetradio
                     url: http://www.beatlesradio.com:8000/stream/1/
-                  - id: 1008
-                    name: Michael
-                    type: spotify
                   zones:
                   - disabled: false
                     id: 0
@@ -991,11 +1003,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -1132,9 +1153,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -1410,11 +1428,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -1551,9 +1578,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -1819,11 +1843,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -1960,9 +1993,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -2437,11 +2467,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -2578,9 +2617,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -3120,11 +3156,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -3261,9 +3306,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -3618,22 +3660,22 @@ paths:
             schema:
               $ref: '#/components/schemas/ZoneUpdate'
             examples:
-              Change Name:
+              Change name:
                 value:
                   name: Bedroom
               Change audio source:
                 value:
                   source-id: 3
-              Change Volume in relative to min/max volume:
+              Change volume relative to min/max volume:
                 value:
                   vol: 0.44
-              Change Volume in absolute decibels:
+              Change volume in absolute decibels:
                 value:
                   vol: -45
               Mute:
                 value:
                   mute: true
-              Change Max Volume:
+              Change max volume:
                 value:
                   vol_max: 0
         required: true
@@ -3731,11 +3773,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -3872,9 +3923,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -4422,11 +4470,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -4563,9 +4620,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -4779,23 +4833,23 @@ paths:
             schema:
               $ref: '#/components/schemas/GroupUpdate'
             examples:
-              Rezone Group:
+              Rezone group:
                 value:
                   name: Upstairs
                   zones:
                   - 3
                   - 4
                   - 5
-              Change Name:
+              Change name:
                 value:
                   name: Upstairs
               Change audio source:
                 value:
                   source-id: 3
-              Increase Volume relative to each zones min and max settings:
+              Set volume relative to each zone's min/max volume:
                 value:
                   vol_f: 0.44
-              Increase Volume in absolute decibels:
+              Set volume of each zone in absolute decibels:
                 value:
                   vol_delta: -45
               Mute:
@@ -4896,11 +4950,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -5037,9 +5100,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -5261,13 +5321,13 @@ paths:
                   station: '4473713754798410236'
                   type: pandora
                   user: test@micro-nova.com
-              Add MicroNova Spotify:
+              Add Spotify Connect:
                 value:
-                  name: MicroNova Spotify
+                  name: AmpliPi
                   type: spotify
-              Add Micronova AirPlay:
+              Add AirPlay:
                 value:
-                  name: Micronova AP
+                  name: AmpliPi
                   type: airplay
               Play single file or announcement:
                 value:
@@ -5388,9 +5448,6 @@ paths:
                   name: Beatles Radio
                   type: internetradio
                   url: http://www.beatlesradio.com:8000/stream/1/
-                - id: 1008
-                  name: Michael
-                  type: spotify
   /api/streams/{sid}:
     get:
       tags:
@@ -5430,9 +5487,9 @@ paths:
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
-          Michael:
+          Downstairs:
             value: 1008
-            summary: Michael - spotify
+            summary: Downstairs - spotify
       responses:
         '200':
           description: Successful Response
@@ -5521,9 +5578,9 @@ paths:
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
-          Michael:
+          Downstairs:
             value: 1008
-            summary: Michael - spotify
+            summary: Downstairs - spotify
       responses:
         '200':
           description: Successful Response
@@ -5618,11 +5675,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -5759,9 +5825,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -5969,9 +6032,9 @@ paths:
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
-          Michael:
+          Downstairs:
             value: 1008
-            summary: Michael - spotify
+            summary: Downstairs - spotify
       requestBody:
         content:
           application/json:
@@ -6085,11 +6148,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -6226,9 +6298,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -6437,9 +6506,9 @@ paths:
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
-          Michael:
+          Downstairs:
             value: 1008
-            summary: Michael - spotify
+            summary: Downstairs - spotify
       - description: Number found on the end of a pandora url while playing the station,
           ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727
         required: true
@@ -6545,11 +6614,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -6686,9 +6764,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -6902,9 +6977,9 @@ paths:
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
-          Michael:
+          Downstairs:
             value: 1008
-            summary: Michael - spotify
+            summary: Downstairs - spotify
       - required: true
         schema:
           $ref: '#/components/schemas/StreamCommand'
@@ -7004,11 +7079,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -7145,9 +7229,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -7615,11 +7696,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -7756,9 +7846,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -8064,11 +8151,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -8205,9 +8301,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -8495,11 +8588,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -8636,9 +8738,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -8919,11 +9018,20 @@ paths:
                       - 17
                     info:
                       config_file: house.json
-                      fw: []
-                      latest_release: unknown
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
-                      online: false
+                      online: true
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -9060,9 +9168,6 @@ paths:
                       name: Beatles Radio
                       type: internetradio
                       url: http://www.beatlesradio.com:8000/stream/1/
-                    - id: 1008
-                      name: Michael
-                      type: spotify
                     zones:
                     - disabled: false
                       id: 0
@@ -9475,23 +9580,23 @@ components:
           description: Average output volume as a floating-point number
       description: 'Reconfiguration of a Group '
       examples:
-        Rezone Group:
+        Rezone group:
           value:
             name: Upstairs
             zones:
             - 3
             - 4
             - 5
-        Change Name:
+        Change name:
           value:
             name: Upstairs
         Change audio source:
           value:
             source-id: 3
-        Increase Volume relative to each zones min and max settings:
+        Set volume relative to each zone's min/max volume:
           value:
             vol_f: 0.44
-        Increase Volume in absolute decibels:
+        Set volume of each zone in absolute decibels:
           value:
             vol_delta: -45
         Mute:
@@ -9540,23 +9645,23 @@ components:
           type: integer
       description: 'Reconfiguration of a specific Group '
       examples:
-        Rezone Group:
+        Rezone group:
           value:
             name: Upstairs
             zones:
             - 3
             - 4
             - 5
-        Change Name:
+        Change name:
           value:
             name: Upstairs
         Change audio source:
           value:
             source-id: 3
-        Increase Volume relative to each zones min and max settings:
+        Set volume relative to each zone's min/max volume:
           value:
             vol_f: 0.44
-        Increase Volume in absolute decibels:
+        Set volume of each zone in absolute decibels:
           value:
             vol_delta: -45
         Mute:
@@ -10128,11 +10233,20 @@ components:
               - 17
             info:
               config_file: house.json
-              fw: []
-              latest_release: unknown
+              fw:
+              - git_dirty: false
+                git_hash: de0f8eb
+                version: '1.6'
+              - git_dirty: false
+                git_hash: de0f8eb
+                version: '1.6'
+              - git_dirty: false
+                git_hash: de0f8eb
+                version: '1.6'
+              latest_release: 0.1.9
               mock_ctrl: false
               mock_streams: false
-              online: false
+              online: true
               version: 0.1.9
             presets:
             - id: 10000
@@ -10269,9 +10383,6 @@ components:
               name: Beatles Radio
               type: internetradio
               url: http://www.beatlesradio.com:8000/stream/1/
-            - id: 1008
-              name: Michael
-              type: spotify
             zones:
             - disabled: false
               id: 0
@@ -10524,13 +10635,13 @@ components:
             station: '4473713754798410236'
             type: pandora
             user: test@micro-nova.com
-        Add MicroNova Spotify:
+        Add Spotify Connect:
           value:
-            name: MicroNova Spotify
+            name: AmpliPi
             type: spotify
-        Add Micronova AirPlay:
+        Add AirPlay:
           value:
-            name: Micronova AP
+            name: AmpliPi
             type: airplay
         Play single file or announcement:
           value:
@@ -10786,22 +10897,22 @@ components:
           description: Set to true if not connected to a speaker
       description: 'Reconfiguration of a Zone '
       examples:
-        Change Name:
+        Change name:
           value:
             name: Bedroom
         Change audio source:
           value:
             source-id: 3
-        Change Volume in relative to min/max volume:
+        Change volume relative to min/max volume:
           value:
             vol: 0.44
-        Change Volume in absolute decibels:
+        Change volume in absolute decibels:
           value:
             vol: -45
         Mute:
           value:
             mute: true
-        Change Max Volume:
+        Change max volume:
           value:
             vol_max: 0
     ZoneUpdateWithId:
@@ -10860,22 +10971,22 @@ components:
           type: integer
       description: 'Reconfiguration of a specific Zone '
       examples:
-        Change Name:
+        Change name:
           value:
             name: Bedroom
         Change audio source:
           value:
             source-id: 3
-        Change Volume in relative to min/max volume:
+        Change volume relative to min/max volume:
           value:
             vol: 0.44
-        Change Volume in absolute decibels:
+        Change volume in absolute decibels:
           value:
             vol: -45
         Mute:
           value:
             mute: true
-        Change Max Volume:
+        Change max volume:
           value:
             vol_max: 0
 tags:
