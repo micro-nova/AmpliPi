@@ -321,9 +321,10 @@ function updateSourceView(status) {
     }
   }
 
-  // TODO: update presets (their last applied times and status)
+  // update presets (their last applied times and status)
   for (const preset of status['presets']) {
     let pst = $('#pst-' + preset.id)[0];
+    if (!pst) { console.log('Preset ' + preset.id + ' missing'); continue; }
     let last_used = pst.querySelector(".last-used");
     if (preset.last_used) {
       last_used.innerHTML = timeSince(new Date(preset.last_used * 1000)); // js expects milliseconds from epoch
