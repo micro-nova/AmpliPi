@@ -13,19 +13,13 @@ device_name = "device_name_in_spotify_connect"
 device = "alsa_audio_device"
 
 # The audio bitrate. 96, 160 or 320 kbit/s
-bitrate = 96
+bitrate = 160
 
 # The maximal size of the cache directory in bytes
-max_cache_size = 100000000
+ max_cache_size = 100000000
 
 # After the music playback has ended, start playing similar songs based on the previous tracks.
 autoplay = true
 
 # The port `spotifyd` uses to announce its service over the network.
 zeroconf_port = 1234
-
-# The displayed device type in Spotify clients.
-device_type = "s_t_b"
-
-# Give streams unique MPRIS names.
-unique_mpris = true
