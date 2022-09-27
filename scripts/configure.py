@@ -122,8 +122,21 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'pianobar']
   },
   'airplay' : {
-    'apt' : [ 'shairport-sync' ],
-    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'}],
+    'apt' : [ 'shairport-sync'],
+    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'},
+              {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync-ap2'}],
+    'script': [
+        'if which nqptp  > /dev/null; then exit 0; fi',
+        'cd ~',
+        'git clone https://github.com/mikebrady/nqptp.git',
+        'pushd nqptp',
+        'autoreconf -fi',
+        './configure --with-systemd-startup',
+        'make',
+        'sudo make install',
+        'sudo systemctl enable nqptp && sudo systemctl restart nqptp',
+        'popd',
+    ]
   },
   'internet_radio' : {
     'apt' : [ 'vlc' ]
