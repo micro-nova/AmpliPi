@@ -30,19 +30,38 @@ function build {
     echo "autoconf already installed"
   fi
 
-  # build shairport-sync-metadata-reader
+  # install a bunch of packages required by shaairport-sync with airplay2 support
+  sudo apt install --no-install-recommends xmltoman automake libtool \
+    libpopt-dev libconfig-dev libasound2-dev avahi-daemon libavahi-client-dev libssl-dev libsoxr-dev \
+    libplist-dev libsodium-dev libavutil-dev libavcodec-dev libavformat-dev uuid-dev xxd
+
   pushd $(mktemp --directory)
+    # build shairport-sync-metadata-reader
     git clone https://github.com/micronova-jb/shairport-sync-metadata-reader.git
     cd shairport-sync-metadata-reader
-    autoreconf -i -f
+    autoreconf -if
     ./configure
     make
+    cd ..
 
-    # export the working directory so we can use it locally
-    export binary_file=$(pwd)/shairport-sync-metadata-reader
+    # build shairport-sync with airplay2 support
+    git clone https://github.com/mikebrady/shairport-sync.git
+    cd shairport-sync
+    autoreconf -if
+    ./configure --sysconfdir=/etc --with-alsa     --with-soxr --with-avahi --with-ssl=openssl --with-systemd --with-airplay-2 --with-metadata --with-mpris-interface
+    make
+
+    # copy the generated bins to a common directory
+    mkdir -p ../bins
+    cd ../bins
+    cp ../shairport-sync-metadata-reader/shairport-sync-metadata-reader .
+    cp ../shairport-sync/shairport-sync .
 
     # report success, with the filepath to the built binary (so the remote version of this script can copy the file)
-    echo "success=$(pwd)/shairport-sync-metadata-reader"
+    echo "success=$(pwd)"
+
+    # export the working directory so we can use it locally
+    export bin_dir=$(pwd)
   popd
 }
 
@@ -66,10 +85,11 @@ if [[ ! -d '/home/pi' ]] ; then
     echo "failed to build binaries, try running this script directly on the pi to debug"
     exit -1
   fi
-  scp $RPI_IP_ADDRESS:$x arm/
+  scp $RPI_IP_ADDRESS:$x/* arm/
   # build files locally
   build
-  cp $binary_file x64/
+  cp $bin_dir/* x64/
+  echo "done building bins!"
   exit
 fi
 
