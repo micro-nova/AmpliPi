@@ -3,9 +3,7 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 import json
-from sys import stdout
 import time
-from tokenize import String
 from typing import List
 from multiprocessing import Process, set_start_method
 from dasbus.connection import SessionMessageBus
@@ -29,11 +27,11 @@ class CommandTypes(Enum):
 @dataclass
 class Metadata:
   """A data class for storing metadata on a song."""
-  artist: String = ''
-  title: String = ''
-  art_url: String = ''
-  album: String = ''
-  state: String = ''
+  artist: str = ''
+  title: str = ''
+  art_url: str = ''
+  album: str = ''
+  state: str = ''
 
 
 class MPRIS:
@@ -46,7 +44,7 @@ class MPRIS:
         interface_name = "org.mpris.MediaPlayer2.Player"
     )
 
-    self.capabilities: list(CommandTypes) = []
+    self.capabilities: List[CommandTypes] = []
 
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
