@@ -79,9 +79,13 @@ def update_info(info) -> bool:
     log('Error: %s' % sys.exc_info()[1])
     return False
 
+# try to start url with special handling to detect failures
+# this allows us to verify the stream during creation
 instance = vlc.Instance(config.split())
 try:
   media = instance.media_new(args.url)
+  # download/parse playlist files, needed for m3u and other playlist files
+  media.parse_with_options(vlc.MediaParseFlag.network, 5000)
 except (AttributeError, NameError) as e:
   log('%s: %s (%s LibVLC %s)' % (e.__class__.__name__, e, sys.argv[0], vlc.libvlc_get_version()))
   sys.exit(1)
@@ -124,6 +128,8 @@ def restart_vlc():
   log('Attempting to restart VLC')
   instance = vlc.Instance(config.split())
   media = instance.media_new(args.url)
+  # download/parse playlist files, needed for m3u and other playlist files
+  media.parse_with_options(vlc.MediaParseFlag.network, 5000)
   player = instance.media_player_new()
   player.set_media(media)
   player.play()
