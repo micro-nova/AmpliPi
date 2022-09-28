@@ -6,10 +6,8 @@ import json
 import time
 from tokenize import String
 from typing import List
-from dasbus.connection import SessionMessageBus
 from multiprocessing import Process
-
-import amplipi.utils as utils
+from dasbus.connection import SessionMessageBus
 
 
 METADATA_MAPPINGS = [
@@ -20,7 +18,6 @@ METADATA_MAPPINGS = [
 ]
 
 METADATA_REFRESH_RATE = 0.5
-METADATA_FILE_NAME = "metadata.txt"
 
 class CommandTypes(Enum):
   PLAY = auto()
@@ -41,7 +38,7 @@ class Metadata:
 class MPRIS:
   """A class for interfacing with an MPRIS MediaPlayer2 over dbus."""
 
-  def __init__(self, service_suffix, src) -> None:
+  def __init__(self, service_suffix, metadata_path) -> None:
     self.mpris = SessionMessageBus().get_proxy(
         service_name = f"org.mpris.MediaPlayer2.{service_suffix}",
         object_path = "/org/mpris/MediaPlayer2",
@@ -51,8 +48,7 @@ class MPRIS:
     self.capabilities = []
 
     self.service_suffix = service_suffix
-    self.src = src
-    self.metadata_path = f'{utils.get_folder("config")}/srcs/{self.src}/{METADATA_FILE_NAME}'
+    self.metadata_path = metadata_path
 
     try:
       with open(self.metadata_path, "w", encoding='utf-8') as f:
@@ -96,7 +92,7 @@ class MPRIS:
 
         return metadata_obj
     except Exception as e:
-      print(f"mpris loading metadata at {self.metadata_path} failed: {e}")
+      print(f"MPRIS loading metadata at {self.metadata_path} failed: {e}")
 
 
   def metadata(self) -> Metadata:
@@ -168,6 +164,7 @@ class MPRIS:
           with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
             json.dump(metadata, metadata_file)
 
-      except:
-        pass
+      except Exception as e:
+        print(f"Error writing MPRIS metadata to file at {metadata_file}: {e}")
+
       time.sleep(1.0/METADATA_REFRESH_RATE)

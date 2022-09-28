@@ -284,7 +284,7 @@ class Spotify(BaseStream):
       self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{src_config_folder}/metadata.txt')
 
       self._connect(src)
     except Exception as exc:
