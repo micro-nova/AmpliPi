@@ -46,7 +46,7 @@ class MPRIS:
         interface_name = "org.mpris.MediaPlayer2.Player"
     )
 
-    self.capabilities = []
+    self.capabilities: list(CommandTypes) = []
 
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
@@ -83,7 +83,7 @@ class MPRIS:
     """Plays or pauses depending on current state."""
     self.mpris.PlayPause()
 
-  def _load_metadata(self):
+  def _load_metadata(self) -> Metadata:
     try:
       with open(self.metadata_path, 'r', encoding='utf-8') as f:
         metadata_dict = json.load(f)
