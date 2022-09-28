@@ -3,10 +3,11 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 import json
+from sys import stdout
 import time
 from tokenize import String
 from typing import List
-from multiprocessing import Process
+from multiprocessing import Process, set_start_method
 from dasbus.connection import SessionMessageBus
 
 
@@ -58,6 +59,7 @@ class MPRIS:
     except Exception as e:
       print (f'Exception clearing metadata file: {e}')
 
+    set_start_method("fork")
     self.metadata_process = Process(target=self._metadata_reader)
     self.metadata_process.start()
 
@@ -154,8 +156,8 @@ class MPRIS:
         for mapping in METADATA_MAPPINGS:
           try:
             metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
-          except KeyError:
-            pass
+          except KeyError as e:
+            print(f"Metadata mapping error: {e}")
 
         metadata['state'] = mpris.PlaybackStatus.strip("'")
 
@@ -165,6 +167,6 @@ class MPRIS:
             json.dump(metadata, metadata_file)
 
       except Exception as e:
-        print(f"Error writing MPRIS metadata to file at {metadata_file}: {e}")
+        print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}")
 
       time.sleep(1.0/METADATA_REFRESH_RATE)
