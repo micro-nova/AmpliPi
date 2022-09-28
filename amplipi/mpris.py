@@ -96,6 +96,8 @@ class MPRIS:
     except Exception as e:
       print(f"MPRIS loading metadata at {self.metadata_path} failed: {e}")
 
+    return Metadata()
+
 
   def metadata(self) -> Metadata:
     """Returns metadata from MPRIS."""
