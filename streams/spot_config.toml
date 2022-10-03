@@ -10,7 +10,7 @@ use_mpris = true
 device_name = "device_name_in_spotify_connect"
 
 # Then name of the alsa device to play from
-#device = "alsa_audio_device"
+device = "alsa_audio_device"
 
 # The audio bitrate. 96, 160 or 320 kbit/s
 bitrate = 160
