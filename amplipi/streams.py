@@ -284,14 +284,14 @@ class Spotify(BaseStream):
     except Exception as exc:
       print(f'Error starting Spotifyd: {exc}')
 
-    time.sleep(0.1) # Delay a bit
+    time.sleep(0.25) # Delay a bit
 
     try:
       self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{src_config_folder}/metadata.txt')
     except Exception as exc:
       print(f'Error starting spotify MPRIS reader: {exc}')
 
-    self._connect(src)
+    self._connect(src) 
 
 
   def disconnect(self):
@@ -302,6 +302,8 @@ class Spotify(BaseStream):
     self._disconnect()
     self.connect_port = None
     del self.mpris # garbage collection doesn't kill this fast enough
+    del self.proc
+    time.sleep(0.1)
     self.mpris = None
     self.proc = None
 

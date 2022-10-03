@@ -4,8 +4,10 @@ from dataclasses import dataclass
 from enum import Enum, auto
 import json
 import time
+import os
+import sys
 from typing import List
-from multiprocessing import Process, set_start_method
+from multiprocessing import Process
 from dasbus.connection import SessionMessageBus
 
 
@@ -133,6 +135,7 @@ class MPRIS:
   def __del__(self):
     try:
       self.metadata_process.kill()
+      os.wait() # does this work?
     except Exception as e:
       print(f'Could not stop MPRIS metadata process: {e}')
 
@@ -151,8 +154,14 @@ class MPRIS:
     last_sent = m.__dict__
 
     while True:
+      print("getting metadata")
       try:
-        raw_metadata = mpris.Metadata
+        raw_metadata = {}
+        try:
+          raw_metadata = mpris.Metadata
+        except Exception as e:
+          print(f"Dbus error getting MPRIS metadata: {e}")
+
         metadata = {}
 
         for mapping in METADATA_MAPPINGS:
@@ -170,5 +179,7 @@ class MPRIS:
 
       except Exception as e:
         print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}\nThe above is normal if a user is not yet connected to Spotifyd.")
+
+      sys.stdout.flush() # forces stdout to print
 
       time.sleep(1.0/METADATA_REFRESH_RATE)
