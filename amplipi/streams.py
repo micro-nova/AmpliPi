@@ -93,7 +93,7 @@ class BaseStream:
     """
     return f'{self.name} - {self.stype}'
 
-  def _disconnect(self):
+  def  _disconnect(self):
     print(f'{self.name} disconnected')
     self.state = 'disconnected'
     self.src = None
@@ -278,25 +278,30 @@ class Spotify(BaseStream):
       TOML.write(data)
 
     # PROCESS
-    spotify_args = [f'{utils.get_folder("streams")}/spotifyd', '--no-daemon', '--config-path', './config.toml']
+    try:
+      spotify_args = [f'{utils.get_folder("streams")}/spotifyd', '--no-daemon', '--config-path', './config.toml']
+      self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
+    except Exception as exc:
+      print(f'Error starting Spotifyd: {exc}')
+
+    time.sleep(0.1) # Delay a bit
 
     try:
-      self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
-      time.sleep(0.1) # Delay a bit
-
       self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{src_config_folder}/metadata.txt')
-
-      self._connect(src)
     except Exception as exc:
-      print(f'error starting spotify: {exc}')
+      print(f'Error starting spotify MPRIS reader: {exc}')
+
+    self._connect(src)
+
 
   def disconnect(self):
     try:
       self.proc.kill()
-    except Exception:
-      pass
+    except Exception as e:
+      print(f"Spotifyd didn't shut down: {e}")
     self._disconnect()
     self.connect_port = None
+    del self.mpris # garbage collection doesn't kill this fast enough
     self.mpris = None
     self.proc = None
 
@@ -318,6 +323,7 @@ class Spotify(BaseStream):
         source.supported_cmds=list(self.supported_cmds.keys())
         if md.art_url:
           source.img_url = md.art_url
+      pass
 
     except Exception as e:
       print(f"error in spotify: {e}")

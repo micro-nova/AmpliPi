@@ -57,9 +57,11 @@ class MPRIS:
     except Exception as e:
       print (f'Exception clearing metadata file: {e}')
 
-    set_start_method("fork")
-    self.metadata_process = Process(target=self._metadata_reader)
-    self.metadata_process.start()
+    try:
+      self.metadata_process = Process(target=self._metadata_reader)
+      self.metadata_process.start()
+    except Exception as e:
+      print(f'Exception starting MPRIS metadata process: {e}')
 
   def play(self) -> None:
     """Plays."""
@@ -131,8 +133,8 @@ class MPRIS:
   def __del__(self):
     try:
       self.metadata_process.kill()
-    except:
-      pass
+    except Exception as e:
+      print(f'Could not stop MPRIS metadata process: {e}')
 
   def _metadata_reader(self):
     """Method run by the metadata process, also handles playing/paused."""
@@ -167,6 +169,6 @@ class MPRIS:
             json.dump(metadata, metadata_file)
 
       except Exception as e:
-        print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}")
+        print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}\nThe above is normal if a user is not yet connected to Spotifyd.")
 
       time.sleep(1.0/METADATA_REFRESH_RATE)
