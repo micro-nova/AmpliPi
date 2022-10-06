@@ -363,10 +363,9 @@ class Api:
     self.status.info.online = self._online_cache.get(throttled)
     self.status.info.latest_release = self._latest_release_cache.get(throttled)
 
-  def get_state(self) -> models.Status:
-    """ get the system state """
-    # update the state with the latest stream info
-    # TODO: figure out how to cache stream info
+  def _sync_stream_info(self) -> None:
+    """Synchronize the stream list to the stream status"""
+    # TODO: figure out how to cache stream info, since it only needs to happen when a stream is added/updated
     optional_fields = ['station', 'user', 'password', 'url', 'logo', 'freq', 'token', 'client_id'] # optional configuration fields
     streams = []
     for sid, stream_inst in self.streams.items():
@@ -379,7 +378,11 @@ class Api:
           stream.__dict__[field] = stream_inst.__dict__[field]
       streams.append(stream)
     self.status.streams = streams
+
+  def get_state(self) -> models.Status:
+    """ get the system state """
     self._update_sys_info()
+    self._sync_stream_info()
     # update source's info
     # TODO: stream/source info should be updated in a background thread
     for src in self.status.sources:
