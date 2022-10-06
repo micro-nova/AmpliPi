@@ -32,9 +32,10 @@ TEST_CONFIG['groups'] = [
   {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
 ]
 AP_STREAM_ID = 1000
+P_STREAM_ID = 1001
 TEST_CONFIG['streams'] = [
   {"id": AP_STREAM_ID, "name": "AmpliPi", "type": "shairport"},
-  {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
+  {"id": P_STREAM_ID, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
   {"id": 1002, "name": "AmpliPi", "type": "spotify"},
   {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
   {"id": 1004, "name": "AmpliPi", "type": "dlna"},
@@ -239,11 +240,13 @@ def test_load_null_config(client):
 def test_load_multi_config(client):
   """ Load multiple configurations """
   # create a test config with a connected stream
-  sinput=f'stream={AP_STREAM_ID}'
+  sinputs = [f'stream={AP_STREAM_ID}', f'stream={P_STREAM_ID}']
   stream_test_config = deepcopy(client.original_config)
   if 'streams' in stream_test_config:
-    stream_test_config['sources'][0]['input'] = sinput
+    stream_test_config['sources'][0]['input'] = sinputs[0]
+    stream_test_config['sources'][1]['input'] = sinputs[1]
     assert stream_test_config['streams'][0]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
+    assert stream_test_config['streams'][1]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
   # load a barebones config
   rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
   assert rv.status_code == HTTPStatus.OK
