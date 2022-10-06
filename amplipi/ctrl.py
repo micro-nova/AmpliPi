@@ -381,9 +381,8 @@ class Api:
   def get_state(self) -> models.Status:
     """ get the system state """
     self._update_sys_info()
-    self._sync_stream_info()
     # update source's info
-    # TODO: stream/source info should be updated in a background thread
+    # TODO: source info should be updated in a background thread
     for src in self.status.sources:
       self._update_src_info(src)
     return self.status
@@ -742,6 +741,7 @@ class Api:
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
       self.streams[sid] = stream
+      self._sync_stream_info()
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
@@ -766,6 +766,7 @@ class Api:
     try:
       changes = update.dict(exclude_none=True)
       stream.reconfig(**changes)
+      self._sync_stream_info()
       return ApiResponse.ok()
     except Exception as exc:
       return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
@@ -782,6 +783,7 @@ class Api:
       i, _ = utils.find(self.status.streams, sid)
       if i is not None:
         del self.status.streams[i] # delete the cached stream state just in case
+      self._sync_stream_info()
       if not internal:
         self.mark_changes()
       return ApiResponse.ok()
