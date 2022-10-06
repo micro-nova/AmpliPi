@@ -31,8 +31,9 @@ TEST_CONFIG['groups'] = [
   {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
   {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
 ]
+AP_STREAM_ID = 1000
 TEST_CONFIG['streams'] = [
-  {"id": 1000, "name": "AmpliPi", "type": "shairport"},
+  {"id": AP_STREAM_ID, "name": "AmpliPi", "type": "shairport"},
   {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
   {"id": 1002, "name": "AmpliPi", "type": "spotify"},
   {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
@@ -205,30 +206,59 @@ def test_reset(client):
   rv = client.post('/api/reset')
   assert rv.status_code == HTTPStatus.OK
 
+def check_config(expected, actual):
+  """Check configuration changes match expected"""
+  assert actual is not None
+  for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+    if t in expected:
+      assert t in actual, f'missing field {t}'
+      assert len(actual[t]) == len(expected[t]), f'failed to load {t} portion of configuration expected: {expected[t]}, actual: {actual[t]}'
+      # check ids and names match for each field, avoiding generated data
+      exp_ids = { exp["id"]: exp for exp in expected[t] }
+      for iact in actual[t]:
+        assert iact["id"] in exp_ids, f'{iact["name"]}(id={iact["id"]}) missing from expected config'
+        assert iact["name"] == exp_ids[iact["id"]]["name"], f'{iact["name"]} does not match expected={exp_ids[iact["id"]]["name"]}'
+    else:
+      assert t in actual, f'missing field {t}, it is still expected to be generated empty even though it not specified in the expected configuration'
+      assert len(actual[t]) == 0, f'{t} should be empty since it is not preset in expected config'
+
 def test_load_og_config(client):
   """ Reload the initial configuration """
   rv = client.post('/api/load', json=client.original_config)
   assert rv.status_code == HTTPStatus.OK
   if rv.status_code == HTTPStatus.OK:
-    jrv = rv.json()
-    assert jrv is not None
-    og_config = client.original_config
-    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
-      if t in og_config:
-        assert len(jrv[t]) == len(og_config[t])
-
+    check_config(client.original_config, rv.json())
 
 def test_load_null_config(client):
   """ Load with the basic default configuration """
   rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
   assert rv.status_code == HTTPStatus.OK
   if rv.status_code == HTTPStatus.OK:
-    jrv = rv.json()
-    assert jrv is not None
-    og_config = amplipi.models.Status().dict()
-    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
-      if t in og_config:
-        assert len(jrv[t]) == len(og_config[t])
+    check_config(amplipi.models.Status().dict(), rv.json())
+
+def test_load_multi_config(client):
+  """ Load multiple configurations """
+  # create a test config with a connected stream
+  sinput=f'stream={AP_STREAM_ID}'
+  stream_test_config = deepcopy(client.original_config)
+  if 'streams' in stream_test_config:
+    stream_test_config['sources'][0]['input'] = sinput
+    assert stream_test_config['streams'][0]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
+  # load a barebones config
+  rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(amplipi.models.Status().dict(), rv.json())
+  # load the test config with a stream (testing the transition from simple -> more complicated)
+  rv = client.post('/api/load', json=stream_test_config)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(stream_test_config, rv.json())
+  # load a barebones config (testing the transition from more complicated -> simple)
+  rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(amplipi.models.Status().dict(), rv.json())
 
 def test_open_api_yamlfile(client):
   """ Check if the openapi yaml doc is available """
