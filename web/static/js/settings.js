@@ -15,6 +15,7 @@ const STREAM_TYPES_ = {
   dlna:           new Stream("dlna", "DLNA"),
   fmradio:        new Stream("fmradio", "FM Radio Station"),
   internetradio:  new Stream("internetradio", "Internet Radio Station"),
+  lms:            new Stream("lms", "LMS client"),
   pandora:        new Stream("pandora", "Pandora Station"),
   plexamp:        new Stream("plexamp", "Plexamp"),
   spotify:        new Stream("spotify", "Spotify Device"),

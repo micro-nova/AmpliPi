@@ -461,6 +461,7 @@ class Stream(Base):
   * plexamp
   * file
   * fmradio
+  * lms
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
@@ -550,6 +551,10 @@ class Stream(Base):
             'logo': 'static/imgs/fmradio.png'
           }
         },
+        'Add LMS Client': {
+          'value': {
+            'name': 'Family'
+          }
       },
       'examples': {
         'Regina Spektor Radio': {
@@ -595,6 +600,7 @@ class Stream(Base):
         },
       }
     }
+  }
 
 class StreamUpdate(BaseUpdate):
   """ Reconfiguration of a Stream """
