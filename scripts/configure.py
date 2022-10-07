@@ -144,6 +144,15 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'lms' : {
     'copy' : [{'from': 'bin/ARCH/squeezelite', 'to': 'streams/squeezelite'}],
+    # TODO: remove the LMS install here, intended for testing
+    'script' : [
+      'if ! sudo systemctl is-active logitechmediaserver.service > /dev/null; then',
+      '  wget http://downloads.slimdevices.com/LogitechMediaServer_v8.2.0/logitechmediaserver_8.2.0_all.deb',
+      '  sudo dpkg -i logitechmediaserver_8.2.0_all.deb',
+      '  sudo apt install --fix-broken --assume-yes',
+      '  sudo dpkg -i logitechmediaserver_8.2.0_all.deb',
+      'fi',
+    ]
   },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
