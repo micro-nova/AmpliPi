@@ -462,6 +462,7 @@ class Stream(Base):
   * plexamp
   * file
   * fmradio
+  * lms
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
@@ -551,6 +552,10 @@ class Stream(Base):
             'logo': 'static/imgs/fmradio.png'
           }
         },
+        'Add LMS Client': {
+          'value': {
+            'name': 'Family'
+          }
       },
       'examples': {
         'Regina Spektor Radio': {
@@ -596,6 +601,7 @@ class Stream(Base):
         },
       }
     }
+  }
 
 @lru_cache(1)
 def optional_stream_fields() -> Set:

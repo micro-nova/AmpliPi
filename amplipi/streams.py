@@ -910,8 +910,72 @@ class FMRadio(BaseStream):
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
 
+class LMS(BaseStream):
+  """ An LMS Stream """
+  def __init__(self, name, mock=False):
+    super().__init__('lms', name, mock)
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+      reconnect_needed = True
+    if reconnect_needed:
+      if self._is_running():
+        last_src = self.src
+        self.disconnect()
+        time.sleep(0.1) # delay a bit, is this needed?
+        self.connect(last_src)
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, src):
+    """ Connect a sqeezelite output to a given audio source
+    This will create a LMS client based on the given name
+    """
+    if self.mock:
+      self._connect(src)
+      return
+
+    # Make the (per-source) config directory
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'mkdir -p {src_config_folder}')
+
+    # TODO: Add metadata support? This may have to watch the output log?
+
+    # Process
+    lms_args = [f'{utils.get_folder("streams")}/squeezelite',
+                '-n', self.name,
+                '-m', f'314{src}', # mac address, needs to be unique but not tied to actual NIC MAC
+                '-o', utils.output_device(src),
+                '-f', f'{src_config_folder}/lms_log.txt',
+                '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
+               ]
+
+    try:
+      self.proc = subprocess.Popen(args=lms_args)
+      self._connect(src)
+    except Exception as exc:
+      print(f'error starting lms: {exc}')
+
+  def disconnect(self):
+    if self._is_running():
+      self.proc.kill()
+    self._disconnect()
+    self.proc = None
+
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url='static/imgs/lms.png',
+      track='check LMS for song info',
+    )
+    return source
+
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
+AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio, LMS]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -935,4 +999,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return FilePlayer(args['name'], args['url'], mock=mock)
   elif stream.type == 'fmradio':
     return FMRadio(args['name'], args['freq'], args['logo'], mock=mock)
+  elif stream.type == 'lms':
+    return LMS(args['name'], mock=mock)
   raise NotImplementedError(stream.type)
