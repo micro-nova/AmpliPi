@@ -26,7 +26,8 @@ from re import sub
 import sys
 import subprocess
 import time
-from typing import Union
+from ctypes import c_ulong # unsigned ints for MAC generation
+from typing import Union, Optional
 import threading
 
 # Used by InternetRadio and Spotify
@@ -909,8 +910,89 @@ class FMRadio(BaseStream):
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
 
+class LMS(BaseStream):
+  """ An LMS Stream using squeezelite"""
+  def __init__(self, name, server=None, mock=False):
+    super().__init__('lms', name, mock)
+    self.server : Optional[str] = server
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+      reconnect_needed = True
+    if 'server' in kwargs and kwargs['server'] != self.server:
+      self.name = kwargs['server']
+      reconnect_needed = True
+    if reconnect_needed:
+      if self._is_running():
+        last_src = self.src
+        self.disconnect()
+        time.sleep(0.1) # delay a bit, is this needed?
+        self.connect(last_src)
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, src):
+    """ Connect a sqeezelite output to a given audio source
+    This will create a LMS client based on the given name
+    """
+    if self.mock:
+      self._connect(src)
+      return
+    try:
+      # Make the (per-source) config directory
+      src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+      os.system(f'mkdir -p {src_config_folder}')
+
+      # TODO: Add metadata support? This may have to watch the output log?
+
+      # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
+      fake_mac = c_ulong(hash(self.name)).value.to_bytes(8, 'little')
+      fake_mac = list(fake_mac[0:4]) + [31, 41] # make it look like a MAC address, filling with digits of Pi
+      fake_mac = ':'.join([f'{b:02x}' for b in fake_mac])
+
+      # Process
+      lms_args = [f'{utils.get_folder("streams")}/squeezelite',
+                  '-n', self.name,
+                  '-m', fake_mac,
+                  '-o', utils.output_device(src),
+                  '-f', f'{src_config_folder}/lms_log.txt',
+                  '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
+                ]
+      if self.server is not None:
+        # specify the server to connect to (if unspecified squeezelite starts in discovery mode)
+        server = self.server
+        # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
+        if 'localhost' ==  server or server.startswith('localhost:'):
+          # squeezelite does not support localhost and requires the actual hostname
+          # NOTE: :9000 is assumed unless otherwise specified
+          server.replace('localhost', socket.gethostname())
+        lms_args += [ '-s', server]
+
+      self.proc = subprocess.Popen(args=lms_args)
+      self._connect(src)
+    except Exception as exc:
+      print(f'error starting lms: {exc}')
+
+  def disconnect(self):
+    if self._is_running():
+      self.proc.kill()
+    self._disconnect()
+    self.proc = None
+
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url='static/imgs/lms.png',
+      track='check LMS for song info',
+    )
+    return source
+
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio]
+AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio, LMS]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -927,11 +1009,13 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'dlna':
     return DLNA(args['name'], mock=mock)
   elif stream.type == 'internetradio':
-    return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
+    return InternetRadio(args['name'], args['url'], args.get('logo'), mock=mock)
   elif stream.type == 'plexamp':
     return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
   elif stream.type == 'fileplayer':
     return FilePlayer(args['name'], args['url'], mock=mock)
   elif stream.type == 'fmradio':
-    return FMRadio(args['name'], args['freq'], args['logo'], mock=mock)
+    return FMRadio(args['name'], args['freq'], args.get('logo'), mock=mock)
+  elif stream.type == 'lms':
+    return LMS(args['name'], args.get('server'), mock=mock)
   raise NotImplementedError(stream.type)

@@ -39,6 +39,7 @@ TEST_CONFIG['streams'] = [
   {"id": 1002, "name": "AmpliPi", "type": "spotify"},
   {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
   {"id": 1004, "name": "AmpliPi", "type": "dlna"},
+  {"id": 1005, "name": "AmpliPi", "type": "lms"},
 ]
 TEST_CONFIG['presets'] = [
   {"id": 10000,
