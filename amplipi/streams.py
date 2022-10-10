@@ -250,6 +250,9 @@ class Spotify(BaseStream):
     """ Connect a Spotify output to a given audio source
     This will create a Spotify Connect device based on the given name
     """
+
+    print("Spotifyd connecting")
+
     if self.mock:
       self._connect(src)
       return
@@ -291,10 +294,13 @@ class Spotify(BaseStream):
     except Exception as exc:
       print(f'Error starting spotify MPRIS reader: {exc}')
 
-    self._connect(src) 
+    self._connect(src)
+
+    print("Spotifyd connected")
 
 
   def disconnect(self):
+    print("disconnecting spotifyd")
     try:
       self.proc.kill()
     except Exception as e:

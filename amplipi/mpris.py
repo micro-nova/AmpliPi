@@ -9,6 +9,7 @@ import sys
 from typing import List
 from multiprocessing import Process
 from dasbus.connection import SessionMessageBus
+from dasbus.client.proxy import disconnect_proxy
 
 
 METADATA_MAPPINGS = [
@@ -50,6 +51,7 @@ class MPRIS:
 
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
+    self.ok = True
 
     try:
       with open(self.metadata_path, "w", encoding='utf-8') as f:
@@ -133,20 +135,17 @@ class MPRIS:
     return self.capabilities
 
   def __del__(self):
+    self.ok = False
+
     try:
       self.metadata_process.kill()
       os.wait() # does this work?
     except Exception as e:
       print(f'Could not stop MPRIS metadata process: {e}')
+    disconnect_proxy(self.mpris)
 
   def _metadata_reader(self):
     """Method run by the metadata process, also handles playing/paused."""
-
-    mpris = SessionMessageBus().get_proxy(
-      service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
-      object_path = "/org/mpris/MediaPlayer2",
-      interface_name = "org.mpris.MediaPlayer2.Player"
-    )
 
     m = Metadata()
     m.state = 'Stopped'
@@ -154,6 +153,12 @@ class MPRIS:
     last_sent = m.__dict__
 
     while True:
+      mpris = SessionMessageBus().get_proxy(
+        service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
+        object_path = "/org/mpris/MediaPlayer2",
+        interface_name = "org.mpris.MediaPlayer2.Player"
+      )
+
       print("getting metadata")
       try:
         raw_metadata = {}
@@ -183,3 +188,5 @@ class MPRIS:
       sys.stdout.flush() # forces stdout to print
 
       time.sleep(1.0/METADATA_REFRESH_RATE)
+
+      disconnect_proxy(mpris)
