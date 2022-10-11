@@ -522,6 +522,11 @@ class Api:
         zone.name = name
         zone.disabled = disabled
 
+        # any disabled zone should not be able to play anything, mute it to be sure
+        if zone.disabled and not mute:
+          mute = True
+          update_mutes = True
+
         # update the zone's associated source
         sid = utils.parse_int(source_id, [0, 1, 2, 3])
         zones = self.status.zones
