@@ -330,7 +330,7 @@ def test_get_zone(client, zid):
   assert s['name'] == jrv['name']
 
 @pytest.mark.parametrize('zid', base_zone_ids())
-def test_patch_zone(client, zid):
+def test_patch_zone_rename(client, zid):
   """ Try changing a zones name """
   rv = client.patch('/api/zones/{}'.format(zid), json={'name': 'patched-name'})
   assert rv.status_code == HTTPStatus.OK
@@ -338,6 +338,30 @@ def test_patch_zone(client, zid):
   s = find(jrv['zones'], zid)
   assert s is not None
   assert s['name'] == 'patched-name'
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_patch_zone_mute_disable(client, zid):
+  """ Unmute then disable a zone """
+  rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False, 'vol_f': 0.5})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['mute'] == False
+  assert s['vol_f'] == 0.5
+  rv = client.patch('/api/zones/{}'.format(zid), json={'disabled': True})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['disabled'] == True
+  assert s['mute'] == True
+  rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['mute'] == True # a disabled zone overrides/forces mute
 
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_patch_zones(client, sid):
