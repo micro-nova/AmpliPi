@@ -100,10 +100,18 @@ class Api:
   _LAST_PRESET_ID = 9999
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Input 1", "input": "local"},
-      {"id": 1, "name": "Input 2", "input": "local"},
-      {"id": 2, "name": "Input 3", "input": "local"},
-      {"id": 3, "name": "Input 4", "input": "local"}
+      {"id":  0, "name":  "Input 1", "input": ""},
+      {"id":  1, "name":  "Input 2", "input": ""},
+      {"id":  2, "name":  "Input 3", "input": ""},
+      {"id":  3, "name":  "Input 4", "input": ""},
+      {"id":  4, "name":  "Input 5", "input": "", "pipe_to": 0},
+      {"id":  5, "name":  "Input 6", "input": "", "pipe_to": 1},
+      {"id":  6, "name":  "Input 7", "input": "", "pipe_to": 2},
+      {"id":  7, "name":  "Input 8", "input": "", "pipe_to": 3},
+      {"id":  8, "name":  "Input 9", "input": "", "pipe_to": 0},
+      {"id":  9, "name": "Input 10", "input": "", "pipe_to": 1},
+      {"id": 10, "name": "Input 11", "input": "", "pipe_to": 2},
+      {"id": 11, "name": "Input 12", "input": "", "pipe_to": 3},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -478,7 +486,8 @@ class Api:
             src.input = last_input
             raise Exception(f'StreamID specified by "{src.input}" not found')
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
-          if rt_needs_update or force_update:
+          virtual = src.pipe_to is not None
+          if (rt_needs_update or force_update) and not virtual:
             # get the current underlying type of each of the sources, for configuration of the runtime
             src_cfg = [self._is_digital(self.status.sources[s].input) for s in range(4)]
             # update this source
@@ -523,7 +532,7 @@ class Api:
         zone.disabled = disabled
 
         # update the zone's associated source
-        sid = utils.parse_int(source_id, [0, 1, 2, 3])
+        sid = utils.parse_int(source_id, range(len(self.status.sources)))
         zones = self.status.zones
         if update_source_id or force_update:
           zone_sources = [zone.source_id for zone in zones]
