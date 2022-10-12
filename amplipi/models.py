@@ -46,6 +46,9 @@ MAX_VOL_DB = 0
 MIN_DB_RANGE = 20
 """ Smallest allowed difference between a zone's vol_max and vol_min """
 
+MAX_SOURCES = 12
+""" Maximum allowed sources including virtual sources """
+
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """
   assert MIN_VOL_F <= pcnt <= MAX_VOL_F
@@ -55,7 +58,7 @@ class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
   Name = Field(description='Friendly name')
-  SourceId = Field(ge=0, le=3, description='id of the connected source')
+  SourceId = Field(ge=0, le=MAX_SOURCES, description='id of the connected source')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
@@ -81,7 +84,7 @@ class fields_w_default(SimpleNamespace):
   These are needed because there is ambiguity where an optional field has a default value
   """
   # TODO: less duplication
-  SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
+  SourceId = Field(default=0, ge=0, le=MAX_SOURCES, description='id of the connected source')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
@@ -124,6 +127,7 @@ class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
   info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback)')
+  pipe_to: Optional[int] = Field(description='Additional input connected to another source')
 
   def get_stream(self) -> Optional[int]:
     """ Get a source's connected stream if any """
