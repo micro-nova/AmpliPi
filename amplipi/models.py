@@ -279,7 +279,7 @@ class ZoneUpdate(BaseUpdate):
         },
         'Change audio source': {
           'value': {
-            'source-id': 3
+            'source_id': 3
           }
         },
         'Change volume relative to min/max volume': {
@@ -418,7 +418,7 @@ class GroupUpdate(BaseUpdate):
         },
         'Change audio source': {
           'value': {
-            'source-id': 3
+            'source_id': 3
           }
         },
         "Set volume relative to each zone's min/max volume": {
