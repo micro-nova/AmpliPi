@@ -101,7 +101,7 @@ def unused_groups(ctrl: Api, src: int) -> Dict[int, str]:
 def unused_zones(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get zones that are not conencted to src """
   zones = ctrl.status.zones
-  return {z.id : z.name for z in zones if z.source_id != src and z.id is not None}
+  return {z.id : z.name for z in zones if z.source_id != src and z.id is not None and not z.disabled}
 
 def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   """ Get zones that are connected to src, but don't belong to a full group """
