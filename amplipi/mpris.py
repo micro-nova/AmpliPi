@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 import json
+from logging import exception
 import time
 import os
 import sys
@@ -153,13 +154,16 @@ class MPRIS:
     last_sent = m.__dict__
 
     while True:
-      mpris = SessionMessageBus().get_proxy(
-        service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
-        object_path = "/org/mpris/MediaPlayer2",
-        interface_name = "org.mpris.MediaPlayer2.Player"
-      )
+      try:
+        mpris = SessionMessageBus().get_proxy(
+          service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
+          object_path = "/org/mpris/MediaPlayer2",
+          interface_name = "org.mpris.MediaPlayer2.Player"
+        )
+      except Exception as e:
+        print(f"failed to connect mpris {e}")
 
-      print("getting metadata")
+      print(f"getting mrpis metadata from {self.service_suffix}")
       try:
         raw_metadata = {}
         try:
@@ -183,7 +187,8 @@ class MPRIS:
             json.dump(metadata, metadata_file)
 
       except Exception as e:
-        print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}\nThe above is normal if a user is not yet connected to Spotifyd.")
+        print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}"
+              +"\nThe above is normal if a user is not yet connected to the stream.")
 
       sys.stdout.flush() # forces stdout to print
 
