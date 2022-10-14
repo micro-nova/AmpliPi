@@ -35,10 +35,11 @@ function updateSettings() {
   $.get("/api", function(data) {
     $.each(data.sources, function(k, v) {
       streams[v.id] = v;
+      display_name = v.id <= 3 ? `rca ${v.id+1}` : 'virtual';
       $("#settings-tab-inputs-stream-selection").append(
         '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
         v.name +
-        ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
+        ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + display_name + '</span>'
       );
     });
     $.each(data.streams, function(k, v) {
@@ -118,8 +119,10 @@ $(function() {
     $("#settings-tab-inputs-new-stream").removeClass('active');
     $(this).addClass('active');
     var s = streams[$(this).data("id")];
-    var stream_type = s.type ? STREAM_TYPES_[s.type] : `rca ${s.id+1}`;
-
+    var stream_type = s.type ? STREAM_TYPES_[s.type] : new Stream('rca', `rca ${s.id+1}`);
+    if (s.id > 3 && stream_type.name == 'rca') {
+      stream_type = new Stream('virtual', 'virtual');
+    }
     $("#settings-tab-inputs-stream-title").text(s.name + " (" + stream_type.name + ")");
     var html = `
       <input type="hidden" id="edit-sid" name="id" value="${s.id}">
