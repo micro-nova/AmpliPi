@@ -104,14 +104,11 @@ class Api:
       {"id":  1, "name":  "Input 2", "input": ""},
       {"id":  2, "name":  "Input 3", "input": ""},
       {"id":  3, "name":  "Input 4", "input": ""},
+      # add temporary virtual sources
       {"id":  4, "name":  "Input 5", "input": "", "pipe_to": 0},
       {"id":  5, "name":  "Input 6", "input": "", "pipe_to": 1},
       {"id":  6, "name":  "Input 7", "input": "", "pipe_to": 2},
       {"id":  7, "name":  "Input 8", "input": "", "pipe_to": 3},
-      {"id":  8, "name":  "Input 9", "input": "", "pipe_to": 0},
-      {"id":  9, "name": "Input 10", "input": "", "pipe_to": 1},
-      {"id": 10, "name": "Input 11", "input": "", "pipe_to": 2},
-      {"id": 11, "name": "Input 12", "input": "", "pipe_to": 3},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -261,11 +258,19 @@ class Api:
     # [:] does an in-place modification to the list suggested by https://stackoverflow.com/a/1208792/1110730
     self.status.streams[:] = [s for s in self.status.streams if s.id not in failed_streams]
 
+    # setup sources 4-7 for special lms sources for this build
+    while len(self.status.sources) < 8:
+      sid = len(self.status.sources)
+      pipe_to = sid % 4 if sid >= 4 else None # the last four sources just connect to the first four
+      self.status.sources.append(models.Source(id=sid, name=f'Input {sid + 1}', source='', pipe_to=pipe_to))
+
     # configure all sources so that they are in a known state
-    for src in self.status.sources:
+    for i, src in enumerate(self.status.sources):
+      assert i == src.id, 'source index does not march ordering, invalid configuration'
       if src.id is not None:
         update = models.SourceUpdate(input=src.input)
         self.set_source(src.id, update, force_update=True, internal=True)
+
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for zone in self.status.zones:
