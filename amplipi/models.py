@@ -209,7 +209,7 @@ class SourceUpdate(BaseUpdate):
 
 class SourceUpdateWithId(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
-  id : int = Field(ge=0,le=4)
+  id : int = Field(ge=0,le=MAX_SOURCES)
 
   def as_update(self) -> SourceUpdate:
     """ Convert to SourceUpdate """
@@ -822,7 +822,7 @@ class Info(BaseModel):
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
-  sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
+  sources: List[Source] = [Source(id=i, name=str(i), pipe_to=i % 4 if i >= 4 else None) for i in range(8)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
   streams: List[Stream] = []
