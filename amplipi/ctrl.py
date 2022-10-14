@@ -205,8 +205,6 @@ class Api:
       self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
 
-    # TODO: detect missing sources
-
     # populate system info
     self._online_cache = utils.TimeBasedCache(self._check_is_online, 5, 'online')
     self._latest_release_cache = utils.TimeBasedCache(self._check_latest_release, 3600, 'latest release')
@@ -264,6 +262,7 @@ class Api:
     # setup sources 4-7 for special lms sources for this build
     while len(self.status.sources) < 8:
       sid = len(self.status.sources)
+      print(f'Config is sissing source {sid}, adding it back')
       pipe_to = sid % 4 if sid >= 4 else None # the last four sources just connect to the first four
       if pipe_to is None:
         name = f'Input {sid + 1}'
