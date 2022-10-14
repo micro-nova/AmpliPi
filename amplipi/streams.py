@@ -944,10 +944,15 @@ class LMS(BaseStream):
 
     # TODO: Add metadata support? This may have to watch the output log?
 
+     # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
+    fake_mac = hash(self.name).to_bytes(8, 'little')
+    fake_mac = list(fake_mac[0:4]) + [src, 31]
+    fake_mac = ':'.join([f'{b:02x}' for b in fake_mac])
+
     # Process
     lms_args = [f'{utils.get_folder("streams")}/squeezelite',
                 '-n', self.name,
-                '-m', f'314{src}', # mac address, needs to be unique but not tied to actual NIC MAC
+                '-m', fake_mac,
                 '-o', utils.output_device(src),
                 '-f', f'{src_config_folder}/lms_log.txt',
                 '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
