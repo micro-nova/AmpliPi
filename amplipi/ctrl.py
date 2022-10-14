@@ -261,7 +261,11 @@ class Api:
     while len(self.status.sources) < 8:
       sid = len(self.status.sources)
       pipe_to = sid % 4 if sid >= 4 else None # the last four sources just connect to the first four
-      self.status.sources.append(models.Source(id=sid, name=f'Input {sid + 1}', source='', pipe_to=pipe_to))
+      if pipe_to is None:
+        name = f'Input {sid + 1}'
+      else:
+        name = f'Virtual input {sid + 1}'
+      self.status.sources.append(models.Source(id=sid, name=name, source='', pipe_to=pipe_to))
 
     # configure all sources so that they are in a known state
     for i, src in enumerate(self.status.sources):
@@ -355,9 +359,12 @@ class Api:
         >>> my_amplipi.get_inputs()
         { None, '', 'local', 'Local', 'stream=9449' }
     """
-    inputs = {None: '', 'local' : f'{src.name} - rca'}
+    inputs: Dict[Optional[str], str] = {None: ''}
+    is_virtual = src.pipe_to is not None
+    if not is_virtual:
+      inputs['local'] = f'{src.name} - rca'
     for stream in self.get_state().streams:
-      inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
+      inputs[f'stream={stream.id}'] = f'{stream.name} - {stream.type}'
     return inputs
 
   def _check_is_online(self) -> bool:
