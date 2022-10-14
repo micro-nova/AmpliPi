@@ -105,15 +105,18 @@ class Api:
       {"id":  2, "name":  "Input 3", "input": ""},
       {"id":  3, "name":  "Input 4", "input": ""},
       # add temporary virtual sources
-      {"id":  4, "name":  "Input 5", "input": "", "pipe_to": 0},
-      {"id":  5, "name":  "Input 6", "input": "", "pipe_to": 1},
-      {"id":  6, "name":  "Input 7", "input": "", "pipe_to": 2},
-      {"id":  7, "name":  "Input 8", "input": "", "pipe_to": 3},
+      {"id":  4, "name":  "Input 5", "input": "stream=1000", "pipe_to": 0},
+      {"id":  5, "name":  "Input 6", "input": "stream=1001", "pipe_to": 1},
+      {"id":  6, "name":  "Input 7", "input": "stream=1002", "pipe_to": 2},
+      {"id":  7, "name":  "Input 8", "input": "stream=1003", "pipe_to": 3},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
-      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+      {"id": 1000, "name": "Music 1", "type": "lms"},
+      {"id": 1001, "name": "Music 2", "type": "lms"},
+      {"id": 1002, "name": "Music 3", "type": "lms"},
+      {"id": 1003, "name": "Music 4", "type": "lms"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
