@@ -257,7 +257,7 @@
         </div>
       </div>
       {% for src in sources %}
-      <div id="s{{ src.id }}-groups" class="tab-pane {% if src == cur_src %} active {% endif %}">
+      <div id="s{{ src.id }}-groups" class="tab-pane {% if src.id == cur_src %} active {% endif %}">
         {% for group in groups if group['source_id'] == src.id %}
         <div class="card group">
           <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#s{{ src.id }}-groups" href="#g{{ group['id'] }}-zones" aria-expanded="false">
