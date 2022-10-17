@@ -186,8 +186,13 @@ class AirPlay(BaseStream):
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__('airplay', name, disabled=disabled, mock=mock)
     self.proc2 = None
-    # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
-    # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
+    self.mpris = None
+    self.supported_cmds = [
+      'play',
+      'pause',
+      'next',
+      'prev'
+      ]
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -219,12 +224,12 @@ class AirPlay(BaseStream):
         'drift': 2000, # allow this number of frames of drift away from exact synchronisation before attempting to correct it
         'resync_threshold': 0, # a synchronisation error greater than this will cause resynchronisation; 0 disables it
         'log_verbosity': 0, # "0" means no debug verbosity, "3" is most verbose.
+        'mpris_service_bus': 'Session',
       },
       'metadata':{
         'enabled': 'yes',
         'include_cover_art': 'yes',
-        'pipe_name': f'{utils.get_folder("config")}/srcs/{src}/shairport-sync-metadata',
-        'pipe_timeout': 5000,
+        'cover_art_cache_directory': f'{utils.get_folder("web")}/generated/{src}',
       },
       'alsa': {
         'output_device': utils.output_device(src), # alsa output device
@@ -246,8 +251,10 @@ class AirPlay(BaseStream):
     print(f'meta_args: {meta_args}')
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    self.proc2 = None
-    #self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+      self.mpris = MPRIS(f'ShairportSync', f'{src_config_folder}/metadata.txt')
+    except Exception as exc:
+      print(f'Error starting airplay MPRIS reader: {exc}')
     self._connect(src)
 
   def disconnect(self):
@@ -259,29 +266,47 @@ class AirPlay(BaseStream):
     self.proc = None
 
   def info(self) -> models.SourceInfo:
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
-    loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=self.full_name(), state=self.state)
-    source.img_url = 'static/imgs/shairport.png'
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url='static/imgs/shairport.png'
+    )
+
     try:
-      with open(loc, 'r') as file:
-        for line in file.readlines():
-          if line:
-            data = line.split(',,,')
-            for i in range(len(data)):
-              data[i] = data[i].strip('".')
-            source.artist = data[0]
-            source.track = data[1]
-            source.album = data[2]
-            if 'False' in data[3]:
-              source.state = 'playing'
-            else:
-              source.state = 'paused'
-            if int(data[4]):
-              source.img_url = f"/generated/shairport/srcs/{self.src}/{data[5]}"
-    except Exception as exc:
-      print(f'Failed to get currentSong - it may not exist: {exc}')
+      md = self.mpris.metadata()
+
+      if not self.mpris.is_stopped():
+        source.state = 'playing' if self.mpris.is_playing() else 'paused'
+        source.artist = md.artist
+        source.track = md.title
+        source.album = md.album
+        source.supported_cmds=list(self.supported_cmds)
+
+        img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
+        img_loc = f'generated/{self.src}/{img_name}'
+
+        source.img_url = img_loc
+
+    except Exception as e:
+      print(f"error in airplay: {e}")
+
     return source
+
+  def send_cmd(self, cmd):
+    try:
+      if cmd in self.supported_cmds:
+        if cmd == 'play':
+          self.mpris.play()
+        elif cmd == 'pause':
+          self.mpris.pause()
+        elif cmd == 'next':
+          self.mpris.next()
+        elif cmd == 'prev':
+          self.mpris.previous()
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception as e:
+      print(f"error in shairport: {e}")
 
 class Spotify(BaseStream):
   """ A Spotify Stream """
