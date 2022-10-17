@@ -40,6 +40,7 @@ _DEBUG_API = False # print out a graphical state of the api after each call
 
 USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 MUTE_ALL_ID = 10000
+LMS_DEFAULTS = [1000, 1001, 1002, 1003]
 
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
@@ -105,18 +106,18 @@ class Api:
       {"id":  2, "name":  "Input 3", "input": ""},
       {"id":  3, "name":  "Input 4", "input": ""},
       # add temporary virtual sources
-      {"id":  4, "name":  "Input 5", "input": "stream=1000", "pipe_to": 0},
-      {"id":  5, "name":  "Input 6", "input": "stream=1001", "pipe_to": 1},
-      {"id":  6, "name":  "Input 7", "input": "stream=1002", "pipe_to": 2},
-      {"id":  7, "name":  "Input 8", "input": "stream=1003", "pipe_to": 3},
+      {"id":  4, "name":  "Input 5", "input": f"stream={LMS_DEFAULTS[0]}", "pipe_to": 0},
+      {"id":  5, "name":  "Input 6", "input": f"stream={LMS_DEFAULTS[1]}", "pipe_to": 1},
+      {"id":  6, "name":  "Input 7", "input": f"stream={LMS_DEFAULTS[2]}", "pipe_to": 2},
+      {"id":  7, "name":  "Input 8", "input": f"stream={LMS_DEFAULTS[3]}", "pipe_to": 3},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
-      {"id": 1000, "name": "Music 1", "type": "lms"},
-      {"id": 1001, "name": "Music 2", "type": "lms"},
-      {"id": 1002, "name": "Music 3", "type": "lms"},
-      {"id": 1003, "name": "Music 4", "type": "lms"},
+      {"id": LMS_DEFAULTS[0], "name": "Music 1", "type": "lms"},
+      {"id": LMS_DEFAULTS[1], "name": "Music 2", "type": "lms"},
+      {"id": LMS_DEFAULTS[2], "name": "Music 3", "type": "lms"},
+      {"id": LMS_DEFAULTS[3], "name": "Music 4", "type": "lms"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
@@ -789,6 +790,8 @@ class Api:
   def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
     try:
+      if sid in LMS_DEFAULTS and isinstance(self.streams[sid], amplipi.streams.LMS):
+        raise Exception(f'Stream {sid} cannot be deleted')
       # if input is connected to a source change that input to nothing
       for src in self.status.sources:
         if src.get_stream() == sid and src.id is not None:
