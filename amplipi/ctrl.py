@@ -258,6 +258,7 @@ class Api:
           print(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
     self._sync_stream_info() # need to update the status with the new streams
+    lms_streams = [ s for s in self.status.streams if s.type == 'lms']
 
     # setup sources 4-7 for special lms sources for this build
     while len(self.status.sources) < 8:
@@ -268,7 +269,13 @@ class Api:
         name = f'Input {sid + 1}'
       else:
         name = f'Virtual input {sid + 1}'
-      self.status.sources.append(models.Source(id=sid, name=name, source='', pipe_to=pipe_to))
+      self.status.sources.append(models.Source(id=sid, name=name, input='', pipe_to=pipe_to))
+    # setup the last four sources to use host lms
+    if len(lms_streams) >= 4:
+      for src in self.status.sources[4:8]:
+        if src.id is not None:
+          lms = lms_streams[src.id - 4]
+          src.input = f'stream={lms.id}'
 
     # configure all sources so that they are in a known state
     for i, src in enumerate(self.status.sources):
