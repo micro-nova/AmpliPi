@@ -955,6 +955,7 @@ class LMS(BaseStream):
                   '-n', self.name,
                   '-m', fake_mac,
                   '-o', utils.output_device(src),
+                  '-s', socket.gethostname(),
                   '-f', f'{src_config_folder}/lms_log.txt',
                   '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
                 ]
