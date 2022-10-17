@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 import json
-from logging import exception
 import time
 import os
 import sys
@@ -180,6 +179,7 @@ class MPRIS:
             print(f"Metadata mapping error: {e}")
 
         metadata['state'] = mpris.PlaybackStatus.strip("'")
+        metadata['volume'] = mpris.Volume
 
         if metadata != last_sent:
           last_sent = metadata

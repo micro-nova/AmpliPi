@@ -20,6 +20,7 @@ This module provides complete control of the AmpliPi Audio System's sources,
 zones, groups and streams.
 """
 
+from sys import intern
 from typing import List, Dict, Set, Union, Optional, Callable
 
 from enum import Enum
@@ -29,6 +30,7 @@ import os # files
 import time
 
 import threading
+from sqlalchemy import false, true
 import wrapt
 
 import amplipi.models as models
@@ -494,6 +496,21 @@ class Api:
       if internal:
         raise exc
       return ApiResponse.error(f'failed to set source: {exc}')
+    return ApiResponse.ok()
+
+  def increment_volume(self, sid: int, percent: float, internal: bool = False):
+    try:
+      zones = self.status.zones
+
+      for zone in zones:
+        if zone.source_id == sid:
+          zone.vol_f += percent/100
+          self.set_zone(zid = zone.id ,internal=True)
+          zone
+    except Exception as exc:
+      if internal:
+        raise exc
+      return ApiResponse.error('failed to increment volume: {exc}')
     return ApiResponse.ok()
 
   def set_zone(self, zid, update: models.ZoneUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:

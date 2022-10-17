@@ -149,7 +149,7 @@ class AirPlay(BaseStream):
         'name': self.name,
         'port': 5100 + 100 * src, # Listen for service requests on this port
         'udp_port_base': 6101 + 100 * src, # start allocating UDP ports from this port number when needed
-        'drift': 2000, # allow this number of frames of drift away from exact synchronisation before attempting to correct it
+           'drift': 2000, # allow this number of frames of drift away from exact synchronisation before attempting to correct it
         'resync_threshold': 0, # a synchronisation error greater than this will cause resynchronisation; 0 disables it
         'log_verbosity': 0, # "0" means no debug verbosity, "3" is most verbose.
       },
