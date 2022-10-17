@@ -259,6 +259,7 @@ class Api:
     # only keep the successful streams, this fixes a common problem of loading a stream that doesn't exist in the current developement
     # [:] does an in-place modification to the list suggested by https://stackoverflow.com/a/1208792/1110730
     self.status.streams[:] = [s for s in self.status.streams if s.id not in failed_streams]
+    lms_streams = [ s for s in self.status.streams if s.type == 'lms' and s.id not in failed_streams ]
 
     # setup sources 4-7 for special lms sources for this build
     while len(self.status.sources) < 8:
@@ -269,7 +270,13 @@ class Api:
         name = f'Input {sid + 1}'
       else:
         name = f'Virtual input {sid + 1}'
-      self.status.sources.append(models.Source(id=sid, name=name, source='', pipe_to=pipe_to))
+      self.status.sources.append(models.Source(id=sid, name=name, input='', pipe_to=pipe_to))
+    # setup the last four sources to use host lms
+    if len(lms_streams) >= 4:
+      for src in self.status.sources[4:8]:
+        if src.id is not None:
+          lms = lms_streams[src.id - 4]
+          src.input = f'stream={lms.id}'
 
     # configure all sources so that they are in a known state
     for i, src in enumerate(self.status.sources):

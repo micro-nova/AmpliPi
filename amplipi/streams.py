@@ -955,7 +955,7 @@ class LMS(BaseStream):
                   '-n', self.name,
                   '-m', fake_mac,
                   '-o', utils.output_device(src),
-                  '-s', socket.gethostname(),
+                  '-s', socket.gethostname(), # TODO: make this hostname a parameter, if unset let it discover the server
                   '-f', f'{src_config_folder}/lms_log.txt',
                   '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
                 ]
