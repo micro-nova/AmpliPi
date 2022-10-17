@@ -25,6 +25,7 @@ import os
 import sys
 import subprocess
 import time
+from ctypes import c_ulong # unsigned ints for MAC generation
 from typing import Union
 import threading
 
@@ -945,7 +946,7 @@ class LMS(BaseStream):
     # TODO: Add metadata support? This may have to watch the output log?
 
      # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
-    fake_mac = hash(self.name).to_bytes(8, 'little')
+    fake_mac = c_ulong(hash(self.name)).value.to_bytes(8, 'little')
     fake_mac = list(fake_mac[0:4]) + [src, 31]
     fake_mac = ':'.join([f'{b:02x}' for b in fake_mac])
 
