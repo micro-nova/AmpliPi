@@ -265,7 +265,7 @@
           </a>
           <div class="card-body">
             <div id="g{{ group['id'] }}-vol" class="volume {% if group['mute'] %} muted {% endif %}"  data-group="{{ group['id'] }}" data-source="{{src.id}}">
-              <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ group['vol_f'] }}" class="volume-range">
+              <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ group['vol_f'] }}" step="0.01" class="volume-range">
               <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                 <i class="fa {% if group['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
               </div>
@@ -283,7 +283,7 @@
                 <h6 class="card-header">{{ zone['name'] }}</h6>
                 <div class="card-body">
                   <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}"  data-source="{{src.id}}">
-                    <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}" class="volume-range">
+                    <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}" step="0.01" class="volume-range">
                     <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                       <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
                     </div>
@@ -305,7 +305,7 @@
           <h6 class="card-header">{{ zone['name'] }}</h6>
           <div class="card-body">
             <div id="z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}" data-source="{{src.id}}">
-              <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}" class="volume-range">
+              <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}" step="0.01" class="volume-range">
               <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                 <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
               </div>
