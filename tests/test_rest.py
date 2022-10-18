@@ -239,29 +239,45 @@ def test_load_null_config(client):
 
 def test_load_multi_config(client):
   """ Load multiple configurations """
-  # create a test config with a connected stream
+  # create a test config with a multiple connected stream
   sinputs = [f'stream={AP_STREAM_ID}', f'stream={P_STREAM_ID}']
-  stream_test_config = deepcopy(client.original_config)
-  if 'streams' in stream_test_config:
-    stream_test_config['sources'][0]['input'] = sinputs[0]
-    stream_test_config['sources'][1]['input'] = sinputs[1]
-    assert stream_test_config['streams'][0]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
-    assert stream_test_config['streams'][1]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
+  multi_stream_cfg = deepcopy(client.original_config)
+  if 'streams' in multi_stream_cfg:
+    multi_stream_cfg['sources'][0]['input'] = sinputs[0]
+    multi_stream_cfg['sources'][1]['input'] = sinputs[1]
+    assert multi_stream_cfg['streams'][0]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
+    assert multi_stream_cfg['streams'][1]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
+  # create a simple config with a single stream connected
+  single_stream_cfg = deepcopy(amplipi.models.Status().dict())
+  single_stream_cfg['sources'][0]['input'] = f'stream=2000'
+  single_stream_cfg['streams'] = [{"id": 2000, "name": "SimpleAmpliPi", "type": "shairport"}]
+  # create a barebones config with no streams
+  bare_cfg = deepcopy(amplipi.models.Status().dict())
   # load a barebones config
-  rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
+  rv = client.post('/api/load', json=bare_cfg)
   assert rv.status_code == HTTPStatus.OK
   if rv.status_code == HTTPStatus.OK:
-    check_config(amplipi.models.Status().dict(), rv.json())
-  # load the test config with a stream (testing the transition from simple -> more complicated)
-  rv = client.post('/api/load', json=stream_test_config)
+    check_config(bare_cfg, rv.json())
+  # load a single stream config
+  rv = client.post('/api/load', json=single_stream_cfg)
   assert rv.status_code == HTTPStatus.OK
   if rv.status_code == HTTPStatus.OK:
-    check_config(stream_test_config, rv.json())
-  # load a barebones config (testing the transition from more complicated -> simple)
-  rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
+    check_config(single_stream_cfg, rv.json())
+  # load the multi stream config with a stream (testing the transition from simple -> more complicated)
+  rv = client.post('/api/load', json=multi_stream_cfg)
   assert rv.status_code == HTTPStatus.OK
   if rv.status_code == HTTPStatus.OK:
-    check_config(amplipi.models.Status().dict(), rv.json())
+    check_config(multi_stream_cfg, rv.json())
+  # load a single stream config (testing the transition from more complicated -> simple)
+  rv = client.post('/api/load', json=single_stream_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(single_stream_cfg, rv.json())
+  # load a single stream config (testing the transition from more simple -> bare bones)
+  rv = client.post('/api/load', json=bare_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(bare_cfg, rv.json())
 
 def test_open_api_yamlfile(client):
   """ Check if the openapi yaml doc is available """
