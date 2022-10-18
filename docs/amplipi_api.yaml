@@ -3665,7 +3665,7 @@ paths:
                   name: Bedroom
               Change audio source:
                 value:
-                  source-id: 3
+                  source_id: 3
               Change volume relative to min/max volume:
                 value:
                   vol: 0.44
@@ -4845,7 +4845,7 @@ paths:
                   name: Upstairs
               Change audio source:
                 value:
-                  source-id: 3
+                  source_id: 3
               Set volume relative to each zone's min/max volume:
                 value:
                   vol_f: 0.44
@@ -9592,7 +9592,7 @@ components:
             name: Upstairs
         Change audio source:
           value:
-            source-id: 3
+            source_id: 3
         Set volume relative to each zone's min/max volume:
           value:
             vol_f: 0.44
@@ -9657,7 +9657,7 @@ components:
             name: Upstairs
         Change audio source:
           value:
-            source-id: 3
+            source_id: 3
         Set volume relative to each zone's min/max volume:
           value:
             vol_f: 0.44
@@ -10902,7 +10902,7 @@ components:
             name: Bedroom
         Change audio source:
           value:
-            source-id: 3
+            source_id: 3
         Change volume relative to min/max volume:
           value:
             vol: 0.44
@@ -10976,7 +10976,7 @@ components:
             name: Bedroom
         Change audio source:
           value:
-            source-id: 3
+            source_id: 3
         Change volume relative to min/max volume:
           value:
             vol: 0.44
