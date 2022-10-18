@@ -798,7 +798,7 @@ class Api:
     """Deletes an existing stream"""
     try:
       if sid in LMS_DEFAULTS and isinstance(self.streams[sid], amplipi.streams.LMS):
-        raise Exception(f'Stream {sid} cannot be deleted')
+        raise Exception(f'Protected stream {sid} cannot be deleted')
       # if input is connected to a source change that input to nothing
       for src in self.status.sources:
         if src.get_stream() == sid and src.id is not None:
@@ -813,6 +813,11 @@ class Api:
       return ApiResponse.ok()
     except KeyError as exc:
       msg = f'delete stream failed: {sid} does not exist'
+      if internal:
+        raise Exception(msg) from exc
+      return ApiResponse.error(msg)
+    except Exception as exc:
+      msg = f'delete stream failed: {exc}'
       if internal:
         raise Exception(msg) from exc
       return ApiResponse.error(msg)
