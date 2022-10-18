@@ -247,11 +247,28 @@ def test_load_multi_config(client):
     multi_stream_cfg['sources'][1]['input'] = sinputs[1]
     assert multi_stream_cfg['streams'][0]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
     assert multi_stream_cfg['streams'][1]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
-  # create a simple config with a single stream connected
+  # create a simple config with a single stream connected, with metadata representing raw config load
   single_stream_cfg = amplipi.models.Status().dict()
-  single_stream_cfg['sources'][0]['input'] = f'stream=2000'
+  single_stream_cfg['sources'][0] = {
+    "id": 0,
+    "name": "Input 1",
+    "input": "stream=2000",
+    "info": {
+      "name": "Groove Salad - internet radio",
+      "state": "playing",
+      "artist": "Liam Thomas",
+      "track": "With your touch",
+      "station": "Groove Salad [SomaFM]",
+      "img_url": "https://somafm.com/img3/groovesalad-400.jpg",
+      "supported_cmds": [
+        "play",
+        "stop"
+      ]
+    }
+  }
   single_stream_cfg['streams'] = [
-    {"id": 2000, "name": "SimpleAmpliPi", "type": "shairport"},
+    {"id": 2000, 'name': 'Groove Salad', "type": "internetradio",
+     "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"}
   ]
   # create a barebones config with no streams
   bare_cfg = deepcopy(amplipi.models.Status().dict())
