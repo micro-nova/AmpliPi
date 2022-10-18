@@ -305,10 +305,10 @@ async def get_image(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, h
   name = os.path.basename(uri) + '.jpg'
   return FileResponse(img_tmp_jpg, media_type='image/jpg', filename=name)
 
-api.post('/api/sources/{sid}/vol_inc/{percent}', tags=['stream'])
-def volume_increment(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, percent: int = 5) -> models.Status:
+@api.post('/api/sources/{sid}/vol_inc/{percent}', tags=['source'])
+def volume_increment(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, percent: float = 0) -> models.Status:
   """ Increments (or decrements) the volume on a source. """
-  return code_response(ctrl, ctrl.increment_volume(sid, percent/100))
+  return code_response(ctrl, ctrl.increment_volume(sid, percent))
 
 # zones
 

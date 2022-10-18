@@ -223,6 +223,7 @@ class Spotify(BaseStream):
     self.connect_port = None
     self.mpris = None
     self.proc_pid = None
+    self.last_volume = 0
 
     self.supported_cmds = {
       'play': [0x05],
@@ -332,6 +333,10 @@ class Spotify(BaseStream):
         if md.art_url:
           source.img_url = md.art_url
       pass
+
+      if self.last_volume != md.volume:
+        print(f"adjusting by {md.volume}")
+        self.last_volume = md.volume
 
     except Exception as e:
       print(f"error in spotify: {e}")

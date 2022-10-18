@@ -498,19 +498,25 @@ class Api:
       return ApiResponse.error(f'failed to set source: {exc}')
     return ApiResponse.ok()
 
-  def increment_volume(self, sid: int, percent: float, internal: bool = False):
+  def increment_volume(self, sid: int, amnt: float, internal: bool = False):
     try:
       zones = self.status.zones
 
       for zone in zones:
         if zone.source_id == sid:
-          zone.vol_f += percent/100
-          self.set_zone(zid = zone.id ,internal=True)
-          zone
+          new_vol = zone.vol_f + amnt
+          new_vol = min(max(new_vol, 0), 1)
+          self.set_zone(
+            zone.id,
+            models.ZoneUpdate(
+              vol_f=new_vol
+              ),
+            force_update=True,
+            internal=True)
     except Exception as exc:
       if internal:
         raise exc
-      return ApiResponse.error('failed to increment volume: {exc}')
+      return ApiResponse.error(f'failed to increment volume: {exc}')
     return ApiResponse.ok()
 
   def set_zone(self, zid, update: models.ZoneUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
