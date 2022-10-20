@@ -163,13 +163,13 @@ class MPRIS:
       except Exception as e:
         print(f"failed to connect mpris {e}")
 
-      print(f"getting mrpis metadata from {self.service_suffix}")
+      # print(f"getting mrpis metadata from {self.service_suffix}")
       try:
         raw_metadata = {}
         try:
           raw_metadata = mpris.Metadata
         except Exception as e:
-          print(f"Dbus error getting MPRIS metadata: {e}")
+          print(f"Dbus error getting MPRIS metadata from {self.service_suffix}: {e}")
 
         metadata = {}
 
@@ -177,7 +177,7 @@ class MPRIS:
           try:
             metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
           except KeyError as e:
-            print(f"Metadata mapping error: {e}")
+            print(f"Metadata mapping error from {self.service_suffix}: {e}")
 
         metadata['state'] = mpris.PlaybackStatus.strip("'")
         metadata['volume'] = mpris.Volume
@@ -190,7 +190,7 @@ class MPRIS:
             json.dump(metadata, metadata_file)
 
       except Exception as e:
-        print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}"
+        print(f"Error writing MPRIS metadata to file at {self.metadata_path} from {self.service_suffix}: {e}"
               +"\nThe above is normal if a user is not yet connected to the stream.")
 
       sys.stdout.flush() # forces stdout to print
