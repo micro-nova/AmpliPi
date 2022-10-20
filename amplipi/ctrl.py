@@ -376,14 +376,13 @@ class Api:
   def _sync_stream_info(self) -> None:
     """Synchronize the stream list to the stream status"""
     # TODO: figure out how to cache stream info, since it only needs to happen when a stream is added/updated
-    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'freq', 'token', 'client_id'] # optional configuration fields
     streams = []
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
       # convert the stream instance info to stream data (serialize its current configuration)
       st_type = type(stream_inst).__name__.lower()
       stream = models.Stream(id=sid, name=stream_inst.name, type=st_type)
-      for field in optional_fields:
+      for field in models.optional_stream_fields():
         if field in stream_inst.__dict__:
           stream.__dict__[field] = stream_inst.__dict__[field]
       streams.append(stream)
