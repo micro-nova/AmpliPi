@@ -255,8 +255,19 @@ class Api:
     # configure all sources so that they are in a known state
     for src in self.status.sources:
       if src.id is not None:
-        update = models.SourceUpdate(input=src.input)
-        self.set_source(src.id, update, force_update=True, internal=True)
+        try:
+          update = models.SourceUpdate(input=src.input)
+          self.set_source(src.id, update, force_update=True, internal=True)
+        except Exception as e:
+          print(f'Error configuring source {src.id}: {e}')
+          print(f'defaulting source {src.id} to an empty input')
+          update = models.SourceUpdate(input='')
+          try:
+            self.set_source(src.id, update, force_update=True, internal=True)
+          except Exception as e2:
+            print(f'Error configuring source {src.id}: {e2}')
+            print(f'Source {src.id} left uninitialized')
+
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for zone in self.status.zones:
