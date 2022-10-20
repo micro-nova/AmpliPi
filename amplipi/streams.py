@@ -38,6 +38,7 @@ import socket
 import amplipi.models as models
 import amplipi.utils as utils
 from amplipi.mpris import MPRIS
+from streams.spotify_volume_manager import SpotVolumeManager
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -223,7 +224,7 @@ class Spotify(BaseStream):
     self.connect_port = None
     self.mpris = None
     self.proc_pid = None
-    self.last_volume = 0
+    self.volume_thread = None
 
     self.supported_cmds = {
       'play': [0x05],
@@ -290,15 +291,20 @@ class Spotify(BaseStream):
 
     time.sleep(0.25) # Delay a bit
 
+    # METADATA OBJECT
+    md_path =  f'{src_config_folder}/metadata.txt'
+
     try:
-      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{src_config_folder}/metadata.txt')
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', md_path)
     except Exception as exc:
       print(f'Error starting spotify MPRIS reader: {exc}')
+
+    #VOLUME THREAD
+    self.volume_thread = SpotVolumeManager(md_path, src)
 
     self._connect(src)
 
     print("Spotifyd connected")
-
 
   def disconnect(self):
     print("disconnecting spotifyd")
@@ -308,10 +314,12 @@ class Spotify(BaseStream):
       print(f"Spotifyd didn't shut down: {e}")
     self._disconnect()
     self.connect_port = None
-    del self.mpris # garbage collection doesn't kill this fast enough
-    del self.proc
-    time.sleep(0.1)
+    if self.volume_thread: self.volume_thread.stop()
+    self.volume_thread = None
+    # del self.mpris # garbage collection doesn't kill this fast enough
+    # del self.proc
     self.mpris = None
+    # time.sleep(1)
     self.proc = None
 
   def info(self) -> models.SourceInfo:
@@ -333,10 +341,6 @@ class Spotify(BaseStream):
         if md.art_url:
           source.img_url = md.art_url
       pass
-
-      if self.last_volume != md.volume:
-        print(f"adjusting by {md.volume}")
-        self.last_volume = md.volume
 
     except Exception as e:
       print(f"error in spotify: {e}")

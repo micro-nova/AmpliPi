@@ -23,3 +23,8 @@ autoplay = true
 
 # The port `spotifyd` uses to announce its service over the network.
 zeroconf_port = 1234
+
+# parameters to trick volume
+control = "fake control"
+volume_controller = "alsa"
+initial_volume = "50"

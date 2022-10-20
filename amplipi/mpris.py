@@ -19,7 +19,7 @@ METADATA_MAPPINGS = [
   ('album', 'xesam:album')
 ]
 
-METADATA_REFRESH_RATE = 0.5
+METADATA_REFRESH_RATE = 2
 
 class CommandTypes(Enum):
   PLAY = auto()
@@ -184,6 +184,8 @@ class MPRIS:
 
         if metadata != last_sent:
           last_sent = metadata
+          # This file is used by a couple other things (spotify volume manager) so
+          # if the mpris interface gets changed make sure it still creates this file
           with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
             json.dump(metadata, metadata_file)
 
