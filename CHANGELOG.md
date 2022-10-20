@@ -5,6 +5,9 @@
   * Robustify config loading to handle missing streams
   * Simplify stream serialization
 
+* Streams
+  * Add LMS Client
+
 ## 0.1.9
 * Web App
   * Add link for text log

@@ -473,6 +473,7 @@ class Stream(Base):
   freq: Optional[str] = Field(description='FM Frequency (MHz), used for fmradio')
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
+  server: Optional[str] = Field(description='Server url')
 
   # add examples for each type of stream
   class Config:
@@ -552,6 +553,12 @@ class Stream(Base):
             'logo': 'static/imgs/fmradio.png'
           }
         },
+        'Add LMS Client connected specifically to amplipi': {
+          'value': {
+            'name': 'Test',
+            'server': 'localhost'
+          }
+        },
         'Add LMS Client': {
           'value': {
             'name': 'Family'
@@ -618,6 +625,7 @@ class StreamUpdate(BaseUpdate):
   url: Optional[str]
   logo: Optional[str]
   freq: Optional[str]
+  server: Optional[str]
 
   class Config:
     schema_extra = {

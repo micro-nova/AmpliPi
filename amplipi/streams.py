@@ -26,7 +26,7 @@ import sys
 import subprocess
 import time
 from ctypes import c_ulong # unsigned ints for MAC generation
-from typing import Union
+from typing import Union, Optional
 import threading
 
 # Used by InternetRadio and Spotify
@@ -913,13 +913,17 @@ class FMRadio(BaseStream):
 
 class LMS(BaseStream):
   """ An LMS Stream """
-  def __init__(self, name, mock=False):
+  def __init__(self, name, server=None, mock=False):
     super().__init__('lms', name, mock)
+    self.server : Optional[str] = server
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
+      reconnect_needed = True
+    if 'server' in kwargs and kwargs['server'] != self.server:
+      self.name = kwargs['server']
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
@@ -955,10 +959,18 @@ class LMS(BaseStream):
                   '-n', self.name,
                   '-m', fake_mac,
                   '-o', utils.output_device(src),
-                  '-s', socket.gethostname(),
                   '-f', f'{src_config_folder}/lms_log.txt',
                   '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
                 ]
+      if self.server is not None:
+        # specify the server to connect to (if unspecified squeezelite starts in discovery mode)
+        server = self.server
+        # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
+        if 'localhost' ==  server or server.startswith('localhost:'):
+          # squeezelite does not support localhost and requires the actual hostname
+          # NOTE: :9000 is assumed unless otherwise specified
+          server.replace('localhost', socket.gethostname())
+        lms_args += [ '-s', server]
 
       self.proc = subprocess.Popen(args=lms_args)
       self._connect(src)
@@ -1006,5 +1018,5 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'fmradio':
     return FMRadio(args['name'], args['freq'], args['logo'], mock=mock)
   elif stream.type == 'lms':
-    return LMS(args['name'], mock=mock)
+    return LMS(args['name'], args['server'], mock=mock)
   raise NotImplementedError(stream.type)
