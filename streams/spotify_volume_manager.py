@@ -35,7 +35,7 @@ class SpotVolumeManager(Thread):
 
         if self.last_volume != vol:
           adjustment = (vol-self.last_volume)/100
-          requests.post(f"http://localhost:5000/api/sources/{self.sid}/vol_inc/{adjustment}")
+          requests.post(f"http://localhost/api/sources/{self.sid}/vol_inc/{adjustment}")
           self.last_volume = vol
       except Exception as e:
         print("error changing volume: "+str(e))
