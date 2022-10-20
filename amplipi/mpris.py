@@ -34,7 +34,7 @@ class Metadata:
   title: str = ''
   art_url: str = ''
   album: str = ''
-  state: str = '',
+  state: str = ''
   volume: float = 0
 
 
