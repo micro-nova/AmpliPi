@@ -912,7 +912,7 @@ class FMRadio(BaseStream):
     return source
 
 class LMS(BaseStream):
-  """ An LMS Stream """
+  """ An LMS Stream using squeezelite"""
   def __init__(self, name, server=None, mock=False):
     super().__init__('lms', name, mock)
     self.server : Optional[str] = server
