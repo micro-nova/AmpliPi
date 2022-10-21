@@ -951,7 +951,7 @@ class LMS(BaseStream):
 
       # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
       fake_mac = c_ulong(hash(self.name)).value.to_bytes(8, 'little')
-      fake_mac = list(fake_mac[0:4]) + [src, 31]
+      fake_mac = list(fake_mac[0:4]) + [31, 41] # make it look like a MAC address, filling with digits of Pi
       fake_mac = ':'.join([f'{b:02x}' for b in fake_mac])
 
       # Process
