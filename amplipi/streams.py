@@ -1010,13 +1010,13 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'dlna':
     return DLNA(args['name'], mock=mock)
   elif stream.type == 'internetradio':
-    return InternetRadio(args['name'], args['url'], args['logo'], mock=mock)
+    return InternetRadio(args['name'], args['url'], args.get('logo'), mock=mock)
   elif stream.type == 'plexamp':
     return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
   elif stream.type == 'fileplayer':
     return FilePlayer(args['name'], args['url'], mock=mock)
   elif stream.type == 'fmradio':
-    return FMRadio(args['name'], args['freq'], args['logo'], mock=mock)
+    return FMRadio(args['name'], args['freq'], args.get('logo'), mock=mock)
   elif stream.type == 'lms':
-    return LMS(args['name'], args['server'], mock=mock)
+    return LMS(args['name'], args.get('server'), mock=mock)
   raise NotImplementedError(stream.type)
