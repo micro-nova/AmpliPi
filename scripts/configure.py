@@ -991,3 +991,16 @@ if __name__ == '__main__':
           display=flags.display, audiodetector=flags.audiodetector,
           firmware=flags.firmware, password=flags.password,
           restart_updater=flags.restart_updater)
+
+# TODO:
+# dpkg --list piwiz &>/dev/null
+# sudo apt-get purge piwiz -y
+
+# en_US local:
+# Configure timezone and locale
+#sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+#  echo 'LANG="en_US.UTF-8"' >/etc/default/locale && \
+#  dpkg-reconfigure -f noninteractive locales && \
+#  update-locale LANG=en_US.UTF-8
+
+# Generic keyboard:
