@@ -425,6 +425,10 @@ function initVolControl(ctrl) {
   const zone = ctrl.dataset.hasOwnProperty('zone') ? ctrl.dataset.zone : null;
   const group = ctrl.dataset.hasOwnProperty('group') ? ctrl.dataset.group : null;
   let last_req_stamp = Date(0); // keep track of request time stamps for throttling (so we don't overload AmpliPi)
+  let start_touch = null;
+  let drag = false;
+  const VERT_THRESHOLD = 25; // how far the user must drag vertically before the touch is considered a scroll
+  const slope_THRESHOLD = 0.40; // how steep of an slope the user must drag before the touch is considered a scroll
 
   const initValue = (value) => {
     const pct = (value - range.min) / (range.max - range.min) * 100.0;
@@ -460,15 +464,50 @@ function initVolControl(ctrl) {
   initValue(range.value);
 
   const calculateFill = (e) => {
+    let set_pos = true
     let offsetX = e.offsetX
 
+    if (e.type === "touchstart"){
+      drag = false;
+      start_touch = e.touches[0];
+      set_pos = false;
+    }
+
     if (e.type === "touchmove") {
+      dy = Math.abs(e.touches[0].screenY - start_touch.screenY);
+      dx = Math.abs(e.touches[0].screenX - start_touch.screenX);
+
+      slope = dy/dx;
+      console.log(slope);
+
+      drag = true;
       offsetX = e.touches[0].pageX - e.touches[0].target.offsetLeft;
+
+      if (dy > VERT_THRESHOLD || slope > slope_THRESHOLD) {
+        set_pos = false;
+      }
+    }
+
+    // if a mouseup is happening and a we detected a touch we're on a touchscreen so check dy
+    if (e.type === "mouseup" && start_touch != null) {
+      dy = Math.abs(e.screenY - start_touch.screenY);
+
+      if (dy > VERT_THRESHOLD) {
+        set_pos = false;
+      }
+    }
+
+    if (e.type =="touchend") {
+      dy = Math.abs(e.touches[0].screenY - start_touch.screenY);
+
+      if (dy > VERT_THRESHOLD) {
+        set_pos = false;
+      }
     }
 
     const width = e.target.offsetWidth - 30;
 
-    setPct((offsetX - 15) / width * 100.0)
+    if(set_pos) setPct((offsetX - 15) / width * 100.0);
   }
   vols[ctrl.id] = {}
   vols[ctrl.id].barStillDown = false;
