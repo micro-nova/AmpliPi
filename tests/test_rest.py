@@ -237,6 +237,24 @@ def test_load_null_config(client):
   if rv.status_code == HTTPStatus.OK:
     check_config(amplipi.models.Status().dict(), rv.json())
 
+def test_load_stream_missing_config(client):
+  """ A config loaded with a missing stream will be a common problem when changing versions.
+    This will happend when a version does not support a specific stream type
+  """
+  # create a config with an unloadable stream
+  unsupported_stream_cfg = amplipi.models.Status().dict()
+  unsupported_stream_cfg['sources'][0]['input'] = 'stream=2000'
+  unsupported_stream_cfg['streams'] = [
+    {"id": 2000, 'name': 'Unsupported stream', "type": "unsupported-type" }
+  ]
+  rv = client.post('/api/load', json=unsupported_stream_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    # config should be loaded without unsupported stream and source input should be set to ''
+    status = rv.json()
+    check_config(amplipi.models.Status().dict(), rv.json())
+    assert status['sources'][0]['input'] == ''
+
 def test_load_multi_config(client):
   """ Load multiple configurations """
   # create a test config with a multiple connected stream
