@@ -21,24 +21,22 @@ such as Pandora, Spotify, and AirPlay. Each digital source is expected to have
 a consistent interface.
 """
 
-import os
-from re import sub
-import sys
-import subprocess
-import time
-from typing import Union, Optional
-import threading
-
 # Used by InternetRadio and Spotify
 import json
+import os
 import signal
-import ast
 import socket
 import hashlib # md5 for string -> MAC generation
+import subprocess
+import sys
+import threading
+import time
+from typing import Union
 
 import amplipi.models as models
 import amplipi.utils as utils
 from amplipi.mpris import MPRIS
+
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -127,6 +125,7 @@ class AirPlay(BaseStream):
       'next',
       'prev'
       ]
+    self.STATE_TIMEOUT = 300 # seconds
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -201,7 +200,7 @@ class AirPlay(BaseStream):
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(
-      name=self.full_name(),
+      name=f"Connect to {self.name} on Airplay",
       state=self.state,
       img_url='static/imgs/shairport.png'
     )
@@ -209,8 +208,15 @@ class AirPlay(BaseStream):
     try:
       md = self.mpris.metadata()
 
-      if not self.mpris.is_stopped():
-        source.state = 'playing' if self.mpris.is_playing() else 'paused'
+      if self.mpris.is_playing():
+        source.state = 'playing'
+      else:
+        if time.time() - md.state_changed_time < self.STATE_TIMEOUT:
+          source.state = 'paused'
+        else:
+          source.state = 'stopped'
+
+      if source.state != 'stopped':
         source.artist = md.artist
         source.track = md.title
         source.album = md.album
@@ -218,8 +224,8 @@ class AirPlay(BaseStream):
 
         img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
         img_loc = f'generated/{self.src}/{img_name}'
-
         source.img_url = img_loc
+
 
     except Exception as e:
       print(f"error in airplay: {e}")
