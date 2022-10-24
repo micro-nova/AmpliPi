@@ -335,6 +335,93 @@ class Spotify(BaseStream):
     except Exception as exc:
       raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
+class YTLivestream(BaseStream):
+  """ A YouTube Livestream """
+  def __init__(self, name, url, mock=False):
+    super().__init__('ytlivestream', name, mock)
+
+    self.ytdlp_process = None
+    self.mpv_process = None
+    self.url = url
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+    if 'url' in kwargs and kwargs['url'] != self.url:
+      self.url = kwargs['url']
+      reconnect_needed = True
+    if reconnect_needed:
+      if self._is_running():
+        last_src = self.src
+        self.disconnect()
+        time.sleep(0.1) # delay a bit, is this needed?
+        self.connect(last_src)
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, src):
+    """ Run mpv with ytdlp to play a livestream to a given audio source """
+
+    print("ytlivestream connecting")
+
+    if self.mock:
+      self._connect(src)
+      return
+
+    # Make the (per-source) config directory
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'mkdir -p {src_config_folder}')
+
+    # PROCESS
+    try:
+      ytdlp_args = ['yt-dlp', '-f', '91', '-o', '-', self.url]
+      mpv_args = ['mpv', '--no-video', f'--audio-device=\'alsach{src}\'', '-']
+      self.ytdlp_process = subprocess.Popen(args=ytdlp_args,
+                                            bufsize=1024,
+                                            stdin=subprocess.PIPE,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE,
+                                            cwd=f'{src_config_folder}')
+      self.mpv_process = subprocess.Popen(args=mpv_args,
+                                          bufsize=1024,
+                                          stdin=self.ytdlp_process.stdout,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE,
+                                          cwd=f'{src_config_folder}')
+    except Exception as exc:
+      print(f'Error starting ytlivestream: {exc}')
+
+    time.sleep(0.25) # Delay a bit
+
+    self._connect(src)
+
+    print("ytlivestream connected")
+
+
+  def disconnect(self):
+    print("disconnecting ytlivestream")
+    try:
+      self.ytdlp_process.kill()
+    except Exception as e:
+      print(f"ytdlp didn't shut down: {e}")
+
+    try:
+      self.mpv_process.kill()
+    except Exception as e:
+      print(f"mpv didn't shut down: {e}")
+
+    self._disconnect()
+
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url='static/imgs/spotify.png' # report generic spotify image in place of unspecified album art
+    )
+
+    return source
+
+
 class Pandora(BaseStream):
   """ A Pandora Stream """
   def __init__(self, name, user, password, station, mock=False):
