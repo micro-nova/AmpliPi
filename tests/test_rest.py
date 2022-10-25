@@ -31,9 +31,11 @@ TEST_CONFIG['groups'] = [
   {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
   {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
 ]
+AP_STREAM_ID = 1000
+P_STREAM_ID = 1001
 TEST_CONFIG['streams'] = [
-  {"id": 1000, "name": "AmpliPi", "type": "shairport"},
-  {"id": 1001, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
+  {"id": AP_STREAM_ID, "name": "AmpliPi", "type": "shairport"},
+  {"id": P_STREAM_ID, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
   {"id": 1002, "name": "AmpliPi", "type": "spotify"},
   {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
   {"id": 1004, "name": "AmpliPi", "type": "dlna"},
@@ -205,30 +207,124 @@ def test_reset(client):
   rv = client.post('/api/reset')
   assert rv.status_code == HTTPStatus.OK
 
+def check_config(expected, actual):
+  """Check configuration changes match expected"""
+  assert actual is not None
+  for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
+    if t in expected:
+      assert t in actual, f'missing field {t}'
+      assert len(actual[t]) == len(expected[t]), f'failed to load {t} portion of configuration expected: {expected[t]}, actual: {actual[t]}'
+      # check ids and names match for each field, avoiding generated data
+      exp_ids = { exp["id"]: exp for exp in expected[t] }
+      for iact in actual[t]:
+        assert iact["id"] in exp_ids, f'{iact["name"]}(id={iact["id"]}) missing from expected config'
+        assert iact["name"] == exp_ids[iact["id"]]["name"], f'{iact["name"]} does not match expected={exp_ids[iact["id"]]["name"]}'
+    else:
+      assert t in actual, f'missing field {t}, it is still expected to be generated empty even though it not specified in the expected configuration'
+      assert len(actual[t]) == 0, f'{t} should be empty since it is not preset in expected config'
+
 def test_load_og_config(client):
   """ Reload the initial configuration """
   rv = client.post('/api/load', json=client.original_config)
   assert rv.status_code == HTTPStatus.OK
   if rv.status_code == HTTPStatus.OK:
-    jrv = rv.json()
-    assert jrv is not None
-    og_config = client.original_config
-    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
-      if t in og_config:
-        assert len(jrv[t]) == len(og_config[t])
-
+    check_config(client.original_config, rv.json())
 
 def test_load_null_config(client):
   """ Load with the basic default configuration """
-  rv = client.post('/api/load', json={'config': amplipi.models.Status().dict()})
+  rv = client.post('/api/load', json=amplipi.models.Status().dict())
   assert rv.status_code == HTTPStatus.OK
   if rv.status_code == HTTPStatus.OK:
-    jrv = rv.json()
-    assert jrv is not None
-    og_config = amplipi.models.Status().dict()
-    for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
-      if t in og_config:
-        assert len(jrv[t]) == len(og_config[t])
+    check_config(amplipi.models.Status().dict(), rv.json())
+
+def test_load_stream_missing_config(client):
+  """ A config loaded with a missing stream will be a common problem when changing versions.
+    This will happend when a version does not support a specific stream type
+  """
+  # create a config with an unloadable stream
+  unsupported_stream_cfg = amplipi.models.Status().dict()
+  unsupported_stream_cfg['sources'][0]['input'] = 'stream=2000'
+  unsupported_stream_cfg['streams'] = [
+    {"id": 2000, 'name': 'Unsupported stream', "type": "unsupported-type" }
+  ]
+  rv = client.post('/api/load', json=unsupported_stream_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    # config should be loaded without unsupported stream and source input should be set to ''
+    status = rv.json()
+    check_config(amplipi.models.Status().dict(), rv.json())
+    assert status['sources'][0]['input'] == ''
+
+def test_load_multi_config(client):
+  """ Load multiple configurations """
+  # create a test config with a multiple connected stream
+  sinputs = [f'stream={AP_STREAM_ID}', f'stream={P_STREAM_ID}']
+  multi_stream_cfg = client.original_config
+  if 'streams' in multi_stream_cfg:
+    multi_stream_cfg['sources'][0]['input'] = sinputs[0]
+    multi_stream_cfg['sources'][1]['input'] = sinputs[1]
+    assert multi_stream_cfg['streams'][0]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
+    assert multi_stream_cfg['streams'][1]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
+  # create a simple config with a single stream connected, with metadata representing raw config load
+  single_stream_cfg = amplipi.models.Status().dict()
+  single_stream_cfg['sources'][0] = {
+    "id": 0,
+    "name": "Input 1",
+    "input": "stream=2000",
+    "info": {
+      "name": "Groove Salad - internet radio",
+      "state": "playing",
+      "artist": "Liam Thomas",
+      "track": "With your touch",
+      "station": "Groove Salad [SomaFM]",
+      "img_url": "https://somafm.com/img3/groovesalad-400.jpg",
+      "supported_cmds": [
+        "play",
+        "stop"
+      ]
+    }
+  }
+  single_stream_cfg['streams'] = [
+    {"id": 2000, 'name': 'Groove Salad', "type": "internetradio",
+     "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"}
+  ]
+  # create a barebones config with no streams
+  bare_cfg = deepcopy(amplipi.models.Status().dict())
+  # load a barebones config
+  rv = client.post('/api/load', json=bare_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(bare_cfg, rv.json())
+  # load a single stream config
+  rv = client.post('/api/load', json=single_stream_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(single_stream_cfg, rv.json())
+  # load the multi stream config with a stream (testing the transition from simple -> more complicated)
+  rv = client.post('/api/load', json=multi_stream_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(multi_stream_cfg, rv.json())
+  # load a single stream config (testing the transition from more complicated -> simple)
+  rv = client.post('/api/load', json=single_stream_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(single_stream_cfg, rv.json())
+  # load a bare config (testing the transition from more simple -> bare bones)
+  rv = client.post('/api/load', json=bare_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(bare_cfg, rv.json())
+  # load the multi stream config with a stream (testing the transition from bare -> more complicated)
+  rv = client.post('/api/load', json=multi_stream_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(multi_stream_cfg, rv.json())
+  # load a bare config (testing the transition from complex -> bare bones)
+  rv = client.post('/api/load', json=bare_cfg)
+  assert rv.status_code == HTTPStatus.OK
+  if rv.status_code == HTTPStatus.OK:
+    check_config(bare_cfg, rv.json())
 
 def test_open_api_yamlfile(client):
   """ Check if the openapi yaml doc is available """

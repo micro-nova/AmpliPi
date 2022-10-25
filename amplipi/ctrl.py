@@ -243,21 +243,31 @@ class Api:
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
     failed_streams: List[int] = []
     for stream in self.status.streams:
+      assert stream.id is not None
       if stream.id:
         try:
           self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams)
         except Exception as exc:
           print(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
-    # only keep the successful streams, this fixes a common problem of loading a stream that doesn't exist in the current developement
-    # [:] does an in-place modification to the list suggested by https://stackoverflow.com/a/1208792/1110730
-    self.status.streams[:] = [s for s in self.status.streams if s.id not in failed_streams]
+    self._sync_stream_info() # need to update the status with the new streams
 
     # configure all sources so that they are in a known state
     for src in self.status.sources:
       if src.id is not None:
-        update = models.SourceUpdate(input=src.input)
-        self.set_source(src.id, update, force_update=True, internal=True)
+        try:
+          update = models.SourceUpdate(input=src.input)
+          self.set_source(src.id, update, force_update=True, internal=True)
+        except Exception as e:
+          print(f'Error configuring source {src.id}: {e}')
+          print(f'defaulting source {src.id} to an empty input')
+          update = models.SourceUpdate(input='')
+          try:
+            self.set_source(src.id, update, force_update=True, internal=True)
+          except Exception as e2:
+            print(f'Error configuring source {src.id}: {e2}')
+            print(f'Source {src.id} left uninitialized')
+
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for zone in self.status.zones:
@@ -363,25 +373,26 @@ class Api:
     self.status.info.online = self._online_cache.get(throttled)
     self.status.info.latest_release = self._latest_release_cache.get(throttled)
 
-  def get_state(self) -> models.Status:
-    """ get the system state """
-    # update the state with the latest stream info
-    # TODO: figure out how to cache stream info
-    optional_fields = ['station', 'user', 'password', 'url', 'logo', 'freq', 'token', 'client_id'] # optional configuration fields
+  def _sync_stream_info(self) -> None:
+    """Synchronize the stream list to the stream status"""
+    # TODO: figure out how to cache stream info, since it only needs to happen when a stream is added/updated
     streams = []
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
       # convert the stream instance info to stream data (serialize its current configuration)
       st_type = type(stream_inst).__name__.lower()
       stream = models.Stream(id=sid, name=stream_inst.name, type=st_type)
-      for field in optional_fields:
+      for field in models.optional_stream_fields():
         if field in stream_inst.__dict__:
           stream.__dict__[field] = stream_inst.__dict__[field]
       streams.append(stream)
     self.status.streams = streams
+
+  def get_state(self) -> models.Status:
+    """ get the system state """
     self._update_sys_info()
     # update source's info
-    # TODO: stream/source info should be updated in a background thread
+    # TODO: source info should be updated in a background thread
     for src in self.status.sources:
       self._update_src_info(src)
     return self.status
@@ -740,6 +751,7 @@ class Api:
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
       self.streams[sid] = stream
+      self._sync_stream_info()
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
@@ -764,6 +776,7 @@ class Api:
     try:
       changes = update.dict(exclude_none=True)
       stream.reconfig(**changes)
+      self._sync_stream_info()
       return ApiResponse.ok()
     except Exception as exc:
       return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
@@ -780,6 +793,7 @@ class Api:
       i, _ = utils.find(self.status.streams, sid)
       if i is not None:
         del self.status.streams[i] # delete the cached stream state just in case
+      self._sync_stream_info()
       if not internal:
         self.mark_changes()
       return ApiResponse.ok()

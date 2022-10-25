@@ -1,6 +1,9 @@
 # AmpliPi Software Releases
 
 ## 0.1.X Upcoming
+* Streams
+  * Robustify config loading to handle missing streams
+  * Simplify stream serialization
 
 ## 0.1.9
 * Web App

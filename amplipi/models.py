@@ -20,7 +20,8 @@ Encourages reuse of datastructures across AmpliPi
 """
 
 # type handling, fastapi leverages type checking for performance and easy docs
-from typing import List, Dict, Optional, Union
+from functools import lru_cache
+from typing import List, Dict, Optional, Union, Set
 from types import SimpleNamespace
 from enum import Enum
 
@@ -595,6 +596,12 @@ class Stream(Base):
         },
       }
     }
+
+@lru_cache(1)
+def optional_stream_fields() -> Set:
+  """ Extra fields that can be preset in a stream """
+  model = Stream(id=0, name='', type='fake').dict()
+  return { k for k, v in model.items() if v is None }
 
 class StreamUpdate(BaseUpdate):
   """ Reconfiguration of a Stream """
