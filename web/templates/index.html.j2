@@ -347,10 +347,17 @@
   </div>
   <div id="amplipi-info" class="text-center">
     <div>
-      <span><a href="http://www.AmpliPi.com" target="_blank" rel="noopener noreferrer">AmpliPi</a>™ by <a href="http://www.micro-nova.com" target="_blank" rel="noopener noreferrer">MicroNova</a></span>
+      <span>
+        <a href="http://www.AmpliPi.com" target="_blank" rel="noopener noreferrer">AmpliPi</a>™
+        {% if '+' in version %}
+          v{{version}}
+        {% else %}
+          <a href="https://github.com/micro-nova/AmpliPi/releases/tag/{{version}}">v{{version}}</a>
+        {% endif %}
+      </span>
     </div>
-    <div id="version">
-      v{{version}} © 2022
+    <div>
+      <span> by <a href="http://www.micro-nova.com" target="_blank" rel="noopener noreferrer">MicroNova</a> © 2022</span>
     </div>
     <div>
       <span><a href="/doc" target="_blank" rel="noopener noreferrer">API</a> |
