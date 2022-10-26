@@ -35,8 +35,8 @@ jobs:
         mypy amplipi/ --ignore-missing-imports
     - name: Test mock using pytest # rpi cannot be tested directly due to hardware...
       run: |
+        pytest tests/test_ctrl.py -vvv -k 'not _live' # this needs to be run before test_rest due to some of its config side effects
         pytest tests/test_rest.py -vvv -k 'not _live' --cov=./ --cov-report=xml
-        pytest tests/test_ctrl.py -vvv -k 'not _live'
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
