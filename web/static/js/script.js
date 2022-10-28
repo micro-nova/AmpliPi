@@ -502,6 +502,7 @@ function initVolControl(ctrl) {
       dy = Math.abs(e.touches[0].screenY - start_touch.screenY);
 
       if (dy > VERT_THRESHOLD) {
+        // this was probably a scroll up/down reject it!
         set_pos = false;
       }
     }
