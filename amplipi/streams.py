@@ -35,6 +35,7 @@ import json
 import signal
 import ast
 import socket
+import hashlib # md5 for string -> MAC generation
 
 import amplipi.models as models
 import amplipi.utils as utils
@@ -949,9 +950,10 @@ class LMS(BaseStream):
       # TODO: Add metadata support? This may have to watch the output log?
 
       # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
-      fake_mac = c_ulong(hash(self.name)).value.to_bytes(8, 'little')
-      fake_mac = list(fake_mac[0:4]) + [31, 41] # make it look like a MAC address, filling with digits of Pi
-      fake_mac = ':'.join([f'{b:02x}' for b in fake_mac])
+      md5 = hashlib.md5()
+      md5.update(self.name.encode('utf-8'))
+      md5_hex = md5.hexdigest()
+      fake_mac = ':'.join([md5_hex[i:i+2] for i in range(0, 12, 2)])
 
       # Process
       lms_args = [f'{utils.get_folder("streams")}/squeezelite',
