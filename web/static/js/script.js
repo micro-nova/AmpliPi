@@ -479,7 +479,6 @@ function initVolControl(ctrl) {
 
      // compute the slope to distinguish between slides and scrolls
       slope = dy/dx;
-      console.log(slope);
 
       drag = true;
       offsetX = e.touches[0].pageX - e.touches[0].target.offsetLeft;
