@@ -477,6 +477,7 @@ function initVolControl(ctrl) {
       dy = Math.abs(e.touches[0].screenY - start_touch.screenY);
       dx = Math.abs(e.touches[0].screenX - start_touch.screenX);
 
+     // compute the slope to distinguish between slides and scrolls
       slope = dy/dx;
       console.log(slope);
 
