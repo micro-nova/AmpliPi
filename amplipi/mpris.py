@@ -3,13 +3,12 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 import json
+from multiprocessing import Process
 import time
-from tokenize import String
 from typing import List
 from dasbus.connection import SessionMessageBus
-from multiprocessing import Process
 
-import amplipi.utils as utils
+from amplipi import utils
 
 
 METADATA_MAPPINGS = [
@@ -31,11 +30,11 @@ class CommandTypes(Enum):
 @dataclass
 class Metadata:
   """A data class for storing metadata on a song."""
-  artist: String = ''
-  title: String = ''
-  art_url: String = ''
-  album: String = ''
-  state: String = ''
+  artist: str = ''
+  title: str = ''
+  art_url: str = ''
+  album: str = ''
+  state: str = ''
 
 
 class MPRIS:
@@ -48,7 +47,7 @@ class MPRIS:
         interface_name = "org.mpris.MediaPlayer2.Player"
     )
 
-    self.capabilities = []
+    self.capabilities: List[CommandTypes] = []
 
     self.service_suffix = service_suffix
     self.src = src
@@ -97,6 +96,7 @@ class MPRIS:
         return metadata_obj
     except Exception as e:
       print(f"mpris loading metadata at {self.metadata_path} failed: {e}")
+    return None
 
 
   def metadata(self) -> Metadata:
