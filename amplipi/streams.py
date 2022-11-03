@@ -26,7 +26,6 @@ from re import sub
 import sys
 import subprocess
 import time
-from ctypes import c_ulong # unsigned ints for MAC generation
 from typing import Union, Optional
 import threading
 
