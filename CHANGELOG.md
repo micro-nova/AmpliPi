@@ -1,9 +1,14 @@
 # AmpliPi Software Releases
 
 ## 0.1.X Upcoming
+* web App
+  * Reject scroll events to volume sliders
+  * Cleanup version display
 * Streams
   * Robustify config loading to handle missing streams
   * Simplify stream serialization
+  * Swich to Spotifyd Spotify client
+  * Add MPRIS metadata/command interface
 
 ## 0.1.9
 * Web App
