@@ -332,7 +332,7 @@ class Spotify(BaseStream):
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as e:
-      print(f"error in spotify: {e}")
+      raise Exception(f"Error sending command {cmd}: {e}") from e
 
 class Pandora(BaseStream):
   """ A Pandora Stream """
