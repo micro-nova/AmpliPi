@@ -22,6 +22,7 @@ a consistent interface.
 """
 
 import os
+from re import sub
 import sys
 import subprocess
 import time
@@ -36,6 +37,7 @@ import socket
 
 import amplipi.models as models
 import amplipi.utils as utils
+from amplipi.mpris import MPRIS
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -217,15 +219,11 @@ class Spotify(BaseStream):
   """ A Spotify Stream """
   def __init__(self, name, mock=False):
     super().__init__('spotify', name, mock)
-    self.proc2 = None
-    self.metaport = None
-    self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.supported_cmds = {
-      'play': [0x05],
-      'pause': [0x04],
-      'next': [0x07],
-      'prev': [0x08]
-    }
+
+    self.connect_port = None
+    self.mpris = None
+    self.proc_pid = None
+    self.supported_cmds = ['play', 'pause', 'next', 'prev']
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -256,84 +254,85 @@ class Spotify(BaseStream):
 
     toml_template = f'{utils.get_folder("streams")}/spot_config.toml'
     toml_useful = f'{src_config_folder}/config.toml'
+
+    # make source folder
+    os.system(f'mkdir -p {src_config_folder}')
+
     # Copy the config template
     os.system(f'cp {toml_template} {toml_useful}')
 
     # Input the proper values
-    self.metaport = 5030 + 2*src
+    self.connect_port = 4070 + 10*src
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
-      data = data.replace('AmpliPi_TEMPLATE', f'{self.name}')
-      data = data.replace("device = 'ch'", f"device = 'ch{src}'")
-      data = data.replace('5030', f'{self.metaport}')
+      data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
+      data = data.replace("alsa_audio_device", f"ch{src}")
+      data = data.replace('1234', f'{self.connect_port}')
     with open(toml_useful, 'w') as TOML:
       TOML.write(data)
 
     # PROCESS
-    meta_args = ['python3', f'{utils.get_folder("streams")}/spot_meta.py', f'{self.metaport}', f'{src_config_folder}']
-    spotify_args = [f'{utils.get_folder("streams")}/vollibrespot']
+    spotify_args = [f'{utils.get_folder("streams")}/spotifyd', '--no-daemon', '--config-path', './config.toml']
 
     try:
-      self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp)
-      self.proc2 = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
+      self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
+
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)
+
       self._connect(src)
     except Exception as exc:
       print(f'error starting spotify: {exc}')
 
   def disconnect(self):
-    if self._is_running():
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
-      self.proc2.kill()
+    try:
+      self.proc.kill()
+    except Exception:
+      pass
     self._disconnect()
+    self.connect_port = None
+    self.mpris = None
     self.proc = None
-    self.proc2 = None
 
   def info(self) -> models.SourceInfo:
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
-    loc = f'{src_config_folder}/currentSong'
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      img_url='static/imgs/spotify.png'
+      img_url='static/imgs/spotify.png' # report generic spotify image in place of unspecified album art
     )
+
     try:
-      with open(loc, 'r') as file:
-        d = {}
-        for line in file.readlines():
-          try:
-            d = ast.literal_eval(line)
-          except Exception as exc:
-            print(f'Error parsing currentSong: {exc}')
-        if d['state'] and d['state'] != 'stopped':
-          source.state = d['state']
-          source.artist = ', '.join(d['artist'])
-          source.track = d['track']
-          source.album = d['album']
-          source.supported_cmds=list(self.supported_cmds.keys())
-        else:
-          source.track = f'connect to {self.name}'
-        if d['img_url']: # report generic spotify image in place of unspecified album art
-          source.img_url = d['img_url']
-    except Exception:
-      pass
+      md = self.mpris.metadata()
+
+      if not self.mpris.is_stopped():
+        source.state = 'playing' if self.mpris.is_playing() else 'paused'
+        source.artist = md.artist
+        source.track = md.title
+        source.album = md.album
+        source.supported_cmds=self.supported_cmds
+        if md.art_url:
+          source.img_url = md.art_url
+
+    except Exception as e:
+      print(f"error in spotify: {e}")
+
     return source
 
   def send_cmd(self, cmd):
-    """ Control of Spotify via commands sent over sockets
-    Commands include play, pause, next, and previous
-    Takes src as an input so that it knows which UDP port to send on
-    """
-    udp_ip = "127.0.0.1" # AmpliPi's IP
-    udp_port = self.metaport + 1 # Adding 1 to the 'metaport' variable used in connect()
-
     try:
       if cmd in self.supported_cmds:
-        self.socket.sendto(bytes(self.supported_cmds[cmd]), (udp_ip, udp_port))
+        if cmd == 'play':
+          self.mpris.play()
+        elif cmd == 'pause':
+          self.mpris.pause()
+        elif cmd == 'next':
+          self.mpris.next()
+        elif cmd == 'prev':
+          self.mpris.previous()
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
-    except Exception as exc:
-      raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
+    except Exception as e:
+      raise Exception(f"Error sending command {cmd}: {e}") from e
 
 class Pandora(BaseStream):
   """ A Pandora Stream """

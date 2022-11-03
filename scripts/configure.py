@@ -85,6 +85,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'xkcdpass',                    # Random passphrase generation
              'systemd-journal-remote',      # Remote/web based log access
              'jq',                          # JSON parser used in check-release script
+             # pygobject dependencies (Spotifyd)
+             'libgirepository1.0-dev', 'libcairo2-dev'
             ],
   },
   'web' : {
@@ -166,13 +168,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     # 'script' : [ './streams/plexamp_nodeinstall.bash' ]
   },
   'spotify' : {
-    'script' :  [
-      'if [ ! -e "streams/vollibrespot" ] ; then',
-      '  curl -L https://github.com/ashthespy/Vollibrespot/releases/download/v0.2.4/vollibrespot-armv7l.tar.xz -o streams/vollibrespot.tar.xz',
-      '  tar --directory streams -xvf streams/vollibrespot.tar.xz',
-      '  rm streams/vollibrespot.tar.xz',
-      'fi',
-    ]
+    'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
   }
 }
 

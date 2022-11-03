@@ -1,16 +1,25 @@
-# Default configuration settings for Vollibrespot
-# This template file will be updated as streams are connected
-[Authentication]
-device-name = 'AmpliPi_TEMPLATE'
+[global]
 
-[Playback] # required heading, we use system defaults
+# If set to true, `spotifyd` tries to bind to the session dbus
+# and expose MPRIS controls. When running headless, without a dbus session,
+# then set this to false to avoid binding errors
+use_mpris = true
 
-[Output]
-device = 'ch' # ch0-ch3 are accepted
-initial-volume = 100
-backend = 'alsa'
+# The name that gets displayed under the connect tab on
+# official clients. Spaces are not allowed!
+device_name = "device_name_in_spotify_connect"
 
-[Misc]
-disable-audio-cache = true  # Cache audio files (relies on local system for cleanup!)
-cache-location = '/tmp'     # Path to cache
-metadata-port = 5030
+# Then name of the alsa device to play from
+device = "alsa_audio_device"
+
+# The audio bitrate. 96, 160 or 320 kbit/s
+bitrate = 160
+
+# The maximal size of the cache directory in bytes
+ max_cache_size = 100000000
+
+# After the music playback has ended, start playing similar songs based on the previous tracks.
+autoplay = true
+
+# The port `spotifyd` uses to announce its service over the network.
+zeroconf_port = 1234
