@@ -223,13 +223,7 @@ class Spotify(BaseStream):
     self.connect_port = None
     self.mpris = None
     self.proc_pid = None
-
-    self.supported_cmds = {
-      'play': [0x05],
-      'pause': [0x04],
-      'next': [0x07],
-      'prev': [0x08]
-    }
+    self.supported_cmds = ['play', 'pause', 'next', 'prev']
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -315,7 +309,7 @@ class Spotify(BaseStream):
         source.artist = md.artist
         source.track = md.title
         source.album = md.album
-        source.supported_cmds=list(self.supported_cmds.keys())
+        source.supported_cmds=self.supported_cmds
         if md.art_url:
           source.img_url = md.art_url
 
