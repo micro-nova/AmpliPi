@@ -28,7 +28,7 @@ kill -KILL $(ps ax | grep 'python' | grep 'uvicorn' | awk '{print $1}') > /dev/n
 
 if [[ "$mock_streams" != "True" ]] ; then
   # kill streaming services TODO: uvicorn should close the amplipi app cleaner, why doesnt it? wsgi?
-  killall librespot > /dev/null
+  killall spotifyd > /dev/null
   killall pianobar > /dev/null
   killall shairport-sync > /dev/null
   kill -KILL $(ps ax | grep 'python' | grep 'sp_meta' | awk '{print $1}') > /dev/null

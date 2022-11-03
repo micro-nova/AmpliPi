@@ -1,5 +1,6 @@
 adafruit-circuitpython-rgb-display
 aiofiles
+dasbus
 deepdiff
 fastapi
 fastapi_utils
@@ -11,6 +12,7 @@ numpy
 pillow
 psutil
 pydantic
+pygobject
 pylint
 pyserial
 pytest
