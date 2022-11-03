@@ -9,8 +9,6 @@
   * Simplify stream serialization
   * Swich to Spotifyd Spotify client
   * Add MPRIS metadata/command interface
-
-* Streams
   * Add LMS Client
 
 ## 0.1.9
