@@ -144,6 +144,10 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'fi',
     ]
   },
+  'lms' : {
+    'apt': ['libcrypt-openssl-rsa-perl'], # needed for ShairTunes2W support
+    'copy' : [{'from': 'bin/ARCH/squeezelite', 'to': 'streams/squeezelite'}],
+  },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
               'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
