@@ -384,7 +384,7 @@ def get_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> mod
   raise HTTPException(404, f'stream {sid} not found')
 
 @api.patch('/api/streams/{sid}', tags=['stream'])
-def set_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, update: models.StreamUpdate = None) -> models.Status:
+def set_stream(update: models.StreamUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Status:
   """ Update a stream's configuration (stream=**sid**) """
   return code_response(ctrl, ctrl.set_stream(sid, update))
 
@@ -400,7 +400,7 @@ def change_station(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, st
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=f'station={station}'))
 
 @api.post('/api/streams/{sid}/{cmd}', tags=['stream'])
-def exec_command(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, cmd: models.StreamCommand = None) -> models.Status:
+def exec_command(cmd: models.StreamCommand, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Status:
   """ Executes a comamnd on a stream (stream=**sid**).
 
     Command options:
@@ -436,7 +436,7 @@ def get_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mod
   raise HTTPException(404, f'preset {pid} not found')
 
 @api.patch('/api/presets/{pid}', tags=['preset'])
-def set_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID, update: models.PresetUpdate = None) -> models.Status:
+def set_preset(update: models.PresetUpdate, ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> models.Status:
   """ Update a preset's configuration (preset=**pid**) """
   return code_response(ctrl, ctrl.set_preset(pid, update))
 
