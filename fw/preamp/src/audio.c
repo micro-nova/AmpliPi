@@ -163,11 +163,20 @@ bool zoneAmpEnabled(size_t zone) {
 
 // Mute the specified zone
 void mute(size_t zone, bool mute) {
+  if (!mute) {
+    // If un-muting, make sure we're not in standby.
+    // Must un-standby, then un-mute to reduce popping.
+    standby(false);
+  }
+
   // Set pin low to mute
   writePin(zone_mute_[zone], !mute);
 
-  // If no zones are on, standby
-  standby(!anyZoneAmpOn());
+  if (mute) {
+    // If muting, check if we can go into standby.
+    // Must mute, then standby to reduce popping.
+    standby(!anyZoneAmpOn());
+  }
 }
 
 bool muted(size_t zone) {
