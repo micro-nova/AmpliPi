@@ -13,6 +13,7 @@ import glob
 from typing import List, Union, Tuple, Dict, Any, Optional
 import time
 import re
+import shlex
 import sys
 import requests
 
@@ -314,8 +315,12 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
         'sudo udevadm trigger -s sound -c add'.split(), # trigger an 'add' action on the 'sound' subsystem
         'udevadm settle'.split(),                       # wait for udev rules to fire and settle
       ]).run()])
-    # set usb soundcard to 100% volume
-    tasks += print_progress([Task('set usb soundcard to 100% volume', 'amixer -Dusb71 cset numid=8 100%'.split()).run()])
+    # setup USB soundcard
+    tasks += print_progress([Task('set usb soundcard volumes and unmute', multiargs=[
+        'amixer -D hw:cmedia8chint set Speaker 100% unmute'.split(),                    # set output to 100% volume and unmute
+        'amixer -D hw:cmedia8chint set Line capture cap 0dB playback mute 0%'.split(),  # set Line input to 0dB and unmute, disable line out
+        shlex.split('amixer -D hw:cmedia8chint set "IEC958 In" cap'),                   # unmute SPDIF input
+      ]).run()])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
