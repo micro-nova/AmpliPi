@@ -358,7 +358,7 @@ class Api:
     """
     return src_type != 'local'
 
-  def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
+  def get_inputs(self, src: models.Source) -> Dict[str, str]:
     """Gets a dictionary of the possible inputs for a source
 
       Returns:
@@ -369,7 +369,7 @@ class Api:
         >>> my_amplipi.get_inputs()
         { None, '', 'local', 'Local', 'stream=9449' }
     """
-    inputs: Dict[Optional[str], str] = {None: ''}
+    inputs: Dict[str, str] = {'': ''}
     is_virtual = src.pipe_to is not None
     if not is_virtual:
       inputs['local'] = f'{src.name} - rca'
@@ -382,7 +382,7 @@ class Api:
       aliasing_source = self.status.sources[src.id + 4]
       _, aliased_stream = utils.find(streams, aliasing_source.get_stream())
       if aliased_stream:
-        inputs[None] = aliased_stream.name
+        inputs[''] = aliased_stream.name
     return inputs
 
   def _check_is_online(self) -> bool:
