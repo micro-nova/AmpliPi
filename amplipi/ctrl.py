@@ -373,8 +373,16 @@ class Api:
     is_virtual = src.pipe_to is not None
     if not is_virtual:
       inputs['local'] = f'{src.name} - rca'
-    for stream in self.get_state().streams:
-      inputs[f'stream={stream.id}'] = f'{stream.name} - {stream.type}'
+    streams = self.get_state().streams
+    for stream in streams:
+      # we don't want users to switch to the always on LMS streams
+      if not (stream.type == 'lms' and stream.id in LMS_DEFAULTS):
+        inputs[f'stream={stream.id}'] = f'{stream.name} - {stream.type}'
+    if src.id is not None and len(self.status.sources) >= 8:
+      aliasing_source = self.status.sources[src.id + 4]
+      _, aliased_stream = utils.find(streams, aliasing_source.get_stream())
+      if aliased_stream:
+        inputs[None] = aliased_stream.name
     return inputs
 
   def _check_is_online(self) -> bool:
@@ -424,6 +432,11 @@ class Api:
     # TODO: source info should be updated in a background thread
     for src in self.status.sources:
       self._update_src_info(src)
+    # use the aliased sources info when input is None
+    if len(self.status.sources) >= 8:
+      for i, src in enumerate(self.status.sources[0:4]):
+        if src.input == '' or src.input is None:
+          src.info = self.status.sources[i + 4].info
     return self.status
 
   def get_info(self) -> models.Info:
@@ -527,6 +540,10 @@ class Api:
             if not self._rt.update_sources(src_cfg):
               raise Exception('failed to set source')
           self._update_src_info(src) # synchronize the source's info
+          # use the aliased sources info when input is None
+          if len(self.status.sources) >= 8:
+            if input_ == '' or input_ is None:
+              src.info = self.status.sources[idx + 4].info
         if not internal:
           self.mark_changes()
       else:
