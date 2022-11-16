@@ -149,6 +149,8 @@ poetry.lock
 streams/shairport-sync-metadata-reader
 streams/vollibrespot
 streams/vollibrespot.tar.xz
+streams/squeezelite
+streams/spotifyd
 gmrender-resurrect
 
 # Amplipi Web
