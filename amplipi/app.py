@@ -92,16 +92,22 @@ class SimplifyingRouter(APIRouter):
       kwargs["response_model_exclude_none"] = True
       return super().add_api_route(path, endpoint, **kwargs)
 
+def check_srcs_equal(id1: Optional[int], id2: Optional[int]) -> bool:
+  """ Check if two sources are equal """
+  if id1 is None or id2 is None:
+    return id1 == id2
+  return (id1 % 4) == (id2 % 4)
+
 # Helper functions
 def unused_groups(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get groups that are not connected to src """
   groups = ctrl.status.groups
-  return {g.id : g.name for g in groups if g.source_id != src and g.id  is not None}
+  return {g.id : g.name for g in groups if check_srcs_equal(g.source_id, src) and g.id  is not None}
 
 def unused_zones(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get zones that are not conencted to src """
   zones = ctrl.status.zones
-  return {z.id : z.name for z in zones if z.source_id != src and z.id is not None and not z.disabled}
+  return {z.id : z.name for z in zones if check_srcs_equal(z.source_id, src) and z.id is not None and not z.disabled}
 
 def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   """ Get zones that are connected to src, but don't belong to a full group """
@@ -110,10 +116,10 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   # get all of the zones that belong to this sources groups
   grouped_zones: Set[int] = set()
   for group in groups:
-    if group.source_id == src:
+    if check_srcs_equal(group.source_id, src):
       grouped_zones = grouped_zones.union(group.zones)
   # get all of the zones connected to this soource
-  source_zones = {z.id for z in zones if z.source_id == src}
+  source_zones = {z.id for z in zones if check_srcs_equal(z.source_id, src)}
   # return all of the zones connected to this source that aren't in a group
   ungrouped_zones_ = source_zones.difference(grouped_zones)
   return [zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
@@ -734,20 +740,22 @@ def doc():
 def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
   """ Webapp main view """
   state = ctrl.get_state()
+  displayed_sources = [src for src in state.sources if src.id is not None and src.id < 4]
+  displayed_source_ids = [src.id for src in state.sources if src.id is not None and src.id < 4]
   context = {
     # needed for template to make response
     'request': request,
     # simplified amplipi state
     'cur_src': src,
-    'sources': state.sources,
+    'sources': displayed_sources,
     'zones': state.zones,
     'groups': state.groups,
     'presets': state.presets,
-    'inputs': [ctrl.get_inputs(src) for src in state.sources],
-    'unused_groups': [unused_groups(ctrl, src.id) for src in state.sources if src.id is not None],
-    'unused_zones': [unused_zones(ctrl, src.id) for src in state.sources if src.id is not None],
-    'ungrouped_zones': [ungrouped_zones(ctrl, src.id) for src in state.sources if src.id is not None],
-    'song_info': [src.info for src in state.sources if src.info is not None], # src.info should never be None
+    'inputs': [ctrl.get_inputs(src) for src in displayed_sources],
+    'unused_groups': [unused_groups(ctrl, src_id) for src_id in displayed_source_ids],
+    'unused_zones': [unused_zones(ctrl, src_id) for src_id in displayed_source_ids],
+    'ungrouped_zones': [ungrouped_zones(ctrl, src_id) for src_id in displayed_source_ids],
+    'song_info': [src.info for src in displayed_sources if src.info is not None], # src.info should never be None
     'version': state.info.version if state.info else 'unknown',
     'min_vol': models.MIN_VOL_F,
     'max_vol': models.MAX_VOL_F,
