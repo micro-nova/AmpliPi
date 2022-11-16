@@ -249,6 +249,9 @@ function onDislike(ctrl) {
 function updateSourceView(status) {
   // update player state
   for (const src of status['sources']) {
+    if (src.id > 3) {
+      continue;
+    }
     const stream_id = src.input.startsWith("stream=") ? src.input.replace("stream=", "") : undefined;
     let cover = $('#s' + src.id + '-player .cover img')[0];
     let artist = $('#s' + src.id + '-player .info .artist')[0];
@@ -305,7 +308,7 @@ function updateSourceView(status) {
       const zone = status.zones[z];
       updateVol(ctrl, zone.mute, zone.vol_f);
       parent_src = ctrl.dataset.source;
-      if (zone.source_id != parent_src) {
+      if (zone.source_id % 4 != parent_src) {
         zone_mismatch = true;
       }
     } else if (ctrl.dataset.hasOwnProperty('group')) {
