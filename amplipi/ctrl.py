@@ -572,8 +572,8 @@ class Api:
         sid = utils.parse_int(source_id, range(len(self.status.sources)))
         zones = self.status.zones
         if update_source_id or force_update:
-          zone_sources = [zone.source_id for zone in zones]
-          zone_sources[idx] = sid
+          zone_sources = [zone.source_id % 4 for zone in zones]
+          zone_sources[idx] = sid % 4 # there are only 4 real sources, virtual sources are mapped
           if self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
