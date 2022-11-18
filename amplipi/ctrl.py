@@ -114,10 +114,10 @@ class Api:
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
-      {"id": LMS_DEFAULTS[0], "name": "Music 1", "type": "lms"},
-      {"id": LMS_DEFAULTS[1], "name": "Music 2", "type": "lms"},
-      {"id": LMS_DEFAULTS[2], "name": "Music 3", "type": "lms"},
-      {"id": LMS_DEFAULTS[3], "name": "Music 4", "type": "lms"},
+      {"id": LMS_DEFAULTS[0], "name": "Music 1", "type": "lms", "server": "localhost"},
+      {"id": LMS_DEFAULTS[1], "name": "Music 2", "type": "lms", "server": "localhost"},
+      {"id": LMS_DEFAULTS[2], "name": "Music 3", "type": "lms", "server": "localhost"},
+      {"id": LMS_DEFAULTS[3], "name": "Music 4", "type": "lms", "server": "localhost"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
