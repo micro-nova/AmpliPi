@@ -263,7 +263,7 @@ class Api:
     # setup sources 4-7 for special lms sources for this build
     while len(self.status.sources) < 8:
       sid = len(self.status.sources)
-      print(f'Config is sissing source {sid}, adding it back')
+      print(f'Config is missing source {sid}, adding it back')
       pipe_to = sid % 4 if sid >= 4 else None # the last four sources just connect to the first four
       if pipe_to is None:
         name = f'Input {sid + 1}'
