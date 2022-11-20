@@ -532,6 +532,10 @@ while frame_num < 10 and run:
         use_debug_port = not use_debug_port
         log.warning(f"Couldn't connect at {primary_url} but got a connection at {secondary_url}, switching over")
 
+    # Don't show virtual sources if they exist, only the 4 real sources.
+    if len(sources) > 4:
+      del sources[4:]
+
     if not primary_success and not secondary_success:
       connection_retries += 1
       if not connected_once:
