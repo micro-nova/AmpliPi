@@ -54,6 +54,14 @@ sudo ln -s $root_dir/etc/init.d/resize2fs_once $root_dir/etc/rc3.d/S01resize2fs_
 echo -e "\nRemoving all log files"
 sudo find $root_dir/var/log -type f -exec rm {} \;
 
+echo "Resetting password to default"
+# TODO set password to 'raspberry'
+
+# TODO: need to set a unique machine-id on each unit
+#echo "Resetting /etc/machine-id"
+#sudo rm $root_dir/etc/machine-id
+#sudo dbus-uuidgen --ensure=$root_di/etc/machine-id
+
 echo "Cleaning up /home/pi"
 rm -f $root_dir/home/pi/.config/amplipi/default_password.txt
 cat /dev/null > ~/.bash_history
@@ -118,6 +126,7 @@ echo -e "\nShrinking root partition to $fs_kib KiB."
 echo ",${fs_kib}KiB" | sudo sfdisk -N2 $pi_path
 
 # Print disk info, get last line, trim whitespace, return 3rd field
+echo -e "\nRoot partition shrunk, finding end of used space on disk."
 end_sector=$(sudo fdisk -l $pi_path | tail -1 | tr -s ' ' | cut -d ' ' -f 3)
 sector_size=512
 mb_chunks=$(($end_sector*$sector_size/1024**2 + 1)) # +1 because this math truncates
