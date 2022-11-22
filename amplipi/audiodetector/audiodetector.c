@@ -35,10 +35,19 @@
 #include <time.h>
 #include <unistd.h>
 
-#define STATUS_FILE_PATH "rca_status"
-#define SPIDEV_PATH      "/dev/spidev1.1"
-#define SPI_CLOCK_HZ     3600000
-#define NUM_CHANNELS     8
+#define STATUS_FILE_PATH    "rca_status"
+#define SPIDEV_PATH         "/dev/spidev1.1"
+#define SPI_CLOCK_HZ        3600000
+#define NUM_CHANNELS        8
+#define SAMPLES_PER_SECOND  10
+#define WINDOW_SIZE_SECONDS 3
+#define MICRO               1000000
+#define CH_ACTIVE_THR       10
+#define DEFAULT_BASELINE    550
+#define WINDOW_SIZE         (SAMPLES_PER_SECOND * WINDOW_SIZE_SECONDS)
+
+// #define DUMP_CSV
+// #define DEBUG_PRINT
 
 bool abort_ = false;
 
@@ -55,6 +64,20 @@ typedef union {
   };
   uint16_t vals[NUM_CHANNELS];
 } AdcData;
+
+typedef union {
+  struct {
+    uint16_t ch3l[WINDOW_SIZE];
+    uint16_t ch3r[WINDOW_SIZE];
+    uint16_t ch2l[WINDOW_SIZE];
+    uint16_t ch2r[WINDOW_SIZE];
+    uint16_t ch1l[WINDOW_SIZE];
+    uint16_t ch1r[WINDOW_SIZE];
+    uint16_t ch0l[WINDOW_SIZE];
+    uint16_t ch0r[WINDOW_SIZE];
+  };
+  uint16_t vals[NUM_CHANNELS * WINDOW_SIZE];
+} AdcWindow;
 
 typedef union {
   struct {
@@ -173,20 +196,50 @@ bool measure(AdcData *data) {
   return true;
 }
 
-void process(AdcData *raw_data, AdcData *baseline, AudioStatus *status) {
+void update_window(AdcWindow *window, AdcData *raw_data) {
+  // window is implemented like a circular queue
+  static size_t window_index = 0;
   for (size_t i = 0; i < sizeof(AdcData) / sizeof(raw_data->vals[0]); i++) {
-    if (raw_data->vals[i] < baseline->vals[i]) {
-      baseline->vals[i] = raw_data->vals[i];
+    window->vals[i * WINDOW_SIZE + window_index] = raw_data->vals[i];
+  }
+  window_index = (window_index + 1) % WINDOW_SIZE;
+}
+
+void process(AdcData *max_data, AdcWindow *window, AdcData *baseline,
+             AudioStatus *status) {
+  // Update baseline
+  for (size_t i = 0; i < sizeof(AdcData) / sizeof(max_data->vals[0]); i++) {
+    if (max_data->vals[i] < baseline->vals[i]) {
+      baseline->vals[i] = max_data->vals[i];
     }
   }
-  status->ch0l = (raw_data->ch0l - baseline->ch0l) > 10;
-  status->ch0r = (raw_data->ch0r - baseline->ch0r) > 10;
-  status->ch1l = (raw_data->ch1l - baseline->ch1l) > 10;
-  status->ch1r = (raw_data->ch1r - baseline->ch1r) > 10;
-  status->ch2l = (raw_data->ch2l - baseline->ch2l) > 10;
-  status->ch2r = (raw_data->ch2r - baseline->ch2r) > 10;
-  status->ch3l = (raw_data->ch3l - baseline->ch3l) > 10;
-  status->ch3r = (raw_data->ch3r - baseline->ch3r) > 10;
+  // Update status
+  status->ch0l = (max_data->ch0l - baseline->ch0l) > CH_ACTIVE_THR;
+  status->ch0r = (max_data->ch0r - baseline->ch0r) > CH_ACTIVE_THR;
+  status->ch1l = (max_data->ch1l - baseline->ch1l) > CH_ACTIVE_THR;
+  status->ch1r = (max_data->ch1r - baseline->ch1r) > CH_ACTIVE_THR;
+  status->ch2l = (max_data->ch2l - baseline->ch2l) > CH_ACTIVE_THR;
+  status->ch2r = (max_data->ch2r - baseline->ch2r) > CH_ACTIVE_THR;
+  status->ch3l = (max_data->ch3l - baseline->ch3l) > CH_ACTIVE_THR;
+  status->ch3r = (max_data->ch3r - baseline->ch3r) > CH_ACTIVE_THR;
+}
+
+// Given the window of past raw data, populate maxvals with the max along
+// channels
+void compute_window_max(AdcWindow *window, AdcData *maxvals) {
+  // iterate through channels
+  for (size_t i = 0; i < sizeof(maxvals->vals) / sizeof(maxvals->vals[0]);
+       i++) {
+    // iterate through samples
+    maxvals->vals[i] = 0;
+    for (size_t j = 0; j < sizeof(window->ch0l) / sizeof(window->ch0l[0]);
+         j++) {
+      uint16_t curr_val = window->vals[i * WINDOW_SIZE + j];
+      if (curr_val > maxvals->vals[i]) {
+        maxvals->vals[i] = curr_val;
+      }
+    }
+  }
 }
 
 void print_data(AdcData *data) {
@@ -194,6 +247,58 @@ void print_data(AdcData *data) {
          data->ch1l, data->ch1r, data->ch2l, data->ch2r, data->ch3l,
          data->ch3r);
   // fflush(stdout);
+}
+
+void print_status(AudioStatus *status) {
+  printf("{ %u, %u, %u, %u, %u, %u, %u, %u }\n", status->ch0l, status->ch0r,
+         status->ch1l, status->ch1r, status->ch2l, status->ch2r, status->ch3l,
+         status->ch3r);
+}
+
+void print_csv_header(FILE *csv) {
+  fprintf(csv,
+          "ch0l,ch0r,ch1l,ch1r,ch2l,ch2r,ch3l,ch3r,s0l,s0r,s1l,s1r,s2l,s2r,s3l,"
+          "s3r,\n");
+}
+
+void print_to_csv(AdcData *data, AudioStatus *status, FILE *csv) {
+#ifdef DUMP_CSV
+  fprintf(csv, "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,\n", data->ch0l,
+          data->ch0r, data->ch1l, data->ch1r, data->ch2l, data->ch2r,
+          data->ch3l, data->ch3r, status->ch0l, status->ch0r, status->ch1l,
+          status->ch1r, status->ch2l, status->ch2r, status->ch3l, status->ch3r);
+#endif
+}
+
+FILE *open_csv() {
+#ifdef DUMP_CSV
+  FILE *f_csv;
+  f_csv = fopen("raw_dump.csv", "w+");
+  print_csv_header(f_csv);
+  return f_csv;
+#else
+  return NULL;
+#endif
+}
+
+void close_csv(FILE *f_csv) {
+#ifdef DUMP_CSV
+  fclose(f_csv);
+#endif
+}
+
+void print_values(AdcData *baseline, AdcData *raw_data, AdcData *max_data,
+                  AudioStatus *status) {
+#ifdef DEBUG_PRINT
+  printf("baseline:    ");
+  print_data(baseline);
+  printf("raw data:    ");
+  print_data(raw_data);
+  printf("window max:  ");
+  print_data(max_data);
+  printf("status:      ");
+  print_status(status);
+#endif
 }
 
 int main(int argc, char **argv) {
@@ -210,18 +315,27 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  AdcData baseline;  // Minimum values ever recorded
-  memset(&baseline, 0xFF, sizeof(AdcData));
+  AdcData baseline;  // Minimum values ever recorded (of window max)
+  for (size_t i = 0; i < sizeof(AdcData) / sizeof(baseline.vals[0]); i++)
+    baseline.vals[i] = DEFAULT_BASELINE;
+  AdcWindow window;
+  memset(&window, 0xFF, sizeof(AdcWindow));
   AdcData     raw_data;
+  AdcData     max_data;
   AudioStatus status;
+  FILE       *f_csv = open_csv();
+
   while (1) {
     success = measure(&raw_data);
     if (!success) {
       fprintf(stderr, "Failed to read ADC\n");
       return EXIT_FAILURE;
     }
-
-    process(&raw_data, &baseline, &status);
+    update_window(&window, &raw_data);
+    compute_window_max(&window, &max_data);
+    process(&max_data, &window, &baseline, &status);
+    print_values(&baseline, &raw_data, &max_data, &status);
+    print_to_csv(&max_data, &status, f_csv);
 
     success = write_data(status_fd, &status);
     if (!success) {
@@ -229,8 +343,9 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    sleep(1);  // TODO: Timer
+    usleep(MICRO / SAMPLES_PER_SECOND);
     if (abort_) {
+      close_csv(f_csv);
       bool result = close_storage(STATUS_FILE_PATH, status_fd);
       return result ? EXIT_SUCCESS : EXIT_FAILURE;
     }
