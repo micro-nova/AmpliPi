@@ -92,6 +92,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'web' : {
   },
   'logging' : {
+    'amplipi-only' : True,
     'script' : [
       'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
       f"echo '{RSYSLOG_CFG}' | sudo tee /etc/rsyslog.conf",
@@ -281,6 +282,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   files = []
   scripts: Dict[str, List[str]] = {}
   for dep in deps:
+    if dep.get('amplipi-only', False) and not env['is_amplipi']:
+      continue
     install_steps = _os_deps[dep]
     if 'copy' in install_steps:
       files += install_steps['copy']
