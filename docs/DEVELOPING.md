@@ -2,13 +2,15 @@
 
 Thanks for considering developing for AmpliPi. We appreciate your support!
 
+## Developing the webapp
+  To develop for the webapp, you will need to install nodejs and any dependencies for [ReactJS](https://react.dev/)
+
 ## Developing on a separate computer
 
 This allows remote development with the ability to test changes on your AmpliPi
-
-1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
-1. Make changes with your favorite editor, we suggest vscode
-1. Use `scripts/deploy` to deploy the latest software.
+1. Checkout [this repo](https://github.com/micro-nova) on a linux based system. A git bash shell on windows works fine as well, we suggest Windows Subsystem for Linux (WSL).
+2. Make changes with your favorite editor, we suggest vscode
+3. Use `scripts/deploy` to deploy the latest software.
    The pi must have access to the internet to successfully run this script.
 
 ### Installing Node.js
@@ -69,7 +71,6 @@ __Notes:__
 - The latest Windows 10 supports mDNS which we use to easily ssh into amplipi, however we had some problems using WiFi so we suggest a ethernet connection on windows.
 
 ## Different development setups
-Many of you will not have the luxury of having an AmpliPi system to test with, after all they are not currently available.
 Below are a couple of different ways you can start developing for the AmpliPi without an actual system:
 * Mocked out audio and mocked out controller (needs: debian based system such as Pi or Ubuntu)
 

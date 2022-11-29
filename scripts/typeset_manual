@@ -1,0 +1,7 @@
+#!/bin/bash
+# get directory that the script exists in
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# run the script from the base directory
+cd ${SCRIPT_DIR}/..
+# run the latest version of the markdown -> latex -> psf toolchain from https://github.com/Witiko/markdown
+docker run --rm -v $(realpath .)/docs:/docs -w /docs witiko/markdown latexmk -lualatex manual.tex
