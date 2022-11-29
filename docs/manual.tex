@@ -9,11 +9,17 @@
 \usepackage{tgheros}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
-\usepackage[english]{isodate}
-\usepackage[parfill]{parskip}
+%\usepackage[english]{isodate}
+%\usepackage[parfill]{parskip}
 \usepackage[hybrid]{markdown}
-\markdownSetup{pipeTables,tableCaptions}
-
+\markdownSetup{
+  pipeTables,
+  tableCaptions,
+  rendererPrototypes = {
+    image = {\includegraphics{#2}}, % this makes images inline
+    codeSpan = {\texttt{#1}}, % Render inline code via `\texttt`.'
+  }
+}
 \title{AmpliPi Manual}
 \author{MicroNova}
 \date{November 2022}

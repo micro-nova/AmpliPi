@@ -20,7 +20,7 @@
 - Ensure that the safety ground terminal is connected to a proper ground. Never connect the ground to a gas pipe, as a severe explosion and/or fire may result.
 - Be sure the installation of this product is stable, avoid unlevel surfaces as the product may fall and cause injury, property damage, electrocution and/or fire.
 - Note that when the unit is turned off, it is not completely disconnected from the AC power outlet. Do not open the cover.
-
+\newpage
 ## FCC Statement
 
 1. This device complies with Part 15 of the FCC Rules. Operation is subject to the following two conditions:
@@ -37,10 +37,12 @@ NOTE: This equipment has been tested and found to comply with the limits for a C
 - Connect the equipment into an outlet on a circuit different from that to which the receiver is connected.
 - Consult the dealer or an experienced radio/TV technician for help.
 
+\newpage
 # Overview
 AmpliPi™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio streams (Pandora, Spotify, AirPlay, etc) or sources (RCA inputs), each routed to one or many zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPi Expanders.
 
-Your AmpliPi controller includes the following components
+Your AmpliPi controller includes the following components:
+
 - 1 x AmpliPi Controller
 - 1 x This User Manual
 - 6 x Phoenix connectors for speaker connections
@@ -52,9 +54,13 @@ The following optional accessories are available and can be purchased separately
 ## App
 
 AmpliPi hosts a mobile-friendly web app that can control the system from any PC or mobile phone on the local network. Its design was based on the idea that each of the four audio sources could be controlled separately by different people in the house. Each audio source's controls are in their own tab at the top of the app.
+
 \newpage
 ## Main Controller
 ### Front Panel
+
+\setkeys{Gin}{width=.9\linewidth}
+![Controller - Front Panel](imgs/backpanel.jpg "test")
 
 - DISPLAY: Show IP Address, Hostname, Password, audio info and zone volumes.
 - ON/STANDBY: Show state of the audio controller:
@@ -65,11 +71,10 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
     - Blue: Zone is on (not muted)
     - None: Zone is off (muted)
 
-/newpage
 ### Rear Panel
 
 \setkeys{Gin}{width=.9\linewidth}
-![Controller - Rear Panel](imgs/backpanel.jpg "Rear Panel")
+![Controller - Rear Panel](imgs/backpanel.jpg)
 
 - POWER: 115V, or optionally 230V connection. An internal 115/230 switch is set internally on the power supply and marked on the rear of the unit.
 - CONTROLLER: Connections to the embedded Raspberry Pi Controller.
@@ -85,8 +90,9 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
 - EXPANSION:
     - CHAIN OUT: Connection to the next expansion unit (if one or more expanders are needed).
 
-/newpage
+\newpage
 ### Specifications
+
 |Feature||
 |:------|:-----|
 |Streaming Sources | Airplay, Pandora, Spotify Connect, DLNA  |
@@ -108,8 +114,9 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
 |Stereo Zones      | 6 |
 |Audio Input       | 4 RCA Line In|
 |Digital Audio Sources | 32-bit 384KHz (source 1), 16-bit 48KHz (sources 2-4)|
-: Soecifications
+: Specifications
 
+\newpage
 ## Zone Expander
 Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create a massive whole house audio system with up to 36 stereo zone outputs!
 
@@ -128,12 +135,30 @@ Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create 
 - EXPANSION:
     * CHAIN OUT: Connection from previous expansion or main unit.
     * CHAIN OUT: Connection to the next expansion unit (if needed).
-Specifications
+
+### Specifications
+
+|Feature||
+|:------|:-----|
+|Dimensions        | 2U 19" rackmount unit with 300mm depth|
+|Power Input       | 90-132VAC or 180-264VAC|
+|Power Consumption | 1W Idle|
+|                  | 391W Continuous|
+|                  | 782W Peak|
+|Peak Current Consumption|6.8A @ 115VAC or 3.4A @230VAC|
+|Speaker Power     | 79 WPC @ 4 Ω|
+|                  | 57 WPC @ 4 Ω|
+|                  | 44 WPC @ 4 Ω|
+|Speaker Impedance | 4 -8 Ω |
+|Stereo Zones      | 6 |
+|Audio Input       | From Controller|
+: Specifications
 
 
 ## Wall Panel
 See the included Sonoff manual for specifications and installation.
 
+\newpage
 # Installation
 ## Overview
 We understand you will probably be excited to power on your AmpliPi and try it out. To avoid damaging the unit, please read through this guide before installing and powering your AmpliPi unit!
