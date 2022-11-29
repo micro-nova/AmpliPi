@@ -1,4 +1,8 @@
 ## Safety
+
+\setkeys{Gin}{width=.30\linewidth}
+![Warning](imgs/manual/warning.png)
+
 - **WARNING!** TO REDUCE THE RISK OF FIRE OR ELECTRIC SHOCK, DO NOT EXPOSE THIS APPLIANCE TO RAIN OR MOISTURE.
 - **CAUTION!** TO REDUCE THE RISK OF SHOCK, DO NOT REMOVE THE COVER.
 
@@ -22,7 +26,8 @@
 - Note that when the unit is turned off, it is not completely disconnected from the AC power outlet. Do not open the cover.
 \newpage
 ## FCC Statement
-
+\setkeys{Gin}{width=.20\linewidth}
+![FCC Logo](imgs/manual/fcc-logo.png)
 1. This device complies with Part 15 of the FCC Rules. Operation is subject to the following two conditions:
     - This device may not cause harmful interference.
     - This device must accept any interference received, including interference that may cause undesired operation.
@@ -53,14 +58,18 @@ The following optional accessories are available and can be purchased separately
 
 ## App
 
+
+\setkeys{Gin}{width=.99\linewidth}
+![App PC/Android](imgs/manual/webapp_phone_and_pc.jpg)
+
 AmpliPi hosts a mobile-friendly web app that can control the system from any PC or mobile phone on the local network. Its design was based on the idea that each of the four audio sources could be controlled separately by different people in the house. Each audio source's controls are in their own tab at the top of the app.
 
 \newpage
 ## Main Controller
 ### Front Panel
 
-\setkeys{Gin}{width=.9\linewidth}
-![Controller - Front Panel](imgs/backpanel.jpg "test")
+\setkeys{Gin}{width=.99\linewidth}
+![Controller - Front Panel](imgs/manual/front_main_panel.jpg)
 
 - DISPLAY: Show IP Address, Hostname, Password, audio info and zone volumes.
 - ON/STANDBY: Show state of the audio controller:
@@ -73,8 +82,8 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
 
 ### Rear Panel
 
-\setkeys{Gin}{width=.9\linewidth}
-![Controller - Rear Panel](imgs/backpanel.jpg)
+\setkeys{Gin}{width=.99\linewidth}
+![Controller - Rear Panel](imgs/manual/rear_main_panel.jpg)
 
 - POWER: 115V, or optionally 230V connection. An internal 115/230 switch is set internally on the power supply and marked on the rear of the unit.
 - CONTROLLER: Connections to the embedded Raspberry Pi Controller.
@@ -114,13 +123,16 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
 |Stereo Zones      | 6 |
 |Audio Input       | 4 RCA Line In|
 |Digital Audio Sources | 32-bit 384KHz (source 1), 16-bit 48KHz (sources 2-4)|
-: Specifications
 
 \newpage
 ## Zone Expander
 Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create a massive whole house audio system with up to 36 stereo zone outputs!
 
 ### Front Panel
+
+\setkeys{Gin}{width=.99\linewidth}
+![Zone Expander - Front Panel](imgs/manual/front_panel_expansion.png)
+
 - ON/STANDBY: Show state of the audio controller:
     * Green: Unit is on
     * Red: Unit is in Standby
@@ -130,12 +142,18 @@ Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create 
     * None: Zone is off (muted)
 
 ### Rear Panel
+
+
+\setkeys{Gin}{width=.99\linewidth}
+![Zone Expander - Rear Panel](imgs/manual/rear_expansion_panel.jpg)
+
 - PREOUT: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
 - ZONE X: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors.
 - EXPANSION:
     * CHAIN OUT: Connection from previous expansion or main unit.
     * CHAIN OUT: Connection to the next expansion unit (if needed).
 
+\newpage
 ### Specifications
 
 |Feature||
@@ -152,10 +170,13 @@ Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create 
 |Speaker Impedance | 4 -8 Ω |
 |Stereo Zones      | 6 |
 |Audio Input       | From Controller|
-: Specifications
 
-
+\newpage
 ## Wall Panel
+
+\setkeys{Gin}{width=.50\linewidth}
+![Wall Panel](imgs/manual/nspanel_graphics_modded.png)
+
 See the included Sonoff manual for specifications and installation.
 
 \newpage
@@ -168,7 +189,13 @@ WARNING!! DO NOT CONNECT UNIT TO 230V MAINS WITHOUT FIRST SETTING INTERNAL MAINS
 ## Speakers
 Each of AmpliPi's zone outputs can drive a 4-8 Ohm speaker pair, using the provided Phoenix connectors. Here is what the basic wiring diagram for a zone looks like:
 
+\setkeys{Gin}{width=.60\linewidth}
+![Speaker wiring](imgs/manual/zone_speaker_wiring.png)
+
 AmpliPi's amplifiers are capable of driving 4-8 Ohm speaker loads in a stereo configuration. Here is what a typical stereo speaker connection, using CL2 rated 14-AWG speaker wire and the Phoenix connectors, looks like:
+
+\setkeys{Gin}{width=.99\linewidth}
+![Pheonix connector connection](imgs/speaker_wire_to_pheonix.jpg)
 
 To connect a stereo speaker pair, using speaker wire:
 
@@ -195,6 +222,9 @@ Just a friendly reminder, to avoid causing hardware damage:
 **WARNING!! DO NOT CONNECT UNIT TO 230V MAINS WITHOUT FIRST SETTING INTERNAL MAINS POWER SWITCH.**
 
 AmpliPi ships preconfigured for 120V mains power, but can be switched over to work on 230V mains. Internally, there is a red switch on the side of the Meanwell power supply that can be toggled for 230V. The easiest way to get at this witch is to take off the top cover. The power supply switch can potentially be accessed through the vent slots on the right side of the unit as well. Here are some pictures to help clarify the process:
+
+\setkeys{Gin}{width=.50\linewidth}
+![Power Supply Configuration](imgs/manual/power_instructions.png)
 
 Once the unit has the correct input voltage configured, plug in the AmpliPi to a wall outlet. The ON/STANDBY will start of blinking red then transition to red once the unit is fully powered on. Continue below to enjoy your unit!
 
