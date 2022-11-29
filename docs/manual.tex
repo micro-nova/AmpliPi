@@ -1,0 +1,32 @@
+\documentclass{article}
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+ }
+\usepackage{tgheros}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[english]{isodate}
+\usepackage[parfill]{parskip}
+\usepackage[hybrid]{markdown}
+\markdownSetup{pipeTables,tableCaptions}
+
+\title{AmpliPi Manual}
+\author{MicroNova}
+\date{November 2022}
+
+\begin{document}
+
+\maketitle
+\newpage
+\pagenumbering{Roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+\markdownInput{MANUAL.md}
+
+\end{document}
