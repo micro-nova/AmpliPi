@@ -1,0 +1,35 @@
+\babel@toc {english}{}\relax 
+\contentsline {subsection}{\numberline {0.1}Safety}{1}{}%
+\contentsline {subsubsection}{\numberline {0.1.1}IMPORTANT SAFETY INSTRUCTIONS}{1}{}%
+\contentsline {subsection}{\numberline {0.2}FCC Statement}{2}{}%
+\contentsline {section}{\numberline {1}Overview}{3}{}%
+\contentsline {subsection}{\numberline {1.1}App}{3}{}%
+\contentsline {subsection}{\numberline {1.2}Main Controller}{4}{}%
+\contentsline {subsubsection}{\numberline {1.2.1}Front Panel}{4}{}%
+\contentsline {subsubsection}{\numberline {1.2.2}Rear Panel}{4}{}%
+\contentsline {subsubsection}{\numberline {1.2.3}Specifications}{5}{}%
+\contentsline {subsection}{\numberline {1.3}Zone Expander}{6}{}%
+\contentsline {subsubsection}{\numberline {1.3.1}Front Panel}{6}{}%
+\contentsline {subsubsection}{\numberline {1.3.2}Rear Panel}{6}{}%
+\contentsline {subsubsection}{\numberline {1.3.3}Specifications}{7}{}%
+\contentsline {subsection}{\numberline {1.4}Wall Panel}{8}{}%
+\contentsline {section}{\numberline {2}Installation}{9}{}%
+\contentsline {subsection}{\numberline {2.1}Overview}{9}{}%
+\contentsline {subsection}{\numberline {2.2}Mounting and unit placement}{9}{}%
+\contentsline {subsection}{\numberline {2.3}Speakers}{9}{}%
+\contentsline {subsubsection}{\numberline {2.3.1}Connections}{10}{}%
+\contentsline {subsubsection}{\numberline {2.3.2}Runnning wire in walls and ceilings}{10}{}%
+\contentsline {subsubsection}{\numberline {2.3.3}More Info}{10}{}%
+\contentsline {subsection}{\numberline {2.4}Preamp Outputs}{10}{}%
+\contentsline {subsection}{\numberline {2.5}Audio Inputs}{10}{}%
+\contentsline {subsection}{\numberline {2.6}Network connection}{10}{}%
+\contentsline {subsection}{\numberline {2.7}Power}{11}{}%
+\contentsline {subsection}{\numberline {2.8}Startup and Configuration}{11}{}%
+\contentsline {section}{\numberline {3}Troubleshooting}{13}{}%
+\contentsline {subsection}{\numberline {3.1}Audio}{13}{}%
+\contentsline {subsubsection}{\numberline {3.1.1}Noise}{13}{}%
+\contentsline {subsubsection}{\numberline {3.1.2}No Audio}{13}{}%
+\contentsline {subsection}{\numberline {3.2}Updating}{13}{}%
+\contentsline {subsection}{\numberline {3.3}New Release}{13}{}%
+\contentsline {subsection}{\numberline {3.4}Prereleases and using previous versions}{13}{}%
+\contentsline {subsection}{\numberline {3.5}Reimaging AmpliPi}{13}{}%

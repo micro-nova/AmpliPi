@@ -3,17 +3,17 @@
 Bluetooth support can be enabled by connecting a USB Bluetooth dongle to your AmpliPi.
 
 ## Hardware support
-AmpliPi currently supports at most one Bluetooth stream at a time. If a Bluetooth dongle is connected when the AmpliPi is started a Bluetooth stream is created automatically. 
+AmpliPi currently supports at most one Bluetooth stream at a time. If a Bluetooth dongle is connected when the AmpliPi is started a Bluetooth stream is created automatically.
 
 ### Tested Hardware
--  [this Bluetooth dongle](https://www.amazon.com/gp/product/B08LVH5BCP/).
+-  [ZEXMTE Long Range USB Bluetooth Adapter](https://www.amazon.com/gp/product/B08LVH5BCP/).
 
 ### Other USB Bluetooth dongles
-Other Bluetooth dongles may need drivers to be installed.
+Other Bluetooth dongles may need drivers to be installed. We suggest ensuring the maximum range of the adapter encompasses your whole home so that the music isn't spotty.
 
 ## How to play audio
 1. Set one of the sources to the Bluetooth stream input
-2. Pair and connect your  device to **amplipi** (the hostname of your AmpliPi)
+2. Pair and connect your device to **amplipi** (the hostname of your AmpliPi)
 3. Play some audio out your device
 
 ## Multiple Bluetooth devices

@@ -14,13 +14,12 @@ All of the connections will be made to the back panel. Here's a quick reference 
 - **POWER**: 115V, or optionally 230V connection, 115/230 switch is set on internal power supply and marked on rear of unit, see [Power](#power)
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller
   - **SERVICE**: USB mini connection for re-imaging the Pi's EMMC
-  - **USB**:  USB A ports for connecting peripherals such as additional storage devices
-  - **AUX IN**: Additional stereo input, planned to be used for announcements
-  - **HDMI OUT**: The Pi's HMDI output, can be used for visualizations or development
+  - **USB**:  USB A ports for connecting peripherals such as additional storage devices. **DO NOT USE AS A USB POWER SOURCE TO AN INPUT**
+  - **AUX IN**: Additional stereo input, intended for PA announcements
   - **ETHERNET**: Network connection, see [Networking](#networking)
 - **INPUTS**: 4 Stereo RCA inputs, see [RCA Inputs](#rca-inputs)
 - **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers
-- **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors see [Speakers](#speakers)
+- **ZONES**: Amplified stereo outputs for the given Zone, using 4-pin Phoenix connectors see [Speakers](#speakers)
 - **EXPANSION**: Connection to additional expansion unit (multiple units can be daisy-chained), see [Expansion Units](#expansion)
 
 ![Backpanel](imgs/backpanel.jpg)
@@ -29,7 +28,7 @@ All of the connections will be made to the back panel. Here's a quick reference 
 
 Each of AmpliPi's 6 zones can drive a 4-8 Ohm speaker pair, using the provided Phoenix connectors. Here is what the basic wiring diagram for a zone looks like:
 
-![Speaker-Zone Diagram](imgs/zone_speaker_connection.svg)
+<!-- ![Speaker-Zone Diagram](imgs/zone_speaker_connection.svg) -->
 
 AmpliPi's amplifiers are capable of driving 4-8 Ohm speaker loads in a stereo configuration. Here is what a typical stereo speaker connection, using CL2 rated 14-AWG speaker wire and the Phoenix connectors, looks like:
 
@@ -80,7 +79,7 @@ Zones attach to main units using the CHAIN IN/OUT connectors on the rear panel.
 
 Now that the AmpliPi unit is powered on, it is time to play with it. Let's see what it can do:
 
-1. Go to [amplipi.local](http://amplipi.local/0) (Android and Windows 7 users will need to type the ip address found on the unit's display into their web browser to find the page).
+1. Go to [amplipi.local](http://amplipi.local). If you've changed your hostname, you can also check the units front display for the url.
    You should now be connected to AmpliPi's mobile-friendly website.
    Please note that an https connection to the AmpliPi is not currently available since certificates have to be managed on a per-unit basis.
    Android users can download the [AmpliPi app](https://play.google.com/store/apps/details?id=com.amplipishellapp) in the Google Play Store.
@@ -101,6 +100,6 @@ The API is also available via the API link at the bottom of the [main page](http
 
 - The AmpliPi [user community](https://amplipi.discourse.group/) is a great place to learn more about AmpliPi, post questions, and interact with other AmpliPi users!
 - Feature requests and bug reports please [Create an issue](https://github.com/micro-nova/AmpliPi/issues/new).
-- Feedback on webapp: [Add comments to Webapp Feedback](https://github.com/micro-nova/AmpliPi/issues/34)
+- Feedback on webapp: [Add comments to Webapp Feedback](https://github.com/micro-nova/AmpliPi/issues/495)
 - Other feedback: [Add or Comment on a discussion](https://github.com/micro-nova/AmpliPi/discussions)
 
