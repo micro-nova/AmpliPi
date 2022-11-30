@@ -16,18 +16,21 @@
   pipeTables,
   tableCaptions,
   rendererPrototypes = {
-    image = {\includegraphics{#2}}, % this makes images inline
+    image = {\begin{center}\includegraphics{#2}\end{center}}, % center images inline
     codeSpan = {\texttt{#1}}, % Render inline code via `\texttt`.'
   }
 }
-\title{AmpliPi Manual}
+\title{AmpliPi Home Audio Controller - User Manual}
 \author{MicroNova}
 \date{November 2022}
 \setlength\parindent{0pt}
 \begin{document}
 
 \maketitle
+\setkeys{Gin}{width=.99\linewidth}
+\includegraphics{imgs/manual/main_graphic_16x9.jpg}
 \newpage
+
 \pagenumbering{Roman}
 \tableofcontents
 \newpage

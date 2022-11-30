@@ -1,3 +1,7 @@
+
+[//]: # (This manual can be generated on a linux machine with docker installed with ./scripts/typeset_manual.)
+[//]: # (To generate this on Windows download tex live from www.tug.org/texlive/. Then use the command: latexmk -cd -lualatex -silent amplipi/docs/manual.tex. This manual can also be edited online using overleaf. You will need to updload manual.tex and manual.md as well as the relevant images.)
+
 ## Safety
 
 \setkeys{Gin}{width=.30\linewidth}
@@ -53,8 +57,9 @@ Your AmpliPi controller includes the following components:
 - 6 x Phoenix connectors for speaker connections
 
 The following optional accessories are available and can be purchased separately:
-- AmpliPi Wall Panel - Wall mountable touch panel that can control volume and playback for a zone or group of zones. Also includes two physical switches for light control.
-- AmpliPi Zone Expander - Expansion unit to add more controllable zones. Up to 5 can be added to an AmpliPi controller for a total of 36 zones.
+
+- **AmpliPi Wall Panel**: Wall mountable touch panel that can control volume and playback for a zone or group of zones. Also includes two physical switches for light control.
+- **AmpliPi Zone Expander**: Expansion unit to add more controllable zones. Up to 5 can be added to an AmpliPi controller for a total of 36 zones.
 
 ## App
 
@@ -71,12 +76,12 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
 \setkeys{Gin}{width=.99\linewidth}
 ![Controller - Front Panel](imgs/manual/front_main_panel.jpg)
 
-- DISPLAY: Show IP Address, Hostname, Password, audio info and zone volumes.
-- ON/STANDBY: Show state of the audio controller:
+- **DISPLAY**: Show IP Address, Hostname, Password, audio info and zone volumes.
+- **ON/STANDBY**: Show state of the audio controller:
     - Green: Unit is on
     - Red: Unit is in Standby
     - Blinking Red: Unit is waiting to be configured
-- ZONE: Show powered state of each zone
+- **ZONE**: Show powered state of each zone
     - Blue: Zone is on (not muted)
     - None: Zone is off (muted)
 
@@ -85,19 +90,19 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
 \setkeys{Gin}{width=.99\linewidth}
 ![Controller - Rear Panel](imgs/manual/rear_main_panel.jpg)
 
-- POWER: 115V, or optionally 230V connection. An internal 115/230 switch is set internally on the power supply and marked on the rear of the unit.
-- CONTROLLER: Connections to the embedded Raspberry Pi Controller.
-- SERVICE: USB mini connection for re-imaging the Pi's EMMC.
-- USB: USB A ports for connecting peripherals such as additional storage devices.
-- OPTICAL IN: SPDIF audio input, planned to be used for extra inputs.
-- AUX IN: Additional stereo input, planned to be used for announcements.
-- HDMI OUT: The Pi's HDMI output, can be used for visualizations or development.
-- ETHERNET: Network connection.
-- INPUTS: 4 Stereo RCA inputs.
-- PREOUT: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
-- ZONE X: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors.
-- EXPANSION:
-    - CHAIN OUT: Connection to the next expansion unit (if one or more expanders are needed).
+- **POWER**: 115V, or optionally 230V connection. An internal 115/230 switch is set internally on the power supply and marked on the rear of the unit.
+- **CONTROLLER**: Connections to the embedded Raspberry Pi Controller.
+- **SERVICE**: USB mini connection for re-imaging the Pi's EMMC.
+- **USB**: USB A ports for connecting peripherals such as additional storage devices.
+- **OPTICAL IN**: SPDIF audio input, planned to be used for extra inputs.
+- **AUX IN**: Additional stereo input, planned to be used for announcements.
+- **HDMI OUT**: The Pi's HDMI output, can be used for visualizations or development.
+- **ETHERNET**: Network connection.
+- **INPUTS**: 4 Stereo RCA inputs.
+- **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
+- **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors.
+- **EXPANSION**:
+    - **CHAIN OUT**: Connection to the next expansion unit (if one or more expanders are needed).
 
 \newpage
 ### Specifications
@@ -105,23 +110,34 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
 |Feature||
 |:------|:-----|
 |Streaming Sources | Airplay, Pandora, Spotify Connect, DLNA  |
+|||
 |Control Interfaces| Web App, REST API|
+|||
 |Dimensions        | 2U 19" rackmount unit with 300mm depth|
+|||
 |Connectivity      | 100Mbps Ethernet|
 |                  | HDMI 1.4 output|
 |                  | 2x USB 2.0 External|
 |                  | 1x USB 2.0 Internal|
+|||
 |Power Input       | 90-132VAC or 180-264VAC|
+|||
 |Power Consumption | 6.7W Idle|
 |                  | 391W Continuous|
 |                  | 782W Peak|
+|||
 |Peak Current Consumption|6.8A @ 115VAC or 3.4A @230VAC|
+|||
 |Speaker Power     | 79 WPC @ 4 Ω|
 |                  | 57 WPC @ 4 Ω|
 |                  | 44 WPC @ 4 Ω|
+|||
 |Speaker Impedance | 4 -8 Ω |
+|||
 |Stereo Zones      | 6 |
+|||
 |Audio Input       | 4 RCA Line In|
+|||
 |Digital Audio Sources | 32-bit 384KHz (source 1), 16-bit 48KHz (sources 2-4)|
 
 \newpage
@@ -133,11 +149,11 @@ Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create 
 \setkeys{Gin}{width=.99\linewidth}
 ![Zone Expander - Front Panel](imgs/manual/front_panel_expansion.png)
 
-- ON/STANDBY: Show state of the audio controller:
+- **ON/STANDBY**: Show state of the audio controller:
     * Green: Unit is on
     * Red: Unit is in Standby
     * Blinking Red: Unit is waiting to be configured
-- ZONE: Show powered state of each zone
+- **ZONE**: Show powered state of each zone
     * Blue: Zone is on (not muted)
     * None: Zone is off (muted)
 
@@ -147,11 +163,11 @@ Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create 
 \setkeys{Gin}{width=.99\linewidth}
 ![Zone Expander - Rear Panel](imgs/manual/rear_expansion_panel.jpg)
 
-- PREOUT: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
-- ZONE X: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors.
-- EXPANSION:
-    * CHAIN OUT: Connection from previous expansion or main unit.
-    * CHAIN OUT: Connection to the next expansion unit (if needed).
+- **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
+- **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors.
+- **EXPANSION**:
+    * **CHAIN OUT**: Connection from previous expansion or main unit.
+    * **CHAIN OUT**: Connection to the next expansion unit (if needed).
 
 \newpage
 ### Specifications
@@ -159,16 +175,23 @@ Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create 
 |Feature||
 |:------|:-----|
 |Dimensions        | 2U 19" rackmount unit with 300mm depth|
+|||
 |Power Input       | 90-132VAC or 180-264VAC|
+|||
 |Power Consumption | 1W Idle|
 |                  | 391W Continuous|
 |                  | 782W Peak|
+|||
 |Peak Current Consumption|6.8A @ 115VAC or 3.4A @230VAC|
+|||
 |Speaker Power     | 79 WPC @ 4 Ω|
 |                  | 57 WPC @ 4 Ω|
 |                  | 44 WPC @ 4 Ω|
+|||
 |Speaker Impedance | 4 -8 Ω |
+|||
 |Stereo Zones      | 6 |
+|||
 |Audio Input       | From Controller|
 
 \newpage
@@ -185,6 +208,17 @@ See the included Sonoff manual for specifications and installation.
 We understand you will probably be excited to power on your AmpliPi and try it out. To avoid damaging the unit, please read through this guide before installing and powering your AmpliPi unit!
 
 WARNING!! DO NOT CONNECT UNIT TO 230V MAINS WITHOUT FIRST SETTING INTERNAL MAINS POWER SWITCH.
+
+See the power section for more details on what changes are needed to suport 230V mains.
+
+## Mounting and unit placement
+
+Main Controllers and Zone Expanders both ship with built in 19" rackmount ears, so that they can be easily installed into a rack with mounting screws (not provided).
+
+Some things to keep in mind avoid overheating the unit:
+- Don't block the vent holes on the side
+- Don't allow dust to build up inside the unit to avoid overheading the unit.
+
 
 ## Speakers
 Each of AmpliPi's zone outputs can drive a 4-8 Ohm speaker pair, using the provided Phoenix connectors. Here is what the basic wiring diagram for a zone looks like:
@@ -205,23 +239,46 @@ To connect a stereo speaker pair, using speaker wire:
 4. To avoid any shorts, make sure that there aren't any stray wire strands.
 5. The speaker set can now be connected to one of the 6 zones.
 
-Much more information on speaker selection and  installation can be the found in AmpliPi’s online documentation and question forums found at the end of this guide.
+### Connections
+- Inproper connection of speakers can damage the unit
+- Never connect mutiple speakers in parallel such that it brings the total impedance below 4 ohms (max 2x 8ohm speakers in parallel).
+- Amplified speaker ouputs **CAN NOT** be bridged, attempting to do so will damage the amplifier and void the warrenty
+
+### Runnning wire in walls and ceilings
+- Most electric codes require the use of CL2 rated speaker wire for in-wall installations
+- Avoid running speaker wire next to AC power wires as much as possble to reduce noise.
+- When necessary, cross AC wires at 90 degree angles to avoid introducing any noise into the speakers.
+
+### More Info
+
+Much more information on speaker selection and installation can be the found in AmpliPi’s online documentation and question forums found at the end of this guide.
 
 ## Preamp Outputs
+Each of AmpliPi's zone outputs have a corresponding line-level preout output pair. These outputs can be used to connect powered subwoofers and other active/powered speakers.
+
+The volume output of a preout is controlled by the corresponding speaker output. This allows a connected subwoofer to be controlled propoertionally to the speakers output in the same zone.
+
 ## Audio Inputs
 Each of the stereo RCA inputs can be connected to a different audio source, such as the output of a TV or a record player.
 Expansion Units
 To increase the number of zones you can add expansion units to your system. You can add up to 5 additional zone expander units to a single AmpliPi main unit. Each expansion unit adds 6 zones or pairs of speakers. Zones attach to main units using the CHAIN IN/OUT connectors on the rear panel.These are included with each Zone Expander.
 
 ## Network connection
-Connect an RJ45 cable to the Ethernet port on the main unit.
+Connect an RJ45 cable to the Ethernet port on the main unit. Connect the other end to a port on your main network (likeliy on your router). The unit's IP address is configured by DHCP by default.
 
 ## Power
 Just a friendly reminder, to avoid causing hardware damage:
 
 **WARNING!! DO NOT CONNECT UNIT TO 230V MAINS WITHOUT FIRST SETTING INTERNAL MAINS POWER SWITCH.**
 
-AmpliPi ships preconfigured for 120V mains power, but can be switched over to work on 230V mains. Internally, there is a red switch on the side of the Meanwell power supply that can be toggled for 230V. The easiest way to get at this witch is to take off the top cover. The power supply switch can potentially be accessed through the vent slots on the right side of the unit as well. Here are some pictures to help clarify the process:
+AmpliPi ships preconfigured for 120V mains power, but can be switched over to work on 230V mains.
+
+Several changes need to be made to the unit to connect to 230V mains:
+- Use an appropriate 230V power cable (AmmpliPi only ships with a 120V XXX style cable)
+- Chnage the internal power supply fuse located in the IEC socket. ???HOW TO DO THAT??????
+- Switch the internal power supply to 230V (See below)
+
+Internally, there is a red switch on the side of the Meanwell power supply that can be toggled for 230V. The easiest way to get at this witch is to take off the top cover. The power supply switch can potentially be accessed through the vent slots on the right side of the unit as well. Here are some pictures to help clarify the process:
 
 \setkeys{Gin}{width=.50\linewidth}
 ![Power Supply Configuration](imgs/manual/power_instructions.png)
@@ -240,3 +297,10 @@ Now that the AmpliPi unit is powered on, it is time to play with it. Let's see w
 6. You will probably want to change the default group and zone names and add different streaming sources. The Gear icon () provides an interface to configure inputs, zones, and groups.
 
 We know you will want to setup and configure more of your AmpliPi! Since this was printed we added more features and made the AmpliPi better! This guide is continued at amplipi.com/getting-started. Use the QR code below to jump there now.
+
+\setkeys{Gin}{width=.30\linewidth}
+![Next steps](imgs/manual/scan_me.png)
+
+## Troubleshooting
+
+Much more advanced and updated information can be the found in AmpliPi’s online documentation and question forums found at the end of the Startup and Configuration section.
