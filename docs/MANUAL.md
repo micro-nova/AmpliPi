@@ -229,7 +229,7 @@ Each of AmpliPi's zone outputs can drive a 4-8 Ohm speaker pair, using the provi
 AmpliPi's amplifiers are capable of driving 4-8 Ohm speaker loads in a stereo configuration. Here is what a typical stereo speaker connection, using CL2 rated 14-AWG speaker wire and the Phoenix connectors, looks like:
 
 \setkeys{Gin}{width=.99\linewidth}
-![Pheonix connector connection](imgs/speaker_wire_to_pheonix.jpg)
+![Pheonix connector connection](imgs/manual/speaker_wire_to_pheonix.png)
 
 To connect a stereo speaker pair, using speaker wire:
 
