@@ -443,9 +443,10 @@ class Api:
     playing = False
     status_file = 'rca_status'
     try:
-      with open(status_file, mode='rb') as file:
-        status_all = file.read()[0]
-        playing = (status_all & (0b11 << (src.id * 2))) != 0
+      if src.id is not None:
+        with open(status_file, mode='rb') as file:
+          status_all = file.read()[0]
+          playing = (status_all & (0b11 << (src.id * 2))) != 0
     except FileNotFoundError as error:
       print(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
     except Exception as error:
