@@ -4,6 +4,7 @@ dasbus
 deepdiff
 fastapi
 fastapi_utils
+httpx
 jinja2
 loguru
 mypy
