@@ -65,18 +65,22 @@ typedef union {
   uint16_t vals[NUM_CHANNELS];
 } AdcData;
 
-typedef union {
-  struct {
-    uint16_t ch3l[WINDOW_SIZE];
-    uint16_t ch3r[WINDOW_SIZE];
-    uint16_t ch2l[WINDOW_SIZE];
-    uint16_t ch2r[WINDOW_SIZE];
-    uint16_t ch1l[WINDOW_SIZE];
-    uint16_t ch1r[WINDOW_SIZE];
-    uint16_t ch0l[WINDOW_SIZE];
-    uint16_t ch0r[WINDOW_SIZE];
+typedef struct {
+  union {
+    struct {
+      uint16_t ch3l[WINDOW_SIZE];
+      uint16_t ch3r[WINDOW_SIZE];
+      uint16_t ch2l[WINDOW_SIZE];
+      uint16_t ch2r[WINDOW_SIZE];
+      uint16_t ch1l[WINDOW_SIZE];
+      uint16_t ch1r[WINDOW_SIZE];
+      uint16_t ch0l[WINDOW_SIZE];
+      uint16_t ch0r[WINDOW_SIZE];
+    };
+    uint16_t ch_vals[NUM_CHANNELS][WINDOW_SIZE];
+    uint16_t all_vals[NUM_CHANNELS * WINDOW_SIZE];
   };
-  uint16_t vals[NUM_CHANNELS * WINDOW_SIZE];
+  size_t index; // rolling index into the window
 } AdcWindow;
 
 typedef union {
@@ -196,13 +200,18 @@ bool measure(AdcData *data) {
   return true;
 }
 
+void init_window(AdcWindow *window) {
+
+  memset(&window->all_vals, 0xFF, NUM_CHANNELS*WINDOW_SIZE*sizeof(window->all_vals[0]));
+  window->index = 0;
+}
+
 void update_window(AdcWindow *window, AdcData *raw_data) {
-  // window is implemented like a circular queue
-  static size_t window_index = 0;
-  for (size_t i = 0; i < sizeof(AdcData) / sizeof(raw_data->vals[0]); i++) {
-    window->vals[i * WINDOW_SIZE + window_index] = raw_data->vals[i];
+  // each channel's window is a circular queue, insert the raw data into the current slot/index
+  for (size_t i = 0; i < NUM_CHANNELS; i++) {
+    window->ch_vals[i][window->index] = raw_data->vals[i];
   }
-  window_index = (window_index + 1) % WINDOW_SIZE;
+  window->index = (window->index + 1) % WINDOW_SIZE;
 }
 
 void process(AdcData *max_data, AdcWindow *window, AdcData *baseline,
@@ -228,15 +237,13 @@ void process(AdcData *max_data, AdcWindow *window, AdcData *baseline,
 // channels
 void compute_window_max(AdcWindow *window, AdcData *maxvals) {
   // iterate through channels
-  for (size_t i = 0; i < sizeof(maxvals->vals) / sizeof(maxvals->vals[0]);
-       i++) {
+  for (size_t ch = 0; ch < sizeof(maxvals->vals) / sizeof(maxvals->vals[0]); ch++) {
     // iterate through samples
-    maxvals->vals[i] = 0;
-    for (size_t j = 0; j < sizeof(window->ch0l) / sizeof(window->ch0l[0]);
-         j++) {
-      uint16_t curr_val = window->vals[i * WINDOW_SIZE + j];
-      if (curr_val > maxvals->vals[i]) {
-        maxvals->vals[i] = curr_val;
+    maxvals->vals[ch] = 0;
+    for (size_t s = 0; s < sizeof(window->ch0l) / sizeof(window->ch0l[0]); s++) {
+      uint16_t curr_val = window->ch_vals[ch][s];
+      if (curr_val > maxvals->vals[ch]) {
+        maxvals->vals[ch] = curr_val;
       }
     }
   }
@@ -319,11 +326,12 @@ int main(int argc, char **argv) {
   for (size_t i = 0; i < sizeof(AdcData) / sizeof(baseline.vals[0]); i++)
     baseline.vals[i] = DEFAULT_BASELINE;
   AdcWindow window;
-  memset(&window, 0xFF, sizeof(AdcWindow));
   AdcData     raw_data;
   AdcData     max_data;
   AudioStatus status;
   FILE       *f_csv = open_csv();
+
+  init_window(&window);
 
   while (1) {
     success = measure(&raw_data);
