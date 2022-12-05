@@ -16,7 +16,7 @@
   pipeTables,
   tableCaptions,
   rendererPrototypes = {
-    image = {\begin{center}\includegraphics{#2}\end{center}}, % center images inline
+    image = {\begin{center}\setkeys{Gin}{width=.99\linewidth}\includegraphics{#2}\end{center}}, % center images inline expanding to page width
     codeSpan = {\texttt{#1}}, % Render inline code via `\texttt`.'
   }
 }
@@ -36,6 +36,22 @@
 \newpage
 \pagenumbering{arabic}
 
-\markdownInput{MANUAL.md}
+\markdownInput{SAFETY.md}
+\newpage
+\markdownInput{FCC.md}
+\newpage
+\markdownInput{OVERVIEW.md}
+\newpage
+\markdownInput{MAIN_CONTROLLER.md}
+\newpage
+\markdownInput{MAIN_CONTROLLER_SPECS.md}
+\newpage
+\markdownInput{ZONE_EXPANDER.md}
+\newpage
+\markdownInput{ZONE_EXPANDER_SPECS.md}
+\newpage
+\markdownInput{WALL_PANEL.md}
+\newpage
+\markdownInput{INSTALLATION.md}
 
 \end{document}
