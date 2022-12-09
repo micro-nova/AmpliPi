@@ -5,6 +5,7 @@ from enum import Enum, auto
 import json
 from multiprocessing import Process
 import time
+from datetime import datetime
 from typing import List
 from dasbus.connection import SessionMessageBus
 
@@ -20,6 +21,7 @@ METADATA_MAPPINGS = [
 
 METADATA_REFRESH_RATE = 0.5
 METADATA_FILE_NAME = "metadata.txt"
+ERROR_LOG_NAME = "MPRIS_log.txt"
 
 class CommandTypes(Enum):
   PLAY = auto()
@@ -40,7 +42,7 @@ class Metadata:
 class MPRIS:
   """A class for interfacing with an MPRIS MediaPlayer2 over dbus."""
 
-  def __init__(self, service_suffix, src) -> None:
+  def __init__(self, service_suffix, src, log_fname = None) -> None:
     self.mpris = SessionMessageBus().get_proxy(
         service_name = f"org.mpris.MediaPlayer2.{service_suffix}",
         object_path = "/org/mpris/MediaPlayer2",
@@ -53,16 +55,26 @@ class MPRIS:
     self.src = src
     self.metadata_path = f'{utils.get_folder("config")}/srcs/{self.src}/{METADATA_FILE_NAME}'
 
+    if log_fname:
+      self.log_path = f'{utils.get_folder("config")}/srcs/{self.src}/{log_fname}'
+    else:
+      self.log_path = None
+
     try:
       with open(self.metadata_path, "w", encoding='utf-8') as f:
         m = Metadata()
         m.state = "Stopped"
         json.dump(m.__dict__, f)
     except Exception as e:
-      print (f'Exception clearing metadata file: {e}')
+      self._log("creating metadata file", e)
 
     self.metadata_process = Process(target=self._metadata_reader)
     self.metadata_process.start()
+
+  def _log(self, message: str, e: Exception):
+    if self.log_path:
+      with open(self.log_path, 'a', encoding="utf-8") as log_file:
+        log_file.write(f"[{datetime.now().isoformat()}] MPRIS error while {message}: {e}\n")
 
   def play(self) -> None:
     """Plays."""
@@ -95,7 +107,7 @@ class MPRIS:
 
         return metadata_obj
     except Exception as e:
-      print(f"mpris loading metadata at {self.metadata_path} failed: {e}")
+      self._log("loading metadata file", e)
     return None
 
 
@@ -133,8 +145,8 @@ class MPRIS:
   def __del__(self):
     try:
       self.metadata_process.kill()
-    except:
-      pass
+    except Exception as e:
+      self._log("shutting down", e)
 
   def _metadata_reader(self):
     """Method run by the metadata process, also handles playing/paused."""
@@ -158,8 +170,8 @@ class MPRIS:
         for mapping in METADATA_MAPPINGS:
           try:
             metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
-          except KeyError:
-            pass
+          except KeyError as e:
+            self._log("mapping keys", e)
 
         metadata['state'] = mpris.PlaybackStatus.strip("'")
 
@@ -168,6 +180,6 @@ class MPRIS:
           with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
             json.dump(metadata, metadata_file)
 
-      except:
-        pass
+      except Exception as e:
+        self._log("polling mpris", e)
       time.sleep(1.0/METADATA_REFRESH_RATE)
