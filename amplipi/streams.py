@@ -73,11 +73,12 @@ def uuid_gen():
 
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
-  def __init__(self, stype, name, mock=False):
+  def __init__(self, stype, name, mock=False, only_src=None):
     self.name = name
     self.proc = None
     self.mock = mock
     self.src = None
+    self.only_src = only_src
     self.state = 'disconnected'
     self.stype = stype
 
@@ -109,11 +110,42 @@ class BaseStream:
       return self.proc.poll() is None
     return False
 
+  def requires_src(self) -> Optional[int]:
+    """ Check if this stream needs to be connected to a specific source
+
+    returns that source's id or None for any source
+    """
+    return self.only_src
+
   def send_cmd(self, cmd: str) -> None:
     """ Generic send_cmd function. If not implemented in a stream,
     and a command is sent, this error will be raised.
     """
     raise NotImplementedError(f'{self.name} does not support commands')
+
+class RCA(BaseStream):
+  """ A built-in RCA input """
+  def __init__(self, name: str, index: int, mock: bool):
+    super().__init__('rca', name, mock, only_src=index)
+
+  def reconfig(self, **kwargs):
+    self.name = kwargs['name']
+
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state, # TODO: add playing status
+      img_url='static/imgs/rca.png',
+    )
+    return source
+
+  def connect(self, src):
+    if src != self.only_src:
+      raise Exception(f"Unable to connect RCA {self.only_src} to src {src}, can only be connected to {self.only_src}")
+    self._connect(src)
+
+  def disconnect(self):
+    self._disconnect()
 
 class AirPlay(BaseStream):
   """ An AirPlay Stream """
@@ -993,7 +1025,7 @@ class LMS(BaseStream):
     return source
 
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio, LMS]
+AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio, LMS]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -1001,7 +1033,9 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
   """
   args = stream.dict(exclude_none=True)
-  if stream.type == 'pandora':
+  if stream.type == 'rca':
+    return RCA(args['name'], args['index'], mock=mock)
+  elif stream.type == 'pandora':
     return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
   elif stream.type == 'shairport' or stream.type == 'airplay': # handle older configs
     return AirPlay(args['name'], mock=mock)

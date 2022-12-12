@@ -343,9 +343,11 @@ class Api:
         >>> my_amplipi.get_inputs()
         { None, '', 'local', 'Local', 'stream=9449' }
     """
-    inputs = {None: '', 'local' : f'{src.name} - rca'}
-    for stream in self.get_state().streams:
-      inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
+    inputs: Dict[Union[str, None], str] = {None: ''}
+    for sid, stream in self.streams.items():
+      req_src = stream.requires_src()
+      if req_src in [None, src.id]: # TODO: remove this filter when sources can dynamically change output
+        inputs[f'stream={sid}'] = stream.full_name()
     return inputs
 
   def _check_is_online(self) -> bool:

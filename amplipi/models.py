@@ -70,8 +70,7 @@ class fields(SimpleNamespace):
   Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
 
-  * Digital Stream ('stream=SID') where SID is the ID of the connected stream
-  * Analog RCA Input ('rca=RCA_ID') connects to the system RCA input (0-3)
+  * Digital Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 
@@ -130,16 +129,6 @@ class Source(Base):
     try:
       sinput = str(self.input)
       if sinput.startswith('stream='):
-        return int(sinput.split('=')[1])
-      return None
-    except ValueError:
-      return None
-
-  def get_rca(self) -> Optional[int]:
-    """ Get a source's RCA input if any """
-    try:
-      sinput = str(self.input)
-      if sinput.startswith('rca='):
         return int(sinput.split('=')[1])
       return None
     except ValueError:
