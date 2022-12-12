@@ -119,9 +119,12 @@ class SourceInfo(BaseModel):
   img_url: Optional[str]
   supported_cmds: List[str] = []
 
+NO_OUTPUT = -1
+
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
+  pipe_to: int = Field(description='Output dervice to send audio out', default=-1)
   info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback)')
 
   def get_stream(self) -> Optional[int]:
@@ -185,7 +188,8 @@ class Source(Base):
 
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
-  input: Optional[str] # 'None', 'rca=ID', 'stream=ID' # TODO: add helpers to get stream_id
+  input: Optional[str] = fields.AudioInput
+  pipe_to: Optional[int] = Field(description='Output dervice to send audio out', default=-1)
 
   class Config:
     schema_extra = {
