@@ -71,7 +71,7 @@ class fields(SimpleNamespace):
   AudioInput = Field('', description="""Connected audio source
 
   * Digital Stream ('stream=SID') where SID is the ID of the connected stream
-  * Analog RCA Input ('local') connects to the RCA inputs associated
+  * Analog RCA Input ('rca=RCA_ID') connects to the system RCA input (0-3)
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 
@@ -129,7 +129,17 @@ class Source(Base):
     """ Get a source's connected stream if any """
     try:
       sinput = str(self.input)
-      if 'stream=' in sinput:
+      if sinput.startswith('stream='):
+        return int(sinput.split('=')[1])
+      return None
+    except ValueError:
+      return None
+
+  def get_rca(self) -> Optional[int]:
+    """ Get a source's RCA input if any """
+    try:
+      sinput = str(self.input)
+      if sinput.startswith('rca='):
         return int(sinput.split('=')[1])
       return None
     except ValueError:
@@ -186,7 +196,7 @@ class Source(Base):
 
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
-  input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
+  input: Optional[str] # 'None', 'rca=ID', 'stream=ID' # TODO: add helpers to get stream_id
 
   class Config:
     schema_extra = {
