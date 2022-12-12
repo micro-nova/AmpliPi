@@ -135,7 +135,7 @@ class RCA(BaseStream):
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state, # TODO: add playing status
-      img_url='static/imgs/rca.png',
+      img_url='static/imgs/rca_inputs.svg',
     )
     return source
 

@@ -98,12 +98,13 @@ class Api:
   streams: Dict[int, amplipi.streams.AnyStream]
 
   _LAST_PRESET_ID = 9999
+  RCAs = [996, 997, 998, 999]
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Input 1", "input": "local"},
-      {"id": 1, "name": "Input 2", "input": "local"},
-      {"id": 2, "name": "Input 3", "input": "local"},
-      {"id": 3, "name": "Input 4", "input": "local"}
+      {"id": 0, "name": "Input 1", "input": f"stream={RCAs[0]}"},
+      {"id": 1, "name": "Input 2", "input": f"stream={RCAs[1]}"},
+      {"id": 2, "name": "Input 3", "input": f"stream={RCAs[2]}"},
+      {"id": 3, "name": "Input 4", "input": f"stream={RCAs[3]}"}
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -268,6 +269,8 @@ class Api:
             print(f'Error configuring source {src.id}: {e2}')
             print(f'Source {src.id} left uninitialized')
 
+    # TODO: add code to replace old RCA inputs with RCA stream
+
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for zone in self.status.zones:
@@ -323,14 +326,16 @@ class Api:
     else:
       self.save()
 
-  @staticmethod
-  def _is_digital(src_type: str) -> bool:
-    """Determines whether a source type, @src_type, is analog or digital
+  def _is_digital(self, sinput: str) -> bool:
+    """Determines whether a source input, @sinput, is analog or digital
 
-      'local' is the analog input, anything else is some sort of digital streaming source.
-      The runtime only has the concept of digital or analog
+    The runtime only has the concept of digital or analog
     """
-    return src_type != 'local'
+    try:
+      sid = int(sinput.replace('stream=',''))
+    except:
+      return False
+    return sid in self.RCAs
 
   def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
     """Gets a dictionary of the possible inputs for a source
@@ -341,7 +346,7 @@ class Api:
         Get the possible inputs for any source (only one stream)
 
         >>> my_amplipi.get_inputs()
-        { None, '', 'local', 'Local', 'stream=9449' }
+        { None, '', 'stream=9449' }
     """
     inputs: Dict[Union[str, None], str] = {None: ''}
     for sid, stream in self.streams.items():
@@ -355,7 +360,7 @@ class Api:
     try:
       with open(os.path.join(USER_CONFIG_DIR, 'online'), encoding='utf-8') as fonline:
         online = 'online' in fonline.readline()
-    except Exception as exc:
+    except Exception:
       pass
     return online
 
@@ -364,7 +369,7 @@ class Api:
     try:
       with open(os.path.join(USER_CONFIG_DIR, 'latest_release'), encoding='utf-8') as flatest:
         release = flatest.readline().strip()
-    except Exception as exc:
+    except Exception:
       pass
     return release
 
@@ -461,8 +466,6 @@ class Api:
     stream_inst = self.get_stream(src)
     if stream_inst is not None:
       src.info = stream_inst.info()
-    elif src.input == 'local' and src.id is not None:
-      src.info = self._get_rca_info(src)
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
@@ -806,6 +809,7 @@ class Api:
   def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
     try:
+      # TODO: don't allow RCA streams to be deleted
       # if input is connected to a source change that input to nothing
       for src in self.status.sources:
         if src.get_stream() == sid and src.id is not None:
