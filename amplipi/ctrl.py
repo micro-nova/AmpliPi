@@ -782,6 +782,8 @@ class Api:
   def create_stream(self, data: models.Stream, internal=False) -> models.Stream:
     """ Create a new stream """
     try:
+      if data.type == 'rca':
+        raise Exception(f'Unable to create protected RCA stream, the RCA streams for each RCA input {self.RCAs} already exist')
       # Make a new stream and add it to streams
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
@@ -819,7 +821,10 @@ class Api:
   def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
     try:
-      # TODO: don't allow RCA streams to be deleted
+      # RCA streams are intrinsic to the hardware and can't be removed
+      if sid in self.RCAs and isinstance(self.streams[sid], amplipi.streams.RCA):
+        msg = f'Protected stream {sid} cannot be removed, use disabled=True to hide it'
+        raise Exception(msg)
       # if input is connected to a source change that input to nothing
       for src in self.status.sources:
         if src.get_stream() == sid and src.id is not None:
@@ -833,11 +838,13 @@ class Api:
       if not internal:
         self.mark_changes()
       return ApiResponse.ok()
-    except KeyError as exc:
+    except KeyError :
       msg = f'delete stream failed: {sid} does not exist'
-      if internal:
-        raise Exception(msg) from exc
-      return ApiResponse.error(msg)
+    except Exception as exc:
+      msg =  f'delete stream failed: {exc}'
+    if internal:
+      raise Exception(msg)
+    return ApiResponse.error(msg)
 
   @save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> ApiResponse:
