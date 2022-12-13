@@ -473,6 +473,7 @@ class Stream(Base):
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
   server: Optional[str] = Field(description='Server url')
+  disbaled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
 
   # add examples for each type of stream
   class Config:

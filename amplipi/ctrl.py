@@ -281,8 +281,6 @@ class Api:
             print(f'Error configuring source {src.id}: {e2}')
             print(f'Source {src.id} left uninitialized')
 
-    # TODO: add code to replace old RCA inputs with RCA stream
-
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
     for zone in self.status.zones:
