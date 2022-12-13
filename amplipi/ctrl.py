@@ -101,14 +101,18 @@ class Api:
   RCAs = [996, 997, 998, 999]
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Input 1", "input": f"stream={RCAs[0]}"},
-      {"id": 1, "name": "Input 2", "input": f"stream={RCAs[1]}"},
-      {"id": 2, "name": "Input 3", "input": f"stream={RCAs[2]}"},
-      {"id": 3, "name": "Input 4", "input": f"stream={RCAs[3]}"}
+      {"id": 0, "name": "Player 1", "input": f""},
+      {"id": 1, "name": "Player 2", "input": f""},
+      {"id": 2, "name": "Player 3", "input": f""},
+      {"id": 3, "name": "Player 4", "input": f""},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
+      {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0},
+      {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1},
+      {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2},
+      {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3},
       {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
@@ -239,6 +243,14 @@ class Api:
         for z in self.status.zones:
           if z.id not in muted_zones:
             mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
+
+    # add any missing RCA stream
+    for rca_id in self.RCAs:
+      sid, stream = utils.find(self.status.streams, rca_id)
+      if sid is None:
+        idx = rca_id - self.RCAs[0]
+        rca_stream = models.Stream(id=rca_id, name='Input {idx}', type='rca', index=idx)
+        self.status.streams.insert(idx, rca_stream)
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
