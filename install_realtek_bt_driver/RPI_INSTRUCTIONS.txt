@@ -1,0 +1,16 @@
+https://forums.raspberrypi.com/viewtopic.php?t=294634
+
+1. Search this link for "BH456A" and download the Linux drivers: https://www.xmpow.com/pages/download
+
+2. Install 7zip to extract the drivers:
+sudo apt install p7zip-full
+
+2. Extract the 7z file (the file name may differ):
+7z x 20201202_mpow_BH456A_driver+for+Linux.7z
+
+3. Copy both the fw and config files (the source folder name may differ):
+sudo cp -iv 20201202_LINUX_BT_DRIVER/rtkbt-firmware/lib/firmware/rtlbt/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin
+sudo cp -iv 20201202_LINUX_BT_DRIVER/rtkbt-firmware/lib/firmware/rtlbt/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin
+
+4. Reboot
+

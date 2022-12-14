@@ -1,0 +1,25 @@
+Release History:
+	20201202:
+		update firmware files for rtl8723d, rtl8821c, rtl8852a
+		update firmware files for rtl8723f, rtl8761b, rtl8725a
+	20201026:
+		update firmware file for rtl8822c
+		coex: Fix incorrect profile judgement issue in acl disc
+	20200812: 
+		update the config file for rtl8821cu to fix the bring-up issue on Linux Kernel 4.19+
+		add the support for RTL8723F
+	20200610:
+		update the FW files for rtl8821c and rtl8761b
+
+Software Package Feature:
+	Bluez
+	Other software based on HCI, L2CAP, RFCOMM, SCO and Management sock 
+
+Hardware Supported:
+	All Realtek Bluetooth Chip.
+
+Platform Supported:
+	Linux kernel V2.6.32-5.7.1
+
+CPU supported:
+	ARM/MIPS/X86

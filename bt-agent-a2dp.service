@@ -1,0 +1,16 @@
+[Unit]
+Description=A2DP Bluetooth Agent
+After=bluetooth.service
+Wants=bluetooth.service
+
+[Service]
+ExecStartPre=/bin/sh -c "echo discoverable on | bluetoothctl"
+ExecStart=/usr/bin/python -u /usr/local/bin/a2dp-agent
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=A2DP-Agent
+RestartSec=1
+Restart=always
+
+[Install]
+WantedBy=bluetooth.service
