@@ -360,8 +360,11 @@ class Api:
     """
     inputs: Dict[Union[str, None], str] = {None: ''}
     for sid, stream in self.streams.items():
-      req_src = stream.requires_src() # TODO: remove this filter when sources can dynamically change output
-      if not stream.disabled and req_src in [None, src.id]:
+      connectable = stream.requires_src() in [None, src.id] # TODO: remove this filter when sources can dynamically change output
+      connected = src.get_stream()
+      if sid == connected:
+        assert connectable, print(f'Source {src} has invalid input: stream={connected}')
+      if (sid == connected or not stream.disabled) and connectable:
         inputs[f'stream={sid}'] = stream.full_name()
     return inputs
 
