@@ -437,7 +437,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory={directory}
+WorkingDirectory={directory}/config/srcs
 ExecStart={directory}/amplipi/audiodetector/audiodetector
 Restart=on-failure
 RestartSec=10

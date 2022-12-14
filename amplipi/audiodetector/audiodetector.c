@@ -41,10 +41,12 @@
 #define NUM_CHANNELS        8
 #define SAMPLES_PER_SECOND  10
 #define WINDOW_SIZE_SECONDS 3
+#define TIMEOUT_SECONDS     10
 #define MICRO               1000000
 #define CH_ACTIVE_THR       10
 #define DEFAULT_BASELINE    550
 #define WINDOW_SIZE         (SAMPLES_PER_SECOND * WINDOW_SIZE_SECONDS)
+#define TIMEOUT_CYCLES      (SAMPLES_PER_SECOND * TIMEOUT_SECONDS)
 
 // #define DUMP_CSV
 // #define DEBUG_PRINT
@@ -64,6 +66,9 @@ typedef union {
   };
   uint16_t vals[NUM_CHANNELS];
 } AdcData;
+
+// i would be duplicating AdcData and giving it a different name, so this is fine right?
+typedef AdcData AdcTimeout;
 
 typedef struct {
   union {
@@ -201,8 +206,8 @@ bool measure(AdcData *data) {
 }
 
 void init_window(AdcWindow *window) {
-
-  memset(&window->all_vals, 0xFF, NUM_CHANNELS*WINDOW_SIZE*sizeof(window->all_vals[0]));
+  for (size_t i = 0; i < sizeof(window->all_vals) / sizeof(window->all_vals[0]); i++)
+    window->all_vals[i] = DEFAULT_BASELINE;
   window->index = 0;
 }
 
@@ -214,7 +219,7 @@ void update_window(AdcWindow *window, AdcData *raw_data) {
   window->index = (window->index + 1) % WINDOW_SIZE;
 }
 
-void process(AdcData *max_data, AdcWindow *window, AdcData *baseline,
+void process(AdcData *max_data, AdcWindow *window, AdcData *baseline, AdcTimeout *timeout,
              AudioStatus *status) {
   // Update baseline
   for (size_t i = 0; i < sizeof(AdcData) / sizeof(max_data->vals[0]); i++) {
@@ -223,14 +228,16 @@ void process(AdcData *max_data, AdcWindow *window, AdcData *baseline,
     }
   }
   // Update status
-  status->ch0l = (max_data->ch0l - baseline->ch0l) > CH_ACTIVE_THR;
-  status->ch0r = (max_data->ch0r - baseline->ch0r) > CH_ACTIVE_THR;
-  status->ch1l = (max_data->ch1l - baseline->ch1l) > CH_ACTIVE_THR;
-  status->ch1r = (max_data->ch1r - baseline->ch1r) > CH_ACTIVE_THR;
-  status->ch2l = (max_data->ch2l - baseline->ch2l) > CH_ACTIVE_THR;
-  status->ch2r = (max_data->ch2r - baseline->ch2r) > CH_ACTIVE_THR;
-  status->ch3l = (max_data->ch3l - baseline->ch3l) > CH_ACTIVE_THR;
-  status->ch3r = (max_data->ch3r - baseline->ch3r) > CH_ACTIVE_THR;
+  status->all = 0;
+  for (size_t ch = 0; ch < NUM_CHANNELS; ch++) {
+    if (max_data->vals[ch] - baseline->vals[ch] > CH_ACTIVE_THR) {
+      timeout->vals[ch] = TIMEOUT_CYCLES;
+      status->all = status->all | (1 << (NUM_CHANNELS - ch - 1));
+    } else if (timeout->vals[ch] > 0) {
+      timeout->vals[ch]--;
+      status->all = status->all | (1 << (NUM_CHANNELS - ch - 1));
+    }
+  }
 }
 
 // Given the window of past raw data, populate maxvals with the max along
@@ -322,13 +329,18 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  AdcData baseline;  // Minimum values ever recorded (of window max)
-  for (size_t i = 0; i < sizeof(AdcData) / sizeof(baseline.vals[0]); i++)
+  AdcData     baseline;  // Minimum values ever recorded (of window max)
+  AdcTimeout  timeout;
+  for (size_t i = 0; i < sizeof(AdcData) / sizeof(baseline.vals[0]); i++) {
     baseline.vals[i] = DEFAULT_BASELINE;
-  AdcWindow window;
+    timeout.vals[i] = 0;
+  }
+    
+  AdcWindow   window;
   AdcData     raw_data;
   AdcData     max_data;
   AudioStatus status;
+
   FILE       *f_csv = open_csv();
 
   init_window(&window);
@@ -341,7 +353,7 @@ int main(int argc, char **argv) {
     }
     update_window(&window, &raw_data);
     compute_window_max(&window, &max_data);
-    process(&max_data, &window, &baseline, &status);
+    process(&max_data, &window, &baseline, &timeout, &status);
     print_values(&baseline, &raw_data, &max_data, &status);
     print_to_csv(&max_data, &status, f_csv);
 

@@ -441,7 +441,7 @@ class Api:
       # RCA, name mimics the steam's formatting
     src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='stopped')
     playing = False
-    status_file = 'rca_status'
+    status_file = f'{utils.get_folder("config")}/srcs/rca_status'
     try:
       if src.id is not None:
         with open(status_file, mode='rb') as file:
