@@ -1093,9 +1093,120 @@ class LMS(BaseStream):
     )
     return source
 
+class Bluetooth(BaseStream):
+  """ A source for Bluetooth streams, which requires an external Bluetooth USB dongle """
+
+  def __init__(self, name, mock=False):
+    super().__init__('bluetooth', name, mock)
+    self.bkg_thread = None
+    self.logo = "static/imgs/bluetooth.png"
+    self.proc2 = None
+    self.supported_cmds = {
+      'play': 'play',
+      'pause': 'pause',
+      'next': 'next',
+      'prev': 'previous',
+      'stop': 'stop'
+    }
+
+  def __del__(self):
+    self.disconnect()
+
+  def reconfig(self, **kwargs):
+    reconnect_needed = False
+
+  def connect(self, src):
+    """ Connect a bluealsa-aplay process with audio output to a given audio source """
+    print(f'connecting {self.name} to {src}...')
+
+    if self.mock:
+      self._connect(src)
+      return
+
+    # Power on Bluetooth and enable discoverability
+    btpon_args = f'bluetoothctl power on'
+    print(f'running: {btpon_args}')
+    btpon_proc = subprocess.Popen(args=btpon_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    btdon_args = f'bluetoothctl discoverable on'
+    print(f'running: {btdon_args}')
+    bton_proc = subprocess.Popen(args=btdon_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+
+    # Start audio via bluealsa-aplay (accepting any bluetooth device with all zeros)
+    baplay_args = f'bluealsa-aplay -d {utils.output_device(src)} 00:00:00:00:00:00'
+    print(f'running: {baplay_args}')
+    self.proc = subprocess.Popen(args=baplay_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+
+    # Start metadata watcher
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
+    os.system('mkdir -p {}'.format(src_config_folder))
+    song_info_path = f'{src_config_folder}/currentSong'
+    btmeta_args = f'python3 {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path}'
+    print(f'running: {btmeta_args}')
+    self.proc2 = subprocess.Popen(args=btmeta_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+
+    self._connect(src)
+    return
+
+  def _is_running(self):
+    if self.proc:
+      return self.proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_running():
+      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
+    self.proc = None
+    self.proc2 = None
+
+    # Power off Bluetooth and disable discoverability
+    btdoff_args = f'bluetoothctl discoverable off'
+    btdoff_proc = subprocess.Popen(args=btdoff_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    btpoff_args = f'bluetoothctl power off'
+    btpoff_proc = subprocess.Popen(args=btpoff_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+
+    self._disconnect()
+
+  def info(self) -> models.SourceInfo:
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+    loc = f'{src_config_folder}/currentSong'
+    source = models.SourceInfo(name=self.full_name(),
+                               state=self.state,
+                               img_url=self.logo,
+                               supported_cmds=list(self.supported_cmds.keys()))
+    try:
+      with open(loc, 'r') as file:
+        data = json.loads(file.read())
+        source.artist = data['artist']
+        source.track = data['title']
+        source.album = data['album']
+        source.state = data['status']
+        return source
+    except Exception:
+      pass
+    return source
+
+  def send_cmd(self, cmd):
+    try:
+      if cmd in self.supported_cmds and self.src != None:
+        btcmd_args = f'python3 {utils.get_folder("streams")}/bluetooth.py --command={cmd}'
+        print(f'running: {btcmd_args}')
+        btcmd_proc = subprocess.Popen(args=btcmd_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception:
+      pass
+
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-                  FilePlayer, FMRadio, LMS]
+                  FilePlayer, FMRadio, LMS, Bluetooth]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -1126,4 +1237,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
   if stream.type == 'lms':
     return LMS(name, args.get('server'), disabled=disabled, mock=mock)
+  elif stream.type == 'bluetooth':
+    return Bluetooth(args['name'], mock=mock)
   raise NotImplementedError(stream.type)
