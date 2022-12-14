@@ -454,23 +454,6 @@ class Api:
       return self.streams.get(idx, None)
     return None
 
-  def _get_rca_info(self, src: models.Source) -> models.SourceInfo:
-      # RCA, name mimics the steam's formatting
-    src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='stopped')
-    playing = False
-    status_file = f'{utils.get_folder("config")}/srcs/rca_status'
-    try:
-      if src.id is not None:
-        with open(status_file, mode='rb') as file:
-          status_all = file.read()[0]
-          playing = (status_all & (0b11 << (src.id * 2))) != 0
-    except FileNotFoundError as error:
-      print(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
-    except Exception as error:
-      print(f'Error getting RCA audio status:\n  {error}')
-    src_info.state = "playing" if playing else "stopped"
-    return src_info
-
   def _update_src_info(self, src: models.Source):
     """ Update a source's status and song metadata """
     stream_inst = self.get_stream(src)

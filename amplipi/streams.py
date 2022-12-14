@@ -119,6 +119,9 @@ class BaseStream:
     """ Connect the stream to an output source """
     self._connect(src)
 
+  def reconfig(self, **kwargs):
+    """ Reconfigure a potentially running stream """
+
   def _is_running(self):
     if self.proc:
       return self.proc.poll() is None
@@ -155,12 +158,20 @@ class RCA(BaseStream):
     self.name = kwargs['name']
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(
-      name=self.full_name(),
-      state=self.state, # TODO: add playing status
-      img_url='static/imgs/rca_inputs.svg',
-    )
-    return source
+    src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=self.full_name(), state='stopped')
+    playing = False
+    status_file = f'{utils.get_folder("config")}/srcs/rca_status'
+    try:
+      if self.src is not None:
+        with open(status_file, mode='rb') as file:
+          status_all = file.read()[0]
+          playing = (status_all & (0b11 << (self.src * 2))) != 0
+    except FileNotFoundError as error:
+      print(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
+    except Exception as error:
+      print(f'Error getting RCA audio status:\n  {error}')
+    src_info.state = "playing" if playing else "stopped"
+    return src_info
 
   def connect(self, src):
     if src != self.only_src:
