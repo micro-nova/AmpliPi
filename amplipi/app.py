@@ -61,7 +61,7 @@ from multiprocessing import Queue
 # amplipi
 import amplipi.utils as utils
 import amplipi.models as models
-from amplipi.ctrl import Api, ApiResponse, ApiCode # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
@@ -254,6 +254,11 @@ def get_source(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> mod
 @api.patch('/api/sources/{sid}', tags=['source'])
 def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Status:
   """ Update a source's configuration (source=**sid**) """
+  if update.input == 'local':
+    # correct older api requests to use RCA inputs as a stream
+    valid_update = update.copy()
+    valid_update.input = f'stream={RCAs[sid]}'
+    print(f'correcting deprecated use of RCA inputs from {update} to {valid_update}')
   return code_response(ctrl, ctrl.set_source(sid, update))
 
 @api.get('/api/sources/{sid}/image/{height}', tags=['source'],
