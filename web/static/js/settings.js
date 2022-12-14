@@ -140,8 +140,20 @@ $(function() {
         <label for="stream_name">Stream Name</label>
         <input type="text" class="form-control" name="name" id="stream_name" value="${s.name}" aria-describedby="nameHelp" data-required="true">
         <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
-      </div>
-    `;
+      </div>`;
+
+    disable_html = `
+      <div class="form-group">
+        <input type="hidden" value="false" name="disabled">
+        <input type="checkbox" name="disabled" id="stream_disable" value="true"${s.disabled ? " checked" : ""} aria-describedby="disabledHelp" data-required="true">
+        <label for="stream_disable">Disabled</label>
+        <small id="disabledHelp" class="form-text text-muted">Don't show this stream in the input dropdown</small>
+      </div>`;
+
+    if (s.type) {
+      // sources can't be disabled yet
+      html += disable_html;
+    }
 
     switch (stream_type) {
       case STREAM_TYPES_.fmradio:
