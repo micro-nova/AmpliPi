@@ -101,15 +101,34 @@ class BaseStream:
     self.state = 'disconnected'
     self.src = None
 
+  def disconnect(self):
+    """ Disconnect the stream from an output source """
+    if self._is_running() and self.proc is not None:
+      try:
+        self.proc.kill()
+      except Exception:
+        pass
+    self._disconnect()
+
   def _connect(self, src):
     print(f'{self.name} connected to {src}')
     self.state = 'connected'
     self.src = src
 
+  def connect(self, src: int):
+    """ Connect the stream to an output source """
+    self._connect(src)
+
   def _is_running(self):
     if self.proc:
       return self.proc.poll() is None
     return False
+
+  def info(self) -> models.SourceInfo:
+    """ Get stream info and song metadata """
+    return models.SourceInfo(
+      name=self.full_name(),
+      state=self.state)
 
   def requires_src(self) -> Optional[int]:
     """ Check if this stream needs to be connected to a specific source

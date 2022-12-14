@@ -462,6 +462,7 @@ class Stream(Base):
   * file
   * fmradio
   * lms
+  * rca
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
