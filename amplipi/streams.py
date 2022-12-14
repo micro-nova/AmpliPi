@@ -147,6 +147,9 @@ class RCA(BaseStream):
   """ A built-in RCA input """
   def __init__(self, name: str, index: int, disabled: bool = False, mock: bool = False):
     super().__init__('rca', name, only_src=index, disabled=disabled, mock=mock)
+    # for serialiation the stream model's field needs to map to a stream's fields
+    # index is needed for serialization
+    self.index = index
 
   def reconfig(self, **kwargs):
     self.name = kwargs['name']
