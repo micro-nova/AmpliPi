@@ -264,6 +264,24 @@ def test_load_stream_missing_config(client):
     check_config(amplipi.models.Status().dict(), rv.json())
     assert status['sources'][0]['input'] == ''
 
+def test_load_old_config(client):
+  """ Test that an old config has its RCA input names updated """
+  # convert the config into something that looks like an old config
+  source_names = ['tv', 'record player', 'cd player', 'jukebox']
+  old_config = base_config_copy()
+  for i in range(4):
+    rca_stream = old_config['streams'].pop(0)
+    assert rca_stream['type'] == 'rca'
+  for src in old_config['sources']:
+    src['name'] = source_names[src['id']]
+  # load the old config, the value returned should be a config that has been converted
+  rv = client.post('/api/load', json=old_config)
+  assert rv.status_code == HTTPStatus.OK
+  status = rv.json()
+  for s in status['streams']:
+    if s['type'] == 'rca':
+      assert s['name'] == source_names[s['index']], print('old source name was not converted to rca stream name')
+
 def test_load_multi_config(client):
   """ Load multiple configurations """
   # create a test config with a multiple connected stream
