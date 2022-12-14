@@ -244,12 +244,18 @@ class Api:
           if z.id not in muted_zones:
             mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
 
-    # add any missing RCA stream
+    # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
     for rca_id in RCAs:
       sid, stream = utils.find(self.status.streams, rca_id)
       if sid is None:
         idx = rca_id - RCAs[0]
-        rca_stream = models.Stream(id=rca_id, name=f'Input {idx + 1}', type='rca', index=idx)
+        # try to use the old name in the source
+        try:
+          input_name = self.status.sources[idx].name
+        except Exception as e:
+          input_name = f'Input {idx + 1}'
+          print(f'Error using old source name: {e}')
+        rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
         self.status.streams.insert(idx, rca_stream)
 
     # configure all streams into a known state
