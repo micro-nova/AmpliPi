@@ -800,8 +800,8 @@ class Api:
   def create_stream(self, data: models.Stream, internal=False) -> models.Stream:
     """ Create a new stream """
     try:
-      if data.type == 'rca':
-        raise Exception(f'Unable to create protected RCA stream, the RCA streams for each RCA input {self.RCAs} already exist')
+      if not internal and data.type == 'rca':
+        raise Exception(f'Unable to create protected RCA stream, the RCA streams for each RCA input {RCAs} already exist')
       # Make a new stream and add it to streams
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
