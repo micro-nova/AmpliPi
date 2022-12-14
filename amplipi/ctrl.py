@@ -509,12 +509,30 @@ class Api:
           stream = self.get_stream(src)
           if stream:
             # update the streams last connected source to have no input, since we have stolen its input
+            stolen_from: Optional[models.Source] = None
             if stream.src is not None and stream.src != idx:
-              other_src = self.status.sources[stream.src]
-              print('stealing {} from source {}'.format(stream.name, other_src.name))
-              other_src.input = ''
-            stream.disconnect()
-            stream.connect(idx)
+              stolen_from = self.status.sources[stream.src]
+              print('stealing {} from source {}'.format(stream.name, stolen_from.name))
+              stolen_from.input = ''
+            try:
+              stream.disconnect()
+              stream.connect(idx)
+            except Exception as iexc:
+              print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
+              stream.disconnect()
+              if old_stream:
+                print(f'Trying to get back to the previous input: {old_stream.name}')
+                old_stream.connect(idx)
+                src.input = last_input
+              else:
+                src.input = ''
+              # connect the stream back to its old source
+              if stolen_from:
+                print(f"Trying to revert src {stolen_from.id}'s input to {stream.name}")
+                stream.connect(stolen_from.id)
+                stolen_from.input = input_
+              # now that we recovered, show that this failed
+              raise iexc
           elif src.input and 'stream=' in src.input: # invalid stream id?
             # TODO: should this stream id validation happen in the Source model?
             src.input = last_input
