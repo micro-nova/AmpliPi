@@ -34,6 +34,7 @@ function updateSettings() {
   $("#settings-tab-groups-selection").empty();
   $("#settings-tab-groups-config").html("");
   $.get("/api", function(data) {
+    /* Remove sources for now, TODO: source configuration needs its own settings page
     $.each(data.sources, function(k, v) {
       streams[v.id] = v;
       $("#settings-tab-inputs-stream-selection").append(
@@ -42,6 +43,7 @@ function updateSettings() {
         ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `Source ${v.id+1}` + '</span>'
       );
     });
+    */
     $.each(data.streams, function(k, v) {
       streams[v.id] = v;
       $("#settings-tab-inputs-stream-selection").append(
