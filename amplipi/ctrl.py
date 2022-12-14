@@ -360,8 +360,8 @@ class Api:
     """
     inputs: Dict[Union[str, None], str] = {None: ''}
     for sid, stream in self.streams.items():
-      req_src = stream.requires_src()
-      if req_src in [None, src.id]: # TODO: remove this filter when sources can dynamically change output
+      req_src = stream.requires_src() # TODO: remove this filter when sources can dynamically change output
+      if not stream.disabled and req_src in [None, src.id]:
         inputs[f'stream={sid}'] = stream.full_name()
     return inputs
 
