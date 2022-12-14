@@ -473,6 +473,7 @@ class Stream(Base):
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
   server: Optional[str] = Field(description='Server url')
+  index: Optional[int] = Field(description='RCA index')
   disbaled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
 
   # add examples for each type of stream
@@ -821,7 +822,7 @@ class Status(BaseModel):
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
-  streams: List[Stream] = []
+  streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(4)]
   presets: List[Preset] = []
   info: Optional[Info]
 

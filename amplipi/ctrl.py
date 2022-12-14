@@ -40,6 +40,8 @@ _DEBUG_API = False # print out a graphical state of the api after each call
 
 USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 MUTE_ALL_ID = 10000
+LAST_PRESET_ID = 9999
+RCAs = [996, 997, 998, 999]
 
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
@@ -97,8 +99,6 @@ class Api:
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
 
-  _LAST_PRESET_ID = 9999
-  RCAs = [996, 997, 998, 999]
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
       {"id": 0, "name": "Player 1", "input": f""},
@@ -245,11 +245,11 @@ class Api:
             mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
 
     # add any missing RCA stream
-    for rca_id in self.RCAs:
+    for rca_id in RCAs:
       sid, stream = utils.find(self.status.streams, rca_id)
       if sid is None:
-        idx = rca_id - self.RCAs[0]
-        rca_stream = models.Stream(id=rca_id, name='Input {idx}', type='rca', index=idx)
+        idx = rca_id - RCAs[0]
+        rca_stream = models.Stream(id=rca_id, name=f'Input {idx + 1}', type='rca', index=idx)
         self.status.streams.insert(idx, rca_stream)
 
     # configure all streams into a known state
@@ -345,7 +345,7 @@ class Api:
       sid = int(sinput.replace('stream=',''))
     except:
       return False
-    return sid in self.RCAs
+    return sid in RCAs
 
   def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
     """Gets a dictionary of the possible inputs for a source
@@ -822,7 +822,7 @@ class Api:
     """Deletes an existing stream"""
     try:
       # RCA streams are intrinsic to the hardware and can't be removed
-      if sid in self.RCAs and isinstance(self.streams[sid], amplipi.streams.RCA):
+      if sid in RCAs and isinstance(self.streams[sid], amplipi.streams.RCA):
         msg = f'Protected stream {sid} cannot be removed, use disabled=True to hide it'
         raise Exception(msg)
       # if input is connected to a source change that input to nothing
@@ -1041,10 +1041,10 @@ class Api:
 
       # update last config preset for restore capabilities (creating if missing)
       # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
-      last_pid, _ = utils.find(self.status.presets, self._LAST_PRESET_ID)
+      last_pid, _ = utils.find(self.status.presets, LAST_PRESET_ID)
       status = self.status
       last_config = models.Preset(
-        id=9999,
+        id=LAST_PRESET_ID,
         name='Restore last config',
         last_used=None, # this need to be in javascript time format
         state=models.PresetState(
@@ -1114,7 +1114,7 @@ class Api:
       time.sleep(0.1)
       if stream_inst.state in ['stopped', 'disconnected']:
         break
-    resp4 = self.load_preset(self._LAST_PRESET_ID, internal=True)
+    resp4 = self.load_preset(LAST_PRESET_ID, internal=True)
     resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
     if resp5.code != ApiCode.OK:
       return resp5

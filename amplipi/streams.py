@@ -1035,6 +1035,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
 
   we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
   """
+  # pylint: disable=too-many-return-statements
   args = stream.dict(exclude_none=True)
   name = args.pop('name')
   disabled = args.pop('disabled', False)
