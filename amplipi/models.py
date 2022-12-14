@@ -173,7 +173,7 @@ class Source(Base):
           'value': {
             'id' : 3,
             'name': '3',
-            'input': 'local',
+            'input': 'stream=999',
             'info': {
               'img_url': 'static/imgs/rca_inputs.svg',
               'state': 'unknown',
@@ -190,8 +190,8 @@ class SourceUpdate(BaseUpdate):
   class Config:
     schema_extra = {
       'examples': {
-        'Update Input to RCA input': {
-          'value': {'input': 'local'}
+        'Update Input to RCA Input 2': {
+          'value': {'input': 'stream=997'}
         },
         'Update name': {
           'value': {'name': 'J2'}
