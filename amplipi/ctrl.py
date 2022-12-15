@@ -249,12 +249,15 @@ class Api:
       sid, stream = utils.find(self.status.streams, rca_id)
       if sid is None:
         idx = rca_id - RCAs[0]
-        # try to use the old name in the source
+        # try to use the old name in the source if it was renamed from the default name of 1-4
+        input_name = f'Input {idx + 1}'
         try:
-          input_name = self.status.sources[idx].name
+          src_name = self.status.sources[idx].name
+          if not src_name.isdigit():
+            input_name = src_name
         except Exception as e:
-          input_name = f'Input {idx + 1}'
-          print(f'Error using old source name: {e}')
+          print(f'Error discovering old source name for conversion to RCA stream: {e}')
+          print(f'- Defaulting name to: {input_name}')
         rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
         self.status.streams.insert(idx, rca_stream)
 
