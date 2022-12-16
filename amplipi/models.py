@@ -475,7 +475,7 @@ class Stream(Base):
   token: Optional[str] = Field(description='Plexamp token for server.json')
   server: Optional[str] = Field(description='Server url')
   index: Optional[int] = Field(description='RCA index')
-  disbaled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
+  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
 
   # add examples for each type of stream
   class Config:
