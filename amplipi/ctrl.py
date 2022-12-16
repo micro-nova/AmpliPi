@@ -109,11 +109,11 @@ class Api:
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
-      {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0},
-      {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1},
-      {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2},
-      {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3},
-      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+      {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0, "disabled": False},
+      {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1, "disabled": False},
+      {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2, "disabled": False},
+      {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3, "disabled": False},
+      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg", "disabled": False},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
