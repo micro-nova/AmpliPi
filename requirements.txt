@@ -24,6 +24,7 @@ pyyaml
 requests
 rpi.gpio
 smbus2
+spidev
 sse-starlette
 types-pkg_resources
 types-pyyaml
