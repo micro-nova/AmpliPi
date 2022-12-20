@@ -192,6 +192,8 @@ def _check_and_setup_platform():
   # Get the platform name
   # - example pi output: Linux-5.4.51-v7+-armv7l-with-debian-10.4
   # - example ubuntu output: Linux-5.4.0-66-generic-x86_64-with-Ubuntu-18.04-bionic
+  # - example 64-bit pi output: Linux-5.15.76-v8+-aarch64-with-glibc2.31
+  # NOTE: bullseye removed the with-debian so we just check for its package manager apt instead
   lplatform = platform.platform().lower()
 
   # Figure out what platform we are on since we expect to be on a raspberry pi or a debian based development system
@@ -202,12 +204,11 @@ def _check_and_setup_platform():
       if apt:
         env['has_apt'] = True
         env['platform_supported'] = True
-    elif 'armv7l' in lplatform and 'debian' in lplatform:
-      env['arch'] = 'arm'
+    elif 'armv7l' in lplatform or 'aarch64' in lplatform and apt:
+      env['arch'] = 'arm' if 'arm7l' in lplatform else 'arm64'
       env['platform_supported'] = True
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
-
   return env
 
 class Task:
