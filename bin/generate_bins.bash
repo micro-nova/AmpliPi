@@ -10,15 +10,18 @@ Build binaries that are packaged with AmpliPi for several different architecture
 This builds binaries on a Pi for now, TODO: cross compile everything!
 
   --only-local: Only build local binaries (the pi takes awhile)
+  --64-bit: Build on a 64-bit pi
   -h, --help: Print this help text.
 "
 
 #TODO: add building and cross building spotifyd
 
 local_only=false
+use_64_bit=false
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --local_only) local_only=true ;;
+    --64-bit) use_64_bit=true ;;
     -h|--help) printf "$helptext"; exit 0 ;;
     *)  printf "Unknown parameter passed: $1\n\n"
         printf "$helptext"
@@ -29,44 +32,37 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 function build {
-  git_installed=$(sudo apt list --installed 2> /dev/null | grep git/ -c)
+  git_installed=$(sudo apt-get list --installed 2> /dev/null | grep git/ -c)
   if [ 0 -eq "${git_installed}" ]; then
     echo "installing git"
-    sudo apt update && sudo apt install -y git
+    sudo apt-get update && sudo apt-get install -y git
   else
     echo "git already installed"
   fi
 
   # build-essential and autoconf are required to make the metadata reader
-  be_installed=$(sudo apt list --installed 2> /dev/null | grep build-essential -c)
+  be_installed=$(sudo apt-get list --installed 2> /dev/null | grep build-essential -c)
   if [ 0 -eq "${be_installed}" ]; then
     echo "installing build-essential"
-    sudo apt update && sudo apt install -y build-essential
+    sudo apt-get update && sudo apt-get install -y build-essential
   else
     echo "build-essential already installed"
   fi
 
-  autoconf_installed=$(sudo apt list --installed 2> /dev/null | grep autoconf -c)
+  autoconf_installed=$(sudo apt-get list --installed 2> /dev/null | grep autoconf -c)
   if [ 0 -eq "${autoconf_installed}" ]; then
     echo "installing autoconf"
-    sudo apt update && sudo apt install -y autoconf
+    sudo apt-get update && sudo apt-get install -y autoconf
   else
     echo "autoconf already installed"
   fi
 
   # install a bunch of packages required by shaairport-sync with airplay2 support
-  sudo apt install --no-install-recommends xmltoman automake libtool \
+  sudo apt-get install -y --no-install-recommends xmltoman automake libtool \
     libpopt-dev libconfig-dev libasound2-dev avahi-daemon libavahi-client-dev libssl-dev libsoxr-dev \
     libplist-dev libsodium-dev libavutil-dev libavcodec-dev libavformat-dev uuid-dev xxd libgcrypt-dev
 
   pushd $(mktemp --directory)
-    # build shairport-sync-metadata-reader
-    git clone https://github.com/micronova-jb/shairport-sync-metadata-reader.git
-    cd shairport-sync-metadata-reader
-    autoreconf -if
-    ./configure
-    make
-    cd ..
 
     # build shairport-sync with airplay2 support
     git clone https://github.com/mikebrady/shairport-sync.git
@@ -78,7 +74,6 @@ function build {
     # copy the generated bins to a common directory
     mkdir -p ../bins
     cd ../bins
-    cp ../shairport-sync-metadata-reader/shairport-sync-metadata-reader .
     cp ../shairport-sync/shairport-sync ./shairport-sync-ap2
 
     # clean then build shairport-sync without airplay2 support
@@ -120,7 +115,11 @@ if [[ ! -d '/home/pi' ]] ; then
       echo "failed to build binaries, try running this script directly on the pi to debug"
       exit -1
     fi
-    scp $RPI_IP_ADDRESS:$x/* arm/
+    if $use_64_bit; then
+      scp $RPI_IP_ADDRESS:$x/* arm64/
+    else
+      scp $RPI_IP_ADDRESS:$x/* arm/
+    fi
   fi
   # build files locally
   build

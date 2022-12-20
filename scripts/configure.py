@@ -147,14 +147,16 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'script' : [
       'if ! which redsea  > /dev/null; then', # TODO: check version
       '  echo "Installing redsea"',
-      '  cd /tmp',
+      '  pushd $(mktemp --directory)',
       '  git clone --depth 1 https://github.com/windytan/redsea.git',
-      '  cd redsea',
+      '  pushd redsea',
       '  ./autogen.sh && ./configure && make',
       '  sudo make install',
       '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
       '  sudo udevadm control --reload-rules',
       '  sudo udevadm trigger',
+      '  popd',
+      '  popd',
       'fi',
     ]
   },
@@ -206,22 +208,17 @@ def _check_and_setup_platform():
   # Get the platform name
   # - example pi output: Linux-5.4.51-v7+-armv7l-with-debian-10.4
   # - example ubuntu output: Linux-5.4.0-66-generic-x86_64-with-Ubuntu-18.04-bionic
+  # - example 64-bit pi output: Linux-5.15.76-v8+-aarch64-with-glibc2.31
+  # NOTE: bullseye removed the with-debian so we just check for its package manager apt instead
   lplatform = platform.platform().lower()
-
-  # Figure out what platform we are on since we expect to be on a raspberry pi or a debian based development system
   if 'linux' in lplatform:
+    env['has_apt'] = subprocess.run('which apt-get'.split(), check=False).returncode == 0
     if 'x86_64' in lplatform:
-      apt = subprocess.run('which apt-get'.split(), check=True)
       env['arch'] = 'x64'
-      if apt:
-        env['has_apt'] = True
-        env['platform_supported'] = True
-    elif 'armv7l' in lplatform and 'debian' in lplatform:
-      env['arch'] = 'arm'
-      env['platform_supported'] = True
-      env['has_apt'] = True
+    elif 'armv7l' in lplatform or 'aarch64' in lplatform:
+      env['arch'] = 'arm' if 'armv7l' in lplatform else 'arm64'
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
-
+  env['platform_supported'] = env['has_apt'] and env['arch'] != 'unknown'
   return env
 
 class Task:

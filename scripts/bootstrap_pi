@@ -46,7 +46,6 @@ while [[ "$#" -gt 0 ]]; do
     --img)
         if (($# > 1)); then
           img_file=$2; shift
-          hostname_only=true
         else
           printf "--img requires a second parameter\n\n"
           printf "$helptext"
