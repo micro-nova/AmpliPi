@@ -304,6 +304,11 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
         'sudo udevadm trigger -s sound -c add'.split(), # trigger an 'add' action on the 'sound' subsystem
         'udevadm settle'.split(),                       # wait for udev rules to fire and settle
       ]).run()])
+    # disable pulseaudio
+    tasks += print_progress([Task('disable pulseaudio', multiargs=[
+        'systemctl --user mask pulseaudio.socket'.split(),            # set output to 100% volume and unmute
+        'systemctl --user mask pulseaudio.service'.split(),           # set Line input to 0dB and unmute, disable line out
+      ]).run()])
     # setup USB soundcard
     tasks += print_progress([Task('set usb soundcard volumes and unmute', multiargs=[
         'amixer -D hw:cmedia8chint set Speaker 100% unmute'.split(),                    # set output to 100% volume and unmute
