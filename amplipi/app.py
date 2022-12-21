@@ -234,6 +234,7 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
     if resp.code == ApiCode.OK:
       # general commands return None to indicate success
       return ctrl.get_state()
+    print(f"Error: {resp.msg}")
     # TODO: refine error codes based on error message
     raise HTTPException(404, resp.msg)
   return resp
