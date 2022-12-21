@@ -693,7 +693,7 @@ def _update_audiodetector(env: dict, progress) -> List[Task]:
   if not env['is_amplipi']:
     return [Task(name='Update Audio Detector', output = 'Not on AmpliPi', success=False)]
   tasks = []
-  tasks += print_progress([Task('Build audiodetector', 'make -C amplipi/audiodetector'.split()).run()])
+  tasks += print_progress([Task('Build audiodetector', f'make -C {env["base_dir"]}/amplipi/audiodetector'.split()).run()])
   tasks += print_progress(_create_service('amplipi-audiodetector', _audiodetector_service(env['base_dir'])))
   tasks += print_progress(_restart_service('amplipi-audiodetector'))
   tasks += print_progress(_enable_service('amplipi-audiodetector'))
