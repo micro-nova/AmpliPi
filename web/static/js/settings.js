@@ -19,6 +19,7 @@ const STREAM_TYPES_ = {
   pandora:        new Stream("pandora", "Pandora Station"),
   plexamp:        new Stream("plexamp", "Plexamp"),
   spotify:        new Stream("spotify", "Spotify Device"),
+  rca:            new Stream("rca", "RCA Input"),
 };
 
 /* updateSettings clears out the previous API information and shows the current state */
@@ -33,14 +34,16 @@ function updateSettings() {
   $("#settings-tab-groups-selection").empty();
   $("#settings-tab-groups-config").html("");
   $.get("/api", function(data) {
+    /* Remove sources for now, TODO: source configuration needs its own settings page
     $.each(data.sources, function(k, v) {
       streams[v.id] = v;
       $("#settings-tab-inputs-stream-selection").append(
         '<li class="list-group-item list-group-item-action list-group-item-dark stream" style="vertical-align: bottom;" data-id="' + v.id + '">' +
         v.name +
-        ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `rca ${v.id+1}` + '</span>'
+        ' <span style="float:right;font-size:0.8rem;color:navy;line-height:25px;vertical-align: bottom;">' + `Source ${v.id+1}` + '</span>'
       );
     });
+    */
     $.each(data.streams, function(k, v) {
       streams[v.id] = v;
       $("#settings-tab-inputs-stream-selection").append(
@@ -118,7 +121,7 @@ $(function() {
     $("#settings-tab-inputs-new-stream").removeClass('active');
     $(this).addClass('active');
     var s = streams[$(this).data("id")];
-    var stream_type = s.type ? STREAM_TYPES_[s.type] : `rca ${s.id+1}`;
+    var stream_type = s.type ? STREAM_TYPES_[s.type] : `source ${s.id+1}`;
 
     $("#settings-tab-inputs-stream-title").text(s.name + " (" + stream_type.name + ")");
     var html = `
@@ -139,8 +142,20 @@ $(function() {
         <label for="stream_name">Stream Name</label>
         <input type="text" class="form-control" name="name" id="stream_name" value="${s.name}" aria-describedby="nameHelp" data-required="true">
         <small id="nameHelp" class="form-text text-muted">This name can be anything - it will be used to select this stream from the source selection dropdown</small>
-      </div>
-    `;
+      </div>`;
+
+    disable_html = `
+      <div class="form-group">
+        <input type="hidden" value="false" name="disabled">
+        <input type="checkbox" name="disabled" id="stream_disable" value="true"${s.disabled ? " checked" : ""} aria-describedby="disabledHelp" data-required="true">
+        <label for="stream_disable">Disabled</label>
+        <small id="disabledHelp" class="form-text text-muted">Don't show this stream in the input dropdown</small>
+      </div>`;
+
+    if (s.type) {
+      // sources can't be disabled yet
+      html += disable_html;
+    }
 
     switch (stream_type) {
       case STREAM_TYPES_.fmradio:
@@ -209,7 +224,7 @@ $(function() {
     }
 
     // Analog RCA input, can't be deleted. TODO: make RCA inputs disable-able
-    hide_del = s.type == null ? 'style="display:none"' : '';
+    hide_del = (s.type == null) || (stream_type == STREAM_TYPES_.rca) ? 'style="display:none"' : '';
     html += `
         <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Save Changes</button>
         <button type="button" class="btn btn-danger" ${hide_del} id="delete" data-id="${s.id}">Delete</button>

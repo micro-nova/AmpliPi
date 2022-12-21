@@ -70,8 +70,7 @@ class fields(SimpleNamespace):
   Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
 
-  * Digital Stream ('stream=SID') where SID is the ID of the connected stream
-  * Analog RCA Input ('local') connects to the RCA inputs associated
+  * Digital Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 
@@ -129,7 +128,7 @@ class Source(Base):
     """ Get a source's connected stream if any """
     try:
       sinput = str(self.input)
-      if 'stream=' in sinput:
+      if sinput.startswith('stream='):
         return int(sinput.split('=')[1])
       return None
     except ValueError:
@@ -174,7 +173,7 @@ class Source(Base):
           'value': {
             'id' : 3,
             'name': '3',
-            'input': 'local',
+            'input': 'stream=999',
             'info': {
               'img_url': 'static/imgs/rca_inputs.svg',
               'state': 'unknown',
@@ -186,13 +185,13 @@ class Source(Base):
 
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
-  input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
+  input: Optional[str] # 'None', 'rca=ID', 'stream=ID' # TODO: add helpers to get stream_id
 
   class Config:
     schema_extra = {
       'examples': {
-        'Update Input to RCA input': {
-          'value': {'input': 'local'}
+        'Update Input to RCA Input 2': {
+          'value': {'input': 'stream=997'}
         },
         'Update name': {
           'value': {'name': 'J2'}
@@ -463,6 +462,7 @@ class Stream(Base):
   * file
   * fmradio
   * lms
+  * rca
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
@@ -474,6 +474,8 @@ class Stream(Base):
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
   server: Optional[str] = Field(description='Server url')
+  index: Optional[int] = Field(description='RCA index')
+  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
 
   # add examples for each type of stream
   class Config:
@@ -821,7 +823,7 @@ class Status(BaseModel):
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
-  streams: List[Stream] = []
+  streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(4)]
   presets: List[Preset] = []
   info: Optional[Info]
 

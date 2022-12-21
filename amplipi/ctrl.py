@@ -40,6 +40,8 @@ _DEBUG_API = False # print out a graphical state of the api after each call
 
 USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 MUTE_ALL_ID = 10000
+LAST_PRESET_ID = 9999
+RCAs = [996, 997, 998, 999]
 
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
@@ -97,18 +99,21 @@ class Api:
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
 
-  _LAST_PRESET_ID = 9999
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Input 1", "input": "local"},
-      {"id": 1, "name": "Input 2", "input": "local"},
-      {"id": 2, "name": "Input 3", "input": "local"},
-      {"id": 3, "name": "Input 4", "input": "local"}
+      {"id": 0, "name": "Player 1", "input": f""},
+      {"id": 1, "name": "Player 2", "input": f""},
+      {"id": 2, "name": "Player 3", "input": f""},
+      {"id": 3, "name": "Player 4", "input": f""},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
-      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+      {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0, "disabled": False},
+      {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1, "disabled": False},
+      {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2, "disabled": False},
+      {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3, "disabled": False},
+      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg", "disabled": False},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
       {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
@@ -239,6 +244,23 @@ class Api:
           if z.id not in muted_zones:
             mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
 
+    # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
+    for rca_id in RCAs:
+      sid, stream = utils.find(self.status.streams, rca_id)
+      if sid is None:
+        idx = rca_id - RCAs[0]
+        # try to use the old name in the source if it was renamed from the default name of 1-4
+        input_name = f'Input {idx + 1}'
+        try:
+          src_name = self.status.sources[idx].name
+          if not src_name.isdigit():
+            input_name = src_name
+        except Exception as e:
+          print(f'Error discovering old source name for conversion to RCA stream: {e}')
+          print(f'- Defaulting name to: {input_name}')
+        rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
+        self.status.streams.insert(idx, rca_stream)
+
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
     failed_streams: List[int] = []
@@ -323,14 +345,16 @@ class Api:
     else:
       self.save()
 
-  @staticmethod
-  def _is_digital(src_type: str) -> bool:
-    """Determines whether a source type, @src_type, is analog or digital
+  def _is_digital(self, sinput: str) -> bool:
+    """Determines whether a source input, @sinput, is analog or digital
 
-      'local' is the analog input, anything else is some sort of digital streaming source.
-      The runtime only has the concept of digital or analog
+    The runtime only has the concept of digital or analog
     """
-    return src_type != 'local'
+    try:
+      sid = int(sinput.replace('stream=',''))
+      return sid in RCAs
+    except:
+      return False
 
   def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
     """Gets a dictionary of the possible inputs for a source
@@ -341,11 +365,16 @@ class Api:
         Get the possible inputs for any source (only one stream)
 
         >>> my_amplipi.get_inputs()
-        { None, '', 'local', 'Local', 'stream=9449' }
+        { None, '', 'stream=9449' }
     """
-    inputs = {None: '', 'local' : f'{src.name} - rca'}
-    for stream in self.get_state().streams:
-      inputs['stream={}'.format(stream.id)] = f'{stream.name} - {stream.type}'
+    inputs: Dict[Union[str, None], str] = {None: ''}
+    for sid, stream in self.streams.items():
+      connectable = stream.requires_src() in [None, src.id] # TODO: remove this filter when sources can dynamically change output
+      connected = src.get_stream()
+      if sid == connected:
+        assert connectable, print(f'Source {src} has invalid input: stream={connected}')
+      if (sid == connected or not stream.disabled) and connectable:
+        inputs[f'stream={sid}'] = stream.full_name()
     return inputs
 
   def _check_is_online(self) -> bool:
@@ -353,7 +382,7 @@ class Api:
     try:
       with open(os.path.join(USER_CONFIG_DIR, 'online'), encoding='utf-8') as fonline:
         online = 'online' in fonline.readline()
-    except Exception as exc:
+    except Exception:
       pass
     return online
 
@@ -362,7 +391,7 @@ class Api:
     try:
       with open(os.path.join(USER_CONFIG_DIR, 'latest_release'), encoding='utf-8') as flatest:
         release = flatest.readline().strip()
-    except Exception as exc:
+    except Exception:
       pass
     return release
 
@@ -437,30 +466,11 @@ class Api:
       return self.streams.get(idx, None)
     return None
 
-  def _get_rca_info(self, src: models.Source) -> models.SourceInfo:
-      # RCA, name mimics the steam's formatting
-    src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='stopped')
-    playing = False
-    status_file = f'{utils.get_folder("config")}/srcs/rca_status'
-    try:
-      if src.id is not None:
-        with open(status_file, mode='rb') as file:
-          status_all = file.read()[0]
-          playing = (status_all & (0b11 << (src.id * 2))) != 0
-    except FileNotFoundError as error:
-      print(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
-    except Exception as error:
-      print(f'Error getting RCA audio status:\n  {error}')
-    src_info.state = "playing" if playing else "stopped"
-    return src_info
-
   def _update_src_info(self, src: models.Source):
     """ Update a source's status and song metadata """
     stream_inst = self.get_stream(src)
     if stream_inst is not None:
       src.info = stream_inst.info()
-    elif src.input == 'local' and src.id is not None:
-      src.info = self._get_rca_info(src)
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
@@ -494,12 +504,30 @@ class Api:
           stream = self.get_stream(src)
           if stream:
             # update the streams last connected source to have no input, since we have stolen its input
+            stolen_from: Optional[models.Source] = None
             if stream.src is not None and stream.src != idx:
-              other_src = self.status.sources[stream.src]
-              print('stealing {} from source {}'.format(stream.name, other_src.name))
-              other_src.input = ''
-            stream.disconnect()
-            stream.connect(idx)
+              stolen_from = self.status.sources[stream.src]
+              print('stealing {} from source {}'.format(stream.name, stolen_from.name))
+              stolen_from.input = ''
+            try:
+              stream.disconnect()
+              stream.connect(idx)
+            except Exception as iexc:
+              print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
+              stream.disconnect()
+              if old_stream:
+                print(f'Trying to get back to the previous input: {old_stream.name}')
+                old_stream.connect(idx)
+                src.input = last_input
+              else:
+                src.input = ''
+              # connect the stream back to its old source
+              if stolen_from:
+                print(f"Trying to revert src {stolen_from.id}'s input to {stream.name}")
+                stream.connect(stolen_from.id)
+                stolen_from.input = input_
+              # now that we recovered, show that this failed
+              raise iexc
           elif src.input and 'stream=' in src.input: # invalid stream id?
             # TODO: should this stream id validation happen in the Source model?
             src.input = last_input
@@ -767,6 +795,8 @@ class Api:
   def create_stream(self, data: models.Stream, internal=False) -> models.Stream:
     """ Create a new stream """
     try:
+      if not internal and data.type == 'rca':
+        raise Exception(f'Unable to create protected RCA stream, the RCA streams for each RCA input {RCAs} already exist')
       # Make a new stream and add it to streams
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
@@ -804,6 +834,10 @@ class Api:
   def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
     try:
+      # RCA streams are intrinsic to the hardware and can't be removed
+      if sid in RCAs and isinstance(self.streams[sid], amplipi.streams.RCA):
+        msg = f'Protected stream {sid} cannot be removed, use disabled=True to hide it'
+        raise Exception(msg)
       # if input is connected to a source change that input to nothing
       for src in self.status.sources:
         if src.get_stream() == sid and src.id is not None:
@@ -817,11 +851,13 @@ class Api:
       if not internal:
         self.mark_changes()
       return ApiResponse.ok()
-    except KeyError as exc:
+    except KeyError :
       msg = f'delete stream failed: {sid} does not exist'
-      if internal:
-        raise Exception(msg) from exc
-      return ApiResponse.error(msg)
+    except Exception as exc:
+      msg =  f'delete stream failed: {exc}'
+    if internal:
+      raise Exception(msg)
+    return ApiResponse.error(msg)
 
   @save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> ApiResponse:
@@ -1018,10 +1054,10 @@ class Api:
 
       # update last config preset for restore capabilities (creating if missing)
       # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
-      last_pid, _ = utils.find(self.status.presets, self._LAST_PRESET_ID)
+      last_pid, _ = utils.find(self.status.presets, LAST_PRESET_ID)
       status = self.status
       last_config = models.Preset(
-        id=9999,
+        id=LAST_PRESET_ID,
         name='Restore last config',
         last_used=None, # this need to be in javascript time format
         state=models.PresetState(
@@ -1091,7 +1127,7 @@ class Api:
       time.sleep(0.1)
       if stream_inst.state in ['stopped', 'disconnected']:
         break
-    resp4 = self.load_preset(self._LAST_PRESET_ID, internal=True)
+    resp4 = self.load_preset(LAST_PRESET_ID, internal=True)
     resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
     if resp5.code != ApiCode.OK:
       return resp5

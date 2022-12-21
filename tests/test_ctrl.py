@@ -100,7 +100,6 @@ def prune_state(state: amplipi.models.Status):
   for field in dstate['sources']:
     field.pop('info')
   dstate.pop('info')
-
   # default config only adds float volumes, dB volumes are calculated
   for field in dstate['zones']:
     field.pop('vol')

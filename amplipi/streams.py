@@ -73,11 +73,13 @@ def uuid_gen():
 
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
-  def __init__(self, stype, name, mock=False):
+  def __init__(self, stype: str, name: str, only_src=None, disabled: bool=False, mock=False):
     self.name = name
+    self.disabled = disabled
     self.proc = None
     self.mock = mock
     self.src = None
+    self.only_src = only_src
     self.state = 'disconnected'
     self.stype = stype
 
@@ -99,15 +101,44 @@ class BaseStream:
     self.state = 'disconnected'
     self.src = None
 
+  def disconnect(self):
+    """ Disconnect the stream from an output source """
+    if self._is_running() and self.proc is not None:
+      try:
+        self.proc.kill()
+      except Exception:
+        pass
+    self._disconnect()
+
   def _connect(self, src):
     print(f'{self.name} connected to {src}')
     self.state = 'connected'
     self.src = src
 
+  def connect(self, src: int):
+    """ Connect the stream to an output source """
+    self._connect(src)
+
+  def reconfig(self, **kwargs):
+    """ Reconfigure a potentially running stream """
+
   def _is_running(self):
     if self.proc:
       return self.proc.poll() is None
     return False
+
+  def info(self) -> models.SourceInfo:
+    """ Get stream info and song metadata """
+    return models.SourceInfo(
+      name=self.full_name(),
+      state=self.state)
+
+  def requires_src(self) -> Optional[int]:
+    """ Check if this stream needs to be connected to a specific source
+
+    returns that source's id or None for any source
+    """
+    return self.only_src
 
   def send_cmd(self, cmd: str) -> None:
     """ Generic send_cmd function. If not implemented in a stream,
@@ -115,10 +146,45 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
+class RCA(BaseStream):
+  """ A built-in RCA input """
+  def __init__(self, name: str, index: int, disabled: bool = False, mock: bool = False):
+    super().__init__('rca', name, only_src=index, disabled=disabled, mock=mock)
+    # for serialiation the stream model's field needs to map to a stream's fields
+    # index is needed for serialization
+    self.index = index
+
+  def reconfig(self, **kwargs):
+    self.name = kwargs['name']
+
+  def info(self) -> models.SourceInfo:
+    src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=self.full_name(), state='stopped')
+    playing = False
+    status_file = f'{utils.get_folder("config")}/srcs/rca_status'
+    try:
+      if self.src is not None:
+        with open(status_file, mode='rb') as file:
+          status_all = file.read()[0]
+          playing = (status_all & (0b11 << (self.src * 2))) != 0
+    except FileNotFoundError as error:
+      print(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
+    except Exception as error:
+      print(f'Error getting RCA audio status:\n  {error}')
+    src_info.state = "playing" if playing else "stopped"
+    return src_info
+
+  def connect(self, src):
+    if src != self.only_src:
+      raise Exception(f"Unable to connect RCA {self.only_src} to src {src}, can only be connected to {self.only_src}")
+    self._connect(src)
+
+  def disconnect(self):
+    self._disconnect()
+
 class AirPlay(BaseStream):
   """ An AirPlay Stream """
-  def __init__(self, name, mock=False):
-    super().__init__('airplay', name, mock)
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+    super().__init__('airplay', name, disabled=disabled, mock=mock)
     self.proc2 = None
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
@@ -218,8 +284,8 @@ class AirPlay(BaseStream):
 
 class Spotify(BaseStream):
   """ A Spotify Stream """
-  def __init__(self, name, mock=False):
-    super().__init__('spotify', name, mock)
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+    super().__init__('spotify', name, disabled=disabled, mock=mock)
 
     self.connect_port = None
     self.mpris = None
@@ -301,7 +367,8 @@ class Spotify(BaseStream):
       state=self.state,
       img_url='static/imgs/spotify.png' # report generic spotify image in place of unspecified album art
     )
-
+    if self.mpris is None:
+      return source
     try:
       md = self.mpris.metadata()
 
@@ -337,8 +404,8 @@ class Spotify(BaseStream):
 
 class Pandora(BaseStream):
   """ A Pandora Stream """
-  def __init__(self, name, user, password, station, mock=False):
-    super().__init__('pandora', name, mock)
+  def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
+    super().__init__('pandora', name, disabled=disabled, mock=mock)
     self.user = user
     self.password = password
     self.station = station
@@ -489,8 +556,8 @@ class Pandora(BaseStream):
 
 class DLNA(BaseStream):
   """ A DLNA Stream """
-  def __init__(self, name, mock=False):
-    super().__init__('dlna', name, mock)
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+    super().__init__('dlna', name, disabled=disabled, mock=mock)
     self.proc2 = None
     self.uuid = 0
 
@@ -565,8 +632,8 @@ class DLNA(BaseStream):
 
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
-  def __init__(self, name, url, logo, mock=False):
-    super().__init__('internet radio', name, mock)
+  def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
+    super().__init__('internet radio', name, disabled=disabled, mock=mock)
     self.url = url
     self.logo = logo
     self.supported_cmds = ['play', 'stop']
@@ -664,8 +731,8 @@ class InternetRadio(BaseStream):
 
 class Plexamp(BaseStream):
   """ A Plexamp Stream """
-  def __init__(self, name, client_id, token, mock=False):
-    super().__init__('plexamp', name, mock)
+  def __init__(self, name: str, client_id, token, disabled: bool = False, mock: bool = False):
+    super().__init__('plexamp', name, disabled=disabled, mock=mock)
     self.client_id = client_id
     self.token = token
 
@@ -760,8 +827,8 @@ class Plexamp(BaseStream):
 
 class FilePlayer(BaseStream):
   """ An Single one shot file player - initially intended for use as a part of the PA Announcements """
-  def __init__(self, name, url:str, mock=False):
-    super().__init__('file player', name, mock)
+  def __init__(self, name: str, url: str, disabled: bool = False, mock: bool = False):
+    super().__init__('file player', name, disabled=disabled, mock=mock)
     self.url = url
     self.bkg_thread = None
 
@@ -824,8 +891,8 @@ class FilePlayer(BaseStream):
 
 class FMRadio(BaseStream):
   """ An FMRadio Stream using RTLSDR """
-  def __init__(self, name, freq, logo, mock=False):
-    super().__init__('fm radio', name, mock)
+  def __init__(self, name: str, freq, logo: Optional[str] = None, disabled: bool = False, mock: bool = False):
+    super().__init__('fm radio', name, disabled=disabled, mock=mock)
     self.freq = freq
     self.logo = logo
 
@@ -912,8 +979,8 @@ class FMRadio(BaseStream):
 
 class LMS(BaseStream):
   """ An LMS Stream using squeezelite"""
-  def __init__(self, name, server=None, mock=False):
-    super().__init__('lms', name, mock)
+  def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
+    super().__init__('lms', name, disabled=disabled, mock=mock)
     self.server : Optional[str] = server
 
   def reconfig(self, **kwargs):
@@ -993,30 +1060,36 @@ class LMS(BaseStream):
     return source
 
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio, LMS]
+AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
+                  FilePlayer, FMRadio, LMS]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
 
   we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
   """
+  # pylint: disable=too-many-return-statements
   args = stream.dict(exclude_none=True)
-  if stream.type == 'pandora':
-    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
-  elif stream.type == 'shairport' or stream.type == 'airplay': # handle older configs
-    return AirPlay(args['name'], mock=mock)
+  name = args.pop('name')
+  disabled = args.pop('disabled', False)
+  if stream.type == 'rca':
+    return RCA(name, args['index'], disabled=disabled, mock=mock)
+  elif stream.type == 'pandora':
+    return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock)
+  elif stream.type in ['shairport', 'airplay']: # handle older configs
+    return AirPlay(name, disabled=disabled, mock=mock)
   elif stream.type == 'spotify':
-    return Spotify(args['name'], mock=mock)
+    return Spotify(name, disabled=disabled, mock=mock)
   elif stream.type == 'dlna':
-    return DLNA(args['name'], mock=mock)
+    return DLNA(name, disabled=disabled, mock=mock)
   elif stream.type == 'internetradio':
-    return InternetRadio(args['name'], args['url'], args.get('logo'), mock=mock)
+    return InternetRadio(name, args['url'], args.get('logo'), disabled=disabled, mock=mock)
   elif stream.type == 'plexamp':
-    return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
+    return Plexamp(name, args['client_id'], args['token'], disabled=disabled, mock=mock)
   elif stream.type == 'fileplayer':
-    return FilePlayer(args['name'], args['url'], mock=mock)
+    return FilePlayer(name, args['url'], disabled=disabled, mock=mock)
   elif stream.type == 'fmradio':
-    return FMRadio(args['name'], args['freq'], args.get('logo'), mock=mock)
+    return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
   elif stream.type == 'lms':
-    return LMS(args['name'], args.get('server'), mock=mock)
+    return LMS(name, args.get('server'), disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
