@@ -264,6 +264,7 @@ class Api:
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
+    assert 'bluetooth' not in [s.name for s in self.status.streams]
     failed_streams: List[int] = []
     for stream in self.status.streams:
       assert stream.id is not None
@@ -274,6 +275,25 @@ class Api:
           print(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
     self._sync_stream_info() # need to update the status with the new streams
+
+    # check how many bluetooth streams exist
+    bt_streams = sum([isinstance(stream, amplipi.streams.Bluetooth) for stream in self.streams.values()])
+    assert bt_streams <= 1
+    if amplipi.streams.Bluetooth.bluetooth_available():
+      print('bluetooth dongle available')
+      # make one stream available
+      if bt_streams == 0:
+        # make one
+        print('no bt streams present. creating one')
+        self.create_stream(models.Stream(type='bluetooth', name='Bluetooth'), internal=True)
+    else:
+      print('bluetooth dongle unavailable')
+      if bt_streams > 0:
+        # remove each bt stream
+        print('bt streams present. removing all')
+        to_remove = filter(lambda s: s[1] is amplipi.streams.Bluetooth, self.streams.items())
+        for s in to_remove:
+          self.delete_stream(s[0])
 
     # configure all sources so that they are in a known state
     # only models.MAX_SOURCES are supported, keep the config from adding extra

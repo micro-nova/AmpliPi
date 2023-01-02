@@ -6,9 +6,7 @@
 import time
 import json
 import argparse
-import os
 import sys
-import traceback
 from bluezero import dbus_tools
 from bluezero import media_player
 
@@ -44,19 +42,24 @@ if args.song_info:
 
 # Run command on bluetooth device (next, pause, etc)
 if args.command != None:
+  print(f'bluetooth.py got args.command: {args.command}')
   # Find the mac address of the first media player connected over Bluetooth
   mac_addr = None
   for dbus_path in dbus_tools.get_managed_objects():
+    print(f'bluetooth.py got dbus_path: {dbus_path}')
     if dbus_path.endswith('player0'):
       mac_addr = dbus_tools.get_device_address_from_dbus_path(dbus_path)
 
   if mac_addr:
+    print(f'bluetooth.py got non_null mac_addr: {mac_addr}')
     try:
       mp = media_player.MediaPlayer(mac_addr)
       if args.command == 'play':
         mp.play()
+        print('bluetooth: play')
       elif args.command == 'pause':
         mp.pause()
+        print('bluetooth: pause')
       elif args.command == 'next':
         mp.next()
       elif args.command == 'prev':
@@ -76,6 +79,7 @@ if args.command != None:
   exit(1)
 
 def main():
+  print('in bluetooth main()')
   last_info = ""
   latest_info = {
     'artist': '',
@@ -168,11 +172,9 @@ def main():
   except KeyboardInterrupt:
     print('exit')
 
-  except KeyboardInterrupt:
-    print("Shutdown requested...exiting")
-    sys.exit(0)
   except Exception:
     log(sys.exc_info())
+
 
 if __name__ == "__main__":
   main()

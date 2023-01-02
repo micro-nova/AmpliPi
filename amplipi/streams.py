@@ -22,6 +22,8 @@ a consistent interface.
 """
 
 import os
+import traceback
+from re import sub
 import sys
 import subprocess
 import time
@@ -1112,8 +1114,12 @@ class Bluetooth(BaseStream):
   def __del__(self):
     self.disconnect()
 
-  def reconfig(self, **kwargs):
-    reconnect_needed = False
+  @staticmethod
+  def bluetooth_available():
+    """Determines if a bluetooth dongle is present"""
+    btcmd_args = 'bluetoothctl show'
+    btcmd_proc = subprocess.run(args=btcmd_args.split(), stdout=subprocess.PIPE)
+    return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
 
   def connect(self, src):
     """ Connect a bluealsa-aplay process with audio output to a given audio source """
@@ -1125,17 +1131,12 @@ class Bluetooth(BaseStream):
 
     # Power on Bluetooth and enable discoverability
     btpon_args = f'bluetoothctl power on'
-    print(f'running: {btpon_args}')
-    btpon_proc = subprocess.Popen(args=btpon_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    subprocess.run(args=btpon_args.split(), preexec_fn=os.setpgrp)
     btdon_args = f'bluetoothctl discoverable on'
-    print(f'running: {btdon_args}')
-    bton_proc = subprocess.Popen(args=btdon_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    subprocess.run(args=btdon_args.split(), preexec_fn=os.setpgrp)
 
     # Start audio via bluealsa-aplay (accepting any bluetooth device with all zeros)
     baplay_args = f'bluealsa-aplay -d {utils.output_device(src)} 00:00:00:00:00:00'
-    print(f'running: {baplay_args}')
     self.proc = subprocess.Popen(args=baplay_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
 
@@ -1143,7 +1144,7 @@ class Bluetooth(BaseStream):
     src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
     os.system('mkdir -p {}'.format(src_config_folder))
     song_info_path = f'{src_config_folder}/currentSong'
-    btmeta_args = f'python3 {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path}'
+    btmeta_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path} --verbose'
     print(f'running: {btmeta_args}')
     self.proc2 = subprocess.Popen(args=btmeta_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
@@ -1165,11 +1166,10 @@ class Bluetooth(BaseStream):
 
     # Power off Bluetooth and disable discoverability
     btdoff_args = f'bluetoothctl discoverable off'
-    btdoff_proc = subprocess.Popen(args=btdoff_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    subprocess.run(args=btdoff_args.split(), preexec_fn=os.setpgrp)
+
     btpoff_args = f'bluetoothctl power off'
-    btpoff_proc = subprocess.Popen(args=btpoff_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    subprocess.run(args=btpoff_args.split(), preexec_fn=os.setpgrp)
 
     self._disconnect()
 
@@ -1188,21 +1188,23 @@ class Bluetooth(BaseStream):
         source.album = data['album']
         source.state = data['status']
         return source
-    except Exception:
-      pass
+    except Exception as e:
+      print(f'bluetooth: exception {e}')
+      traceback.print_exc()
     return source
 
   def send_cmd(self, cmd):
+    print(f'bluetooth: sending command {cmd}')
     try:
       if cmd in self.supported_cmds and self.src != None:
-        btcmd_args = f'python3 {utils.get_folder("streams")}/bluetooth.py --command={cmd}'
-        print(f'running: {btcmd_args}')
-        btcmd_proc = subprocess.Popen(args=btcmd_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+        btcmd_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --command={cmd} --verbose'
+        subprocess.run(args=btcmd_args.split(), stdin=subprocess.PIPE, stdout=sys.stdout,
+                                      stderr=subprocess.STDOUT, preexec_fn=os.setpgrp)
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
-    except Exception:
-      pass
+    except Exception as e:
+      print(f'bluetooth: exception {e}')
+      traceback.print_exc()
 
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
