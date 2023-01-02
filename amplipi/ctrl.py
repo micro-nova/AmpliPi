@@ -101,10 +101,14 @@ class Api:
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Player 1", "input": f""},
-      {"id": 1, "name": "Player 2", "input": f""},
-      {"id": 2, "name": "Player 3", "input": f""},
-      {"id": 3, "name": "Player 4", "input": f""},
+      {"id": 0, "name": "Player 1", "input": f"", "pipe_to": 0},
+      {"id": 1, "name": "Player 2", "input": f"", "pipe_to": 1},
+      {"id": 2, "name": "Player 3", "input": f"", "pipe_to": 2},
+      {"id": 3, "name": "Player 4", "input": f"", "pipe_to": 3},
+      {"id": 4, "name": "Player 5", "input": f"", "pipe_to": models.NO_OUTPUT},
+      {"id": 5, "name": "Player 6", "input": f"", "pipe_to": models.NO_OUTPUT},
+      {"id": 6, "name": "Player 7", "input": f"", "pipe_to": models.NO_OUTPUT},
+      {"id": 7, "name": "Player 8", "input": f"", "pipe_to": models.NO_OUTPUT},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -474,6 +478,10 @@ class Api:
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
+  def _resolve_src(self, virtual_src_id: int) -> Optional[int]:
+    _, src = utils.find(self.status.sources, virtual_src_id)
+    return src.pipe_to if src else None
+
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
 
@@ -583,11 +591,13 @@ class Api:
           update_mutes = True
 
         # update the zone's associated source
-        sid = utils.parse_int(source_id, [0, 1, 2, 3])
+        # TODO: this logic will need to be done in set_source as well on change to pipe_to, make it reusable!
+        sid = utils.parse_int(source_id, range(models.MAX_SOURCES))
         zones = self.status.zones
         if update_source_id or force_update:
-          zone_sources = [zone.source_id for zone in zones]
-          zone_sources[idx] = sid
+          zone_sources = [self._resolve_src(zone.source_id) for zone in zones]
+          zone_sources[idx] = self._resolve_srC(sid)
+          # TODO: handle source ids that got resolved to None or NO_INPUT by setting them to src=0 and muting them with power=off
           if self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
