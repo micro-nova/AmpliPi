@@ -408,7 +408,7 @@ class Api:
       items = self.get_state().__dict__[plural_tag]
     return items
 
-  def get_stream(self, src: models.Source = None, sid: int = None) -> Optional[amplipi.streams.AnyStream]:
+  def get_stream(self, src: Optional[models.Source] = None, sid: Optional[int] = None) -> Optional[amplipi.streams.AnyStream]:
     """Gets the stream from a source
 
     Args:
@@ -722,9 +722,13 @@ class Api:
     except KeyError:
       return ApiResponse.error('delete group failed: {} does not exist'.format(gid))
 
-  def _new_stream_id(self):
-    stream: Optional[models.Stream] = max(self.status.streams, key=lambda stream: stream.id, default=None)
-    if stream and stream.id:
+  def _new_stream_id(self) -> int:
+    def get_stream_id(stream):
+      if (stream is not None) and (stream.id is not None):
+        return stream.id
+      return -1
+    stream: Optional[models.Stream] = max(self.status.streams, key=get_stream_id, default=None)
+    if stream and stream.id is not None:
       return stream.id + 1
     return 1000
 
