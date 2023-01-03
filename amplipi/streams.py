@@ -1240,5 +1240,5 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   if stream.type == 'lms':
     return LMS(name, args.get('server'), disabled=disabled, mock=mock)
   elif stream.type == 'bluetooth':
-    return Bluetooth(args['name'], mock=mock)
+    return Bluetooth(name, mock=mock)
   raise NotImplementedError(stream.type)
