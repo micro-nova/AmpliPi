@@ -1098,24 +1098,18 @@ class LMS(BaseStream):
 class Bluetooth(BaseStream):
   """ A source for Bluetooth streams, which requires an external Bluetooth USB dongle """
 
-  def __init__(self, name, mock=False):
-    super().__init__('bluetooth', name, mock)
+  def __init__(self, name, disabled=False, mock=False):
+    super().__init__('bluetooth', name, disabled=disabled, mock=mock)
     self.bkg_thread = None
     self.logo = "static/imgs/bluetooth.png"
     self.proc2 = None
-    self.supported_cmds = {
-      'play': 'play',
-      'pause': 'pause',
-      'next': 'next',
-      'prev': 'previous',
-      'stop': 'stop'
-    }
+    self.supported_cmds = ['play', 'pause', 'next', 'prev', 'stop']
 
   def __del__(self):
     self.disconnect()
 
   @staticmethod
-  def bluetooth_available():
+  def is_hw_available():
     """Determines if a bluetooth dongle is present"""
     btcmd_args = 'bluetoothctl show'
     btcmd_proc = subprocess.run(args=btcmd_args.split(), stdout=subprocess.PIPE)
@@ -1179,7 +1173,7 @@ class Bluetooth(BaseStream):
     source = models.SourceInfo(name=self.full_name(),
                                state=self.state,
                                img_url=self.logo,
-                               supported_cmds=list(self.supported_cmds.keys()))
+                               supported_cmds=self.supported_cmds)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())
@@ -1240,5 +1234,5 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   if stream.type == 'lms':
     return LMS(name, args.get('server'), disabled=disabled, mock=mock)
   elif stream.type == 'bluetooth':
-    return Bluetooth(name, mock=mock)
+    return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
