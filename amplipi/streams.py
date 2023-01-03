@@ -178,7 +178,7 @@ class AirPlay(BaseStream):
     os.system(f'mkdir -p {src_config_folder}')
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
-    shairport_args = f"{utils.get_folder('streams')}/shairport-sync-ap2 -c {config_file}".split(' ')
+    shairport_args = f"{utils.get_folder('streams')}/shairport-sync -c {config_file}".split(' ')
     meta_args = [f"{utils.get_folder('streams')}/shairport_metadata.bash", src_config_folder, web_dir]
     print(f'shairport_args: {shairport_args}')
     print(f'meta_args: {meta_args}')
@@ -222,9 +222,12 @@ class AirPlay(BaseStream):
         source.album = md.album
         source.supported_cmds=list(self.supported_cmds)
 
-        img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
-        img_loc = f'generated/{self.src}/{img_name}'
-        source.img_url = img_loc
+        if md.title != '':
+          img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
+          img_loc = f'generated/{self.src}/{img_name}'
+          source.img_url = img_loc
+        else:
+          source.track = "No metadata available"
 
 
     except Exception as e:
@@ -236,9 +239,9 @@ class AirPlay(BaseStream):
     try:
       if cmd in self.supported_cmds:
         if cmd == 'play':
-          self.mpris.play()
+          self.mpris.play_pause()
         elif cmd == 'pause':
-          self.mpris.pause()
+          self.mpris.play_pause()
         elif cmd == 'next':
           self.mpris.next()
         elif cmd == 'prev':
