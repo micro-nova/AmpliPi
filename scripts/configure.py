@@ -122,31 +122,31 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'pianobar']
   },
   'airplay' : {
-    'apt' : [ 'shairport-sync' ],
-    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'}],
+#    'apt' : [ 'shairport-sync' ],
+#    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'}],
   },
   'internet_radio' : {
     'apt' : [ 'vlc' ]
   },
-  'fmradio' : {
-    'apt' : [ 'rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev' ],
-    'script' : [
-      'if ! which redsea  > /dev/null; then', # TODO: check version
-      '  echo "Installing redsea"',
-      '  cd /tmp',
-      '  git clone --depth 1 https://github.com/windytan/redsea.git',
-      '  cd redsea',
-      '  ./autogen.sh && ./configure && make',
-      '  sudo make install',
-      '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
-      '  sudo udevadm control --reload-rules',
-      '  sudo udevadm trigger',
-      'fi',
-    ]
-  },
+ 'fmradio' : {
+#   'apt' : [ 'rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev' ],
+#   'script' : [
+#     'if ! which redsea  > /dev/null; then', # TODO: check version
+#     '  echo "Installing redsea"',
+#     '  cd /tmp',
+#     '  git clone --depth 1 https://github.com/windytan/redsea.git',
+#     '  cd redsea',
+#     '  ./autogen.sh && ./configure && make',
+#     '  sudo make install',
+#     '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
+#     '  sudo udevadm control --reload-rules',
+#     '  sudo udevadm trigger',
+#     'fi',
+#   ]
+ },
   'lms' : {
-    'apt': ['libcrypt-openssl-rsa-perl'], # needed for ShairTunes2W support
-    'copy' : [{'from': 'bin/ARCH/squeezelite', 'to': 'streams/squeezelite'}],
+#    'apt': ['libcrypt-openssl-rsa-perl'], # needed for ShairTunes2W support
+#    'copy' : [{'from': 'bin/ARCH/squeezelite', 'to': 'streams/squeezelite'}],
   },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
@@ -172,7 +172,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     # 'script' : [ './streams/plexamp_nodeinstall.bash' ]
   },
   'spotify' : {
-    'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
+#    'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
   }
 }
 
