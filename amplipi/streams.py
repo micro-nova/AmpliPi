@@ -333,7 +333,7 @@ class Spotify(BaseStream):
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
       data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
-      data = data.replace("alsa_audio_device", f"ch{src}")
+      data = data.replace("alsa_audio_device", utils.output_device(src))
       data = data.replace('1234', f'{self.connect_port}')
     with open(toml_useful, 'w') as TOML:
       TOML.write(data)
@@ -802,7 +802,7 @@ class Plexamp(BaseStream):
     # mpd.conf creation
     with open(mpd_conf_file, 'r') as MPD:
       data = MPD.read()
-      data = data.replace('ch', f'ch{src}')
+      data = data.replace('ch', utils.output_device(src))
       data = data.replace('GENERIC_LOGFILE_LOCATION', f'{plexamp_config_folder}/mpd.log')
     with open(mpd_conf_file, 'w') as MPD:
       MPD.write(data)
