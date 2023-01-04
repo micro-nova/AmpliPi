@@ -198,8 +198,8 @@ def _check_and_setup_platform():
 
   # Figure out what platform we are on since we expect to be on a raspberry pi or a debian based development system
   if 'linux' in lplatform:
+    apt = subprocess.run('which apt-get'.split(), check=True)
     if 'x86_64' in lplatform:
-      apt = subprocess.run('which apt-get'.split(), check=True)
       env['arch'] = 'x64'
       if apt:
         env['has_apt'] = True
