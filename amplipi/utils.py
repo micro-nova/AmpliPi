@@ -135,7 +135,7 @@ def available_outputs():
 
 def output_device(sid: int) -> str:
   """ Get a source's corresponding ALSA output device string """
-  dev = 'ch' + str(sid)
+  dev = f'loop{sid}in' # use a loopback device for testing loopback switching
   if dev in available_outputs():
     return dev
   return 'default' # fallback to default
