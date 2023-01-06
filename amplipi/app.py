@@ -839,6 +839,24 @@ def advertise_service(port, que: Queue):
           q.put('done')
           ad.join()
   """
+  def ok():
+    """ Was a stop requested by the parent process? """
+    return que.empty()
+
+  while ok():
+    try:
+      _advertise_service(port, ok)
+    except Exception as e:
+      print(f'Failed to advertise AmpliPi service: {e}')
+      # delay for a bit after a failure
+      delay_ct = 300
+      while ok() and delay_ct > 0:
+        sleep(0.1)
+        delay_ct -= 1
+
+def _advertise_service(port: int, ok: Callable) -> None:
+  """ Underlying advertisement, can throw Exceptions when network is not connected """
+
   hostname = f'{gethostname()}.local'
   url = f'http://{hostname}'
 
@@ -851,18 +869,16 @@ def advertise_service(port, que: Queue):
   except:
     pass
 
-  def ok():
-    """ Was a stop requested by the parent process? """
-    return que.empty()
-
   # Try to find the best interface to advertise on,
   # retrying in case DHCP resolution is delayed
   ip_addr, mac_addr = None, None
+  good_iface: Optional[str] = None
   retry_count = 5
   while ok() and not (ip_addr and mac_addr) and retry_count > 0:
     for iface in ifaces:
       ip_addr, mac_addr = get_ip_info(iface)
       if ip_addr and mac_addr:
+        good_iface = iface
         break # take the first good interface found
     sleep(2) # wait a bit in case this was started before DHCP was started
     retry_count -= 1
@@ -907,7 +923,16 @@ def advertise_service(port, que: Queue):
   print('AmpliPi zeroconf - finished registering service')
   try:
     while ok():
-      sleep(0.1)
+      delay_ct = 100
+      while ok() and delay_ct > 0:
+        sleep(0.1)
+      if ok() and good_iface:
+        # check if the ip changed
+        new_ip_addr, _ = get_ip_info(iface)
+        if new_ip_addr != ip_addr:
+          print(f'AmpliPi zeroconf - IP address changed from {ip_addr} to {new_ip_addr}')
+          print(f'AmpliPi zeroconf - Registration change needed')
+          raise Exception("change registration")
   except:
     pass
   finally:
