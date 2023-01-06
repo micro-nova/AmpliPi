@@ -3,6 +3,8 @@
 ## Upcoming release
 * Web App
   * Fixed bug that allows disabled streams to be shown & selected
+* Make zeroconf advertisement more robust to ip address changes
+* Remove deprecated old zeroconf advertisement
 
 ## 0.3.1
 * System

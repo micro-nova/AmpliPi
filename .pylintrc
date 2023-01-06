@@ -35,6 +35,7 @@ good-names=i,
            c,
            id,
            ex,
+           ok,
            Run,
 
 [FORMAT]
