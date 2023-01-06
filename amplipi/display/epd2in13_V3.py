@@ -41,8 +41,14 @@ class EPD:
     def __init__(self):
         self.reset_pin = epdconfig.RST_PIN
         self.dc_pin = epdconfig.DC_PIN
-        self.busy_pin = epdconfig.BUSY_PIN
         self.cs_pin = epdconfig.CS_PIN
+        self.busy_pin = epdconfig.BUSY_PIN
+
+        # self.reset_pin = 12
+        # self.dc_pin = 39
+        # self.cs_pin = 44
+        # self.busy_pin = 38
+
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
 
