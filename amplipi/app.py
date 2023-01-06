@@ -913,6 +913,10 @@ def advertise_service(port, que: Queue):
     server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
   )
 
+  if not ok():
+    print("AmpliPi zeroconf - cancelled")
+    return
+
   print(f'AmpliPi zeroconf - registering service: {info}')
   # right now the AmpliPi webserver is ipv4 only
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr])
