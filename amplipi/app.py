@@ -855,6 +855,8 @@ def advertise_service(port, que: Queue):
     """ Was a stop requested by the parent process? """
     return que.empty()
 
+  # Try to find the best interface to advertise on,
+  # retrying in case DHCP resolution is delayed
   ip_addr, mac_addr = None, None
   retry_count = 5
   while ok() and not (ip_addr and mac_addr) and retry_count > 0:
@@ -872,25 +874,6 @@ def advertise_service(port, que: Queue):
     ip_addr = '0.0.0.0' # Any hosted ip on this device
   if port != 80:
     url += f':{port}'
-  info_deprecated = ServiceInfo(
-    '_http._tcp.local.',
-    # this is named AmpliPi-api to distinguish from the common Spotify/Airport name of AmpliPi
-    'amplipi-api._http._tcp.local.',
-    addresses=[inet_aton(ip_addr)],
-    port=port,
-    properties={
-      # standard info
-      'path': '/api/',
-      # extra info - for interfacing
-      'name': 'AmpliPi',
-      'vendor': 'MicroNova',
-      'version': utils.detect_version(),
-      # extra info - for user
-      'web_app': url,
-      'documentation': f'{url}/doc'
-    },
-    server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
-  )
 
   info = ServiceInfo(
     # use a custom type to easily support multiple amplipi device enumeration
@@ -920,7 +903,6 @@ def advertise_service(port, que: Queue):
   print(f'AmpliPi zeroconf - registering service: {info}')
   # right now the AmpliPi webserver is ipv4 only
   zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr])
-  zeroconf.register_service(info_deprecated, cooperating_responders=True)
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
