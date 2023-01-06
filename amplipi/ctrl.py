@@ -348,13 +348,22 @@ class Api:
   def _is_digital(self, sinput: str) -> bool:
     """Determines whether a source input, @sinput, is analog or digital
 
-    The runtime only has the concept of digital or analog
+    sinput is expected to be one of the following:
+
+    | str                  | meaning  | analog or digital? |
+    | -------------------- | -------- | ------------------ |
+    | ''                   | no input | digital            |
+    | 'stream={stream_id}' | a stream | analog or digital (depending on stream_id's stream type) |
+
+    The runtime only has the concept of digital or analog.
+    The system defaults to digital as an undriven analog input acts as an antenna,
+     producing a small amount of white noise.
     """
     try:
       sid = int(sinput.replace('stream=',''))
-      return sid in RCAs
+      return sid not in RCAs
     except:
-      return False
+      return True
 
   def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
     """Gets a dictionary of the possible inputs for a source
