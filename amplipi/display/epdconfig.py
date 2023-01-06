@@ -6,7 +6,7 @@
 # *----------------
 # * | This version:   V1.2
 # * | Date        :   2022-10-29
-# * | Info        :   
+# * | Info        :
 # ******************************************************************************
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
@@ -37,10 +37,14 @@ logger = logging.getLogger(__name__)
 
 class RaspberryPi:
     # Pin definition
-    RST_PIN  = 17
-    DC_PIN   = 25
-    CS_PIN   = 8
-    BUSY_PIN = 24
+    # RST_PIN  = 17
+    # DC_PIN   = 25
+    # CS_PIN   = 8
+    # BUSY_PIN = 24
+    RST_PIN = 12
+    DC_PIN = 39
+    CS_PIN = 44
+    BUSY_PIN = 38
 
     def __init__(self):
         import spidev
@@ -73,7 +77,13 @@ class RaspberryPi:
         self.GPIO.setup(self.BUSY_PIN, self.GPIO.IN)
 
         # SPI device, bus = 0, device = 0
-        self.SPI.open(0, 0)
+        # tried 2,1
+        # tried 2,0
+        # tried 1,1
+        # tried 1,0
+        # tried 0,1
+        # TODO: how to specify mosi, miso?????
+        self.SPI.open(0, 0) # 0, 0
         self.SPI.max_speed_hz = 4000000
         self.SPI.mode = 0b00
         return 0
