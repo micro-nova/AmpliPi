@@ -355,7 +355,9 @@ class Api:
     | ''                   | no input | digital            |
     | 'stream={stream_id}' | a stream | analog or digital (depending on stream_id's stream type) |
 
-    The runtime only has the concept of digital or analog
+    The runtime only has the concept of digital or analog.
+    The system defaults to digital as an undriven analog input acts as an antenna,
+     producing a small amount of white noise.
     """
     try:
       sid = int(sinput.replace('stream=',''))
