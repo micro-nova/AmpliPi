@@ -218,6 +218,9 @@ config_boot () {
   sudo sed -i $CMDLINE -e "s/console=ttyAMA0,[0-9]\+ //"
   sudo sed -i $CMDLINE -e "s/console=serial0,[0-9]\+ //"
 
+  echo "Copying the pi's boot configuration"
+  sudo cp $amplipi_config_dir/boot_config.txt config.txt
+
   # Added to cmdline.txt between 'quiet' and 'splash' to resize on next boot
   #init=/usr/lib/raspi-config/init_resize.sh
 
@@ -241,9 +244,6 @@ config_root () {
     echo "Adding the pi user to the dialout group"
     sudo sed -i'' -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' etc/group
 
-    echo "Copying the pi's boot configuration"
-    sudo cp $amplipi_config_dir/boot_config.txt /mnt/pi-boot/config.txt
-
     # extra config to enable i2c (from do-i2c in raspi-config bash script)
     BLACKLIST=etc/modprobe.d/raspi-blacklist.conf
     if ! [ -e $BLACKLIST ]; then
@@ -254,6 +254,11 @@ config_root () {
     if ! grep -q "^i2c[-_]dev" etc/modules; then
       printf "i2c-dev\n" | sudo tee -a etc/modules
     fi
+
+    # Set UTC as timezone
+    # Via bash: sudo rm /etc/localtime; echo UTC | sudo tee /etc/timezone >/dev/null | sudo dpkg-reconfigure -f noninteractive tzdata
+    sudo ln -sf usr/share/zoneinfo/Etc/UTC etc/localtime
+    echo UTC | sudo tee etc/timezone >/dev/null
   fi
 
   popd # /mnt/pi-root

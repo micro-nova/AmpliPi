@@ -71,3 +71,6 @@ dtoverlay=spi2-2cs
 # Lock it so it doesn't scale down and lower SPI speed
 core_freq=400
 core_freq_min=400
+
+# Lower GPU memory from the default of 76 to 32 MB. 16 is the min but disables some features.
+gpu_mem=32
