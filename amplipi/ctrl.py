@@ -348,6 +348,13 @@ class Api:
   def _is_digital(self, sinput: str) -> bool:
     """Determines whether a source input, @sinput, is analog or digital
 
+    sinput is expected to be one of the following:
+
+    | str                  | meaning  | analog or digital? |
+    | -------------------- | -------- | ------------------ |
+    | ''                   | no input | digital            |
+    | 'stream={stream_id}' | a stream | analog or digital (depending on stream_id's stream type) |
+
     The runtime only has the concept of digital or analog
     """
     try:
