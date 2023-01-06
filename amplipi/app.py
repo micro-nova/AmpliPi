@@ -53,6 +53,7 @@ from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
 # mdns service advertisement
+from time import sleep
 import netifaces as ni
 from socket import gethostname, inet_aton
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
@@ -849,11 +850,20 @@ def advertise_service(port, que: Queue):
         ifaces.append(iface)
   except:
     pass
+
+  def ok():
+    """ Was a stop requested by the parent process? """
+    return que.empty()
+
   ip_addr, mac_addr = None, None
-  for iface in ifaces:
-    ip_addr, mac_addr = get_ip_info(iface)
-    if ip_addr and mac_addr:
-      break # take the first good interface found
+  retry_count = 5
+  while ok() and not (ip_addr and mac_addr) and retry_count > 0:
+    for iface in ifaces:
+      ip_addr, mac_addr = get_ip_info(iface)
+      if ip_addr and mac_addr:
+        break # take the first good interface found
+    sleep(2) # wait a bit in case this was started before DHCP was started
+    retry_count -= 1
 
   if not ip_addr:
     print(f'AmpliPi zeroconf - unable to register service on one of {ifaces}, \
@@ -910,7 +920,7 @@ def advertise_service(port, que: Queue):
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
-    while que.empty():
+    while ok():
       sleep(0.1)
   except:
     pass
