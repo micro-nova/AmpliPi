@@ -31,6 +31,7 @@ import busio
 import cProfile
 import digitalio
 from enum import Enum
+import json
 from loguru import logger as log
 import os
 import requests
@@ -85,6 +86,29 @@ except (NotImplementedError, RuntimeError) as err:
   log.critical(err)
   log.critical('Only Raspberry Pi is currently supported')
   sys.exit(1)
+
+# Identity - allows display customization
+USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+identity : Dict[str, str] = {
+  'name': 'AmpliPi',
+  'touch_logo': 'amplipi/display/imgs/amplipi_320x126.png'
+}
+# Load fields from special identity file (if it exists), falling back to default values above
+try:
+  with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8') as identity_file:
+    potential_identity = json.load(identity_file)
+    for key, val in identity.items():
+      identity[key] = potential_identity.get(key, val)
+except FileNotFoundError:
+  pass
+except Exception as e:
+  print(f'Error loading identity file: {e}')
+
+try:
+  ap_logo = Image.open(identity['touch_logo']).convert('RGB')
+except Exception:
+  # default to a black image
+  ap_logo = Image.new('RGB', (320 , 126))
 
 profile = False
 _touch_test_passed = False
@@ -467,7 +491,6 @@ signal.signal(signal.SIGTERM, exit_handler)
 
 # Load image and convert to RGB
 mn_logo = Image.open('amplipi/display/imgs/micronova_320x240.png').convert('RGB')
-ap_logo = Image.open('amplipi/display/imgs/amplipi_320x126.png').convert('RGB')
 display.image(mn_logo)
 
 # Turn on display backlight now that an image is loaded
