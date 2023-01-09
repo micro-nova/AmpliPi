@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <!-- This is black magic that makes the screen look good on mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AmpliPi - Home Audio</title>
+  <title>{{identity.name}} - Home Audio</title>
   <link rel="shortcut icon" href="static/imgs/amplipi-small-logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css"
                 onerror="this.onerror=null;this.href='static/css/libs/normalize/5.0.0/normalize.min.css';">
@@ -24,7 +24,7 @@
     <div id="preset-list" card="card">
       <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#main-list" href="#preset-list .card-body" aria-expanded="false">
         <!--h6 class="card-header"><i class="fas fa-chevron-down"></i> </h6-->
-        <div class="title"><span class="text-white">Ampli</span><span class="text-danger">Pi</span></div>
+        <div class="title">{{identity.html_logo}}</div>
         <div class="title-down"> <i class="fa fa-chevron-down"></i></div>
       </a>
       <div class="card-body collapse">
@@ -348,7 +348,7 @@
   <div id="amplipi-info" class="text-center">
     <div>
       <span>
-        <a href="http://www.AmpliPi.com" target="_blank" rel="noopener noreferrer">AmpliPi</a>™
+        <a href="{{identity.website}}" target="_blank" rel="noopener noreferrer">{{identity.name}}</a>™
         {% if '+' in version %}
           v{{version}}
         {% else %}
