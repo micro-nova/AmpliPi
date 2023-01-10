@@ -147,7 +147,9 @@ poetry.lock
 
 # Copied architecture specific files
 streams/shairport-sync-metadata-reader
-treams/shairport-sync-ap2
+streams/shairport-sync-ap2
+streams/spotifyd
+streams/squeezelite
 streams/vollibrespot
 streams/vollibrespot.tar.xz
 gmrender-resurrect
