@@ -255,7 +255,7 @@ class MPRIS:
 
     last_sent = m.__dict__
 
-    while True:
+    while self.ok:
       try:
         mpris = SessionMessageBus().get_proxy(
           service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
@@ -265,7 +265,7 @@ class MPRIS:
       except Exception as e:
         print(f"failed to connect mpris {e}")
 
-      print(f"getting mrpis metadata from {self.service_suffix}")
+      # print(f"getting mrpis metadata from {self.service_suffix}")
       try:
         raw_metadata = {}
         try:
@@ -279,7 +279,8 @@ class MPRIS:
           try:
             metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
           except KeyError as e:
-            print(f"Metadata mapping error: {e}")
+            # print(f"Metadata mapping error: {e}")
+            pass
 
         metadata['state'] = mpris.PlaybackStatus.strip("'")
         metadata['volume'] = mpris.Volume

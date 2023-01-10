@@ -31,6 +31,7 @@ import subprocess
 import sys
 import threading
 import time
+from pgrep import pgrep # used by airplay to find already existing streams
 from typing import Union
 
 import amplipi.models as models
@@ -181,10 +182,10 @@ class RCA(BaseStream):
 
 class AirPlay(BaseStream):
   """ An AirPlay Stream """
-  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+  def __init__(self, name: str, ap2:bool, disabled: bool = False, mock: bool = False):
     super().__init__('airplay', name, disabled=disabled, mock=mock)
-    self.proc2 = None
     self.mpris = None
+    self.ap2 = ap2
     self.supported_cmds = [
       'play',
       'pause',
@@ -197,6 +198,9 @@ class AirPlay(BaseStream):
     reconnect_needed = False
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
+      reconnect_needed = True
+    if 'ap2' in kwargs and kwargs['ap2'] != self.ap2:
+      self.ap2 = kwargs['ap2']
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
@@ -244,60 +248,60 @@ class AirPlay(BaseStream):
     os.system(f'mkdir -p {src_config_folder}')
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
-    shairport_args = f"{utils.get_folder('streams')}/shairport-sync-ap2 -c {config_file}".split(' ')
-    meta_args = [f"{utils.get_folder('streams')}/shairport_metadata.bash", src_config_folder, web_dir]
+    shairport_args = f"{utils.get_folder('streams')}/shairport-sync{'-ap2' if self.ap2 else ''} -c {config_file}".split(' ')
     print(f'shairport_args: {shairport_args}')
-    print(f'meta_args: {meta_args}')
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-      self.mpris = MPRIS(f'ShairportSync', f'{src_config_folder}/metadata.txt')
+      mpris_name = 'ShairportSync'
+      # If there are multiple shairport-sync processes, add the pid to the mpris name
+      # shairport sync only adds the pid to the mpris name if it cannot use the default name
+      if len(pgrep('shairport-sync')) > 1: mpris_name += f".i{self.proc.pid}"
+      self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
     except Exception as exc:
       print(f'Error starting airplay MPRIS reader: {exc}')
     self._connect(src)
 
   def disconnect(self):
     if self._is_running():
-      os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
       self.proc.kill()
     self._disconnect()
-    self.proc2 = None
     self.proc = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(
-      name=f"Connect to {self.name} on Airplay",
+      name=f"Connect to {self.name} on Airplay{'2' if self.ap2 else ''}",
       state=self.state,
       img_url='static/imgs/shairport.png'
     )
 
-    try:
-      md = self.mpris.metadata()
+    # try:
+    #   md = self.mpris.metadata()
 
-      if self.mpris.is_playing():
-        source.state = 'playing'
-      else:
-        if time.time() - md.state_changed_time < self.STATE_TIMEOUT:
-          source.state = 'paused'
-        else:
-          source.state = 'stopped'
+    #   if self.mpris.is_playing():
+    #     source.state = 'playing'
+    #   else:
+    #     if time.time() - md.state_changed_time < self.STATE_TIMEOUT:
+    #       source.state = 'paused'
+    #     else:
+    #       source.state = 'stopped'
 
-      if source.state != 'stopped':
-        source.artist = md.artist
-        source.track = md.title
-        source.album = md.album
-        source.supported_cmds=list(self.supported_cmds)
+    #   if source.state != 'stopped':
+    #     source.artist = md.artist
+    #     source.track = md.title
+    #     source.album = md.album
+    #     source.supported_cmds=list(self.supported_cmds)
 
-        if md.title != '':
-          img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
-          img_loc = f'generated/{self.src}/{img_name}'
-          source.img_url = img_loc
-        else:
-          source.track = "No metadata available"
+    #     if md.title != '':
+    #       img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
+    #       img_loc = f'generated/{self.src}/{img_name}'
+    #       source.img_url = img_loc
+    #     else:
+    #       source.track = "No metadata available"
 
 
-    except Exception as e:
-      print(f"error in airplay: {e}")
+    # except Exception as e:
+    #   print(f"error in airplay: {e}")
 
     return source
 
@@ -1112,7 +1116,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'pandora':
     return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock)
   elif stream.type in ['shairport', 'airplay']: # handle older configs
-    return AirPlay(name, disabled=disabled, mock=mock)
+    return AirPlay(name, disabled=disabled, args['ap2'], mock=mock)
   elif stream.type == 'spotify':
     return Spotify(name, disabled=disabled, mock=mock)
   elif stream.type == 'dlna':

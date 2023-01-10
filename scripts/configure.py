@@ -124,7 +124,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   'airplay' : {
     'apt' : [ 'shairport-sync'],
     'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'},
-              {'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'}],
+              {'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
+              {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
     'script': [
         'if which nqptp  > /dev/null; then exit 0; fi',
         'cd ~',

@@ -48,7 +48,7 @@ function build {
     git clone https://github.com/mikebrady/shairport-sync.git
     cd shairport-sync
     autoreconf -if
-    ./configure --sysconfdir=/etc --with-alsa     --with-soxr --with-avahi --with-ssl=openssl --with-systemd --with-airplay-2 --with-metadata --with-mpris-interface
+    ./configure --sysconfdir=/etc --with-alsa --with-soxr --with-avahi --with-ssl=openssl --with-systemd --with-airplay-2 --with-metadata --with-mpris-interface
     make
 
     # copy the generated bins to a common directory
@@ -56,6 +56,16 @@ function build {
     cd ../bins
     cp ../shairport-sync-metadata-reader/shairport-sync-metadata-reader .
     cp ../shairport-sync/shairport-sync ./shairport-sync-ap2
+
+    # clean then build shairport-sync without airplay2 support
+    cd ../shairport-sync
+    make clean
+    ./configure --sysconfdir=/etc --with-alsa --with-soxr --with-avahi --with-ssl=openssl --with-systemd --with-metadata --with-mpris-interface
+    make
+
+    # copy the generated bins to a common directory
+    cd ../bins
+    cp ../shairport-sync/shairport-sync .
 
     # report success, with the filepath to the built binary (so the remote version of this script can copy the file)
     echo "success=$(pwd)"
