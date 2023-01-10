@@ -106,6 +106,13 @@ class Base(BaseModel):
   id: Optional[int] = fields.ID
   name: str = fields.Name
 
+class Mux(Base):
+  """ Changes to the software multiplexor mapping virtual sources to hardware """
+  connections: List[Optional[int]] = [None, None, None, None]
+
+class MuxUpdate(Mux):
+  pass
+
 class BaseUpdate(BaseModel):
   """ Base class for updates to AmpliPi models
   name: Associated name, updated if necessary
@@ -122,12 +129,9 @@ class SourceInfo(BaseModel):
   img_url: Optional[str]
   supported_cmds: List[str] = []
 
-NO_OUTPUT = -1
-
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
-  pipe_to: int = Field(description='Output dervice to send audio out', default=NO_OUTPUT)
   info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback)')
 
   def get_stream(self) -> Optional[int]:
@@ -192,7 +196,6 @@ class Source(Base):
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
   input: Optional[str] = fields.AudioInput
-  pipe_to: Optional[int] = Field(description='Output dervice to send audio out', default=NO_OUTPUT)
 
   class Config:
     schema_extra = {
@@ -827,7 +830,8 @@ class Info(BaseModel):
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
-  sources: List[Source] = [Source(id=i, name=str(i), pipe_to=i) for i in range(4)] + [Source(id=i, name=str(i), pipe_to=NO_OUTPUT) for i in range(4,8)]
+  connections: List[Optional[int]] = [0, 1, 2, 3]
+  sources: List[Source] = [Source(id=i, name=str(i)) for i in range(8)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
   streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(4)]

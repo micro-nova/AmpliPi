@@ -29,6 +29,7 @@ import os # files
 import time
 
 import threading
+import subprocess
 import wrapt
 
 import amplipi.models as models
@@ -81,6 +82,31 @@ class ApiResponse:
   OK = ApiCode.OK
   ERROR = ApiCode.ERROR
 
+class Connection:
+  """ A connection from a virutual source to a real DAC """
+  def __init__(self, id: int):
+    self.id = id
+    self.src: Optional[int] = None
+    self._proc: Optional[subprocess.Popen] = None
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, source_id: Optional[int]):
+    """ Connect an output to a given audio source """
+    if source_id is not None:
+      args = f'alsaloop -C {utils.output_device(source_id)} -P ch{self.id} -t 100000'.split() # TODO: use utils to abstract the real devices away
+      self._proc = subprocess.Popen(args=args)
+      time.sleep(0.1) # Delay a bit
+    self.src = source_id
+
+  def disconnect(self):
+    """ Disconnect from a DAC """
+    try:
+      self._proc.kill()
+    except Exception:
+      pass
+
 class Api:
   """ Amplipi Controller API"""
   # pylint: disable=too-many-instance-attributes
@@ -100,15 +126,16 @@ class Api:
   streams: Dict[int, amplipi.streams.AnyStream]
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
+    "connections": [0, 1, 2, 3],
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Player 1", "input": f"", "pipe_to": 0},
-      {"id": 1, "name": "Player 2", "input": f"", "pipe_to": 1},
-      {"id": 2, "name": "Player 3", "input": f"", "pipe_to": 2},
-      {"id": 3, "name": "Player 4", "input": f"", "pipe_to": 3},
-      {"id": 4, "name": "Player 5", "input": f"", "pipe_to": models.NO_OUTPUT},
-      {"id": 5, "name": "Player 6", "input": f"", "pipe_to": models.NO_OUTPUT},
-      {"id": 6, "name": "Player 7", "input": f"", "pipe_to": models.NO_OUTPUT},
-      {"id": 7, "name": "Player 8", "input": f"", "pipe_to": models.NO_OUTPUT},
+      {"id": 0, "name": "Player 1", "input": f"",},
+      {"id": 1, "name": "Player 2", "input": f"",},
+      {"id": 2, "name": "Player 3", "input": f"",},
+      {"id": 3, "name": "Player 4", "input": f"",},
+      {"id": 4, "name": "Player 5", "input": f"",},
+      {"id": 5, "name": "Player 6", "input": f"",},
+      {"id": 6, "name": "Player 7", "input": f"",},
+      {"id": 7, "name": "Player 8", "input": f"",},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -264,6 +291,11 @@ class Api:
           print(f'- Defaulting name to: {input_name}')
         rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
         self.status.streams.insert(idx, rca_stream)
+
+    # configure all connections so that they are in a known good state
+    self.connections = [Connection(c) for c in range(4)]
+    mux = models.MuxUpdate(connections=self.status.connections)
+    self.set_connections(mux, force_update=True, internal=True)
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
@@ -479,8 +511,28 @@ class Api:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
   def _resolve_src(self, virtual_src_id: int) -> Optional[int]:
-    _, src = utils.find(self.status.sources, virtual_src_id)
-    return src.pipe_to if src else None
+    if virtual_src_id in self.status.connections:
+      return self.status.connections.index(virtual_src_id)
+    return None
+
+  def set_connections(self, update: models.MuxUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
+    """ Configure the virtual source to DAC connections """
+    try:
+      if force_update:
+        mods = [c for c in range(4)]
+      else:
+        mods = [c for c in range(4) if not(self.status.connections[c] == update.connections[c])]
+      # TODO: error on any conflicts (multiconnections not allowed)
+      for c in mods:
+        self.connections[c].disconnect()
+      for c in mods:
+        sid = update.connections[c]
+        self.connections[c].connect(sid)
+    except Exception as exc:
+      if internal:
+        raise exc
+      return ApiResponse.error(f'failed to set connections: {exc}')
+    return ApiResponse.ok()
 
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
@@ -511,9 +563,9 @@ class Api:
           src.input = input_ # reconfigure the input so get_stream knows which stream to get
           stream = self.get_stream(src)
           if stream:
-            # update the streams last connected source to have no input, since we have stolen its input
             stolen_from: Optional[models.Source] = None
             if stream.src is not None and stream.src != idx:
+              # update the streams last connected source to have no input, since we have stolen its input
               stolen_from = self.status.sources[stream.src]
               print('stealing {} from source {}'.format(stream.name, stolen_from.name))
               stolen_from.input = ''
@@ -543,7 +595,10 @@ class Api:
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
           if rt_needs_update or force_update:
             # get the current underlying type of each of the sources, for configuration of the runtime
-            src_cfg = [self._is_digital(self.status.sources[s].input) for s in range(4)]
+            src_cfg = [True] * 4
+            for c, connected_src in enumerate(self.status.connections):
+              if connected_src is not None:
+                src_cfg[c] = self._is_digital(self.status.sources[connected_src].input)
             # update this source
             src_cfg[idx] = self._is_digital(input_)
             if not self._rt.update_sources(src_cfg):

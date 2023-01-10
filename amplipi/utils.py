@@ -135,7 +135,7 @@ def available_outputs():
 
 def output_device(sid: int) -> str:
   """ Get a source's corresponding ALSA output device string """
-  dev = f'loop{sid}in' # use a loopback device for testing loopback switching
+  dev = f'dmix:CARD=Loopback_{sid},DEV=0'.replace('_0', '') # use the loopback dmixer (plughw and hw don't work here)
   if dev in available_outputs():
     return dev
   return 'default' # fallback to default
