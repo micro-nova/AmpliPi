@@ -104,7 +104,11 @@ except FileNotFoundError:
 except Exception as e:
   print(f'Error loading identity file: {e}')
 
-ap_logo = Image.open(identity['touch_logo']).convert('RGB')
+try:
+  ap_logo = Image.open(identity['touch_logo']).convert('RGB')
+except Exception:
+  # default to a black image
+  ap_logo = Image.new('RGB', (320 , 126))
 
 profile = False
 _touch_test_passed = False
