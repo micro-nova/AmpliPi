@@ -33,7 +33,7 @@ function build {
   # install a bunch of packages required by shaairport-sync with airplay2 support
   sudo apt install --no-install-recommends xmltoman automake libtool \
     libpopt-dev libconfig-dev libasound2-dev avahi-daemon libavahi-client-dev libssl-dev libsoxr-dev \
-    libplist-dev libsodium-dev libavutil-dev libavcodec-dev libavformat-dev uuid-dev xxd
+    libplist-dev libsodium-dev libavutil-dev libavcodec-dev libavformat-dev uuid-dev xxd libgcrypt-dev
 
   pushd $(mktemp --directory)
     # build shairport-sync-metadata-reader
@@ -55,7 +55,7 @@ function build {
     mkdir -p ../bins
     cd ../bins
     cp ../shairport-sync-metadata-reader/shairport-sync-metadata-reader .
-    cp ../shairport-sync/shairport-sync .
+    cp ../shairport-sync/shairport-sync ./shairport-sync-ap2
 
     # report success, with the filepath to the built binary (so the remote version of this script can copy the file)
     echo "success=$(pwd)"
