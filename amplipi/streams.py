@@ -178,7 +178,7 @@ class AirPlay(BaseStream):
     os.system(f'mkdir -p {src_config_folder}')
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
-    shairport_args = f"{utils.get_folder('streams')}/shairport-sync -c {config_file}".split(' ')
+    shairport_args = f"{utils.get_folder('streams')}/shairport-sync-ap2 -c {config_file}".split(' ')
     meta_args = [f"{utils.get_folder('streams')}/shairport_metadata.bash", src_config_folder, web_dir]
     print(f'shairport_args: {shairport_args}')
     print(f'meta_args: {meta_args}')
