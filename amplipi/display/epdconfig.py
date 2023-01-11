@@ -36,11 +36,6 @@ logger = logging.getLogger(__name__)
 
 
 class RaspberryPi:
-    # Pin definition
-    # RST_PIN  = 17
-    # DC_PIN   = 25
-    # CS_PIN   = 8
-    # BUSY_PIN = 24
     RST_PIN = 12
     DC_PIN = 39
     CS_PIN = 44
@@ -75,15 +70,7 @@ class RaspberryPi:
         self.GPIO.setup(self.DC_PIN, self.GPIO.OUT)
         self.GPIO.setup(self.CS_PIN, self.GPIO.OUT)
         self.GPIO.setup(self.BUSY_PIN, self.GPIO.IN)
-
-        # SPI device, bus = 0, device = 0
-        # tried 2,1
-        # tried 2,0
-        # tried 1,1
-        # tried 1,0
-        # tried 0,1
-        # TODO: how to specify mosi, miso?????
-        self.SPI.open(0, 0) # 0, 0
+        self.SPI.open(2, 1)
         self.SPI.max_speed_hz = 4000000
         self.SPI.mode = 0b00
         return 0
