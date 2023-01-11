@@ -40,6 +40,8 @@ import amplipi.models as models
 import amplipi.utils as utils
 from amplipi.mpris import MPRIS
 
+# We use Popen for long running process control this error is not useful: pylint: disable=consider-using-with
+
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
   with open(filename, 'wt') as cfg_file:

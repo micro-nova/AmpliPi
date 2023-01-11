@@ -32,10 +32,10 @@ import threading
 import subprocess
 import wrapt
 
-import amplipi.models as models
-import amplipi.rt as rt
+from amplipi import models
+from amplipi import rt
+from amplipi import utils
 import amplipi.streams
-import amplipi.utils as utils
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -127,18 +127,19 @@ class Api:
   config_file_valid: bool
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
+  connections = [Connection(c) for c in range(4)]
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "connections": [0, 1, 2, 3],
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Player 1", "input": f"",},
-      {"id": 1, "name": "Player 2", "input": f"",},
-      {"id": 2, "name": "Player 3", "input": f"",},
-      {"id": 3, "name": "Player 4", "input": f"",},
-      {"id": 4, "name": "Player 5", "input": f"",},
-      {"id": 5, "name": "Player 6", "input": f"",},
-      {"id": 6, "name": "Player 7", "input": f"",},
-      {"id": 7, "name": "Player 8", "input": f"",},
+      {"id": 0, "name": "Player 1", "input": "",},
+      {"id": 1, "name": "Player 2", "input": "",},
+      {"id": 2, "name": "Player 3", "input": "",},
+      {"id": 3, "name": "Player 4", "input": "",},
+      {"id": 4, "name": "Player 5", "input": "",},
+      {"id": 5, "name": "Player 6", "input": "",},
+      {"id": 6, "name": "Player 7", "input": "",},
+      {"id": 7, "name": "Player 8", "input": "",},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -211,7 +212,7 @@ class Api:
     self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi() # reset the fw
 
     # test open the config file, this will throw an exception if there are issues writing to the file
-    with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
+    with open(settings.config_file, 'a', encoding='utf-8'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
