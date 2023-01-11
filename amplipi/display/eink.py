@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import subprocess
 import sys
 import time
 
+from amplipi import formatter
 from amplipi.display import epd2in13_V3
 import socket
 import netifaces as ni
@@ -72,7 +74,6 @@ def update_display(host_name, password, ip_str):
     print(f'Failed to load font {fontname}')
     sys.exit(3)
 
-  print('getting ascent, descent')
   ascent, descent = font.getmetrics()
   cw = font.getlength(" ")
   ch = ascent + descent
@@ -85,29 +86,14 @@ def update_display(host_name, password, ip_str):
     print(f'Screen height = {height}, width = {width}')
     epd.init()
     epd.Clear(0xFF)
-
     image = Image.new('1', (epd.height, epd.width), 255)  # 255: clear the frame
     draw = ImageDraw.Draw(image)
 
-    if fontsize == 14:
-      # draw.text((0, 0*ch), 'Password\u21b4', font=font, fill=0)
-      draw.text((0, 0*ch), 'hello world\u21b4', font=font, fill=0)
-      draw.text((0, 1*ch), '0123456789 0123456789 012345678', font=font, fill=0)
-      draw.text((0, 5*ch), 'IP\u21b4', font=font, fill=0)
-      draw.text((width-18*cw, 5*ch), 'Internet access: \u2713', font=font, fill=0)
-      draw.text((0, 6*ch), '192.168.128.200 amplipi.local', font=font, fill=0)
-    else:
-      # draw.text((0, 0*ch), '01234567890123456789', font=font, fill=0)
-      # draw.text((0, 0*ch), 'hello world', font=font, fill=0)
-      # draw.text((0, 1*ch), 'password_chars_>20', font=font, fill=0)
-      # draw.text((0, 2*ch), 'Password\u2197', font=font, fill=0)
-      # draw.text((width-8*cw, 2*ch), '\u2199IP/host', font=font, fill=0)
-      # draw.text((0, 3*ch), '192.168.128.200', font=font, fill=0)
-      # draw.text((0, 4*ch), 'amplipi.local', font=font, fill=0)
-
-      draw.text((0, 0*ch), f'Host: {host_name}')
-      draw.text((0, 1*ch), f'Pass: {password}')
-      draw.text((0, 2*ch), f'IP:   {ip_str}')
+    interval = (4/3) * ch
+    start = interval/2
+    draw.text((0, start + 0*interval), f'Host: {host_name}', font=font, fill=0)
+    draw.text((0, start + 1*interval), f'Pass: {password}', font=font, fill=0)
+    draw.text((0, start + 2*interval), f'IP:   {ip_str}', font=font, fill=0)
 
     image = image.rotate(180) # flip
     print('displaying image')
@@ -128,7 +114,7 @@ def get_info(args, default_pass):
     # TODO: uhh can this even happen
     host_name = 'None'
   try:
-    ip_str = ni.ifaddresses(args.iface)[ni.AF_INET][0]['addr'] + ', ' + host_name
+    ip_str = ni.ifaddresses(args.iface)[ni.AF_INET][0]['addr']
   except:
     ip_str = 'Disconnected'
 
@@ -156,3 +142,10 @@ def run(args=None):
     # wait before polling again
     time.sleep(8)
 
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
+                                   formatter_class=formatter.AmpliPiHelpFormatter)
+  parser.add_argument('-i', '--iface', default='eth0',
+                      help='the network interface to display the IP of')
+  args = parser.parse_args()
+  run(args)
