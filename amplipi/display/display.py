@@ -21,8 +21,6 @@
 #      loguru requests rpi.gpio netifaces psutil
 # apt: libatlas-base-dev
 
-print("hhhhhhhhhhi")
-
 import sys
 
 from amplipi.display import eink
@@ -56,7 +54,6 @@ from PIL import Image, ImageDraw, ImageFont
 import netifaces as ni    # network interfaces
 import psutil             # CPU, RAM, etc.
 
-print('display code launched')
 
 parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
                                  formatter_class=formatter.AmpliPiHelpFormatter)
@@ -393,17 +390,21 @@ def read_temp():
 read_temp_raw() # Dummy read
 temp0, temp1 = read_temp_raw()
 if temp0 == 0 or temp1 == 0:
-  # A touch screen doesn't seem to be present
-  # TODO: Read ID from display itself as screen presence detection
-  # log.critical("Couldn't communicate with touch screen")
-  # sys.exit(2)
+  # A touch screen doesn't seem to be present, so assume e-ink is present
 
-  # launch e-ink code
-  print('launching eink code')
+  # release control over spi/pins
+  try:
+    spi.unlock()
+  except ValueError:
+    pass
+  spi.deinit()
+  led.deinit()
+  disp_cs.deinit()
+  disp_dc.deinit()
+  touch_cs.deinit()
+
   eink.run(args)
-  # exit with 0
   sys.exit(0)
-print('not launching eink code')
 
 def touch_callback(pin_num):
   # TODO: Debounce touches
