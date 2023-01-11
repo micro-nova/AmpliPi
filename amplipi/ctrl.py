@@ -95,6 +95,7 @@ class Connection:
   def connect(self, source_id: Optional[int]):
     """ Connect an output to a given audio source """
     if source_id is not None:
+      # TODO: add support for using the other side of the loopback since we only have 6 loopbacks
       dev = f'hw:Loopback_{source_id},1'.replace('_0', '') # 0th loopback is just Loopback
       args = f'alsaloop -C {dev} -P ch{self.id} -t 100000'.split() # TODO: use utils to abstract the real devices away
       try:
@@ -542,6 +543,7 @@ class Api:
 
   def set_connections(self, update: models.MuxUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """ Configure the virtual source to DAC connections and update the underlying zones connections to match"""
+    # TODO: something is weird still, when the connections are switched - need to investigate
     try:
       current = models.Mux(connections=self.status.connections)
       all_connections = list(filter(None, update.connections)) # no collisions on None

@@ -135,6 +135,7 @@ def available_outputs():
 
 def output_device(sid: int) -> str:
   """ Get a source's corresponding ALSA output device string """
+  # TODO: use the other side for devices 6-11 since we only have 6 loopbacks
   dev = f'dmix:CARD=Loopback_{sid},DEV=0'.replace('_0', '') # use the loopback dmixer (plughw and hw don't work here)
   if dev in available_outputs():
     return dev
