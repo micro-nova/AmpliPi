@@ -97,6 +97,7 @@ class Connection:
     if source_id is not None:
       args = f'alsaloop -C {utils.output_device(source_id)} -P ch{self.id} -t 100000'.split() # TODO: use utils to abstract the real devices away
       try:
+        print(f'  starting connection via: {" ".join(args)}')
         self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
       except Exception as exc:
         print(f'Failed to start alsaloop connection: {exc}')
@@ -105,10 +106,12 @@ class Connection:
 
   def disconnect(self):
     """ Disconnect from a DAC """
-    try:
-      self._proc.kill()
-    except Exception:
-      pass
+    if self._proc:
+      print(f'  stopping connection {self.id}')
+      try:
+        self._proc.kill()
+      except Exception:
+        pass
 
 class Api:
   """ Amplipi Controller API"""
@@ -548,6 +551,8 @@ class Api:
         mods = list(range(4))
       else:
         mods = [c for c in range(4) if not(self.status.connections[c] == update.connections[c])]
+      print(f'updating connections with {update.connections}')
+      print(f'  connections modified: {" ".join([f"{update.connections[c]} -> {c}" for c in mods])}')
       # some zones could be changed with these modifications, we should mute them during the transition
       # other zones may be discunnected by these modifications (they are connected to a virtual source that doesn't have a real connection)
       old_srcs = {current.connections[c] for c in mods}
@@ -556,6 +561,8 @@ class Api:
       srcs_disconnected = old_srcs - new_srcs
       zones_temp_muted = [z.id for z in self.status.zones if z.source_id in srcs_in_trans and not z.mute and z.id is not None]
       zones_muted = [z.id for z in self.status.zones if z.source_id in srcs_disconnected and not z.mute and z.id is not None]
+      print(f'  muting zones temporarily {zones_temp_muted}')
+      print(f'  muting zones permanently {zones_muted}')
       if len(zones_temp_muted) or len(zones_muted):
         self.set_zones(models.MultiZoneUpdate(zones=zones_temp_muted+zones_muted, update=models.ZoneUpdate(mute=True)))
       # disconnect any of the connections being changed, we will connect any real connections soon
@@ -567,8 +574,11 @@ class Api:
       # update analog/digital switches
       ad_src_config = self._get_source_config(connections=update.connections)
       if ad_src_config != self._get_source_config(connections=current.connections):
+        print(f'  A/D config changed from {self._get_source_config(connections=current.connections)} to {ad_src_config}')
         if not self._rt.update_sources(ad_src_config):
           raise Exception('unable to reconfigure digital/analog mux')
+      else:
+        print('  no changes to A/D config')
       # connect any real connections
       for c in mods:
         sid = update.connections[c]
@@ -579,6 +589,7 @@ class Api:
       # unmute temporarily muted sources
       #  this needs to happen after status.connections is updated since the new connections will use the new muxing
       if len(zones_temp_muted):
+        print(f'  unmuting temporarily muted zones {zones_temp_muted}')
         self.set_zones(models.MultiZoneUpdate(zones=zones_temp_muted, update=models.ZoneUpdate(mute=False)))
     except Exception as exc:
       if internal:
