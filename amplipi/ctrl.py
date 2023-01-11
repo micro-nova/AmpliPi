@@ -400,9 +400,9 @@ class Api:
     """
     try:
       sid = int(sinput.replace('stream=',''))
-      return sid in RCAs
+      return sid not in RCAs
     except:
-      return False
+      return True
 
   def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
     """Gets a dictionary of the possible inputs for a source
