@@ -29,7 +29,8 @@
 
 
 import logging
-import epdconfig
+# import epdconfig
+from amplipi.display import epdconfig
 
 # Display resolution
 EPD_WIDTH       = 122
@@ -43,11 +44,6 @@ class EPD:
         self.dc_pin = epdconfig.DC_PIN
         self.cs_pin = epdconfig.CS_PIN
         self.busy_pin = epdconfig.BUSY_PIN
-
-        # self.reset_pin = 12
-        # self.dc_pin = 39
-        # self.cs_pin = 44
-        # self.busy_pin = 38
 
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT

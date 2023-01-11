@@ -1,57 +1,158 @@
 #!/usr/bin/env python3
-
+import os
+import subprocess
 import sys
-import epd2in13_V3
+import time
+
+from amplipi.display import epd2in13_V3
+import socket
+import netifaces as ni
 from PIL import Image,ImageDraw,ImageFont
 
-# Get fonts
-#fontname = 'DejaVuSansMono'
-fontname = 'DejaVuSansMono-Bold'
-fontsize=20
-try:
-  font = ImageFont.truetype(fontname, fontsize)
-except:
-  print(f'Failed to load font {fontname}')
-  sys.exit(3)
+class DefaultPass:
+  """Helper class to read and verify the current pi user's password against
+     the stored default AmpliPi password."""
 
-ascent, descent = font.getmetrics()
-cw = font.getlength(" ")
-ch = ascent + descent
-print(f'Font height = {ch}, width = {cw}')
+  # Password config location
+  PASS_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  PASS_FILE = os.path.join(PASS_DIR, 'default_password.txt')
+  DEFAULT_PI_PASSWORD = 'raspberry'
 
-try:
-  epd = epd2in13_V3.EPD()
-  height = epd.width # rotated
-  width = epd.height # rotated
-  print(f'Screen height = {height}, width = {width}')
-  epd.init()
-  epd.Clear(0xFF)
+  def __init__(self):
+    self.default_password = ''
+    self.pass_file_present = False
+    self.update()
 
-  image = Image.new('1', (epd.height, epd.width), 255)  # 255: clear the frame
-  draw = ImageDraw.Draw(image)
+  def update(self) -> str:
+    """Check if the default password file has changed and if so
+       verify if it is the pi user's current password.
+    """
+    old_presence = self.pass_file_present
+    new_default = self.get_default_pw()
+    if self.default_password != new_default or self.pass_file_present != old_presence:
+      self.default_password = new_default
+      self.default_in_use = self.check_pw(self.default_password)
 
-  if fontsize == 14:
-    # draw.text((0, 0*ch), 'Password\u21b4', font=font, fill=0)
-    draw.text((0, 0*ch), 'hello world\u21b4', font=font, fill=0)
-    draw.text((0, 1*ch), '0123456789 0123456789 012345678', font=font, fill=0)
-    draw.text((0, 5*ch), 'IP\u21b4', font=font, fill=0)
-    draw.text((width-18*cw, 5*ch), 'Internet access: \u2713', font=font, fill=0)
-    draw.text((0, 6*ch), '192.168.128.200 amplipi.local', font=font, fill=0)
-  else:
-    # draw.text((0, 0*ch), '01234567890123456789', font=font, fill=0)
-    draw.text((0, 0*ch), 'hello world', font=font, fill=0)
-    draw.text((0, 1*ch), 'password_chars_>20', font=font, fill=0)
-    draw.text((0, 2*ch), 'Password\u2197', font=font, fill=0)
-    draw.text((width-8*cw, 2*ch), '\u2199IP/host', font=font, fill=0)
-    draw.text((0, 3*ch), '192.168.128.200', font=font, fill=0)
-    draw.text((0, 4*ch), 'amplipi.local', font=font, fill=0)
+    if self.default_in_use:
+      if self.pass_file_present:
+        # A random password has been set as the default for AmpliPi.
+        return self.default_password
+      # Default Pi password is still in use, this isn't secure.
+      return self.default_password
+    # Current password has been changed from the default
+    return 'User Set'
 
-  image = image.rotate(180) # flip
-  epd.display(epd.getbuffer(image))
+  def get_default_pw(self) -> str:
+    if os.path.exists(self.PASS_FILE):
+      with open(self.PASS_FILE, 'r', encoding='utf-8') as pass_file:
+        self.pass_file_present = True
+        return pass_file.readline().rstrip()
+    self.pass_file_present = False
+    return self.DEFAULT_PI_PASSWORD
 
-  epd.sleep()
-except IOError as e:
-  print(f'Error: {e}')
-except KeyboardInterrupt:
-  print('CTRL+C')
-  epd2in13_V3.epdconfig.module_exit()
+  @staticmethod
+  def check_pw(pw: str) -> bool:
+    """ Check if the given password is the pi user's current password. """
+    try:
+      subprocess.run(f'sudo python3 amplipi/display/check_pass {pw}', shell=True, check=True)
+      return True
+    except subprocess.CalledProcessError:
+      return False
+
+
+def update_display(host_name, password, ip_str):
+  print('update_display')
+  # Get fonts
+  #fontname = 'DejaVuSansMono'
+  fontname = 'DejaVuSansMono-Bold'
+  fontsize=20
+  try:
+    font = ImageFont.truetype(fontname, fontsize)
+  except:
+    print(f'Failed to load font {fontname}')
+    sys.exit(3)
+
+  print('getting ascent, descent')
+  ascent, descent = font.getmetrics()
+  cw = font.getlength(" ")
+  ch = ascent + descent
+  print(f'Font height = {ch}, width = {cw}')
+
+  try:
+    epd = epd2in13_V3.EPD()
+    height = epd.width # rotated
+    width = epd.height # rotated
+    print(f'Screen height = {height}, width = {width}')
+    epd.init()
+    epd.Clear(0xFF)
+
+    image = Image.new('1', (epd.height, epd.width), 255)  # 255: clear the frame
+    draw = ImageDraw.Draw(image)
+
+    if fontsize == 14:
+      # draw.text((0, 0*ch), 'Password\u21b4', font=font, fill=0)
+      draw.text((0, 0*ch), 'hello world\u21b4', font=font, fill=0)
+      draw.text((0, 1*ch), '0123456789 0123456789 012345678', font=font, fill=0)
+      draw.text((0, 5*ch), 'IP\u21b4', font=font, fill=0)
+      draw.text((width-18*cw, 5*ch), 'Internet access: \u2713', font=font, fill=0)
+      draw.text((0, 6*ch), '192.168.128.200 amplipi.local', font=font, fill=0)
+    else:
+      # draw.text((0, 0*ch), '01234567890123456789', font=font, fill=0)
+      # draw.text((0, 0*ch), 'hello world', font=font, fill=0)
+      # draw.text((0, 1*ch), 'password_chars_>20', font=font, fill=0)
+      # draw.text((0, 2*ch), 'Password\u2197', font=font, fill=0)
+      # draw.text((width-8*cw, 2*ch), '\u2199IP/host', font=font, fill=0)
+      # draw.text((0, 3*ch), '192.168.128.200', font=font, fill=0)
+      # draw.text((0, 4*ch), 'amplipi.local', font=font, fill=0)
+
+      draw.text((0, 0*ch), f'Host: {host_name}')
+      draw.text((0, 1*ch), f'Pass: {password}')
+      draw.text((0, 2*ch), f'IP:   {ip_str}')
+
+    image = image.rotate(180) # flip
+    print('displaying image')
+    epd.display(epd.getbuffer(image))
+
+    epd.sleep()
+  except IOError as e:
+    print(f'Error: {e}')
+  except KeyboardInterrupt:
+    print('CTRL+C')
+    epd2in13_V3.epdconfig.module_exit()
+
+def get_info(args, default_pass):
+  password = default_pass.update()
+  try:
+    host_name = socket.gethostname() + '.local'
+  except:
+    # TODO: uhh can this even happen
+    host_name = 'None'
+  try:
+    ip_str = ni.ifaddresses(args.iface)[ni.AF_INET][0]['addr'] + ', ' + host_name
+  except:
+    ip_str = 'Disconnected'
+
+  return host_name, password, ip_str
+
+def run(args=None):
+  print('eink run')
+  default_pass = DefaultPass()
+  host_name, password, ip_str = get_info(args, default_pass)
+
+  update_display(host_name, password, ip_str)
+  time.sleep(8)
+
+  while True:
+    print('eink loop')
+    # poll stale by checking if info differs
+    new_host_name, new_password, new_ip_str = get_info(args, default_pass)
+
+    if new_host_name != host_name or new_password != password or new_ip_str != ip_str:
+      host_name = new_host_name
+      password = new_password
+      ip_str = new_ip_str
+      update_display(host_name, password, ip_str)
+
+    # wait before polling again
+    time.sleep(8)
+
