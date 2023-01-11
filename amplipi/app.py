@@ -239,6 +239,12 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
     raise HTTPException(404, resp.msg)
   return resp
 
+# connections
+@api.get('/api/connections', tags=['connections'])
+def set_connection(update: models.MuxUpdate, ctrl: Api = Depends(get_ctrl)) -> models.Status:
+  """ Update a source's configuration (source=**sid**) """
+  return code_response(ctrl, ctrl.set_connections(update))
+
 # sources
 @api.get('/api/sources', tags=['source'])
 def get_sources(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Source]]:
