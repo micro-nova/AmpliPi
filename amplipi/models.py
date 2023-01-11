@@ -106,7 +106,7 @@ class Base(BaseModel):
   id: Optional[int] = fields.ID
   name: str = fields.Name
 
-class Mux(Base):
+class Mux(BaseModel):
   """ Changes to the software multiplexor mapping virtual sources to hardware """
   connections: List[Optional[int]] = [None, None, None, None]
 

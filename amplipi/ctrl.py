@@ -95,7 +95,8 @@ class Connection:
   def connect(self, source_id: Optional[int]):
     """ Connect an output to a given audio source """
     if source_id is not None:
-      args = f'alsaloop -C {utils.output_device(source_id)} -P ch{self.id} -t 100000'.split() # TODO: use utils to abstract the real devices away
+      dev = utils.output_device(source_id).replace('DEV=0', 'DEV=1')
+      args = f'alsaloop -C {dev} -P ch{self.id} -t 100000'.split() # TODO: use utils to abstract the real devices away
       try:
         print(f'  starting connection via: {" ".join(args)}')
         self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
