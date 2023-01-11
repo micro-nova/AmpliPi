@@ -95,7 +95,7 @@ class Connection:
   def connect(self, source_id: Optional[int]):
     """ Connect an output to a given audio source """
     if source_id is not None:
-      dev = utils.output_device(source_id).replace('DEV=0', 'DEV=1')
+      dev = f'hw:Loopback_{source_id},1'.replace('_0', '') # 0th loopback is just Loopback
       args = f'alsaloop -C {dev} -P ch{self.id} -t 100000'.split() # TODO: use utils to abstract the real devices away
       try:
         print(f'  starting connection via: {" ".join(args)}')
@@ -574,7 +574,7 @@ class Api:
       # NOTE: source <-> zone routing will be updated when zones are unmuted below
       # update analog/digital switches
       ad_src_config = self._get_source_config(connections=update.connections)
-      if ad_src_config != self._get_source_config(connections=current.connections):
+      if force_update or ad_src_config != self._get_source_config(connections=current.connections):
         print(f'  A/D config changed from {self._get_source_config(connections=current.connections)} to {ad_src_config}')
         if not self._rt.update_sources(ad_src_config):
           raise Exception('unable to reconfigure digital/analog mux')
