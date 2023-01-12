@@ -214,7 +214,7 @@ class SourceUpdate(BaseUpdate):
 
 class SourceUpdateWithId(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
-  id : int = Field(ge=0,le=4)
+  id : int = Field(ge=0,le=MAX_SOURCES-1)
 
   def as_update(self) -> SourceUpdate:
     """ Convert to SourceUpdate """
