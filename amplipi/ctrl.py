@@ -711,7 +711,7 @@ class Api:
         # update the zone's associated source
         sid = utils.parse_int(source_id, range(models.MAX_SOURCES))
         zones = self.status.zones
-        if update_source_id or force_update:
+        if force_update or (update_mutes and not mute) or update_source_id: # when unmuting make sure to resolve the connected source, this is a hack to simplify set_connection logic
           zone_sources = [self._resolve_src(zone.source_id) for zone in zones]
           zone_sources[idx] = self._resolve_src(sid)
           # handle source ids that get resolved to None or NO_INPUT by setting them to src=0 and muting them
@@ -720,6 +720,8 @@ class Api:
           for z, s in enumerate(zone_sources):
             if s is None:
               zone_sources[z] = 0
+          # this is setting the state for all zones
+          # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
           if self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
