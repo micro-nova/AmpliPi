@@ -95,15 +95,18 @@ class Connection:
   def connect(self, source_id: Optional[int]):
     """ Connect an output to a given audio source """
     if source_id is not None:
-      # TODO: add support for using the other side of the loopback since we only have 6 loopbacks
-      dev = f'hw:Loopback_{source_id},1'.replace('_0', '') # 0th loopback is just Loopback
-      args = f'alsaloop -C {dev} -P ch{self.id} -t 100000'.split() # TODO: use utils to abstract the real devices away
-      try:
-        print(f'  starting connection via: {" ".join(args)}')
-        self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
-      except Exception as exc:
-        print(f'Failed to start alsaloop connection: {exc}')
-      time.sleep(0.1) # Delay a bit
+      virt_dev = utils.virtual_connection_device(source_id)
+      phy_dev = utils.real_output_device(self.id)
+      if virt_dev is None:
+        print('  pretending to connect to loopback (unavailable)')
+      else:
+        args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split() # TODO: use utils to abstract the real devices away
+        try:
+          print(f'  starting connection via: {" ".join(args)}')
+          self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
+        except Exception as exc:
+          print(f'Failed to start alsaloop connection: {exc}')
+          time.sleep(0.1) # Delay a bit
     self.src = source_id
 
   def disconnect(self):

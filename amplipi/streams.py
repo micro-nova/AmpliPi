@@ -229,7 +229,7 @@ class AirPlay(BaseStream):
         'pipe_timeout': 5000,
       },
       'alsa': {
-        'output_device': utils.output_device(src), # alsa output device
+        'output_device': utils.virtual_output_device(src), # alsa output device
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
@@ -335,7 +335,7 @@ class Spotify(BaseStream):
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
       data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
-      data = data.replace("alsa_audio_device", utils.output_device(src))
+      data = data.replace("alsa_audio_device", utils.virtual_output_device(src))
       data = data.replace('1234', f'{self.connect_port}')
     with open(toml_useful, 'w') as TOML:
       TOML.write(data)
@@ -474,7 +474,7 @@ class Pandora(BaseStream):
       'fifo': pb_control_fifo,
       'event_command': pb_eventcmd_file
     })
-    write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': utils.output_device(src)})
+    write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': utils.virtual_output_device(src)})
     # create fifos if needed
     if not os.path.exists(pb_control_fifo):
       os.system(f'mkfifo {pb_control_fifo}')
@@ -597,7 +597,7 @@ class DLNA(BaseStream):
 
     meta_args = [f'{utils.get_folder("streams")}/dlna_metadata.bash', f'{src_config_folder}']
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
-                '--gstout-audiodevice', utils.output_device(src), '--gstout-initial-volume-db',
+                '--gstout-audiodevice', utils.virtual_output_device(src), '--gstout-initial-volume-db',
                 '0.0', '-p', f'{portnum}', '-u', f'{self.uuid}',
                 '-f', f'{self.name}', '--logfile',
                 f'{src_config_folder}/metafifo']
@@ -677,11 +677,11 @@ class InternetRadio(BaseStream):
     # Start audio via runvlc.py
     song_info_path = f'{src_config_folder}/currentSong'
     log_file_path = f'{src_config_folder}/log'
-    inetradio_args = [sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
+    inetradio_args = [sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.virtual_output_device(src), '--song-info', song_info_path, '--log', log_file_path]
     print(f'running: {inetradio_args}')
     self.proc = subprocess.Popen(args=inetradio_args, preexec_fn=os.setpgrp)
 
-    print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.output_device(src)}')
+    print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.virtual_output_device(src)}')
     self.state = 'playing'
     self.src = src
 
@@ -804,7 +804,7 @@ class Plexamp(BaseStream):
     # mpd.conf creation
     with open(mpd_conf_file, 'r') as MPD:
       data = MPD.read()
-      data = data.replace('ch', utils.output_device(src))
+      data = data.replace('ch', utils.virtual_output_device(src))
       data = data.replace('GENERIC_LOGFILE_LOCATION', f'{plexamp_config_folder}/mpd.log')
     with open(mpd_conf_file, 'w') as MPD:
       MPD.write(data)
@@ -862,7 +862,7 @@ class FilePlayer(BaseStream):
       return
 
     # Start audio via runvlc.py
-    vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.output_device(src)} {self.url} vlc://quit'
+    vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.virtual_output_device(src)} {self.url} vlc://quit'
     print(f'running: {vlc_args}')
     self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
@@ -929,7 +929,7 @@ class FMRadio(BaseStream):
     song_info_path = f'{src_config_folder}/currentSong'
     log_file_path = f'{src_config_folder}/log'
 
-    fmradio_args = [sys.executable, f"{utils.get_folder('streams')}/fmradio.py", self.freq, utils.output_device(src), '--song-info', song_info_path, '--log', log_file_path]
+    fmradio_args = [sys.executable, f"{utils.get_folder('streams')}/fmradio.py", self.freq, utils.virtual_output_device(src), '--song-info', song_info_path, '--log', log_file_path]
     print(f'running: {fmradio_args}')
     self.proc = subprocess.Popen(args=fmradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
     self._connect(src)
@@ -1027,7 +1027,7 @@ class LMS(BaseStream):
       lms_args = [f'{utils.get_folder("streams")}/squeezelite',
                   '-n', self.name,
                   '-m', fake_mac,
-                  '-o', utils.output_device(src),
+                  '-o', utils.virtual_output_device(src),
                   '-f', f'{src_config_folder}/lms_log.txt',
                   '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
                 ]
