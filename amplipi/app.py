@@ -131,7 +131,7 @@ class params(SimpleNamespace):
   """ Describe standard path ID's for each api type """
   # pylint: disable=too-few-public-methods
   # pylint: disable=invalid-name
-  SourceID = Path(..., ge=0, le=3, description="Source ID")
+  SourceID = Path(..., ge=0, le=models.MAX_SOURCES-1, description="Source ID")
   ZoneID = Path(..., ge=0, le=35, description="Zone ID")
   GroupID = Path(..., ge=0, description="Stream ID")
   StreamID = Path(..., ge=0, description="Stream ID")
