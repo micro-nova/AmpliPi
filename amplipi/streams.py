@@ -73,6 +73,44 @@ def uuid_gen():
   # Generic UUID in case of failure
   return '39ae35cc-b4c1-444d-b13a-294898d771fa'
 
+
+class Connection:
+  """ A connection from a virutual source @src to a real DAC identified by @cid """
+  def __init__(self, cid: int):
+    self.id = cid # the index (0-3) of the connection
+    self.src: Optional[int] = None # source to connect to
+    self._proc: Optional[subprocess.Popen] = None # running process of the connection
+
+  def __del__(self):
+    self.disconnect()
+
+  def connect(self, source_id: Optional[int]):
+    """ Connect an output to a given audio source """
+    if source_id is not None:
+      virt_dev = utils.virtual_connection_device(source_id)
+      phy_dev = utils.real_output_device(self.id)
+      if virt_dev is None:
+        print('  pretending to connect to loopback (unavailable)')
+      else:
+        args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split() # TODO: use utils to abstract the real devices away
+        try:
+          print(f'  starting connection via: {" ".join(args)}')
+          self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
+        except Exception as exc:
+          print(f'Failed to start alsaloop connection: {exc}')
+          time.sleep(0.1) # Delay a bit
+    self.src = source_id
+
+  def disconnect(self):
+    """ Disconnect from a DAC """
+    if self._proc:
+      print(f'  stopping connection {self.id}')
+      try:
+        self._proc.kill()
+      except Exception:
+        pass
+
+
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
   def __init__(self, stype: str, name: str, only_src=None, disabled: bool=False, mock=False):

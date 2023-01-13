@@ -911,7 +911,7 @@ class Api:
     stat_dir = root + '.config/pianobar/stationList'
 
     try:
-      with open(stat_dir, 'r') as file:
+      with open(stat_dir, 'r', encoding='utf-8') as file:
         stations = {}
         for line in file.readlines():
           line = line.strip()
