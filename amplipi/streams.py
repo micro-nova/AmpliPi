@@ -26,7 +26,7 @@ from re import sub
 import sys
 import subprocess
 import time
-from typing import Union, Optional
+from typing import Union, Optional, List
 import threading
 
 # Used by InternetRadio and Spotify
@@ -73,44 +73,6 @@ def uuid_gen():
   # Generic UUID in case of failure
   return '39ae35cc-b4c1-444d-b13a-294898d771fa'
 
-
-class Connection:
-  """ A connection from a virutual source @src to a real DAC identified by @cid """
-  def __init__(self, cid: int):
-    self.id = cid # the index (0-3) of the connection
-    self.src: Optional[int] = None # source to connect to
-    self._proc: Optional[subprocess.Popen] = None # running process of the connection
-
-  def __del__(self):
-    self.disconnect()
-
-  def connect(self, source_id: Optional[int]):
-    """ Connect an output to a given audio source """
-    if source_id is not None:
-      virt_dev = utils.virtual_connection_device(source_id)
-      phy_dev = utils.real_output_device(self.id)
-      if virt_dev is None:
-        print('  pretending to connect to loopback (unavailable)')
-      else:
-        args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split() # TODO: use utils to abstract the real devices away
-        try:
-          print(f'  starting connection via: {" ".join(args)}')
-          self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
-        except Exception as exc:
-          print(f'Failed to start alsaloop connection: {exc}')
-          time.sleep(0.1) # Delay a bit
-    self.src = source_id
-
-  def disconnect(self):
-    """ Disconnect from a DAC """
-    if self._proc:
-      print(f'  stopping connection {self.id}')
-      try:
-        self._proc.kill()
-      except Exception:
-        pass
-
-
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
   def __init__(self, stype: str, name: str, only_src=None, disabled: bool=False, mock=False):
@@ -118,10 +80,13 @@ class BaseStream:
     self.disabled = disabled
     self.proc = None
     self.mock = mock
-    self.src = None
-    self.only_src = only_src
+    self.src: Optional[int] = None
+    self.only_src: Optional[int] = only_src
     self.state = 'disconnected'
     self.stype = stype
+
+  def __del__(self):
+    self.disconnect()
 
   def __str__(self):
     connection = f' connected to src={self.src}' if self.src else ''
@@ -185,6 +150,82 @@ class BaseStream:
     and a command is sent, this error will be raised.
     """
     raise NotImplementedError(f'{self.name} does not support commands')
+
+class VirtualSources:
+  def __init__(self, num_sources: int):
+    self._sources : List[Optional[int]] = [None] * num_sources
+
+  def available(self) -> bool:
+    """ Are any sources available """
+    return None in self._sources
+
+  def alloc(self) -> int:
+    """ Allocate an available virtual source if any"""
+    if self.available():
+      for i, s in enumerate(self._sources):
+        if s is None:
+          self._sources[i] = i
+          return i
+    raise Exception('no sources available')
+
+  def free(self, vsrc: int):
+    """ make a virtual source available """
+    if self._sources[vsrc] is None:
+      raise Exception(f'unable to free virtual source {vsrc} it was not allocated')
+    self._sources[vsrc] = None
+
+vsources = VirtualSources(12)
+
+class PersistentStream(BaseStream):
+  """ Base class for streams that are able to persist without a direct connection to an output """
+  def __init__(self, stype: str, name: str, disabled: bool=False, mock=False):
+    super().__init__(stype, name, None, disabled, mock)
+    self.vsrc: Optional[int] = None
+    self._cproc: Optional[subprocess.Popen] = None
+    self.persist = False
+
+  def __del__(self):
+    self.deactivate()
+    self.disconnect()
+
+  def activate(self, persist=True):
+    """ Start the stream behind the scenes without connecting to a physical source.
+        This is expected to allocate a virtual source
+    """
+    raise NotImplementedError(f'{self.stype} does not support activation')
+
+  def deactivate(self):
+    """ Stop the stream behind the scenes """
+    raise NotImplementedError(f'{self.stype} does not support deaactivation')
+
+  def connect(self, source_id: int):
+    """ Connect an output to a given audio source """
+    if self.vsrc is None:
+      self.activate(persist=False)
+      if self.vsrc is None:
+        raise Exception('No virtual source found/available')
+    virt_dev = utils.virtual_connection_device(self.vsrc)
+    phy_dev = utils.real_output_device(source_id)
+    if virt_dev is None:
+      print('  pretending to connect to loopback (unavailable)')
+    else:
+      args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split() # TODO: use utils to abstract the real devices away
+      try:
+        print(f'  starting connection via: {" ".join(args)}')
+        self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
+      except Exception as exc:
+        print(f'Failed to start alsaloop connection: {exc}')
+        time.sleep(0.1) # Delay a bit
+    self.src = source_id
+
+  def disconnect(self):
+    """ Disconnect from a DAC """
+    if self._cproc:
+      print(f'  stopping connection {self.vsrc} -> {self.src}')
+      try:
+        self._cproc.kill()
+      except Exception:
+        pass
 
 class RCA(BaseStream):
   """ A built-in RCA input """
