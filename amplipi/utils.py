@@ -133,7 +133,7 @@ def available_outputs():
     print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
   return outputs
 
-def virtual_output_device(vsid: int) -> Optional[str]:
+def virtual_output_device(vsid: int) -> str:
   """ Get a virtual source's corresponding ALSA output device string """
   # NOTE: we use the other side (DEV=1) for devices 6-11 since we only have 6 loopbacks
   lb_id = vsid % 6
