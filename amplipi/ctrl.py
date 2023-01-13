@@ -542,7 +542,7 @@ class Api:
               else:
                 src.input = ''
               # connect the stream back to its old source
-              if stolen_from:
+              if stolen_from and stolen_from.id is not None:
                 print(f"Trying to revert src {stolen_from.id}'s input to {stream.name}")
                 stream.connect(stolen_from.id)
                 stolen_from.input = input_
@@ -891,7 +891,16 @@ class Api:
       return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
 
     try:
-      stream.send_cmd(cmd)
+      if cmd in ['activate', 'deactivate']:
+        # TODO: this PersistentStream instance check is too verbose and error prone, find a better way
+        if isinstance(stream, (amplipi.streams.Pandora, amplipi.streams.Spotify, amplipi.streams.AirPlay, amplipi.streams.LMS)):
+          pstream : amplipi.streams.PersistentStream = stream
+          if cmd == 'activate':
+            pstream.activate()
+          else:
+            pstream.deactivate()
+      else:
+        stream.send_cmd(cmd)
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
 
