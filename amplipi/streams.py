@@ -118,6 +118,9 @@ class BaseStream:
     self.state = 'connected'
     self.src = src
 
+  def is_connected(self) -> bool:
+    return self.src is not None
+
   def connect(self, src: int):
     """ Connect the stream to an output source """
     self._connect(src)
@@ -189,33 +192,69 @@ class PersistentStream(BaseStream):
 
   def activate(self, persist=True):
     """ Start the stream behind the scenes without connecting to a physical source.
-        This is expected to allocate a virtual source
+    Stream will @persist after disconnected if enabled
     """
+    try:
+      vsrc = vsources.alloc()
+      if not self.mock:
+        self._activate(vsrc)
+      self.vsrc = vsrc
+      self.persist = persist
+    except Exception as e:
+      if vsrc is not None:
+        vsources.free(vsrc)
+      raise e
+
+  def _activate(self, vsrc: int):
     raise NotImplementedError(f'{self.stype} does not support activation')
+
+  def is_activated(self) -> bool:
+    """ Is this stream activated? """
+    return self.vsrc is not None
 
   def deactivate(self):
     """ Stop the stream behind the scenes """
+    try:
+      self._deactivate()
+    finally:
+      if self.vsrc:
+        vsources.free(self.vsrc)
+
+  def _deactivate(self):
     raise NotImplementedError(f'{self.stype} does not support deaactivation')
 
-  def connect(self, source_id: int):
+  def reactivate(self):
+    """ Stop and restart the stream behind the scenes.
+    This should be called after significant paranmeter changes.
+    """
+    if self.is_activated():
+      self.deactivate()
+      time.sleep(0.1) # wait a bit just in case
+    self.activate(self.persist)
+
+  def connect(self, src: int):
     """ Connect an output to a given audio source """
+    if self.is_connected():
+      raise Exception(f"Stream already connected to a source {self.src}, disconnect before trying to connect")
     if self.vsrc is None:
+      # activate on the fly
+      # avoid persisting after disconnect to save memory and virtual sources
       self.activate(persist=False)
       if self.vsrc is None:
         raise Exception('No virtual source found/available')
     virt_dev = utils.virtual_connection_device(self.vsrc)
-    phy_dev = utils.real_output_device(source_id)
-    if virt_dev is None:
+    phy_dev = utils.real_output_device(src)
+    if virt_dev is None or self.mock:
       print('  pretending to connect to loopback (unavailable)')
     else:
-      args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split() # TODO: use utils to abstract the real devices away
+      args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split()
       try:
         print(f'  starting connection via: {" ".join(args)}')
-        self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
+        self._cproc = subprocess.Popen(args=args)
       except Exception as exc:
         print(f'Failed to start alsaloop connection: {exc}')
         time.sleep(0.1) # Delay a bit
-    self.src = source_id
+    self._connect(src)
 
   def disconnect(self):
     """ Disconnect from a DAC """
@@ -261,11 +300,11 @@ class RCA(BaseStream):
   def disconnect(self):
     self._disconnect()
 
-class AirPlay(BaseStream):
+class AirPlay(PersistentStream):
   """ An AirPlay Stream """
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__('airplay', name, disabled=disabled, mock=mock)
-    self.proc2 = None
+    self.proc2: Optional[subprocess.Popen] = None
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
 
@@ -274,28 +313,19 @@ class AirPlay(BaseStream):
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
-    if reconnect_needed:
-      if self._is_running():
-        last_src = self.src
-        self.disconnect()
-        time.sleep(0.1) # delay a bit, is this needed?
-        self.connect(last_src)
+    if reconnect_needed and self.is_activated():
+      self.reactivate()
 
-  def __del__(self):
-    self.disconnect()
-
-  def connect(self, src):
+  def _activate(self, vsrc: int):
     """ Connect an AirPlay device to a given audio source
     This creates an AirPlay streaming option based on the configuration
     """
-    if self.mock:
-      self._connect(src)
-      return
     config = {
       'general': {
         'name': self.name,
-        'port': 5100 + 100 * src, # Listen for service requests on this port
-        'udp_port_base': 6101 + 100 * src, # start allocating UDP ports from this port number when needed
+        # TODO: these ports need to be thought about to avoid collisions
+        'port': 5100 + 100 * vsrc, # Listen for service requests on this port
+        'udp_port_base': 6101 + 100 * vsrc, # start allocating UDP ports from this port number when needed
         'drift': 2000, # allow this number of frames of drift away from exact synchronisation before attempting to correct it
         'resync_threshold': 0, # a synchronisation error greater than this will cause resynchronisation; 0 disables it
         'log_verbosity': 0, # "0" means no debug verbosity, "3" is most verbose.
@@ -303,17 +333,17 @@ class AirPlay(BaseStream):
       'metadata':{
         'enabled': 'yes',
         'include_cover_art': 'yes',
-        'pipe_name': f'{utils.get_folder("config")}/srcs/{src}/shairport-sync-metadata',
+        'pipe_name': f'{utils.get_folder("config")}/srcs/{vsrc}/shairport-sync-metadata',
         'pipe_timeout': 5000,
       },
       'alsa': {
-        'output_device': utils.virtual_output_device(src), # alsa output device
+        'output_device': utils.virtual_output_device(vsrc), # alsa output device
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{vsrc}'
     os.system(f'rm -f {src_config_folder}/currentSong')
-    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
+    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{vsrc}"
     # make all of the necessary dir(s)
     os.system(f'rm -r -f {web_dir}')
     os.system(f'mkdir -p {web_dir}')
@@ -327,13 +357,11 @@ class AirPlay(BaseStream):
     # TODO: figure out how to get status from shairport
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    self._connect(src)
 
-  def disconnect(self):
+  def _deactivate(self):
     if self._is_running():
       os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
       self.proc.kill()
-    self._disconnect()
     self.proc2 = None
     self.proc = None
 
@@ -362,7 +390,7 @@ class AirPlay(BaseStream):
       print(f'Failed to get currentSong - it may not exist: {exc}')
     return source
 
-class Spotify(BaseStream):
+class Spotify(PersistentStream):
   """ A Spotify Stream """
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__('spotify', name, disabled=disabled, mock=mock)
@@ -377,26 +405,19 @@ class Spotify(BaseStream):
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
-    if reconnect_needed:
-      if self._is_running():
-        last_src = self.src
-        self.disconnect()
-        time.sleep(0.1) # delay a bit, is this needed?
-        self.connect(last_src)
+    if reconnect_needed and self.is_activated():
+      self.reactivate()
 
   def __del__(self):
     self.disconnect()
 
-  def connect(self, src):
+  def _activate(self, vsrc: int):
     """ Connect a Spotify output to a given audio source
     This will create a Spotify Connect device based on the given name
     """
-    if self.mock:
-      self._connect(src)
-      return
 
     # Make the (per-source) config directory
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{vsrc}'
     os.system(f'mkdir -p {src_config_folder}')
 
     toml_template = f'{utils.get_folder("streams")}/spot_config.toml'
@@ -409,13 +430,13 @@ class Spotify(BaseStream):
     os.system(f'cp {toml_template} {toml_useful}')
 
     # Input the proper values
-    self.connect_port = 4070 + 10*src
-    with open(toml_useful, 'r') as TOML:
+    self.connect_port = 4070 + 10 * vsrc
+    with open(toml_useful, 'r', encoding='utf-8') as TOML:
       data = TOML.read()
       data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
-      data = data.replace("alsa_audio_device", utils.virtual_output_device(src))
+      data = data.replace("alsa_audio_device", utils.virtual_output_device(vsrc))
       data = data.replace('1234', f'{self.connect_port}')
-    with open(toml_useful, 'w') as TOML:
+    with open(toml_useful, 'w', encoding='utf-8') as TOML:
       TOML.write(data)
 
     # PROCESS
@@ -425,18 +446,16 @@ class Spotify(BaseStream):
       self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', vsrc)
 
-      self._connect(src)
     except Exception as exc:
       print(f'error starting spotify: {exc}')
 
-  def disconnect(self):
+  def _deactivate(self):
     try:
       self.proc.kill()
     except Exception:
       pass
-    self._disconnect()
     self.connect_port = None
     self.mpris = None
     self.proc = None
@@ -482,7 +501,7 @@ class Spotify(BaseStream):
     except Exception as e:
       raise Exception(f"Error sending command {cmd}: {e}") from e
 
-class Pandora(BaseStream):
+class Pandora(PersistentStream):
   """ A Pandora Stream """
   def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
     super().__init__('pandora', name, disabled=disabled, mock=mock)
@@ -511,26 +530,15 @@ class Pandora(BaseStream):
         self.__dict__[k] = v
         if k in pb_fields:
           reconnect_needed = True
-    if reconnect_needed and self._is_running():
-      last_src = self.src
-      self.disconnect()
-      time.sleep(0.1) # delay a bit, is this needed?
-      self.connect(last_src)
+    if reconnect_needed and self.is_activated():
+      self.reactivate()
 
-  def __del__(self):
-    self.disconnect()
-
-  def connect(self, src):
+  def _activate(self, vsrc: int):
     """ Connect pandora output to a given audio source
     This will start up pianobar with a configuration specific to @src
     """
-    if self.mock:
-      self._connect(src)
-      return
-    # TODO: future work, make pandora and shairport use audio fifos that makes it simple to switch their sinks
-
     # make a special home/config to launch pianobar in (this allows us to have multiple pianobars)
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{vsrc}'
     eventcmd_template = f'{utils.get_folder("streams")}/eventcmd.sh'
     pb_home = src_config_folder
     pb_config_folder = f'{pb_home}/.config/pianobar'
@@ -552,7 +560,7 @@ class Pandora(BaseStream):
       'fifo': pb_control_fifo,
       'event_command': pb_eventcmd_file
     })
-    write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': utils.virtual_output_device(src)})
+    write_config_file(pb_src_config_file, {'default_driver': 'alsa', 'dev': utils.virtual_output_device(vsrc)})
     # create fifos if needed
     if not os.path.exists(pb_control_fifo):
       os.system(f'mkfifo {pb_control_fifo}')
@@ -561,18 +569,16 @@ class Pandora(BaseStream):
     # start pandora process in special home
     print(f'Pianobar config at {pb_config_folder}')
     try:
-      self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w'), stderr=open(pb_error_file, 'w'), env={'HOME' : pb_home})
+      self.proc = subprocess.Popen(args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w', encoding='utf-8'), stderr=open(pb_error_file, 'w', encoding='utf-8'), env={'HOME' : pb_home})
       time.sleep(0.1) # Delay a bit before creating a control pipe to pianobar
       self.ctrl = pb_control_fifo
-      self._connect(src)
-      self.state = 'playing'
+      self.state = 'playing' # TODO: we need to pause pandora if it isn't playing anywhere
     except Exception as exc:
       print(f'error starting pianobar: {exc}')
 
-  def disconnect(self):
+  def _deactivate(self):
     if self._is_running():
       self.proc.kill()
-    self._disconnect()
     self.proc = None
     self.ctrl = ''
 
@@ -978,7 +984,7 @@ class FMRadio(BaseStream):
       #print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
 
-class LMS(BaseStream):
+class LMS(PersistentStream):
   """ An LMS Stream using squeezelite"""
   def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
     super().__init__('lms', name, disabled=disabled, mock=mock)
@@ -999,19 +1005,13 @@ class LMS(BaseStream):
         time.sleep(0.1) # delay a bit, is this needed?
         self.connect(last_src)
 
-  def __del__(self):
-    self.disconnect()
-
-  def connect(self, src):
+  def _activate(self, vsrc: int):
     """ Connect a sqeezelite output to a given audio source
     This will create a LMS client based on the given name
     """
-    if self.mock:
-      self._connect(src)
-      return
     try:
       # Make the (per-source) config directory
-      src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+      src_config_folder = f'{utils.get_folder("config")}/srcs/{vsrc}'
       os.system(f'mkdir -p {src_config_folder}')
 
       # TODO: Add metadata support? This may have to watch the output log?
@@ -1026,7 +1026,7 @@ class LMS(BaseStream):
       lms_args = [f'{utils.get_folder("streams")}/squeezelite',
                   '-n', self.name,
                   '-m', fake_mac,
-                  '-o', utils.virtual_output_device(src),
+                  '-o', utils.virtual_output_device(vsrc),
                   '-f', f'{src_config_folder}/lms_log.txt',
                   '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
                 ]
@@ -1041,14 +1041,12 @@ class LMS(BaseStream):
         lms_args += [ '-s', server]
 
       self.proc = subprocess.Popen(args=lms_args)
-      self._connect(src)
     except Exception as exc:
       print(f'error starting lms: {exc}')
 
-  def disconnect(self):
+  def _deactivate(self):
     if self._is_running():
       self.proc.kill()
-    self._disconnect()
     self.proc = None
 
   def info(self) -> models.SourceInfo:
