@@ -29,7 +29,6 @@ import os # files
 import time
 
 import threading
-import subprocess
 import wrapt
 
 from amplipi import models
@@ -82,42 +81,6 @@ class ApiResponse:
   OK = ApiCode.OK
   ERROR = ApiCode.ERROR
 
-class Connection:
-  """ A connection from a virutual source @src to a real DAC identified by @cid """
-  def __init__(self, cid: int):
-    self.id = cid # the index (0-3) of the connection
-    self.src: Optional[int] = None # source to connect to
-    self._proc: Optional[subprocess.Popen] = None # running process of the connection
-
-  def __del__(self):
-    self.disconnect()
-
-  def connect(self, source_id: Optional[int]):
-    """ Connect an output to a given audio source """
-    if source_id is not None:
-      virt_dev = utils.virtual_connection_device(source_id)
-      phy_dev = utils.real_output_device(self.id)
-      if virt_dev is None:
-        print('  pretending to connect to loopback (unavailable)')
-      else:
-        args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split() # TODO: use utils to abstract the real devices away
-        try:
-          print(f'  starting connection via: {" ".join(args)}')
-          self._proc = subprocess.Popen(args=args) # pylint: disable=consider-using-with
-        except Exception as exc:
-          print(f'Failed to start alsaloop connection: {exc}')
-          time.sleep(0.1) # Delay a bit
-    self.src = source_id
-
-  def disconnect(self):
-    """ Disconnect from a DAC """
-    if self._proc:
-      print(f'  stopping connection {self.id}')
-      try:
-        self._proc.kill()
-      except Exception:
-        pass
-
 class Api:
   """ Amplipi Controller API"""
   # pylint: disable=too-many-instance-attributes
@@ -135,7 +98,6 @@ class Api:
   config_file_valid: bool
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
-  connections = [Connection(c) for c in range(4)]
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "connections": [0, 1, 2, 3],
@@ -202,11 +164,6 @@ class Api:
     self._save_timer = None
     self._delay_saves = settings.delay_saves
     self._settings = settings
-
-    # disconnect all of the connections just in case audio is playing through any of them
-    # this allows us to configure the sources and zones without any reprocussions
-    for con in self.connections:
-      con.disconnect()
 
     # Create firmware interface. If one already exists delete then re-init.
     if self._initialized:
@@ -347,10 +304,6 @@ class Api:
       self.set_zone(zone.id, zone_update, force_update=True, internal=True)
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
-
-    # configure all connections so that they are in a known good state
-    mux = models.MuxUpdate(connections=self.status.connections)
-    self.set_connections(mux, force_update=True, internal=True)
 
   def __del__(self):
     # stop save in the future so we can save right away
@@ -530,13 +483,6 @@ class Api:
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
-  def _resolve_src(self, virtual_src_id: int, connections: Optional[List[Optional[int]]]=None) -> Optional[int]:
-    if not connections:
-      connections = self.status.connections
-    if virtual_src_id in connections:
-      return connections.index(virtual_src_id)
-    return None
-
   def _get_source_config(self, sources: Optional[List[models.Source]]=None, connections: Optional[List[Optional[int]]]=None) -> List[bool]:
     if not sources:
       sources = self.status.sources
@@ -547,65 +493,6 @@ class Api:
       if connected_src is not None:
         src_cfg[c] = self._is_digital(sources[connected_src].input)
     return src_cfg
-
-  def set_connections(self, update: models.MuxUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
-    """ Configure the virtual source to DAC connections and update the underlying zones connections to match"""
-    # TODO: something is weird still, when the connections are switched - need to investigate
-    try:
-      current = models.Mux(connections=self.status.connections)
-      all_connections = list(filter(None, update.connections)) # no collisions on None
-      unique_connections = set(all_connections)
-      if len(all_connections) != len(unique_connections):
-        raise Exception('multiple connections to the same output found')
-      if force_update:
-        mods = list(range(4))
-      else:
-        mods = [c for c in range(4) if not(self.status.connections[c] == update.connections[c])]
-      print(f'updating connections with {update.connections}')
-      print(f'  connections modified: {" ".join([f"{update.connections[c]} -> {c}" for c in mods])}')
-      # some zones could be changed with these modifications, we should mute them during the transition
-      # other zones may be discunnected by these modifications (they are connected to a virtual source that doesn't have a real connection)
-      old_srcs = {current.connections[c] for c in mods}
-      new_srcs = {update.connections[c] for c in mods}
-      srcs_in_trans = new_srcs
-      srcs_disconnected = old_srcs - new_srcs
-      zones_temp_muted = [z.id for z in self.status.zones if z.source_id in srcs_in_trans and not z.mute and z.id is not None]
-      zones_muted = [z.id for z in self.status.zones if z.source_id in srcs_disconnected and not z.mute and z.id is not None]
-      print(f'  muting zones temporarily {zones_temp_muted}')
-      print(f'  muting zones permanently {zones_muted}')
-      if len(zones_temp_muted) or len(zones_muted):
-        self.set_zones(models.MultiZoneUpdate(zones=zones_temp_muted+zones_muted, update=models.ZoneUpdate(mute=True)))
-      # disconnect any of the connections being changed, we will connect any real connections soon
-      # this sequence avoids any intermediate multi-connections and disconnects
-      # any connections that got updated to None
-      for c in mods:
-        self.connections[c].disconnect()
-      # NOTE: source <-> zone routing will be updated when zones are unmuted below
-      # update analog/digital switches
-      ad_src_config = self._get_source_config(connections=update.connections)
-      if force_update or ad_src_config != self._get_source_config(connections=current.connections):
-        print(f'  A/D config changed from {self._get_source_config(connections=current.connections)} to {ad_src_config}')
-        if not self._rt.update_sources(ad_src_config):
-          raise Exception('unable to reconfigure digital/analog mux')
-      else:
-        print('  no changes to A/D config')
-      # connect any real connections
-      for c in mods:
-        sid = update.connections[c]
-        if sid is not None:
-          self.connections[c].connect(sid)
-      # update the connection status (in-place)
-      self.status.connections[:] = update.connections
-      # unmute temporarily muted sources
-      #  this needs to happen after status.connections is updated since the new connections will use the new muxing
-      if len(zones_temp_muted):
-        print(f'  unmuting temporarily muted zones {zones_temp_muted}')
-        self.set_zones(models.MultiZoneUpdate(zones=zones_temp_muted, update=models.ZoneUpdate(mute=False)))
-    except Exception as exc:
-      if internal:
-        raise exc
-      return ApiResponse.error(f'failed to set connections: {exc}')
-    return ApiResponse.ok()
 
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
@@ -715,15 +602,9 @@ class Api:
         # update the zone's associated source
         sid = utils.parse_int(source_id, range(models.MAX_SOURCES))
         zones = self.status.zones
-        if force_update or (update_mutes and not mute) or update_source_id: # when unmuting make sure to resolve the connected source, this is a hack to simplify set_connection logic
-          zone_sources = [self._resolve_src(zone.source_id) for zone in zones]
-          zone_sources[idx] = self._resolve_src(sid)
-          # handle source ids that get resolved to None or NO_INPUT by setting them to src=0 and muting them
-          if zone_sources[idx] is None:
-            mute = True # TODO: when a source is disconnected we mute the zone for now, this mute really shouldn't be persistent
-          for z, s in enumerate(zone_sources):
-            if s is None:
-              zone_sources[z] = 0
+        if update_source_id or force_update :
+          zone_sources = [zone.source_id for zone in zones]
+          zone_sources[idx] = sid
           # this is setting the state for all zones
           # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
           if self._rt.update_zone_sources(idx, zone_sources):
