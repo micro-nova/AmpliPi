@@ -807,26 +807,14 @@ class InternetRadio(BaseStream):
       pass
 
 class Plexamp(BaseStream):
-  """ A Plexamp Stream """
+  """ A Plexamp Stream
+  TODO: old plexamp interface was disabled, integrate support for new PlexAmp
+  """
   def __init__(self, name: str, client_id, token, disabled: bool = False, mock: bool = False):
     super().__init__('plexamp', name, disabled=disabled, mock=mock)
-    self.client_id = client_id
-    self.token = token
 
   def reconfig(self, **kwargs):
-    reconnect_needed = False
-    if 'name' in kwargs and kwargs['name'] != self.name:
-      self.name = kwargs['name']
-      reconnect_needed = True
-    if reconnect_needed:
-      if self._is_running():
-        last_src = self.src
-        self.disconnect()
-        time.sleep(0.1) # delay a bit, is this needed?
-        self.connect(last_src)
-
-  def __del__(self):
-    self.disconnect()
+    self.name = kwargs['name']
 
   def connect(self, src):
     """ Connect plexamp output to a given audio source
@@ -836,70 +824,12 @@ class Plexamp(BaseStream):
       self._connect(src)
       return
 
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
-    mpd_template = f'{utils.get_folder("streams")}/mpd.conf'
-    plexamp_template = f'{utils.get_folder("streams")}/server.json'
-    plexamp_home = src_config_folder
-    plexamp_config_folder = f'{plexamp_home}/.config/Plexamp'
-    mpd_conf_file = f'{plexamp_home}/mpd.conf'
-    server_json_file = f'{plexamp_config_folder}/server.json'
-    # make all of the necessary dir(s)
-    os.system(f'mkdir -p {plexamp_config_folder}')
-    os.system(f'cp {mpd_template} {mpd_conf_file}')
-    os.system(f'cp {plexamp_template} {server_json_file}')
-    self.uuid = uuid_gen()
-    # server.json config (Proper server.json file must be copied over for this to work)
-    with open(server_json_file) as json_file:
-      contents = json.load(json_file)
-      r_token = contents['user']['token']
-      if r_token != '_': # Dummy value from template
-        self.token = r_token
-
-    # Double quotes required for Python -> JSON translation
-    json_config = {
-      "player": {
-        "name": f"{self.name}",
-        "identifier": f"{self.client_id}"
-      },
-      "user": {
-        "token": self.token
-      },
-      "state": "null",
-      "server": "null",
-      "audio": {
-        "normalize": "false",
-        "crossfade": "false",
-        "mpd_path": f"{mpd_conf_file}"
-      }
-    }
-
-    with open(server_json_file, 'w') as new_json:
-      json.dump(json_config, new_json, indent=2)
-
-    # mpd.conf creation
-    with open(mpd_conf_file, 'r') as MPD:
-      data = MPD.read()
-      data = data.replace('ch', utils.virtual_output_device(src))
-      data = data.replace('GENERIC_LOGFILE_LOCATION', f'{plexamp_config_folder}/mpd.log')
-    with open(mpd_conf_file, 'w') as MPD:
-      MPD.write(data)
-    # PROCESS
-    plexamp_args = ['/usr/bin/node', '/home/pi/plexamp/server/server.prod.js']
-    try:
-      self.proc = subprocess.Popen(args=plexamp_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : plexamp_home})
-      time.sleep(0.1) # Delay a bit
-      self._connect(src)
-    except Exception as exc:
-      print(f'error starting plexamp: {exc}')
-
   def disconnect(self):
-    if self._is_running():
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
     self._disconnect()
-    self.proc = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    source.track = "Not currently supported"
     return source
 
 class FilePlayer(BaseStream):
