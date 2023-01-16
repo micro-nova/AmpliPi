@@ -189,7 +189,6 @@ class PersistentStream(BaseStream):
     super().__init__(stype, name, None, disabled, mock)
     self.vsrc: Optional[int] = None
     self._cproc: Optional[subprocess.Popen] = None
-    self.persist = False # TODO: keep track of this in a streams config and don't set it in activate/deactivate
 
   def __del__(self):
     self.deactivate()
@@ -197,9 +196,10 @@ class PersistentStream(BaseStream):
 
   def is_persistent(self):
     """ Does this stream run in the background? """
-    return self.persist
+    # TODO: this should be a runtime configurable field and used to determine streams to start up in the background
+    return False
 
-  def activate(self, persist=True):
+  def activate(self):
     """ Start the stream behind the scenes without connecting to a physical source.
     Stream will @persist after disconnected if enabled
     """
@@ -209,14 +209,12 @@ class PersistentStream(BaseStream):
       self.state = "connected" # optimistically make this look like a normal stream for now
       if not self.mock:
         self._activate(vsrc) # might override self.state
-      self.persist = persist
-      print(f"Activating {self.name} ({'persistant' if persist else 'temporarily'})")
+      print(f"Activating {self.name} ({'persistant' if self.is_persistent() else 'temporarily'})")
     except Exception as e:
       print(f'Failed to activate {self.name}: {e}')
       if vsrc is not None:
         vsources.free(vsrc)
       self.vsrc = None
-      self.persist = False
       self.state = 'disconnected'
       raise e
 
@@ -232,7 +230,6 @@ class PersistentStream(BaseStream):
     try:
       print(f'deactivating {self.name}')
       self._deactivate()
-      self.persist = False
     except Exception as e:
       raise Exception(f'Failed to deactivate {self.name}: {e}') from e
     finally:
@@ -250,11 +247,9 @@ class PersistentStream(BaseStream):
     This should be called after significant paranmeter changes.
     """
     print(f'reactivating {self.name}')
-    persist = self.persist
     if self.is_activated():
       self.deactivate()
       time.sleep(0.1) # wait a bit just in case
-    self.activate(persist)
 
   def connect(self, src: int):
     """ Connect an output to a given audio source """
@@ -262,8 +257,7 @@ class PersistentStream(BaseStream):
       raise Exception(f"Stream already connected to a source {self.src}, disconnect before trying to connect")
     if self.vsrc is None:
       # activate on the fly
-      # avoid persisting after disconnect to save memory and virtual sources
-      self.activate(persist=False)
+      self.activate()
       if self.vsrc is None:
         raise Exception('No virtual source found/available')
     virt_dev = utils.virtual_connection_device(self.vsrc)
@@ -332,6 +326,9 @@ class AirPlay(PersistentStream):
     self.proc2: Optional[subprocess.Popen] = None
     # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
     # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
+
+  def is_persistent(self):
+    return True
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -435,6 +432,9 @@ class Spotify(PersistentStream):
 
   def __del__(self):
     self.disconnect()
+
+  def is_persistent(self):
+    return True
 
   def _activate(self, vsrc: int):
     """ Connect a Spotify output to a given audio source
@@ -1014,6 +1014,9 @@ class LMS(PersistentStream):
   def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
     super().__init__('lms', name, disabled=disabled, mock=mock)
     self.server : Optional[str] = server
+
+  def is_persistent(self):
+    return True
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
