@@ -200,7 +200,9 @@ class PersistentStream(BaseStream):
         self._activate(vsrc)
       self.vsrc = vsrc
       self.persist = persist
+      print(f"Activating {self.name} ({'persistant' if persist else 'temporarily'})")
     except Exception as e:
+      print(f'Failed to activate {self.name}: {e}')
       if vsrc is not None:
         vsources.free(vsrc)
       raise e
