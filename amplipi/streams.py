@@ -341,7 +341,7 @@ class AirPlay(PersistentStream):
       'metadata':{
         'enabled': 'yes',
         'include_cover_art': 'yes',
-        'pipe_name': f'{utils.get_folder("config")}/srcs/{vsrc}/shairport-sync-metadata',
+        'pipe_name': f'{utils.get_folder("config")}/srcs/v{vsrc}/shairport-sync-metadata',
         'pipe_timeout': 5000,
       },
       'alsa': {
@@ -349,9 +349,9 @@ class AirPlay(PersistentStream):
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{vsrc}'
+    src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
     os.system(f'rm -f {src_config_folder}/currentSong')
-    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{vsrc}"
+    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/v{vsrc}"
     # make all of the necessary dir(s)
     os.system(f'rm -r -f {web_dir}')
     os.system(f'mkdir -p {web_dir}')
@@ -374,7 +374,7 @@ class AirPlay(PersistentStream):
     self.proc = None
 
   def info(self) -> models.SourceInfo:
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
+    src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
     loc = f'{src_config_folder}/currentSong'
     source = models.SourceInfo(name=self.full_name(), state=self.state)
     source.img_url = 'static/imgs/shairport.png'
@@ -393,7 +393,7 @@ class AirPlay(PersistentStream):
             else:
               source.state = 'paused'
             if int(data[4]):
-              source.img_url = f"/generated/shairport/srcs/{self.src}/{data[5]}"
+              source.img_url = f"/generated/shairport/srcs/v{self.vsrc}/{data[5]}"
     except Exception as exc:
       print(f'Failed to get currentSong - it may not exist: {exc}')
     return source
@@ -425,7 +425,7 @@ class Spotify(PersistentStream):
     """
 
     # Make the (per-source) config directory
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{vsrc}'
+    src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
     os.system(f'mkdir -p {src_config_folder}')
 
     toml_template = f'{utils.get_folder("streams")}/spot_config.toml'
@@ -546,7 +546,7 @@ class Pandora(PersistentStream):
     This will start up pianobar with a configuration specific to @src
     """
     # make a special home/config to launch pianobar in (this allows us to have multiple pianobars)
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{vsrc}'
+    src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
     eventcmd_template = f'{utils.get_folder("streams")}/eventcmd.sh'
     pb_home = src_config_folder
     pb_config_folder = f'{pb_home}/.config/pianobar'
@@ -591,7 +591,7 @@ class Pandora(PersistentStream):
     self.ctrl = ''
 
   def info(self) -> models.SourceInfo:
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
+    src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
     loc = f'{src_config_folder}/.config/pianobar/currentSong'
     source = models.SourceInfo(
       name=self.full_name(),
@@ -1008,10 +1008,7 @@ class LMS(PersistentStream):
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
-        last_src = self.src
-        self.disconnect()
-        time.sleep(0.1) # delay a bit, is this needed?
-        self.connect(last_src)
+        self.reactivate()
 
   def _activate(self, vsrc: int):
     """ Connect a sqeezelite output to a given audio source
@@ -1019,7 +1016,7 @@ class LMS(PersistentStream):
     """
     try:
       # Make the (per-source) config directory
-      src_config_folder = f'{utils.get_folder("config")}/srcs/{vsrc}'
+      src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
       os.system(f'mkdir -p {src_config_folder}')
 
       # TODO: Add metadata support? This may have to watch the output log?
