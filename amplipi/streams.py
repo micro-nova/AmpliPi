@@ -706,7 +706,7 @@ class DLNA(BaseStream):
 
     meta_args = [f'{utils.get_folder("streams")}/dlna_metadata.bash', f'{src_config_folder}']
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
-                '--gstout-audiodevice', utils.virtual_output_device(src), '--gstout-initial-volume-db',
+                '--gstout-audiodevice', utils.real_output_device(src), '--gstout-initial-volume-db',
                 '0.0', '-p', f'{portnum}', '-u', f'{self.uuid}',
                 '-f', f'{self.name}', '--logfile',
                 f'{src_config_folder}/metafifo']
@@ -783,11 +783,11 @@ class InternetRadio(BaseStream):
     # Start audio via runvlc.py
     song_info_path = f'{src_config_folder}/currentSong'
     log_file_path = f'{src_config_folder}/log'
-    inetradio_args = [sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.virtual_output_device(src), '--song-info', song_info_path, '--log', log_file_path]
+    inetradio_args = [sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.real_output_device(src), '--song-info', song_info_path, '--log', log_file_path]
     print(f'running: {inetradio_args}')
     self.proc = subprocess.Popen(args=inetradio_args, preexec_fn=os.setpgrp)
 
-    print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.virtual_output_device(src)}')
+    print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.real_output_device(src)}')
     self.state = 'playing'
     self.src = src
 
@@ -895,7 +895,7 @@ class FilePlayer(BaseStream):
       return
 
     # Start audio via runvlc.py
-    vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.virtual_output_device(src)} {self.url} vlc://quit'
+    vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.real_output_device(src)} {self.url} vlc://quit'
     print(f'running: {vlc_args}')
     self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
@@ -959,7 +959,7 @@ class FMRadio(BaseStream):
     song_info_path = f'{src_config_folder}/currentSong'
     log_file_path = f'{src_config_folder}/log'
 
-    fmradio_args = [sys.executable, f"{utils.get_folder('streams')}/fmradio.py", self.freq, utils.virtual_output_device(src), '--song-info', song_info_path, '--log', log_file_path]
+    fmradio_args = [sys.executable, f"{utils.get_folder('streams')}/fmradio.py", self.freq, utils.real_output_device(src), '--song-info', song_info_path, '--log', log_file_path]
     print(f'running: {fmradio_args}')
     self.proc = subprocess.Popen(args=fmradio_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
     self._connect(src)
