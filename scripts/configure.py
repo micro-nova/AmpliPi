@@ -248,11 +248,11 @@ class Task:
         break
     return self
 
-def _setup_loopbacks() -> List[Task]:
+def _setup_loopbacks(base_dir) -> List[Task]:
   """ Configure ALSA loopbacks using snd_aloop kernel module """
   return [Task('copy loopback module configuration', multiargs=[
-              'sudo cp config/modules /etc/modules'.split(),
-              'sudo cp sound.conf /etc/modprobe.d/'.split(),
+              f'sudo cp {base_dir}/config/modules.conf /etc/modules'.split(),
+              f'sudo cp {base_dir}/config/sound.conf /etc/modprobe.d/sound.conf'.split(),
           ]).run()]
 
 def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
@@ -324,7 +324,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     # and point it to the AmpliPi install location's script directory.
     tasks += print_progress([Task("Setting up crontab", [f"cat {env['base_dir']}/config/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts@' | crontab -"], shell=True).run()])
     # setup loopbacks
-    tasks += print_progress(_setup_loopbacks())
+    tasks += print_progress(_setup_loopbacks(env['base_dir']))
   # install debian packages
   tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
