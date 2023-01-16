@@ -200,6 +200,7 @@ class PersistentStream(BaseStream):
         self._activate(vsrc)
       self.vsrc = vsrc
       self.persist = persist
+      self.state = "connected" # make this look like a normal stream for now
       print(f"Activating {self.name} ({'persistant' if persist else 'temporarily'})")
     except Exception as e:
       print(f'Failed to activate {self.name}: {e}')
@@ -219,6 +220,7 @@ class PersistentStream(BaseStream):
     try:
       print(f'deactivating {self.name}')
       self._deactivate()
+      self.state = "disconnected"  # make this look like a normal stream for now
       self.persist = False
     except Exception as e:
       raise Exception(f'Failed to deactivate {self.name}: {e}') from e
@@ -261,7 +263,7 @@ class PersistentStream(BaseStream):
       except Exception as exc:
         print(f'Failed to start alsaloop connection: {exc}')
         time.sleep(0.1) # Delay a bit
-    self._connect(src)
+    self.src = src
 
   def disconnect(self):
     """ Disconnect from a DAC """
@@ -271,7 +273,7 @@ class PersistentStream(BaseStream):
         self._cproc.kill()
       except Exception:
         pass
-    self._disconnect()
+    self.src = None
     if not self.persist:
       # remember to deactivate temporarily activated streams
       self.deactivate()
