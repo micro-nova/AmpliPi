@@ -2,6 +2,7 @@
 import argparse
 import sys
 import time
+from typing import Tuple
 
 from amplipi import formatter
 from amplipi.display import epd2in13_V3
@@ -90,26 +91,26 @@ class EInkDisplay(Display):
       image = image.rotate(180)  # flip
       print('Displaying image')
       self.epd.display(self.epd.getbuffer(image))
-      self.epd.sleep()  # TODO: what does sleep do?
+      self.epd.sleep()
     except IOError as e:
       print(f'Error: {e}')
     except KeyboardInterrupt:
       print('CTRL+C')
       epd2in13_V3.epdconfig.module_exit()
 
-  def pick_pass_font(self, password, max_length):
+  def pick_pass_font(self, password, max_length) -> ImageFont:
     try:
       for i in range(20, 10, -1):
         f = ImageFont.truetype(self.fontname, i)
         if f.getlength(password) <= max_length:
           return f
-      return ImageFont.truetype(self.fontname, 10)
     except:
       print(f'Failed to load font {self.fontname}')
       sys.exit(3)
+    return ImageFont.truetype(self.fontname, 10)
 
 
-def get_info(args, default_pass):
+def get_info(args, default_pass) -> Tuple[str, str, str]:
   password, _ = default_pass.update()
   try:
     host_name = socket.gethostname() + '.local'
