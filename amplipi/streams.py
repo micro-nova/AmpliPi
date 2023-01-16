@@ -215,7 +215,11 @@ class PersistentStream(BaseStream):
   def deactivate(self):
     """ Stop the stream behind the scenes """
     try:
+      print(f'deactivating {self.name}')
       self._deactivate()
+      self.persist = False
+    except Exception as e:
+      raise Exception(f'Failed to deactivate {self.name}: {e}') from e
     finally:
       if self.vsrc:
         vsources.free(self.vsrc)
@@ -227,10 +231,11 @@ class PersistentStream(BaseStream):
     """ Stop and restart the stream behind the scenes.
     This should be called after significant paranmeter changes.
     """
+    persist = self.persist
     if self.is_activated():
       self.deactivate()
       time.sleep(0.1) # wait a bit just in case
-    self.activate(self.persist)
+    self.activate(persist)
 
   def connect(self, src: int):
     """ Connect an output to a given audio source """
