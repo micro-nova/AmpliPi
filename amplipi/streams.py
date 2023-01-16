@@ -272,6 +272,9 @@ class PersistentStream(BaseStream):
       except Exception:
         pass
     self._disconnect()
+    if not self.persist:
+      # remember to deactivate temporarily activated streams
+      self.deactivate()
 
 class RCA(BaseStream):
   """ A built-in RCA input """
