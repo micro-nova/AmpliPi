@@ -136,6 +136,7 @@ class Metadata:
   art_url: str = ''
   album: str = ''
   state: str = ''
+  connected: bool = False
   state_changed_time: float = 0
 
 
@@ -218,6 +219,10 @@ class MPRIS:
     """Stopped?"""
     return self._load_metadata().state == 'Stopped'
 
+  def is_connected(self) -> bool:
+    """Connected?"""
+    return self._load_metadata().connected
+
   def get_capabilities(self) -> List[CommandTypes]:
     """Returns a list of supported commands."""
 
@@ -239,7 +244,6 @@ class MPRIS:
 
   def __del__(self):
     self.ok = False
-
     try:
       self.metadata_process.kill()
       os.wait() # does this work?
@@ -256,6 +260,7 @@ class MPRIS:
     last_sent = m.__dict__
 
     while self.ok:
+      metadata = {}
       try:
         mpris = SessionMessageBus().get_proxy(
           service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
@@ -263,6 +268,7 @@ class MPRIS:
           interface_name = "org.mpris.MediaPlayer2.Player"
         )
       except Exception as e:
+        metadata['connected'] = False
         print(f"failed to connect mpris {e}")
 
       # print(f"getting mrpis metadata from {self.service_suffix}")
@@ -271,9 +277,8 @@ class MPRIS:
         try:
           raw_metadata = mpris.Metadata
         except Exception as e:
+          metadata['connected'] = False
           print(f"Dbus error getting MPRIS metadata: {e}")
-
-        metadata = {}
 
         for mapping in METADATA_MAPPINGS:
           try:
@@ -290,14 +295,17 @@ class MPRIS:
         else:
           metadata['state_changed_time'] = last_sent['state_changed_time']
 
+        metadata['connected'] = True
+
         if metadata != last_sent:
           last_sent = metadata
           with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
             json.dump(metadata, metadata_file)
 
       except Exception as e:
-        print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}"
-              +"\nThe above is normal if a user is not yet connected to the stream.")
+        # print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}"
+        #       +"\nThe above is normal if a user is not yet connected to the stream.")
+        pass
 
       sys.stdout.flush() # forces stdout to print
 

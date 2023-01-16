@@ -275,33 +275,33 @@ class AirPlay(BaseStream):
       img_url='static/imgs/shairport.png'
     )
 
-    # try:
-    #   md = self.mpris.metadata()
+    try:
+      md = self.mpris.metadata()
 
-    #   if self.mpris.is_playing():
-    #     source.state = 'playing'
-    #   else:
-    #     if time.time() - md.state_changed_time < self.STATE_TIMEOUT:
-    #       source.state = 'paused'
-    #     else:
-    #       source.state = 'stopped'
+      if self.mpris.is_playing():
+        source.state = 'playing'
+      else:
+        if time.time() - md.state_changed_time < self.STATE_TIMEOUT:
+          source.state = 'paused'
+        else:
+          source.state = 'stopped'
 
-    #   if source.state != 'stopped':
-    #     source.artist = md.artist
-    #     source.track = md.title
-    #     source.album = md.album
-    #     source.supported_cmds=list(self.supported_cmds)
+      if source.state != 'stopped':
+        source.artist = md.artist
+        source.track = md.title
+        source.album = md.album
+        source.supported_cmds=list(self.supported_cmds)
 
-    #     if md.title != '':
-    #       img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
-    #       img_loc = f'generated/{self.src}/{img_name}'
-    #       source.img_url = img_loc
-    #     else:
-    #       source.track = "No metadata available"
+        if md.title != '':
+          img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
+          img_loc = f'generated/{self.src}/{img_name}'
+          source.img_url = img_loc
+        else:
+          source.track = "No metadata available"
 
 
-    # except Exception as e:
-    #   print(f"error in airplay: {e}")
+    except Exception as e:
+      print(f"error in airplay: {e}")
 
     return source
 
