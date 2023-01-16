@@ -14,19 +14,27 @@ from amplipi.display.common import DefaultPass, Display
 class EInkDisplay(Display):
   # fontname = 'DejaVuSansMono'
   fontname = 'DejaVuSansMono-Bold'
-  fontsize = 20
+  main_fontsize = 20
+  width_tolerance = 3
 
   def __init__(self, args):
     self.args = args
     self.epd = None
     self.font = None
+    self.pass_font = None
     self.ch = None
     self.cw = None
+    self.width = 0
+    self.height = 0
+    self.pass_fontsize = 15
+    self.temp_fonts = []
 
   def init(self) -> bool:
     # Get fonts
     try:
-      self.font = ImageFont.truetype(self.fontname, self.fontsize)
+      self.font = ImageFont.truetype(self.fontname, self.main_fontsize)
+      # pass font size will change depending on password length
+      self.pass_font = ImageFont.truetype(self.fontname, self.pass_fontsize)
     except:
       print(f'Failed to load font {self.fontname}')
       sys.exit(3)
@@ -34,13 +42,11 @@ class EInkDisplay(Display):
     ascent, descent = self.font.getmetrics()
     self.cw = self.font.getlength(" ")
     self.ch = ascent + descent
-    print(f'Font height = {self.ch}, width = {self.cw}')
 
     try:
       self.epd = epd2in13_V3.EPD()
-      height = self.epd.width  # rotated
-      width = self.epd.height  # rotated
-      print(f'Screen height = {height}, width = {width}')
+      self.height = self.epd.width  # rotated
+      self.width = self.epd.height  # rotated
       self.epd.init()
     except IOError as e:
       print(f'Error: {e}')
@@ -62,27 +68,27 @@ class EInkDisplay(Display):
         host_name = new_host_name
         password = new_password
         ip_str = new_ip_str
+        self.pass_font = self.pick_pass_font(password, self.width + self.width_tolerance)
         self.update_display(host_name, password, ip_str)
 
       # wait before polling again
       time.sleep(8)
 
   def update_display(self, host_name, password, ip_str):
-    print('update_display')
-
     try:
       self.epd.Clear(0xFF)
       image = Image.new('1', (self.epd.height, self.epd.width), 255)  # 255: clear the frame
       draw = ImageDraw.Draw(image)
 
-      interval = (4 / 3) * self.ch
-      start = interval / 2
+      interval = (5 / 4) * self.ch
+      start = interval / 4
       draw.text((0, start + 0 * interval), f'Host: {host_name}', font=self.font, fill=0)
-      draw.text((0, start + 1 * interval), f'Pass: {password}', font=self.font, fill=0)
-      draw.text((0, start + 2 * interval), f'IP:   {ip_str}', font=self.font, fill=0)
+      draw.text((0, start + 1 * interval), f'IP:   {ip_str}', font=self.font, fill=0)
+      draw.text((0, start + 2 * interval), f'Pass\u21b4', font=self.font, fill=0)
+      draw.text((0, start + 3 * interval), password, font=self.pass_font, fill=0)
 
       image = image.rotate(180)  # flip
-      print('displaying image')
+      print('Displaying image')
       self.epd.display(self.epd.getbuffer(image))
       self.epd.sleep()  # TODO: what does sleep do?
     except IOError as e:
@@ -91,12 +97,23 @@ class EInkDisplay(Display):
       print('CTRL+C')
       epd2in13_V3.epdconfig.module_exit()
 
+  def pick_pass_font(self, password, max_length):
+    try:
+      for i in range(20, 10, -1):
+        f = ImageFont.truetype(self.fontname, i)
+        if f.getlength(password) <= max_length:
+          return f
+      return ImageFont.truetype(self.fontname, 10)
+    except:
+      print(f'Failed to load font {self.fontname}')
+      sys.exit(3)
+
+
 def get_info(args, default_pass):
   password, _ = default_pass.update()
   try:
     host_name = socket.gethostname() + '.local'
   except:
-    # TODO: uhh can this even happen
     host_name = 'None'
   try:
     ip_str = ni.ifaddresses(args.iface)[ni.AF_INET][0]['addr']
