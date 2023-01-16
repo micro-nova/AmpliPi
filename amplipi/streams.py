@@ -128,6 +128,11 @@ class BaseStream:
   def reconfig(self, **kwargs):
     """ Reconfigure a potentially running stream """
 
+  def is_activated(self):
+    """ Check if this stream has been activated """
+    # activate/deactivate is not supported by the base stream type
+    return False
+
   def _is_running(self):
     if self.proc:
       return self.proc.poll() is None
@@ -184,11 +189,15 @@ class PersistentStream(BaseStream):
     super().__init__(stype, name, None, disabled, mock)
     self.vsrc: Optional[int] = None
     self._cproc: Optional[subprocess.Popen] = None
-    self.persist = False
+    self.persist = False # TODO: keep track of this in a streams config and don't set it in activate/deactivate
 
   def __del__(self):
     self.deactivate()
     self.disconnect()
+
+  def is_persistent(self):
+    """ Does this stream run in the background? """
+    return self.persist
 
   def activate(self, persist=True):
     """ Start the stream behind the scenes without connecting to a physical source.
@@ -196,16 +205,19 @@ class PersistentStream(BaseStream):
     """
     try:
       vsrc = vsources.alloc()
-      if not self.mock:
-        self._activate(vsrc)
       self.vsrc = vsrc
+      self.state = "connected" # optimistically make this look like a normal stream for now
+      if not self.mock:
+        self._activate(vsrc) # might override self.state
       self.persist = persist
-      self.state = "connected" # make this look like a normal stream for now
       print(f"Activating {self.name} ({'persistant' if persist else 'temporarily'})")
     except Exception as e:
       print(f'Failed to activate {self.name}: {e}')
       if vsrc is not None:
         vsources.free(vsrc)
+      self.vsrc = None
+      self.persist = False
+      self.state = 'disconnected'
       raise e
 
   def _activate(self, vsrc: int):
@@ -220,13 +232,15 @@ class PersistentStream(BaseStream):
     try:
       print(f'deactivating {self.name}')
       self._deactivate()
-      self.state = "disconnected"  # make this look like a normal stream for now
       self.persist = False
     except Exception as e:
       raise Exception(f'Failed to deactivate {self.name}: {e}') from e
     finally:
+      self.state = "disconnected"  # make this look like a normal stream for now
       if self.vsrc:
-        vsources.free(self.vsrc)
+        vsrc = self.vsrc
+        self.vsrc = None
+        vsources.free(vsrc)
 
   def _deactivate(self):
     raise NotImplementedError(f'{self.stype} does not support deaactivation')
@@ -235,6 +249,7 @@ class PersistentStream(BaseStream):
     """ Stop and restart the stream behind the scenes.
     This should be called after significant paranmeter changes.
     """
+    print(f'reactivating {self.name}')
     persist = self.persist
     if self.is_activated():
       self.deactivate()
@@ -274,9 +289,6 @@ class PersistentStream(BaseStream):
       except Exception:
         pass
     self.src = None
-    if not self.persist:
-      # remember to deactivate temporarily activated streams
-      self.deactivate()
 
 class RCA(BaseStream):
   """ A built-in RCA input """

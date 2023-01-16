@@ -532,6 +532,10 @@ class Api:
             try:
               stream.disconnect()
               stream.connect(idx)
+              # potentially deactivate the old stream to save resources
+              if old_stream and old_stream.is_activated():
+                if not old_stream.is_persistent(): # type: ignore
+                  old_stream.deactivate() # type: ignore
             except Exception as iexc:
               print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
               stream.disconnect()
@@ -552,6 +556,9 @@ class Api:
             # TODO: should this stream id validation happen in the Source model?
             src.input = last_input
             raise Exception(f'StreamID specified by "{src.input}" not found')
+          elif old_stream and old_stream.is_activated():
+            if not old_stream.is_persistent(): # type: ignore
+              old_stream.deactivate() # type: ignore
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
           if rt_needs_update or force_update:
             src_cfg = self._get_source_config()
