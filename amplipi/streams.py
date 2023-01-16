@@ -264,6 +264,7 @@ class PersistentStream(BaseStream):
         self._cproc.kill()
       except Exception:
         pass
+    self._disconnect()
 
 class RCA(BaseStream):
   """ A built-in RCA input """
