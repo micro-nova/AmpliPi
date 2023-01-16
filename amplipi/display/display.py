@@ -1,10 +1,14 @@
 import argparse
+import sys
 
 from amplipi import formatter
 from amplipi.display.einkdisplay import EInkDisplay
 from amplipi.display.tftdisplay import TFTDisplay
 
 if __name__ == '__main__':
+  if 'venv' not in sys.prefix:
+    print(f"Warning: Did you mean to run {__file__} from amplipi's venv?\n")
+
   parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
                                    formatter_class=formatter.AmpliPiHelpFormatter)
   parser.add_argument('-u', '--url', default='localhost', help="the AmpliPi's URL to contact")

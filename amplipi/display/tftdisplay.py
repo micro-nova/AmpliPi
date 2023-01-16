@@ -1,29 +1,23 @@
+import cProfile
+import socket
 import sys
-
-from amplipi.display.common import Color, Display, DefaultPass
-
-if 'venv' not in sys.prefix:
-  print(f"Warning: Did you mean to run {__file__} from amplipi's venv?\n")
+import time
+from typing import List, Tuple, Optional
 
 # pylint: disable=wrong-import-position
 import busio
-import cProfile
 import digitalio
-from loguru import logger as log
-import requests
-import socket
-import time
-from typing import Any, Dict, List, Tuple, Optional
-
-from amplipi import models
-
-# Display
-from adafruit_rgb_display import ili9341
-from PIL import Image, ImageDraw, ImageFont
-
 # To retrieve system info
 import netifaces as ni  # network interfaces
 import psutil  # CPU, RAM, etc.
+import requests
+from PIL import Image, ImageDraw, ImageFont
+# Display
+from adafruit_rgb_display import ili9341
+from loguru import logger as log
+
+from amplipi import models
+from amplipi.display.common import Color, Display, DefaultPass
 
 # If this is run on anything other than a Raspberry Pi,
 # it won't work. Just quit if not on a Pi.
