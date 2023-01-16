@@ -881,15 +881,12 @@ class Api:
   @save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> ApiResponse:
     """Sets play/pause on a specific pandora source """
-    # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     if int(sid) not in self.streams:
       return ApiResponse.error(f'Stream id {sid} does not exist')
-
     try:
       stream = self.streams[sid]
     except Exception as exc:
       return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
-
     try:
       if cmd in ['activate', 'deactivate']:
         # TODO: this PersistentStream instance check is too verbose and error prone, find a better way
@@ -903,7 +900,6 @@ class Api:
         stream.send_cmd(cmd)
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
-
     return ApiResponse.ok()
 
   @save_on_success
