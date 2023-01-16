@@ -205,7 +205,7 @@ def _check_and_setup_platform():
         env['has_apt'] = True
         env['platform_supported'] = True
     elif 'armv7l' in lplatform or 'aarch64' in lplatform and apt:
-      env['arch'] = 'arm' if 'arm7l' in lplatform else 'arm64'
+      env['arch'] = 'arm' if 'armv7l' in lplatform else 'arm64'
       env['platform_supported'] = True
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
