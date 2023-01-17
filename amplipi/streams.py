@@ -471,7 +471,7 @@ class Spotify(PersistentStream):
       self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', vsrc)
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'v{vsrc}') # TODO: MPRIS should just need a path!
 
     except Exception as exc:
       print(f'error starting spotify: {exc}')
