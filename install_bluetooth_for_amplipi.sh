@@ -3,7 +3,7 @@
 
 # Run as: sudo .\install_bluetooth_for_amplipi.sh
 
-apt-get install -y libsndfile1 libsndfile1-dev libbluetooth-dev bluealsa python-dbus libasound2-dev git autotools-dev automake libtool m4
+apt-get install -y libsndfile1 libsndfile1-dev libbluetooth-dev bluealsa dbus-python libasound2-dev git autotools-dev automake libtool m4
 
 # For better audio quality, build bluealsa manually after installing fdk-aac and the latest version of bluez 5.58
 # Install aacplus decoder
@@ -52,7 +52,6 @@ After=bluetooth.service
 Type=simple
 User=root
 ExecStart=/usr/bin/bluealsa -p a2dp-source -p a2dp-sink
-
 EOF
 
 #---------------------------------------------------------------------------------------------------------------#

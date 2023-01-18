@@ -187,6 +187,36 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'spotify' : {
     'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
+  },
+  'bluetooth' : {
+    'copy' : [{'from': 'bin/ARCH/rtl8761b_fw', 'to': '/lib/firmware/rtl_bt/rtl8761b_fw.bin'},
+              {'from': 'bin/ARCH/rtl8761b_config', 'to': '/lib/firmware/rtl_bt/rtl8761b_config.bin'},
+              {'from': 'config/bluetooth/main.conf', 'to': '/etc/bluetooth/main.conf'},
+              {'from': 'config/bluetooth/bluealsa.service', 'to': '/lib/systemd/system/bluealsa.service'},
+              {'from': 'streams/bluetooth_agent', 'to': '/usr/local/bin'},
+              {'from': 'config/bluetooth/bluetooth_agent.service', 'to': '/etc/systemd/system'}],
+    'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'dbus-python',
+              'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4' ],
+    'script' : [
+      # Install SBC
+      'pushd $(mktemp --directory)',
+      'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
+      'cd sbc',
+      './bootstrap-configure',
+      './configure',
+      'make',
+      'make install',
+      'popd',
+
+      # Add pi user to bluetooth group so we don't need to run sudo
+      'usermod -G bluetooth -a pi',
+
+      'chmod +x /usr/local/bin/bluetooth_agent',
+
+      'systemctl enable bluetooth',
+      'systemctl enable bluealsa',
+      'systemctl enable bluetooth_agent.service',
+    ]
   }
 }
 

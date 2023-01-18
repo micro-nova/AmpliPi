@@ -32,7 +32,7 @@ Most of these digital streaming services are provided by other open-source proje
 |Google Cast|No||||Need to investigate|
 |Offline Music|No||||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|
 |TIDAL|No||||See [#87](http://github.com/micro-nova/AmpliPi/issues/87)|
-|Bluetooth|No||||See [#150](http://github.com/micro-nova/AmpliPi/issues/150)|
+|Bluetooth|Yes||||See [#150](http://github.com/micro-nova/AmpliPi/issues/150)|
 
 In the future we plan to integrate with several home automation systems. Below is their current status.
 
