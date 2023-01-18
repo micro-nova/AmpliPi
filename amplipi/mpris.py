@@ -220,7 +220,7 @@ class MPRIS:
     return self._load_metadata().state == 'Stopped'
 
   def is_connected(self) -> bool:
-    """Connected?"""
+    """Returns true if we can talk to the MPRIS dbus object."""
     return self._load_metadata().connected
 
   def get_capabilities(self) -> List[CommandTypes]:

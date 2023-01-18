@@ -412,7 +412,6 @@ class Api:
     self.status.info.latest_release = self._latest_release_cache.get(throttled)
 
   def _sync_stream_info(self) -> None:
-    print("hi")
     """Synchronize the stream list to the stream status"""
     # TODO: figure out how to cache stream info, since it only needs to happen when a stream is added/updated
     streams = []
@@ -426,7 +425,6 @@ class Api:
           stream.__dict__[field] = stream_inst.__dict__[field]
       streams.append(stream)
     self.status.streams = streams
-    print("bye")
 
   def get_state(self) -> models.Status:
     """ get the system state """

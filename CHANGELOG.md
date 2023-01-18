@@ -10,6 +10,8 @@
   * Swich to Spotifyd Spotify client
   * Add MPRIS metadata/command interface
   * Add LMS Client
+  * make Airplay use MPRIS
+  * add single Airplay2 to Airplay stream
 
 ## 0.1.9
 * Web App

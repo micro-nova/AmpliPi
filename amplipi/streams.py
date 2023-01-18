@@ -31,7 +31,6 @@ import subprocess
 import sys
 import threading
 import time
-from pgrep import pgrep # used by airplay to find already existing streams
 from typing import Union
 
 import amplipi.models as models
@@ -186,6 +185,7 @@ class AirPlay(BaseStream):
     super().__init__('airplay', name, disabled=disabled, mock=mock)
     self.mpris = None
     self.ap2 = ap2
+    self.ap2_exists = False
     self.supported_cmds = [
       'play',
       'pause',
@@ -216,9 +216,21 @@ class AirPlay(BaseStream):
     """ Connect an AirPlay device to a given audio source
     This creates an AirPlay streaming option based on the configuration
     """
+
+    # if stream is airplay2 check for other airplay2s and error if found
+    # pgrep has it's own process that will include the process name so we sub 1 from the results
+    if self.ap2:
+      if len(os.popen("pgrep -f shairport-sync-ap2").read().strip().splitlines())-1 > 0:
+        self.ap2_exists = True
+        raise Exception('AirPlay2 stream already exists')
+      else:
+        # this persists when you restart a stream so we also set it to false
+        self.ap2_exists = False
+
     if self.mock:
       self._connect(src)
       return
+
     config = {
       'general': {
         'name': self.name,
@@ -242,6 +254,7 @@ class AirPlay(BaseStream):
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
     os.system(f'rm -f {src_config_folder}/currentSong')
     web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
+
     # make all of the necessary dir(s)
     os.system(f'rm -r -f {web_dir}')
     os.system(f'mkdir -p {web_dir}')
@@ -250,13 +263,15 @@ class AirPlay(BaseStream):
     write_sp_config_file(config_file, config)
     shairport_args = f"{utils.get_folder('streams')}/shairport-sync{'-ap2' if self.ap2 else ''} -c {config_file}".split(' ')
     print(f'shairport_args: {shairport_args}')
-    # TODO: figure out how to get status from shairport
+
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
     try:
       mpris_name = 'ShairportSync'
       # If there are multiple shairport-sync processes, add the pid to the mpris name
       # shairport sync only adds the pid to the mpris name if it cannot use the default name
-      if len(pgrep('shairport-sync')) > 1: mpris_name += f".i{self.proc.pid}"
+      if len(os.popen("pgrep shairport-sync").read().strip().splitlines()) > 1:
+        mpris_name += f".i{self.proc.pid}"
       self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
     except Exception as exc:
       print(f'Error starting airplay MPRIS reader: {exc}')
@@ -275,12 +290,20 @@ class AirPlay(BaseStream):
       img_url='static/imgs/shairport.png'
     )
 
+    # if stream is airplay2 and other airplay2s exist show error message
+    if self.ap2:
+      if self.ap2_exists:
+        source.name = 'An Airplay2 stream already exists!\n Please disconnect it and try again.'
+        return source
+
     try:
       md = self.mpris.metadata()
 
       if self.mpris.is_playing():
         source.state = 'playing'
       else:
+        # if we've been paused for a while, say we're stopped since
+        # shairport-sync doesn't really differentiate between paused and stopped
         if time.time() - md.state_changed_time < self.STATE_TIMEOUT:
           source.state = 'paused'
         else:
