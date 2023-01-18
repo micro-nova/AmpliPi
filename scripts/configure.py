@@ -192,13 +192,15 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'copy' : [{'from': 'bin/ARCH/rtl8761b_fw', 'to': '/lib/firmware/rtl_bt/rtl8761b_fw.bin'},
               {'from': 'bin/ARCH/rtl8761b_config', 'to': '/lib/firmware/rtl_bt/rtl8761b_config.bin'},
               {'from': 'config/bluetooth/main.conf', 'to': '/etc/bluetooth/main.conf'},
-              {'from': 'config/bluetooth/bluealsa.service', 'to': '/lib/systemd/system/bluealsa.service'},
-              {'from': 'streams/bluetooth_agent', 'to': '/usr/local/bin'},
-              {'from': 'config/bluetooth/bluetooth_agent.service', 'to': '/etc/systemd/system'}],
-    'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'dbus-python',
+              # TODO: investigate where to put these services
+              {'from': 'config/bluetooth/bluealsa.service', 'to': '/lib/systemd/system/'},
+              {'from': 'streams/bluetooth_agent', 'to': '/usr/local/bin/'},
+              {'from': 'config/bluetooth/bluetooth_agent.service', 'to': '/etc/systemd/system/'}],
+    'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
               'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4' ],
     'script' : [
       # Install SBC
+      # TODO: check if already installed
       'pushd $(mktemp --directory)',
       'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
       'cd sbc',
@@ -215,7 +217,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
 
       'sudo systemctl enable bluetooth',
       'sudo systemctl enable bluealsa',
-      'sudo systemctl enable bluetooth_agent.service',
+      'sudo systemctl enable bluetooth_agent',
     ]
   }
 }
@@ -312,6 +314,9 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   scripts: Dict[str, List[str]] = {}
   for dep in deps:
     install_steps = _os_deps[dep]
+    #
+    if 'amplipi_only' in install_steps and not env['is_amplipi']:
+      continue
     if 'copy' in install_steps:
       files += install_steps['copy']
     if 'apt' in install_steps:
