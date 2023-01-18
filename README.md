@@ -22,7 +22,7 @@ Most of these digital streaming services are provided by other open-source proje
 |Streaming Service|Supported|Multiple?|Metadata|Provided By|Notes|
 |--|--:|--:|--:|--|--|
 |Pandora|Yes|Yes|Yes|[Pianobar](https://github.com/PromyLOPh/pianobar)||
-|Airplay|Yes|Yes|Yes|[Shairport-sync](https://github.com/mikebrady/shairport-sync)|Metadata only available from iTunes|
+|Airplay|Yes|Yes|Yes|[Shairport-sync](https://github.com/mikebrady/shairport-sync)|Airplay 2 for [one stream only](https://github.com/micro-nova/AmpliPi/issues/436).|
 |Spotify|Yes|Yes|Yes|[Librespot](https://github.com/librespot-org/librespot)|Requires Spotify Premium, one account per stream. See [disclaimer](https://github.com/librespot-org/librespot#disclaimer)|
 |DLNA|Yes|Yes|Yes|[gmrender-resurrect](https://github.com/hzeller/gmrender-resurrect)||
 |Internet Radio|Yes|Yes|Yes|[VLC](https://github.com/videolan/vlc)||
