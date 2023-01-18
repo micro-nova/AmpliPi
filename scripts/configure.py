@@ -205,17 +205,17 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       './bootstrap-configure',
       './configure',
       'make',
-      'make install',
+      'sudo make install',
       'popd',
 
       # Add pi user to bluetooth group so we don't need to run sudo
-      'usermod -G bluetooth -a pi',
+      'sudo usermod -G bluetooth -a pi',
 
-      'chmod +x /usr/local/bin/bluetooth_agent',
+      'sudo chmod +x /usr/local/bin/bluetooth_agent',
 
-      'systemctl enable bluetooth',
-      'systemctl enable bluealsa',
-      'systemctl enable bluetooth_agent.service',
+      'sudo systemctl enable bluetooth',
+      'sudo systemctl enable bluealsa',
+      'sudo systemctl enable bluetooth_agent.service',
     ]
   }
 }
