@@ -29,10 +29,10 @@ Most of these digital streaming services are provided by other open-source proje
 |Plexamp|No|No|No|[Plexamp](https://plexamp.com/)|See [#200](http://github.com/micro-nova/AmpliPi/issues/200)|
 |FM Radio|Yes|No|Yes|[rtl-sdr](https://osmocom.org/projects/rtl-sdr/wiki/Rtl-sdr)/[redsea](https://github.com/windytan/redsea)|Requires [RTL SDR](https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/) compatible USB device|
 |LMS|Yes|Yes|No|[squeezelite](https://github.com/ralph-irving/squeezelite)|Requires separate LMS Server|
+|Bluetooth|Yes|No|Yes|[bluezero](https://github.com/ukBaz/python-bluezero)||
 |Google Cast|No||||Need to investigate|
 |Offline Music|No||||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|
 |TIDAL|No||||See [#87](http://github.com/micro-nova/AmpliPi/issues/87)|
-|Bluetooth|Yes|No|Yes|[bluezero](https://github.com/ukBaz/python-bluezero)||
 
 In the future we plan to integrate with several home automation systems. Below is their current status.
 
