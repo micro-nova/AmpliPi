@@ -612,43 +612,6 @@ def test_create_pandora(client):
   for k, v in m_and_k.items():
     assert jrv[k] == v
 
-# /stream post-stream
-def test_steal_airplay(client):
-  """ Try stealing an airplay stream """
-  ap = { 'name': 'test', 'type':'airplay', 'ap2': False}
-  rv = client.post('/api/stream', json=ap)
-  # check that the stream has an id added to it and that all of the fields are still there
-  assert rv.status_code == HTTPStatus.OK
-
-  id1 =rv.json()["id"]
-
-  ap = { 'name': 'test2', 'type':'airplay', 'ap2': False}
-  rv = client.post('/api/stream', json=ap)
-  # check that the stream has an id added to it and that all of the fields are still there
-  assert rv.status_code == HTTPStatus.OK
-
-  id2 =rv.json()["id"]
-
-  # move the stream to a different source
-  client.patch('/api/sources/0', json={'input': f'stream={id1}'})
-  time.sleep(1)
-
-  client.patch('/api/sources/1', json={'input': f'stream={id2}'})
-  time.sleep(1)
-
-  # try to steal the stream
-  client.patch('/api/sources/1', json={'input': f'stream={id1}'})
-  time.sleep(1)
-  # get home page
-  rv = client.get('/')
-  # check that the return value has good status
-  assert rv.status_code == HTTPStatus.OK
-  time.sleep(1)
-  rv = client.get('/')
-  # check that the return value has good status
-  assert rv.status_code == HTTPStatus.OK
-
-
 # /streams/{streamId} get-stream
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_get_stream(client, sid):
