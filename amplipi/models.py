@@ -679,6 +679,8 @@ class StreamCommand(str, Enum):
   LOVE = 'love'
   BAN = 'ban'
   SHELVE = 'shelve'
+  ACTIVATE = 'activate'
+  DEACTIVATE = 'deactivate'
 
 class PresetState(BaseModel):
   """ A set of partial configuration changes to make to sources, zones, and groups """
