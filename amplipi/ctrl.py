@@ -516,7 +516,7 @@ class Api:
         if input_updated or force_update:
           # shutdown old stream
           old_stream = self.get_stream(src)
-          if old_stream:
+          if old_stream and old_stream.is_connected():
             old_stream.disconnect()
           # start new stream
           last_input = src.input
@@ -530,7 +530,8 @@ class Api:
               print(f'stealing {stream.name} from source {stolen_from.name}')
               stolen_from.input = ''
             try:
-              stream.disconnect()
+              if stream.is_connected():
+                stream.disconnect()
               stream.connect(idx)
               # potentially deactivate the old stream to save resources
               if old_stream and old_stream.is_activated():
