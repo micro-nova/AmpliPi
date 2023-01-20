@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
 	agent = Agent(bus, AGENT_PATH)
 
-	obj = bus.get_object("org.bluez", "/org/bluez");
+	obj = bus.get_object("org.bluez", "/org/bluez")
 	manager = dbus.Interface(obj, "org.bluez.AgentManager1")
 	manager.RegisterAgent(AGENT_PATH, "NoInputNoOutput")
 

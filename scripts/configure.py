@@ -189,16 +189,25 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
   },
   'bluetooth' : {
-    'copy' : [{'from': 'bin/ARCH/rtl8761b_fw', 'to': '/lib/firmware/rtl_bt/rtl8761b_fw.bin'},
-              {'from': 'bin/ARCH/rtl8761b_config', 'to': '/lib/firmware/rtl_bt/rtl8761b_config.bin'},
-              {'from': 'config/bluetooth/main.conf', 'to': '/etc/bluetooth/main.conf'},
-              # TODO: investigate where to put these services
-              {'from': 'config/bluetooth/bluealsa.service', 'to': '/lib/systemd/system/'},
-              {'from': 'streams/bluetooth_agent', 'to': '/usr/local/bin/'},
-              {'from': 'config/bluetooth/bluetooth_agent.service', 'to': '/etc/systemd/system/'}],
+    # 'copy' : [{'from': 'bin/ARCH/rtl8761b_fw', 'to': '/lib/firmware/rtl_bt/rtl8761b_fw.bin'},
+    #           {'from': 'bin/ARCH/rtl8761b_config', 'to': '/lib/firmware/rtl_bt/rtl8761b_config.bin'},
+    #           {'from': 'config/bluetooth/main.conf', 'to': '/etc/bluetooth/main.conf'},
+    #           # TODO: investigate where to put these services
+    #           {'from': 'config/bluetooth/bluealsa.service', 'to': '/lib/systemd/system/'},
+    #           {'from': 'streams/bluetooth_agent', 'to': '/usr/local/bin/'},
+    #           {'from': 'config/bluetooth/bluetooth_agent.service', 'to': '/etc/systemd/system/'}],
     'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
               'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4' ],
     'script' : [
+      # 'sudo cp bin/ARCH/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
+      # 'sudo cp bin/ARCH/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
+      # TODO: handle ARCH keyword in scripts, not just copy
+      'sudo cp bin/arm/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
+      'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
+      'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
+      'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
+      'sudo cp streams/bluetooth_agent /usr/local/bin/',
+      'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
       # Install SBC
       # TODO: check if already installed
       'pushd $(mktemp --directory)',
