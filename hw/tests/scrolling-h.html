@@ -2,7 +2,6 @@
 <html>
 <head>
 <title>Scrolling H</title>
-
 <!--
 scrolling-h.html (v0.4.1) - display scrolling Hs
 by Tom Sato <VEF00200@nifty.com>, http://t-sato.in.coocan.jp/, 2015-11-15
@@ -18,6 +17,13 @@ Key Operation:
   s: make scroll slower
   p: pause scroll
 -->
+
+<style>
+  *{margin:0;}
+  body{
+    overflow:hidden;
+  }
+</style>
 </head>
 <body onLoad="scroll()" style="line-height: 100%; vertical-align: bottom; white-space: nowrap;">
 
