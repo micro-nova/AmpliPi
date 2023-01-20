@@ -481,6 +481,10 @@ class Spotify(PersistentStream):
       self.proc.kill()
     except Exception:
       pass
+    try:
+      del self.mpris
+    except Exception:
+      pass
     self.connect_port = None
     self.mpris = None
     self.proc = None
