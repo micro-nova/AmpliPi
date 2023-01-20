@@ -139,7 +139,8 @@ def virtual_output_device(vsid: int) -> str:
   lb_id = vsid % 6
   lb_dev_in = vsid // 6
   assert vsid < 12, "only 12 virtual outputs are supported"
-  dev = f'plughw:CARD=Loopback_{lb_id},DEV={lb_dev_in}'.replace('_0', '') # use the loopback dmixer (plughw and hw don't work here)
+  # dev = f'plughw:CARD=Loopback_{lb_id},DEV={lb_dev_in}'.replace('_0', '') # use the loopback dmixer (plughw and hw don't work here)
+  dev = f'lb{vsid}c'
   if dev in available_outputs():
     return dev
   return 'default' # for now we want basic streams to play for testing
