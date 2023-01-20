@@ -196,10 +196,10 @@ class Api:
             self.status = models.Status.parse_file(cfg_path)
             loaded_config = True
             break
-          errors.append('config file "{}" does not exist'.format(cfg_path))
+          errors.append(f'config file "{cfg_path}" does not exist')
         except Exception as exc:
           self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
-          errors.append('error loading config file: {}'.format(exc))
+          errors.append(f'error loading config file: {exc}')
 
     if not loaded_config:
       print(errors[0])
@@ -331,11 +331,11 @@ class Api:
         if os.path.exists(self.backup_config_file):
           os.remove(self.backup_config_file)
         os.rename(self.config_file, self.backup_config_file)
-      with open(self.config_file, 'w') as cfg:
+      with open(self.config_file, 'w', encoding='utf-8') as cfg:
         cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as exc:
-      print('Error saving config: {}'.format(exc))
+      print(f'Error saving config: {exc}')
 
   def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
@@ -527,7 +527,7 @@ class Api:
             if stream.src is not None and stream.src != idx:
               # update the streams last connected source to have no input, since we have stolen its input
               stolen_from = self.status.sources[stream.src]
-              print('stealing {} from source {}'.format(stream.name, stolen_from.name))
+              print(f'stealing {stream.name} from source {stolen_from.name}')
               stolen_from.input = ''
             try:
               stream.disconnect()
@@ -1030,7 +1030,7 @@ class Api:
     for group in preset_state.groups or []:
       _, groups_to_update = utils.find(self.status.groups, group.id)
       if groups_to_update is None:
-        raise NameError('group {} does not exist'.format(group.id))
+        raise NameError(f'group {group.id} does not exist')
       self.set_group(group.id, group.as_update(), internal=True)
       if group.mute is not None:
         # use the updated group's zones just in case the group's zones were just changed

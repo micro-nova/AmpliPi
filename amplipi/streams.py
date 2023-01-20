@@ -53,7 +53,7 @@ def write_sp_config_file(filename, config):
     for group, gconfig in config.items():
       cfg_file.write(f'{group} =\n{{\n')
       for key, value in gconfig.items():
-        if type(value) is str:
+        if isinstance(value, str):
           cfg_file.write(f'  {key} = "{value}"\n')
         else:
           cfg_file.write(f'  {key} = {value}\n')
