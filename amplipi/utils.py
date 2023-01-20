@@ -151,7 +151,8 @@ def virtual_connection_device(vsid: int) -> Optional[str]:
   lb_dev_in = vsid // 6
   lb_dev_out = {0:1, 1:0}[lb_dev_in] # loopback output is on the opposite side
   assert vsid < 12, "only 12 virtual outputs are supported"
-  dev = f'hw:CARD=Loopback_{lb_id},DEV={lb_dev_out}'.replace('_0', '') # here we use the hw side
+  #dev = f'hw:CARD=Loopback_{lb_id},DEV={lb_dev_out}'.replace('_0', '') # here we use the hw side
+  dev = f'lb{vsid}p'
   if dev in available_outputs():
     return dev.replace('CARD=', '').replace('DEV=', '') # alsaloop doesn't like these specifiers
   return None
