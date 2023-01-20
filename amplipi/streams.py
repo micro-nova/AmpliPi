@@ -359,7 +359,7 @@ class AirPlay(PersistentStream):
         'pipe_timeout': 5000,
       },
       'alsa': {
-        'output_device': f'lb{vsrc}x', # alsa output device
+        'output_device': utils.virtual_output_device(vsrc), # alsa output device
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
@@ -459,7 +459,7 @@ class Spotify(PersistentStream):
     with open(toml_useful, 'r', encoding='utf-8') as TOML:
       data = TOML.read()
       data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
-      data = data.replace("alsa_audio_device", f'lb{vsrc}x')
+      data = data.replace("alsa_audio_device", utils.virtual_output_device(vsrc))
       data = data.replace('1234', f'{self.connect_port}')
     with open(toml_useful, 'w', encoding='utf-8') as TOML:
       TOML.write(data)
