@@ -534,7 +534,8 @@ class Api:
                 stream.disconnect()
               stream.connect(idx)
               # potentially deactivate the old stream to save resources
-              if old_stream and old_stream.is_activated():
+              # NOTE: old_stream and new stream could be the same if force_update is True
+              if old_stream and old_stream != stream and old_stream.is_activated():
                 if not old_stream.is_persistent(): # type: ignore
                   old_stream.deactivate() # type: ignore
             except Exception as iexc:
