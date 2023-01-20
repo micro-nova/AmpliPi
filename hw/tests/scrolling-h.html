@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Scrolling H</title>
+
+<!--
+scrolling-h.html (v0.4.1) - display scrolling Hs
+by Tom Sato <VEF00200@nifty.com>, http://t-sato.in.coocan.jp/, 2015-11-15
+
+This code is in the public domain.
+
+Key Operation:
+  b: black letters on white screen
+  w: white letters on black screen
+  0-9: set font size (smaller to larger)
+  f: make scroll faster
+  n: default scroll speed
+  s: make scroll slower
+  p: pause scroll
+-->
+</head>
+<body onLoad="scroll()" style="line-height: 100%; vertical-align: bottom; white-space: nowrap;">
+
+<script type="text/javascript">
+var dwell = 50;
+var step = 3;
+var pause = 0;
+var n_words = 21;
+var n_lines = 200;
+
+document.body.style.fontFamily = 'Arial, sans-serif';
+document.bgColor = "#000000";
+document.fgColor = "#FFFFFF";
+
+function scrollTop() {
+  y = document.body.scrollTop;
+  if (y == 0) y = document.documentElement.scrollTop;
+  return y;
+}
+
+function scroll() {
+  if (!pause) {
+    y = scrollTop();
+    window.scrollBy(0, step);
+    if (y == scrollTop()) window.scrollTo(0, 2 * y / n_lines);
+  }
+  setTimeout("scroll()", dwell);
+}
+
+function keydown(e) {
+  e = e || window.event;
+  if (48 <= e.keyCode && e.keyCode <= 57) {  // 0..9
+    document.body.style.fontSize = Math.pow(1.5, e.keyCode - 44) + "px";
+  } else {
+    switch (e.keyCode) {
+    case 66:  // b
+      document.bgColor = "#FFFFFF";
+      document.fgColor = "#000000";
+      break;
+    case 87: // w
+      document.bgColor = "#000000";
+      document.fgColor = "#FFFFFF";
+      break;
+    case 70: // f
+      pause = 0;
+      dwell = 30;
+      step = 5;
+      break;
+    case 78: // n
+      pause = 0;
+      dwell = 50;
+      step = 3;
+      break;
+    case 83: // s
+      pause = 0;
+      dwell = 50;
+      step = 1;
+      break;
+    case 80: // p
+      pause = 1;
+      break;
+    }
+  }
+  e.keyCode = 0;
+}
+
+document.onkeydown = keydown;
+
+for (x1 = 0; x1 < n_words; x1++) {
+  document.write("<ruby>H<rt>");
+  if (x1 % 10 == 0) document.write("&block;");
+  else document.write(x1 % 10);
+  document.write("</rt></ruby>");
+  document.write("HHHHHHHHH");
+}
+document.write("<br>\n");
+
+for (y = 0; y < n_lines; y++) {
+  for (x1 = 0; x1 < n_words; x1++) {
+    document.write("HHHHHHHHHH");
+  }
+  document.write("<br>\n");
+}
+</script>
+
+</body>
+</html>
