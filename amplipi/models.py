@@ -76,7 +76,7 @@ class fields(SimpleNamespace):
   Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
 
-  * Digital Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
+  * Digital or Analog Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 
@@ -108,13 +108,6 @@ class Base(BaseModel):
   """
   id: Optional[int] = fields.ID
   name: str = fields.Name
-
-class Mux(BaseModel):
-  """ Changes to the software multiplexor mapping virtual sources to hardware """
-  connections: List[Optional[int]] = [None, None, None, None]
-
-class MuxUpdate(Mux):
-  pass
 
 class BaseUpdate(BaseModel):
   """ Base class for updates to AmpliPi models

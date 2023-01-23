@@ -100,7 +100,6 @@ class Api:
   streams: Dict[int, amplipi.streams.AnyStream]
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
-    "connections": [0, 1, 2, 3],
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
       {"id": 0, "name": "Player 1", "input": "",},
       {"id": 1, "name": "Player 2", "input": "",},
