@@ -189,6 +189,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
   },
   'bluetooth' : {
+    'amplipi_only' : [], # TODO: can i just put None as the value?
     # 'copy' : [{'from': 'bin/ARCH/rtl8761b_fw', 'to': '/lib/firmware/rtl_bt/rtl8761b_fw.bin'},
     #           {'from': 'bin/ARCH/rtl8761b_config', 'to': '/lib/firmware/rtl_bt/rtl8761b_config.bin'},
     #           {'from': 'config/bluetooth/main.conf', 'to': '/etc/bluetooth/main.conf'},
@@ -892,7 +893,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
 
   env = _check_and_setup_platform()
   if not env['platform_supported']:
-    tasks[0].output = f'untested platform: {platform.platform()}. Please fix this this script and make a PR to github.com/micro-nova/AmpliPi'
+    tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
   else:
     tasks[0].output = str(env)
     tasks[0].success = True
