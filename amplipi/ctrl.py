@@ -915,13 +915,11 @@ class Api:
       return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
     try:
       if cmd in ['activate', 'deactivate']:
-        # TODO: this PersistentStream instance check is too verbose and error prone, find a better way
-        if isinstance(stream, (amplipi.streams.Pandora, amplipi.streams.Spotify, amplipi.streams.AirPlay, amplipi.streams.LMS)):
-          pstream : amplipi.streams.PersistentStream = stream
+        if isinstance(stream, amplipi.streams.PersistentStream):
           if cmd == 'activate':
-            pstream.activate()
+            stream.activate()
           else:
-            pstream.deactivate()
+            stream.deactivate()
       else:
         stream.send_cmd(cmd)
     except Exception as exc:
