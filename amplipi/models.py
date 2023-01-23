@@ -49,6 +49,9 @@ MIN_DB_RANGE = 20
 MAX_SOURCES = 4
 """ Max audio sources """
 
+SOURCE_DISCONNECTED = -1
+""" Indicate no source connection, simulated in SW by muting zone for now """
+
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """
   assert MIN_VOL_F <= pcnt <= MAX_VOL_F
@@ -58,7 +61,7 @@ class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
   Name = Field(description='Friendly name')
-  SourceId = Field(ge=0, le=MAX_SOURCES-1, description='id of the connected source')
+  SourceId = Field(ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
@@ -83,7 +86,7 @@ class fields_w_default(SimpleNamespace):
   These are needed because there is ambiguity where an optional field has a default value
   """
   # TODO: less duplication
-  SourceId = Field(default=0, ge=0, le=MAX_SOURCES-1, description='id of the connected source')
+  SourceId = Field(default=0, ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')

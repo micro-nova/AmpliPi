@@ -620,17 +620,20 @@ class Api:
         zone.name = name
         zone.disabled = disabled
 
-        # any disabled zone should not be able to play anything, mute it to be sure
-        if zone.disabled and not mute:
+        # parse and check the source id
+        sid = utils.parse_int(source_id, range(models.SOURCE_DISCONNECTED, models.MAX_SOURCES))
+
+        # any zone disabled by source disconnection or a 'disabled' flag should not be able to play anything
+        implicit_mute = zone.disabled or sid == models.SOURCE_DISCONNECTED
+        if implicit_mute and not mute:
           mute = True
           update_mutes = True
 
-        # update the zone's associated source
-        sid = utils.parse_int(source_id, range(models.MAX_SOURCES))
+        # update the zone's associated source (defaulting to source 0 if disconnected)
         zones = self.status.zones
         if update_source_id or force_update :
           zone_sources = [zone.source_id for zone in zones]
-          zone_sources[idx] = sid
+          zone_sources[idx] = max(sid, 0) # default disconnected zones to source 0
           # this is setting the state for all zones
           # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
           if self._rt.update_zone_sources(idx, zone_sources):
