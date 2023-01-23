@@ -46,7 +46,7 @@ MAX_VOL_DB = 0
 MIN_DB_RANGE = 20
 """ Smallest allowed difference between a zone's vol_max and vol_min """
 
-MAX_SOURCES = 12
+MAX_SOURCES = 4
 """ Max audio sources """
 
 def pcnt2Vol(pcnt: float) -> int:
@@ -832,8 +832,7 @@ class Info(BaseModel):
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
-  connections: List[Optional[int]] = [0, 1, 2, 3]
-  sources: List[Source] = [Source(id=i, name=str(i)) for i in range(8)]
+  sources: List[Source] = [Source(id=i, name=str(i)) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
   streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(4)]

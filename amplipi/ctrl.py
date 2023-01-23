@@ -106,10 +106,6 @@ class Api:
       {"id": 1, "name": "Player 2", "input": "",},
       {"id": 2, "name": "Player 3", "input": "",},
       {"id": 3, "name": "Player 4", "input": "",},
-      {"id": 4, "name": "Player 5", "input": "",},
-      {"id": 5, "name": "Player 6", "input": "",},
-      {"id": 6, "name": "Player 7", "input": "",},
-      {"id": 7, "name": "Player 8", "input": "",},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -356,8 +352,16 @@ class Api:
 
   def _is_digital(self, sinput: str) -> bool:
     """Determines whether a source input, @sinput, is analog or digital
+    @sinput is expected to be one of the following:
 
-    The runtime only has the concept of digital or analog
+    | str                  | meaning  | analog or digital? |
+    | -------------------- | -------- | ------------------ |
+    | ''                   | no input | digital            |
+    | 'stream={stream_id}' | a stream | analog or digital (depending on stream_id's stream type) |
+
+    The runtime only has the concept of digital or analog.
+    The system defaults to digital as an undriven analog input acts as an antenna,
+     producing a small amount of white noise.
     """
     try:
       sid = int(sinput.replace('stream=',''))
@@ -483,15 +487,13 @@ class Api:
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
-  def _get_source_config(self, sources: Optional[List[models.Source]]=None, connections: Optional[List[Optional[int]]]=None) -> List[bool]:
+  def _get_source_config(self, sources: Optional[List[models.Source]]=None) -> List[bool]:
+    """ Convert the preamp's source configuration """
     if not sources:
       sources = self.status.sources
-    if not connections:
-      connections = self.status.connections
     src_cfg = [True] * 4
-    for c, connected_src in enumerate(connections):
-      if connected_src is not None:
-        src_cfg[c] = self._is_digital(sources[connected_src].input)
+    for s, src in enumerate(sources):
+      src_cfg[s] = self._is_digital(sources[s].input)
     return src_cfg
 
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
