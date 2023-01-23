@@ -213,9 +213,9 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'pushd $(mktemp --directory)',
       'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
       'cd sbc',
-      './bootstrap-configure',
-      './configure',
-      'make',
+      'sudo ./bootstrap-configure',
+      'sudo ./configure',
+      'sudo make',
       'sudo make install',
       'popd',
 
@@ -323,7 +323,6 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   scripts: Dict[str, List[str]] = {}
   for dep in deps:
     install_steps = _os_deps[dep]
-    #
     if 'amplipi_only' in install_steps and not env['is_amplipi']:
       continue
     if 'copy' in install_steps:
