@@ -209,15 +209,21 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'sudo cp streams/bluetooth_agent /usr/local/bin/',
       'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
       # Install SBC
-      # TODO: check if already installed
+      'if ! [ -e /usr/local/lib/libsbc.so.1.3.1 ]',
+      'then',
+      'echo Installing SBC...',
       'pushd $(mktemp --directory)',
       'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
       'cd sbc',
+      'git checkout 8dc5d5ba381512ad5b1afa45c63ec6b0a3833244',
       'sudo ./bootstrap-configure',
       'sudo ./configure',
       'sudo make',
       'sudo make install',
       'popd',
+      'else',
+      'echo SBC already installed, skipping installation.',
+      'fi',
 
       # Add pi user to bluetooth group so we don't need to run sudo
       'sudo usermod -G bluetooth -a pi',
