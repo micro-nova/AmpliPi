@@ -203,8 +203,6 @@ class Api:
       self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
 
-    # TODO: detect missing sources
-
     # populate system info
     self._online_cache = utils.TimeBasedCache(self._check_is_online, 5, 'online')
     self._latest_release_cache = utils.TimeBasedCache(self._check_latest_release, 3600, 'latest release')
@@ -276,6 +274,23 @@ class Api:
     self._sync_stream_info() # need to update the status with the new streams
 
     # configure all sources so that they are in a known state
+    # only models.MAX_SOURCES are supported, keep the config from adding extra
+    # this helps us transition from weird and experimental configs
+    try:
+      self.status.sources[:] = self.status.sources[0:models.MAX_SOURCES]
+    except Exception as exc:
+      print(f'Error configuring sources: using all defaults')
+      self.status.sources[:] = [models.Source(id=i, name=f'Player {i+1}') for i in range(models.MAX_SOURCES)]
+    # populate any missing sources, to match the underlying system's capabilities
+    for sid in range(len(self.status.sources), models.MAX_SOURCES):
+      print(f'Error: missing source {sid}, inserting default source')
+      self.status.sources.insert(sid, models.Source(id=sid, name=f'Player {sid+1}'))
+    # sequentially number sources if necessary
+    for sid, src in enumerate(self.status.sources):
+      if src.id != sid:
+        print(f'Error: source at index {sid} is not sequentially numbered, fixing')
+        src.id = sid
+    # configure all of the sources, now that they are layed out as expected
     for src in self.status.sources:
       if src.id is not None:
         try:
@@ -287,8 +302,8 @@ class Api:
           update = models.SourceUpdate(input='')
           try:
             self.set_source(src.id, update, force_update=True, internal=True)
-          except Exception as e2:
-            print(f'Error configuring source {src.id}: {e2}')
+          except Exception as e_empty:
+            print(f'Error configuring source {src.id}: {e_empty}')
             print(f'Source {src.id} left uninitialized')
 
     # configure all of the zones so that they are in a known state
