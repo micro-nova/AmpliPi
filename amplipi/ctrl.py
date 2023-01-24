@@ -307,6 +307,7 @@ class Api:
       self._save_timer.cancel()
       self._save_timer = None
     self.save()
+    print('stopping streams')
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()

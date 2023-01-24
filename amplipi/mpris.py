@@ -7,7 +7,7 @@ import time
 import os
 import sys
 from typing import List
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from dasbus.connection import SessionMessageBus
 from dasbus.client.proxy import disconnect_proxy
 
@@ -49,11 +49,12 @@ class MPRIS:
         interface_name = "org.mpris.MediaPlayer2.Player"
     )
 
+    self._signal = Queue()
+
     self.capabilities: List[CommandTypes] = []
 
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
-    self.ok = True
 
     try:
       with open(self.metadata_path, "w", encoding='utf-8') as f:
@@ -64,7 +65,7 @@ class MPRIS:
       print (f'Exception clearing metadata file: {e}')
 
     try:
-      self.metadata_process = Process(target=self._metadata_reader)
+      self.metadata_process = Process(target=self._metadata_reader, args=[self._signal])
       self.metadata_process.start()
     except Exception as e:
       print(f'Exception starting MPRIS metadata process: {e}')
@@ -141,16 +142,27 @@ class MPRIS:
 
     return self.capabilities
 
-  def __del__(self):
-    self.ok = False
+  def close(self):
+    """Closes the MPRIS object."""
+    print("walking to the well")
+    self._signal.put('done')
+    print("poisoning the well")
+    # time.sleep(1)
     try:
-      self.metadata_process.kill()
-      os.wait() # does this work?
+      self.metadata_process.join(1.0)
     except Exception as e:
       print(f'Could not stop MPRIS metadata process: {e}')
     disconnect_proxy(self.mpris)
+    # try:
+    #   os.remove(self.metadata_path)
+    # except Exception as e:
+    #   print(f'Could not remove metadata file: {e}')
+    # print(f'Closed MPRIS {self.service_suffix}')
 
-  def _metadata_reader(self):
+  def __del__(self):
+    self.close()
+
+  def _metadata_reader(self, que: Queue):
     """Method run by the metadata process, also handles playing/paused."""
 
     m = Metadata()
@@ -158,7 +170,15 @@ class MPRIS:
 
     last_sent = m.__dict__
 
-    while self.ok:
+    def ok():
+      """Returns true if we should keep running."""
+      if not que.empty():
+        print(f"MPRIS metadata process for {self.service_suffix} exiting")
+      else:
+        print(f"MPRIS metadata process for {self.service_suffix} still running")
+      return que.empty()
+
+    while ok():
 
       metadata = {}
       try:
@@ -170,6 +190,8 @@ class MPRIS:
       except Exception as e:
         metadata['connected'] = False
         print(f"failed to connect mpris {e}")
+        if not ok():
+          return
 
       print(f"getting mrpis metadata from {self.service_suffix}")
       try:
@@ -179,6 +201,8 @@ class MPRIS:
         except Exception as e:
           metadata['connected'] = False
           print(f"Dbus error getting MPRIS metadata: {e}")
+          if not ok():
+            return
 
         for mapping in METADATA_MAPPINGS:
           try:
@@ -205,12 +229,15 @@ class MPRIS:
       except Exception as e:
         print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}"
               +"\nThe above is normal if a user is not yet connected to the stream.")
-        pass
+        if not ok():
+          return
 
       sys.stdout.flush() # forces stdout to print
 
+      if not ok():
+        return
       time.sleep(1.0/METADATA_REFRESH_RATE)
       try:
         disconnect_proxy(mpris)
       except Exception as e:
-        print
+        print(e)

@@ -280,12 +280,11 @@ class AirPlay(BaseStream):
 
   def disconnect(self):
     if self.mpris:
-      del self.mpris
+      self.mpris.close()
     self.mpris = None
     if self._is_running():
-      self.proc.stdin.close()
       self.proc.terminate()
-      if self.proc.wait(1):
+      if self.proc.wait(1) != 0:
         self.proc.kill()
     self._disconnect()
     self.proc = None
