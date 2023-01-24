@@ -31,7 +31,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Union
+from typing import Union, Optional
 
 import amplipi.models as models
 import amplipi.utils as utils
@@ -222,7 +222,8 @@ class AirPlay(BaseStream):
     if self.ap2:
       if len(os.popen("pgrep -f shairport-sync-ap2").read().strip().splitlines())-1 > 0:
         self.ap2_exists = True
-        raise Exception('AirPlay2 stream already exists')
+        self._connect(src)
+        return
       else:
         # this persists when you restart a stream so we also set it to false
         self.ap2_exists = False
@@ -265,7 +266,7 @@ class AirPlay(BaseStream):
     print(f'shairport_args: {shairport_args}')
 
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
+
     try:
       mpris_name = 'ShairportSync'
       # If there are multiple shairport-sync processes, add the pid to the mpris name
@@ -278,6 +279,9 @@ class AirPlay(BaseStream):
     self._connect(src)
 
   def disconnect(self):
+    if self.mpris:
+      del self.mpris
+    self.mpris = None
     if self._is_running():
       self.proc.kill()
     self._disconnect()
@@ -295,6 +299,10 @@ class AirPlay(BaseStream):
       if self.ap2_exists:
         source.name = 'An Airplay2 stream already exists!\n Please disconnect it and try again.'
         return source
+
+    if not self.mpris:
+      print(f'Airplay: No MPRIS object for {self.name}')
+      return source
 
     try:
       md = self.mpris.metadata()
@@ -325,6 +333,8 @@ class AirPlay(BaseStream):
 
     except Exception as e:
       print(f"error in airplay: {e}")
+
+    print(f'airplay {self.name} returns {source.__dict__}')
 
     return source
 
@@ -395,7 +405,7 @@ class Spotify(BaseStream):
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
       data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
-      data = data.replace("alsa_audio_device", f"ch{src}")
+      data = data.replace("alsa_audio_device", utils.output_device(src))
       data = data.replace('1234', f'{self.connect_port}')
     with open(toml_useful, 'w') as TOML:
       TOML.write(data)
@@ -407,7 +417,7 @@ class Spotify(BaseStream):
       self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{src_config_folder}/metadata.txt')
 
       self._connect(src)
     except Exception as exc:
@@ -420,6 +430,8 @@ class Spotify(BaseStream):
       pass
     self._disconnect()
     self.connect_port = None
+    if self.mpris:
+      del self.mpris
     self.mpris = None
     self.proc = None
 
@@ -1139,7 +1151,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'pandora':
     return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock)
   elif stream.type in ['shairport', 'airplay']: # handle older configs
-    return AirPlay(name, disabled=disabled, args['ap2'], mock=mock)
+    return AirPlay(name, args['ap2'], disabled=disabled, mock=mock)
   elif stream.type == 'spotify':
     return Spotify(name, disabled=disabled, mock=mock)
   elif stream.type == 'dlna':
