@@ -77,7 +77,8 @@ class EInkDisplay(Display):
 
   def update_display(self, host_name, password, ip_str):
     try:
-      self.epd.Clear(0xFF)
+      self.epd.init()  # need to re-init after epd.sleep()
+      # self.epd.Clear(0xFF)
       image = Image.new('1', (self.epd.height, self.epd.width), 255)  # 255: clear the frame
       draw = ImageDraw.Draw(image)
 
