@@ -4,6 +4,28 @@ set -e # stop on error
 # get directory that the script exists in
 cd "$( dirname "$0" )"
 
+
+helptext="Usage: generate_bins.bash [OPTION]...
+Build binaries that are packaged with AmpliPi for several different architectures.
+This builds binaries on a Pi for now, TODO: cross compile everything!
+
+  --only-local: Only build local binaries (the pi takes awhile)
+  -h, --help: Print this help text.
+"
+
+local_only=false
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --local_only) local_only=true ;;
+    -h|--help) printf "$helptext"; exit 0 ;;
+    *)  printf "Unknown parameter passed: $1\n\n"
+        printf "$helptext"
+        exit 1
+      ;;
+  esac
+  shift
+done
+
 function build {
   git_installed=$(sudo apt list --installed 2> /dev/null | grep git/ -c)
   if [ 0 -eq "${git_installed}" ]; then
@@ -76,26 +98,28 @@ function build {
 }
 
 if [[ ! -d '/home/pi' ]] ; then
-  # copy this script to the amplipi
-  # check if RPI_IP_ADDRESS is set
-  if [[ -z "${RPI_IP_ADDRESS}" ]]; then
-    echo ""
-    echo "Please set RPI_IP_ADDRESS, for example:"
-    echo -e '\033[1;32mexport RPI_IP_ADDRESS=amplipi.local\033[0m'
-    echo "for ssh key access"
-    echo -e '\033[1;32mexport RPI_IP_ADDRESS=pi@amplipi.local\033[0m'
-    echo ""
-    exit 1
+  if ! $local_only; then
+    # copy this script to the amplipi
+    # check if RPI_IP_ADDRESS is set
+    if [[ -z "${RPI_IP_ADDRESS}" ]]; then
+      echo ""
+      echo "Please set RPI_IP_ADDRESS, for example:"
+      echo -e '\033[1;32mexport RPI_IP_ADDRESS=amplipi.local\033[0m'
+      echo "for ssh key access"
+      echo -e '\033[1;32mexport RPI_IP_ADDRESS=pi@amplipi.local\033[0m'
+      echo ""
+      exit 1
+    fi
+    echo "copying this script to the amplipi"
+    scp generate_bins.bash ${RPI_IP_ADDRESS}:
+    echo "building the files on the amplipi"
+    x=$(ssh $RPI_IP_ADDRESS "source generate_bins.bash | grep 'success=' | sed 's/success=//'")
+    if [[ -z "$x" ]] ; then
+      echo "failed to build binaries, try running this script directly on the pi to debug"
+      exit -1
+    fi
+    scp $RPI_IP_ADDRESS:$x/* arm/
   fi
-  echo "copying this script to the amplipi"
-  scp generate_bins.bash ${RPI_IP_ADDRESS}:
-  echo "building the files on the amplipi"
-  x=$(ssh $RPI_IP_ADDRESS "source generate_bins.bash | grep 'success=' | sed 's/success=//'")
-  if [[ -z "$x" ]] ; then
-    echo "failed to build binaries, try running this script directly on the pi to debug"
-    exit -1
-  fi
-  scp $RPI_IP_ADDRESS:$x/* arm/
   # build files locally
   build
   cp $bin_dir/* x64/
