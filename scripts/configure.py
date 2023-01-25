@@ -189,26 +189,19 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
   },
   'bluetooth' : {
-    'amplipi_only' : [], # TODO: can i just put None as the value?
-    # 'copy' : [{'from': 'bin/ARCH/rtl8761b_fw', 'to': '/lib/firmware/rtl_bt/rtl8761b_fw.bin'},
-    #           {'from': 'bin/ARCH/rtl8761b_config', 'to': '/lib/firmware/rtl_bt/rtl8761b_config.bin'},
-    #           {'from': 'config/bluetooth/main.conf', 'to': '/etc/bluetooth/main.conf'},
-    #           # TODO: investigate where to put these services
-    #           {'from': 'config/bluetooth/bluealsa.service', 'to': '/lib/systemd/system/'},
-    #           {'from': 'streams/bluetooth_agent', 'to': '/usr/local/bin/'},
-    #           {'from': 'config/bluetooth/bluetooth_agent.service', 'to': '/etc/systemd/system/'}],
+    'amplipi_only' : [],
     'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
               'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4' ],
     'script' : [
-      # 'sudo cp bin/ARCH/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
-      # 'sudo cp bin/ARCH/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
-      # TODO: handle ARCH keyword in scripts, not just copy
+      # referencing arm here is okay because bluetooth is marked as 'amplipi_only'
       'sudo cp bin/arm/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
       'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
       'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
+      # TODO: investigate where to put these services
       'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
       'sudo cp streams/bluetooth_agent /usr/local/bin/',
       'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
+
       # Install SBC
       'if ! [ -e /usr/local/lib/libsbc.so.1.3.1 ]',
       'then',
@@ -216,7 +209,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'pushd $(mktemp --directory)',
       'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
       'cd sbc',
-      'git checkout 8dc5d5ba381512ad5b1afa45c63ec6b0a3833244',
+      'git checkout 8dc5d5ba381512ad5b1afa45c63ec6b0a3833244',  # sbc release 2.0
       'sudo ./bootstrap-configure',
       'sudo ./configure',
       'sudo make',

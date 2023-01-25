@@ -76,7 +76,6 @@ if args.command != None:
   exit(1)
 
 def main():
-  print('in bluetooth main()')
   last_info = ""
   latest_info = {
     'artist': '',
