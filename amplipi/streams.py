@@ -1111,9 +1111,15 @@ class Bluetooth(BaseStream):
   @staticmethod
   def is_hw_available():
     """Determines if a bluetooth dongle is present"""
-    btcmd_args = 'bluetoothctl show'
-    btcmd_proc = subprocess.run(args=btcmd_args.split(), stdout=subprocess.PIPE)
-    return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
+    try:
+      if subprocess.run('which bluetoothctl'.split()).returncode != 0:
+        return False
+      btcmd_proc = subprocess.run('bluetoothctl show'.split(), stdout=subprocess.PIPE)
+      return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
+    except Exception as e:
+      print(f'Error checking for bluetooth hardware: {e}')
+      return False
+
 
   def connect(self, src):
     """ Connect a bluealsa-aplay process with audio output to a given audio source """
