@@ -6,10 +6,10 @@ import json
 import time
 import os
 import sys
-from typing import List
-from multiprocessing import Process, Queue
+from typing import List, Dict, Any, Optional
+from multiprocessing import Process, SimpleQueue
 from dasbus.connection import SessionMessageBus
-from dasbus.client.proxy import disconnect_proxy
+from dasbus.client.proxy import disconnect_proxy, InterfaceProxy
 
 
 METADATA_MAPPINGS = [
@@ -49,12 +49,13 @@ class MPRIS:
         interface_name = "org.mpris.MediaPlayer2.Player"
     )
 
-    self._signal = Queue()
+    self._signal: "SimpleQueue[str]" = SimpleQueue()
 
     self.capabilities: List[CommandTypes] = []
 
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
+    self._closing = False
 
     try:
       with open(self.metadata_path, "w", encoding='utf-8') as f:
@@ -144,15 +145,24 @@ class MPRIS:
 
   def close(self):
     """Closes the MPRIS object."""
-    print("walking to the well")
+    if self._closing:
+      return
+    self._closing = True
+    print("walking to the well", flush=True)
     self._signal.put('done')
-    print("poisoning the well")
+    print("poisoning the well", flush=True)
     # time.sleep(1)
-    try:
-      self.metadata_process.join(1.0)
-    except Exception as e:
-      print(f'Could not stop MPRIS metadata process: {e}')
-    disconnect_proxy(self.mpris)
+    self.metadata_process.join(1.0)
+    if self.metadata_process.is_alive():
+      print(f'Failed to stop MPRIS metadata process', flush=True)
+    self.metadata_process = None
+    print(f'Cleaning up signal queue', flush=True)
+    self._signal = None
+    if self.mpris:
+      print('disconnecting proxy', flush=True)
+      disconnect_proxy(self.mpris)
+    self.mpris = None
+    print("mpris closed", flush=True)
     # try:
     #   os.remove(self.metadata_path)
     # except Exception as e:
@@ -162,82 +172,98 @@ class MPRIS:
   def __del__(self):
     self.close()
 
-  def _metadata_reader(self, que: Queue):
+  def _metadata_reader(self, que: SimpleQueue):
     """Method run by the metadata process, also handles playing/paused."""
 
     m = Metadata()
     m.state = 'Stopped'
+    mpris: Optional[InterfaceProxy] = None
 
     last_sent = m.__dict__
 
     def ok():
       """Returns true if we should keep running."""
       if not que.empty():
-        print(f"MPRIS metadata process for {self.service_suffix} exiting")
+        print(f"MPRIS metadata process for {self.service_suffix} exiting", flush=True)
+        sys.stdout.flush()
       else:
-        print(f"MPRIS metadata process for {self.service_suffix} still running")
+        print(f"MPRIS metadata process for {self.service_suffix} still running", flush=True)
       return que.empty()
 
     while ok():
 
-      metadata = {}
-      try:
-        mpris = SessionMessageBus().get_proxy(
-          service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
-          object_path = "/org/mpris/MediaPlayer2",
-          interface_name = "org.mpris.MediaPlayer2.Player"
-        )
-      except Exception as e:
-        metadata['connected'] = False
-        print(f"failed to connect mpris {e}")
-        if not ok():
-          return
-
-      print(f"getting mrpis metadata from {self.service_suffix}")
-      try:
-        raw_metadata = {}
+      metadata: Dict[str, Any] = {}
+      if not mpris:
         try:
-          raw_metadata = mpris.Metadata
+          print(f'connecting to {self.service_suffix}')
+          mpris = SessionMessageBus().get_proxy(
+            service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
+            object_path = "/org/mpris/MediaPlayer2",
+            interface_name = "org.mpris.MediaPlayer2.Player"
+          )
         except Exception as e:
           metadata['connected'] = False
-          print(f"Dbus error getting MPRIS metadata: {e}")
+          print(f"failed to connect mpris {e}", flush=True)
           if not ok():
-            return
+            break
 
-        for mapping in METADATA_MAPPINGS:
+      #print(f"getting mrpis metadata from {self.service_suffix}")
+      if mpris:
+        try:
+          raw_metadata = {}
           try:
-            metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
-          except KeyError as e:
-            print(f"Metadata mapping error: {e}")
-            pass
+            raw_metadata = mpris.Metadata
+          except Exception as e:
+            metadata['connected'] = False
+            #print(f"Dbus error getting MPRIS metadata: {e}")
+            if not ok():
+              break
 
-        metadata['state'] = mpris.PlaybackStatus.strip("'")
-        metadata['volume'] = mpris.Volume
+          for mapping in METADATA_MAPPINGS:
+            try:
+              metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
+            except KeyError as e:
+              #print(f"Metadata mapping error: {e}")
+              pass
+            if not ok():
+              break
 
-        if metadata['state'] != last_sent['state']:
-          metadata['state_changed_time'] = time.time()
-        else:
-          metadata['state_changed_time'] = last_sent['state_changed_time']
+          if ok():
+            metadata['state'] = mpris.PlaybackStatus.strip("'")
+            metadata['volume'] = mpris.Volume
 
-        metadata['connected'] = True
+            if metadata['state'] != last_sent['state']:
+              metadata['state_changed_time'] = time.time()
+            else:
+              metadata['state_changed_time'] = last_sent['state_changed_time']
 
-        if metadata != last_sent:
-          last_sent = metadata
-          with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
-            json.dump(metadata, metadata_file)
+            metadata['connected'] = True
 
-      except Exception as e:
-        print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}"
-              +"\nThe above is normal if a user is not yet connected to the stream.")
-        if not ok():
-          return
+          if metadata != last_sent:
+            last_sent = metadata
+            with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
+              json.dump(metadata, metadata_file)
 
-      sys.stdout.flush() # forces stdout to print
+        except Exception as e:
+          print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}"
+                +"\nThe above is normal if a user is not yet connected to the stream.", flush=True)
+          try:
+            disconnect_proxy(mpris)
+          except Exception as e_proxy:
+            print(f'Error disconnecting MPRIS proxy: {e_proxy}', flush=True)
+          finally:
+            mpris = None
+          if not ok():
+            break
 
-      if not ok():
-        return
-      time.sleep(1.0/METADATA_REFRESH_RATE)
+      if ok():
+        time.sleep(1.0/METADATA_REFRESH_RATE)
+
+    print('metadata reader thread stopped', flush=True)
+    if mpris:
       try:
+        print('disconnecting from MPRIS proxy', flush=True)
         disconnect_proxy(mpris)
       except Exception as e:
-        print(e)
+        print(e, flush=True)
+

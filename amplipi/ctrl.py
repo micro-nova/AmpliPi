@@ -311,9 +311,10 @@ class Api:
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()
+    print('streams stopped', flush=True)
     # put the firmware in a reset state (should mute all audio)
     self._rt.reset()
-    print('controller shutdown complete')
+    print('controller shutdown complete', flush=True)
 
   def save(self) -> None:
     """ Saves the system state to json"""

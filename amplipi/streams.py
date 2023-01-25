@@ -95,7 +95,7 @@ class BaseStream:
     return f'{self.name} - {self.stype}'
 
   def _disconnect(self):
-    print(f'{self.name} disconnected')
+    print(f'{self.name} disconnected', flush=True)
     self.state = 'disconnected'
     self.src = None
 
@@ -281,10 +281,15 @@ class AirPlay(BaseStream):
   def disconnect(self):
     if self.mpris:
       self.mpris.close()
+    print('mpris!=None!', flush=True)
     self.mpris = None
+    print('mpris=None!', flush=True)
     if self._is_running():
+      self.proc.stdin.close()
+      print('stopping shairport-sync', flush=True)
       self.proc.terminate()
       if self.proc.wait(1) != 0:
+        print('killing shairport-sync', flush=True)
         self.proc.kill()
     self._disconnect()
     self.proc = None
