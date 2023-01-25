@@ -17,6 +17,8 @@
 * Streams
   * Switch to Spotifyd Spotify client
   * Add MPRIS metadata/command interface
+  * Add LMS Client
+  * Add Bluetooth stream
   * Add LMS Client (no metadata yet)
   * Make Airplay use MPRIS
   * Add single Airplay2 to Airplay stream
