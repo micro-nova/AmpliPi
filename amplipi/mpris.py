@@ -7,7 +7,7 @@ import time
 import os
 import sys
 from typing import List, Dict, Any, Optional
-from multiprocessing import Process, SimpleQueue
+from multiprocessing import Process, Event
 from dasbus.connection import SessionMessageBus
 from dasbus.client.proxy import disconnect_proxy, InterfaceProxy
 
@@ -49,7 +49,7 @@ class MPRIS:
         interface_name = "org.mpris.MediaPlayer2.Player"
     )
 
-    self._signal: "SimpleQueue[str]" = SimpleQueue()
+    self._signal = Event()
 
     self.capabilities: List[CommandTypes] = []
 
@@ -149,7 +149,7 @@ class MPRIS:
       return
     self._closing = True
     print(f"walking to the well {self.metadata_process}", flush=True)
-    self._signal.put('done')
+    self._signal.set()
     print("poisoning the well", flush=True)
     # time.sleep(1)
     self.metadata_process.join(1.0)
@@ -172,7 +172,7 @@ class MPRIS:
   def __del__(self):
     self.close()
 
-  def _metadata_reader(self, que: SimpleQueue):
+  def _metadata_reader(self, signal: Event):
     """Method run by the metadata process, also handles playing/paused."""
 
     m = Metadata()
@@ -183,12 +183,12 @@ class MPRIS:
 
     def ok():
       """Returns true if we should keep running."""
-      if not que.empty():
+      if signal.is_set():
         print(f"MPRIS metadata process for {self.service_suffix} exiting", flush=True)
         sys.stdout.flush()
       # else:
         # print(f"MPRIS metadata process for {self.service_suffix} still running", flush=True)
-      return que.empty()
+      return not signal.is_set()
 
     while ok():
 
