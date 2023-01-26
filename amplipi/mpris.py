@@ -148,7 +148,7 @@ class MPRIS:
     if self._closing:
       return
     self._closing = True
-    print("walking to the well", flush=True)
+    print(f"walking to the well {self.metadata_process}", flush=True)
     self._signal.put('done')
     print("poisoning the well", flush=True)
     # time.sleep(1)
@@ -186,8 +186,8 @@ class MPRIS:
       if not que.empty():
         print(f"MPRIS metadata process for {self.service_suffix} exiting", flush=True)
         sys.stdout.flush()
-      else:
-        print(f"MPRIS metadata process for {self.service_suffix} still running", flush=True)
+      # else:
+        # print(f"MPRIS metadata process for {self.service_suffix} still running", flush=True)
       return que.empty()
 
     while ok():

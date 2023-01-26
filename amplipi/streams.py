@@ -109,7 +109,7 @@ class BaseStream:
     self._disconnect()
 
   def _connect(self, src):
-    print(f'{self.name} connected to {src}')
+    print(f'{self.name} connected to {src}', flush=True)
     self.state = 'connected'
     self.src = src
 
@@ -279,6 +279,8 @@ class AirPlay(BaseStream):
     self._connect(src)
 
   def disconnect(self):
+    print(f'disconnecting {self.name}!', flush=True)
+    print(f'mpris pre_close: {self.mpris} on {self.name}!', flush=True)
     if self.mpris:
       self.mpris.close()
     print('mpris!=None!', flush=True)
@@ -291,6 +293,10 @@ class AirPlay(BaseStream):
       if self.proc.wait(1) != 0:
         print('killing shairport-sync', flush=True)
         self.proc.kill()
+    try:
+      subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
+    except Exception as e:
+      print(f'Error removing airplay config files: {e}')
     self._disconnect()
     self.proc = None
 
@@ -308,7 +314,7 @@ class AirPlay(BaseStream):
         return source
 
     if not self.mpris:
-      print(f'Airplay: No MPRIS object for {self.name}')
+      print(f'Airplay: No MPRIS object for {self.name}!')
       return source
 
     try:
