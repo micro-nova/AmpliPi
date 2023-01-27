@@ -1,14 +1,15 @@
 #! /usr/bin/python3
 # -*- coding: utf-8 -*-
 
-""" Bluetooth currently only supports at most one Bluetooth stream. Handles media controls and audio. """
+""" Bluetooth currently only supports at most one Bluetooth stream. Handles media controls and audio playback. """
 
-import time
-import json
 import argparse
+import json
 import sys
-from bluezero import dbus_tools
-from bluezero import media_player
+import time
+
+from dataclasses import dataclass, asdict
+from bluezero import dbus_tools, media_player
 
 parser = argparse.ArgumentParser(prog='bluetooth', description='track bluetooth metadata and control playback')
 parser.add_argument('--command', type=str, help='playback command (play, pause, next, previous)', nargs='?',
@@ -17,6 +18,17 @@ parser.add_argument('--song-info', type=str, help='file to update with current s
 parser.add_argument('--log', type=str, help='log file (defaults to stdout)', default=None)
 parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
+
+@dataclass
+class MediaInfo:
+  artist: str = ''
+  title: str = ''
+  album: str = ''
+  duration: str = ''
+  status: str = ''
+
+  def as_json(self):
+    return json.dumps(asdict(self))
 
 def log(info):
   if args.log:
@@ -28,16 +40,6 @@ def log(info):
       print(info)
   else:
     print(info)
-
-if args.song_info:
-  try:
-    pass
-    # with open(args.song_info, "wt") as f:
-    #   # TODO:
-    #   f.write(json.dumps({"station": str(player.get_state())}))
-  except Exception:
-    log(sys.exc_info())
-    sys.exit(1)
 
 # Run command on bluetooth device (next, pause, etc)
 if args.command is not None:
@@ -75,14 +77,7 @@ if args.command is not None:
   sys.exit(1)
 
 def main():
-  last_info = ""
-  latest_info = {
-    'artist': '',
-    'title': '',
-    'album': '',
-    'duration': '',
-    'status': ''
-  }
+  last_info = MediaInfo()
 
   try:
     while True:
@@ -96,51 +91,31 @@ def main():
         try:
           mp = media_player.MediaPlayer(mac_addr)
           track_details = mp.track
-          status = mp.status
           artist = track_details.get("Artist", "")
           title = track_details.get("Title", "")
           album = track_details.get("Album", "")
           duration = track_details.get("Duration", "")
-
-          latest_info = {
-            'artist': artist,
-            'title': title,
-            'album': album,
-            'duration': duration,
-            'status': status
-          }
+          latest_info = MediaInfo(artist, title, album, duration, mp.status)
         except:
-          latest_info = {
-            'artist': "",
-            'title': "",
-            'album': "",
-            'duration': "",
-            'status': "stopped"
-          }
+          latest_info = MediaInfo(status='stopped')
 
       else:
-        latest_info = {
-          'artist': '',
-          'title': '',
-          'album': '',
-          'duration': '',
-          'status': 'stopped'
-        }
+        latest_info = MediaInfo(status='stopped')
 
         if args.verbose:
           log('Error: No media player connected')
 
-      if last_info != json.dumps(latest_info) and args.song_info is not None:
+      if last_info != latest_info and args.song_info is not None:
         # Update song_info file with new information
         try:
           with open(args.song_info, "wt") as f:
-            f.write(json.dumps(latest_info))
+            f.write(latest_info.as_json())
 
-          last_info = json.dumps(latest_info)
+          last_info = latest_info
 
           if args.verbose:
             log('Updated song_info')
-            log(json.dumps(latest_info))
+            log(latest_info.as_json())
 
         except Exception:
           log(f'song_info file: {args.song_info}')
