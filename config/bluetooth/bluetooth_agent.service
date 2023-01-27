@@ -5,7 +5,7 @@ Wants=bluetooth.service
 
 [Service]
 ExecStartPre=/bin/sh -c "echo discoverable on | bluetoothctl"
-ExecStart=/usr/bin/python -u /usr/local/bin/bluetooth_agent
+ExecStart=/usr/bin/python3 -u /usr/local/bin/bluetooth_agent
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=bluetooth_agent

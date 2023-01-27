@@ -1,11 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # https://gist.github.com/Pindar/e259bec5c3ab862f4ff5f1fbcb11bfc1
 
 """ Handles pairing and authorization of Bluetooth devices. The following agent
 allows the Raspberry Pi to automatically pair and accept A2DP, HFP, HSP and
 AVRCP connections from Bluetooth devices. """
-
-from __future__ import absolute_import, print_function, unicode_literals
 
 import dbus
 import dbus.mainloop.glib
@@ -34,8 +32,7 @@ class Agent(dbus.service.Object):
     if self.exit_on_release:
       mainloop.quit()
 
-  @dbus.service.method(AGENT_INTERFACE,
-          in_signature="os", out_signature="")
+  @dbus.service.method(AGENT_INTERFACE, in_signature="os", out_signature="")
   def AuthorizeService(self, device, uuid):
     print(f"AuthorizeService ({device}, {uuid})")
     if uuid.lower() == "0000110d-0000-1000-8000-00805f9b34fb":
