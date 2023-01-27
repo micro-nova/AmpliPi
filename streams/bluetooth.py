@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# Uses rtl_fm to access an RTL-SDR dongle, redsea to process RDS data (if any), and aplay to output to audio device
+""" Bluetooth currently only supports at most one Bluetooth stream. Handles media controls and audio. """
 
 import time
 import json
@@ -31,17 +31,16 @@ def log(info):
 
 if args.song_info:
   try:
-    f = open(args.song_info, "wt")
-
-    # TODO:
-    # f.write(json.dumps({"station": str(player.get_state())}))
-    f.close()
+    pass
+    # with open(args.song_info, "wt") as f:
+    #   # TODO:
+    #   f.write(json.dumps({"station": str(player.get_state())}))
   except Exception:
     log(sys.exc_info())
-    exit(1)
+    sys.exit(1)
 
 # Run command on bluetooth device (next, pause, etc)
-if args.command != None:
+if args.command is not None:
   # Find the mac address of the first media player connected over Bluetooth
   mac_addr = None
   for dbus_path in dbus_tools.get_managed_objects():
@@ -73,7 +72,7 @@ if args.command != None:
       if args.verbose:
         log('Error: No media player connected')
 
-  exit(1)
+  sys.exit(1)
 
 def main():
   last_info = ""
@@ -98,25 +97,10 @@ def main():
           mp = media_player.MediaPlayer(mac_addr)
           track_details = mp.track
           status = mp.status
-          try:
-            artist = track_details["Artist"]
-          except:
-            artist = ""
-
-          try:
-            title = track_details["Title"]
-          except:
-            title = ""
-
-          try:
-            album = track_details["Album"]
-          except:
-            album = ""
-
-          try:
-            duration = track_details["Duration"]
-          except:
-            duration = ""
+          artist = track_details.get("Artist", "")
+          title = track_details.get("Title", "")
+          album = track_details.get("Album", "")
+          duration = track_details.get("Duration", "")
 
           latest_info = {
             'artist': artist,
@@ -146,12 +130,11 @@ def main():
         if args.verbose:
           log('Error: No media player connected')
 
-      if last_info != json.dumps(latest_info) and args.song_info != None:
+      if last_info != json.dumps(latest_info) and args.song_info is not None:
         # Update song_info file with new information
         try:
-          f = open(args.song_info, "wt")
-          f.write(json.dumps(latest_info))
-          f.close()
+          with open(args.song_info, "wt") as f:
+            f.write(json.dumps(latest_info))
 
           last_info = json.dumps(latest_info)
 
@@ -160,8 +143,8 @@ def main():
             log(json.dumps(latest_info))
 
         except Exception:
-          log('song_info file: %s' % args.song_info)
-          log('Error: %s' % sys.exc_info()[1])
+          log(f'song_info file: {args.song_info}')
+          log(f'Error: {sys.exc_info()[1]}')
 
       time.sleep(1)
 

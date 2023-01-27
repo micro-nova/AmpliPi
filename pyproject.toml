@@ -33,6 +33,7 @@ include = [
   "config/*.conf",
   "config/bluetooth/*",
   "config/*.rules",
+  "config/bluetooth/*",
   "debs/**/*",
   "fw/*.sh", # no need to add full source tree
   "fw/bin/*",
