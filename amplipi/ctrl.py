@@ -296,7 +296,6 @@ class Api:
           self.delete_stream(s, internal=True)
 
 
-
     # configure all sources so that they are in a known state
     # only models.MAX_SOURCES are supported, keep the config from adding extra
     # this helps us transition from weird and experimental configs
