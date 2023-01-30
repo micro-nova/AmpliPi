@@ -5,10 +5,13 @@
 
 import argparse
 import json
+import subprocess
 import sys
 import time
 
 from dataclasses import dataclass, asdict
+from typing import Optional
+
 from bluezero import dbus_tools, media_player
 
 parser = argparse.ArgumentParser(prog='bluetooth', description='track bluetooth metadata and control playback')
@@ -76,8 +79,17 @@ if args.command is not None:
 
   sys.exit(1)
 
+def mac_to_device_name(mac: str) -> Optional[str]:
+  devices = subprocess.run('bluetoothctl devices'.split(), timeout=0.5, check=True, capture_output=True).stdout.decode()
+  for line in devices.splitlines():
+    if line.split()[1].lower() == mac.lower():
+      return ' '.join(line.split()[2:])
+  return None
+
 def main():
   last_info = MediaInfo()
+  last_mac_addr = ''
+  device_name = None
 
   try:
     while True:
@@ -92,15 +104,29 @@ def main():
           mp = media_player.MediaPlayer(mac_addr)
           track_details = mp.track
           artist = track_details.get("Artist", "")
-          title = track_details.get("Title", "")
           album = track_details.get("Album", "")
+          title = track_details.get("Title", "")
           duration = track_details.get("Duration", "")
+
+          if last_mac_addr != mac_addr:
+            last_mac_addr = mac_addr
+            device_name = mac_to_device_name(mac_addr)
+
+          if device_name:
+            title += " - " + device_name
+          else:
+            if len(title) > 0:
+              print('WARNING: Bluetooth media player has song title, but no device!')
+              title += "- Unknown device"
+            else:
+              title = "Unknown device"
+
           latest_info = MediaInfo(artist, title, album, duration, mp.status)
         except:
           latest_info = MediaInfo(status='stopped')
 
       else:
-        latest_info = MediaInfo(status='stopped')
+        latest_info = MediaInfo(status='stopped', title="No device connected - Pair device to 'amplipi'")
 
         if args.verbose:
           log('Error: No media player connected')
