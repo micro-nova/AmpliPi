@@ -279,19 +279,16 @@ class AirPlay(BaseStream):
     self._connect(src)
 
   def disconnect(self):
-    print(f'disconnecting {self.name}!', flush=True)
-    print(f'mpris pre_close: {self.mpris} on {self.name}!', flush=True)
+    print(f'disconnecting {self.name}!')
     if self.mpris:
       self.mpris.close()
-    print('mpris!=None!', flush=True)
     self.mpris = None
-    print('mpris=None!', flush=True)
     if self._is_running():
       self.proc.stdin.close()
-      print('stopping shairport-sync', flush=True)
+      print('stopping shairport-sync')
       self.proc.terminate()
       if self.proc.wait(1) != 0:
-        print('killing shairport-sync', flush=True)
+        print('killing shairport-sync')
         self.proc.kill()
     try:
       subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
@@ -325,7 +322,7 @@ class AirPlay(BaseStream):
       else:
         # if we've been paused for a while, say we're stopped since
         # shairport-sync doesn't really differentiate between paused and stopped
-        if time.time() - md.state_changed_time < self.STATE_TIMEOUT:
+        if source.state == 'paused' and time.time() - md.state_changed_time < self.STATE_TIMEOUT:
           source.state = 'paused'
         else:
           source.state = 'stopped'
