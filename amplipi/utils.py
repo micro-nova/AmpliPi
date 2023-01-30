@@ -31,7 +31,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 
 import pkg_resources # version
 
-import amplipi.models as models
+from amplipi import models
 
 # pylint: disable=bare-except
 
@@ -48,11 +48,11 @@ def parse_int(i, options):
   """ Parse an integer into one of the given options """
   if int(i) in options:
     return int(i)
-  raise ValueError('{} is not in [{}]'.format(i, options))
+  raise ValueError(f'{i} is not in [{options}]')
 
 def error(msg):
   """ wrap the error message specified by msg into an error """
-  print('Error: {}'.format(msg))
+  print(f'Error: {msg}')
   return {'error': msg}
 
 VT = TypeVar("VT")
@@ -63,16 +63,16 @@ def updated_val(update: Optional[VT], val: VT) -> Tuple[VT, bool]:
     return val, False
   return update, update != val
 
-BT = TypeVar("BT", bound='models.Base', covariant=True)
+BT_co = TypeVar("BT_co", bound='models.Base', covariant=True)
 
-def find(items: Iterable[BT], item_id: int, key='id') -> Union[Tuple[int, BT], Tuple[None, None]]:
+def find(items: Iterable[BT_co], item_id: int, key='id') -> Union[Tuple[int, BT_co], Tuple[None, None]]:
   """ Find an item by id """
   for i, item in enumerate(items):
     if item.__dict__[key] == item_id:
       return i, item
   return None, None
 
-def next_available_id(items: Iterable[BT], default: int = 0) -> int:
+def next_available_id(items: Iterable[BT_co], default: int = 0) -> int:
   """ Get a new unique id among @items """
   # TODO; use `largest_item = max(items, key=lambda item: item.id, default=None)` to find max if models.Base changes id to be required
   largest_id = None
@@ -198,7 +198,7 @@ def detect_version() -> str:
   version = 'unknown'
   script_folder = os.path.dirname(os.path.realpath(__file__))
   try:
-    with open(os.path.join(script_folder, '..', 'pyproject.toml')) as proj_file:
+    with open(os.path.join(script_folder, '..', 'pyproject.toml'), encoding='utf-8') as proj_file:
       for line in proj_file.readlines():
         if 'version' in line:
           match = TOML_VERSION_STR.search(line)
@@ -227,7 +227,7 @@ def is_amplipi():
   # Check for Raspberry Pi
   try:
     # Also available in /proc/device-tree/model, and in /proc/cpuinfo's "Model" field
-    with io.open('/sys/firmware/devicetree/base/model', 'r') as model:
+    with io.open('/sys/firmware/devicetree/base/model', 'r', encoding='utf-8') as model:
       desired_model = 'Raspberry Pi Compute Module 3 Plus'
       current_model = model.read()
       if desired_model.lower() not in current_model.lower():
