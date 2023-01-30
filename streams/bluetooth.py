@@ -1,7 +1,10 @@
 #! /usr/bin/python3
 # -*- coding: utf-8 -*-
 
-""" Bluetooth currently only supports at most one Bluetooth stream. Handles media controls and audio playback. """
+""" Bluetooth command line interface for media controls and metadata
+
+Currently only supports at most one Bluetooth stream.
+"""
 
 import argparse
 import json
@@ -105,7 +108,7 @@ def main():
           track_details = mp.track
           artist = track_details.get("Artist", "")
           album = track_details.get("Album", "")
-          title = track_details.get("Title", "")
+          title = track_details.get("Title", "Unknown")
           duration = track_details.get("Duration", "")
 
           if last_mac_addr != mac_addr:

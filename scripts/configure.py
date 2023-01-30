@@ -189,7 +189,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
   },
   'bluetooth' : {
-    'amplipi_only' : [],
+    'amplipi_only' : True,
     'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
               'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4' ],
     'script' : [
@@ -323,7 +323,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   scripts: Dict[str, List[str]] = {}
   for dep in deps:
     install_steps = _os_deps[dep]
-    if 'amplipi_only' in install_steps and not env['is_amplipi']:
+    if install_steps.get('amplipi_only', False) and not env['is_amplipi']:
       continue
     if 'copy' in install_steps:
       files += install_steps['copy']

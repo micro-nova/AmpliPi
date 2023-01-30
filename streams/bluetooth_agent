@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 # https://gist.github.com/Pindar/e259bec5c3ab862f4ff5f1fbcb11bfc1
 
-""" Handles pairing and authorization of Bluetooth devices. The following agent
-allows the Raspberry Pi to automatically pair and accept A2DP, HFP, HSP and
-AVRCP connections from Bluetooth devices. """
+""" Bluetooth Agent
+
+Handles pairing and authorization of Bluetooth devices. Allows the host to automatically
+pair and accept A2DP, HFP, HSP and AVRCP connections from Bluetooth devices.
+"""
 
 import dbus
 import dbus.mainloop.glib
