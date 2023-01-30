@@ -242,6 +242,9 @@ class Api:
           if z.id not in muted_zones:
             mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
 
+    # configure Aux and SPDIF
+    utils.configure_inputs()
+
     # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
     for rca_id in RCAs:
       sid, stream = utils.find(self.status.streams, rca_id)

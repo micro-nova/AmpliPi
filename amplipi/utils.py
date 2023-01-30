@@ -26,6 +26,7 @@ import time
 import os
 import re
 import subprocess
+import shlex
 from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 
 import pkg_resources # version
@@ -132,6 +133,19 @@ def available_outputs():
   if 'ch0' not in outputs:
     print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
   return outputs
+
+def configure_inputs():
+  """ The IEC598 and Aux inputs are being muted/misconfigured during system startup
+
+    Enable the capture capability for Aux and IEC958 and set capture volume to 100% (unmuted) """
+  if is_amplipi():
+    # setup usb soundcard input volumes and unmute
+    try:
+      subprocess.run(shlex.split(r'amixer -D hw:cmedia8chint set Speaker 100% unmute'), check=True) # is this required??
+      subprocess.run(shlex.split('amixer -D hw:cmedia8chint set Line capture cap 0dB playback mute 0%'), check=True)
+      subprocess.run(shlex.split('amixer -D hw:cmedia8chint set "IEC958 In" cap'), check=True)
+    except Exception as e:
+      print(f'Failed to configure inputs: {e}')
 
 def output_device(sid: int) -> str:
   """ Get a source's corresponding ALSA output device string """
