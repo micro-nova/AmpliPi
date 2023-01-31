@@ -30,15 +30,7 @@ class MPRISMetadataReader:
 
     self.mpris: Optional[InterfaceProxy] = None
 
-    self.last_sent = {
-      'artist'              : '',
-      'title'               : '',
-      'art_url'             : '',
-      'album'               : '',
-      'state'               : 'stopped',
-      'connected'           : False,
-      'state_changed_time'  : 0
-    }
+    self.last_sent = None
 
     self.ok = True
 
@@ -96,6 +88,10 @@ class MPRISMetadataReader:
           if self.ok:
             metadata['state'] = mpris.PlaybackStatus.strip("'")
             metadata['volume'] = mpris.Volume
+
+            # initialize last sent if it hasn't been yet
+            if self.last_sent is None:
+              self.last_sent = metadata
 
             if metadata['state'] != self.last_sent['state']:
               metadata['state_changed_time'] = time.time()

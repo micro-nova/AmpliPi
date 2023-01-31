@@ -193,7 +193,7 @@ class AirPlay(BaseStream):
       'prev'
       ]
     self.STATE_TIMEOUT = 300 # seconds
-    self._connect_time = -1
+    self._connect_time = 0
     self._coverart_dir = ''
 
   def reconfig(self, **kwargs):
@@ -326,8 +326,8 @@ class AirPlay(BaseStream):
       if self.mpris.is_playing():
         source.state = 'playing'
       else:
-        # if we've been paused for a while, say we're stopped since
-        # shairport-sync doesn't really differentiate between paused and stopped
+        # if we've been paused for a while and the state has changed since connecting, then say
+        # we're stopped since shairport-sync doesn't really differentiate between paused and stopped
         if self._connect_time < md.state_changed_time and time.time() - md.state_changed_time < self.STATE_TIMEOUT:
           source.state = 'paused'
         else:
