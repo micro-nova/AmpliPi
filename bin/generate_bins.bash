@@ -13,6 +13,8 @@ This builds binaries on a Pi for now, TODO: cross compile everything!
   -h, --help: Print this help text.
 "
 
+#TODO: add building and cross building spotifyd
+
 local_only=false
 while [[ "$#" -gt 0 ]]; do
   case "$1" in

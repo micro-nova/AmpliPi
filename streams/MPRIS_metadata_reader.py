@@ -1,5 +1,6 @@
+"""MPRIS metadata reader, Polls the MPRIS interface specified and outputs the
+   content to a JSON file."""
 
-"""File run by the mpris interface."""
 import json
 import signal
 import sys
@@ -16,9 +17,13 @@ METADATA_MAPPINGS = [
 
 METADATA_REFRESH_RATE = 0.5
 
-class mpris_child_proc:
-  def __init__(self, service_suffix, metadata_path):
+class MPRISMetadataReader:
+  """A class for getting metadata from an MPRIS MediaPlayer2 over dbus."""
+
+  def __init__(self, service_suffix, metadata_path, debug):
     signal.signal(signal.SIGTERM, self.sigterm_handler)
+
+    self.debug = debug
 
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
@@ -40,7 +45,8 @@ class mpris_child_proc:
 
   def sigterm_handler(self):
     """Handle sigterm."""
-    print(f"MPRIS metadata process for {self.service_suffix} exiting", flush=True)
+    if self.debug:
+      print(f"MPRIS metadata process for {self.service_suffix} exiting", flush=True)
     self.ok = False
     sys.exit(0)
 
@@ -52,7 +58,8 @@ class mpris_child_proc:
       metadata: Dict[str, Any] = {}
       if not self.mpris:
         try:
-          print(f'connecting to {self.service_suffix}')
+          if self.debug:
+            print(f'connecting to {self.service_suffix}')
           mpris = SessionMessageBus().get_proxy(
             service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
             object_path = "/org/mpris/MediaPlayer2",
@@ -64,7 +71,8 @@ class mpris_child_proc:
           if not self.ok:
             break
 
-      #print(f"getting mrpis metadata from {self.service_suffix}")
+      if self.debug:
+        print(f"getting mrpis metadata from {self.service_suffix}")
       if mpris:
         try:
           raw_metadata = {}
@@ -80,8 +88,8 @@ class mpris_child_proc:
             try:
               metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
             except KeyError as e:
-              #print(f"Metadata mapping error: {e}")
-              pass
+              if self.debug:
+                print(f"Metadata mapping error: {e}")
             if not self.ok:
               break
 
@@ -102,8 +110,8 @@ class mpris_child_proc:
               json.dump(metadata, metadata_file)
 
         except Exception as e:
-          # print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}"
-          #       +"\nThe above is normal if a user is not yet connected to the stream.", flush=True)
+          if self.debug:
+            print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}")
           try:
             disconnect_proxy(mpris)
           except Exception as e_proxy:
@@ -116,20 +124,23 @@ class mpris_child_proc:
       if self.ok:
         time.sleep(1.0/METADATA_REFRESH_RATE)
 
-    print('metadata reader thread stopped', flush=True)
+    if self.debug:
+      print('metadata reader thread stopped', flush=True)
     if mpris:
       try:
-        print('disconnecting from MPRIS proxy', flush=True)
+        if self.debug:
+          print('disconnecting from MPRIS proxy', flush=True)
         disconnect_proxy(mpris)
       except Exception as e:
         print(e, flush=True)
 
 
-if len(sys.argv) != 3:
-  print("Usage: mprisdaughterproc.py <service_suffix> <metadata_path>")
+if len(sys.argv) < 3:
+  print("Usage: MPRIS_metadata_reader.py <service_suffix> <metadata_path> [debug]")
   sys.exit(1)
 
 service_suffix = sys.argv[1]
 metadata_path = sys.argv[2]
+debug = (sys.argv[3].lower()=='true') if len(sys.argv) > 3 else False
 
-mpris_child_proc(service_suffix, metadata_path).run()
+MPRISMetadataReader(service_suffix, metadata_path, debug).run()

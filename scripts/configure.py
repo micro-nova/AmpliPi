@@ -127,7 +127,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
               {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
     'script': [
         'if which nqptp  > /dev/null; then exit 0; fi',
-        'cd ~',
+        'cd /tmp',
         'git clone https://github.com/mikebrady/nqptp.git',
         'pushd nqptp',
         'autoreconf -fi',

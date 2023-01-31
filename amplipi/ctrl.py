@@ -301,21 +301,17 @@ class Api:
     self._update_groups()
 
   def __del__(self):
-    print('controller shutting down', flush=True)
     # stop save in the future so we can save right away
     # we save before shutting everything down to avoid saving disconnected state
     if self._save_timer:
       self._save_timer.cancel()
       self._save_timer = None
     self.save()
-    print('stopping streams', flush=True)
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()
-    print('streams stopped', flush=True)
     # put the firmware in a reset state (should mute all audio)
     self._rt.reset()
-    print('controller shutdown complete', flush=True)
 
   def save(self) -> None:
     """ Saves the system state to json"""

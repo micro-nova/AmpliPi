@@ -7,11 +7,11 @@
 * Streams
   * Robustify config loading to handle missing streams
   * Simplify stream serialization
-  * Swich to Spotifyd Spotify client
+  * Switch to Spotifyd Spotify client
   * Add MPRIS metadata/command interface
   * Add LMS Client
-  * make Airplay use MPRIS
-  * add single Airplay2 to Airplay stream
+  * Make Airplay use MPRIS
+  * Add single Airplay2 to Airplay stream
 
 ## 0.1.9
 * Web App

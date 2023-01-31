@@ -181,7 +181,7 @@ class RCA(BaseStream):
 
 class AirPlay(BaseStream):
   """ An AirPlay Stream """
-  def __init__(self, name: str, ap2:bool, disabled: bool = False, mock: bool = False):
+  def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
     super().__init__('airplay', name, disabled=disabled, mock=mock)
     self.mpris = None
     self.ap2 = ap2
@@ -193,6 +193,8 @@ class AirPlay(BaseStream):
       'prev'
       ]
     self.STATE_TIMEOUT = 300 # seconds
+    self._connect_time = -1
+    self._coverart_dir = ''
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -223,6 +225,7 @@ class AirPlay(BaseStream):
       if len(os.popen("pgrep -f shairport-sync-ap2").read().strip().splitlines())-1 > 0:
         self.ap2_exists = True
         self._connect(src)
+        print('Another Airplay 2 stream is already in use, unable to start, mocking connection.')
         return
       else:
         # this persists when you restart a stream so we also set it to false
@@ -231,6 +234,9 @@ class AirPlay(BaseStream):
     if self.mock:
       self._connect(src)
       return
+
+    self._connect_time = time.time()
+    self._coverart_dir = f'{utils.get_folder("web")}/generated/{self.src}'
 
     config = {
       'general': {
@@ -245,7 +251,7 @@ class AirPlay(BaseStream):
       'metadata':{
         'enabled': 'yes',
         'include_cover_art': 'yes',
-        'cover_art_cache_directory': f'{utils.get_folder("web")}/generated/{src}',
+        'cover_art_cache_directory': self._coverart_dir,
       },
       'alsa': {
         'output_device': utils.output_device(src), # alsa output device
@@ -322,7 +328,7 @@ class AirPlay(BaseStream):
       else:
         # if we've been paused for a while, say we're stopped since
         # shairport-sync doesn't really differentiate between paused and stopped
-        if source.state == 'paused' and time.time() - md.state_changed_time < self.STATE_TIMEOUT:
+        if self._connect_time < md.state_changed_time and time.time() - md.state_changed_time < self.STATE_TIMEOUT:
           source.state = 'paused'
         else:
           source.state = 'stopped'
@@ -334,17 +340,19 @@ class AirPlay(BaseStream):
         source.supported_cmds=list(self.supported_cmds)
 
         if md.title != '':
-          img_name = os.listdir(f'{utils.get_folder("web")}/generated/{self.src}')[0]
-          img_loc = f'generated/{self.src}/{img_name}'
-          source.img_url = img_loc
+          #if there is a title, attempt to get coverart
+          try:
+            img_name = os.listdir(self._coverart_dir)[0]
+            img_loc = f'generated/{self.src}/{img_name}'
+            source.img_url = img_loc
+          except Exception:
+            pass
         else:
           source.track = "No metadata available"
 
 
     except Exception as e:
       print(f"error in airplay: {e}")
-
-    print(f'airplay {self.name} returns {source.__dict__}')
 
     return source
 
@@ -1161,7 +1169,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'pandora':
     return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock)
   elif stream.type in ['shairport', 'airplay']: # handle older configs
-    return AirPlay(name, args['ap2'], disabled=disabled, mock=mock)
+    return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock)
   elif stream.type == 'spotify':
     return Spotify(name, disabled=disabled, mock=mock)
   elif stream.type == 'dlna':
