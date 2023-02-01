@@ -235,6 +235,11 @@ class AirPlay(BaseStream):
       self._connect(src)
       return
 
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'rm -f {src_config_folder}/currentSong')
+    self._connect_time = time.time()
+    self._coverart_dir = f'{utils.get_folder("web")}/generated/{src}'
+
     config = {
       'general': {
         'name': self.name,
@@ -255,15 +260,10 @@ class AirPlay(BaseStream):
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
-    os.system(f'rm -f {src_config_folder}/currentSong')
-    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
-    self._connect_time = time.time()
-    self._coverart_dir = f'{utils.get_folder("web")}/generated/{src}'
 
     # make all of the necessary dir(s)
-    os.system(f'rm -r -f {web_dir}')
-    os.system(f'mkdir -p {web_dir}')
+    os.system(f'rm -r -f {self._coverart_dir}')
+    os.system(f'mkdir -p {self._coverart_dir}')
     os.system(f'mkdir -p {src_config_folder}')
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
