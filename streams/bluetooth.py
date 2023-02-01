@@ -8,6 +8,7 @@ Currently only supports at most one Bluetooth stream.
 
 import argparse
 import json
+import socket
 import subprocess
 import sys
 import time
@@ -108,7 +109,7 @@ def main():
           track_details = mp.track
           artist = track_details.get("Artist", "")
           album = track_details.get("Album", "")
-          title = track_details.get("Title", "Unknown")
+          title = track_details.get("Title", "")
           duration = track_details.get("Duration", "")
 
           if last_mac_addr != mac_addr:
@@ -116,7 +117,10 @@ def main():
             device_name = mac_to_device_name(mac_addr)
 
           if device_name:
-            title += " - " + device_name
+            if len(title) > 0:
+              title += " - " + device_name
+            else:
+              title = device_name
           else:
             if len(title) > 0:
               print('WARNING: Bluetooth media player has song title, but no device!')
@@ -129,7 +133,7 @@ def main():
           latest_info = MediaInfo(status='stopped')
 
       else:
-        latest_info = MediaInfo(status='stopped', title="No device connected - Pair device to 'amplipi'")
+        latest_info = MediaInfo(status='stopped', title=f"No device connected - Pair device to '{socket.gethostname()}'")
 
         if args.verbose:
           log('Error: No media player connected')
