@@ -235,9 +235,6 @@ class AirPlay(BaseStream):
       self._connect(src)
       return
 
-    self._connect_time = time.time()
-    self._coverart_dir = f'{utils.get_folder("web")}/generated/{self.src}'
-
     config = {
       'general': {
         'name': self.name,
@@ -261,6 +258,8 @@ class AirPlay(BaseStream):
     src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
     os.system(f'rm -f {src_config_folder}/currentSong')
     web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
+    self._connect_time = time.time()
+    self._coverart_dir = f'{utils.get_folder("web")}/generated/{src}'
 
     # make all of the necessary dir(s)
     os.system(f'rm -r -f {web_dir}')
@@ -341,12 +340,9 @@ class AirPlay(BaseStream):
 
         if md.title != '':
           #if there is a title, attempt to get coverart
-          try:
-            img_name = os.listdir(self._coverart_dir)[0]
-            img_loc = f'generated/{self.src}/{img_name}'
-            source.img_url = img_loc
-          except Exception:
-            pass
+          images = os.listdir(self._coverart_dir)
+          if len(images) > 0:
+            source.img_url = f'generated/{self.src}/{images[0]}'
         else:
           source.track = "No metadata available"
 
