@@ -158,6 +158,16 @@ $(function() {
     }
 
     switch (stream_type) {
+      case STREAM_TYPES_.airplay:
+        html += `
+          <div class="form-group">
+            <input type="hidden" value="false" name="ap2">
+            <input type="checkbox" name="ap2" id="airplay_ap2" value="true"${s.ap2 ? " checked" : ""} aria-describedby="ap2Help" data-required="true">
+            <label for="airplay_ap2">Airplay2</label>
+            <small id="ap2Help" class="form-text text-muted">Make this stream Airplay2; only one Airplay2 stream can be running at a time.</small>
+          </div>
+        `;
+        break;
       case STREAM_TYPES_.fmradio:
         html += `
           <div class="form-group">
@@ -256,6 +266,16 @@ $(function() {
     }
     var html = name_html;
     switch (stream_type) {
+      case STREAM_TYPES_.airplay:
+        html += `
+          <div class="form-group">
+            <input type="hidden" value="false" name="ap2">
+            <input type="checkbox" name="ap2" id="new_airplay_ap2" aria-describedby="new_ap2Help" data-required="true">
+            <label for="new_airplay_ap2">Airplay2</label>
+            <small id="new_ap2Help" class="form-text text-muted">Make this stream Airplay2; only one Airplay2 stream can be running at a time.</small>
+          </div>
+        `;
+        break;
       case STREAM_TYPES_.fmradio:
         html = `
           <div id="fmradio_warning" class="form-group" style="color: yellow;">

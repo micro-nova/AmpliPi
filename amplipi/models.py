@@ -476,6 +476,7 @@ class Stream(Base):
   server: Optional[str] = Field(description='Server url')
   index: Optional[int] = Field(description='RCA index')
   disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
+  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
 
   # add examples for each type of stream
   class Config:
@@ -538,7 +539,8 @@ class Stream(Base):
         'Add AirPlay': {
           'value': {
             'name': 'AmpliPi',
-            'type': 'airplay'
+            'type': 'airplay',
+            'ap2': True
           }
         },
         "Play single file or announcement" : {

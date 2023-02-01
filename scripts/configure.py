@@ -122,8 +122,22 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'pianobar']
   },
   'airplay' : {
-    'apt' : [ 'shairport-sync' ],
-    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'}],
+    'apt' : [ 'shairport-sync'],
+    'copy' : [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
+              {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
+    'script': [
+        'if which nqptp  > /dev/null; then exit 0; fi',
+        'pushd $(mktemp --directory)',
+        'git clone https://github.com/mikebrady/nqptp.git',
+        'pushd nqptp',
+        'autoreconf -fi',
+        './configure --with-systemd-startup',
+        'make',
+        'sudo make install',
+        'sudo systemctl enable nqptp && sudo systemctl restart nqptp',
+        'popd',
+        'popd',
+    ]
   },
   'internet_radio' : {
     'apt' : [ 'vlc' ]
@@ -285,9 +299,6 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
     tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
-    if 'shairport-sync-metadata-reader' in _to:
-      # windows messes up permissions
-      tasks += print_progress([Task(f"make {_to} executable", f"chmod +x {_to}".split()).run()])
   if env['is_amplipi']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"

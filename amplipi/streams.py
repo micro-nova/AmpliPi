@@ -21,24 +21,22 @@ such as Pandora, Spotify, and AirPlay. Each digital source is expected to have
 a consistent interface.
 """
 
-import os
-from re import sub
-import sys
-import subprocess
-import time
-from typing import Union, Optional
-import threading
-
 # Used by InternetRadio and Spotify
 import json
+import os
 import signal
-import ast
 import socket
 import hashlib # md5 for string -> MAC generation
+import subprocess
+import sys
+import threading
+import time
+from typing import Union, Optional
 
 import amplipi.models as models
 import amplipi.utils as utils
 from amplipi.mpris import MPRIS
+
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -97,7 +95,7 @@ class BaseStream:
     return f'{self.name} - {self.stype}'
 
   def _disconnect(self):
-    print(f'{self.name} disconnected')
+    print(f'{self.name} disconnected', flush=True)
     self.state = 'disconnected'
     self.src = None
 
@@ -111,7 +109,7 @@ class BaseStream:
     self._disconnect()
 
   def _connect(self, src):
-    print(f'{self.name} connected to {src}')
+    print(f'{self.name} connected to {src}', flush=True)
     self.state = 'connected'
     self.src = src
 
@@ -183,16 +181,28 @@ class RCA(BaseStream):
 
 class AirPlay(BaseStream):
   """ An AirPlay Stream """
-  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+  def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
     super().__init__('airplay', name, disabled=disabled, mock=mock)
-    self.proc2 = None
-    # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
-    # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
+    self.mpris = None
+    self.ap2 = ap2
+    self.ap2_exists = False
+    self.supported_cmds = [
+      'play',
+      'pause',
+      'next',
+      'prev'
+      ]
+    self.STATE_TIMEOUT = 300 # seconds
+    self._connect_time = 0
+    self._coverart_dir = ''
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
+      reconnect_needed = True
+    if 'ap2' in kwargs and kwargs['ap2'] != self.ap2:
+      self.ap2 = kwargs['ap2']
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
@@ -208,9 +218,28 @@ class AirPlay(BaseStream):
     """ Connect an AirPlay device to a given audio source
     This creates an AirPlay streaming option based on the configuration
     """
+
+    # if stream is airplay2 check for other airplay2s and error if found
+    # pgrep has it's own process that will include the process name so we sub 1 from the results
+    if self.ap2:
+      if len(os.popen("pgrep -f shairport-sync-ap2").read().strip().splitlines())-1 > 0:
+        self.ap2_exists = True
+        self._connect(src)
+        print('Another Airplay 2 stream is already in use, unable to start, mocking connection.')
+        return
+      else:
+        # this persists when you restart a stream so we also set it to false
+        self.ap2_exists = False
+
     if self.mock:
       self._connect(src)
       return
+
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'rm -f {src_config_folder}/currentSong')
+    self._connect_time = time.time()
+    self._coverart_dir = f'{utils.get_folder("web")}/generated/{src}'
+
     config = {
       'general': {
         'name': self.name,
@@ -219,68 +248,125 @@ class AirPlay(BaseStream):
         'drift': 2000, # allow this number of frames of drift away from exact synchronisation before attempting to correct it
         'resync_threshold': 0, # a synchronisation error greater than this will cause resynchronisation; 0 disables it
         'log_verbosity': 0, # "0" means no debug verbosity, "3" is most verbose.
+        'mpris_service_bus': 'Session',
       },
       'metadata':{
         'enabled': 'yes',
         'include_cover_art': 'yes',
-        'pipe_name': f'{utils.get_folder("config")}/srcs/{src}/shairport-sync-metadata',
-        'pipe_timeout': 5000,
+        'cover_art_cache_directory': self._coverart_dir,
       },
       'alsa': {
         'output_device': utils.output_device(src), # alsa output device
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
-    os.system(f'rm -f {src_config_folder}/currentSong')
-    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
+
     # make all of the necessary dir(s)
-    os.system(f'rm -r -f {web_dir}')
-    os.system(f'mkdir -p {web_dir}')
+    os.system(f'rm -r -f {self._coverart_dir}')
+    os.system(f'mkdir -p {self._coverart_dir}')
     os.system(f'mkdir -p {src_config_folder}')
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
-    shairport_args = f'shairport-sync -c {config_file}'.split(' ')
-    meta_args = [f"{utils.get_folder('streams')}/shairport_metadata.bash", src_config_folder, web_dir]
+    shairport_args = f"{utils.get_folder('streams')}/shairport-sync{'-ap2' if self.ap2 else ''} -c {config_file}".split(' ')
     print(f'shairport_args: {shairport_args}')
-    print(f'meta_args: {meta_args}')
-    # TODO: figure out how to get status from shairport
+
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    try:
+      mpris_name = 'ShairportSync'
+      # If there are multiple shairport-sync processes, add the pid to the mpris name
+      # shairport sync only adds the pid to the mpris name if it cannot use the default name
+      if len(os.popen("pgrep shairport-sync").read().strip().splitlines()) > 1:
+        mpris_name += f".i{self.proc.pid}"
+      self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
+    except Exception as exc:
+      print(f'Error starting airplay MPRIS reader: {exc}')
     self._connect(src)
 
   def disconnect(self):
+    print(f'disconnecting {self.name}!')
+    if self.mpris:
+      self.mpris.close()
+    self.mpris = None
     if self._is_running():
-      os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
-      self.proc.kill()
+      self.proc.stdin.close()
+      print('stopping shairport-sync')
+      self.proc.terminate()
+      if self.proc.wait(1) != 0:
+        print('killing shairport-sync')
+        self.proc.kill()
+    try:
+      subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
+    except Exception as e:
+      print(f'Error removing airplay config files: {e}')
     self._disconnect()
-    self.proc2 = None
     self.proc = None
 
   def info(self) -> models.SourceInfo:
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
-    loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=self.full_name(), state=self.state)
-    source.img_url = 'static/imgs/shairport.png'
+    source = models.SourceInfo(
+      name=f"Connect to {self.name} on Airplay{'2' if self.ap2 else ''}",
+      state=self.state,
+      img_url='static/imgs/shairport.png'
+    )
+
+    # if stream is airplay2 and other airplay2s exist show error message
+    if self.ap2:
+      if self.ap2_exists:
+        source.name = 'An Airplay2 stream already exists!\n Please disconnect it and try again.'
+        return source
+
+    if not self.mpris:
+      print(f'Airplay: No MPRIS object for {self.name}!')
+      return source
+
     try:
-      with open(loc, 'r') as file:
-        for line in file.readlines():
-          if line:
-            data = line.split(',,,')
-            for i in range(len(data)):
-              data[i] = data[i].strip('".')
-            source.artist = data[0]
-            source.track = data[1]
-            source.album = data[2]
-            if 'False' in data[3]:
-              source.state = 'playing'
-            else:
-              source.state = 'paused'
-            if int(data[4]):
-              source.img_url = f"/generated/shairport/srcs/{self.src}/{data[5]}"
-    except Exception as exc:
-      print(f'Failed to get currentSong - it may not exist: {exc}')
+      md = self.mpris.metadata()
+
+      if self.mpris.is_playing():
+        source.state = 'playing'
+      else:
+        # if we've been paused for a while and the state has changed since connecting, then say
+        # we're stopped since shairport-sync doesn't really differentiate between paused and stopped
+        if self._connect_time < md.state_changed_time and time.time() - md.state_changed_time < self.STATE_TIMEOUT:
+          source.state = 'paused'
+        else:
+          source.state = 'stopped'
+
+      if source.state != 'stopped':
+        source.artist = md.artist
+        source.track = md.title
+        source.album = md.album
+        source.supported_cmds=list(self.supported_cmds)
+
+        if md.title != '':
+          #if there is a title, attempt to get coverart
+          images = os.listdir(self._coverart_dir)
+          if len(images) > 0:
+            source.img_url = f'generated/{self.src}/{images[0]}'
+        else:
+          source.track = "No metadata available"
+
+
+    except Exception as e:
+      print(f"error in airplay: {e}")
+
     return source
+
+  def send_cmd(self, cmd):
+    try:
+      if cmd in self.supported_cmds:
+        if cmd == 'play':
+          self.mpris.play_pause()
+        elif cmd == 'pause':
+          self.mpris.play_pause()
+        elif cmd == 'next':
+          self.mpris.next()
+        elif cmd == 'prev':
+          self.mpris.previous()
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception as e:
+      print(f"error in shairport: {e}")
 
 class Spotify(BaseStream):
   """ A Spotify Stream """
@@ -333,7 +419,7 @@ class Spotify(BaseStream):
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
       data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
-      data = data.replace("alsa_audio_device", f"ch{src}")
+      data = data.replace("alsa_audio_device", utils.output_device(src))
       data = data.replace('1234', f'{self.connect_port}')
     with open(toml_useful, 'w') as TOML:
       TOML.write(data)
@@ -345,7 +431,7 @@ class Spotify(BaseStream):
       self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{src_config_folder}/metadata.txt')
 
       self._connect(src)
     except Exception as exc:
@@ -358,6 +444,8 @@ class Spotify(BaseStream):
       pass
     self._disconnect()
     self.connect_port = None
+    if self.mpris:
+      del self.mpris
     self.mpris = None
     self.proc = None
 
@@ -1077,7 +1165,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'pandora':
     return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock)
   elif stream.type in ['shairport', 'airplay']: # handle older configs
-    return AirPlay(name, disabled=disabled, mock=mock)
+    return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock)
   elif stream.type == 'spotify':
     return Spotify(name, disabled=disabled, mock=mock)
   elif stream.type == 'dlna':
