@@ -46,6 +46,12 @@ MAX_VOL_DB = 0
 MIN_DB_RANGE = 20
 """ Smallest allowed difference between a zone's vol_max and vol_min """
 
+MAX_SOURCES = 4
+""" Max audio sources """
+
+SOURCE_DISCONNECTED = -1
+""" Indicate no source connection, simulated in SW by muting zone for now """
+
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """
   assert MIN_VOL_F <= pcnt <= MAX_VOL_F
@@ -55,7 +61,7 @@ class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
   Name = Field(description='Friendly name')
-  SourceId = Field(ge=0, le=3, description='id of the connected source')
+  SourceId = Field(ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
@@ -80,7 +86,7 @@ class fields_w_default(SimpleNamespace):
   These are needed because there is ambiguity where an optional field has a default value
   """
   # TODO: less duplication
-  SourceId = Field(default=0, ge=0, le=3, description='id of the connected source')
+  SourceId = Field(default=0, ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
@@ -204,7 +210,7 @@ class SourceUpdate(BaseUpdate):
 
 class SourceUpdateWithId(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
-  id : int = Field(ge=0,le=4)
+  id : int = Field(ge=0,le=MAX_SOURCES-1)
 
   def as_update(self) -> SourceUpdate:
     """ Convert to SourceUpdate """
@@ -766,7 +772,7 @@ class Announcement(BaseModel):
   media : str = Field(description="URL to media to play as the announcement")
   vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB, overrides vol_f')
   vol_f: float = Field(default=0.5, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
-  source_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
+  source_id: int = Field(default=3, ge=0, le=MAX_SOURCES-1, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
 
@@ -822,7 +828,7 @@ class Info(BaseModel):
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
-  sources: List[Source] = [Source(id=i, name=str(i)) for i in range(4)]
+  sources: List[Source] = [Source(id=i, name=str(i)) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
   streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(4)]

@@ -273,6 +273,23 @@ class Api:
     self._sync_stream_info() # need to update the status with the new streams
 
     # configure all sources so that they are in a known state
+    # only models.MAX_SOURCES are supported, keep the config from adding extra
+    # this helps us transition from weird and experimental configs
+    try:
+      self.status.sources[:] = self.status.sources[0:models.MAX_SOURCES]
+    except Exception as exc:
+      print(f'Error configuring sources: using all defaults')
+      self.status.sources[:] = [models.Source(id=i, name=f'Player {i+1}') for i in range(models.MAX_SOURCES)]
+    # populate any missing sources, to match the underlying system's capabilities
+    for sid in range(len(self.status.sources), models.MAX_SOURCES):
+      print(f'Error: missing source {sid}, inserting default source')
+      self.status.sources.insert(sid, models.Source(id=sid, name=f'Player {sid+1}'))
+    # sequentially number sources if necessary
+    for sid, src in enumerate(self.status.sources):
+      if src.id != sid:
+        print(f'Error: source at index {sid} is not sequentially numbered, fixing')
+        src.id = sid
+    # configure all of the sources, now that they are layed out as expected
     for src in self.status.sources:
       if src.id is not None:
         try:
@@ -479,6 +496,15 @@ class Api:
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
+  def _get_source_config(self, sources: Optional[List[models.Source]]=None) -> List[bool]:
+    """ Convert the preamp's source configuration """
+    if not sources:
+      sources = self.status.sources
+    src_cfg = [True] * 4
+    for s, src in enumerate(sources):
+      src_cfg[s] = self._is_digital(sources[s].input)
+    return src_cfg
+
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
 
@@ -539,10 +565,7 @@ class Api:
             raise Exception(f'StreamID specified by "{src.input}" not found')
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
           if rt_needs_update or force_update:
-            # get the current underlying type of each of the sources, for configuration of the runtime
-            src_cfg = [self._is_digital(self.status.sources[s].input) for s in range(4)]
-            # update this source
-            src_cfg[idx] = self._is_digital(input_)
+            src_cfg = self._get_source_config()
             if not self._rt.update_sources(src_cfg):
               raise Exception('failed to set source')
           self._update_src_info(src) # synchronize the source's info
@@ -582,17 +605,22 @@ class Api:
         zone.name = name
         zone.disabled = disabled
 
-        # any disabled zone should not be able to play anything, mute it to be sure
-        if zone.disabled and not mute:
+        # parse and check the source id
+        sid = utils.parse_int(source_id, range(models.SOURCE_DISCONNECTED, models.MAX_SOURCES))
+
+        # any zone disabled by source disconnection or a 'disabled' flag should not be able to play anything
+        implicit_mute = zone.disabled or sid == models.SOURCE_DISCONNECTED
+        if implicit_mute and not mute:
           mute = True
           update_mutes = True
 
-        # update the zone's associated source
-        sid = utils.parse_int(source_id, [0, 1, 2, 3])
+        # update the zone's associated source (defaulting to source 0 if disconnected)
         zones = self.status.zones
-        if update_source_id or force_update:
+        if update_source_id or force_update :
           zone_sources = [zone.source_id for zone in zones]
-          zone_sources[idx] = sid
+          zone_sources[idx] = max(sid, 0) # default disconnected zones to source 0
+          # this is setting the state for all zones
+          # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
           if self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
