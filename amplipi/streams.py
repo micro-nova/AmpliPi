@@ -21,17 +21,18 @@ such as Pandora, Spotify, and AirPlay. Each digital source is expected to have
 a consistent interface.
 """
 
-# Used by InternetRadio and Spotify
-import json
 import os
+import sys
+import subprocess
+import time
+from typing import Union, Optional, List
+import threading
+
+import ast
+import json
 import signal
 import socket
 import hashlib # md5 for string -> MAC generation
-import subprocess
-import sys
-import threading
-import time
-from typing import Union, Optional
 
 from amplipi import models
 from amplipi import utils
@@ -60,8 +61,7 @@ def write_sp_config_file(filename, config):
 
 def uuid_gen():
   """ Generates a UUID for use in DLNA and Plexamp streams """
-  u_args = 'uuidgen'
-  uuid_proc = subprocess.run(args=u_args, capture_output=True)
+  uuid_proc = subprocess.run(args='uuidgen', capture_output=True, check=False)
   uuid_str = str(uuid_proc).split(',')
   c_check = uuid_str[0]
   val = uuid_str[2]
@@ -76,12 +76,15 @@ class BaseStream:
   def __init__(self, stype: str, name: str, only_src=None, disabled: bool=False, mock=False):
     self.name = name
     self.disabled = disabled
-    self.proc = None
+    self.proc: Optional[subprocess.Popen] = None
     self.mock = mock
-    self.src = None
-    self.only_src = only_src
+    self.src: Optional[int] = None
+    self.only_src: Optional[int] = only_src
     self.state = 'disconnected'
     self.stype = stype
+
+  def __del__(self):
+    self.disconnect()
 
   def __str__(self):
     connection = f' connected to src={self.src}' if self.src else ''
@@ -97,7 +100,7 @@ class BaseStream:
     return f'{self.name} - {self.stype}'
 
   def _disconnect(self):
-    print(f'{self.name} disconnected', flush=True)
+    print(f'{self.name} disconnected')
     self.state = 'disconnected'
     self.src = None
 
@@ -111,9 +114,12 @@ class BaseStream:
     self._disconnect()
 
   def _connect(self, src):
-    print(f'{self.name} connected to {src}', flush=True)
+    print(f'{self.name} connected to {src}')
     self.state = 'connected'
     self.src = src
+
+  def is_connected(self) -> bool:
+    return self.src is not None
 
   def connect(self, src: int):
     """ Connect the stream to an output source """
@@ -375,9 +381,9 @@ class Spotify(BaseStream):
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__('spotify', name, disabled=disabled, mock=mock)
 
-    self.connect_port = None
-    self.mpris = None
-    self.proc_pid = None
+    self.connect_port: Optional[int] = None
+    self.mpris: Optional[MPRIS] = None
+    self.proc_pid: Optional[int] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
 
   def reconfig(self, **kwargs):
@@ -527,8 +533,6 @@ class Pandora(BaseStream):
       time.sleep(0.1) # delay a bit, is this needed?
       self.connect(last_src)
 
-  def __del__(self):
-    self.disconnect()
 
   def connect(self, src):
     """ Connect pandora output to a given audio source
@@ -743,9 +747,6 @@ class InternetRadio(BaseStream):
       time.sleep(0.1) # delay a bit, is this needed?
       self.connect(last_src)
 
-  def __del__(self):
-    self.disconnect()
-
   def connect(self, src):
     """ Connect a VLC output to a given audio source
     This will create a VLC process based on the given name
@@ -822,26 +823,14 @@ class InternetRadio(BaseStream):
       pass
 
 class Plexamp(BaseStream):
-  """ A Plexamp Stream """
+  """ A Plexamp Stream
+  TODO: old plexamp interface was disabled, integrate support for new PlexAmp
+  """
   def __init__(self, name: str, client_id, token, disabled: bool = False, mock: bool = False):
     super().__init__('plexamp', name, disabled=disabled, mock=mock)
-    self.client_id = client_id
-    self.token = token
 
   def reconfig(self, **kwargs):
-    reconnect_needed = False
-    if 'name' in kwargs and kwargs['name'] != self.name:
-      self.name = kwargs['name']
-      reconnect_needed = True
-    if reconnect_needed:
-      if self._is_running():
-        last_src = self.src
-        self.disconnect()
-        time.sleep(0.1) # delay a bit, is this needed?
-        self.connect(last_src)
-
-  def __del__(self):
-    self.disconnect()
+    self.name = kwargs['name']
 
   def connect(self, src):
     """ Connect plexamp output to a given audio source
@@ -851,70 +840,12 @@ class Plexamp(BaseStream):
       self._connect(src)
       return
 
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
-    mpd_template = f'{utils.get_folder("streams")}/mpd.conf'
-    plexamp_template = f'{utils.get_folder("streams")}/server.json'
-    plexamp_home = src_config_folder
-    plexamp_config_folder = f'{plexamp_home}/.config/Plexamp'
-    mpd_conf_file = f'{plexamp_home}/mpd.conf'
-    server_json_file = f'{plexamp_config_folder}/server.json'
-    # make all of the necessary dir(s)
-    os.system(f'mkdir -p {plexamp_config_folder}')
-    os.system(f'cp {mpd_template} {mpd_conf_file}')
-    os.system(f'cp {plexamp_template} {server_json_file}')
-    self.uuid = uuid_gen()
-    # server.json config (Proper server.json file must be copied over for this to work)
-    with open(server_json_file) as json_file:
-      contents = json.load(json_file)
-      r_token = contents['user']['token']
-      if r_token != '_': # Dummy value from template
-        self.token = r_token
-
-    # Double quotes required for Python -> JSON translation
-    json_config = {
-      "player": {
-        "name": f"{self.name}",
-        "identifier": f"{self.client_id}"
-      },
-      "user": {
-        "token": self.token
-      },
-      "state": "null",
-      "server": "null",
-      "audio": {
-        "normalize": "false",
-        "crossfade": "false",
-        "mpd_path": f"{mpd_conf_file}"
-      }
-    }
-
-    with open(server_json_file, 'w') as new_json:
-      json.dump(json_config, new_json, indent=2)
-
-    # mpd.conf creation
-    with open(mpd_conf_file, 'r') as MPD:
-      data = MPD.read()
-      data = data.replace('ch', f'ch{src}')
-      data = data.replace('GENERIC_LOGFILE_LOCATION', f'{plexamp_config_folder}/mpd.log')
-    with open(mpd_conf_file, 'w') as MPD:
-      MPD.write(data)
-    # PROCESS
-    plexamp_args = ['/usr/bin/node', '/home/pi/plexamp/server/server.prod.js']
-    try:
-      self.proc = subprocess.Popen(args=plexamp_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : plexamp_home})
-      time.sleep(0.1) # Delay a bit
-      self._connect(src)
-    except Exception as exc:
-      print(f'error starting plexamp: {exc}')
-
   def disconnect(self):
-    if self._is_running():
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
     self._disconnect()
-    self.proc = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    source.track = "Not currently supported"
     return source
 
 class FilePlayer(BaseStream):
@@ -923,9 +854,6 @@ class FilePlayer(BaseStream):
     super().__init__('file player', name, disabled=disabled, mock=mock)
     self.url = url
     self.bkg_thread = None
-
-  def __del__(self):
-    self.disconnect()
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -1002,9 +930,6 @@ class FMRadio(BaseStream):
       self.disconnect()
       time.sleep(0.1) # delay a bit, is this needed?
       self.connect(last_src)
-
-  def __del__(self):
-    self.disconnect()
 
   def connect(self, src):
     """ Connect a fmradio.py output to a given audio source """
@@ -1089,9 +1014,6 @@ class LMS(BaseStream):
         self.disconnect()
         time.sleep(0.1) # delay a bit, is this needed?
         self.connect(last_src)
-
-  def __del__(self):
-    self.disconnect()
 
   def connect(self, src):
     """ Connect a sqeezelite output to a given audio source

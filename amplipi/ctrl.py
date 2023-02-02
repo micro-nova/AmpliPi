@@ -531,21 +531,22 @@ class Api:
         if input_updated or force_update:
           # shutdown old stream
           old_stream = self.get_stream(src)
-          if old_stream:
+          if old_stream and old_stream.is_connected():
             old_stream.disconnect()
           # start new stream
           last_input = src.input
           src.input = input_ # reconfigure the input so get_stream knows which stream to get
           stream = self.get_stream(src)
           if stream:
-            # update the streams last connected source to have no input, since we have stolen its input
             stolen_from: Optional[models.Source] = None
             if stream.src is not None and stream.src != idx:
+              # update the streams last connected source to have no input, since we have stolen its input
               stolen_from = self.status.sources[stream.src]
-              print('stealing {} from source {}'.format(stream.name, stolen_from.name))
+              print(f'stealing {stream.name} from source {stolen_from.name}')
               stolen_from.input = ''
             try:
-              stream.disconnect()
+              if stream.is_connected():
+                stream.disconnect()
               stream.connect(idx)
             except Exception as iexc:
               print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
@@ -557,7 +558,7 @@ class Api:
               else:
                 src.input = ''
               # connect the stream back to its old source
-              if stolen_from:
+              if stolen_from and stolen_from.id is not None:
                 print(f"Trying to revert src {stolen_from.id}'s input to {stream.name}")
                 stream.connect(stolen_from.id)
                 stolen_from.input = input_
