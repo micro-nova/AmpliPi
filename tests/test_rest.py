@@ -498,6 +498,30 @@ def test_patch_zone_mute_disable(client, zid):
   assert s is not None
   assert s['mute'] == True # a disabled zone overrides/forces mute
 
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_patch_zone_mute_disconnect(client, zid):
+  """ Unmute then disconnect a zone """
+  rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False, 'vol_f': 0.5})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['mute'] == False
+  assert s['vol_f'] == 0.5
+  rv = client.patch('/api/zones/{}'.format(zid), json={'source_id': -1})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['source_id'] == -1
+  assert s['mute'] == True
+  rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['mute'] == True # a disconnected zone overrides/forces mute
+
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_patch_zones(client, sid):
   """ Try changing multiple zones """
