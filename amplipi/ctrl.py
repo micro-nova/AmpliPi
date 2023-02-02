@@ -325,7 +325,11 @@ class Api:
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()
-    # put the firmware in a reset state (should mute all audio)
+    # mute all audio
+    all_muted = [True] * len(self.status.zones)
+    for z in self.status.zones[::6]:
+      self._rt.update_zone_mutes(z.id, all_muted)
+    # put the firmware in a reset state
     self._rt.reset()
 
   def save(self) -> None:
