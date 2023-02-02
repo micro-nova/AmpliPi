@@ -784,8 +784,10 @@ class InternetRadio(BaseStream):
     loc = f'{src_config_folder}/currentSong'
     source = models.SourceInfo(name=self.full_name(),
                               state=self.state,
-                              img_url=self.logo,
+                              img_url='static/imgs/internet_radio.png',
                               supported_cmds=self.supported_cmds)
+    if self.logo:
+      source.img_url = self.logo
     try:
       with open(loc, 'r', encoding='utf-8') as file:
         data = json.loads(file.read())
