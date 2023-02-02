@@ -31,10 +31,10 @@ import time
 import threading
 import wrapt
 
-import amplipi.models as models
-import amplipi.rt as rt
+from amplipi import models
+from amplipi import rt
+from amplipi import utils
 import amplipi.streams
-import amplipi.utils as utils
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -101,10 +101,10 @@ class Api:
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Player 1", "input": f""},
-      {"id": 1, "name": "Player 2", "input": f""},
-      {"id": 2, "name": "Player 3", "input": f""},
-      {"id": 3, "name": "Player 4", "input": f""},
+      {"id": 0, "name": "Player 1", "input": "",},
+      {"id": 1, "name": "Player 2", "input": "",},
+      {"id": 2, "name": "Player 3", "input": "",},
+      {"id": 3, "name": "Player 4", "input": "",},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -172,7 +172,7 @@ class Api:
     self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi() # reset the fw
 
     # test open the config file, this will throw an exception if there are issues writing to the file
-    with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
+    with open(settings.config_file, 'a', encoding='utf-8'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
@@ -191,18 +191,16 @@ class Api:
             self.status = models.Status.parse_file(cfg_path)
             loaded_config = True
             break
-          errors.append('config file "{}" does not exist'.format(cfg_path))
+          errors.append(f'config file "{cfg_path}" does not exist')
         except Exception as exc:
           self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
-          errors.append('error loading config file: {}'.format(exc))
+          errors.append(f'error loading config file: {exc}')
 
     if not loaded_config:
       print(errors[0])
       print('using default config')
       self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
-
-    # TODO: detect missing sources
 
     # populate system info
     self._online_cache = utils.TimeBasedCache(self._check_is_online, 5, 'online')
@@ -286,8 +284,8 @@ class Api:
           update = models.SourceUpdate(input='')
           try:
             self.set_source(src.id, update, force_update=True, internal=True)
-          except Exception as e2:
-            print(f'Error configuring source {src.id}: {e2}')
+          except Exception as e_empty:
+            print(f'Error configuring source {src.id}: {e_empty}')
             print(f'Source {src.id} left uninitialized')
 
     # configure all of the zones so that they are in a known state
@@ -321,11 +319,11 @@ class Api:
         if os.path.exists(self.backup_config_file):
           os.remove(self.backup_config_file)
         os.rename(self.config_file, self.backup_config_file)
-      with open(self.config_file, 'w') as cfg:
+      with open(self.config_file, 'w', encoding='utf-8') as cfg:
         cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as exc:
-      print('Error saving config: {}'.format(exc))
+      print(f'Error saving config: {exc}')
 
   def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
@@ -346,8 +344,7 @@ class Api:
 
   def _is_digital(self, sinput: str) -> bool:
     """Determines whether a source input, @sinput, is analog or digital
-
-    sinput is expected to be one of the following:
+    @sinput is expected to be one of the following:
 
     | str                  | meaning  | analog or digital? |
     | -------------------- | -------- | ------------------ |
@@ -870,20 +867,16 @@ class Api:
   @save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> ApiResponse:
     """Sets play/pause on a specific pandora source """
-    # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     if int(sid) not in self.streams:
-      return ApiResponse.error('Stream id {} does not exist'.format(sid))
-
+      return ApiResponse.error(f'Stream id {sid} does not exist')
     try:
       stream = self.streams[sid]
     except Exception as exc:
-      return ApiResponse.error('Unable to get stream {}: {}'.format(sid, exc))
-
+      return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
     try:
       stream.send_cmd(cmd)
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
-
     return ApiResponse.ok()
 
   @save_on_success
@@ -900,7 +893,7 @@ class Api:
     stat_dir = root + '.config/pianobar/stationList'
 
     try:
-      with open(stat_dir, 'r') as file:
+      with open(stat_dir, 'r', encoding='utf-8') as file:
         stations = {}
         for line in file.readlines():
           line = line.strip()
@@ -1007,7 +1000,7 @@ class Api:
     for group in preset_state.groups or []:
       _, groups_to_update = utils.find(self.status.groups, group.id)
       if groups_to_update is None:
-        raise NameError('group {} does not exist'.format(group.id))
+        raise NameError(f'group {group.id} does not exist')
       self.set_group(group.id, group.as_update(), internal=True)
       if group.mute is not None:
         # use the updated group's zones just in case the group's zones were just changed

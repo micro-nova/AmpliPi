@@ -33,24 +33,26 @@ import threading
 import time
 from typing import Union, Optional
 
-import amplipi.models as models
-import amplipi.utils as utils
+from amplipi import models
+from amplipi import utils
 from amplipi.mpris import MPRIS
 
+# We use Popen for long running process control this error is not useful:
+# pylint: disable=consider-using-with
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
-  with open(filename, 'wt') as cfg_file:
+  with open(filename, 'wt', encoding='utf-8') as cfg_file:
     for key, value in config.items():
       cfg_file.write(f'{key}={value}\n')
 
 def write_sp_config_file(filename, config):
   """ Write a shairport config file (@filename) with a hierarchy of grouped key=value pairs given by @config """
-  with open(filename, 'wt') as cfg_file:
+  with open(filename, 'wt', encoding='utf-8') as cfg_file:
     for group, gconfig in config.items():
       cfg_file.write(f'{group} =\n{{\n')
       for key, value in gconfig.items():
-        if type(value) is str:
+        if isinstance(value, str):
           cfg_file.write(f'  {key} = "{value}"\n')
         else:
           cfg_file.write(f'  {key} = {value}\n')
@@ -594,7 +596,7 @@ class Pandora(BaseStream):
       img_url='static/imgs/pandora.png'
     )
     try:
-      with open(loc, 'r') as file:
+      with open(loc, 'r', encoding='utf-8') as file:
         for line in file.readlines():
           line = line.strip()
           if line:
@@ -620,7 +622,7 @@ class Pandora(BaseStream):
     """
     try:
       if cmd in self.supported_cmds:
-        with open(self.ctrl, 'w') as file:
+        with open(self.ctrl, 'w', encoding='utf-8') as file:
           file.write(self.supported_cmds[cmd]['cmd'])
           file.flush()
         expected_state = self.supported_cmds[cmd]['state']
@@ -629,7 +631,7 @@ class Pandora(BaseStream):
       elif 'station' in cmd:
         station_id = int(cmd.replace('station=', ''))
         if station_id is not None:
-          with open(self.ctrl, 'w') as file:
+          with open(self.ctrl, 'w', encoding='utf-8') as file:
             file.write('s')
             file.flush()
             file.write(f'{station_id}\n')
@@ -704,11 +706,11 @@ class DLNA(BaseStream):
     loc = f'{src_config_folder}/currentSong'
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/dlna.png')
     try:
-      with open(loc, 'r') as file:
+      with open(loc, 'r', encoding='utf-8') as file:
         for line in file.readlines():
           line = line.strip()
           if line:
-            d = eval(line)
+            d = ast.literal_eval(line)
         source.state = d['state']
         source.album = d['album']
         source.artist = d['artist']
@@ -785,7 +787,7 @@ class InternetRadio(BaseStream):
                               img_url=self.logo,
                               supported_cmds=self.supported_cmds)
     try:
-      with open(loc, 'r') as file:
+      with open(loc, 'r', encoding='utf-8') as file:
         data = json.loads(file.read())
         source.artist = data['artist']
         source.track = data['track']
@@ -988,7 +990,7 @@ class FMRadio(BaseStream):
     reconnect_needed = False
     ir_fields = ['freq', 'logo']
     fields = list(ir_fields) + ['name']
-    for k,v in kwargs.items():
+    for k, v in kwargs.items():
       if k in fields and self.__dict__[k] != v:
         self.__dict__[k] = v
         if k in ir_fields:
@@ -1038,7 +1040,7 @@ class FMRadio(BaseStream):
       self.logo = "static/imgs/fmradio.png"
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url=self.logo)
     try:
-      with open(loc, 'r') as file:
+      with open(loc, 'r', encoding='utf-8') as file:
         data = json.loads(file.read())
         # Example JSON: "station": "Mixx96.1", "callsign": "KXXO", "prog_type": "Soft rock", "radiotext": "        x96.1"
         #print(json.dumps(data))
@@ -1162,22 +1164,22 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   disabled = args.pop('disabled', False)
   if stream.type == 'rca':
     return RCA(name, args['index'], disabled=disabled, mock=mock)
-  elif stream.type == 'pandora':
+  if stream.type == 'pandora':
     return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock)
-  elif stream.type in ['shairport', 'airplay']: # handle older configs
+  if stream.type in ['shairport', 'airplay']: # handle older configs
     return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock)
-  elif stream.type == 'spotify':
+  if stream.type == 'spotify':
     return Spotify(name, disabled=disabled, mock=mock)
-  elif stream.type == 'dlna':
+  if stream.type == 'dlna':
     return DLNA(name, disabled=disabled, mock=mock)
-  elif stream.type == 'internetradio':
+  if stream.type == 'internetradio':
     return InternetRadio(name, args['url'], args.get('logo'), disabled=disabled, mock=mock)
-  elif stream.type == 'plexamp':
+  if stream.type == 'plexamp':
     return Plexamp(name, args['client_id'], args['token'], disabled=disabled, mock=mock)
-  elif stream.type == 'fileplayer':
+  if stream.type == 'fileplayer':
     return FilePlayer(name, args['url'], disabled=disabled, mock=mock)
-  elif stream.type == 'fmradio':
+  if stream.type == 'fmradio':
     return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
-  elif stream.type == 'lms':
+  if stream.type == 'lms':
     return LMS(name, args.get('server'), disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)

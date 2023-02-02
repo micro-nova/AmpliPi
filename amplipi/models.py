@@ -70,7 +70,7 @@ class fields(SimpleNamespace):
   Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
 
-  * Digital Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
+  * Digital or Analog Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 
@@ -185,7 +185,7 @@ class Source(Base):
 
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
-  input: Optional[str] # 'None', 'rca=ID', 'stream=ID' # TODO: add helpers to get stream_id
+  input: Optional[str] = fields.AudioInput
 
   class Config:
     schema_extra = {
