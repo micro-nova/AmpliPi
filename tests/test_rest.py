@@ -27,6 +27,8 @@ import netifaces as ni
 
 TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
 
+NO_SOURCE = -1 # Allows a zone to be disconnected from any source
+
 # add several groups and most of the default streams to the config
 TEST_CONFIG['groups'] = [
   {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
@@ -508,7 +510,7 @@ def test_patch_zone_mute_disconnect(client, zid):
   assert s is not None
   assert s['mute'] == False
   assert s['vol_f'] == 0.5
-  rv = client.patch('/api/zones/{}'.format(zid), json={'source_id': -1})
+  rv = client.patch('/api/zones/{}'.format(zid), json={'source_id': NO_SOURCE})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   s = find(jrv['zones'], zid)

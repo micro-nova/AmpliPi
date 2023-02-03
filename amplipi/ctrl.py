@@ -500,13 +500,13 @@ class Api:
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
-  def _get_source_config(self, sources: Optional[List[models.Source]]=None) -> List[bool]:
+  def _get_source_config(self, sources: Optional[List[models.Source]] = None) -> List[bool]:
     """ Convert the preamp's source configuration """
     if not sources:
       sources = self.status.sources
-    src_cfg = [True] * 4
+    src_cfg = [True] * models.MAX_SOURCES
     for s, src in enumerate(sources):
-      src_cfg[s] = self._is_digital(sources[s].input)
+      src_cfg[s] = self._is_digital(src.input)
     return src_cfg
 
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
