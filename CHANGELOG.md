@@ -1,6 +1,6 @@
 # AmpliPi Software Releases
 
-## 0.1.X Upcoming
+## 0.2.X Upcoming
 * web App
   * Reject scroll events to volume sliders
   * Improve version display
