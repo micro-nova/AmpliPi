@@ -15,7 +15,7 @@
 * API
   * Robustify config loading
   * Make RCA inputs look like streams
-  * Make zone's removeble
+  * Make zones removable
 
 ## 0.1.9
 * Web App
