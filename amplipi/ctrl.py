@@ -325,10 +325,18 @@ class Api:
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()
-    # mute all audio
-    all_muted = [True] * len(self.status.zones)
-    for z in self.status.zones[::6]:
-      self._rt.update_zone_mutes(z.id, all_muted)
+    # lower the volume on any unmuted zone to limit popping
+    # behind the scenes the firmware will gradually lower the volume until the output is effectively muted
+    # muting is more likely to cause popping
+    # we use the low level rt calls to avoid changing the configuration
+    vol_changes = False
+    for z in self.status.zones:
+      if not z.mute:
+        self._rt.update_zone_vol(z.id, models.MIN_VOL_DB)
+        vol_changes = True
+    if vol_changes:
+      # wait for the changes to take effect (we observed a tiny pop without this)
+      time.sleep(0.080)
     # put the firmware in a reset state
     self._rt.reset()
 
