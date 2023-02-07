@@ -5,7 +5,6 @@ deepdiff
 fastapi
 fastapi_utils
 httpx
-pygobject
 jinja2
 loguru
 mypy
