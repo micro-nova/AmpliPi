@@ -131,7 +131,7 @@ class params(SimpleNamespace):
   """ Describe standard path ID's for each api type """
   # pylint: disable=too-few-public-methods
   # pylint: disable=invalid-name
-  SourceID = Path(..., ge=0, le=3, description="Source ID")
+  SourceID = Path(..., ge=0, le=models.MAX_SOURCES-1, description="Source ID")
   ZoneID = Path(..., ge=0, le=35, description="Zone ID")
   GroupID = Path(..., ge=0, description="Stream ID")
   StreamID = Path(..., ge=0, description="Stream ID")
@@ -399,10 +399,11 @@ def delete_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> 
   """ Delete a stream """
   return code_response(ctrl, ctrl.delete_stream(sid))
 
+# The following is a specific endpoint to api/stream/{} and needs to be placed before the catch all exec_command
+
 @api.post('/api/streams/{sid}/station={station}', tags=['stream'])
 def change_station(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, station: int = params.StationID) -> models.Status:
   """ Change station on a pandora stream (stream=**sid**) """
-  # This is a specific version of exec command, it needs to be placed before the genertic version so the path is resolved properly
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=f'station={station}'))
 
 @api.post('/api/streams/{sid}/{cmd}', tags=['stream'])
@@ -418,7 +419,7 @@ def exec_command(cmd: models.StreamCommand, ctrl: Api = Depends(get_ctrl), sid: 
     * Ban Current Song (pandora only): **ban**
     * Shelve Current Song (pandora only): **shelve**
 
-  Currently only available with Pandora streams"""
+  Supported commands are reported in an attached stream's info.stream_cmds"""
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=cmd))
 
 # presets

@@ -1,17 +1,21 @@
 # AmpliPi Software Releases
 
-## 0.1.X Upcoming
+## 0.2.X Upcoming
 * web App
   * Reject scroll events to volume sliders
-  * Cleanup version display
+  * Improve version display
 * Streams
-  * Robustify config loading to handle missing streams
   * Simplify stream serialization
   * Switch to Spotifyd Spotify client
   * Add MPRIS metadata/command interface
   * Add LMS Client
   * Make Airplay use MPRIS
   * Add single Airplay2 to Airplay stream
+  * Add default icon for internet radio
+* API
+  * Robustify config loading
+  * Make RCA inputs look like streams
+  * Make zones removable
 
 ## 0.1.9
 * Web App

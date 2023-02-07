@@ -27,6 +27,8 @@ import netifaces as ni
 
 TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
 
+NO_SOURCE = -1 # Allows a zone to be disconnected from any source
+
 # add several groups and most of the default streams to the config
 TEST_CONFIG['groups'] = [
   {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
@@ -497,6 +499,30 @@ def test_patch_zone_mute_disable(client, zid):
   s = find(jrv['zones'], zid)
   assert s is not None
   assert s['mute'] == True # a disabled zone overrides/forces mute
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_patch_zone_mute_disconnect(client, zid):
+  """ Unmute then disconnect a zone """
+  rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False, 'vol_f': 0.5})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['mute'] == False
+  assert s['vol_f'] == 0.5
+  rv = client.patch('/api/zones/{}'.format(zid), json={'source_id': NO_SOURCE})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['source_id'] == -1
+  assert s['mute'] == True
+  rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['mute'] == True # a disconnected zone overrides/forces mute
 
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_patch_zones(client, sid):

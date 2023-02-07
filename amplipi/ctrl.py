@@ -31,10 +31,10 @@ import time
 import threading
 import wrapt
 
-import amplipi.models as models
-import amplipi.rt as rt
+from amplipi import models
+from amplipi import rt
+from amplipi import utils
 import amplipi.streams
-import amplipi.utils as utils
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -101,10 +101,10 @@ class Api:
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Player 1", "input": f""},
-      {"id": 1, "name": "Player 2", "input": f""},
-      {"id": 2, "name": "Player 3", "input": f""},
-      {"id": 3, "name": "Player 4", "input": f""},
+      {"id": 0, "name": "Player 1", "input": "",},
+      {"id": 1, "name": "Player 2", "input": "",},
+      {"id": 2, "name": "Player 3", "input": "",},
+      {"id": 3, "name": "Player 4", "input": "",},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -172,7 +172,7 @@ class Api:
     self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi() # reset the fw
 
     # test open the config file, this will throw an exception if there are issues writing to the file
-    with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
+    with open(settings.config_file, 'a', encoding='utf-8'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
@@ -191,18 +191,16 @@ class Api:
             self.status = models.Status.parse_file(cfg_path)
             loaded_config = True
             break
-          errors.append('config file "{}" does not exist'.format(cfg_path))
+          errors.append(f'config file "{cfg_path}" does not exist')
         except Exception as exc:
           self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
-          errors.append('error loading config file: {}'.format(exc))
+          errors.append(f'error loading config file: {exc}')
 
     if not loaded_config:
       print(errors[0])
       print('using default config')
       self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
-
-    # TODO: detect missing sources
 
     # populate system info
     self._online_cache = utils.TimeBasedCache(self._check_is_online, 5, 'online')
@@ -275,6 +273,23 @@ class Api:
     self._sync_stream_info() # need to update the status with the new streams
 
     # configure all sources so that they are in a known state
+    # only models.MAX_SOURCES are supported, keep the config from adding extra
+    # this helps us transition from weird and experimental configs
+    try:
+      self.status.sources[:] = self.status.sources[0:models.MAX_SOURCES]
+    except Exception as exc:
+      print(f'Error configuring sources: using all defaults')
+      self.status.sources[:] = [models.Source(id=i, name=f'Player {i+1}') for i in range(models.MAX_SOURCES)]
+    # populate any missing sources, to match the underlying system's capabilities
+    for sid in range(len(self.status.sources), models.MAX_SOURCES):
+      print(f'Error: missing source {sid}, inserting default source')
+      self.status.sources.insert(sid, models.Source(id=sid, name=f'Player {sid+1}'))
+    # sequentially number sources if necessary
+    for sid, src in enumerate(self.status.sources):
+      if src.id != sid:
+        print(f'Error: source at index {sid} is not sequentially numbered, fixing')
+        src.id = sid
+    # configure all of the sources, now that they are layed out as expected
     for src in self.status.sources:
       if src.id is not None:
         try:
@@ -286,8 +301,8 @@ class Api:
           update = models.SourceUpdate(input='')
           try:
             self.set_source(src.id, update, force_update=True, internal=True)
-          except Exception as e2:
-            print(f'Error configuring source {src.id}: {e2}')
+          except Exception as e_empty:
+            print(f'Error configuring source {src.id}: {e_empty}')
             print(f'Source {src.id} left uninitialized')
 
     # configure all of the zones so that they are in a known state
@@ -310,7 +325,19 @@ class Api:
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()
-    # put the firmware in a reset state (should mute all audio)
+    # lower the volume on any unmuted zone to limit popping
+    # behind the scenes the firmware will gradually lower the volume until the output is effectively muted
+    # muting is more likely to cause popping
+    # we use the low level rt calls to avoid changing the configuration
+    vol_changes = False
+    for z in self.status.zones:
+      if not z.mute:
+        self._rt.update_zone_vol(z.id, models.MIN_VOL_DB)
+        vol_changes = True
+    if vol_changes:
+      # wait for the changes to take effect (we observed a tiny pop without this)
+      time.sleep(0.080)
+    # put the firmware in a reset state
     self._rt.reset()
 
   def save(self) -> None:
@@ -321,11 +348,11 @@ class Api:
         if os.path.exists(self.backup_config_file):
           os.remove(self.backup_config_file)
         os.rename(self.config_file, self.backup_config_file)
-      with open(self.config_file, 'w') as cfg:
+      with open(self.config_file, 'w', encoding='utf-8') as cfg:
         cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as exc:
-      print('Error saving config: {}'.format(exc))
+      print(f'Error saving config: {exc}')
 
   def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
@@ -346,8 +373,7 @@ class Api:
 
   def _is_digital(self, sinput: str) -> bool:
     """Determines whether a source input, @sinput, is analog or digital
-
-    sinput is expected to be one of the following:
+    @sinput is expected to be one of the following:
 
     | str                  | meaning  | analog or digital? |
     | -------------------- | -------- | ------------------ |
@@ -482,6 +508,15 @@ class Api:
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
 
+  def _get_source_config(self, sources: Optional[List[models.Source]] = None) -> List[bool]:
+    """ Convert the preamp's source configuration """
+    if not sources:
+      sources = self.status.sources
+    src_cfg = [True] * models.MAX_SOURCES
+    for s, src in enumerate(sources):
+      src_cfg[s] = self._is_digital(src.input)
+    return src_cfg
+
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
 
@@ -504,21 +539,22 @@ class Api:
         if input_updated or force_update:
           # shutdown old stream
           old_stream = self.get_stream(src)
-          if old_stream:
+          if old_stream and old_stream.is_connected():
             old_stream.disconnect()
           # start new stream
           last_input = src.input
           src.input = input_ # reconfigure the input so get_stream knows which stream to get
           stream = self.get_stream(src)
           if stream:
-            # update the streams last connected source to have no input, since we have stolen its input
             stolen_from: Optional[models.Source] = None
             if stream.src is not None and stream.src != idx:
+              # update the streams last connected source to have no input, since we have stolen its input
               stolen_from = self.status.sources[stream.src]
-              print('stealing {} from source {}'.format(stream.name, stolen_from.name))
+              print(f'stealing {stream.name} from source {stolen_from.name}')
               stolen_from.input = ''
             try:
-              stream.disconnect()
+              if stream.is_connected():
+                stream.disconnect()
               stream.connect(idx)
             except Exception as iexc:
               print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
@@ -530,7 +566,7 @@ class Api:
               else:
                 src.input = ''
               # connect the stream back to its old source
-              if stolen_from:
+              if stolen_from and stolen_from.id is not None:
                 print(f"Trying to revert src {stolen_from.id}'s input to {stream.name}")
                 stream.connect(stolen_from.id)
                 stolen_from.input = input_
@@ -542,10 +578,7 @@ class Api:
             raise Exception(f'StreamID specified by "{src.input}" not found')
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
           if rt_needs_update or force_update:
-            # get the current underlying type of each of the sources, for configuration of the runtime
-            src_cfg = [self._is_digital(self.status.sources[s].input) for s in range(4)]
-            # update this source
-            src_cfg[idx] = self._is_digital(input_)
+            src_cfg = self._get_source_config()
             if not self._rt.update_sources(src_cfg):
               raise Exception('failed to set source')
           self._update_src_info(src) # synchronize the source's info
@@ -585,17 +618,22 @@ class Api:
         zone.name = name
         zone.disabled = disabled
 
-        # any disabled zone should not be able to play anything, mute it to be sure
-        if zone.disabled and not mute:
+        # parse and check the source id
+        sid = utils.parse_int(source_id, range(models.SOURCE_DISCONNECTED, models.MAX_SOURCES))
+
+        # any zone disabled by source disconnection or a 'disabled' flag should not be able to play anything
+        implicit_mute = zone.disabled or sid == models.SOURCE_DISCONNECTED
+        if implicit_mute and not mute:
           mute = True
           update_mutes = True
 
-        # update the zone's associated source
-        sid = utils.parse_int(source_id, [0, 1, 2, 3])
+        # update the zone's associated source (defaulting to source 0 if disconnected)
         zones = self.status.zones
-        if update_source_id or force_update:
+        if update_source_id or force_update :
           zone_sources = [zone.source_id for zone in zones]
-          zone_sources[idx] = sid
+          zone_sources[idx] = max(sid, 0) # default disconnected zones to source 0
+          # this is setting the state for all zones
+          # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
           if self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
@@ -870,20 +908,16 @@ class Api:
   @save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> ApiResponse:
     """Sets play/pause on a specific pandora source """
-    # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     if int(sid) not in self.streams:
-      return ApiResponse.error('Stream id {} does not exist'.format(sid))
-
+      return ApiResponse.error(f'Stream id {sid} does not exist')
     try:
       stream = self.streams[sid]
     except Exception as exc:
-      return ApiResponse.error('Unable to get stream {}: {}'.format(sid, exc))
-
+      return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
     try:
       stream.send_cmd(cmd)
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
-
     return ApiResponse.ok()
 
   @save_on_success
@@ -900,7 +934,7 @@ class Api:
     stat_dir = root + '.config/pianobar/stationList'
 
     try:
-      with open(stat_dir, 'r') as file:
+      with open(stat_dir, 'r', encoding='utf-8') as file:
         stations = {}
         for line in file.readlines():
           line = line.strip()
@@ -1007,7 +1041,7 @@ class Api:
     for group in preset_state.groups or []:
       _, groups_to_update = utils.find(self.status.groups, group.id)
       if groups_to_update is None:
-        raise NameError('group {} does not exist'.format(group.id))
+        raise NameError(f'group {group.id} does not exist')
       self.set_group(group.id, group.as_update(), internal=True)
       if group.mute is not None:
         # use the updated group's zones just in case the group's zones were just changed

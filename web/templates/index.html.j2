@@ -256,15 +256,15 @@
           </div>
         </div>
       </div>
-      {% for src in range(4) %}
-      <div id="s{{ src }}-groups" class="tab-pane {% if src == cur_src %} active {% endif %}">
-        {% for group in groups if group['source_id'] == src %}
+      {% for src in sources %}
+      <div id="s{{ src.id }}-groups" class="tab-pane {% if src.id == cur_src %} active {% endif %}">
+        {% for group in groups if group['source_id'] == src.id %}
         <div class="card group">
-          <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#s{{ src }}-groups" href="#g{{ group['id'] }}-zones" aria-expanded="false">
+          <a class="collapsed group-toggle" data-toggle="collapse" data-parent="#s{{ src.id }}-groups" href="#g{{ group['id'] }}-zones" aria-expanded="false">
             <h6 class="card-header"><i class="fas fa-chevron-down"></i> {{ group['name'] }}</h6>
           </a>
           <div class="card-body">
-            <div id="g{{ group['id'] }}-vol" class="volume {% if group['mute'] %} muted {% endif %}"  data-group="{{ group['id'] }}" data-source="{{src}}">
+            <div id="g{{ group['id'] }}-vol" class="volume {% if group['mute'] %} muted {% endif %}"  data-group="{{ group['id'] }}" data-source="{{src.id}}">
               <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ group['vol_f'] }}" step="0.01" class="volume-range">
               <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                 <i class="fa {% if group['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
@@ -276,13 +276,13 @@
               </div>
             </div>
           </div>
-          <div id="g{{ group['id'] }}-zones" class='card-description zones collapse' data-parent="#s{{ src }}-groups">
+          <div id="g{{ group['id'] }}-zones" class='card-description zones collapse' data-parent="#s{{ src.id }}-groups">
             <div class="card-rows">
               {% for zone in zones if zone['id'] in group['zones'] and not zone['disabled']%}
               <div class="card zone">
                 <h6 class="card-header">{{ zone['name'] }}</h6>
                 <div class="card-body">
-                  <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}"  data-source="{{src}}">
+                  <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}"  data-source="{{src.id}}">
                     <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}" step="0.01" class="volume-range">
                     <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                       <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
@@ -300,11 +300,11 @@
           </div>
         </div>
         {% endfor %}
-        {% for zone in ungrouped_zones[src] %}
+        {% for zone in ungrouped_zones[src.id] %}
         <div class="card ungrouped-zone">
           <h6 class="card-header">{{ zone['name'] }}</h6>
           <div class="card-body">
-            <div id="z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}" data-source="{{src}}">
+            <div id="z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}" data-source="{{src.id}}">
               <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}" step="0.01" class="volume-range">
               <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                 <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
@@ -322,17 +322,17 @@
           <h6 class="card-header">Add</h6>
           <div class="card-body">
             <div class="input-group">
-              <select id="s{{ src }}-add-input" class="multiselect custom-select" multiple="multiple" title="Select Group or Zone">
-                {% if unused_groups[src].items() %}
+              <select id="s{{ src.id }}-add-input" class="multiselect custom-select" multiple="multiple" title="Select Group or Zone">
+                {% if unused_groups[src.id].items() %}
                 <optgroup label="Groups">
-                  {% for g, name in unused_groups[src].items() %}
+                  {% for g, name in unused_groups[src.id].items() %}
                   <option value="g{{ g }}">{{ name }}</option>
                   {% endfor %}
                 </optgroup>>
                 {% endif %}
-                {% if unused_zones[src].items() %}
+                {% if unused_zones[src.id].items() %}
                 <optgroup label="Zones">
-                  {% for z, name in unused_zones[src].items() %}
+                  {% for z, name in unused_zones[src.id].items() %}
                   <option value="z{{ z }}">{{ name }}</option>
                   {% endfor %}
                 </optgroup>
