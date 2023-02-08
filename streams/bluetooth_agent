@@ -21,17 +21,10 @@ AGENT_IFACE = 'org.bluez.Agent1'
 AGENT_MNGR_IFACE = 'org.bluez.AgentManager1'
 AGENT_PATH = "/my/app/agent"
 AGENT_MNGR_PATH = '/org/bluez'
-# AGENT_PATH = "/test/agent"
 CAPABILITY = 'NoInputNoOutput'
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 bus = dbus.SystemBus()
-
-# def get_connected_devices(idx=0):
-#   path = f'{ADAPTER_ROOT}{idx}'
-#   adapter_object = bus.get_object(BUS_NAME, path)
-#
-#   pass
 
 def is_device_connected(mac):
   try:
@@ -62,8 +55,6 @@ def configure_adapter(idx=0):
                          'PairableTimeout', dbus.UInt32(0))
   adapter_props.Set(ADAPTER_IFACE,
                          'Pairable', True)
-
-
 
 class Rejected(dbus.DBusException):
   _dbus_error_name = "org.bluez.Error.Rejected"
@@ -124,10 +115,9 @@ class Agent(dbus.service.Object):
   def RequestAuthorization(self, device):
     """ Called when device tries to pair when CAPABILITY=NoInputNoOutput."""
     print(f"RequestAuthorization ({device})")
-    # example
-    mac = ':'.join(device.split('/')[-1].split('_')[1:])
-    # this was causing issues after upgrading to python3... not sure how it ever worked
+    # mac = ':'.join(device.split('/')[-1].split('_')[1:])
 
+    # this was causing issues after upgrading to python3... not sure how it ever worked
     # raise Rejected("Pairing rejected")
 
 
