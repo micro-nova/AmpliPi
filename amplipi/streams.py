@@ -1100,9 +1100,8 @@ class Bluetooth(BaseStream):
 
   def __init__(self, name, disabled=False, mock=False):
     super().__init__('bluetooth', name, disabled=disabled, mock=mock)
-    self.bkg_thread = None
     self.logo = "static/imgs/bluetooth.png"
-    self.proc2 = None
+    self.btmeta_proc = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev', 'stop']
 
   def __del__(self):
@@ -1114,7 +1113,7 @@ class Bluetooth(BaseStream):
     try:
       if subprocess.run('which bluetoothctl'.split()).returncode != 0:
         return False
-      # bluetoothctl show seems to hang somet8imes when hardware is not available
+      # bluetoothctl show seems to hang sometimes when hardware is not available
       # add a timeout so that we don't get stuck waiting
       btcmd_proc = subprocess.run('bluetoothctl show'.split(), stdout=subprocess.PIPE, timeout=0.5, check=True)
       return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
@@ -1132,46 +1131,44 @@ class Bluetooth(BaseStream):
       return
 
     # Power on Bluetooth and enable discoverability
-    btpon_args = f'bluetoothctl power on'
-    subprocess.run(args=btpon_args.split(), preexec_fn=os.setpgrp)
-    btdon_args = f'bluetoothctl discoverable on'
-    subprocess.run(args=btdon_args.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='bluetoothctl power on'.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='bluetoothctl discoverable on'.split(), preexec_fn=os.setpgrp)
 
     # Start audio via bluealsa-aplay (accepting any bluetooth device with all zeros)
-    baplay_args = f'bluealsa-aplay -d {utils.output_device(src)} 00:00:00:00:00:00'
-    self.proc = subprocess.Popen(args=baplay_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    # baplay_args = f'bluealsa-aplay -d {utils.output_device(src)} 00:00:00:00:00:00 --single-audio'
+    # testing valid mac (jonah's phone)
+    baplay_args = f'bluealsa-aplay -d {utils.output_device(src)} 78:F2:38:58:0A:13 --single-audio'
+    # testing invalid mac
+    # baplay_args = f'bluealsa-aplay -d {utils.output_device(src)} 78:F2:38:58:0A:14'
+    # self.bluealsa_proc = subprocess.Popen(args=baplay_args.split(), preexec_fn=os.setpgrp)
 
     # Start metadata watcher
     src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
     os.system('mkdir -p {}'.format(src_config_folder))
     song_info_path = f'{src_config_folder}/currentSong'
-    btmeta_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path} --verbose'
+    device_info_path = f'{src_config_folder}/btDevice'
+    btmeta_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path} --device-info={device_info_path} --output-device={utils.output_device(src)} --verbose'
     print(f'running: {btmeta_args}')
-    self.proc2 = subprocess.Popen(args=btmeta_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
+    self.btmeta_proc = subprocess.Popen(args=btmeta_args.split(), preexec_fn=os.setpgrp)
 
     self._connect(src)
     return
 
   def _is_running(self):
-    if self.proc:
-      return self.proc.poll() is None
+    if self.btmeta_proc:
+      return self.btmeta_proc.poll() is None
     return False
 
   def disconnect(self):
     if self._is_running():
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
-      os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
-    self.proc = None
-    self.proc2 = None
+      # os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      os.killpg(os.getpgid(self.btmeta_proc.pid), signal.SIGKILL)
+    # self.bluealsa_proc = None
+    self.btmeta_proc = None
 
     # Power off Bluetooth and disable discoverability
-    btdoff_args = f'bluetoothctl discoverable off'
-    subprocess.run(args=btdoff_args.split(), preexec_fn=os.setpgrp)
-
-    btpoff_args = f'bluetoothctl power off'
-    subprocess.run(args=btpoff_args.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='bluetoothctl discoverable off'.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='bluetoothctl power off'.split(), preexec_fn=os.setpgrp)
 
     self._disconnect()
 
@@ -1198,10 +1195,11 @@ class Bluetooth(BaseStream):
   def send_cmd(self, cmd):
     print(f'bluetooth: sending command {cmd}')
     try:
-      if cmd in self.supported_cmds and self.src != None:
-        btcmd_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --command={cmd} --verbose'
-        subprocess.run(args=btcmd_args.split(), stdin=subprocess.PIPE, stdout=sys.stdout,
-                                      stderr=subprocess.STDOUT, preexec_fn=os.setpgrp)
+      if cmd in self.supported_cmds and self.src is not None:
+        src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+        device_info_path = f'{src_config_folder}/btDevice'
+        btcmd_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --command={cmd} --device-info={device_info_path} --verbose'
+        subprocess.run(args=btcmd_args.split(), preexec_fn=os.setpgrp)
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as e:
