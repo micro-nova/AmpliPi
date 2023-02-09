@@ -303,10 +303,11 @@ class AirPlay(BaseStream):
       if self.proc.wait(1) != 0:
         print('killing shairport-sync')
         self.proc.kill()
-    try:
-      subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
-    except Exception as e:
-      print(f'Error removing airplay config files: {e}')
+    if self.src:
+      try:
+        subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
+      except Exception as e:
+        print(f'Error removing airplay config files: {e}')
     self._disconnect()
     self.proc = None
 

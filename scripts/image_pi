@@ -53,7 +53,7 @@ fi
 
 # Instruct user on manual boot process
 if $instructions; then
-  read -p "Unplug AmpliPi then press any key to continue." -sn 1
+  read -p "Unplug AmpliPi from power then press any key to continue." -sn 1
   echo -e "\nPlug in a usb cable from your computer to the service port of AmpliPi,"
   read -p "  then press any key to continue." -sn 1
   echo -e "\nPlug in the AmpliPi.\n"
