@@ -268,7 +268,11 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     progress(tasks)
     return tasks
   tasks = []
-  # TODO: add extra apt repos
+  tasks += fix_file_props(env, progress)
+  if env['is_amplipi']:
+    tasks += add_tests(env, progress)
+  print_progress(tasks)
+
   # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
   # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
   tasks += print_progress([Task('get latest debian packages', 'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
@@ -851,11 +855,6 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks[0].output = str(env)
     tasks[0].success = True
   progress(tasks)
-  if failed():
-    return False
-  tasks += fix_file_props(env, progress)
-  if env['is_amplipi']:
-    tasks += add_tests(env, progress)
   if failed():
     return False
   if os_deps:
