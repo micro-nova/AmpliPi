@@ -1115,7 +1115,7 @@ class Bluetooth(BaseStream):
         return False
       # bluetoothctl show seems to hang sometimes when hardware is not available
       # add a timeout so that we don't get stuck waiting
-      btcmd_proc = subprocess.run('bluetoothctl show'.split(), timeout=0.5, check=True)
+      btcmd_proc = subprocess.run('bluetoothctl show'.split(), stdout=subprocess.PIPE, timeout=0.5, check=True)
       return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
     except Exception as e:
       print(f'Error checking for bluetooth hardware: {e}')
