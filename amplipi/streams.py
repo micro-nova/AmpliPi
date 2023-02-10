@@ -1115,7 +1115,7 @@ class Bluetooth(BaseStream):
         return False
       # bluetoothctl show seems to hang sometimes when hardware is not available
       # add a timeout so that we don't get stuck waiting
-      btcmd_proc = subprocess.run('bluetoothctl show'.split(), stdout=subprocess.PIPE, timeout=0.5, check=True)
+      btcmd_proc = subprocess.run('bluetoothctl show'.split(), timeout=0.5, check=True)
       return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
     except Exception as e:
       print(f'Error checking for bluetooth hardware: {e}')
@@ -1187,7 +1187,7 @@ class Bluetooth(BaseStream):
       if cmd in self.supported_cmds and self.src is not None:
         src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
         device_info_path = f'{src_config_folder}/btDevice'
-        btcmd_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --command={cmd} --device-info={device_info_path} --verbose'
+        btcmd_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --command={cmd} --device-info={device_info_path}'
         subprocess.run(args=btcmd_args.split(), preexec_fn=os.setpgrp)
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')

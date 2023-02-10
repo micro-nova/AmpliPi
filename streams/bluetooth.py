@@ -106,7 +106,7 @@ def get_playing_devices_path_and_mac() -> List[tuple]:
       addr = dbus_tools.get_device_address_from_dbus_path(dbus_path)
       try:
         if addr and media_player.MediaPlayer(addr).status == 'playing':
-          playing_devices.append((addr, dbus_path))
+          playing_devices.append(addr)
       except Exception as e:
         print(f"bluetooth.py: WARNING: {e}")
   return playing_devices
@@ -118,7 +118,7 @@ def get_all_devices_path_and_mac() -> List[tuple]:
     if dbus_path.endswith('player0'):
       addr = dbus_tools.get_device_address_from_dbus_path(dbus_path)
       if addr:
-        devices.append((addr, dbus_path))
+        devices.append(addr)
   return devices
 
 def mac_to_device_name(mac: str) -> Optional[str]:
@@ -142,6 +142,7 @@ def update_selected_device(selected_device, selected_playing_device) -> tuple:
 
   # selected playing devices is no longer playing. try finding another
   if len(playing_devices) > 0:
+    # just grab the first available one. order shouldn't matter when selecting a new one.
     return playing_devices[0], playing_devices[0]
 
   # couldn't find another, return selected device if it still exists
@@ -154,6 +155,18 @@ def update_selected_device(selected_device, selected_playing_device) -> tuple:
 
   # there's no players, return None
   return None, None
+
+def alter_title(title, device_name) -> str:
+  """Adds device name or pairing instructions to the title."""
+  if device_name:
+    if len(title) > 0:
+      return title + " - " + device_name
+    return device_name
+  else:
+    if len(title) > 0:
+      print('WARNING: Bluetooth media player has song title, but no device name!')
+      return title + " - Unknown device"
+    return "Unknown device"
 
 def main():
   p_info = MediaInfo()
@@ -168,14 +181,11 @@ def main():
     while True:
       selected_device, selected_playing_device = update_selected_device(selected_device, selected_playing_device)
 
-      if selected_device is not None:
-        mac_addr = selected_device[0]
-      else:
-        mac_addr = None
-
       # if the device changes from the previous state,
       if p_selected_device != selected_device and args.device_info is not None:
         p_selected_device = selected_device
+        if selected_device is not None:
+          device_name = mac_to_device_name(selected_device)
 
         # kill he bluealsa process
         if bluealsa_proc is not None:
@@ -187,50 +197,35 @@ def main():
             pass
 
         # open a new bluealsa process with the new mac address
-        if bluealsa_proc is None and args.output_device is not None and mac_addr is not None:
-          baplay_args = f'bluealsa-aplay -d {args.output_device} {mac_addr} --single-audio'
+        if bluealsa_proc is None and args.output_device is not None and selected_device is not None:
+          baplay_args = f'bluealsa-aplay -d {args.output_device} {selected_device} --single-audio'
           bluealsa_proc = subprocess.Popen(args=baplay_args.split(), preexec_fn=os.setpgrp)
         # write the new mac address to the device info file, used by streams.py bluetooth send command
         with open(args.device_info, "wt") as f:
-          f.write(selected_device[0])
-          print(f'Writing {selected_device[0]} to {args.device_info}')
+          f.write(selected_device)
+          print(f'Writing {selected_device} to {args.device_info}')
 
-      if mac_addr:
+      if selected_device:
         try:
           # get the media player associated with the bluetooth mac, retrieve track details
-          mp = media_player.MediaPlayer(mac_addr)
+          mp = media_player.MediaPlayer(selected_device)
           track_details = mp.track
           artist = track_details.get("Artist", "")
           album = track_details.get("Album", "")
           title = track_details.get("Title", "")
           duration = track_details.get("Duration", "")
 
-          if last_mac_addr != mac_addr:
-            last_mac_addr = mac_addr
-            device_name = mac_to_device_name(mac_addr)
-
           # alter/generate a title to include device name
-          if device_name:
-            if len(title) > 0:
-              title += " - " + device_name
-            else:
-              title = device_name
-          else:
-            if len(title) > 0:
-              print('WARNING: Bluetooth media player has song title, but no device name!')
-              title += " - Unknown device"
-            else:
-              title = "Unknown device"
-
+          title = alter_title(title, device_name)
           info = MediaInfo(artist, title, album, duration, mp.status)
         except:
+          # getting info from media player crashed somehow
           info = MediaInfo(status='stopped')
 
-      else:  # mac_addr is None
+      else:  # selected_device is None
         info = MediaInfo(status='stopped', title=f"No device connected - Pair device to '{socket.gethostname()}'")
-
         if args.verbose:
-          log('Error: No media player connected')
+          log('No media player connected')
 
       # if the info changed from last state,
       if p_info != info and args.song_info is not None:
@@ -249,8 +244,9 @@ def main():
           log(f'Error: {sys.exc_info()[1]}')
 
       sys.stdout.flush()
-      time.sleep(1)
+      time.sleep(1)  # might want to reduce this - currently doesn't feel very responsive
 
+  # TODO: should we sys.exit on these excepts?
   except KeyboardInterrupt:
     print('exit')
 

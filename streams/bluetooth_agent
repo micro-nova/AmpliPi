@@ -6,8 +6,6 @@
 Handles pairing and authorization of Bluetooth devices. Allows the host to automatically
 pair and accept A2DP, HFP, HSP and AVRCP connections from Bluetooth devices.
 """
-import subprocess
-from typing import List
 
 import dbus
 import dbus.mainloop.glib
@@ -26,21 +24,6 @@ CAPABILITY = 'NoInputNoOutput'
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 bus = dbus.SystemBus()
 
-def is_device_connected(mac):
-  try:
-    return subprocess.run(f'bluetoothctl info {mac} | grep Connected'.split(), timeout=0.5, check=True, capture_output=True).stdout.decode().strip().split()[1] == 'yes'
-  except Exception:
-    return False
-
-def get_all_devices() -> List[str]:
-  try:
-    raw_devices = subprocess.run('bluetoothctl devices'.split(), timeout=0.5, check=True, capture_output=True).stdout.decode()
-  except Exception:
-    return []
-  devices = []
-  for line in raw_devices.splitlines():
-    devices.append(line[1])
-  return devices
 
 def configure_adapter(idx=0):
   """ Enable discoverable and pairable for the bluetooth adapter with index idx. """
