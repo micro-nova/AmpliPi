@@ -1132,6 +1132,7 @@ class Bluetooth(BaseStream):
     # Power on Bluetooth and enable discoverability
     subprocess.run(args='bluetoothctl power on'.split(), preexec_fn=os.setpgrp)
     subprocess.run(args='bluetoothctl discoverable on'.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='sudo btmgmt fast-conn on'.split(), preexec_fn=os.setpgrp)
 
     # Start metadata watcher
     src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
