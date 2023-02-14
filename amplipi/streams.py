@@ -1048,11 +1048,12 @@ class LMS(BaseStream):
         # specify the server to connect to (if unspecified squeezelite starts in discovery mode)
         server = self.server
         # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
-        if 'localhost' ==  server or server.startswith('localhost:'):
+        if 'localhost' ==  server:
           # squeezelite does not support localhost and requires the actual hostname
-          # NOTE: :9000 is assumed unless otherwise specified
+          # NOTE: port 9000 is assumed
           server.replace('localhost', socket.gethostname())
         lms_args += [ '-s', server]
+      # TODO: allow port to be specified with server (embedding it in the server URL does not work)
 
       self.proc = subprocess.Popen(args=lms_args)
       self._connect(src)
