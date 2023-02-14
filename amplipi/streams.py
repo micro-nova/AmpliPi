@@ -1007,7 +1007,7 @@ class LMS(BaseStream):
       self.name = kwargs['name']
       reconnect_needed = True
     if 'server' in kwargs and kwargs['server'] != self.server:
-      self.name = kwargs['server']
+      self.server = kwargs['server']
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
@@ -1044,7 +1044,7 @@ class LMS(BaseStream):
                   '-f', f'{src_config_folder}/lms_log.txt',
                   '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
                 ]
-      if self.server is not None:
+      if self.server:
         # specify the server to connect to (if unspecified squeezelite starts in discovery mode)
         server = self.server
         # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
