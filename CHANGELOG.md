@@ -1,5 +1,10 @@
 # AmpliPi Software Releases
-## 0.2.0 Upcoming
+
+## 0.2.1 Upcoming
+* System
+  * Fix python dependencies to specific versions
+
+## 0.2.0
 * Web App
   * Reject scroll events to volume sliders
   * Improve version display
