@@ -200,7 +200,7 @@ $(function() {
           <div class="form-group">
             <label for="lms_server">LMS Server</label>
             <input type="text" class="form-control" name="server" id="lms_server" value="${s.server ? s.server : ''}" data-required="false">
-            <small id="serverHelp" class="form-text text-muted">Optional LMS Server URL or hostname (without port).  Example: <b>mylmsserver</b></small>
+            <small id="serverHelp" class="form-text text-muted">Optional LMS server hostname (without port).  Example: <b>mylmsserver</b></small>
           </div>
           `;
           break;
@@ -331,7 +331,7 @@ $(function() {
         <div class="form-group">
           <label for="new_lms_server">LMS Server</label>
           <input type="text" class="form-control" name="server" id="new_lms_server" data-required="false">
-          <small id="serverHelp" class="form-text text-muted">Optional LMS Server URL or hostname (without port). Example: <b>mylmsserver</b></small>
+          <small id="serverHelp" class="form-text text-muted">Optional LMS server hostname (without port). Example: <b>mylmsserver</b></small>
         </div>
         `;
         break;
