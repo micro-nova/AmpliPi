@@ -195,6 +195,15 @@ $(function() {
           </div>
         `;
         break;
+      case STREAM_TYPES_.lms:
+          html += `
+          <div class="form-group">
+            <label for="lms_server">LMS Server</label>
+            <input type="text" class="form-control" name="server" id="lms_server" value="${s.server ? s.server : ''}" data-required="false">
+            <small id="serverHelp" class="form-text text-muted">Optional LMS Server URL or hostname (without port).  Example: <b>mylmsserver</b></small>
+          </div>
+          `;
+          break;
       case STREAM_TYPES_.pandora:
         html += `
           <div class="form-group">
@@ -315,6 +324,16 @@ $(function() {
             <input type="text" class="form-control" name="logo" id="new_internetradio_logo" aria-describedby="logoHelp">
             <small id="logoHelp" class="form-text text-muted">Optionally provide an image URL for the station.</small>
           </div>`;
+        break;
+
+      case STREAM_TYPES_.lms:
+        html += `
+        <div class="form-group">
+          <label for="new_lms_server">LMS Server</label>
+          <input type="text" class="form-control" name="server" id="new_lms_server" data-required="false">
+          <small id="serverHelp" class="form-text text-muted">Optional LMS Server URL or hostname (without port). Example: <b>mylmsserver</b></small>
+        </div>
+        `;
         break;
       case STREAM_TYPES_.pandora:
         html += `

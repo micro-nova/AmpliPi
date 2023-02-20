@@ -3,6 +3,8 @@
 ## 0.2.1 Upcoming
 * System
   * Fix python dependencies to specific versions
+* Streams
+  * Fix LMS Server parameter
 
 ## 0.2.0
 * Web App
