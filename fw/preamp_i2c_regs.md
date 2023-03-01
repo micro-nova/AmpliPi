@@ -345,8 +345,11 @@ The 12 V supply runs the fans, 9 V is used for audio power, and HV2
 is the second high-voltage power supply for high-power AmpliPi Units.
 All bits are read-only.
 
-EN_9V/PG_9V is only present on prototype power boards, on all others
-the 9 V supply is always on and these two bits are undefined values.
+PG_9V is only present on prototype power boards, on all others
+this bit is an undefined value.
+
+The 9 and 12V supplies are always enabled, so EN_9V/EN_12V will
+always report a '1'.
 
 | PG_9V | Description |
 | ----- | ----------- |
