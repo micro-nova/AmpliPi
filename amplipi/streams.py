@@ -161,7 +161,10 @@ class RCA(BaseStream):
     self.index = index
 
   def reconfig(self, **kwargs):
-    self.name = kwargs['name']
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
 
   def info(self) -> models.SourceInfo:
     src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=self.full_name(), state='stopped')
@@ -206,6 +209,8 @@ class AirPlay(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
@@ -389,6 +394,8 @@ class Spotify(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
@@ -521,6 +528,8 @@ class Pandora(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     pb_fields = ['user', 'password', 'station']
     fields = list(pb_fields) + ['name']
     for k,v in kwargs.items():
@@ -658,6 +667,8 @@ class DLNA(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
@@ -736,7 +747,7 @@ class InternetRadio(BaseStream):
   def reconfig(self, **kwargs):
     reconnect_needed = False
     ir_fields = ['url', 'logo']
-    fields = list(ir_fields) + ['name']
+    fields = list(ir_fields) + ['name', 'disabled']
     for k,v in kwargs.items():
       if k in fields and self.__dict__[k] != v:
         self.__dict__[k] = v
@@ -831,7 +842,10 @@ class Plexamp(BaseStream):
     super().__init__('plexamp', name, disabled=disabled, mock=mock)
 
   def reconfig(self, **kwargs):
-    self.name = kwargs['name']
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
+    if 'name' in kwargs:
+      self.disabled = kwargs['name']
 
   def connect(self, src):
     """ Connect plexamp output to a given audio source
@@ -858,6 +872,8 @@ class FilePlayer(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs:
       self.name = kwargs['name']
     if 'url' in kwargs:
@@ -920,7 +936,7 @@ class FMRadio(BaseStream):
   def reconfig(self, **kwargs):
     reconnect_needed = False
     ir_fields = ['freq', 'logo']
-    fields = list(ir_fields) + ['name']
+    fields = list(ir_fields) + ['name', 'disabled']
     for k, v in kwargs.items():
       if k in fields and self.__dict__[k] != v:
         self.__dict__[k] = v
@@ -1003,6 +1019,8 @@ class LMS(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
