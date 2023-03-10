@@ -576,6 +576,13 @@ class Stream(Base):
             'name': 'Family',
             'type': 'lms',
           }
+        },
+        'Add LMS Client connected specifically to mylmsserver': {
+          'value': {
+            'name': 'Family',
+            'type': 'lms',
+            'server': 'mylmsserver',
+          }
         }
       },
       'examples': {
