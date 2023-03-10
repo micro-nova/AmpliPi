@@ -1,10 +1,14 @@
 # AmpliPi Software Releases
 
-## 0.2.1 Upcoming
+## Upcoming release
+
+## 0.2.1
 * System
   * Fix python dependencies to specific versions
 * Streams
   * Fix LMS Server parameter
+* Docs
+  * Update 9/12V supply register descriptions
 
 ## 0.2.0
 * Web App
