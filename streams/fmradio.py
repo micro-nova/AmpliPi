@@ -64,7 +64,7 @@ def main():
 
   rtlfm_args = f'rtl_fm -M fm -f {freq}M -s 171k -A std -p 0 -l 0 -E deemp -g 20 -F 9'.split()
   redsea_args = ['redsea', '-u', '-p', '--feed-through']
-  aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', '{}'.format(args.output)]
+  aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', f'{args.output}m2s']
 
   rtlfm_proc = subprocess.Popen(args=rtlfm_args, bufsize=1024, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   redsea_proc = subprocess.Popen(args=redsea_args, bufsize=1024, stdin=rtlfm_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
