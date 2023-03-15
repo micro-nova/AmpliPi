@@ -1,6 +1,8 @@
 # AmpliPi Software Releases
 
 ## Upcoming release
+* Streams
+  * Add Bluetooth stream
 
 ## 0.2.1
 * System
@@ -17,8 +19,6 @@
 * Streams
   * Switch to Spotifyd Spotify client
   * Add MPRIS metadata/command interface
-  * Add LMS Client
-  * Add Bluetooth stream
   * Add LMS Client (no metadata yet)
   * Make Airplay use MPRIS
   * Add single Airplay2 to Airplay stream
