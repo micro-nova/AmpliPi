@@ -71,7 +71,7 @@ def main():
   # alsa output stage
   # - convert mono output -> stereo using alsa routes chXm2s
   # - normally mono conversion happens automatically but only the left channel was playing for ch1, ch2, and ch3
-  aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', f'{args.output}m2s']
+  aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', f'{args.output}']
 
   rtlfm_proc = subprocess.Popen(args=rtlfm_args, bufsize=1024, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   redsea_proc = subprocess.Popen(args=redsea_args, bufsize=1024, stdin=rtlfm_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
