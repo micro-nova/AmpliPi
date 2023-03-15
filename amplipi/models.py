@@ -646,6 +646,8 @@ class StreamUpdate(BaseUpdate):
   logo: Optional[str]
   freq: Optional[str]
   server: Optional[str]
+  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
+  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
 
   class Config:
     schema_extra = {
