@@ -62,9 +62,16 @@ def main():
 
   update = False
 
+  # configure RTLSDR and and process FM radio signal
+  #  NOTE: FM decoding is typically done using -M wbfm which implies "-M fm -s 170k -A fast -r 32k -l 0 -E deemp" which sounds ok, but has a lot of noise
+  #  The additional parameters specified below sound much better in our experience
   rtlfm_args = f'rtl_fm -M fm -f {freq}M -s 171k -A std -p 0 -l 0 -E deemp -g 20 -F 9'.split()
+  # metadata processing using redsea
   redsea_args = ['redsea', '-u', '-p', '--feed-through']
-  aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', '{}'.format(args.output)]
+  # ALSA output stage
+  # - rtl_fm output is mono
+  # - mono to stereo conversion happens automatically via ALSA plug module
+  aplay_args = ['aplay', '-r', '171000', '-f', 'S16_LE', '--device', f'{args.output}']
 
   rtlfm_proc = subprocess.Popen(args=rtlfm_args, bufsize=1024, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   redsea_proc = subprocess.Popen(args=redsea_args, bufsize=1024, stdin=rtlfm_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
