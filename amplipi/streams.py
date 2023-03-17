@@ -1136,7 +1136,7 @@ class Bluetooth(BaseStream):
 
     # Start metadata watcher
     src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
-    os.system('mkdir -p {}'.format(src_config_folder))
+    os.system(f'mkdir -p {src_config_folder}')
     song_info_path = f'{src_config_folder}/currentSong'
     device_info_path = f'{src_config_folder}/btDevice'
     btmeta_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path} ' \
