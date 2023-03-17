@@ -89,7 +89,7 @@ class EInkDisplay(Display):
       draw.text((0, start + 2 * interval), f'Pass\u21b4', font=self.font, fill=0)
       draw.text((0, start + 3 * interval), password, font=self.pass_font, fill=0)
 
-      image = image.rotate(180)  # flip
+      # image = image.rotate(180)  # flip
       print('Displaying image')
       self.epd.display(self.epd.getbuffer(image))
       self.epd.sleep()
