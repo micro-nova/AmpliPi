@@ -1194,6 +1194,7 @@ class Bluetooth(BaseStream):
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as e:
       print(f'bluetooth: exception {e}')
+      raise RuntimeError(f'Command {cmd} failed to send: {e}') from e
       traceback.print_exc()
 
 # Simple handling of stream types before we have a type heirarchy
