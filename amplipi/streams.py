@@ -1154,13 +1154,13 @@ class Bluetooth(BaseStream):
   def disconnect(self):
     if self._is_running():
       os.killpg(os.getpgid(self.bt_proc.pid), signal.SIGKILL)
-    self.bt_proc = None
+      self.bt_proc = None
 
-    # Power off Bluetooth and disable discoverability
-    subprocess.run(args='bluetoothctl discoverable off'.split(), preexec_fn=os.setpgrp)
-    subprocess.run(args='bluetoothctl power off'.split(), preexec_fn=os.setpgrp)
+      # Power off Bluetooth and disable discoverability
+      subprocess.run(args='bluetoothctl discoverable off'.split(), preexec_fn=os.setpgrp)
+      subprocess.run(args='bluetoothctl power off'.split(), preexec_fn=os.setpgrp)
 
-    self._disconnect()
+      self._disconnect()
 
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"

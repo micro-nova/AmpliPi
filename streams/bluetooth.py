@@ -13,6 +13,7 @@ import socket
 import subprocess
 import sys
 import time
+import traceback
 
 from dataclasses import dataclass, asdict
 from typing import Optional, List
@@ -170,7 +171,6 @@ def alter_title(title, device_name) -> str:
 
 def main():
   p_info = MediaInfo()
-  last_mac_addr = ''
   device_name = None
   bluealsa_proc = None
   p_selected_device = None
@@ -218,7 +218,7 @@ def main():
           # alter/generate a title to include device name
           title = alter_title(title, device_name)
           info = MediaInfo(artist, title, album, duration, mp.status)
-        except:
+        except Exception:
           # getting info from media player crashed somehow
           info = MediaInfo(status='stopped')
 
@@ -239,19 +239,19 @@ def main():
             log('Updated song_info')
             log(info.as_json())
 
-        except Exception:
+        except Exception as e:
           log(f'song_info file: {args.song_info}')
-          log(f'Error: {sys.exc_info()[1]}')
+          log(f'Error: {e}')
 
       sys.stdout.flush()
       time.sleep(1)  # might want to reduce this - currently doesn't feel very responsive
 
-  # TODO: should we sys.exit on these excepts?
   except KeyboardInterrupt:
     print('exit')
 
-  except Exception:
-    log(sys.exc_info())
+  except Exception as e:
+    log(e)
+    log(traceback.format_exc())
 
 
 if __name__ == "__main__":

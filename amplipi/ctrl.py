@@ -264,7 +264,6 @@ class Api:
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
-    # assert 'bluetooth' not in [s.name for s in self.status.streams]
     failed_streams: List[int] = []
     for stream in self.status.streams:
       assert stream.id is not None
