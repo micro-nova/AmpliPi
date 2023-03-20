@@ -35,6 +35,8 @@ from amplipi import models
 from amplipi import rt
 from amplipi import utils
 import amplipi.streams
+import amplipi.utils as utils
+from amplipi.eeprom import EEPROM, BoardType
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -142,6 +144,31 @@ class Api:
       },
     ]
   }
+
+  STREAMER_CONFIG = { # This is the system state response that will come back from the amplipi box
+    "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
+      {"id": 0, "name": "Input 1", "input": "local"},
+      {"id": 1, "name": "Input 2", "input": "local"},
+      {"id": 2, "name": "Input 3", "input": "local"},
+      {"id": 3, "name": "Input 4", "input": "local"}
+    ],
+    "streams": [
+      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+    ],
+    "zones": [ # this is an array of zones, array length depends on # of boxes connected
+    ],
+    "groups": [
+    ],
+    "presets" : [
+      {"id": MUTE_ALL_ID,
+        "name": "Mute All",
+        "state" : {
+          "zones" : [
+          ]
+        }
+      },
+    ]
+  }
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
   # with this reinit will be called connect and will attempt to load the configutation and connect to an AmpliPi (mocked or real)
   # returning a boolean on whether or not it was successful
@@ -196,10 +223,16 @@ class Api:
           self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
           errors.append(f'error loading config file: {exc}')
 
+    found_boards = EEPROM.get_available_devices(0)
+
     if not loaded_config:
       print(errors[0])
-      print('using default config')
-      self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
+      if BoardType.STREAMER_SUPPORT in found_boards:
+        print('using streamer config')
+        self.status = models.Status.parse_obj(self.STREAMER_CONFIG)
+      else:
+        print('using default config')
+        self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
 
     # populate system info
@@ -220,7 +253,8 @@ class Api:
     if self._mock_hw:
       # only allow 6 zones when mocked to simplify testing
       # add more if needed by specifying them in the config
-      potential_zones = range(6)
+      # potential_zones = range(6)
+      pass
     else:
       potential_zones = range(rt.MAX_ZONES)
     added_zone = False
@@ -337,6 +371,19 @@ class Api:
       self.set_zone(zone.id, zone_update, force_update=True, internal=True)
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
+
+    # if we're a streamer disable any zones or groups that might've been added
+    # if BoardType.STREAMER_SUPPORT in found_boards:
+    #   needs_save = False
+    #   for i in self.status.zones:
+    #     i.disabled = True
+    #     needs_save = True
+    #   for i in self.status.groups:
+    #     i.disabled = True
+    #     needs_save = True
+
+    #   if needs_save:
+    #     self.save()
 
   def __del__(self):
     # stop save in the future so we can save right away

@@ -57,6 +57,22 @@ class EEPROM:
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(WP_PIN, GPIO.OUT)
 
+  @staticmethod
+  def get_available_devices(bus: int) -> List[BoardType]:
+    """Get list of available devices."""
+    i2c = smbus.SMBus(bus)
+
+    devices = []
+
+    for i in BoardType:
+      try:
+        i2c.read_byte(i.value)
+        devices.append(i)
+      except OSError:
+        pass
+
+    return devices
+
   def _enable_write(self) -> None:
     """Enable write to EEPROM."""
     GPIO.output(WP_PIN, GPIO.LOW)
