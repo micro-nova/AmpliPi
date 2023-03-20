@@ -223,11 +223,15 @@ class Api:
           self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
           errors.append(f'error loading config file: {exc}')
 
+    # try to get a list of available boards
     found_boards = EEPROM.get_available_devices(0)
+
+    # check if we are a streamer
+    is_streamer = BoardType.STREAMER_SUPPORT in found_boards
 
     if not loaded_config:
       print(errors[0])
-      if BoardType.STREAMER_SUPPORT in found_boards:
+      if is_streamer:
         print('using streamer config')
         self.status = models.Status.parse_obj(self.STREAMER_CONFIG)
       else:
@@ -250,14 +254,18 @@ class Api:
     self._update_sys_info() # TODO: does sys info need to be updated at init time?
 
     # detect missing zones
-    if self._mock_hw:
+    if self._mock_hw and not is_streamer:
       # only allow 6 zones when mocked to simplify testing
       # add more if needed by specifying them in the config
-      # potential_zones = range(6)
+      potential_zones = range(6)
       pass
+    elif is_streamer:
+      # streamer has no zones
+      potential_zones = []
     else:
       potential_zones = range(rt.MAX_ZONES)
     added_zone = False
+
     for zid in potential_zones:
       _, zone = utils.find(self.status.zones, zid)
       if zone is None and self._rt.exists(zid):
@@ -371,19 +379,6 @@ class Api:
       self.set_zone(zone.id, zone_update, force_update=True, internal=True)
     # configure all of the groups (some fields may need to be updated)
     self._update_groups()
-
-    # if we're a streamer disable any zones or groups that might've been added
-    # if BoardType.STREAMER_SUPPORT in found_boards:
-    #   needs_save = False
-    #   for i in self.status.zones:
-    #     i.disabled = True
-    #     needs_save = True
-    #   for i in self.status.groups:
-    #     i.disabled = True
-    #     needs_save = True
-
-    #   if needs_save:
-    #     self.save()
 
   def __del__(self):
     # stop save in the future so we can save right away

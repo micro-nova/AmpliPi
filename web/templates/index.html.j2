@@ -98,8 +98,10 @@
         <select id="settings-sel" class="custom-select" style="display: none" autocomplete="off"
                 onchange="$(this.value).siblings('div').removeClass('active'); $(this.value).addClass('active');">
           <option value="#settings-tab-inputs">Inputs</option>
+          {%if zones%}
           <option value="#settings-tab-zones">Zones</option>
           <option value="#settings-tab-groups">Groups</option>
+          {%endif %}
           <option value="#settings-tab-config">Configuration and Reset</option>
           <option value="#settings-tab-updates">Updates</option>
         </select>
@@ -318,6 +320,7 @@
           </div>
         </div>
         {% endfor %}
+        {%if zones%}
         <div class="card add-group">
           <h6 class="card-header">Add</h6>
           <div class="card-body">
@@ -341,6 +344,7 @@
             </div>
           </div>
         </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
