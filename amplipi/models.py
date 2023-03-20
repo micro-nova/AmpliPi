@@ -468,6 +468,7 @@ class Stream(Base):
   * file
   * fmradio
   * lms
+  * bluetooth
   * rca
   """)
   # TODO: how to support different stream types

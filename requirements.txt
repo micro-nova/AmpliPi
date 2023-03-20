@@ -1,6 +1,8 @@
 adafruit-circuitpython-rgb-display==3.11.0
 aiofiles==23.1.0
+bluezero==0.7.1
 dasbus==1.7
+dbus-python==1.3.2
 deepdiff==6.2.3
 fastapi==0.91.0
 fastapi-utils==0.2.1

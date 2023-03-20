@@ -1,6 +1,8 @@
 # AmpliPi Software Releases
 
 ## Upcoming release
+* Streams
+  * Add Bluetooth stream
 
 ## 0.2.1
 * System

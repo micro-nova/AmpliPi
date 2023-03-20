@@ -19,6 +19,7 @@ const STREAM_TYPES_ = {
   pandora:        new Stream("pandora", "Pandora Station"),
   plexamp:        new Stream("plexamp", "Plexamp"),
   spotify:        new Stream("spotify", "Spotify Device"),
+  bluetooth:      new Stream("blueooth", "Bluetooth Device"),
   rca:            new Stream("rca", "RCA Input"),
 };
 
@@ -240,6 +241,12 @@ $(function() {
           </div>
         `;
         break;
+        case STREAM_TYPES_.bluetooth:
+        // TODO: there can be exactly zero or one bluetooth streams. how do we limit the stream count? also, should they even be nameable? what purpose is a name other than "bluetooth"
+        html += `
+
+        `
+        break;
     }
 
     // Analog RCA input, can't be deleted. TODO: make RCA inputs disable-able
@@ -369,6 +376,7 @@ $(function() {
             <input type="text" class="form-control" name="token" id="new_plexamp_token" style="background-color: #adb5bd;" value="" data-required="true" readonly>
           </div>`;
         break;
+
     }
     html += `
           <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Stream</button>

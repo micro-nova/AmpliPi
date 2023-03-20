@@ -275,6 +275,26 @@ class Api:
           failed_streams.append(stream.id)
     self._sync_stream_info() # need to update the status with the new streams
 
+    # add/remove dynamic bluetooth stream
+    bt_streams = [sid for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.Bluetooth)]
+    if amplipi.streams.Bluetooth.is_hw_available():
+      print('bluetooth dongle available')
+      # make sure one stream is available
+      if len(bt_streams) == 0:
+        print('no bt streams present. creating one')
+        self.create_stream(models.Stream(type='bluetooth', name='Bluetooth'), internal=True)
+      elif len(bt_streams) > 1:
+        print('bt streams present. removing all but one')
+        for s in bt_streams[1:]:
+          self.delete_stream(s, internal=True)
+    else:
+      print('bluetooth dongle unavailable')
+      if len(bt_streams) > 0:
+        print('bt streams present. removing all')
+        for s in bt_streams:
+          self.delete_stream(s, internal=True)
+
+
     # configure all sources so that they are in a known state
     # only models.MAX_SOURCES are supported, keep the config from adding extra
     # this helps us transition from weird and experimental configs
