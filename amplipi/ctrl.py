@@ -224,7 +224,11 @@ class Api:
           errors.append(f'error loading config file: {exc}')
 
     # try to get a list of available boards
-    found_boards = EEPROM.get_available_devices(0)
+    found_boards = []
+    try:
+      found_boards = EEPROM.get_available_devices(0)
+    except Exception as exc:
+      errors.append('error finding boards: {}'.format(exc))
 
     # check if we are a streamer
     is_streamer = BoardType.STREAMER_SUPPORT in found_boards

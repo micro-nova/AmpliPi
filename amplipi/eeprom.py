@@ -5,7 +5,10 @@ from enum import Enum
 from time import sleep
 from typing import List, Tuple
 import smbus2 as smbus
-import RPi.GPIO as GPIO
+try:
+  import RPi.GPIO as GPIO
+except Exception:
+  pass
 
 WP_PIN = 34
 WRITE_CHECK_ADDRESS = (int)((2048/8)-1) #last byte of 2kbit EEPROM, 8bit per address
@@ -54,8 +57,11 @@ class EEPROM:
   def __init__(self, bus: int, board: BoardType) -> None:
     self._i2c = smbus.SMBus(bus)
     self._address = board.value
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(WP_PIN, GPIO.OUT)
+    try:
+      GPIO.setmode(GPIO.BCM)
+      GPIO.setup(WP_PIN, GPIO.OUT)
+    except NameError:
+      pass
 
   @staticmethod
   def get_available_devices(bus: int) -> List[BoardType]:
@@ -75,7 +81,11 @@ class EEPROM:
 
   def _enable_write(self) -> None:
     """Enable write to EEPROM."""
-    GPIO.output(WP_PIN, GPIO.LOW)
+    try:
+      GPIO.output(WP_PIN, GPIO.LOW)
+    except NameError:
+      pass
+
     try:
       val = self._i2c.read_i2c_block_data(self._address, WRITE_CHECK_ADDRESS, 1)[0]
       self._i2c.write_i2c_block_data(self._address, WRITE_CHECK_ADDRESS, [val+1])
