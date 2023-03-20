@@ -3,6 +3,10 @@
 ## Upcoming release
 * Streams
   * Add Bluetooth stream
+* API
+  * Added support for units without zones
+* Hardware
+  * Added support for EEPROMS on boards to identify board type and revision
 
 ## 0.2.1
 * System
