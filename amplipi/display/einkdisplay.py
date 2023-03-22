@@ -28,6 +28,7 @@ class EInkDisplay(Display):
     self.width = 0
     self.height = 0
     self.pass_fontsize = 15
+    self.refresh_interval = 10
     self.temp_fonts = []
 
   def init(self) -> bool:
@@ -58,27 +59,55 @@ class EInkDisplay(Display):
     return True
 
   def run(self):
+    self.epd.init()
+
     default_pass = DefaultPass()
     host_name, password, ip_str = None, None, None
+
+    display_change_counter = self.refresh_interval
 
     while True:
       # poll stale by checking if info differs
       new_host_name, new_password, new_ip_str = get_info(self.args, default_pass)
 
       if new_host_name != host_name or new_password != password or new_ip_str != ip_str:
+        # eink is sticky, partial refreshing requires a full refresh every few draws.
+        if display_change_counter >= self.refresh_interval:
+          self.display_refresh_base()
+          display_change_counter = 0
+
         host_name = new_host_name
         password = new_password
         ip_str = new_ip_str
         self.pass_font = self.pick_pass_font(password, self.width + self.width_tolerance)
         self.update_display(host_name, password, ip_str)
 
+        display_change_counter += 1
       # wait before polling again
       time.sleep(8)
 
+  def display_refresh_base(self):
+    try:
+      image = Image.new('1', (self.epd.height, self.epd.width), 255)  # 255: clear the frame
+      draw = ImageDraw.Draw(image)
+
+      interval = (5 / 4) * self.ch
+      start = interval / 4
+      draw.text((0, start + 0 * interval), 'Host: ', font=self.font, fill=0)
+      draw.text((0, start + 1 * interval), 'IP:', font=self.font, fill=0)
+      draw.text((0, start + 2 * interval), 'Pass\u21b4', font=self.font, fill=0)
+
+      print('Displaying image')
+      self.epd.displayPartBaseImage(self.epd.getbuffer(image))
+
+    except IOError as e:
+      print(f'Error: {e}')
+    except KeyboardInterrupt:
+      print('CTRL+C')
+      epd2in13_V3.epdconfig.module_exit()
+
   def update_display(self, host_name, password, ip_str):
     try:
-      self.epd.init()  # need to re-init after epd.sleep()
-      # self.epd.Clear(0xFF)
       image = Image.new('1', (self.epd.height, self.epd.width), 255)  # 255: clear the frame
       draw = ImageDraw.Draw(image)
 
@@ -89,10 +118,9 @@ class EInkDisplay(Display):
       draw.text((0, start + 2 * interval), f'Pass\u21b4', font=self.font, fill=0)
       draw.text((0, start + 3 * interval), password, font=self.pass_font, fill=0)
 
-      # image = image.rotate(180)  # flip
       print('Displaying image')
-      self.epd.display(self.epd.getbuffer(image))
-      self.epd.sleep()
+      self.epd.displayPartial(self.epd.getbuffer(image))
+
     except IOError as e:
       print(f'Error: {e}')
     except KeyboardInterrupt:
@@ -134,6 +162,3 @@ if __name__ == '__main__':
   disp = EInkDisplay(args)
   disp.init()
   disp.run()
-
-
-
