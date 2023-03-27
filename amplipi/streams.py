@@ -36,9 +36,9 @@ import signal
 import socket
 import hashlib # md5 for string -> MAC generation
 
+from amplipi.mpris import MPRIS
 from amplipi import models
 from amplipi import utils
-from amplipi.mpris import MPRIS
 
 # We use Popen for long running process control this error is not useful:
 # pylint: disable=consider-using-with
@@ -1124,9 +1124,12 @@ class FMRadio(BaseStream):
 
 class LMS(PersistentStream):
   """ An LMS Stream using squeezelite"""
+  # TODO: Add support for squeezelite commands: play/pause, skip, etc.
   def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
     super().__init__('lms', name, disabled=disabled, mock=mock)
     self.server : Optional[str] = server
+    self.meta_proc : Optional[subprocess.Popen] = None
+    self.meta = {'artist': 'Loading...', 'album': 'If loading takes a long time,', 'track': 'consider adding hostname to stream config', 'image_url': 'static/imgs/lms.png'}
 
   def is_persistent(self):
     return True
@@ -1136,6 +1139,10 @@ class LMS(PersistentStream):
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
+      if os.path.exists(f"lms_{str(self.name).replace(' ', '_')}_metadata.json"):
+        os.remove(f"lms_{str(self.name).replace(' ', '_')}_metadata.json")
+      if os.path.exists(f"lms_{str(self.name).replace(' ', '_')}_metadata_temp.json"):
+        os.remove(f"lms_{str(self.name).replace(' ', '_')}_metadata_temp.json")
       self.name = kwargs['name']
       reconnect_needed = True
     if 'server' in kwargs and kwargs['server'] != self.server:
@@ -1146,15 +1153,19 @@ class LMS(PersistentStream):
         self.reactivate()
 
   def _activate(self, vsrc: int):
-    """ Connect a sqeezelite output to a given audio source
+    """ Connect a squeezelite output to a given audio source
     This will create a LMS client based on the given name
     """
+    f = open(f"lms_{str(self.name).replace(' ', '_')}_metadata.json", "w", encoding="UTF-8")
+    json.dump(self.meta, f, indent = 2)
+    f.close()
+    if self.mock:
+      self._connect(src)
+      return
     try:
       # Make the (per-source) config directory
       src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
       os.system(f'mkdir -p {src_config_folder}')
-
-      # TODO: Add metadata support? This may have to watch the output log?
 
       # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
       md5 = hashlib.md5()
@@ -1179,23 +1190,55 @@ class LMS(PersistentStream):
           # NOTE: port 9000 is assumed
           server.replace('localhost', socket.gethostname())
         lms_args += [ '-s', server]
+
+        meta_args = ['python3', 'streams/lms_metadata.py', '--name', self.name, "--server", self.server]
+        self.meta_proc = subprocess.Popen(args=meta_args)
+      else:
+        meta_args = ['python3', 'streams/lms_metadata.py', '--name', self.name]
+        self.meta_proc = subprocess.Popen(args=meta_args)
       # TODO: allow port to be specified with server (embedding it in the server URL does not work)
 
       self.proc = subprocess.Popen(args=lms_args)
+      self._activate(vsrc)
+
+
     except Exception as exc:
       print(f'error starting lms: {exc}')
 
   def _deactivate(self):
     if self._is_running():
       self.proc.kill()
+    self._deactivate()
+    if self.meta_proc is not None:
+      self.meta_proc.terminate()
+      self.meta_proc = None
     self.proc = None
+    if os.path.exists(f"lms_{str(self.name).replace(' ', '_')}_metadata.json"):
+      os.remove(f"lms_{str(self.name).replace(' ', '_')}_metadata.json")
+    if os.path.exists(f"lms_{str(self.name).replace(' ', '_')}_metadata_temp.json"):
+      os.remove(f"lms_{str(self.name).replace(' ', '_')}_metadata_temp.json")
 
   def info(self) -> models.SourceInfo:
+    # Opens and reads the metadata.json file every time the info def is called
+    # uses a file lock so that the file cannot be read while writing and vice/versa. If you let those processes run into eachother, there are errors
+    try:
+      with open(f"lms_{str(self.name).replace(' ', '_')}_metadata.json", "r", encoding="utf-8") as meta_read:
+        self.meta = json.loads(meta_read.read())
+    except:
+      self.meta = {
+        'track': 'Trying again shortly...',
+        'album': 'Make sure your lms player is connected to this source',
+        'artist': 'Error: Could Not Find LMS Server',
+        'image_url': 'static/imgs/lms.png'
+      }
+
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      img_url='static/imgs/lms.png',
-      track='check LMS for song info',
+      img_url= self.meta.get('image_url', ''),
+      track= self.meta.get('track', ''),
+      album= self.meta.get('album', ''),
+      artist= self.meta.get('artist', '')
     )
     return source
 

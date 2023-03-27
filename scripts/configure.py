@@ -169,7 +169,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'lms' : {
     'apt': ['libcrypt-openssl-rsa-perl'], # needed for ShairTunes2W support
-    'copy' : [{'from': 'bin/ARCH/squeezelite', 'to': 'streams/squeezelite'}],
+    'copy' : [{'from': 'bin/ARCH/squeezelite', 'to': 'streams/squeezelite'},
+              {'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
   },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
