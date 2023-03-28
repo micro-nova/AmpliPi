@@ -1006,6 +1006,46 @@ class Plexamp(BaseStream):
     source.track = "Not currently supported"
     return source
 
+class Aux(BaseStream):
+  """ A stream to play from the aux input. """
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+    super().__init__('aux', name, disabled=disabled, mock=mock)
+
+  def reconfig(self, **kwargs):
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
+    if 'name' in kwargs:
+      self.name = kwargs['name']
+
+  def connect(self, src):
+    """ Use VLC to connect audio output to audio source """
+    print(f'connecting {self.name} to {src}...')
+
+    if self.mock:
+      self._connect(src)
+      return
+
+    # Set input source
+    utils.enable_aux_input()
+
+    # Start audio via runvlc.py
+    vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.real_output_device(src)} alsa://plughw:cmedia8chint,0 vlc://quit'
+    print(f'running: {vlc_args}')
+    self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self._connect(src)
+    return
+
+  def disconnect(self):
+    if self._is_running():
+      self.proc.kill()
+    self.proc = None
+    self._disconnect()
+
+  def info(self) -> models.SourceInfo:
+    source = models.SourceInfo(name=self.full_name(),
+                               img_url='static/imgs/aux_input.svg',
+                               state=self.state)
+    return source
 
 class FilePlayer(BaseStream):
   """ An Single one shot file player - initially intended for use as a part of the PA Announcements """
@@ -1358,7 +1398,7 @@ class Bluetooth(BaseStream):
 
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-                  FilePlayer, FMRadio, LMS, Bluetooth]
+                  Aux, FilePlayer, FMRadio, LMS, Bluetooth]
 
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
@@ -1384,6 +1424,8 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return InternetRadio(name, args['url'], args.get('logo'), disabled=disabled, mock=mock)
   if stream.type == 'plexamp':
     return Plexamp(name, args['client_id'], args['token'], disabled=disabled, mock=mock)
+  if stream.type == 'aux':
+    return Aux(name, disabled=disabled, mock=mock)
   if stream.type == 'fileplayer':
     return FilePlayer(name, args['url'], disabled=disabled, mock=mock)
   if stream.type == 'fmradio':

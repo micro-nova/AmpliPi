@@ -15,7 +15,6 @@ All of the connections will be made to the back panel. Here's a quick reference 
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller
   - **SERVICE**: USB mini connection for re-imaging the Pi's EMMC
   - **USB**:  USB A ports for connecting peripherals such as additional storage devices
-  - **OPTICAL IN**: SPDIF audio input, planned to be used for extra inputs
   - **AUX IN**: Additional stereo input, planned to be used for announcements
   - **HDMI OUT**: The Pi's HMDI output, can be used for visualizations or development
   - **ETHERNET**: Network connection, see [Networking](#networking)
