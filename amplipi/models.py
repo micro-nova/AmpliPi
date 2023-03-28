@@ -488,6 +488,7 @@ class Stream(Base):
   * internetradio
   * spotify
   * plexamp
+  * aux
   * file
   * fmradio
   * lms
@@ -674,9 +675,7 @@ class StreamUpdate(BaseUpdate):
   freq: Optional[str]
   server: Optional[str]
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
-  disabled: Optional[bool] = Field(
-    description="Soft disable use of this stream. It won't be shown as a selectable option")
-
+  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
   class Config:
     schema_extra = {
       'examples': {
@@ -886,7 +885,7 @@ class Status(BaseModel):
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
-  streams: List[Stream] = [Stream(id=996 + i, name=f'Input {i + 1}', type='rca', index=i) for i in range(MAX_SOURCES)]
+  streams: List[Stream] = [Stream(id=995 + i, name=f'Input {i}' if i!=0 else 'Aux', type='rca' if i!= 0 else'aux', index=i-1) for i in range(MAX_SOURCES+1)]
   presets: List[Preset] = []
   info: Optional[Info]
 

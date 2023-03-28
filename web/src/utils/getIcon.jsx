@@ -8,6 +8,7 @@ import plexamp from "@/../static/imgs/plexamp.png";
 import lms from "@/../static/imgs/lms.png";
 import internetradio from "@/../static/imgs/internet_radio.png";
 import rca from "@/../static/imgs/rca_inputs.jpg";
+import aux from "@/../static/imgs/aux_input.svg";
 
 export const getIcon = (type) => {
   if (type === null || type === undefined) {
@@ -43,6 +44,9 @@ export const getIcon = (type) => {
 
     case "INTERNET RADIO":
       return internetradio;
+
+    case "AUX":
+      return aux;
 
     default:
       return internetradio;

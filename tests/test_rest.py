@@ -33,9 +33,11 @@ TEST_CONFIG['groups'] = [
   {"id": 103, "name": "Empty",   "zones": [],     "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
 ]
 RCAs =  amplipi.defaults.RCAs
+AUX_STREAM_ID = amplipi.defaults.AUX_STREAM_ID
 AP_STREAM_ID = 1000
 P_STREAM_ID = 1001
 TEST_CONFIG['streams'] = [
+  {"id": AUX_STREAM_ID, "name": "Aux", "type": "aux"},
   {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0},
   {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1},
   {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2},
@@ -210,7 +212,7 @@ def check_config(expected, actual):
     else:
       assert t in actual, f'missing field {t}, it is still expected to be generated empty even though it not specified in the expected configuration'
       if t == 'streams':
-        assert len(actual[t]) == 4, f'{t} should be populated by the 4 default RCA streams'
+        assert len(actual[t]) == 5, f'{t} should be populated by the 4 default RCA streams and the aux stream'
       else:
         assert len(actual[t]) == 0, f'{t} should be empty since it is not preset in expected config'
 
@@ -247,10 +249,11 @@ def test_load_stream_missing_config(client):
     assert status['sources'][0]['input'] == ''
 
 def test_load_old_config(client):
-  """ Test that an old config has its RCA input names updated """
+  """ Test that an old config has its RCA input names updated and the aux stream is added"""
   # convert the config into something that looks like an old config
   source_names = ['tv', 'record player', 'cd player', 'jukebox']
   old_config = base_config_copy()
+  old_config['streams'].pop(0) # remove the aux stream
   for i in range(4):
     rca_stream = old_config['streams'].pop(0)
     assert rca_stream['type'] == 'rca'
@@ -263,6 +266,7 @@ def test_load_old_config(client):
   for s in status['streams']:
     if s['type'] == 'rca':
       assert s['name'] == source_names[s['index']], print('old source name was not converted to rca stream name')
+  assert status['streams'][0]['type'] == 'aux', 'aux stream was not added to old config'
 
 def test_load_multi_config(client):
   """ Load multiple configurations """
@@ -272,8 +276,8 @@ def test_load_multi_config(client):
   if 'streams' in multi_stream_cfg:
     multi_stream_cfg['sources'][0]['input'] = sinputs[0]
     multi_stream_cfg['sources'][1]['input'] = sinputs[1]
-    assert multi_stream_cfg['streams'][4]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
-    assert multi_stream_cfg['streams'][5]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
+    assert multi_stream_cfg['streams'][5]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
+    assert multi_stream_cfg['streams'][6]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
   # create a simple config with a single stream connected, with metadata representing raw config load
   single_stream_cfg = amplipi.models.Status().dict()
   single_stream_cfg['sources'][0] = {
@@ -294,6 +298,7 @@ def test_load_multi_config(client):
     }
   }
   single_stream_cfg['streams'] = [
+    {"id": AUX_STREAM_ID, "name": "Aux", "type": "aux"},
     {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0},
     {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1},
     {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2},
@@ -601,7 +606,7 @@ def base_stream_ids():
 
 def removable_stream_ids():
   """ Only removable streams (RCAs are exempt) """
-  return [s for s in base_stream_ids() if s not in RCAs]
+  return [s for s in base_stream_ids() if s not in (RCAs + [AUX_STREAM_ID])]
 
 # /stream post-stream
 def test_create_pandora(client):
@@ -718,7 +723,7 @@ def test_delete_connected_stream(client, sid):
     assert rv.status_code != HTTPStatus.OK
     return
   rv = client.delete(f'/api/streams/{sid}')
-  if sid in RCAs:
+  if sid in RCAs+[AUX_STREAM_ID]:
     assert rv.status_code != HTTPStatus.OK
     return
   assert rv.status_code == HTTPStatus.OK

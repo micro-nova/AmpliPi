@@ -207,6 +207,12 @@ def real_output_device(sid: int) -> str:
     return dev
   return 'default'
 
+def enable_aux_input():
+  """ Select the Aux input as the capture source """
+  try:
+    subprocess.check_call('amixer -D hw:cmedia8chint set "PCM Capture Source",0 Line', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except subprocess.CalledProcessError as e:
+    print(f'Failed to enable Aux input: {e}')
 
 def zones_from_groups(status: models.Status, groups: List[int]) -> Set[int]:
   """ Get the set of zones from some groups """

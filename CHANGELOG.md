@@ -8,6 +8,7 @@
 * Remove deprecated old zeroconf advertisement
 * System
   * Manage the /boot/config.txt Raspberry Pi firmware configuration file for bugfixes
+* Added aux input stream, a special stream that is always available and is used to select the 3.5mm input.
 
 ## 0.3.1
 * System

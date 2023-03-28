@@ -278,6 +278,17 @@ class Api:
           rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
           self.status.streams.insert(idx, rca_stream)
 
+    # make sure the config file contains the aux stream
+    has_aux_stream = False
+    for stream in self.status.streams:
+      if stream.type == "aux":
+        has_aux_stream = True
+        break
+
+    if not has_aux_stream:
+      # insert aux stream in appropriate place
+      self.status.streams.insert(0, models.Stream(id=defaults.AUX_STREAM_ID, type="aux", name="Aux"))
+
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
     failed_streams: List[int] = []
@@ -943,8 +954,8 @@ class Api:
   def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
     try:
-      # RCA streams are intrinsic to the hardware and can't be removed
-      if sid in defaults.RCAs and isinstance(self.streams[sid], amplipi.streams.RCA):
+      # Analog streams are intrinsic to the hardware and can't be removed
+      if (sid in defaults.RCAs and isinstance(self.streams[sid], amplipi.streams.RCA)) or (sid == defaults.AUX_STREAM_ID and isinstance(self.streams[sid], amplipi.streams.Aux)):
         msg = f'Protected stream {sid} cannot be removed, use disabled=True to hide it'
         raise Exception(msg)
       # if input is connected to a source change that input to nothing
