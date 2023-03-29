@@ -1,1 +1,33 @@
 // TODO: add colors and mixins here
+$bg:                    #202020;
+$primary:               #2A2A2A;
+$secondary:             #4A4A4A;
+$stream-color:          #757575;
+$zone-color:            #003ACE;
+$group-color:           #04BC00;
+$config-color:          #FFD600;
+$update-color:          #0096FF;
+$sessions-color:        #EB00FF;
+$controls-color:        #F2F2F2;
+$icon-deselected-color: #8D8D8D;
+$volume-slider-color:   #0096FF;
+$text-color:            #FFFFFF;
+
+// fonts
+@mixin header-font {
+    font-family: 'Raleway'
+}
+@mixin regular-font {
+    font-family: 'open sans'
+}
+
+// shadows
+@mixin low-shadow {
+    box-shadow: 0px 5px 15px 4px rgba(0, 0, 0, 0.25);
+}
+@mixin high-shadow {
+    box-shadow: 0px 12px 15px 1px rgba(0, 0, 0, 0.25);
+}
+@mixin icon-shadow {
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}

@@ -1,0 +1,27 @@
+@use 'src/general';
+
+.playercard-container{
+    min-width: 50%;
+    min-height: 100px;
+}
+
+.outer {
+ // grid stuff
+ display: grid;
+ grid-template-columns: 100px 100px;
+ grid-gap: 10px;
+ padding: 10px;
+}
+
+.content {
+    background-color: #444;
+    color: #fff;
+    border-radius: 5px;
+    padding: 20px;
+    font-size: 150%;
+}
+
+.vol {
+    grid-row: 3;
+    grid-column: 1 / 2;
+}

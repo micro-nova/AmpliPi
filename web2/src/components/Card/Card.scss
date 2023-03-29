@@ -1,0 +1,11 @@
+@use 'src/general';
+
+.card {
+    @include general.low-shadow;
+    background-color: general.$primary;
+    border-radius: 18px;
+
+    width: min-content;
+    height: min-content;
+}
+
