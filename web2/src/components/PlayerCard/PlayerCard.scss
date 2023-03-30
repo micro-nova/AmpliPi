@@ -1,27 +1,31 @@
-@use 'src/general';
-
-.playercard-container{
-    min-width: 50%;
-    min-height: 100px;
-}
+@use "src/general";
 
 .outer {
- // grid stuff
- display: grid;
- grid-template-columns: 100px 100px;
- grid-gap: 10px;
- padding: 10px;
+  // grid stuff
+  display: grid;
+  grid-template-columns: min-content min-content;
+  grid-gap: 10px;
+  padding: 10px;
+  min-width: fit-content;
 }
 
 .content {
-    background-color: #444;
-    color: #fff;
-    border-radius: 5px;
-    padding: 20px;
-    font-size: 150%;
+  // background-color: #444;
+  color: #fff;
+  border-radius: 5px;
+  padding: 20px;
+  min-width: fit-content;
+}
+
+.stream-name-container {
+  align-content: right;
+}
+
+.album-art {
+  width: 10vh;
 }
 
 .vol {
-    grid-row: 3;
-    grid-column: 1 / 2;
+  grid-row: 3;
+  grid-column: 1/3;
 }

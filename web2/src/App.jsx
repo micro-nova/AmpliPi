@@ -1,23 +1,35 @@
-import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-import './app.scss'
-import { Card, CardHeader } from '@mui/material'
-// import Card from '@mui/material/Card'
-// import CardHeader from '@mui/material/CardHeader'
+import { useEffect, useState } from 'react'
+import '@/App.scss'
+import Home from '@/pages/Home/Home'
 
-import PlayerCard from './components/PlayerCard/PlayerCard'
+const UPDATE_INTERVAL = 1000
 
 function App() {
 
+  let sources = []
+  let streams = []
+  let zones = []
+
+  const update = () => {
+    fetch(`/api`).then(res => res.json()).then(data => {
+      sources = data.sources
+      streams = data.streams
+      zones = data.zones
+    })
+  }
+
   return (
-    // <div className="box-thing">
-    //   amplipi
-    // </div>
+    useEffect(() => {
+      const interval = setInterval(() => {
+        update()
+      }, UPDATE_INTERVAL)
+      return () => clearInterval(interval)
+    }, []),
+
     <div className='app'>
-      <PlayerCard />
+      <Home getSources={()=>{return sources}} getZones={()=>{return zones}}/>
     </div>
-    
+
   )
 }
 

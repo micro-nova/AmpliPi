@@ -1,0 +1,9 @@
+@use 'src/general';
+
+.zone-text{
+  color: general.$text-color;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: medium;
+  @include general.header-font;
+}

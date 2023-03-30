@@ -1,0 +1,10 @@
+@use 'src/general';
+
+.home-view {
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    row-gap: 10px;
+    align-items: center;
+}
+
