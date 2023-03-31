@@ -3,18 +3,14 @@ import Slider from "@mui/material/Slider";
 import { useState, useEffect } from "react";
 import './VolumeSlider.scss'
 
-const UPDATE_INTERVAL = 1000
+const VolumeSlider = ({vol, onChange}) => {
 
-const VolumeSlider = ({getValue, onChange}) => {
-  const [value, setValue] = useState(getValue());
+  const [value, setValue] = useState(vol);
 
   return (
     useEffect(() => {
-      const interval = setInterval(() => {
-        setValue(getValue());
-      }, UPDATE_INTERVAL);
-      return () => clearInterval(interval);
-    }, []),
+      setValue(vol);
+    }, [vol]),
     <Slider
       className="volume-slider"
       min={0}

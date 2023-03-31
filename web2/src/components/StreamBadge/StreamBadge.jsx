@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 
 const UPDATE_INTERVAL = 1000
 
-const StreamBadge = ({ getInfo }) => {
-  const [name, setName] = useState('')
-  const [type, setType] = useState('')
+const StreamBadge = ({ info }) => {
+  info = info.name.split(" - ")
+  const name = info[0]
+  const type = info[1]
 
   const icon = spotify
   //TODO: populate this with icons or add endpoint to get icons
@@ -14,15 +15,6 @@ const StreamBadge = ({ getInfo }) => {
   }
 
   return (
-    useEffect(() => {
-      const interval = setInterval(() => {
-        const fullname = getInfo().name.split(' - ')
-        setName(fullname[0])
-        setType(fullname[1])
-      }, UPDATE_INTERVAL)
-      return () => clearInterval(interval)
-    }, []),
-
     <div className="stream-badge">
       <div className="stream-name">
       {name}

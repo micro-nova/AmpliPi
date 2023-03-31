@@ -3,9 +3,7 @@ import { useState, useEffect } from 'react';
 
 const UPDATE_INTERVAL = 1000
 
-const ZonesBadge = ({ getZones }) => {
-  const [zones, setZones] = useState([]);
-
+const ZonesBadge = ({ zones }) => {
   let zones_text = ''
   if(zones.length > 2) {
     zones_text = `${zones[0].name} and ${zones.length - 1} more`
@@ -16,13 +14,6 @@ const ZonesBadge = ({ getZones }) => {
   }
 
   return (
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setZones(getZones());
-      }, UPDATE_INTERVAL);
-      return () => clearInterval(interval);
-    }, []),
-
     <div className='zones-text'>
       {zones_text}
     </div>

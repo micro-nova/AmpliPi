@@ -7,27 +7,28 @@ import { useState, useEffect } from "react";
 import PlayerImage from "../PlayerImage/PlayerImage";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
 
-const PlayerCard = ({ source_id, getInfo, getZones, getPlayerVol, setPlayerVol }) => {
+const UPDATE_INTERVAL = 1000;
 
+const PlayerCard = ({ source_id, info, zones, vol, setVol }) => {
   return (
     <Card>
       <div className="outer">
         <div className="content">
-          <ZonesBadge getZones={getZones} />
+          <ZonesBadge zones={zones} />
         </div>
         <div className="content stream-name-container">
-          <StreamBadge getInfo={getInfo}/>
+          <StreamBadge info={info}/>
         </div>
         <div className="content">
-          <PlayerImage getInfo={getInfo} className="album-art"/>
+          <PlayerImage info={info} className="album-art"/>
         </div>
         <div className="content">
-          <SongInfo getInfo={getInfo}/>
+          <SongInfo info={info}/>
         </div>
         <div className="content vol">
           <VolumeSlider
-            getValue={()=>{return getPlayerVol(source_id)}}
-            onChange={(event, vol)=>{setPlayerVol(source_id, event, vol)}}
+            vol={vol}
+            onChange={(event, vol)=>{setVol(source_id, event, vol)}}
           />
         </div>
       </div>

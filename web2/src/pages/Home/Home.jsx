@@ -3,21 +3,21 @@ import "./Home.scss";
 
 const UPDATE_INTERVAL = 500;
 
-const Home = ({getSources, getZones}) => {
+const Home = ({sources, zones}) => {
 
 
   const getSourceZones = (source_id) =>{
-    let zones = [];
-    for(const i of getZones()){
+    let matches = [];
+    for(const i of zones){
       if(i.source_id == source_id){
-        zones.push(i);
+        matches.push(i);
       }
     }
-    return zones;
+    return matches;
   }
 
   const setPlayerVol = (source_id, event, vol) => {
-    console.log(`setting vol to ${vol}`)
+    // console.log(`setting vol to ${vol}`)
     let delta = vol - getPlayerVol(source_id);
 
     for(const i of getSourceZones(source_id)){
@@ -26,7 +26,7 @@ const Home = ({getSources, getZones}) => {
           set_pt = i.vol_f + delta;
         }
         set_pt = Math.max(0, Math.min(1, set_pt))
-        console.log(`setting zone ${i.name} to ${set_pt}`)
+        // console.log(`setting zone ${i.name} to ${set_pt}`)
         i.vol_f = set_pt;
         fetch(`/api/zones/${i.id}`, {method: 'PATCH', headers: {
           'Content-type': 'application/json',
@@ -55,10 +55,10 @@ const Home = ({getSources, getZones}) => {
 
   return (
     <div className="home-view">
-      <PlayerCard source_id={0} getInfo={()=>{return getSources()[0].info}} getZones={()=>{return getSourceZones(0)}} getPlayerVol={getPlayerVol} setPlayerVol={setPlayerVol} />
-      <PlayerCard source_id={1} getInfo={()=>{return getSources()[1].info}} getZones={()=>{return getSourceZones(1)}} getPlayerVol={getPlayerVol} setPlayerVol={setPlayerVol} />
-      <PlayerCard source_id={2} getInfo={()=>{return getSources()[2].info}} getZones={()=>{return getSourceZones(2)}} getPlayerVol={getPlayerVol} setPlayerVol={setPlayerVol} />
-      <PlayerCard source_id={3} getInfo={()=>{return getSources()[3].info}} getZones={()=>{return getSourceZones(3)}} getPlayerVol={getPlayerVol} setPlayerVol={setPlayerVol} />
+      <PlayerCard source_id={0} info={sources[0].info} zones={getSourceZones(0)} vol={getPlayerVol(0)} setVol={setPlayerVol} />
+      <PlayerCard source_id={1} info={sources[1].info} zones={getSourceZones(1)} vol={getPlayerVol(1)} setVol={setPlayerVol} />
+      <PlayerCard source_id={2} info={sources[2].info} zones={getSourceZones(2)} vol={getPlayerVol(2)} setVol={setPlayerVol} />
+      <PlayerCard source_id={3} info={sources[3].info} zones={getSourceZones(3)} vol={getPlayerVol(3)} setVol={setPlayerVol} />
     </div>
   );
 }
