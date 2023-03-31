@@ -1,25 +1,27 @@
 import { useEffect, useState } from "react";
+import { useCookies } from 'react-cookie';
 import "@/App.scss";
 import Home from "@/pages/Home/Home";
+import MenuBar from "./components/MenuBar/MenuBar";
 
 const UPDATE_INTERVAL = 1000;
 
 function App() {
-  const [sources, setSources] = useState([]);
-  const [streams, setStreams] = useState([]);
-  const [zones, setZones] = useState([]);
+  const [status, setStatus] = useState(null);
+  // const [cookies, setCookie] = useCookies(['selected'])
+  const [selectedId, setSelectedId] = useState(0);
+  const [selectedPage, setSelectedPage] = useState(0);
+
 
   const update = () => {
     fetch(`/api`)
       .then((res) => res.json())
       .then((data) => {
-        setSources(data.sources);
-        setStreams(data.streams);
-        setZones(data.zones);
+        setStatus(data);
       });
   };
 
-  if (sources.length == 0 || streams.length == 0 || zones.length == 0) {
+  if (status == null) {
     return (
       useEffect(() => {
         const interval = setInterval(() => {
@@ -40,7 +42,8 @@ function App() {
     }, []),
     (
       <div className="app">
-        <Home sources={sources} zones={zones} />
+        <Home status={status} selectedId={selectedId} setSelectedId={setSelectedId} />
+        <MenuBar pageNumber={selectedPage} onChange={(n)=>{console.log(`changing page to ${n}`); setSelectedPage(n)}}/>
       </div>
     )
   );

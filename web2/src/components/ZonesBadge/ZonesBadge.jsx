@@ -1,8 +1,6 @@
 import './ZonesBadge.scss';
 import { useState, useEffect } from 'react';
 
-const UPDATE_INTERVAL = 1000
-
 const ZonesBadge = ({ zones }) => {
   let zones_text = ''
   if(zones.length > 2) {
@@ -14,7 +12,7 @@ const ZonesBadge = ({ zones }) => {
   }
 
   return (
-    <div className='zones-text'>
+    <div className='zone-text'>
       {zones_text}
     </div>
   );

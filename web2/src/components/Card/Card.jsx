@@ -1,8 +1,10 @@
 import './Card.scss'
 
-const Card = ( {children} ) => {
+const Card = ( {children, selected=false} ) => {
+    const className = selected ? "card card-selected" : "card"
+
     return (
-        <div className="card">
+        <div className={className}>
             {children}
         </div>
     )

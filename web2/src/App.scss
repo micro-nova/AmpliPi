@@ -1,11 +1,8 @@
 @use 'src/general';
 
-.box-thing {
-  width: 411px;
-  height: 75%;
-  background-color: red;
-}
-
 .app {
   background-color: general.$bg;
+  // height: 100vh;
+  // width: 100vw;
+  // overflow: hidden;
 }

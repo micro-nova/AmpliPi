@@ -1,10 +1,16 @@
 @use 'src/general';
 
-.home-view {
-    width: 100vw;
+.home-outer {
     display: flex;
     flex-direction: column;
-    row-gap: 10px;
     align-items: center;
+    width: 100%;
 }
 
+.home-view {
+    display: grid;
+    grid-template-columns: min-content;
+    row-gap: 10px;
+    align-items: center;
+    width: fit-content;
+}

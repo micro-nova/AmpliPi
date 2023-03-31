@@ -2,8 +2,6 @@ import './StreamBadge.scss'
 import spotify from '@/assets/spotify.png'
 import { useState, useEffect } from 'react'
 
-const UPDATE_INTERVAL = 1000
-
 const StreamBadge = ({ info }) => {
   info = info.name.split(" - ")
   const name = info[0]

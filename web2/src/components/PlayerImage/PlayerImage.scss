@@ -1,5 +1,10 @@
 @use 'src/general';
 
 .image{
-  border-radius: 2.5%;
+  display: block;
+  max-width: 8rem;
+  max-height: 8rem;
+  width: auto;
+  height: auto;
+  border-radius: 10%;
 }

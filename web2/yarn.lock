@@ -324,10 +324,10 @@
   resolved "https://registry.npmjs.org/@emotion/weak-memoize/-/weak-memoize-0.3.0.tgz"
   integrity sha512-AHPmaAx+RYfZz0eYu6Gviiagpmiyw98ySSlQvCUhVGDRtDFe4DBS0x1bSjdF3gqUDYOczB+yYvBTtEylYSdRhg==
 
-"@esbuild/linux-x64@0.17.13":
+"@esbuild/win32-x64@0.17.13":
   version "0.17.13"
-  resolved "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.17.13.tgz"
-  integrity sha512-eFLQhJq98qijGRcv9je/9M4Mz1suZ+pOtj62ArsLd0gubNGhhQDz6T30X2X3f1KZ8lkKkr+zN5vtZzx1GAMoFw==
+  resolved "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.17.13.tgz"
+  integrity sha512-pZ/NIgz861XaUPlIkPFjP55nJ4PJa0o/CD4zgeRb1Q9FVE+8GvdB6ifJcK05jRhny5hKExhnRFIdgHmmCYH8vg==
 
 "@jridgewell/gen-mapping@^0.1.0":
   version "0.1.1"
@@ -388,7 +388,14 @@
   resolved "https://registry.npmjs.org/@mui/core-downloads-tracker/-/core-downloads-tracker-5.11.15.tgz"
   integrity sha512-Q0e2oBsjHyIWWj1wLzl14btunvBYC0yl+px7zL9R69tF87uenj6q72ieS369BJ6jxYpJwvXfR6/f+TC+ZUsKKg==
 
-"@mui/material@^5.11.15":
+"@mui/icons-material@^5.11.11":
+  version "5.11.11"
+  resolved "https://registry.npmjs.org/@mui/icons-material/-/icons-material-5.11.11.tgz"
+  integrity sha512-Eell3ADmQVE8HOpt/LZ3zIma8JSvPh3XgnhwZLT0k5HRqZcd6F/QDHc7xsWtgz09t+UEFvOYJXjtrwKmLdwwpw==
+  dependencies:
+    "@babel/runtime" "^7.21.0"
+
+"@mui/material@^5.0.0", "@mui/material@^5.11.15":
   version "5.11.15"
   resolved "https://registry.npmjs.org/@mui/material/-/material-5.11.15.tgz"
   integrity sha512-E5RbLq9/OvRKmGyeZawdnmFBCvhKkI/Zqgr0xFqW27TGwKLxObq/BreJc6Uu5Sbv8Fjj34vEAbRx6otfOyxn5w==
@@ -459,6 +466,19 @@
   version "2.11.7"
   resolved "https://registry.npmjs.org/@popperjs/core/-/core-2.11.7.tgz"
   integrity sha512-Cr4OjIkipTtcXKjAsm8agyleBuDHvxzeBoa1v543lbv1YaIwQjESsVcmjiWiPEbC1FIeHOG/Op9kdCmAmiS3Kw==
+
+"@types/cookie@^0.3.3":
+  version "0.3.3"
+  resolved "https://registry.npmjs.org/@types/cookie/-/cookie-0.3.3.tgz"
+  integrity sha512-LKVP3cgXBT9RYj+t+9FDKwS5tdI+rPBXaNSkma7hvqy35lc7mAokC2zsqWJH0LaqIt3B962nuYI77hsJoT1gow==
+
+"@types/hoist-non-react-statics@^3.0.1":
+  version "3.3.1"
+  resolved "https://registry.npmjs.org/@types/hoist-non-react-statics/-/hoist-non-react-statics-3.3.1.tgz"
+  integrity sha512-iMIqiko6ooLrTh1joXodJK5X9xeEALT1kM5G3ZLhD3hszxBdIEd5C75U834D9mLcINgD4OyZf5uQXjkuYydWvA==
+  dependencies:
+    "@types/react" "*"
+    hoist-non-react-statics "^3.3.0"
 
 "@types/parse-json@^4.0.0":
   version "4.0.0"
@@ -618,6 +638,11 @@ convert-source-map@^1.5.0, convert-source-map@^1.7.0:
   resolved "https://registry.npmjs.org/convert-source-map/-/convert-source-map-1.9.0.tgz"
   integrity sha512-ASFBup0Mz1uyiIjANan1jzLQami9z1PoYSZCiiYW2FczPbenXc45FZdBZLzOT+r6+iciuEModtmCti+hjaAk0A==
 
+cookie@^0.4.0:
+  version "0.4.2"
+  resolved "https://registry.npmjs.org/cookie/-/cookie-0.4.2.tgz"
+  integrity sha512-aSWTXFzaKWkvHO1Ny/s+ePFpvKsPnjc551iI41v3ny/ow6tBG5Vd+FuqGNhh1LxOmVzOlGUriIlOaokOvhaStA==
+
 cosmiconfig@^7.0.0:
   version "7.1.0"
   resolved "https://registry.npmjs.org/cosmiconfig/-/cosmiconfig-7.1.0.tgz"
@@ -750,12 +775,17 @@ has@^1.0.3:
   dependencies:
     function-bind "^1.1.1"
 
-hoist-non-react-statics@^3.3.1:
+hoist-non-react-statics@^3.0.0, hoist-non-react-statics@^3.3.0, hoist-non-react-statics@^3.3.1:
   version "3.3.2"
   resolved "https://registry.npmjs.org/hoist-non-react-statics/-/hoist-non-react-statics-3.3.2.tgz"
   integrity sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==
   dependencies:
     react-is "^16.7.0"
+
+https@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/https/-/https-1.0.0.tgz"
+  integrity sha512-4EC57ddXrkaF0x83Oj8sM6SLQHAWXw90Skqu2M4AEWENZ3F02dFJE/GARA8igO79tcgYqGrD7ae4f5L3um2lgg==
 
 immutable@^4.0.0:
   version "4.3.0"
@@ -932,6 +962,15 @@ prop-types@^15.6.2, prop-types@^15.8.1:
     object-assign "^4.1.1"
     react-is "^16.13.1"
 
+react-cookie@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.npmjs.org/react-cookie/-/react-cookie-4.1.1.tgz"
+  integrity sha512-ffn7Y7G4bXiFbnE+dKhHhbP+b8I34mH9jqnm8Llhj89zF4nPxPutxHT1suUqMeCEhLDBI7InYwf1tpaSoK5w8A==
+  dependencies:
+    "@types/hoist-non-react-statics" "^3.0.1"
+    hoist-non-react-statics "^3.0.0"
+    universal-cookie "^4.0.0"
+
 "react-dom@^17.0.0 || ^18.0.0", react-dom@^18.2.0, react-dom@>=16.6.0:
   version "18.2.0"
   resolved "https://registry.npmjs.org/react-dom/-/react-dom-18.2.0.tgz"
@@ -970,7 +1009,7 @@ react-transition-group@^4.4.5:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-"react@^17.0.0 || ^18.0.0", react@^18.2.0, react@>=16.6.0, react@>=16.8.0:
+"react@^17.0.0 || ^18.0.0", react@^18.2.0, "react@>= 16.3.0", react@>=16.6.0, react@>=16.8.0:
   version "18.2.0"
   resolved "https://registry.npmjs.org/react/-/react-18.2.0.tgz"
   integrity sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==
@@ -1069,6 +1108,14 @@ to-regex-range@^5.0.1:
   integrity sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==
   dependencies:
     is-number "^7.0.0"
+
+universal-cookie@^4.0.0:
+  version "4.0.4"
+  resolved "https://registry.npmjs.org/universal-cookie/-/universal-cookie-4.0.4.tgz"
+  integrity sha512-lbRVHoOMtItjWbM7TwDLdl8wug7izB0tq3/YVKhT/ahB4VDvWMyvnADfnJI8y6fSvsjh51Ix7lTGC6Tn4rMPhw==
+  dependencies:
+    "@types/cookie" "^0.3.3"
+    cookie "^0.4.0"
 
 update-browserslist-db@^1.0.10:
   version "1.0.10"
