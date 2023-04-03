@@ -8,9 +8,9 @@ const VolumeSlider = ({vol, onChange}) => {
   const [value, setValue] = useState(vol);
 
   return (
-    useEffect(() => {
-      setValue(vol);
-    }, [vol]),
+    // useEffect(() => {
+    //   setValue(vol);
+    // }, [vol]),
     <Slider
       className="volume-slider"
       min={0}

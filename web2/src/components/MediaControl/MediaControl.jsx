@@ -7,38 +7,46 @@ import { faStop } from '@fortawesome/free-solid-svg-icons'
 
 import './MediaControl.scss'
 
-const MediaControl = ({ source }) => {
-    const sources = status.sources;
-    console.log("hhhhhi")
-    const playing = source.info.state.includes('playing') 
 
-    const isSupported = (cmd) => { return source.info.supported_cmds.includes(cmd) }
+const MediaControl = ({ source, setSourceState }) => {
+    const enabled = "media-control"
+    const disabled = "media-control media-control-disabled"
+    const streamId = source.input.split("=")[1] // TODO: what if this is rca? or is rca a stream now
+
+    const playing = source.info.state.includes('playing') 
+    const isSupported = (cmd) => source.info.supported_cmds.includes(cmd)
+    const postCommand = (cmd) => {
+        console.log(cmd)
+        fetch(`/api/streams/${streamId}/${cmd}`, {
+            method: 'POST',
+            headers: {
+                'Content-type': 'application/json',
+            },
+        }) 
+    }
     
     const Center = (() => {
         if (playing) {
             if (isSupported('pause')) {
-                return <FontAwesomeIcon icon={faPause} className="media-control" />
+                return <FontAwesomeIcon icon={faPause} className={enabled} onClick={() => {postCommand('pause'); setSourceState('paused')}} />
             } else if (isSupported('stop')) {
-                return <FontAwesomeIcon icon={faStop} className="media-control" /> 
+                return <FontAwesomeIcon icon={faStop} className={enabled} onClick={() => {postCommand('stop'); setSourceState('stopped')}} /> 
             } else {
-                return <FontAwesomeIcon icon={faPause} className="media-control media-control-disabled" />
+                return <FontAwesomeIcon icon={faStop} className={disabled} />
             }
         } else {
             if (isSupported('play')) {
-                return <FontAwesomeIcon icon={faPlay} className="media-control" /> 
+                return <FontAwesomeIcon icon={faPlay} className={enabled} onClick={() => {postCommand('play'); setSourceState('playing')}} /> 
             } else {
-                return <FontAwesomeIcon icon={faPlay} className="media-control media-control-disabled" /> 
+                return <FontAwesomeIcon icon={faPlay} className={disabled} /> 
             }
         }
     })()
 
-    const cmdToClassName = (cmd) => { return isSupported(cmd) ? "media-control" : "media-control media-control-disabled" }
+    const cmdToClassName = (cmd) => isSupported(cmd) ? enabled : disabled
 
-
-    const Backward = <FontAwesomeIcon icon={faStepBackward} className={cmdToClassName('prev')} />
-    const Forward = <FontAwesomeIcon icon={faStepForward} className={cmdToClassName('next')} />
-
-
+    const Backward = <FontAwesomeIcon icon={faStepBackward} className={cmdToClassName('prev')} onClick={() => postCommand('prev')} />
+    const Forward = <FontAwesomeIcon icon={faStepForward} className={cmdToClassName('next')} onClick={() => postCommand('next')}/>
 
     return (
         <div className="media-outer">

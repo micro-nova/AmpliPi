@@ -8,16 +8,23 @@ import MenuBar from "./components/MenuBar/MenuBar";
 const UPDATE_INTERVAL = 1000;
 
 function App() {
-  const [status, setStatus] = useState(null);
-  // const [cookies, setCookie] = useCookies(['selected'])
+  // funny string state lol
+  const [statusOriginal, setStatusOriginal] = useState(null);
+  const status = JSON.parse(statusOriginal)
+  const setStatus = s => setStatusOriginal(JSON.stringify(s))
+
   const [selectedSource, setSelectedSource] = useState(0);
   const [selectedPage, setSelectedPage] = useState(0);
+
 
 
   const update = () => {
     fetch(`/api`)
       .then((res) => res.json())
       .then((data) => {
+        // iterate through data and determine whats different
+        const newStatus = Object.assign({}, status)
+
         setStatus(data);
       });
   };
@@ -40,7 +47,7 @@ function App() {
       default:
         return <Home status={status} selectedSource={selectedSource} setSelectedSource={setSelectedSource} />
       case 1:
-        return <Player status={status} selectedSource={selectedSource} />
+        return <Player status={status} setStatus={setStatus} selectedSource={selectedSource} />
       case 2:
         return <div></div>
       case 3:

@@ -3,9 +3,14 @@ import SongInfo from '@/components/SongInfo/SongInfo'
 import MediaControl from '@/components/MediaControl/MediaControl'
 import './Player.scss'
 
-const Player = ({ status, selectedSource }) => {
-    const source = status.sources[selectedSource];
-    // const zones = status.zones;
+const Player = ({ status, setStatus, selectedSource }) => {
+    const source = status.sources[selectedSource]
+    
+    const setSourceState = (state) => {
+        const newStatus = Object.assign({}, status)
+        newStatus.sources[selectedSource].info.state = state
+        setStatus(newStatus)
+    }
 
     return (
         <>
@@ -14,7 +19,7 @@ const Player = ({ status, selectedSource }) => {
                 <div className="player-inner">
                     <img src={source.info.img_url} className="player-album-art" />
                     <SongInfo info={source.info} artistClassName="player-info-title" albumClassName="player-info-album" trackClassName="player-info-track" />
-                    <MediaControl source={source}/>
+                    <MediaControl source={source} setSourceState={setSourceState}/>
                 </div>
             </div>
         </>
