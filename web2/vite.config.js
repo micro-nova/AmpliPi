@@ -15,7 +15,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // plugins: [react(), 'macros'],
   plugins: [react()],
+  // 'fontawesome-svg-core': {
+  //   license: 'free'
+  // },
   server: {
     host: true,
     // https: false,

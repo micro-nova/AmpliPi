@@ -1,7 +1,7 @@
 import PlayerCard from "@/components/PlayerCard/PlayerCard";
 import "./Home.scss";
 
-const Home = ({ status, selectedId, setSelectedId }) => {
+const Home = ({ status, selectedSource, setSelectedSource }) => {
   const sources = status.sources;
   const zones = status.zones;
 
@@ -64,8 +64,8 @@ const Home = ({ status, selectedId, setSelectedId }) => {
           zones={getSourceZones(0)}
           vol={getPlayerVol(0)}
           setVol={setPlayerVol}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
         />
         <PlayerCard
           sourceId={1}
@@ -73,8 +73,8 @@ const Home = ({ status, selectedId, setSelectedId }) => {
           zones={getSourceZones(1)}
           vol={getPlayerVol(1)}
           setVol={setPlayerVol}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
         />
         <PlayerCard
           sourceId={2}
@@ -82,8 +82,8 @@ const Home = ({ status, selectedId, setSelectedId }) => {
           zones={getSourceZones(2)}
           vol={getPlayerVol(2)}
           setVol={setPlayerVol}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
         />
         <PlayerCard
           sourceId={3}
@@ -91,8 +91,8 @@ const Home = ({ status, selectedId, setSelectedId }) => {
           zones={getSourceZones(3)}
           vol={getPlayerVol(3)}
           setVol={setPlayerVol}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
         />
       </div>
     </div>

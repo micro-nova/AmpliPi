@@ -1,13 +1,20 @@
 import './SongInfo.scss'
-import { useState, useEffect } from 'react'
 
-const SongInfo = ({ info }) => {
+const SongInfo = ({ 
+  info, 
+  artistClassName, 
+  albumClassName, 
+  trackClassName 
+}) => {
+  artistClassName = "artist-name " + artistClassName
+  albumClassName = "album-name " + albumClassName
+  trackClassName = "track-name " + trackClassName
 
   return (
     <div className="song-info">
-      <div className="artist-name">{info.artist}</div>
-      <div className="album-name">{info.album}</div>
-      <div className="track-name">{info.track}</div>
+      <div className={artistClassName}>{info.artist}</div>
+      <div className={albumClassName}>{info.album}</div>
+      <div className={trackClassName}>{info.track}</div>
     </div>
   );
 }

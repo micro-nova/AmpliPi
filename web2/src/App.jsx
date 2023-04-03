@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useCookies } from 'react-cookie';
 import "@/App.scss";
 import Home from "@/pages/Home/Home";
+import Player from "@/pages/Player/Player";
 import MenuBar from "./components/MenuBar/MenuBar";
 
 const UPDATE_INTERVAL = 1000;
@@ -9,7 +10,7 @@ const UPDATE_INTERVAL = 1000;
 function App() {
   const [status, setStatus] = useState(null);
   // const [cookies, setCookie] = useCookies(['selected'])
-  const [selectedId, setSelectedId] = useState(0);
+  const [selectedSource, setSelectedSource] = useState(0);
   const [selectedPage, setSelectedPage] = useState(0);
 
 
@@ -33,6 +34,20 @@ function App() {
     );
   }
 
+  // TODO: do some pages need 'on transition' events for initialization?
+  const Page = () => {
+      switch(selectedPage) {
+      default:
+        return <Home status={status} selectedSource={selectedSource} setSelectedSource={setSelectedSource} />
+      case 1:
+        return <Player status={status} selectedSource={selectedSource} />
+      case 2:
+        return <div></div>
+      case 3:
+        return <div></div>
+    }
+  }
+
   return (
     useEffect(() => {
       const interval = setInterval(() => {
@@ -42,7 +57,9 @@ function App() {
     }, []),
     (
       <div className="app">
-        <Home status={status} selectedId={selectedId} setSelectedId={setSelectedId} />
+        <div style={{paddingBottom: '56px'}}>
+          <Page />
+        </div>
         <MenuBar pageNumber={selectedPage} onChange={(n)=>{console.log(`changing page to ${n}`); setSelectedPage(n)}}/>
       </div>
     )

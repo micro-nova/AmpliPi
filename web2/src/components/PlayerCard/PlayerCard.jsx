@@ -7,11 +7,11 @@ import { useState, useEffect } from "react";
 import PlayerImage from "../PlayerImage/PlayerImage";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
 
-const PlayerCard = ({ sourceId, info, zones, vol, setVol, selectedId, setSelectedId }) => {
-  const selected = selectedId === sourceId
+const PlayerCard = ({ sourceId, info, zones, vol, setVol, selectedSource, setSelectedSource }) => {
+  const selected = selectedSource === sourceId
 
   const select = () => {
-    setSelectedId(sourceId)
+    setSelectedSource(sourceId)
   }
 
   return (
@@ -27,7 +27,6 @@ const PlayerCard = ({ sourceId, info, zones, vol, setVol, selectedId, setSelecte
           <div>
             <PlayerImage info={info} />
           </div>
-          
         </div>
         <div className="content" onClick={select}>
           <SongInfo info={info} />

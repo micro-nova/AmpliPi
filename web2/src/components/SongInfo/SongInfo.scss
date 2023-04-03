@@ -12,15 +12,18 @@
 .artist-name{
     font-size: 1rem;
     @include general.header-font;
+    color: general.$text-color;
 }
 
 .album-name{
     margin: 0.1rem;
     font-size: 0.75rem;
     @include general.header-font;
+    color: general.$text-color;
 }
 
 .track-name{
     font-size: 1rem;
     @include general.header-font;
+    color: general.$text-color;
 }

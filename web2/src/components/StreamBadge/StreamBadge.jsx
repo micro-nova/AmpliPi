@@ -1,6 +1,5 @@
 import './StreamBadge.scss'
 import spotify from '@/assets/spotify.png'
-import { useState, useEffect } from 'react'
 
 const StreamBadge = ({ info }) => {
   info = info.name.split(" - ")
@@ -14,10 +13,10 @@ const StreamBadge = ({ info }) => {
 
   return (
     <div className="stream-badge">
-      <div className="stream-name">
+      <div className="stream-badge-name">
       {name}
       </div>
-        <img src={icon} className="stream-icon" alt="stream icon" />
+        <img src={icon} className="stream-badge-icon" alt="stream icon" />
     </div>
   );
 }

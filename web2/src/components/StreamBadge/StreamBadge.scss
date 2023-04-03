@@ -9,7 +9,7 @@
   justify-content: flex-end;
 }
 
-.stream-name{
+.stream-badge-name{
   color: general.$text-color;
   white-space: nowrap;
   font-size: 1rem;
@@ -17,7 +17,7 @@
   @include general.header-font;
 }
 
-.stream-icon{
+.stream-badge-icon{
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
