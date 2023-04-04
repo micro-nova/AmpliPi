@@ -1,0 +1,42 @@
+@use "src/general.scss";
+
+.zones-modal{
+  @include general.header-font;
+  font-size: 1.5rem;
+  color: general.$text-color;
+}
+
+.zones-modal-card{
+  max-height: 75vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.zones-modal-header {
+  margin: 0.5rem;
+  font-size: 3rem;
+  text-align: center;
+}
+
+.zones-modal-body {
+  padding: 1rem;
+  overflow-y: scroll;
+  //the below is to push the scrollbar out of the card to hide it
+  padding-right: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.zones-modal-list-item{
+  margin-bottom: 1rem;
+}
+
+.zones-modal-footer{
+  display: flex;
+  justify-content: center;
+}
+
+.zones-modal-button-icon{
+  color: general.$controls-color;
+}

@@ -3,7 +3,9 @@ import "./Home.scss";
 
 const Home = ({ status, selectedSource, setSelectedSource }) => {
   const sources = status.sources;
+  const streams = status.streams;
   const zones = status.zones;
+  const groups = status.groups;
 
   const getSourceZones = (source_id) => {
     let matches = [];
@@ -61,38 +63,50 @@ const Home = ({ status, selectedSource, setSelectedSource }) => {
         <PlayerCard
           sourceId={0}
           info={sources[0].info}
-          zones={getSourceZones(0)}
+          usedZones={getSourceZones(0)}
+          zones={zones}
+          groups={groups}
           vol={getPlayerVol(0)}
           setVol={setPlayerVol}
           selectedSource={selectedSource}
           setSelectedSource={setSelectedSource}
+          streams={streams}
         />
         <PlayerCard
           sourceId={1}
           info={sources[1].info}
-          zones={getSourceZones(1)}
+          usedZones={getSourceZones(1)}
+          zones={zones}
+          groups={groups}
           vol={getPlayerVol(1)}
           setVol={setPlayerVol}
           selectedSource={selectedSource}
           setSelectedSource={setSelectedSource}
+          streams={streams}
         />
         <PlayerCard
           sourceId={2}
           info={sources[2].info}
-          zones={getSourceZones(2)}
+          usedZones={getSourceZones(2)}
+          zones={zones}
+          groups={groups}
           vol={getPlayerVol(2)}
           setVol={setPlayerVol}
           selectedSource={selectedSource}
           setSelectedSource={setSelectedSource}
+          streams={streams}
         />
         <PlayerCard
           sourceId={3}
           info={sources[3].info}
-          zones={getSourceZones(3)}
+          usedZones={getSourceZones(3)}
+          zones={zones}
+          groups={groups}
           vol={getPlayerVol(3)}
           setVol={setPlayerVol}
           selectedSource={selectedSource}
           setSelectedSource={setSelectedSource}
+          streams={streams}
         />
       </div>
     </div>

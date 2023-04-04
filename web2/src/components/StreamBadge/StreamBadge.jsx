@@ -1,10 +1,7 @@
 import './StreamBadge.scss'
 import spotify from '@/assets/spotify.png'
 
-const StreamBadge = ({ info }) => {
-  info = info.name.split(" - ")
-  const name = info[0]
-  const type = info[1]
+const StreamBadge = ({ name, type }) => {
 
   const icon = spotify
   //TODO: populate this with icons or add endpoint to get icons
