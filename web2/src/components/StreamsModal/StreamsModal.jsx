@@ -6,7 +6,7 @@ import { useStatusStore } from "@/App";
 
 const StreamsModal = ({ sourceId, setStreamModalOpen }) => {
 
-  streams = useStatusStore((state) => state.status.streams)
+  const streams = useStatusStore((state) => state.status.streams)
 
   const setStream = (streamId) => {
     setStreamModalOpen(false)
@@ -26,7 +26,7 @@ const StreamsModal = ({ sourceId, setStreamModalOpen }) => {
   for (const stream of streams) {
     streamsList.push(
       <div className="streams-modal-list-item" onClick={()=>{setStream(stream.id)}} key={stream.id}>
-        <StreamBadge name={stream.name} type={stream.type} />
+        {`${stream.name} - ${stream.type}`}
       </div>
     )
   }

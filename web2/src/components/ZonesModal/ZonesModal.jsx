@@ -7,24 +7,16 @@ import { IconButton } from "@mui/material";
 import DoneIcon from '@mui/icons-material/Done';
 import { width } from "@mui/system";
 import { useStatusStore } from "@/App.jsx";
-
-const ZoneItem = () => {
-
-}
-
-const GroupItem = () => {
-
-}
-
-
+import { getSourceZones } from "@/pages/Home/Home";
 
 const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
-  const zones =  useStatusStore((state) => state.status.zones);
+  const zones = useStatusStore.getState().status.zones
+  let usedZones = getSourceZones(sourceId, zones);
+  let zonesList = [];
+  let selectedZones = [];
 
   const setZones = (zoneIds) => {
     let removeList = []
-
-    setZoneModalOpen(false)
 
     for(const zone of usedZones){
       if(!zoneIds.includes(zone.id)){
@@ -47,11 +39,10 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
       },
       body: JSON.stringify({ zones: zoneIds, update:{mute: false, source_id:sourceId} }),
     });
+
+    setZoneModalOpen(false)
   }
   
-  let zonesList = [];
-  let selectedZones = [];
-  let selectedGroups = [];
 
   for (const zone of zones) {
     let selected = false;
@@ -91,7 +82,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
         <div className="zones-modal-header">Select Zones</div>
         <div className="zones-modal-body">{zonesList}</div>
         <div className="zones-modal-footer">
-          <IconButton onClick={()=>{setZones(selectedZones, selectedGroups)}}>
+          <IconButton onClick={()=>{setZones(selectedZones)}}>
             <DoneIcon className="zones-modal-button-icon" style={{width:"3rem", height:"3rem"}}/>
           </IconButton>
         </div>
