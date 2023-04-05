@@ -1,53 +1,74 @@
 import { useEffect, useState } from "react";
+import { create } from 'zustand';
 import { useCookies } from 'react-cookie';
 import "@/App.scss";
 import Home from "@/pages/Home/Home";
 import Player from "@/pages/Player/Player";
 import MenuBar from "./components/MenuBar/MenuBar";
+import produce from 'immer'
+import { getSourceZones } from "@/pages/Home/Home"
+import { applyPlayerVol } from "./components/VolumeSlider/VolumeSlider"
 
 const UPDATE_INTERVAL = 1000;
 
-function App() {
-  // funny string state lol
-  const [statusOriginal, setStatusOriginal] = useState(null);
-  const status = JSON.parse(statusOriginal)
-  const setStatus = s => setStatusOriginal(JSON.stringify(s))
 
+export const useStatusStore = create((set) => ({
+  status: null,
+  setZonesVol: (vol, zones, sourceId) => {
+    set(produce((s) => {
+      applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
+        // let zone = null
+        // for (const z of s.status.zones) {
+        //   if (z.id === zone_id) {
+        //     zone = z;
+        //     s.status.zones
+        //   }
+        // }
+
+        for (const i in s.status.zones) {
+          if (s.status.zones[i].id === zone_id) {
+            s.status.zones[i].vol_f = new_vol
+          }
+        }
+
+        // zone.vol_f = new_vol
+      })
+    }))
+  },
+  fetch: async () => {
+    const res = await fetch(`/api`)
+    set({ status: await res.json() })
+  },
+}))
+
+function App() {
   const [selectedSource, setSelectedSource] = useState(0);
   const [selectedPage, setSelectedPage] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  const update = useStatusStore((s) => s.fetch)
 
-
-  const update = () => {
-    fetch(`/api`)
-      .then((res) => res.json())
-      .then((data) => {
-        // iterate through data and determine whats different
-        const newStatus = Object.assign({}, status)
-
-        setStatus(data);
-      });
-  };
-
-  if (status == null) {
+  if (isLoaded == false) {
+    
     return (
       useEffect(() => {
         const interval = setInterval(() => {
-          update();
+          update().then(() => setIsLoaded(true));
         }, UPDATE_INTERVAL);
         return () => clearInterval(interval);
       }, []),
       (<h1>Loading...</h1>)
     );
-  }
 
-  // TODO: do some pages need 'on transition' events for initialization?
+    
+  }
+  
   const Page = () => {
       switch(selectedPage) {
       default:
-        return <Home status={status} selectedSource={selectedSource} setSelectedSource={setSelectedSource} />
+        return <Home selectedSource={selectedSource} setSelectedSource={setSelectedSource} />
       case 1:
-        return <Player status={status} setStatus={setStatus} selectedSource={selectedSource} />
+        return <Player selectedSource={selectedSource} />
       case 2:
         return <div></div>
       case 3:
@@ -57,6 +78,7 @@ function App() {
 
   return (
     useEffect(() => {
+      update();
       const interval = setInterval(() => {
         update();
       }, UPDATE_INTERVAL);

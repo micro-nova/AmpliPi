@@ -6,16 +6,49 @@ import { useState } from "react";
 import { IconButton } from "@mui/material";
 import DoneIcon from '@mui/icons-material/Done';
 import { width } from "@mui/system";
+import { useStatusStore } from "@/App.jsx";
 
-const ZoneItem => () {
-
-}
-
-const GroupItem => () {
+const ZoneItem = () => {
 
 }
 
-const ZonesModal = ({ groups, zones, sourceId, setZones }) => {
+const GroupItem = () => {
+
+}
+
+
+
+const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
+  const zones =  useStatusStore((state) => state.status.zones);
+
+  const setZones = (zoneIds) => {
+    let removeList = []
+
+    setZoneModalOpen(false)
+
+    for(const zone of usedZones){
+      if(!zoneIds.includes(zone.id)){
+        removeList.push(zone.id)
+      }
+    }
+
+    fetch(`/api/zones`, {
+      method: "PATCH",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({ zones: removeList, update:{source_id:-1} }),
+    });
+
+    fetch(`/api/zones`, {
+      method: "PATCH",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({ zones: zoneIds, update:{mute: false, source_id:sourceId} }),
+    });
+  }
+  
   let zonesList = [];
   let selectedZones = [];
   let selectedGroups = [];

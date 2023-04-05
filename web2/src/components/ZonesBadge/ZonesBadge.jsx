@@ -1,14 +1,19 @@
 import './ZonesBadge.scss';
 import { useState, useEffect } from 'react';
+import { getSourceZones } from "@/pages/Home/Home.jsx"
+import { useStatusStore } from '@/App.jsx'
 
-const ZonesBadge = ({ zones }) => {
+const ZonesBadge = ({ sourceId }) => {
+  const allZones = useStatusStore((s) => s.status.zones)
+  const usedZones = getSourceZones(sourceId, allZones)
+
   let zones_text = ''
-  if(zones.length > 2) {
-    zones_text = `${zones[0].name} and ${zones.length - 1} more`
-  } else if(zones.length == 2) {
-    zones_text = `${zones[0].name} and ${zones[1].name}`
-  } else if(zones.length == 1) {
-    zones_text = `${zones[0].name}`
+  if(usedZones.length > 2) {
+    zones_text = `${usedZones[0].name} and ${usedZones.length - 1} more`
+  } else if(usedZones.length == 2) {
+    zones_text = `${usedZones[0].name} and ${usedZones[1].name}`
+  } else if(usedZones.length == 1) {
+    zones_text = `${usedZones[0].name}`
   }
 
   return (

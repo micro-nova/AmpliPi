@@ -9,82 +9,36 @@ import ZonesBadge from "../ZonesBadge/ZonesBadge";
 import StreamsModal from "../StreamsModal/StreamsModal";
 import ZonesModal from "../ZonesModal/ZonesModal";
 
-const PlayerCard = ({ sourceId, info, zones, usedZones, vol, setVol, selectedSource, setSelectedSource, streams }) => {
-  const [StreamModalOpen, setStreamModalOpen] = useState(false);
-  const [ZoneModalOpen, setZoneModalOpen] = useState(false);
+const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
+  const [streamModalOpen, setStreamModalOpen] = useState(false);
+  const [zoneModalOpen, setZoneModalOpen] = useState(false);
   const selected = selectedSource === sourceId
-
-  const select = () => {
-    setSelectedSource(sourceId)
-  }
-
-  const setStream = (streamId) => {
-    setStreamModalOpen(false)
-    setSelectedSource(sourceId)
-
-    fetch(`/api/sources/${sourceId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-type": "application/json",
-      },
-      body: JSON.stringify({ input: `stream=${streamId}` }),
-    });
-  }
-
-  const setZones = (zoneIds) => {
-    let removeList = []
-
-    setZoneModalOpen(false)
-    setSelectedSource(sourceId)
-
-    for(const zone of usedZones){
-      if(!zoneIds.includes(zone.id)){
-        removeList.push(zone.id)
-      }
-    }
-
-    fetch(`/api/zones`, {
-      method: "PATCH",
-      headers: {
-        "Content-type": "application/json",
-      },
-      body: JSON.stringify({ zones: removeList, update:{source_id:-1} }),
-    });
-
-    fetch(`/api/zones`, {
-      method: "PATCH",
-      headers: {
-        "Content-type": "application/json",
-      },
-      body: JSON.stringify({ zones: zoneIds, update:{mute: false, source_id:sourceId} }),
-    });
-  }
 
   return (
     <Card selected={selected}>
       <div className="outer">
         <div className="content" onClick={()=>{setZoneModalOpen(true)}}>
-          <ZonesBadge zones={usedZones} />
+          <ZonesBadge sourceId={sourceId} />
         </div>
         <div className="content stream-name-container" onClick={()=>{setStreamModalOpen(true)}}>
-          <StreamBadge name={info.name.split(" - ")[0]} type={info.name.split(" - ")[1]} />
+          <StreamBadge sourceId={sourceId} />
         </div>
-        <div className="content album-art" onClick={select}>
+        <div className="content album-art" onClick={() => setSelectedSource(sourceId)}>
           <div>
-            <PlayerImage info={info} />
+            <PlayerImage sourceId={sourceId} />
           </div>
         </div>
-        <div className="content" onClick={select}>
-          <SongInfo info={info} />
+        <div className="content" onClick={() => setSelectedSource(sourceId)}>
+          <SongInfo sourceId={sourceId} />
         </div>
         <div className="content vol">
           <VolumeSlider
-            vol={vol}
+            sourceId={sourceId}
             onChange={(event, vol)=>{setVol(sourceId, event, vol)}}
           />
         </div>
-       {StreamModalOpen && <StreamsModal streams={streams} setStream={setStream}/>}
-       {ZoneModalOpen && <ZonesModal groups={groups} zones={zones} setZones={setZones} sourceId={sourceId}/>}
+       {streamModalOpen && <StreamsModal sourceId={sourceId} setStreamModalOpen={setStreamModalOpen}/>}
+       {zoneModalOpen && <ZonesModal sourceId={sourceId} setZoneModalOpen={setZoneModalOpen}/>}
       </div>
     </Card>
   );

@@ -1,11 +1,15 @@
 import './SongInfo.scss'
+import { useStatusStore } from '@/App.jsx'
 
 const SongInfo = ({ 
-  info, 
+  sourceId, 
   artistClassName, 
   albumClassName, 
   trackClassName 
 }) => {
+
+  const info = useStatusStore(state => state.status.sources[sourceId].info)
+
   artistClassName = "artist-name " + artistClassName
   albumClassName = "album-name " + albumClassName
   trackClassName = "track-name " + trackClassName

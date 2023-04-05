@@ -2,24 +2,19 @@ import StreamBar from '@/components/StreamBar/StreamBar'
 import SongInfo from '@/components/SongInfo/SongInfo'
 import MediaControl from '@/components/MediaControl/MediaControl'
 import './Player.scss'
+import { useStatusStore } from '@/App.jsx'
 
-const Player = ({ status, setStatus, selectedSource }) => {
-    const source = status.sources[selectedSource]
-    
-    const setSourceState = (state) => {
-        const newStatus = Object.assign({}, status)
-        newStatus.sources[selectedSource].info.state = state
-        setStatus(newStatus)
-    }
+const Player = ({ selectedSource }) => {
+    const img_url = useStatusStore((s) => s.status.sources[selectedSource].info.img_url)
 
     return (
         <>
-            <StreamBar info={source.info}></StreamBar>
+            <StreamBar sourceId={selectedSource}></StreamBar>
             <div className="player-outer">
                 <div className="player-inner">
-                    <img src={source.info.img_url} className="player-album-art" />
-                    <SongInfo info={source.info} artistClassName="player-info-title" albumClassName="player-info-album" trackClassName="player-info-track" />
-                    <MediaControl source={source} setSourceState={setSourceState}/>
+                    <img src={img_url} className="player-album-art" />
+                    <SongInfo sourceId={selectedSource} artistClassName="player-info-title" albumClassName="player-info-album" trackClassName="player-info-track" />
+                    <MediaControl selectedSource={selectedSource}/>
                 </div>
             </div>
         </>

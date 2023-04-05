@@ -1,10 +1,13 @@
 import './PlayerImage.scss';
 import { useState, useEffect } from 'react';
+import { useStatusStore } from '@/App';
 
-const PlayerImage = ({ info, className }) => {
 
+const PlayerImage = ({ sourceId }) => {
+
+  const img_url = useStatusStore(s => s.status.sources[sourceId].info.img_url);
   return  (
-    <img src={info.img_url} className={`image ${className}`}/>
+    <img src={img_url} className="image"/>
     )
 
 }

@@ -5,13 +5,20 @@ import { faPause } from '@fortawesome/free-solid-svg-icons'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import { faStop } from '@fortawesome/free-solid-svg-icons'
 
+import { useStatusStore } from '@/App.jsx'
+
 import './MediaControl.scss'
 
 
-const MediaControl = ({ source, setSourceState }) => {
+const MediaControl = ({ selectedSource }) => {
+    // const source = status.sources[selectedSource]
+    const source = useStatusStore((s) => s.status.sources[selectedSource])
+
     const enabled = "media-control"
     const disabled = "media-control media-control-disabled"
     const streamId = source.input.split("=")[1] // TODO: what if this is rca? or is rca a stream now
+
+    const setSourceState = (state) => {} // TODO
 
     const playing = source.info.state.includes('playing') 
     const isSupported = (cmd) => source.info.supported_cmds.includes(cmd)

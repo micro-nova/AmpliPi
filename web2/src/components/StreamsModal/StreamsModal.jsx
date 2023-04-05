@@ -2,8 +2,24 @@ import "./StreamsModal.scss";
 import Modal from "../Modal/Modal";
 import Card from "../Card/Card";
 import StreamBadge from "../StreamBadge/StreamBadge";
+import { useStatusStore } from "@/App";
 
-const StreamsModal = ({ streams, setStream }) => {
+const StreamsModal = ({ sourceId, setStreamModalOpen }) => {
+
+  streams = useStatusStore((state) => state.status.streams)
+
+  const setStream = (streamId) => {
+    setStreamModalOpen(false)
+  
+    fetch(`/api/sources/${sourceId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({ input: `stream=${streamId}` }),
+    });
+  }
+
 
   let streamsList = []
 
