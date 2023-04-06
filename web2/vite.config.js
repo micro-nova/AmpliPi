@@ -5,7 +5,7 @@ import path from 'path'
 
 // set this to dev server url
 //TODO: find a way to do this from cli
-const amplipiurl = "http://amplipi10.local/"
+const amplipiurl = "http://192.168.0.117/"
 // const amplipiurl = "http://192.168.0.178/"
 
 // https://vitejs.dev/config/

@@ -10,7 +10,7 @@ const StreamsModal = ({ sourceId, setStreamModalOpen }) => {
 
   const setStream = (streamId) => {
     setStreamModalOpen(false)
-  
+
     fetch(`/api/sources/${sourceId}`, {
       method: "PATCH",
       headers: {
@@ -20,6 +20,17 @@ const StreamsModal = ({ sourceId, setStreamModalOpen }) => {
     });
   }
 
+  const removeStream = () => {
+    setStreamModalOpen(false)
+
+    fetch(`/api/sources/${sourceId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({ input: "None" }),
+    });
+  }
 
   let streamsList = []
 
@@ -30,6 +41,14 @@ const StreamsModal = ({ sourceId, setStreamModalOpen }) => {
       </div>
     )
   }
+
+  streamsList.push(
+    <div className="streams-modal-list-item" onClick={()=>{removeStream()}} key="none">Close Player</div>
+  )
+  streamsList.push(
+    <div className="streams-modal-list-item" onClick={()=>{setStreamModalOpen(false)}} key="cancel">Cancel</div>
+  )
+
 
   return(
     <Modal className="streams-modal">

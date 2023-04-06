@@ -19,7 +19,6 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
   let selectedGroups = [];
 
   const ZonesModalZoneItem = ({ zone, selectable, selected }) => {
-
     return(
     <div
       className="zones-modal-list-item"
@@ -125,6 +124,18 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
     }
   }
 
+  for (const group of groups) {
+    let selected = false;
+    if (group.source_id == sourceId) {
+      selected = true;
+      selectedGroups.push(group.id);
+      usedGroups.push(group)
+    }
+    listItems.push(
+      ZonesModalGroupItem({ group: group, selectable: true, selected: selected })
+    )
+  }
+
   for (const zone of zones) {
     let selected = false;
     if (zone.source_id == sourceId) {
@@ -138,17 +149,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
     )
   }
 
-  for (const group of groups) {
-    let selected = false;
-    if (group.source_id == sourceId) {
-      selected = true;
-      selectedGroups.push(group.id);
-      usedGroups.push(group)
-    }
-    listItems.push(
-      ZonesModalGroupItem({ group: group, selectable: true, selected: selected })
-    )
-    }
+  console.log("test")
 
   return (
     <Modal className="zones-modal">
