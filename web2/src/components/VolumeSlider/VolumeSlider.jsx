@@ -23,7 +23,7 @@ const getPlayerVol = (sourceId, zones) => {
 
 export const applyPlayerVol = (vol, zones, sourceId, apply) => {
   let delta = vol - getPlayerVol(sourceId, zones);
-  
+
   for (let i of getSourceZones(sourceId, zones)) {
     let set_pt = Math.max(0, Math.min(1, i.vol_f + delta));
     apply(i.id, set_pt)
@@ -31,20 +31,23 @@ export const applyPlayerVol = (vol, zones, sourceId, apply) => {
 }
 
 
+let sendingPacketCount = 0
+
 const VolumeSlider = ({sourceId}) => {
   const zones = useStatusStore((s) => s.status.zones)
   const setZonesVol = useStatusStore((s) => s.setZonesVol)
-  const [sendingPacketCount, setSendingPacketCount] = useState(0)
 
   const setPlayerVolRaw = (vol) => applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
-    setSendingPacketCount(sendingPacketCount + 1)
+    console.log(`going to send packet: ${sendingPacketCount}`)
+    sendingPacketCount += 1
+    console.log(`sending packet: ${sendingPacketCount}`)
     fetch(`/api/zones/${zone_id}`, {
         method: "PATCH",
         headers: {
           "Content-type": "application/json",
         },
         body: JSON.stringify({ vol_f: new_vol }),
-      }).then(() => setSendingPacketCount(sendingPacketCount - 1))
+      }).then(() => {sendingPacketCount -= 1; console.log(`packet sent: ${sendingPacketCount}`)})
   })
 
   const setPlayerVol = (vol) => {
@@ -55,7 +58,7 @@ const VolumeSlider = ({sourceId}) => {
       console.log("skipping vol update, " + sendingPacketCount + " already sending")
     }
   }
-  
+
   const value = getPlayerVol(sourceId, zones)
 
   const setValue = (vol) => {
