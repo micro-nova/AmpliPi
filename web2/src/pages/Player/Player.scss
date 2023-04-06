@@ -1,4 +1,4 @@
-
+@use '@/general.scss';
 
 .player-outer {
     width: 100%;
@@ -22,6 +22,7 @@
     align-self: center;
     max-width: 22rem;
     max-height: 22rem;
+    border-radius: 2.5%;
 }
 
 .player-info-title {
@@ -37,4 +38,15 @@
 .player-info-track {
     font-size: 2.5rem;
     // margin-top: 0.25rem;
+}
+
+.player-volume-slider {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+}
+
+.player-volume-expand-button{
+  color: general.$controls-color;
 }

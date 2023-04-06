@@ -39,6 +39,21 @@ export const useStatusStore = create((set) => ({
     const res = await fetch(`/api`)
     set({ status: await res.json() })
   },
+  setZoneVol: (zoneId, new_vol) => {
+    set(produce((s) => {
+      s.status.zones[zoneId].vol_f = new_vol
+    }))
+  },
+  setGroupVol: (groupId, new_vol) => {
+    set(produce((s) => {
+      let g = s.status.groups.filter((g) => g.id === groupId)[0]
+      for (const i of g.zones) {
+        s.status.zones[i].vol_f = new_vol
+      }
+      g.vol_f = new_vol
+    }))
+  }
+
 }))
 
 function App() {
@@ -49,7 +64,7 @@ function App() {
   const update = useStatusStore((s) => s.fetch)
 
   if (isLoaded == false) {
-    
+
     return (
       useEffect(() => {
         const interval = setInterval(() => {
@@ -60,9 +75,9 @@ function App() {
       (<h1>Loading...</h1>)
     );
 
-    
+
   }
-  
+
   const Page = () => {
       switch(selectedPage) {
       default:
