@@ -17,7 +17,7 @@ export const getSourceZones = (source_id, zones) => {
 
 const Home = ({ selectedSource, setSelectedSource }) => {
   const sources = useStatusStore((s)=>s.status.sources)
-  // const sources = useStatusStore.getState().status.sources
+  const clearSourceZones = useStatusStore((s)=>s.clearSourceZones)
   const [zonesModalOpen, setZonesModalOpen] = useState(false)
   const [streamsModalOpen, setStreamsModalOpen] = useState(false)
   let playerCards = [];
@@ -40,17 +40,7 @@ const Home = ({ selectedSource, setSelectedSource }) => {
 
   const initSource = (sourceId) => {
     // clear source zones
-    let z = getSourceZones(sourceId, useStatusStore.getState().status.zones)
-    fetch(`/api/zones`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        zones: z.map((z)=>z.id),
-        update: {source_id: -1}
-      })
-    })
+    clearSourceZones(sourceId)
 
     // open first modal
     setZonesModalOpen(true)

@@ -12,70 +12,76 @@ import { getSourceZones } from "@/pages/Home/Home";
 const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
   const zones = useStatusStore.getState().status.zones
   const groups = useStatusStore.getState().status.groups
-  const [usedZones, setUsedZones] = useState([]);
-  const [usedGroups, setUsedGroups] = useState([]);
-  const [listItems, setListItems] = useState([]);
-  const [selectedZones, setSelectedZones] = useState([]);
-  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [checkedZones, setCheckedZones] = useState(zones.map((zone) => {if(zone.source_id == sourceId){return zone.id}}).filter((item) => {return item != undefined}))
+  const [checkedGroups, setCheckedGroups] = useState(groups.map((group) => {if(group.source_id == sourceId){return group.id}}).filter((item) => {return item != undefined}))
 
-  const ZonesModalZoneItem = ({ zone, selectable, selected }) => {
+  const handleChangeZone = (id) => {
+    if (checkedZones.includes(id)) {
+      let newList = checkedZones.filter((item) => item != id)
+      setCheckedZones(newList)
+    } else {
+      setCheckedZones([...checkedZones, id])
+    }
+  }
+
+  const handleChangeGroup = (id) => {
+    if(checkedGroups.includes(id)){
+      let newList = checkedGroups.filter((item) => item != id)
+      setCheckedGroups(newList)
+    } else {
+      setCheckedGroups([...checkedGroups, id])
+    }
+  }
+
+  const ZonesModalZoneItem = ({ zone, selectable, defaultSelected }) => {
     return(
     <div
       className="zones-modal-list-item"
       key={zone.id}
     >
         {selectable && <Checkbox
-          onChange={(event) => {
-            if (event.target.checked) {
-              console.log(selectedZones)
-              console.log([... selectedZones, zone.id])
-              setSelectedZones([... selectedZones, zone.id]);
-            } else {
-              const index = selectedZones.indexOf(zone.id);
-              if (index > -1) {
-                setSelectedZones([... selectedZones.slice(0, index), ... selectedZones.slice(index + 1)]);
-              }
-            }
-          }}
-          defaultChecked={selected}
+          onChange={() => handleChangeZone(zone.id)}
+          defaultChecked={defaultSelected}
         />}
       {zone.name}
     </div>
     )
   }
 
-  const ZonesModalGroupItem = ({ group, selectable, selected }) => {
+  const ZonesModalGroupItem = ({ group, selectable, defaultSelected }) => {
     return(
       <div
         className="zones-modal-list-item"
         key={group.id}
       >
           {selectable && <Checkbox
-            onChange={(event) => {
-              if (event.target.checked) {
-                setSelectedGroups([... selectedGroups, group.id]);
-              } else {
-                const index = selectedGroups.indexOf(group.id);
-                if (index > -1) {
-                  setSelectedGroups([... selectedGroups.slice(0, index), ... selectedGroups.slice(index + 1)]);
-                }
-              }
-            }}
-            defaultChecked={selected}
+            onChange={() => handleChangeGroup(group.id)}
+            defaultChecked={defaultSelected}
           />}
         {group.name}
       </div>
       )
   }
 
-  const setZones = (zoneIds) => {
+  const setZones = () => {
     let removeList = []
+    let addList = []
 
-    for(const zone of usedZones){
-      if(!zoneIds.includes(zone.id)){
+    for(const zone of zones.filter((zone) => {return zone.source_id == sourceId})){
+      if(!checkedZones.includes(zone.id)){
         removeList.push(zone.id)
       }
     }
+
+    for(const zone of zones.filter((zone) => {return zone.source_id != sourceId})){
+      if(checkedZones.includes(zone.id)){
+        addList.push(zone.id)
+      }
+    }
+
+    console.log(`removing zones: ${removeList}`)
+    console.log(`adding zones: ${addList}`)
+    console.log(`checked zones: ${checkedZones}`)
 
     fetch(`/api/zones`, {
       method: "PATCH",
@@ -90,20 +96,31 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
       headers: {
         "Content-type": "application/json",
       },
-      body: JSON.stringify({ zones: zoneIds, update:{mute: false, source_id:sourceId} }),
+      body: JSON.stringify({ zones: addList, update:{mute: false, source_id:sourceId} }),
     });
 
     setZoneModalOpen(false)
   }
 
-  const setGroups = (groupIds) => {
+  const setGroups = () => {
     let removeList = []
+    let addList = []
 
-    for(const group of usedGroups){
-      if(!groupIds.includes(group.id)){
+    for(const group of groups.filter((group) => {return group.source_id == sourceId})){
+      if(!checkedGroups.includes(group.id)){
         removeList.push(group.id)
       }
     }
+
+    for(const group of groups.filter((group) => {return group.source_id != sourceId})){
+      if(checkedGroups.includes(group.id)){
+        addList.push(group.id)
+      }
+    }
+
+    console.log(`removing groups: ${removeList}`)
+    console.log(`adding groups: ${addList}`)
+    console.log(`checked groups: ${checkedGroups}`)
 
     for (const i of removeList) {
       fetch(`/api/groups/${i}`, {
@@ -115,7 +132,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
       });
     }
 
-    for (const i of groupIds) {
+    for (const i of addList) {
       fetch(`/api/groups/${i}`, {
         method: "PATCH",
         headers: {
@@ -126,47 +143,29 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
     }
   }
 
+  const groupItems = groups.map((group) => {
+    let selected = false;
+    if (group.source_id == sourceId) {
+      selected = true;
+    }
+    return ZonesModalGroupItem({ group: group, selectable: true, defaultSelected: selected })
+  })
+
+  const zoneItems = zones.map((zone) => {
+    let selected = false;
+    if (zone.source_id == sourceId) {
+      selected = true;
+    }
+    return ZonesModalZoneItem({ zone: zone, selectable: true, defaultSelected: selected })
+  })
+
   return (
-    useEffect(() => {
-      let sg = []
-      let ug = []
-      let sz = []
-      let uz = []
-      let li = []
-
-      for (const group of groups) {
-        let selected = false;
-        if (group.source_id == sourceId) {
-          selected = true;
-          sg.push(group.id)
-          ug.push(group)
-        }
-        li.push(ZonesModalGroupItem({ group: group, selectable: true, selected: selected }))
-      }
-      for (const zone of zones) {
-        let selected = false;
-        if (zone.source_id == sourceId) {
-          selected = true;
-          sz.push(zone.id)
-          uz.push(zone)
-        }
-        li.push(ZonesModalZoneItem({ zone: zone, selectable: true, selected: selected }))
-      }
-
-      setUsedGroups(ug)
-      setUsedZones(uz)
-      setSelectedGroups(sg)
-      setSelectedZones(sz)
-      setListItems(li)
-
-      console.log("bang")
-    }, []),
     <Modal className="zones-modal">
       <Card className="zones-modal-card">
         <div className="zones-modal-header">Select Zones</div>
-        <div className="zones-modal-body">{listItems}</div>
+        <div className="zones-modal-body">{groupItems}{zoneItems}</div>
         <div className="zones-modal-footer">
-          <IconButton onClick={()=>{setZones(selectedZones); setGroups(selectedGroups)}}>
+          <IconButton onClick={()=>{setZones(); setGroups()}}>
             <DoneIcon className="zones-modal-button-icon" style={{width:"3rem", height:"3rem"}}/>
           </IconButton>
         </div>

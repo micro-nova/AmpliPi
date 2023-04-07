@@ -36,6 +36,7 @@ export const useStatusStore = create((set) => ({
     }))
   },
   fetch: async () => {
+    // TODO make this not crash the app if the server is down
     const res = await fetch(`/api`)
     set({ status: await res.json() })
   },
@@ -47,10 +48,32 @@ export const useStatusStore = create((set) => ({
   setGroupVol: (groupId, new_vol) => {
     set(produce((s) => {
       let g = s.status.groups.filter((g) => g.id === groupId)[0]
+      console.log(g)
       for (const i of g.zones) {
         s.status.zones[i].vol_f = new_vol
       }
       g.vol_f = new_vol
+    }))
+  },
+  clearSourceZones: (sourceId) => {
+    set(produce((s) => {
+      let z = getSourceZones(sourceId, s.status.zones)
+      fetch(`/api/zones`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          zones: z.map((z)=>z.id),
+          update: {source_id: -1}
+        })
+      })
+      console.log(s.status.zones)
+      for (const i in s.status.zones) {
+        if(s.status.zones[i].source_id == sourceId){
+          s.status.zones[i].source_id = -1
+        }
+      }
     }))
   }
 
