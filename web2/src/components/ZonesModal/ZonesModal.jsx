@@ -2,7 +2,7 @@ import "./ZonesModal.scss";
 import Modal from "../Modal/Modal";
 import Card from "../Card/Card";
 import Checkbox from "@mui/material/Checkbox";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IconButton } from "@mui/material";
 import DoneIcon from '@mui/icons-material/Done';
 import { width } from "@mui/system";
@@ -12,11 +12,11 @@ import { getSourceZones } from "@/pages/Home/Home";
 const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
   const zones = useStatusStore.getState().status.zones
   const groups = useStatusStore.getState().status.groups
-  let usedZones = [];
-  let usedGroups = [];
-  let listItems = [];
-  let selectedZones = [];
-  let selectedGroups = [];
+  const [usedZones, setUsedZones] = useState([]);
+  const [usedGroups, setUsedGroups] = useState([]);
+  const [listItems, setListItems] = useState([]);
+  const [selectedZones, setSelectedZones] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState([]);
 
   const ZonesModalZoneItem = ({ zone, selectable, selected }) => {
     return(
@@ -27,11 +27,13 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
         {selectable && <Checkbox
           onChange={(event) => {
             if (event.target.checked) {
-              selectedZones.push(zone.id);
+              console.log(selectedZones)
+              console.log([... selectedZones, zone.id])
+              setSelectedZones([... selectedZones, zone.id]);
             } else {
               const index = selectedZones.indexOf(zone.id);
               if (index > -1) {
-                selectedZones.splice(index, 1);
+                setSelectedZones([... selectedZones.slice(0, index), ... selectedZones.slice(index + 1)]);
               }
             }
           }}
@@ -51,11 +53,11 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
           {selectable && <Checkbox
             onChange={(event) => {
               if (event.target.checked) {
-                selectedGroups.push(group.id);
+                setSelectedGroups([... selectedGroups, group.id]);
               } else {
                 const index = selectedGroups.indexOf(group.id);
                 if (index > -1) {
-                  selectedGroups.splice(index, 1);
+                  setSelectedGroups([... selectedGroups.slice(0, index), ... selectedGroups.slice(index + 1)]);
                 }
               }
             }}
@@ -124,34 +126,41 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
     }
   }
 
-  for (const group of groups) {
-    let selected = false;
-    if (group.source_id == sourceId) {
-      selected = true;
-      selectedGroups.push(group.id);
-      usedGroups.push(group)
-    }
-    listItems.push(
-      ZonesModalGroupItem({ group: group, selectable: true, selected: selected })
-    )
-  }
-
-  for (const zone of zones) {
-    let selected = false;
-    if (zone.source_id == sourceId) {
-      selected = true;
-      selectedZones.push(zone.id);
-      usedZones.push(zone)
-    }
-
-    listItems.push(
-      ZonesModalZoneItem({ zone: zone, selectable: true, selected: selected })
-    )
-  }
-
-  console.log("test")
-
   return (
+    useEffect(() => {
+      let sg = []
+      let ug = []
+      let sz = []
+      let uz = []
+      let li = []
+
+      for (const group of groups) {
+        let selected = false;
+        if (group.source_id == sourceId) {
+          selected = true;
+          sg.push(group.id)
+          ug.push(group)
+        }
+        li.push(ZonesModalGroupItem({ group: group, selectable: true, selected: selected }))
+      }
+      for (const zone of zones) {
+        let selected = false;
+        if (zone.source_id == sourceId) {
+          selected = true;
+          sz.push(zone.id)
+          uz.push(zone)
+        }
+        li.push(ZonesModalZoneItem({ zone: zone, selectable: true, selected: selected }))
+      }
+
+      setUsedGroups(ug)
+      setUsedZones(uz)
+      setSelectedGroups(sg)
+      setSelectedZones(sz)
+      setListItems(li)
+
+      console.log("bang")
+    }, []),
     <Modal className="zones-modal">
       <Card className="zones-modal-card">
         <div className="zones-modal-header">Select Zones</div>

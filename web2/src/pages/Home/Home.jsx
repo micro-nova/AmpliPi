@@ -17,6 +17,7 @@ export const getSourceZones = (source_id, zones) => {
 
 const Home = ({ selectedSource, setSelectedSource }) => {
   const sources = useStatusStore((s)=>s.status.sources)
+  // const sources = useStatusStore.getState().status.sources
   const [zonesModalOpen, setZonesModalOpen] = useState(false)
   const [streamsModalOpen, setStreamsModalOpen] = useState(false)
   let playerCards = [];
@@ -58,9 +59,33 @@ const Home = ({ selectedSource, setSelectedSource }) => {
   return (
     <div className="home-outer">
       <div className="home-view">
-        {playerCards}
+        {/* <PlayerCard
+          sourceId={0}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
+        />
+        <PlayerCard
+          sourceId={1}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
+        />
+        <PlayerCard
+          sourceId={2}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
+        />
+        <PlayerCard
+          sourceId={3}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
+        /> */}
+
+        {
+          playerCards
+        }
+
         {playerCards.length < sources.length &&
-        <div className="home-add-player-button" onClick={()=>{initSource(nextAvailableSource)}}>+</div>
+          <div className="home-add-player-button" onClick={()=>{initSource(nextAvailableSource)}}>+</div>
         }
       </div>
 
