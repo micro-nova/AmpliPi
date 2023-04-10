@@ -19,3 +19,10 @@
   font-size: 2rem;
   color: general.$text-color;
 }
+
+.settings-card {
+  max-height: 75vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
