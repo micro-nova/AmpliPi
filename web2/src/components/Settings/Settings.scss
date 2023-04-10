@@ -1,0 +1,28 @@
+@use 'src/general';
+
+.settings-outer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.settings-header {
+  @include general.header-font;
+  font-size: 4rem;
+  color: general.$text-color;
+}
+
+.settings-list-item {
+  @include general.header-font;
+  font-size: 2rem;
+  color: general.$text-color;
+}
+
+.settings-card {
+  max-height: 75vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

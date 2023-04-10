@@ -9,7 +9,7 @@ import { width } from "@mui/system";
 import { useStatusStore } from "@/App.jsx";
 import { getSourceZones } from "@/pages/Home/Home";
 
-const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
+const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
   const zones = useStatusStore.getState().status.zones
   const groups = useStatusStore.getState().status.groups
   const [checkedZones, setCheckedZones] = useState(zones.map((zone) => {if(zone.source_id == sourceId){return zone.id}}).filter((item) => {return item != undefined}))
@@ -160,7 +160,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
   })
 
   return (
-    <Modal className="zones-modal">
+    <Modal className="zones-modal" onClose={onClose}>
       <Card className="zones-modal-card">
         <div className="zones-modal-header">Select Zones</div>
         <div className="zones-modal-body">{groupItems}{zoneItems}</div>

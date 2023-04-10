@@ -4,7 +4,7 @@ import Card from "../Card/Card";
 import StreamBadge from "../StreamBadge/StreamBadge";
 import { useStatusStore } from "@/App";
 
-const StreamsModal = ({ sourceId, setStreamModalOpen }) => {
+const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
 
   const streams = useStatusStore((state) => state.status.streams)
 
@@ -51,7 +51,7 @@ const StreamsModal = ({ sourceId, setStreamModalOpen }) => {
 
 
   return(
-    <Modal className="streams-modal">
+    <Modal className="streams-modal" onClose={onClose}>
       <Card className="streams-modal-card">
         <div className="streams-modal-header">
           Select Stream

@@ -5,6 +5,7 @@ import "@/App.scss";
 import Home from "@/pages/Home/Home";
 import Player from "@/pages/Player/Player";
 import MenuBar from "./components/MenuBar/MenuBar";
+import Settings from "@/pages/Settings/Settings";
 import produce from 'immer'
 import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/VolumeSlider/VolumeSlider"
@@ -110,7 +111,7 @@ function App() {
       case 2:
         return <div></div>
       case 3:
-        return <div></div>
+        return <Settings/>
     }
   }
 

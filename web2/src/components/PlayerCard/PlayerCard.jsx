@@ -37,8 +37,8 @@ const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
             onChange={(event, vol)=>{setVol(sourceId, event, vol)}}
           />
         </div>
-       {streamModalOpen && <StreamsModal sourceId={sourceId} setStreamModalOpen={setStreamModalOpen}/>}
-       {zoneModalOpen && <ZonesModal sourceId={sourceId} setZoneModalOpen={setZoneModalOpen}/>}
+       {streamModalOpen && <StreamsModal sourceId={sourceId} setStreamModalOpen={setStreamModalOpen} onClose={()=>setStreamModalOpen(false)}/>}
+       {zoneModalOpen && <ZonesModal sourceId={sourceId} setZoneModalOpen={setZoneModalOpen} onClose={()=>setZoneModalOpen(false)}/>}
       </div>
     </Card>
   );
