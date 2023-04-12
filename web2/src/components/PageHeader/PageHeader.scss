@@ -1,0 +1,24 @@
+@use "src/general.scss";
+
+.page-header {
+    margin: 0.5rem;
+    font-size: 3rem;
+    text-align: center;
+}
+
+.page-header-title {
+    font-size: 3rem;
+    @include general.header-font;
+    color: general.$text-color;
+}
+
+.page-header-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 0.5rem;
+    font-size: 4rem;
+    @include general.header-font;
+    color: general.$text-color;
+    cursor: pointer;
+}

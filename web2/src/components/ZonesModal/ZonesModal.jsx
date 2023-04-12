@@ -10,7 +10,7 @@ import { useStatusStore } from "@/App.jsx";
 import { getSourceZones } from "@/pages/Home/Home";
 
 const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
-  const zones = useStatusStore.getState().status.zones
+  const zones = useStatusStore.getState().status.zones.filter((zone) => !zone.disabled);
   const groups = useStatusStore.getState().status.groups
   const [checkedZones, setCheckedZones] = useState(zones.map((zone) => {if(zone.source_id == sourceId){return zone.id}}).filter((item) => {return item != undefined}))
   const [checkedGroups, setCheckedGroups] = useState(groups.map((group) => {if(group.source_id == sourceId){return group.id}}).filter((item) => {return item != undefined}))

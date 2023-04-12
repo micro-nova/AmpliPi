@@ -1,5 +1,4 @@
 import "./Settings.scss";
-import Card from "@/components/Card/Card"
 import Modal from '@/components/Modal/Modal'
 import Streams from './Streams/Streams'
 import Zones from './Zones/Zones'
@@ -36,10 +35,10 @@ const Settings = ({}) => {
   }
   // wrap in modal if page is open
   const Page = () => openPage === "" ? <div /> :
-    <Modal onClose={close} className="settings-modal">
-      <Card className="settings-card">
+    <Modal onClose={close}>
+      <div className="settings-page-container">
         <CorePage />
-      </Card>
+      </div>
     </Modal>
   return(
   <div className="settings-outer">

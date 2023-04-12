@@ -1,0 +1,23 @@
+@use "src/general.scss";
+
+.group-name{
+  @include general.header-font;
+  color: general.$text-color;
+  font-size: 2rem;
+  margin: 0.5rem;
+}
+
+.group-card{
+  width: 50vw;
+  min-width: 25em;
+}
+
+.group-multi{
+  width: 90%;
+  margin: 1rem;
+  color: general.$text-color;
+}
+
+.group-button-icon{
+  color: general.$controls-color;
+}

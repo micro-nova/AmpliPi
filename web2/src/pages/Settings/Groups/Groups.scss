@@ -1,7 +1,22 @@
 @use "src/general.scss";
 
-.groups-header {
-    margin: 0.5rem;
-    font-size: 3rem;
-    text-align: center;
+.groups-body {
+  @include general.header-font;
+  color: general.$text-color;
+  display: flex;
+  flex-direction: column;
+  height: 95%;
+  overflow-y: auto;
+}
+
+.add-group-button{
+  @include general.header-font;
+  color: general.$controls-color;
+  font-size: 10rem;
+  height: 8rem;
+  cursor: pointer;
+  margin: 0.5rem;
+  position: fixed;
+  right: 0;
+  bottom: 0;
 }

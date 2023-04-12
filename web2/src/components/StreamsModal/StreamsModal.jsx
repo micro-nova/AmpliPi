@@ -4,6 +4,8 @@ import Card from "../Card/Card";
 import StreamBadge from "../StreamBadge/StreamBadge";
 import { useStatusStore } from "@/App";
 
+//TODO: fix RCA behavior
+
 const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
 
   const streams = useStatusStore((state) => state.status.streams)
