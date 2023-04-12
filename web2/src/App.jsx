@@ -1,3 +1,13 @@
+import spotify from '@/assets/spotify.png'
+import dlna from '@/assets/dlna.png'
+import bluetooth from '@/assets/bluetooth.png'
+import fmradio from '@/assets/fmradio.png'
+import shairport from '@/assets/shairport.png'
+import pandora from '@/assets/pandora.png'
+import plexamp from '@/assets/plexamp.png'
+import lms from '@/assets/lms.png'
+import internetradio from '@/assets/internet_radio.png'
+import rca from '@/assets/rca_inputs.jpg'
 import { useEffect, useState } from "react";
 import { create } from 'zustand';
 import { useCookies } from 'react-cookie';
@@ -11,7 +21,6 @@ import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/VolumeSlider/VolumeSlider"
 
 const UPDATE_INTERVAL = 1000;
-
 
 export const useStatusStore = create((set) => ({
   status: null,
@@ -49,7 +58,6 @@ export const useStatusStore = create((set) => ({
   setGroupVol: (groupId, new_vol) => {
     set(produce((s) => {
       let g = s.status.groups.filter((g) => g.id === groupId)[0]
-      console.log(g)
       for (const i of g.zones) {
         s.status.zones[i].vol_f = new_vol
       }
@@ -69,7 +77,6 @@ export const useStatusStore = create((set) => ({
           update: {source_id: -1}
         })
       })
-      console.log(s.status.zones)
       for (const i in s.status.zones) {
         if(s.status.zones[i].source_id == sourceId){
           s.status.zones[i].source_id = -1
@@ -79,6 +86,43 @@ export const useStatusStore = create((set) => ({
   }
 
 }))
+
+export const getIcon = (type) => {
+  switch (type.toUpperCase()) {
+    case "SPOTIFY":
+      return spotify
+
+    case "DLNA":
+      return dlna
+
+    case "BLUETOOTH":
+      return bluetooth
+
+    case "FM RADIO":
+      return fmradio
+
+    case "SHAIRPORT":
+      return shairport
+
+    case "PANDORA":
+      return pandora
+
+    case "PLEXAMP":
+      return plexamp
+
+    case "LMS":
+      return lms
+
+    case "RCA":
+      return rca
+
+    case "INTERNET RADIO":
+      return internetradio
+
+    default:
+      return internetradio
+  }
+}
 
 function App() {
   const [selectedSource, setSelectedSource] = useState(0);
@@ -128,7 +172,7 @@ function App() {
         <div style={{paddingBottom: '56px'}}>
           <Page />
         </div>
-        <MenuBar pageNumber={selectedPage} onChange={(n)=>{console.log(`changing page to ${n}`); setSelectedPage(n)}}/>
+        <MenuBar pageNumber={selectedPage} onChange={(n)=>{setSelectedPage(n)}}/>
       </div>
     )
   );

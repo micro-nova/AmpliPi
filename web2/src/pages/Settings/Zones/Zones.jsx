@@ -16,11 +16,6 @@ const ZoneListItem = ({ zone }) => {
   const [disabled, setDisabled] = useState(zone.disabled)
 
   const applyChanges = () => {
-    console.log("Applying changes to zone", zone.id)
-    console.log("Name:", name)
-    console.log("Max Volume:", vol_max)
-    console.log("Min Volume:", vol_min)
-    console.log("Disabled:", disabled)
     fetch(`/api/zones/${zone.id}`,
     {
       method: 'PATCH',

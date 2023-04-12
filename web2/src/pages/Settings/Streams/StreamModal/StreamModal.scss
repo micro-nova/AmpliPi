@@ -1,0 +1,36 @@
+@use "src/general.scss";
+
+.stream-name{
+  @include general.header-font;
+  color: general.$text-color;
+  font-size: 2rem;
+  margin: 0.5rem;
+}
+
+.stream-card{
+  @include general.header-font;
+  width: 50vw;
+  min-width: 25em;
+}
+
+.stream-field-name{
+  @include general.regular-font;
+  color: general.$text-color;
+  font-size: 1.5rem;
+}
+
+.stream-field-desc{
+  @include general.regular-font;
+  color: general.$text-color;
+  font-size: .9rem;
+}
+
+.stream-multi{
+  width: 90%;
+  margin: 1rem;
+  color: general.$text-color;
+}
+
+.stream-button-icon{
+  color: general.$controls-color;
+}

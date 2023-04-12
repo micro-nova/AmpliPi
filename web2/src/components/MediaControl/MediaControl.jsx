@@ -20,32 +20,31 @@ const MediaControl = ({ selectedSource }) => {
 
     const setSourceState = (state) => {} // TODO
 
-    const playing = source.info.state.includes('playing') 
+    const playing = source.info.state.includes('playing')
     const isSupported = (cmd) => source.info.supported_cmds.includes(cmd)
     const postCommand = (cmd) => {
-        console.log(cmd)
         fetch(`/api/streams/${streamId}/${cmd}`, {
             method: 'POST',
             headers: {
                 'Content-type': 'application/json',
             },
-        }) 
+        })
     }
-    
+
     const Center = (() => {
         if (playing) {
             if (isSupported('pause')) {
                 return <FontAwesomeIcon icon={faPause} className={enabled} onClick={() => {postCommand('pause'); setSourceState('paused')}} />
             } else if (isSupported('stop')) {
-                return <FontAwesomeIcon icon={faStop} className={enabled} onClick={() => {postCommand('stop'); setSourceState('stopped')}} /> 
+                return <FontAwesomeIcon icon={faStop} className={enabled} onClick={() => {postCommand('stop'); setSourceState('stopped')}} />
             } else {
                 return <FontAwesomeIcon icon={faStop} className={disabled} />
             }
         } else {
             if (isSupported('play')) {
-                return <FontAwesomeIcon icon={faPlay} className={enabled} onClick={() => {postCommand('play'); setSourceState('playing')}} /> 
+                return <FontAwesomeIcon icon={faPlay} className={enabled} onClick={() => {postCommand('play'); setSourceState('playing')}} />
             } else {
-                return <FontAwesomeIcon icon={faPlay} className={disabled} /> 
+                return <FontAwesomeIcon icon={faPlay} className={disabled} />
             }
         }
     })()

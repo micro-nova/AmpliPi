@@ -38,24 +38,20 @@ const VolumeSlider = ({sourceId}) => {
   const setZonesVol = useStatusStore((s) => s.setZonesVol)
 
   const setPlayerVolRaw = (vol) => applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
-    console.log(`going to send packet: ${sendingPacketCount}`)
+
     sendingPacketCount += 1
-    console.log(`sending packet: ${sendingPacketCount}`)
     fetch(`/api/zones/${zone_id}`, {
         method: "PATCH",
         headers: {
           "Content-type": "application/json",
         },
         body: JSON.stringify({ vol_f: new_vol }),
-      }).then(() => {sendingPacketCount -= 1; console.log(`packet sent: ${sendingPacketCount}`)})
+      }).then(() => {sendingPacketCount -= 1})
   })
 
   const setPlayerVol = (vol) => {
     if (sendingPacketCount <= 0) {
       setPlayerVolRaw(vol)
-      console.log("updating vol")
-    } else {
-      console.log("skipping vol update, " + sendingPacketCount + " already sending")
     }
   }
 

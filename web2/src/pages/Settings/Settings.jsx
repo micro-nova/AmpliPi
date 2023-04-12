@@ -17,7 +17,6 @@ const Settings = ({}) => {
   const [openPage, setOpenPage] = useState("")
   const close = () => setOpenPage("")
   let CorePage = ({}) => {
-    console.log("changing page to " + openPage)
       switch(openPage) {
         case "Streams":
           return <Streams onClose={close}/>

@@ -10,13 +10,8 @@
 }
 
 .add-group-button{
-  @include general.header-font;
-  color: general.$controls-color;
-  font-size: 10rem;
-  height: 8rem;
-  cursor: pointer;
-  margin: 0.5rem;
   position: fixed;
+  margin: 1rem;
   right: 0;
   bottom: 0;
 }

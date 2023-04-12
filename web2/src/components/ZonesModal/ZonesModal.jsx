@@ -79,9 +79,6 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
       }
     }
 
-    console.log(`removing zones: ${removeList}`)
-    console.log(`adding zones: ${addList}`)
-    console.log(`checked zones: ${checkedZones}`)
 
     fetch(`/api/zones`, {
       method: "PATCH",
@@ -118,9 +115,6 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
       }
     }
 
-    console.log(`removing groups: ${removeList}`)
-    console.log(`adding groups: ${addList}`)
-    console.log(`checked groups: ${checkedGroups}`)
 
     for (const i of removeList) {
       fetch(`/api/groups/${i}`, {

@@ -1,6 +1,6 @@
 import './VolumesDrawer.scss'
 import { useStatusStore } from '@/App.jsx'
-import { SwipeableDrawer } from '@mui/material';
+import { Drawer } from '@mui/material';
 import { getSourceZones } from '@/pages/Home/Home'
 import ZoneVolumeSlider from '../ZoneVolumeSlider/ZoneVolumeSlider';
 import GroupVolumeSlider from '../GroupVolumeSlider/GroupVolumeSlider';
@@ -33,13 +33,10 @@ const VolumesDrawer = ({ open, onClose, sourceId }) => {
     }
   }
 
-  console.log(GroupVolumeSliders)
-
   return(
-    <SwipeableDrawer
+    <Drawer
     open={open}
     onClose={()=>onClose()}
-    onOpen={()=>{}}
     anchor="bottom"
     >
       <div className='volume-sliders-container'>
@@ -51,7 +48,7 @@ const VolumesDrawer = ({ open, onClose, sourceId }) => {
         }
       </div>
 
-    </SwipeableDrawer>
+    </Drawer>
   )
 }
 

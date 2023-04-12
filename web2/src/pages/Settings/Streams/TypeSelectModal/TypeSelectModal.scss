@@ -1,0 +1,13 @@
+@use 'src/general.scss';
+
+.type-select-title{
+  @include general.header-font;
+  color: general.$text-color;
+  font-size: 2rem;
+  margin: 0.5rem;
+}
+
+.type-select-card{
+  width: 50vw;
+  min-width: 25em;
+}

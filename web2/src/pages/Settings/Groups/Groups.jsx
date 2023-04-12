@@ -2,6 +2,8 @@ import PageHeader from '@/components/PageHeader/PageHeader'
 import './Groups.scss'
 import { useStatusStore } from '@/App.jsx'
 import { useState } from 'react'
+import { Fab } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 import GroupModal from './GroupModal/GroupModal'
 
 const GroupListItem = ({ group, zones }) => {
@@ -50,8 +52,10 @@ const Groups = ({ onClose }) => {
               groupsListItems
             }
         </div>
-        <div className="add-group-button" onClick={()=>{setModalOpen(true)}}>
-          +
+        <div className="add-group-button">
+        <Fab onClick={()=>{setModalOpen(true)}}>
+          <AddIcon></AddIcon>
+        </Fab>
         </div>
         { modalOpen &&
           <GroupModal group={{name:"New Group", zones:[]}} zones={zones} onClose={()=>setModalOpen(false)} apply={addGroup}/>
