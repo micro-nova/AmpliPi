@@ -6,6 +6,8 @@ import Groups from './Groups/Groups'
 import Sessions from './Sessions/Sessions'
 import Config from './Config/Config'
 import { useState } from "react";
+import { router } from "@/main";
+
 const PageListItem = ({name, onClick}) => {
   return (
     <div className="settings-list-item" onClick={onClick}>
@@ -13,25 +15,27 @@ const PageListItem = ({name, onClick}) => {
     </div>
   )
 }
-const Settings = ({}) => {
-  const [openPage, setOpenPage] = useState("")
-  const close = () => setOpenPage("")
+
+const Settings = ({ openPage='' }) => {
+  const close = () => router.navigate("/settings")
+
   let CorePage = ({}) => {
       switch(openPage) {
-        case "Streams":
+        case "streams":
           return <Streams onClose={close}/>
-        case "Zones":
+        case "zones":
           return <Zones onClose={close}/>
-        case "Groups":
+        case "groups":
           return <Groups onClose={close}/>
-        case "Sessions":
+        case "sessions":
           return <Sessions onClose={close}/>
-        case "Configuration and Reset":
+        case "config":
           return <Config onClose={close}/>
         default:
           return <div></div>
       }
   }
+
   // wrap in modal if page is open
   const Page = () => openPage === "" ? <div /> :
     <Modal onClose={close}>
@@ -43,12 +47,12 @@ const Settings = ({}) => {
   <div className="settings-outer">
     <div className="settings-header">Settings</div>
     <div className="settings-body">
-      <PageListItem name="Streams" onClick={()=>setOpenPage("Streams")}/>
-      <PageListItem name="Zones" onClick={()=>setOpenPage("Zones")}/>
-      <PageListItem name="Groups" onClick={()=>setOpenPage("Groups")}/>
-      <PageListItem name="Sessions" onClick={()=>setOpenPage("Sessions")}/>
-      <PageListItem name="Configuration and Reset" onClick={()=>setOpenPage("Configuration and Reset")}/>
-      <PageListItem name="Updates" onClick={()=>{window.location.href=window.location.href.slice(0, window.location.href.length-1)+':5001/update'}}/>
+      <PageListItem name="Streams" onClick={()=>router.navigate("/settings/streams")}/>
+      <PageListItem name="Zones" onClick={()=>router.navigate("/settings/zones")}/>
+      <PageListItem name="Groups" onClick={()=>router.navigate("/settings/groups")}/>
+      <PageListItem name="Sessions" onClick={()=>router.navigate("/settings/sessions")}/>
+      <PageListItem name="Configuration and Reset" onClick={()=>router.navigate("/settings/config")}/>
+      <PageListItem name="Updates" onClick={()=>{window.location.href="http://"+window.location.hostname+':5001/update'}}/>
     </div>
     <Page />
   </div>
