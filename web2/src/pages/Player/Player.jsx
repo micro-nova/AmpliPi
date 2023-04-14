@@ -3,7 +3,7 @@ import SongInfo from '@/components/SongInfo/SongInfo'
 import MediaControl from '@/components/MediaControl/MediaControl'
 import './Player.scss'
 import { useStatusStore } from '@/App.jsx'
-import VolumeSlider from '@/components/VolumeSlider/VolumeSlider'
+import CardVolumeSlider from '@/components/CardVolumeSlider/CardVolumeSlider'
 import { IconButton } from '@mui/material'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -23,7 +23,7 @@ const Player = ({ selectedSource }) => {
                     <SongInfo sourceId={selectedSource} artistClassName="player-info-title" albumClassName="player-info-album" trackClassName="player-info-track" />
                     <MediaControl selectedSource={selectedSource}/>
                     <div className='player-volume-slider'>
-                      <VolumeSlider sourceId={selectedSource}/>
+                      <CardVolumeSlider sourceId={selectedSource}/>
                       <IconButton onClick={()=>setDrawerOpen(!drawerOpen)}>
                         {
                           drawerOpen ? <KeyboardArrowUpIcon className='player-volume-expand-button' style={{width:"3rem", height:"3rem"}}/> :
