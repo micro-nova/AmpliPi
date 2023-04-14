@@ -18,7 +18,7 @@ import MenuBar from "./components/MenuBar/MenuBar";
 import Settings from "@/pages/Settings/Settings";
 import produce from 'immer'
 import { getSourceZones } from "@/pages/Home/Home"
-import { applyPlayerVol } from "./components/VolumeSlider/VolumeSlider"
+import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
 
 const UPDATE_INTERVAL = 1000;
 
@@ -43,6 +43,35 @@ export const useStatusStore = create((set) => ({
 
         // zone.vol_f = new_vol
       })
+    }))
+  },
+  setZonesMute: (mute, zones, source_id) => {
+    set(produce((s) => {
+      for (const i of getSourceZones(source_id, zones)) {
+        for (const j of s.status.zones) {
+          if (j.id === i.id) {
+            j.mute = mute
+          }
+        }
+      }
+    }))
+  },
+  setZoneMute: (zid, mute) => {
+    set(produce((s) => {
+      for (const i of s.status.zones) {
+          if (i.id === zid) {
+            i.mute = mute
+          }
+        }
+    }))
+  },
+  setGroupMute: (gid, mute) => {
+    set(produce((s) => {
+      let g = s.status.groups.filter((g) => g.id === gid)[0]
+      for (const i of g.zones) {
+        s.status.zones[i].mute = mute
+      }
+      g.mute = mute
     }))
   },
   fetch: async () => {

@@ -1,1 +1,21 @@
 @use 'src/general';
+
+.volume-slider-container{
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+
+}
+
+.volume-slider-icon{
+  font-size: 2rem;
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+.volume-slider-mute{
+  color: general.$mute-color;
+}

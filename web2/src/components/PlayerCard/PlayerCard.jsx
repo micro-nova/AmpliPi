@@ -2,7 +2,7 @@ import Card from "@/components/Card/Card";
 import "./PlayerCard.scss";
 import StreamBadge from "@/components/StreamBadge/StreamBadge";
 import SongInfo from "../SongInfo/SongInfo";
-import VolumeSlider from "../VolumeSlider/VolumeSlider";
+import CardVolumeSlider from "../CardVolumeSlider/CardVolumeSlider";
 import { useState, useEffect } from "react";
 import PlayerImage from "../PlayerImage/PlayerImage";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
@@ -32,7 +32,7 @@ const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
           <SongInfo sourceId={sourceId} />
         </div>
         <div className="content vol">
-          <VolumeSlider
+          <CardVolumeSlider
             sourceId={sourceId}
             onChange={(event, vol)=>{setVol(sourceId, event, vol)}}
           />
