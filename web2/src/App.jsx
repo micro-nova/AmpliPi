@@ -20,7 +20,6 @@ import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
 import { router } from "@/main"
 
-
 const UPDATE_INTERVAL = 1000;
 
 export const useStatusStore = create((set) => ({
