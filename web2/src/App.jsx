@@ -10,7 +10,6 @@ import internetradio from '@/assets/internet_radio.png'
 import rca from '@/assets/rca_inputs.jpg'
 import { useEffect, useState } from "react";
 import { create } from 'zustand';
-import { useCookies } from 'react-cookie';
 import "@/App.scss";
 import Home from "@/pages/Home/Home";
 import Player from "@/pages/Player/Player";
@@ -19,11 +18,13 @@ import Settings from "@/pages/Settings/Settings";
 import produce from 'immer'
 import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/VolumeSlider/VolumeSlider"
+import { router } from "@/main"
 
 const UPDATE_INTERVAL = 1000;
 
 export const useStatusStore = create((set) => ({
   status: null,
+  loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
   setZonesVol: (vol, zones, sourceId) => {
     set(produce((s) => {
       applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
@@ -48,7 +49,7 @@ export const useStatusStore = create((set) => ({
   fetch: async () => {
     // TODO make this not crash the app if the server is down
     const res = await fetch(`/api`)
-    set({ status: await res.json() })
+    set({ status: await res.json(), loaded: true })
   },
   setZoneVol: (zoneId, new_vol) => {
     set(produce((s) => {
@@ -124,26 +125,39 @@ export const getIcon = (type) => {
   }
 }
 
-function App() {
+function App({ selectedPage }) {
   const [selectedSource, setSelectedSource] = useState(0);
-  const [selectedPage, setSelectedPage] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
-
+  const isLoaded = useStatusStore((s) => s.loaded)
   const update = useStatusStore((s) => s.fetch)
+
+  const setSelectedPage = (n) => {
+    switch (n) {
+      default:
+        router.navigate('/home')
+        break;
+      case 1:
+        router.navigate('/player')
+        break;
+      case 2:
+        router.navigate('/browser')
+        break;
+      case 3:
+        router.navigate('/settings')
+        break;
+    }
+  }
 
   if (isLoaded == false) {
 
     return (
       useEffect(() => {
         const interval = setInterval(() => {
-          update().then(() => setIsLoaded(true));
+          update();
         }, UPDATE_INTERVAL);
         return () => clearInterval(interval);
       }, []),
       (<h1>Loading...</h1>)
     );
-
-
   }
 
   const Page = () => {
