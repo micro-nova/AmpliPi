@@ -24,7 +24,7 @@ const Home = ({ selectedSource, setSelectedSource }) => {
   let nextAvailableSource = null;
 
   sources.forEach((source, i) => {
-    if(source.input.toUpperCase() != "NONE" && source.input != ""){
+    if(source.input.toUpperCase() != "NONE" && source.input != "" && source.input != "local"){
       playerCards.push(
         <PlayerCard
           key={i}

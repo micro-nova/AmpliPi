@@ -48,7 +48,7 @@ const Settings = ({}) => {
       <PageListItem name="Groups" onClick={()=>setOpenPage("Groups")}/>
       <PageListItem name="Sessions" onClick={()=>setOpenPage("Sessions")}/>
       <PageListItem name="Configuration and Reset" onClick={()=>setOpenPage("Configuration and Reset")}/>
-      <PageListItem name="Updates" onClick={()=>{window.location.href+='update'}}/>
+      <PageListItem name="Updates" onClick={()=>{window.location.href=window.location.href.slice(0, window.location.href.length-1)+':5001/update'}}/>
     </div>
     <Page />
   </div>

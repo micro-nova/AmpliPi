@@ -21,7 +21,7 @@ const ZoneVolumeSlider = ({zoneId}) => {
         headers: {
           'Content-type': 'application/json',
         },
-        body: JSON.stringify({vol_f: vol}),
+        body: JSON.stringify({vol_f: vol, mute: false}),
       }).then(() => {sendingRequestCount -= 1})
     }
   }

@@ -6,6 +6,12 @@ import DoneIcon from '@mui/icons-material/Done'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { Select, MenuItem } from "@mui/material"
 import './GroupModal.scss'
+import Checkbox from '@mui/material/Checkbox';
+import ListItemText from '@mui/material/ListItemText';
+
+const getZoneNames = (zones, ids) => {
+  return zones.filter((i)=>{return ids.indexOf(i.id) > -1}).map((i)=>{return i.name}).join(", ")
+}
 
 const GroupModal = ({ group, zones, onClose, del, apply }) => {
   const [groupName, setGroupName] = useState(group.name)
@@ -20,9 +26,11 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
           </div>
           <input type="text" value={groupName} onChange={(e)=>{setGroupName(e.target.value)}}/>
           <br/>
-          <Select className="group-multi" multiple defaultValue={groupZones} onChange={(e)=>{setGroupZones(e.target.value)}}>
+          <Select className="group-multi" multiple defaultValue={groupZones} renderValue={(selected) => getZoneNames(zones, selected)} onChange={(e)=>{setGroupZones(e.target.value)}}>
             {zones.map((zone) => {
-              return <MenuItem key={zone.id} value={zone.id}>{zone.name}</MenuItem>
+              return <MenuItem key={zone.id} value={zone.id}>
+              <Checkbox checked={groupZones.indexOf(zone.id) > -1} />
+              <ListItemText primary={zone.name} /></MenuItem>
             })}
           </Select>
           <div className="group-buttons">

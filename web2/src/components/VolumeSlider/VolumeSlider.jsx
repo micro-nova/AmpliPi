@@ -45,7 +45,7 @@ const VolumeSlider = ({sourceId}) => {
         headers: {
           "Content-type": "application/json",
         },
-        body: JSON.stringify({ vol_f: new_vol }),
+        body: JSON.stringify({ vol_f: new_vol, mute: false }),
       }).then(() => {sendingPacketCount -= 1})
   })
 
