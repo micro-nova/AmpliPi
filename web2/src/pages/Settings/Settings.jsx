@@ -5,8 +5,11 @@ import Zones from './Zones/Zones'
 import Groups from './Groups/Groups'
 import Sessions from './Sessions/Sessions'
 import Config from './Config/Config'
+import About from './About/About'
 import { useState } from "react";
 import { router } from "@/main";
+import LoadingPage from "../LoadingPage/LoadingPage";
+import { useStatusStore } from "@/App";
 
 const PageListItem = ({name, onClick}) => {
   return (
@@ -18,6 +21,10 @@ const PageListItem = ({name, onClick}) => {
 
 const Settings = ({ openPage='' }) => {
   const close = () => router.navigate("/settings")
+
+  const status = useStatusStore((s) => s.status)
+
+  if(status === null) return <LoadingPage/>
 
   let CorePage = ({}) => {
       switch(openPage) {
@@ -31,6 +38,8 @@ const Settings = ({ openPage='' }) => {
           return <Sessions onClose={close}/>
         case "config":
           return <Config onClose={close}/>
+        case "about":
+          return <About onClose={close}/>
         default:
           return <div></div>
       }
@@ -53,6 +62,7 @@ const Settings = ({ openPage='' }) => {
       <PageListItem name="Sessions" onClick={()=>router.navigate("/settings/sessions")}/>
       <PageListItem name="Configuration and Reset" onClick={()=>router.navigate("/settings/config")}/>
       <PageListItem name="Updates" onClick={()=>{window.location.href="http://"+window.location.hostname+':5001/update'}}/>
+      <PageListItem name="About" onClick={()=>router.navigate("/settings/about")}/>
     </div>
     <Page />
   </div>
