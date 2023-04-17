@@ -18,6 +18,7 @@ import Settings from "@/pages/Settings/Settings";
 import produce from 'immer'
 import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
+import LoadingPage from "@/pages/LoadingPage/LoadingPage";
 import { router } from "@/main"
 
 const UPDATE_INTERVAL = 1000;
@@ -185,7 +186,7 @@ function App({ selectedPage }) {
         }, UPDATE_INTERVAL);
         return () => clearInterval(interval);
       }, []),
-      (<h1>Loading...</h1>)
+      (<LoadingPage/>)
     );
   }
 
