@@ -1,7 +1,6 @@
 import "./StreamsModal.scss";
 import Modal from "../Modal/Modal";
 import Card from "../Card/Card";
-import StreamBadge from "../StreamBadge/StreamBadge";
 import { useStatusStore } from "@/App";
 
 //TODO: fix RCA behavior

@@ -3,6 +3,7 @@ import "./Home.scss";
 import { useStatusStore } from '@/App.jsx'
 import ZonesModal from "@/components/ZonesModal/ZonesModal";
 import StreamsModal from "@/components/StreamsModal/StreamsModal";
+import PresetsModal from "@/components/PresetsModal/PresetsModal";
 import { useState } from "react";
 
 export const getSourceZones = (source_id, zones) => {
@@ -20,12 +21,20 @@ const Home = ({ selectedSource, setSelectedSource }) => {
   const clearSourceZones = useStatusStore((s)=>s.clearSourceZones)
   const [zonesModalOpen, setZonesModalOpen] = useState(false)
   const [streamsModalOpen, setStreamsModalOpen] = useState(false)
-  let playerCards = [];
+  const [presetsModalOpen, setPresetsModalOpen] = useState(false)
+  let cards = [];
   let nextAvailableSource = null;
+
+  // temp presets button
+  cards.push(
+    <div onClick={()=>setPresetsModalOpen(true)} key={-1}>
+      Presets
+    </div>
+  )
 
   sources.forEach((source, i) => {
     if(source.input.toUpperCase() != "NONE" && source.input != "" && source.input != "local"){
-      playerCards.push(
+      cards.push(
         <PlayerCard
           key={i}
           sourceId={source.id}
@@ -71,16 +80,17 @@ const Home = ({ selectedSource, setSelectedSource }) => {
         /> */}
 
         {
-          playerCards
+          cards
         }
 
-        {playerCards.length < sources.length &&
+        {cards.length < sources.length &&
           <div className="home-add-player-button" onClick={()=>{initSource(nextAvailableSource)}}>+</div>
         }
       </div>
 
       {zonesModalOpen && <ZonesModal sourceId={nextAvailableSource} setZoneModalOpen={(o)=>{setStreamsModalOpen(!o); setZonesModalOpen(o)}} onClose={()=>setZonesModalOpen(false)}/>}
       {streamsModalOpen && <StreamsModal sourceId={nextAvailableSource} setStreamModalOpen={(o)=>setStreamsModalOpen(o)} onClose={()=>setStreamsModalOpen(false)}/>}
+      {presetsModalOpen && <PresetsModal onClose={()=>setPresetsModalOpen(false)}/>}
 
     </div>
 
