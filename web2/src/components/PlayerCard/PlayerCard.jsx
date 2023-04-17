@@ -18,7 +18,7 @@ const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
     <Card selected={selected}>
       <div className="outer">
         <div className="content" onClick={()=>{setZoneModalOpen(true)}}>
-          <ZonesBadge sourceId={sourceId} />
+          <ZonesBadge sourceId={sourceId}/>
         </div>
         <div className="content stream-name-container" onClick={()=>{setStreamModalOpen(true)}}>
           <StreamBadge sourceId={sourceId} />
