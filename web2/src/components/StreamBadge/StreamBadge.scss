@@ -8,6 +8,9 @@
   align-items: center;
   justify-content: flex-end;
   cursor: pointer;
+  background-color: general.$secondary;
+  border-radius: 10rem;
+  padding: 0.4rem;
 }
 
 .stream-badge-name{
