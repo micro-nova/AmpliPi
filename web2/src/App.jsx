@@ -215,6 +215,7 @@ function App({ selectedPage }) {
       <div className="app">
         <div style={{paddingBottom: '56px'}}>
           <Page />
+
         </div>
         <MenuBar pageNumber={selectedPage} onChange={(n)=>{setSelectedPage(n)}}/>
       </div>
