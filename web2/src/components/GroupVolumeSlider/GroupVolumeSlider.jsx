@@ -58,10 +58,10 @@ const GroupVolumeSlider = ({groupId}) => {
 
         <VolumeSlider mute={group.mute} setMute={setMute} vol={volume} setVol={setVol} />
 
-        <IconButton onClick={()=>setSlidersOpen(!slidersOpen)}>
+        <IconButton style={{padding: "0px"}} onClick={()=>setSlidersOpen(!slidersOpen)}>
           {
-            slidersOpen ? <KeyboardArrowUpIcon className='groups-slider-expand-button' style={{width:"3rem", height:"3rem"}}/> :
-            <KeyboardArrowDownIcon className='groups-slider-expand-button' style={{width:"3rem", height:"3rem"}}/>
+            slidersOpen ? <KeyboardArrowUpIcon className='group-slider-expand-button' style={{width:"3rem", height:"3rem"}}/> :
+            <KeyboardArrowDownIcon className='group-slider-expand-button' style={{width:"3rem", height:"3rem"}}/>
           }
         </IconButton>
       </div>
