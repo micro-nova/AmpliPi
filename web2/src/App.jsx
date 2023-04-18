@@ -20,6 +20,7 @@ import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
 import LoadingPage from "@/pages/LoadingPage/LoadingPage";
 import { router } from "@/main"
+import { LinkOff } from '@mui/icons-material'
 
 const UPDATE_INTERVAL = 1000;
 
@@ -76,10 +77,18 @@ export const useStatusStore = create((set) => ({
       g.mute = mute
     }))
   },
-  fetch: async () => {
+  fetch: () => {
     // TODO make this not crash the app if the server is down
-    const res = await fetch(`/api`)
-    set({ status: await res.json(), loaded: true })
+    fetch(`/api`).then((res)=>{
+      if(res.ok){
+        res.json().then(s => set({ status: s, loaded: true, disconnected: false }))
+      }
+      else{
+        set({disconnected: true})
+      }
+    }).catch((_) => {
+      set({disconnected: true})
+    })
   },
   setZoneVol: (zoneId, new_vol) => {
     set(produce((s) => {
@@ -159,6 +168,7 @@ function App({ selectedPage }) {
   const [selectedSource, setSelectedSource] = useState(0);
   const isLoaded = useStatusStore((s) => s.loaded)
   const update = useStatusStore((s) => s.fetch)
+  const disconnected = useStatusStore((s) => s.disconnected)
 
   const setSelectedPage = (n) => {
     switch (n) {
@@ -213,9 +223,9 @@ function App({ selectedPage }) {
     }, []),
     (
       <div className="app">
+        {disconnected && <LinkOff className='disconnected-icon'/>}
         <div style={{paddingBottom: '56px'}}>
           <Page />
-
         </div>
         <MenuBar pageNumber={selectedPage} onChange={(n)=>{setSelectedPage(n)}}/>
       </div>
