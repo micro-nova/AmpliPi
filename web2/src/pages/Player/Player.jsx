@@ -5,14 +5,15 @@ import './Player.scss'
 import { useStatusStore } from '@/App.jsx'
 import CardVolumeSlider from '@/components/CardVolumeSlider/CardVolumeSlider'
 import { IconButton } from '@mui/material'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import { useState } from 'react'
-import VolumesDrawer from '@/components/VolumesDrawer/VolumesDrawer'
+import VolumeZones from '@/components/VolumeZones/VolumeZones'
+import Card from '@/components/Card/Card'
 
 const Player = ({ selectedSource }) => {
     const img_url = useStatusStore((s) => s.status.sources[selectedSource].info.img_url)
-    const [drawerOpen, setDrawerOpen] = useState(false)
+    const [expanded, setExpanded] = useState(false)
 
     return (
         <>
@@ -22,18 +23,18 @@ const Player = ({ selectedSource }) => {
                     <img src={img_url} className="player-album-art" />
                     <SongInfo sourceId={selectedSource} artistClassName="player-info-title" albumClassName="player-info-album" trackClassName="player-info-track" />
                     <MediaControl selectedSource={selectedSource}/>
-                    <div className='player-volume-slider'>
+                    <Card className='player-volume-slider'>
                       <CardVolumeSlider sourceId={selectedSource}/>
-                      <IconButton onClick={()=>setDrawerOpen(!drawerOpen)}>
+                      <IconButton onClick={()=>setExpanded(!expanded)}>
                         {
-                          drawerOpen ? <KeyboardArrowUpIcon className='player-volume-expand-button' style={{width:"3rem", height:"3rem"}}/> :
+                          expanded ? <KeyboardArrowUpIcon className='player-volume-expand-button' style={{width:"3rem", height:"3rem"}}/> :
                           <KeyboardArrowDownIcon className='player-volume-expand-button' style={{width:"3rem", height:"3rem"}}/>
                         }
                       </IconButton>
-                    </div>
+                    </Card>
                 </div>
-              <VolumesDrawer open={drawerOpen} onClose={()=>setDrawerOpen(false)} sourceId={selectedSource}/>
             </div>
+            {expanded && <VolumeZones sourceId={selectedSource}/>}
         </>
     )
 }

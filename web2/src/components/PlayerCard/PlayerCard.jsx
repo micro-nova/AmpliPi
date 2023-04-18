@@ -28,7 +28,7 @@ const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
             <PlayerImage sourceId={sourceId} />
           </div>
         </div>
-        <div className="content" onClick={() => setSelectedSource(sourceId)}>
+        <div className="content song-info" onClick={() => setSelectedSource(sourceId)}>
           <SongInfo sourceId={sourceId} />
         </div>
         <div className="content vol">

@@ -28,9 +28,6 @@ const About = ({onClose}) => {
           <li><a href="https://github.com/micro-nova/AmpliPi/blob/main/COPYING">License</a></li>
           <li><a href={window.location.href} onClick={()=>{window.location.href="http://"+window.location.hostname+':19531/entries'}}>Logs</a></li>
         </ul>
-
-
-
       </div>
 
     </>
