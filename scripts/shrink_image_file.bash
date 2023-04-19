@@ -23,9 +23,6 @@ sudo chmod +x $root_dir/etc/init.d/resize2fs_once
 #sudo systemctl enable resize2fs_once
 sudo ln -s ../init.d/resize2fs_once $root_dir/etc/rc3.d/S01resize2fs_once
 
-echo "Defragmenting the root filesystem"
-sudo e4defrag ${loopdev}p2s
-
 echo "Un-mounting boot and root partitions"
 sudo umount $boot_dir
 sudo umount $root_dir
@@ -58,7 +55,7 @@ fdisk -l "$img_file"
 
 echo "Truncating image file to the new smaller partition size"
 last_sector=$(fdisk -l "$img_file" -o End | tail -1)
-truncate --size=$[($last_sector+1)*$sector_size] "$img_file"
+truncate --size=$(( ($last_sector+1)*$sector_size )) "$img_file"
 
 echo "Compressing image file to $img_file.xz"
 xz -9T0 "$img_file"

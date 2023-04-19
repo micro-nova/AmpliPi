@@ -3,12 +3,16 @@
 # This script is mainly intended for MicroNova employees to bringup Pi's.
 # This will reset a Pi to its factory state (for a given AmpliPi version).
 
-# Required rpiboot:
-# sudo apt install libusb-1.0-0-dev make gcc
-# git clone --depth=1 https://github.com/raspberrypi/usbboot
-# cd usbboot
-# make
-# sudo make install
+# Required rpiboot setup:
+# On recent ubuntu (22.04 works):
+#   sudo apt install rpiboot
+#
+# On other or older distros:
+#   sudo apt install libusb-1.0-0-dev make gcc
+#   git clone --depth=1 https://github.com/raspberrypi/usbboot
+#   cd usbboot
+#   make
+#   sudo make install
 
 # To run rpiboot without root permissions add
 # SUBSYSTEM=="usb", ATTRS{idVendor}=="0a5c", ATTR{idProduct}=="2711", MODE="0666"
@@ -33,10 +37,10 @@ or read from the Pi to create a .img file for later use.
 "
 
 # Example
-# With preconfigured image: ./image_pi -w amplipi_1.7.img
+# With preconfigured image: ./image_pi -w amplipi_0.2.1.img
 
 # Constants
-write_speed_mb=6    # MB/s write speed to the Pi's EMMC over USB
+write_speed_mb=6    # MB/s write speed to the Pi's eMMC over USB
 read_speed_mb=9.2   # MB/s read speed
 RED='\033[0;31m'
 GRN='\033[0;32m'
@@ -50,66 +54,80 @@ while [[ "$#" -gt 0 ]]; do
   case $1 in
     -w|--write) write_img=true ;;
     -r|--read) read_img=true ;;
-    *.img)
-        img_file=$1
-      ;;
+    *.img) img_file=$1; compressed=false ;;
+    *.img.xz) img_file=$1; compressed=true ;;
     --no-instr) instructions=false ;;
-    -h|--help) printf "$helptext"; exit 0 ;;
-    *)  printf "Unknown parameter passed: $1\n\n"
-        printf "$helptext"
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *)  printf "Unknown parameter passed: %s\n\n" "$1"
+        printf "%s" "$helptext"
         exit 1
       ;;
   esac
   shift
 done
 
-if $write_img && $read_img; then
-  printf "Can't both write and read an image to/from AmpliPi...\n\n"
-  printf "$helptext"
-  exit 1
-elif ! $write_img && ! $read_img; then
-  printf "Must choose to either write or read an image.\n\n"
-  printf "$helptext"
+if ! command -v rpiboot >/dev/null; then
+  echo "Error: rpiboot not found."
+  echo "rpiboot is needed for connecting to the eMMC storage via USB."
+  echo "Install rpiboot with 'sudo apt install rpiboot' or for full instructions see"
+  echo "https://github.com/raspberrypi/usbboot"
   exit 1
 fi
 
-if [ -z $img_file ]; then
+if $write_img && $read_img; then
+  printf "Can't both write and read an image to/from AmpliPi...\n\n"
+  printf "%s" "$helptext"
+  exit 1
+elif ! $write_img && ! $read_img; then
+  printf "Must choose to either write or read an image.\n\n"
+  printf "%s" "$helptext"
+  exit 1
+fi
+
+if [ -z "$img_file" ]; then
   printf "Image file required!\n\n"
-  printf "$helptext"
+  printf "%s" "$helptext"
   exit 1
 fi
 
 # Instruct user on manual boot process
 if $instructions; then
-  read -p "Unplug AmpliPi from power then press any key to continue." -sn 1
+  read -p "Unplug AmpliPi from power then press any key to continue." -rsn 1
   echo -e "\nPlug in a usb cable from your computer to the service port of AmpliPi,"
-  read -p "  then press any key to continue." -sn 1
+  read -p "  then press any key to continue." -rsn 1
   echo -e "\nPlug in the AmpliPi.\n"
 fi
 sudo rpiboot
 
 # Delay to ensure Pi disk device has been loaded
 disk_base_path=/dev/disk/by-id/usb-RPi-MSD
-for i in {1..10}; do
+for _ in {1..10}; do
+  echo "sleeping"
   sleep 0.5
 
   # Check for Raspberry Pi device path
-  pi_path=$(ls $disk_base_path* 2>/dev/null | head -n1)
-  if [ ! -z $pi_path ]; then
+  pi_path=$(find $disk_base_path* 2>/dev/null | head -n1)
+  if [ -n "$pi_path" ]; then
     echo -e "\nRaspberry Pi device found at $pi_path\n"
     break
   fi
 done
 
-if [ -z $pi_path ]; then
+if [ -z "$pi_path" ]; then
   echo -e "\n${RED}ERROR:${NC} No Raspberry Pi device found at $disk_base_path*"
-  read -p "Press any key to continue..." -sn 1
+  read -p "Press any key to continue..." -rsn 1
   echo "" # newline
   exit 2
 fi
 
 if $write_img; then
-  img_size_mb=$(du -m $img_file | cut -f1)
+  if $compressed; then
+    echo "The image file is compressed. Decompression will occur on the fly."
+    img_size_mb=$(( $(xz --robot --list "$img_file" | tail -1 | cut -f 5) / 1024**2 ))
+  else
+    img_size_mb=$(du -m "$img_file" | cut -f1)
+  fi
+
   # bc truncates, add 0.5 to round
   est_time=$(echo "$img_size_mb/$write_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
   echo "Copying the image to the AmpliPi. This will take about $est_time minutes."
@@ -124,59 +142,65 @@ fi
 # Actually do read/write
 echo "Go get a coffee or something :)"
 echo "Started at: $(date)"
-sudo dd $dd_opts bs=4MiB status=progress
+if $write_img && $compressed; then
+  xzcat "$img_file" | sudo dd of="$pi_path" bs=4MiB oflag=direct conv=fsync status=progress
+else
+  sudo dd "$dd_opts" bs=4MiB oflag=direct status=progress
+fi
 echo "Finished at: $(date)"
 
 if $read_img; then
   # Set permissions on new image file to be $USER instead of root
-  sudo chown $USER:$USER $img_file
+  sudo chown "$USER":"$USER" "$img_file"
 
   echo "Done! Exiting."
   exit 0
   # TODO: optionally shrink image and set to expand on first boot.
   # Mount
-  loopdev=$(sudo losetup --find --show $img_file)
-  sudo partprobe $loopdev
+  loopdev=$(sudo losetup --find --show "$img_file")
+  sudo partprobe "$loopdev"
 
   # Check filesystem just in case (run until no errors occur)
   # TODO: sudo necessary?
-  sudo e2fsck -f ${loopdev}p1
-  sudo e2fsck -f ${loopdev}p2
+  sudo e2fsck -f "${loopdev}"p1
+  sudo e2fsck -f "${loopdev}"p2
 
   # Mount boot partition
   boot_dir=$(mktemp -d)
   root_dir=$(mktemp -d)
-  sudo mount ${loopdev}p1 $boot_dir
-  sudo mount ${loopdev}p2 $root_dir
+  sudo mount "${loopdev}"p1 "$boot_dir"
+  sudo mount "${loopdev}"p2 "$root_dir"
 
   # Setup resize2fs on Pi
-  sudo sed -i 's@$@ init=/usr/lib/raspi-config/init_resize.sh@' $boot_dir/cmdline.txt
-  sudo wget -O $root_dir/etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
-  sudo chmod +x $root_dir/etc/init.d/resize2fs_once
+  sudo sed -i 's@$@ init=/usr/lib/raspi-config/init_resize.sh@' "$boot_dir"/cmdline.txt
+  sudo wget -O "$root_dir"/etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
+  sudo chmod +x "$root_dir"/etc/init.d/resize2fs_once
   sudo systemctl enable resize2fs_once
   cat /dev/null > ~/.bash_history && history -c && exit
 
   # Shrink root partition (partition 2)
-  sudo resize2fs -pM ${loopdev}p2
-  block_count=$(sudo tune2fs -l ${loopdev}p2 | grep "Block count" | sed "s/^Block count: *//g")
-  block_size=$(sudo tune2fs -l ${loopdev}p2 | grep "Block size" | sed "s/^Block size: *//g")
+  sudo resize2fs -pM "${loopdev}"p2
+  block_count=$(sudo tune2fs -l "${loopdev}"p2 | grep "Block count" | sed "s/^Block count: *//g")
+  block_size=$(sudo tune2fs -l "${loopdev}"p2 | grep "Block size" | sed "s/^Block size: *//g")
   sector_size=512 # fdisk uses 512-byte sectors
-  new_sectors=$(($block_count*$block_size/512))
-  echo ",$new_sectors" | sudo sfdisk -N2 $loopdev
+  new_sectors=$((block_count*block_size/512))
+  echo ",$new_sectors" | sudo sfdisk -N2 "$loopdev"
 
   # Verify file system is still good
-  sudo e2fsck -f ${loopdev}p2
+  sudo e2fsck -f "${loopdev}"p2
 
   # Remove loop device
-  sudo losetup -d $loopdev
+  sudo losetup -d "$loopdev"
 
   # Verify new partition setup
-  fdisk -l $img_file
+  fdisk -l "$img_file"
   #Device       Boot  Start      End  Sectors  Size Id Type
   #amplipi.img1        8192   532479   524288  256M  c W95 FAT32 (LBA)
   #amplipi.img2      532480 11404616 10872137  5.2G 83 Linux
-  end=11404616
-  truncate --size=$[($end+1)*$sector_size] $img_file
+
+  echo "Truncating image file to the new smaller partition size"
+  last_sector=$(fdisk -l "$img_file" -o End | tail -1)
+  truncate --size=$(( (last_sector+1)*sector_size )) "$img_file"
 fi
 
 echo -e "
@@ -185,5 +209,5 @@ ${GRN}Imaging successful!${NC} Please complete the following steps:
   2. Unplug the AmpliPi unit.
   3. Plug it back in to power it on.
 "
-read -p "Press any key to continue..." -sn 1
+read -p "Press any key to continue..." -rsn 1
 echo "" # newline
