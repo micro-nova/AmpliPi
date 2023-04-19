@@ -1,0 +1,9 @@
+@use 'src/general';
+
+.disconnected-icon{
+  color: general.$mute-color;
+  position: fixed;
+  top: 0;
+  right: 0;
+  margin: 1rem;
+}
