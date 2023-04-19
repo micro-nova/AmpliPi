@@ -12,7 +12,7 @@ import { useStatusStore } from "@/App";
 
 const MenuBar = ({onChange, pageNumber}) => {
 
-  const updateAvailable = useStatusStore((s) => s.status.info.latest_release > s.status.info.version.split('+')[0])
+  const updateAvailable = useStatusStore((s) => s.status.info.version.split('+')[0].localeCompare(s.status.info.latest_release, undefined, { numeric: true, sensitivity: 'base' }) < 0)
 
   return (
     <div className="bar">

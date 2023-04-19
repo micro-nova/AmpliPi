@@ -11,6 +11,7 @@
   @include general.header-font;
   width: 50vw;
   min-width: 25em;
+  padding: 1rem
 }
 
 .stream-field-name{
@@ -33,4 +34,25 @@
 
 .stream-button-icon{
   color: general.$controls-color;
+}
+
+.internet-radio-result{
+  width: 100%;
+  height: 2rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: left;
+  margin: 0.5rem;
+}
+
+.internet-radio-image{
+  height: 100%;
+}
+
+.internet-radio-title{
+  @include general.header-font;
+  color: general.$text-color;
+  font-size: 1rem;
+  margin: 0.5rem;
 }

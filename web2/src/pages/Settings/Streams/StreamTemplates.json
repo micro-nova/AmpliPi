@@ -40,6 +40,10 @@
     "type": "internetradio",
     "fields":[
       {
+        "name":"search",
+        "type":"internet-radio-search"
+      },
+      {
         "title": "URL",
         "description": "Enter the URL of the radio station.",
         "name": "url",

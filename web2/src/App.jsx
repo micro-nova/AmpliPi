@@ -20,7 +20,7 @@ import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
 import LoadingPage from "@/pages/LoadingPage/LoadingPage";
 import { router } from "@/main"
-import { LinkOff } from '@mui/icons-material'
+import DisconnectedIcon from './components/DisconnectedIcon/DisconnectedIcon'
 
 const UPDATE_INTERVAL = 1000;
 
@@ -187,7 +187,7 @@ function App({ selectedPage }) {
     }
   }
 
-  if (isLoaded == false) {
+  if (!isLoaded || disconnected) {
 
     return (
       useEffect(() => {
@@ -223,7 +223,7 @@ function App({ selectedPage }) {
     }, []),
     (
       <div className="app">
-        {disconnected && <LinkOff className='disconnected-icon'/>}
+        <DisconnectedIcon/>
         <div style={{paddingBottom: '56px'}}>
           <Page />
         </div>
