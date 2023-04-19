@@ -34,8 +34,8 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
             })}
           </Select>
           <div className="group-buttons">
-          <IconButton onClick={()=>{if(del) del(); onClose()}}> <DeleteIcon className="group-button-icon" style={{width:"3rem", height:"3rem"}}/> </IconButton>
-          <IconButton onClick={()=>{apply(groupName, groupZones); onClose()}}> <DoneIcon className="group-button-icon" style={{width:"3rem", height:"3rem"}}/> </IconButton>
+            <IconButton onClick={()=>{if(del) del(); onClose()}}> <DeleteIcon className="group-button-icon" style={{width:"3rem", height:"3rem"}}/> </IconButton>
+            <IconButton onClick={()=>{apply(groupName, groupZones); onClose()}}> <DoneIcon className="group-button-icon" style={{width:"3rem", height:"3rem"}}/> </IconButton>
           </div>
         </div>
       </Card>

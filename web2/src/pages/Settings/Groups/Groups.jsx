@@ -8,8 +8,6 @@ import GroupModal from './GroupModal/GroupModal'
 
 const GroupListItem = ({ group, zones }) => {
   const [modalOpen, setModalOpen] = useState(false)
-  const [groupName, setGroupName] = useState(group.name)
-  const [groupZones, setGroupZones] = useState(group.zones)
 
   const editGroup = (name, zones) => {
     fetch('/api/groups/' + group.id, {method: "PATCH", headers: {"Content-type": "application/json"}, body: JSON.stringify({name: name, zones: zones})})

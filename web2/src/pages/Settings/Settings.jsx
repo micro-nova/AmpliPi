@@ -4,6 +4,7 @@ import Streams from './Streams/Streams'
 import Zones from './Zones/Zones'
 import Groups from './Groups/Groups'
 import Sessions from './Sessions/Sessions'
+import Presets from './Presets/Presets'
 import Config from './Config/Config'
 import { useState } from "react";
 import { router } from "@/main";
@@ -29,6 +30,8 @@ const Settings = ({ openPage='' }) => {
           return <Groups onClose={close}/>
         case "sessions":
           return <Sessions onClose={close}/>
+        case "presets":
+          return <Presets onClose={close}/>
         case "config":
           return <Config onClose={close}/>
         default:
@@ -51,6 +54,7 @@ const Settings = ({ openPage='' }) => {
       <PageListItem name="Zones" onClick={()=>router.navigate("/settings/zones")}/>
       <PageListItem name="Groups" onClick={()=>router.navigate("/settings/groups")}/>
       <PageListItem name="Sessions" onClick={()=>router.navigate("/settings/sessions")}/>
+      <PageListItem name="Presets" onClick={()=>router.navigate("/settings/presets")}/>
       <PageListItem name="Configuration and Reset" onClick={()=>router.navigate("/settings/config")}/>
       <PageListItem name="Updates" onClick={()=>{window.location.href="http://"+window.location.hostname+':5001/update'}}/>
     </div>

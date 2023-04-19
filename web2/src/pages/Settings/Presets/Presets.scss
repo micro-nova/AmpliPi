@@ -1,0 +1,17 @@
+@use "src/general.scss";
+
+.presets-body {
+  @include general.header-font;
+  color: general.$text-color;
+  display: flex;
+  flex-direction: column;
+  height: 95%;
+  overflow-y: auto;
+}
+
+.add-preset-button{
+  position: fixed;
+  margin: 1rem;
+  right: 0;
+  bottom: 0;
+}

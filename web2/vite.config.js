@@ -8,7 +8,7 @@ import path from 'path'
 // const amplipiurl = "http://192.168.0.117"
 // const amplipiurl = "http://192.168.0.178"
 // const amplipiurl = "http://fe80::4caf:b851:9a24:ffbc"
-const amplipiurl = "http://192.168.0.195"
+const amplipiurl = "http://192.168.0.198"
 // const amplipiurl = "http://localhost"
 
 // https://vitejs.dev/config/
