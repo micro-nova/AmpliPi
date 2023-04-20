@@ -128,6 +128,9 @@ export const useStatusStore = create((set) => ({
 }))
 
 export const getIcon = (type) => {
+  if (type === null || type === undefined) {
+    return internetradio
+  }
   switch (type.toUpperCase()) {
     case "SPOTIFY":
       return spotify
@@ -141,7 +144,7 @@ export const getIcon = (type) => {
     case "FM RADIO":
       return fmradio
 
-    case "SHAIRPORT":
+    case "AIRPLAY":
       return shairport
 
     case "PANDORA":
