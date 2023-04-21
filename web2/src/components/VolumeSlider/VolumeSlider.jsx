@@ -31,6 +31,7 @@ const VolumeSlider = ({vol, mute, setVol, setMute}) => {
         max={1}
         value={vol}
         onChange={(_, val)=>{setVol(val)}}
+        onChangeCommitted={(_, val)=>{setVol(val, true)}}
       />
     </div>
   );

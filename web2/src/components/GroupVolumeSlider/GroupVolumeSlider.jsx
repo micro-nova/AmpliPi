@@ -22,11 +22,11 @@ const GroupVolumeSlider = ({groupId}) => {
   for(const zoneId of group.zones) {
     zones.push(<ZoneVolumeSlider key={zoneId} zoneId={zoneId} />)
   }
-  const setVol = (vol) => {
+  const setVol = (vol, force = false) => {
 
     setGroupVol(groupId, vol)
 
-    if(sendingRequestCount <= 0) {
+    if(sendingRequestCount <= 0 || force) {
       sendingRequestCount += 1
       fetch(`/api/groups/${groupId}`, {
         method: 'PATCH',
