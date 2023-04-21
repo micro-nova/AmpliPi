@@ -24,11 +24,13 @@ import DisconnectedIcon from './components/DisconnectedIcon/DisconnectedIcon'
 
 const UPDATE_INTERVAL = 1000;
 
-export const useStatusStore = create((set) => ({
+export const useStatusStore = create((set, get) => ({
   status: null,
+  skipUpdate: false,
   loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
   setZonesVol: (vol, zones, sourceId) => {
     set(produce((s) => {
+      s.skipUpdate = true
       applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
         // let zone = null
         // for (const z of s.status.zones) {
@@ -78,7 +80,10 @@ export const useStatusStore = create((set) => ({
     }))
   },
   fetch: () => {
-    // TODO make this not crash the app if the server is down
+    if(get().skipUpdate){
+      set({skipUpdate: false})
+      return
+    }
     fetch(`/api`).then((res)=>{
       if(res.ok){
         res.json().then(s => set({ status: s, loaded: true, disconnected: false }))
@@ -92,6 +97,7 @@ export const useStatusStore = create((set) => ({
   },
   setZoneVol: (zoneId, new_vol) => {
     set(produce((s) => {
+      s.skipUpdate = true
       s.status.zones[zoneId].vol_f = new_vol
     }))
   },
@@ -99,6 +105,7 @@ export const useStatusStore = create((set) => ({
     set(produce((s) => {
       let g = s.status.groups.filter((g) => g.id === groupId)[0]
       for (const i of g.zones) {
+        s.skipUpdate = true
         s.status.zones[i].vol_f = new_vol
       }
       g.vol_f = new_vol

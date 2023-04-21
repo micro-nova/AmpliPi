@@ -53,8 +53,8 @@ const CardVolumeSlider = ({sourceId}) => {
       }).then(() => {sendingPacketCount -= 1})
   })
 
-  const setPlayerVol = (vol) => {
-    if (sendingPacketCount <= 0) {
+  const setPlayerVol = (vol, force=false) => {
+    if (sendingPacketCount <= 0 || force) {
       setPlayerVolRaw(vol)
     }
   }
@@ -68,7 +68,6 @@ const CardVolumeSlider = ({sourceId}) => {
   const mute = getSourceZones(sourceId, zones).map((z) => z.mute).reduce((a, b) => a && b, true)
 
   const setMute = (mute) => {
-    console.log("set mute", mute)
     setZonesMute(mute, zones, sourceId)
     fetch(`/api/zones`, {
       method: "PATCH",
@@ -83,7 +82,7 @@ const CardVolumeSlider = ({sourceId}) => {
   }
 
   return (
-    <VolumeSlider vol={value} mute={mute} setMute={setMute} setVol={(val) => {setPlayerVol(val); setValue(val)}} />
+    <VolumeSlider vol={value} mute={mute} setMute={setMute} setVol={(val, force=false) => {setPlayerVol(val, force); setValue(val)}} />
   );
 }
 

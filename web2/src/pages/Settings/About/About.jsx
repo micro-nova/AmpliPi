@@ -6,8 +6,6 @@ const About = ({onClose}) => {
 
   const info = useStatusStore.getState().status.info
 
-  console.log(info)
-
   return(
     <>
       <PageHeader title="About" onClose={onClose}/>
