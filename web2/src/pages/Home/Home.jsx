@@ -15,7 +15,7 @@ export const getSourceZones = (source_id, zones) => {
   return matches;
 };
 
-const Home = ({ selectedSource, setSelectedSource }) => {
+const Home = ({ selectedSource, setSelectedPage, setSelectedSource }) => {
   const sources = useStatusStore((s)=>s.status.sources)
   const clearSourceZones = useStatusStore((s)=>s.clearSourceZones)
   const [zonesModalOpen, setZonesModalOpen] = useState(false)
@@ -31,6 +31,7 @@ const Home = ({ selectedSource, setSelectedSource }) => {
           sourceId={source.id}
           selectedSource={selectedSource}
           setSelectedSource={setSelectedSource}
+          setSelectedPage={setSelectedPage}
         />
       )
       } else {
@@ -49,26 +50,6 @@ const Home = ({ selectedSource, setSelectedSource }) => {
   return (
     <div className="home-outer">
       <div className="home-view">
-        {/* <PlayerCard
-          sourceId={0}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
-        />
-        <PlayerCard
-          sourceId={1}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
-        />
-        <PlayerCard
-          sourceId={2}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
-        />
-        <PlayerCard
-          sourceId={3}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
-        /> */}
 
         {
           playerCards
