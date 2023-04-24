@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useEffect } from "react"
 import { useStatusStore } from "@/App"
 import Modal from '@/components/Modal/Modal'
 import Card from '@/components/Card/Card'
@@ -81,6 +82,10 @@ const Structured2Top = ({dict}) => {
 const StructuredDictAsTree = ({dict, depth=0, checkedInit=false, passInSetCheckedRecur=null, passInGetCheckedRecur=null, refreshTop=null}) => {
   const [checked, setChecked] = useState(checkedInit)
 
+  const setCheckedEffect = (s) => {
+
+  }
+
   let childSetChecked = []
   let childGetChecked = []
 
@@ -96,6 +101,7 @@ const StructuredDictAsTree = ({dict, depth=0, checkedInit=false, passInSetChecke
       let s = childGetChecked.reduce((acc, curr) => curr() === 'ind' ? 'ind' : (acc === curr() ? acc : 'ind'), childGetChecked[0]())
       // TODO: can i do setChecked here?
       setChecked(s)
+      
       return s
     }
 
@@ -104,18 +110,20 @@ const StructuredDictAsTree = ({dict, depth=0, checkedInit=false, passInSetChecke
 
   if (refreshTop === null) {
     refreshTop = () => {
-      if (childGetChecked !== null) {
-        calculateInd()
-      }
+      calculateInd()
     }
   }
 
   const handlePress = (e) => {
-    setChecked(e.target.checked ? 'checked' : 'unchecked')
+    const newChecked = e.target.checked ? 'checked' : 'unchecked'
+    
     if (childSetChecked !== null) {
-      childSetChecked.forEach(it => it(e.target.checked ? 'checked' : 'unchecked'))
+      
+      // childSetChecked.forEach(it => it(e.target.checked ? 'checked' : 'unchecked'))
+      childSetChecked.forEach(it => it(newChecked))
       // childSetChecked()
     }
+    setChecked(e.target.checked ? 'checked' : 'unchecked')
     refreshTop()
   }
 
@@ -146,7 +154,7 @@ const StructuredDictAsTree = ({dict, depth=0, checkedInit=false, passInSetChecke
       <Box sx={{ display: 'flex', flexDirection: 'column', ml: 3*depth }}>
         <FormControlLabel
         label={dict.name}
-        control={<Checkbox checked={checked === 'checked'} indeterminate={checked === 'ind'} onChange={handlePress}/>}
+        control={<Checkbox checked={checked === 'checked'} indeterminate={checked === 'ind'} onChange={handlePress} onMouseLeave={refreshTop()}/>}
         />
         {/* <DictToTree dict={value} depth={depth+1} /> */}
         {entries}
