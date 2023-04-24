@@ -167,7 +167,17 @@ const CreatePresetModal = ({ onClose }) => {
     console.log("savePreset")
     console.log(mergePayloads(tree))
 
-    // build 
+    // create presett
+    fetch(`/api/preset`, {
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        'name': name,
+        'state': mergePayloads(tree),
+      })
+    })
   }
 
   if (tree === null) return <div/>
