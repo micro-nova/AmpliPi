@@ -82,10 +82,6 @@ const Structured2Top = ({dict}) => {
 const StructuredDictAsTree = ({dict, depth=0, checkedInit=false, passInSetCheckedRecur=null, passInGetCheckedRecur=null, refreshTop=null}) => {
   const [checked, setChecked] = useState(checkedInit)
 
-  const setCheckedEffect = (s) => {
-
-  }
-
   let childSetChecked = []
   let childGetChecked = []
 

@@ -4,7 +4,7 @@ import { useStatusStore } from "@/App.jsx";
 import { useState } from "react";
 import { Fab } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import CreatePresetModal from './CreatePresetModal/CreatePresetModal'
+import CreatePresetModal from './CreatePresetModal/CreatePresetModal2'
 
 const PresetListItem = ({ preset }) => {
   const [editOpen, setEditOpen] = useState(false);
