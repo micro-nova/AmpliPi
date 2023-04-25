@@ -1,15 +1,13 @@
-import './ZonesBadge.scss';
-import { useState, useEffect } from 'react';
+import "./ZonesBadge.scss"
+import { useState, useEffect } from "react"
 import { getSourceZones } from "@/pages/Home/Home.jsx"
-import { useStatusStore } from '@/App.jsx'
-import { chipClasses } from '@mui/material';
+import { useStatusStore } from "@/App.jsx"
+import { chipClasses } from "@mui/material"
 
 const ZoneChip = ({ zone }) => {
   return (
-    <div className='zone-chip'>
-      <div className='zone-text'>
-        {zone.name}
-      </div>
+    <div className="zone-chip">
+      <div className="zone-text">{zone.name}</div>
     </div>
   )
 }
@@ -18,12 +16,11 @@ const ZonesBadge = ({ sourceId }) => {
   const allZones = useStatusStore((s) => s.status.zones)
   const usedZones = getSourceZones(sourceId, allZones)
 
-
-  let chips = [];
+  let chips = []
 
   switch (usedZones.length) {
     case 0:
-      chips.push(<ZoneChip key={0} zone={{ name: 'Add Zones' }} />)
+      chips.push(<ZoneChip key={0} zone={{ name: "Add Zones" }} />)
       break
     case 1:
       chips.push(<ZoneChip key={0} zone={usedZones[0]} />)
@@ -34,7 +31,9 @@ const ZonesBadge = ({ sourceId }) => {
       break
     default:
       chips.push(<ZoneChip key={0} zone={usedZones[0]} />)
-      chips.push(<ZoneChip key={1} zone={{ name: `+${usedZones.length - 2} more` }} />)
+      chips.push(
+        <ZoneChip key={1} zone={{ name: `+${usedZones.length - 2} more` }} />
+      )
   }
 
   return <div>{chips}</div>

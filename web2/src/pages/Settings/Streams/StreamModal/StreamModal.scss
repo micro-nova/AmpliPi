@@ -1,42 +1,42 @@
 @use "src/general.scss";
 
-.stream-name{
+.stream-name {
   @include general.header-font;
   color: general.$text-color;
   font-size: 2rem;
   margin: 0.5rem;
 }
 
-.stream-card{
+.stream-card {
   @include general.header-font;
   width: 50vw;
   min-width: 25em;
-  padding: 1rem
+  padding: 1rem;
 }
 
-.stream-field-name{
+.stream-field-name {
   @include general.regular-font;
   color: general.$text-color;
   font-size: 1.5rem;
 }
 
-.stream-field-desc{
+.stream-field-desc {
   @include general.regular-font;
   color: general.$text-color;
-  font-size: .9rem;
+  font-size: 0.9rem;
 }
 
-.stream-multi{
+.stream-multi {
   width: 90%;
   margin: 1rem;
   color: general.$text-color;
 }
 
-.stream-button-icon{
+.stream-button-icon {
   color: general.$controls-color;
 }
 
-.internet-radio-result{
+.internet-radio-result {
   width: 100%;
   height: 2rem;
   display: flex;
@@ -46,11 +46,11 @@
   margin: 0.5rem;
 }
 
-.internet-radio-image{
+.internet-radio-image {
   height: 100%;
 }
 
-.internet-radio-title{
+.internet-radio-title {
   @include general.header-font;
   color: general.$text-color;
   font-size: 1rem;

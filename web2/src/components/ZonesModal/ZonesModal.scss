@@ -1,12 +1,12 @@
 @use "src/general.scss";
 
-.zones-modal{
+.zones-modal {
   @include general.header-font;
   font-size: 1.5rem;
   color: general.$text-color;
 }
 
-.zones-modal-card{
+.zones-modal-card {
   max-height: 75vh;
   overflow: hidden;
   display: flex;
@@ -28,15 +28,15 @@
   height: 100%;
 }
 
-.zones-modal-list-item{
+.zones-modal-list-item {
   margin-bottom: 1rem;
 }
 
-.zones-modal-footer{
+.zones-modal-footer {
   display: flex;
   justify-content: center;
 }
 
-.zones-modal-button-icon{
+.zones-modal-button-icon {
   color: general.$controls-color;
 }

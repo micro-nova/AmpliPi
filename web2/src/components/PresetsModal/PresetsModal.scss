@@ -1,12 +1,12 @@
 @use "src/general.scss";
 
-.presets-modal{
+.presets-modal {
   @include general.header-font;
   font-size: 1.5rem;
   color: general.$text-color;
 }
 
-.presets-modal-card{
+.presets-modal-card {
   max-height: 75vh;
   overflow: hidden;
   display: flex;
@@ -28,35 +28,35 @@
   height: 100%;
 }
 
-.presets-modal-list-item{
+.presets-modal-list-item {
   margin-bottom: 1rem;
 }
 
 .preset-item {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    // align-items: center;
-    // padding: 0.5rem;
-    // border: 1px solid #000000;
-    // border-radius: 5px;
-    // margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  // align-items: center;
+  // padding: 0.5rem;
+  // border: 1px solid #000000;
+  // border-radius: 5px;
+  // margin-bottom: 0.5rem;
 }
 
 .preset-name-and-last-used {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
 }
 
 .preset-item-last-used {
-    // just want to make the font smaller
-    color: general.$select-color-gray;
-    font-size: 1.25rem;
-    padding-left: 8px;
+  // just want to make the font smaller
+  color: general.$select-color-gray;
+  font-size: 1.25rem;
+  padding-left: 8px;
 }
 
 .preset-item-icon {
-    font-size: 1.5rem;
-    padding-right: 2rem;
+  font-size: 1.5rem;
+  padding-right: 2rem;
 }

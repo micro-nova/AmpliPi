@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
-import Modal from "@/components/Modal/Modal";
-import Card from "@/components/Card/Card";
-import { CircularProgress, IconButton } from "@mui/material";
-import DoneIcon from "@mui/icons-material/Done";
-import DeleteIcon from "@mui/icons-material/Delete";
-import "./StreamModal.scss";
-import StreamTemplates from "../StreamTemplates.json";
+import { useEffect, useState } from "react"
+import Modal from "@/components/Modal/Modal"
+import Card from "@/components/Card/Card"
+import { CircularProgress, IconButton } from "@mui/material"
+import DoneIcon from "@mui/icons-material/Done"
+import DeleteIcon from "@mui/icons-material/Delete"
+import "./StreamModal.scss"
+import StreamTemplates from "../StreamTemplates.json"
 
 const NAME_DESC =
-  "This name can be anything - it will be used to select this stream from the source selection dropdown";
-const DISABLED_DESC = "Don't show this stream in the input dropdown";
+  "This name can be anything - it will be used to select this stream from the source selection dropdown"
+const DISABLED_DESC = "Don't show this stream in the input dropdown"
 
 const TextField = ({ name, desc, defaultValue, onChange }) => {
   return (
@@ -19,13 +19,13 @@ const TextField = ({ name, desc, defaultValue, onChange }) => {
         type="text"
         defaultValue={defaultValue}
         onChange={(e) => {
-          onChange(e.target.value);
+          onChange(e.target.value)
         }}
       />
       <div className="stream-field-desc">{desc}</div>
     </div>
-  );
-};
+  )
+}
 
 const BoolField = ({ name, desc, defaultValue, onChange }) => {
   return (
@@ -35,25 +35,24 @@ const BoolField = ({ name, desc, defaultValue, onChange }) => {
         type="checkbox"
         defaultChecked={defaultValue}
         onChange={(e) => {
-          onChange(e.target.checked);
+          onChange(e.target.checked)
         }}
       />
       <div className="stream-field-desc">{desc}</div>
     </div>
-  );
-};
+  )
+}
 
 const InternetRadioSearch = ({ onChange }) => {
-  const [host, setHost] = useState("");
-  const [results, setResults] = useState([]);
-  const [query, setQuery] = useState("");
+  const [host, setHost] = useState("")
+  const [results, setResults] = useState([])
+  const [query, setQuery] = useState("")
 
   const search = (name) => {
-
-    setResults([<CircularProgress/>]);
+    setResults([<CircularProgress />])
 
     if (host === "") {
-      return;
+      return
     }
 
     fetch(`http://${host}/json/stations/search`, {
@@ -62,34 +61,37 @@ const InternetRadioSearch = ({ onChange }) => {
       body: JSON.stringify({ name: name }),
     }).then((res) =>
       res.json().then((s) => {
-        setResults(s.slice(0,10).map(
-          (s) =>
-          <div className="internet-radio-result" key={s.changeuuid} onClick={
-              ()=>{
-                onChange({name: s.name, url: s.url, logo: s.favicon})
-              }
-            }>
-            <img src={s.favicon} className="internet-radio-image"/>
-            <div className="internet-radio-name">{s.name}</div>
-          </div>
-        ));
+        setResults(
+          s.slice(0, 10).map((s) => (
+            <div
+              className="internet-radio-result"
+              key={s.changeuuid}
+              onClick={() => {
+                onChange({ name: s.name, url: s.url, logo: s.favicon })
+              }}
+            >
+              <img src={s.favicon} className="internet-radio-image" />
+              <div className="internet-radio-name">{s.name}</div>
+            </div>
+          ))
+        )
       })
-    );
-  };
+    )
+  }
 
   return (
     useEffect(() => {
       fetch("http://all.api.radio-browser.info/json/servers").then((res) =>
         res.json().then(async (s) => {
           for (const i of s) {
-            const res = await fetch(i.ip);
+            const res = await fetch(i.ip)
             if (res.ok && res.status === 200) {
-              setHost(i.name);
-              break;
+              setHost(i.name)
+              break
             }
           }
         })
-      );
+      )
     }, []),
     (
       <div className="stream-field">
@@ -99,22 +101,20 @@ const InternetRadioSearch = ({ onChange }) => {
         <div className="stream-field-desc">
           Search for internet radio stations
         </div>
-        <div className="radio-search-results">
-          {results}
-        </div>
+        <div className="radio-search-results">{results}</div>
       </div>
     )
-  );
-};
+  )
+}
 
 const StreamModal = ({ stream, onClose, apply, del }) => {
   const [streamFields, setStreamFields] = useState(
     JSON.parse(JSON.stringify(stream))
-  ); // set streamFields to copy of stream
+  ) // set streamFields to copy of stream
 
   const streamTemplate = StreamTemplates.filter(
     (t) => t.type === stream.type
-  )[0];
+  )[0]
 
   return (
     <Modal onClose={onClose}>
@@ -128,7 +128,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
               desc={NAME_DESC}
               defaultValue={streamFields.name}
               onChange={(v) => {
-                setStreamFields({ ...streamFields, name: v });
+                setStreamFields({ ...streamFields, name: v })
               }}
             />
             {
@@ -144,10 +144,10 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                         required={field.required}
                         defaultValue={streamFields[field.name]}
                         onChange={(v) => {
-                          setStreamFields({ ...streamFields, [field.name]: v });
+                          setStreamFields({ ...streamFields, [field.name]: v })
                         }}
                       />
-                    );
+                    )
                   case "bool":
                     return (
                       <BoolField
@@ -156,10 +156,10 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                         desc={field.desc}
                         defaultValue={streamFields[field.name]}
                         onChange={(v) => {
-                          setStreamFields({ ...streamFields, [field.name]: v });
+                          setStreamFields({ ...streamFields, [field.name]: v })
                         }}
                       />
-                    );
+                    )
                   case "internet-radio-search":
                     return (
                       <InternetRadioSearch
@@ -170,10 +170,10 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                             ["name"]: v.name,
                             ["logo"]: v.logo,
                             ["url"]: v.url,
-                          });
+                          })
                         }}
                       />
-                    );
+                    )
                 }
               })
             }
@@ -182,7 +182,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
               desc={DISABLED_DESC}
               defaultValue={streamFields.disabled}
               onChange={(v) => {
-                setStreamFields({ ...streamFields, disabled: v });
+                setStreamFields({ ...streamFields, disabled: v })
               }}
             />
           </div>
@@ -190,8 +190,8 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
         <div className="stream-buttons">
           <IconButton
             onClick={() => {
-              apply(streamFields);
-              onClose();
+              apply(streamFields)
+              onClose()
             }}
           >
             {" "}
@@ -202,8 +202,8 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
           </IconButton>
           <IconButton
             onClick={() => {
-              if (del) del(streamFields);
-              onClose();
+              if (del) del(streamFields)
+              onClose()
             }}
           >
             {" "}
@@ -215,7 +215,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
         </div>
       </Card>
     </Modal>
-  );
-};
+  )
+}
 
-export default StreamModal;
+export default StreamModal

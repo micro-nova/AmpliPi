@@ -1,34 +1,34 @@
-@use 'src/general';
+@use "src/general";
 
 .home-outer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  overflow-y: auto;
 }
 
 .home-view {
-    display: grid;
-    grid-template-columns: min-content;
-    row-gap: 10px;
-    align-items: center;
-    width: fit-content;
+  display: grid;
+  grid-template-columns: min-content;
+  row-gap: 10px;
+  align-items: center;
+  width: fit-content;
 }
 
 .home-add-player-button {
-    width: 100%;
-    height: 4rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 3rem;
-    color: general.$controls-color;
-    border-color: general.$secondary;
-    border-style: solid;
-    border-radius: 1rem;
-    background-color: general.$bg;
+  width: 100%;
+  height: 4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 3rem;
+  color: general.$controls-color;
+  border-color: general.$secondary;
+  border-style: solid;
+  border-radius: 1rem;
+  background-color: general.$bg;
 }
 
 .home-presets-button {
@@ -44,7 +44,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  
+
   color: general.$controls-color;
   border-color: general.$secondary;
   border-style: solid;
@@ -59,4 +59,3 @@
   justify-content: space-between;
   align-items: center;
 }
-

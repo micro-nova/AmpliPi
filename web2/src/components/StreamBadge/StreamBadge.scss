@@ -1,6 +1,6 @@
-@use 'src/general';
+@use "src/general";
 
-.stream-badge{
+.stream-badge {
   width: fit-content;
   height: fit-content;
   display: flex;
@@ -13,7 +13,7 @@
   padding: 0.4rem;
 }
 
-.stream-badge-name{
+.stream-badge-name {
   color: general.$text-color;
   white-space: nowrap;
   font-size: 1rem;
@@ -21,7 +21,7 @@
   @include general.header-font;
 }
 
-.stream-badge-icon{
+.stream-badge-icon {
   width: 2rem;
   height: 2rem;
   border-radius: 50%;

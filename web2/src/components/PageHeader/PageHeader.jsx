@@ -1,4 +1,4 @@
-import "./PageHeader.scss";
+import "./PageHeader.scss"
 
 const PageHeader = ({ title, onClose }) => {
   return (
@@ -8,7 +8,7 @@ const PageHeader = ({ title, onClose }) => {
       </div>
       <div className="page-header-title">{title}</div>
     </div>
-  );
+  )
 }
 
-export default PageHeader;
+export default PageHeader

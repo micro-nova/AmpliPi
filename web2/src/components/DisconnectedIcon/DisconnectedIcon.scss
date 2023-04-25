@@ -1,6 +1,6 @@
-@use 'src/general';
+@use "src/general";
 
-.disconnected-icon{
+.disconnected-icon {
   color: general.$mute-color;
   position: fixed;
   top: 0;

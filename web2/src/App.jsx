@@ -1,137 +1,148 @@
-import spotify from '@/assets/spotify.png'
-import dlna from '@/assets/dlna.png'
-import bluetooth from '@/assets/bluetooth.png'
-import fmradio from '@/assets/fmradio.png'
-import shairport from '@/assets/shairport.png'
-import pandora from '@/assets/pandora.png'
-import plexamp from '@/assets/plexamp.png'
-import lms from '@/assets/lms.png'
-import internetradio from '@/assets/internet_radio.png'
-import rca from '@/assets/rca_inputs.jpg'
-import { useEffect, useState } from "react";
-import { create } from 'zustand';
-import "@/App.scss";
-import Home from "@/pages/Home/Home";
-import Player from "@/pages/Player/Player";
-import MenuBar from "./components/MenuBar/MenuBar";
-import Settings from "@/pages/Settings/Settings";
-import produce from 'immer'
+import spotify from "@/assets/spotify.png"
+import dlna from "@/assets/dlna.png"
+import bluetooth from "@/assets/bluetooth.png"
+import fmradio from "@/assets/fmradio.png"
+import shairport from "@/assets/shairport.png"
+import pandora from "@/assets/pandora.png"
+import plexamp from "@/assets/plexamp.png"
+import lms from "@/assets/lms.png"
+import internetradio from "@/assets/internet_radio.png"
+import rca from "@/assets/rca_inputs.jpg"
+import { create } from "zustand"
+import "@/App.scss"
+import Home from "@/pages/Home/Home"
+import Player from "@/pages/Player/Player"
+import MenuBar from "./components/MenuBar/MenuBar"
+import Settings from "@/pages/Settings/Settings"
+import produce from "immer"
 import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
-import LoadingPage from "@/pages/LoadingPage/LoadingPage";
 import { router } from "@/main"
-import DisconnectedIcon from './components/DisconnectedIcon/DisconnectedIcon'
+import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon"
 
-const UPDATE_INTERVAL = 1000;
 
 export const useStatusStore = create((set, get) => ({
   status: null,
   skipUpdate: false,
   loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
+  disconnected: true,
+  selectedSource: 0,
+  setSelectedSource: (selected) => {
+    set({selectedSource: selected})
+  },
   setZonesVol: (vol, zones, sourceId) => {
-    set(produce((s) => {
-      s.skipUpdate = true
-      applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
-        // let zone = null
-        // for (const z of s.status.zones) {
-        //   if (z.id === zone_id) {
-        //     zone = z;
-        //     s.status.zones
-        //   }
-        // }
-
-        for (const i in s.status.zones) {
-          if (s.status.zones[i].id === zone_id) {
-            s.status.zones[i].vol_f = new_vol
+    set(
+      produce((s) => {
+        s.skipUpdate = true
+        applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
+          for (const i in s.status.zones) {
+            if (s.status.zones[i].id === zone_id) {
+              s.status.zones[i].vol_f = new_vol
+            }
           }
-        }
+        })
 
-        // zone.vol_f = new_vol
+        // pre-emptive unmute
+
       })
-    }))
+    )
   },
   setZonesMute: (mute, zones, source_id) => {
-    set(produce((s) => {
-      for (const i of getSourceZones(source_id, zones)) {
-        for (const j of s.status.zones) {
-          if (j.id === i.id) {
-            j.mute = mute
+    set(
+      produce((s) => {
+        for (const i of getSourceZones(source_id, zones)) {
+          for (const j of s.status.zones) {
+            if (j.id === i.id) {
+              j.mute = mute
+            }
           }
         }
-      }
-    }))
+      })
+    )
   },
   setZoneMute: (zid, mute) => {
-    set(produce((s) => {
-      for (const i of s.status.zones) {
+    set(
+      produce((s) => {
+        for (const i of s.status.zones) {
           if (i.id === zid) {
             i.mute = mute
           }
         }
-    }))
+      })
+    )
   },
   setGroupMute: (gid, mute) => {
-    set(produce((s) => {
-      let g = s.status.groups.filter((g) => g.id === gid)[0]
-      for (const i of g.zones) {
-        s.status.zones[i].mute = mute
-      }
-      g.mute = mute
-    }))
+    set(
+      produce((s) => {
+        let g = s.status.groups.filter((g) => g.id === gid)[0]
+        for (const i of g.zones) {
+          s.status.zones[i].mute = mute
+        }
+        g.mute = mute
+      })
+    )
   },
   fetch: () => {
-    if(get().skipUpdate){
-      set({skipUpdate: false})
+    if (get().skipUpdate) {
+      set({ skipUpdate: false })
       return
     }
-    fetch(`/api`).then((res)=>{
-      if(res.ok){
-        res.json().then(s => set({ status: s, loaded: true, disconnected: false }))
-      }
-      else{
-        set({disconnected: true})
-      }
-    }).catch((_) => {
-      set({disconnected: true})
-    })
+    fetch(`/api`)
+      .then((res) => {
+        if (res.ok) {
+          res
+            .json()
+            .then((s) => set({ status: s, loaded: true, disconnected: false }))
+        } else {
+          set({ disconnected: true })
+        }
+      })
+      .catch((_) => {
+        set({ disconnected: true })
+      })
   },
   setZoneVol: (zoneId, new_vol) => {
-    set(produce((s) => {
-      s.skipUpdate = true
-      s.status.zones[zoneId].vol_f = new_vol
-    }))
+    set(
+      produce((s) => {
+        s.skipUpdate = true
+        s.status.zones[zoneId].vol_f = new_vol
+      })
+    )
   },
   setGroupVol: (groupId, new_vol) => {
-    set(produce((s) => {
-      let g = s.status.groups.filter((g) => g.id === groupId)[0]
-      for (const i of g.zones) {
-        s.skipUpdate = true
-        s.status.zones[i].vol_f = new_vol
-      }
-      g.vol_f = new_vol
-    }))
+    set(
+      produce((s) => {
+        let g = s.status.groups.filter((g) => g.id === groupId)[0]
+        for (const i of g.zones) {
+          s.skipUpdate = true
+          s.status.zones[i].vol_f = new_vol
+        }
+        g.vol_f = new_vol
+      })
+    )
   },
   clearSourceZones: (sourceId) => {
-    set(produce((s) => {
-      let z = getSourceZones(sourceId, s.status.zones)
-      fetch(`/api/zones`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          zones: z.map((z)=>z.id),
-          update: {source_id: -1}
+    set(
+      produce((s) => {
+        let z = getSourceZones(sourceId, s.status.zones)
+        fetch(`/api/zones`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            zones: z.map((z) => z.id),
+            update: { source_id: -1 },
+          }),
         })
-      })
-      for (const i in s.status.zones) {
-        if(s.status.zones[i].source_id == sourceId){
-          s.status.zones[i].source_id = -1
+        for (const i in s.status.zones) {
+          if (s.status.zones[i].source_id == sourceId) {
+            s.status.zones[i].source_id = -1
+          }
         }
-      }
-    }))
-  }
-
+      })
+    )
+  },
 }))
 
 export const getIcon = (type) => {
@@ -174,73 +185,51 @@ export const getIcon = (type) => {
   }
 }
 
-function App({ selectedPage }) {
-  const [selectedSource, setSelectedSource] = useState(0);
-  const isLoaded = useStatusStore((s) => s.loaded)
-  const update = useStatusStore((s) => s.fetch)
-  const disconnected = useStatusStore((s) => s.disconnected)
+const Page = ({ selectedPage }) => {
+  switch (selectedPage) {
+    default:
+      return <Home />
+    case 1:
+      return <Player />
+    case 2:
+      return <div></div>
+    case 3:
+      return <Settings />
+  }
+}
 
+function App({ selectedPage }) {
   const setSelectedPage = (n) => {
     switch (n) {
       default:
-        router.navigate('/home')
-        break;
+        router.navigate("/home")
+        break
       case 1:
-        router.navigate('/player')
-        break;
+        router.navigate("/player")
+        break
       case 2:
-        router.navigate('/browser')
-        break;
+        router.navigate("/browser")
+        break
       case 3:
-        router.navigate('/settings')
-        break;
-    }
-  }
-
-  if (!isLoaded || disconnected) {
-
-    return (
-      useEffect(() => {
-        const interval = setInterval(() => {
-          update();
-        }, UPDATE_INTERVAL);
-        return () => clearInterval(interval);
-      }, []),
-      (<LoadingPage/>)
-    );
-  }
-
-  const Page = () => {
-      switch(selectedPage) {
-      default:
-        return <Home selectedSource={selectedSource} setSelectedSource={setSelectedSource} />
-      case 1:
-        return <Player selectedSource={selectedSource} />
-      case 2:
-        return <div></div>
-      case 3:
-        return <Settings/>
+        router.navigate("/settings")
+        break
     }
   }
 
   return (
-    useEffect(() => {
-      update();
-      const interval = setInterval(() => {
-        update();
-      }, UPDATE_INTERVAL);
-      return () => clearInterval(interval);
-    }, []),
-    (
-      <div className="app">
-        <DisconnectedIcon/>
-        <div style={{paddingBottom: '56px'}}>
-          <Page />
-        </div>
-        <MenuBar pageNumber={selectedPage} onChange={(n)=>{setSelectedPage(n)}}/>
+    <div className="app">
+      <DisconnectedIcon />
+      <div style={{ paddingBottom: "56px" }}>
+        <Page selectedPage={selectedPage}/>
       </div>
-    )
-  );
+      <MenuBar
+        pageNumber={selectedPage}
+        onChange={(n) => {
+          setSelectedPage(n)
+        }}
+      />
+    </div>
+  )
 }
 
-export default App;
+export default App

@@ -1,6 +1,6 @@
-@use 'src/general';
+@use "src/general";
 
-.zone-text{
+.zone-text {
   color: general.$text-color;
   font-size: 1rem;
   font-weight: medium;
@@ -11,7 +11,7 @@
   cursor: pointer;
 }
 
-.zone-chip{
+.zone-chip {
   background-color: general.$secondary;
   border-radius: 10rem;
   padding: 0.3rem 0.5rem;

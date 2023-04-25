@@ -1,37 +1,37 @@
-$bg:                    #202020;
-$primary:               #2A2A2A;
-$secondary:             #4A4A4A;
-$selected:              #424242;
-$stream-color:          #757575;
-$zone-color:            #003ACE;
-$group-color:           #04BC00;
-$config-color:          #FFD600;
-$update-color:          #0096FF;
-$sessions-color:        #EB00FF;
-$controls-color:        #F2F2F2;
-$icon-deselected-color: #8D8D8D;
-$volume-slider-color:   #0096FF;
-$text-color:            #FFFFFF;
-$select-color-gray:     #BDBDBD; // for preset used_last
-$mute-color:            #dc3545;
+$bg: #1d1d1d; // was 202020
+$primary: #2a2a2a;
+$secondary: #4a4a4a;
+$selected: #424242;
+$stream-color: #757575;
+$zone-color: #003ace;
+$group-color: #04bc00;
+$config-color: #ffd600;
+$update-color: #0096ff;
+$sessions-color: #eb00ff;
+$controls-color: #f2f2f2;
+$icon-deselected-color: #8d8d8d;
+$volume-slider-color: #0096ff;
+$text-color: #ffffff;
+$select-color-gray: #bdbdbd; // for preset used_last
+$mute-color: #dc3545;
 
 // fonts
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans&family=Raleway&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans&family=Raleway&display=swap");
 
 @mixin header-font {
-    font-family: 'Raleway'
+  font-family: "Raleway";
 }
 @mixin regular-font {
-    font-family: 'open sans'
+  font-family: "open sans";
 }
 
 // shadows
 @mixin low-shadow {
-    box-shadow: 0px 5px 15px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 5px 15px 4px rgba(0, 0, 0, 0.25);
 }
 @mixin high-shadow {
-    box-shadow: 0px 12px 15px 1px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 12px 15px 1px rgba(0, 0, 0, 0.25);
 }
 @mixin icon-shadow {
-    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
 }

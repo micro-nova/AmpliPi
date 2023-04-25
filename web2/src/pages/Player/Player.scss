@@ -1,4 +1,4 @@
-@use '@/general.scss';
+@use "@/general.scss";
 
 .player-outer {
   width: 100%;
@@ -31,7 +31,7 @@
 }
 
 .player-info-album {
-  font-size: .75rem;
+  font-size: 0.75rem;
   // margin-top: 0.25rem;
 }
 
@@ -48,6 +48,6 @@
   width: 65vw;
 }
 
-.player-volume-expand-button{
+.player-volume-expand-button {
   color: general.$controls-color;
 }
