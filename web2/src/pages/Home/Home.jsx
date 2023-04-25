@@ -25,13 +25,6 @@ const Home = ({ selectedSource, setSelectedSource }) => {
   let cards = [];
   let nextAvailableSource = null;
 
-  // temp presets button
-  cards.push(
-    <div onClick={()=>setPresetsModalOpen(true)} key={-1}>
-      Presets
-    </div>
-  )
-
   sources.forEach((source, i) => {
     if(source.input.toUpperCase() != "NONE" && source.input != "" && source.input != "local"){
       cards.push(
@@ -58,26 +51,10 @@ const Home = ({ selectedSource, setSelectedSource }) => {
   return (
     <div className="home-outer">
       <div className="home-view">
-        {/* <PlayerCard
-          sourceId={0}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
-        />
-        <PlayerCard
-          sourceId={1}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
-        />
-        <PlayerCard
-          sourceId={2}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
-        />
-        <PlayerCard
-          sourceId={3}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
-        /> */}
+        {/* temp presets button thing */}
+        <div onClick={()=>setPresetsModalOpen(true)}>
+          Presets
+        </div>
 
         {
           cards

@@ -8,11 +8,11 @@ import Card from '@/components/Card/Card'
 import DoneIcon from '@mui/icons-material/Done'
 import './CreatePresetModal.scss'
 
-import Checkbox from '@mui/material/Checkbox';
+import Checkbox from '@mui/material/Checkbox'
 import Switch from '@mui/material/Switch'
-import IconButton from '@mui/material/IconButton';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Box from '@mui/material/Box'
 
 const setCheckedRecur = (dict, checked) => {
   dict.checked = checked
@@ -30,9 +30,6 @@ const computeCheckedStateRecur = (dict) => {
     if (c === 'ind' || curr === 'ind' || c !== curr) {
       c = 'ind'
     }
-  }
-  if (dict.checked !== c) {
-    console.log(`check state changed from ${dict.checked}  to ${c} for ${dict}.`)
   }
   dict.checked = c
   return c
@@ -68,8 +65,6 @@ const baseDict = (open, name, content, payload=null) => {
     'payload' : payload,
   }
 }
-
-
 
 const buildTreeDict = (status, showInactive=false) => {
   const dictWithOptions = (source) => {
@@ -164,10 +159,7 @@ const CreatePresetModal = ({ onClose }) => {
   }, [])
 
   const savePreset = () => {
-    console.log("savePreset")
-    console.log(mergePayloads(tree))
-
-    // create presett
+    // create preset
     fetch(`/api/preset`, {
       method: 'POST',
       headers: {
@@ -179,7 +171,7 @@ const CreatePresetModal = ({ onClose }) => {
       })
     })
   }
-
+  // creation of tree is delayed due to useEffect, so early return is required
   if (tree === null) return <div/>
 
   return (
