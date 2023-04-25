@@ -3,17 +3,19 @@ import "./PlayerCard.scss"
 import StreamBadge from "@/components/StreamBadge/StreamBadge"
 import SongInfo from "../SongInfo/SongInfo"
 import CardVolumeSlider from "../CardVolumeSlider/CardVolumeSlider"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import PlayerImage from "../PlayerImage/PlayerImage"
 import ZonesBadge from "../ZonesBadge/ZonesBadge"
 import StreamsModal from "../StreamsModal/StreamsModal"
 import ZonesModal from "../ZonesModal/ZonesModal"
+import { useStatusStore } from "@/App.jsx"
 import { router } from "@/main"
 
-const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
+const PlayerCard = ({ sourceId }) => {
   const [streamModalOpen, setStreamModalOpen] = useState(false)
   const [zoneModalOpen, setZoneModalOpen] = useState(false)
-  const selected = selectedSource === sourceId
+  const setSelectedSource = useStatusStore((s) => s.setSelectedSource)
+  const selected = useStatusStore((s) => s.selectedSource) === sourceId
 
   const select = () => {
     if (selected) {

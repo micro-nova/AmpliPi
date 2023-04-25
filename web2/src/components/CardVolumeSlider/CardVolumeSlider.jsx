@@ -62,6 +62,7 @@ const CardVolumeSlider = ({ sourceId }) => {
 
   const setValue = (vol) => {
     setZonesVol(vol, zones, sourceId)
+    setZonesMute(false, zones, sourceId)
   }
 
   const mute = getSourceZones(sourceId, zones)

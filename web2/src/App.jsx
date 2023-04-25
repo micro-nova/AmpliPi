@@ -8,7 +8,6 @@ import plexamp from "@/assets/plexamp.png"
 import lms from "@/assets/lms.png"
 import internetradio from "@/assets/internet_radio.png"
 import rca from "@/assets/rca_inputs.jpg"
-import { useEffect, useState } from "react"
 import { create } from "zustand"
 import "@/App.scss"
 import Home from "@/pages/Home/Home"
@@ -18,38 +17,33 @@ import Settings from "@/pages/Settings/Settings"
 import produce from "immer"
 import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
-import LoadingPage from "@/pages/LoadingPage/LoadingPage"
 import { router } from "@/main"
 import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon"
 
-const UPDATE_INTERVAL = 1000
 
 export const useStatusStore = create((set, get) => ({
   status: null,
   skipUpdate: false,
   loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
   disconnected: true,
+  selectedSource: 0,
+  setSelectedSource: (selected) => {
+    set({selectedSource: selected})
+  },
   setZonesVol: (vol, zones, sourceId) => {
     set(
       produce((s) => {
         s.skipUpdate = true
         applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
-          // let zone = null
-          // for (const z of s.status.zones) {
-          //   if (z.id === zone_id) {
-          //     zone = z;
-          //     s.status.zones
-          //   }
-          // }
-
           for (const i in s.status.zones) {
             if (s.status.zones[i].id === zone_id) {
               s.status.zones[i].vol_f = new_vol
             }
           }
-
-          // zone.vol_f = new_vol
         })
+
+        // pre-emptive unmute
+
       })
     )
   },
@@ -191,12 +185,20 @@ export const getIcon = (type) => {
   }
 }
 
-function App({ selectedPage }) {
-  const [selectedSource, setSelectedSource] = useState(0)
-  const isLoaded = useStatusStore((s) => s.loaded)
-  const update = useStatusStore((s) => s.fetch)
-  const disconnected = useStatusStore((s) => s.disconnected)
+const Page = ({ selectedPage }) => {
+  switch (selectedPage) {
+    default:
+      return <Home />
+    case 1:
+      return <Player />
+    case 2:
+      return <div></div>
+    case 3:
+      return <Settings />
+  }
+}
 
+function App({ selectedPage }) {
   const setSelectedPage = (n) => {
     switch (n) {
       default:
@@ -214,50 +216,11 @@ function App({ selectedPage }) {
     }
   }
 
-  // if (!isLoaded || disconnected) {
-
-  //   return (
-  //     useEffect(() => {
-  //       const interval = setInterval(() => {
-  //         update();
-  //       }, UPDATE_INTERVAL);
-  //       return () => clearInterval(interval);
-  //     }, []),
-  //     (<LoadingPage/>)
-  //   );
-  // }
-
-  const Page = () => {
-    switch (selectedPage) {
-      default:
-        return (
-          <Home
-            selectedSource={selectedSource}
-            setSelectedSource={setSelectedSource}
-          />
-        )
-      case 1:
-        return <Player selectedSource={selectedSource} />
-      case 2:
-        return <div></div>
-      case 3:
-        return <Settings />
-    }
-  }
-
   return (
-    // useEffect(() => {
-    //   update();
-    //   const interval = setInterval(() => {
-    //     update();
-    //   }, UPDATE_INTERVAL);
-    //   return () => clearInterval(interval);
-    // }, []),
-    // (
     <div className="app">
       <DisconnectedIcon />
       <div style={{ paddingBottom: "56px" }}>
-        <Page />
+        <Page selectedPage={selectedPage}/>
       </div>
       <MenuBar
         pageNumber={selectedPage}
@@ -266,7 +229,6 @@ function App({ selectedPage }) {
         }}
       />
     </div>
-    // )
   )
 }
 

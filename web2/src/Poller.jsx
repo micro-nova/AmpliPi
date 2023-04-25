@@ -10,11 +10,17 @@ const Poller = ({ children }) => {
   const disconnected = useStatusStore((s) => s.disconnected)
   const update = useStatusStore((s) => s.fetch)
 
+  // update immediately at start
+  useEffect(() => {
+    update()
+  }, [])
+
+  // update periodically
   useInterval(() => {
     update()
   }, UPDATE_INTERVAL)
 
-  if (!isLoaded) {
+  if (!isLoaded || disconnected) {
     return <LoadingPage />
   }
   return children

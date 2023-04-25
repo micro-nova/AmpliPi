@@ -4,9 +4,7 @@ const Modal = ({ children, className = "", onClose }) => {
   return (
     <div
       className={`modal_container ${className}`}
-      onClick={() => {
-        onClose()
-      }}
+      onClick={onClose}
     >
       <div
         onClick={(e) => {

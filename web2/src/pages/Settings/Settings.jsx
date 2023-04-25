@@ -20,6 +20,8 @@ const PageListItem = ({ name, onClick }) => {
   )
 }
 
+const close = () => router.navigate("/settings")
+
 const CorePage = ({ openPage }) => {
   switch (openPage) {
     case "streams":
@@ -54,7 +56,7 @@ const Page = ({ openPage }) =>
   )
 
 const Settings = ({ openPage = "" }) => {
-  const close = () => router.navigate("/settings")
+  
 
   const status = useStatusStore((s) => s.status)
 

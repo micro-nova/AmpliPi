@@ -11,7 +11,8 @@ import { useState } from "react"
 import VolumeZones from "@/components/VolumeZones/VolumeZones"
 import Card from "@/components/Card/Card"
 
-const Player = ({ selectedSource }) => {
+const Player = ({ }) => {
+  const selectedSource = useStatusStore((s) => s.selectedSource)
   const img_url = useStatusStore(
     (s) => s.status.sources[selectedSource].info.img_url
   )

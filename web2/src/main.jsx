@@ -1,13 +1,14 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
-import { CookiesProvider } from "react-cookie"
 import App from "./App"
 import Settings from "./pages/Settings/Settings"
 import Poller from "./Poller"
 import "./index.scss"
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
+import './general.scss'
 
 import {
-  createBrowserRouter,
   createHashRouter,
   RouterProvider,
   Navigate,
@@ -80,10 +81,22 @@ export const router = createHashRouter([
   // }
 ])
 
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      paper: '#2a2a2a' // TODO: no good way of getting this from scss...
+    },
+  },
+})
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <Poller>
-      <RouterProvider router={router} />
-    </Poller>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <Poller>
+        <RouterProvider router={router} />
+      </Poller>
+    </ThemeProvider>
   </React.StrictMode>
 )

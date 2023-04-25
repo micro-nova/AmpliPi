@@ -16,12 +16,13 @@ export const getSourceZones = (source_id, zones) => {
   return matches
 }
 
-const Home = ({ selectedSource, setSelectedSource }) => {
+const Home = ({}) => {
   const sources = useStatusStore((s) => s.status.sources)
   const clearSourceZones = useStatusStore((s) => s.clearSourceZones)
   const [zonesModalOpen, setZonesModalOpen] = useState(false)
   const [streamsModalOpen, setStreamsModalOpen] = useState(false)
   const [presetsModalOpen, setPresetsModalOpen] = useState(false)
+  
   let cards = []
   let nextAvailableSource = null
 
@@ -35,8 +36,6 @@ const Home = ({ selectedSource, setSelectedSource }) => {
         <PlayerCard
           key={i}
           sourceId={source.id}
-          selectedSource={selectedSource}
-          setSelectedSource={setSelectedSource}
         />
       )
     } else {
