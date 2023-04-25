@@ -1,64 +1,70 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { CookiesProvider } from "react-cookie";
-import App from './App'
-import Settings from './pages/Settings/Settings'
-import './index.scss'
+import React from "react"
+import ReactDOM from "react-dom/client"
+import { CookiesProvider } from "react-cookie"
+import App from "./App"
+import Settings from "./pages/Settings/Settings"
+import Poller from "./Poller"
+import "./index.scss"
 
-import { createBrowserRouter, createHashRouter, RouterProvider, Navigate } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  createHashRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom"
 
 export const router = createHashRouter([
   {
-    path: '/',
+    path: "/",
     element: <Navigate to="/home" />,
     errorElement: <div>404</div>,
   },
   {
-    path: '/home',
+    path: "/home",
     element: <App selectedPage={0} />,
   },
   {
-    path: '/player',
+    path: "/player",
     element: <App selectedPage={1} />,
   },
   {
-    path: '/browser',
+    path: "/browser",
     element: <App selectedPage={2} />,
   },
   {
-    path: '/settings',
+    path: "/settings",
     // element: <App selectedPage={3} />,
     children: [
       {
-        path: '/settings',
+        path: "/settings",
         element: <App selectedPage={3} />,
       },
       {
-        path: 'streams',
+        path: "streams",
         element: <Settings openPage="streams" />,
       },
       {
-        path: 'zones',
+        path: "zones",
         element: <Settings openPage="zones" />,
       },
       {
-        path: 'groups',
+        path: "groups",
         element: <Settings openPage="groups" />,
       },
       {
-        path: 'sessions',
+        path: "sessions",
         element: <Settings openPage="sessions" />,
       },
       {
-        path: 'presets',
+        path: "presets",
         element: <Settings openPage="presets" />,
       },
       {
-        path: 'config',
+        path: "config",
         element: <Settings openPage="config" />,
       },
       {
-        path: 'about',
+        path: "about",
         element: <Settings openPage="about" />,
       },
       // TODO: maybe redirect to update page. this is only accessable via URL
@@ -66,7 +72,7 @@ export const router = createHashRouter([
       //   path: 'updates',
       //   element: <Settings openPage="updates" />,
       // },
-    ]
+    ],
   },
   // {
   //   path: '/settings/streams',
@@ -74,8 +80,10 @@ export const router = createHashRouter([
   // }
 ])
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>,
+    <Poller>
+      <RouterProvider router={router} />
+    </Poller>
+  </React.StrictMode>
 )

@@ -2,12 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="15a9dea8-88f2-4709-9b9e-9b956407a60a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/web2/src/components/MediaControl/MediaControl.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/components/MediaControl/MediaControl.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/App.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/src/main.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/main.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/src/pages/Settings/Presets/Presets.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/pages/Settings/Presets/Presets.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/vite.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/web2/vite.config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Merge.Settings">
+    <option name="BRANCH" value="origin/webapp_2" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -23,7 +29,8 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true"
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Users/jonah/PycharmProjects/AmpliPi-webapp2"
   }
 }]]></component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />

@@ -1,6 +1,6 @@
-@use 'src/general';
+@use "src/general";
 
-.loading-container{
+.loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -9,7 +9,7 @@
   width: 100vw;
 }
 
-.loading-logo{
+.loading-logo {
   height: 5rem;
   margin-bottom: 2rem;
 }

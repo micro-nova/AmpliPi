@@ -9,26 +9,26 @@
   overflow-y: auto;
 }
 
-.zones-zone-name{
+.zones-zone-name {
   @include general.header-font;
   color: general.$text-color;
   font-size: 2rem;
   margin: 0.5rem;
 }
 
-.zones-zone-column{
+.zones-zone-column {
   display: flex;
   flex-direction: column;
   margin: 0.5rem;
 }
 
-.zones-zone-row{
+.zones-zone-row {
   display: flex;
   flex-direction: row;
   margin: 0.5rem;
 }
 
-.zones-zone-expand-button{
+.zones-zone-expand-button {
   color: general.$controls-color;
   cursor: pointer;
 }

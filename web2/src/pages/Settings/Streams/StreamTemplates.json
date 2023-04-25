@@ -2,7 +2,7 @@
   {
     "name": "AirPlay Device",
     "type": "airplay",
-    "fields":[
+    "fields": [
       {
         "title": "Airplay2",
         "description": "Make this stream Airplay2; only one Airplay2 stream can be running at a time.",
@@ -14,12 +14,12 @@
   {
     "name": "DLNA",
     "type": "dlna",
-    "fields":[]
+    "fields": []
   },
   {
     "name": "FM Radio Station",
     "type": "fmradio",
-    "fields":[
+    "fields": [
       {
         "title": "Frequency",
         "description": "Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.",
@@ -38,10 +38,10 @@
   {
     "name": "Internet Radio Station",
     "type": "internetradio",
-    "fields":[
+    "fields": [
       {
-        "name":"search",
-        "type":"internet-radio-search"
+        "name": "search",
+        "type": "internet-radio-search"
       },
       {
         "title": "URL",
@@ -61,7 +61,7 @@
   {
     "name": "LMS Client",
     "type": "lms",
-    "fields":[
+    "fields": [
       {
         "title": "Server",
         "description": "Optional LMS server hostname (without port). Example: mylmsserver",
@@ -73,7 +73,7 @@
   {
     "name": "Pandora Station",
     "type": "pandora",
-    "fields":[
+    "fields": [
       {
         "title": "Station ID",
         "description": "Station ID is the numeric section of a Pandora station link. Example: ID = 4610303469018478727 from https://www.pandora.com/station/play/4610303469018478727",
@@ -98,16 +98,16 @@
   {
     "name": "Spotify Device",
     "type": "spotify",
-    "fields":[]
+    "fields": []
   },
   {
     "name": "Bluetooth Device",
     "type": "bluetooth",
-    "fields":[]
+    "fields": []
   },
   {
     "name": "RCA Input",
     "type": "rca",
-    "fields":[]
+    "fields": []
   }
 ]

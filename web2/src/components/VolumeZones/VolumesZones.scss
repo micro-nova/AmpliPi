@@ -1,19 +1,19 @@
-@use '@/general.scss';
+@use "@/general.scss";
 
-.volume-sliders-container{
+.volume-sliders-container {
   padding-top: 2.5rem;
   padding-left: 5rem;
   padding-right: 5rem;
   color: general.$controls-color;
 }
 
-.zone-vol-card{
+.zone-vol-card {
   margin-top: 1rem;
   padding: 0.75rem;
   color: general.$controls-color;
 }
 
-.group-vol-card{
+.group-vol-card {
   margin-top: 1rem;
   padding: 0.75rem;
   color: general.$controls-color;

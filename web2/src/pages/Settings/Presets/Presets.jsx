@@ -4,21 +4,18 @@ import { useStatusStore } from "@/App.jsx"
 import { useState } from "react"
 import { Fab } from "@mui/material"
 import AddIcon from "@mui/icons-material/Add"
-import CreatePresetModal from './CreatePresetModal/CreatePresetModal'
+import CreatePresetModal from "./CreatePresetModal/CreatePresetModal"
 import EditPresetModal from "./EditPresetModal/EditPresetModal"
 
-
 const PresetListItem = ({ preset }) => {
-  const [presetOpen, setPresetOpen] = useState(false);
+  const [presetOpen, setPresetOpen] = useState(false)
 
   return (
     <>
-      <div onClick={()=>setPresetOpen(true)}>
-        {preset.name}
-      </div>
-      { presetOpen &&
-        <EditPresetModal onClose={()=>setPresetOpen(false)} preset={preset}/>
-      }
+      <div onClick={() => setPresetOpen(true)}>{preset.name}</div>
+      {presetOpen && (
+        <EditPresetModal onClose={() => setPresetOpen(false)} preset={preset} />
+      )}
     </>
   )
 }
@@ -27,9 +24,9 @@ const Presets = ({ onClose }) => {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const presets = useStatusStore((s) => s.status.presets)
 
-  const presetListItems = presets.map((preset) => {
-    return <PresetListItem preset={preset} key={preset.id} />
-  })
+  const presetListItems = presets.map((preset) => (
+    <PresetListItem preset={preset} key={preset.id} />
+  ))
 
   return (
     <>
@@ -38,13 +35,15 @@ const Presets = ({ onClose }) => {
       <div className="add-preset-button">
         <Fab
           onClick={() => {
-            setCreateModalOpen(true);
+            setCreateModalOpen(true)
           }}
         >
-          <AddIcon></AddIcon>
+          <AddIcon />
         </Fab>
       </div>
-      {createModalOpen && <CreatePresetModal onClose={()=>setCreateModalOpen(false)}/>}
+      {createModalOpen && (
+        <CreatePresetModal onClose={() => setCreateModalOpen(false)} />
+      )}
     </>
   )
 }

@@ -1,21 +1,20 @@
-@use 'src/general';
+@use "src/general";
 
-.volume-slider-container{
+.volume-slider-container {
   display: flex;
   flex-direction: row;
   align-items: center;
   width: 100%;
   justify-content: center;
-
 }
 
-.volume-slider-icon{
+.volume-slider-icon {
   font-size: 2rem;
   margin-right: 0.5rem;
   margin-left: 0.75rem;
   cursor: pointer;
 }
 
-.volume-slider-mute{
+.volume-slider-mute {
   color: general.$mute-color;
 }

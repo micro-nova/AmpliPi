@@ -1,13 +1,13 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import path from "path"
 // import https from 'https'
 
 // set this to dev server url
 //TODO: find a way to do this from cli
 // const amplipiurl = "http://192.168.0.117"
-const amplipiurl = "http://192.168.0.178"
-// const amplipiurl = "http://192.168.0.118"
+// const amplipiurl = "http://192.168.0.178"
+const amplipiurl = "http://192.168.0.118"
 // const amplipiurl = "http://fe80::4caf:b851:9a24:ffbc"
 // const amplipiurl = "http://192.168.0.198"
 // const amplipiurl = "http://localhost"
@@ -16,7 +16,7 @@ const amplipiurl = "http://192.168.0.178"
 export default defineConfig({
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   // plugins: [react(), 'macros'],
@@ -28,22 +28,22 @@ export default defineConfig({
     host: true,
     // https: false,
     proxy: {
-      '/api': {
+      "/api": {
         target: amplipiurl,
         changeOrigin: true,
         // secure: false,
         // agent: new https.Agent()
       },
-      '/static': {
+      "/static": {
         target: amplipiurl,
         changeOrigin: true,
         // secure: false,
         // agent: new https.Agent()
       },
-      '/update':{
-        target: amplipiurl+':5001',
+      "/update": {
+        target: amplipiurl + ":5001",
         changeOrigin: true,
-      }
-    }
+      },
+    },
   },
 })

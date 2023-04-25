@@ -1,12 +1,12 @@
 @use "src/general.scss";
 
-.streams-modal{
+.streams-modal {
   @include general.header-font;
   font-size: 1.5rem;
   color: general.$text-color;
 }
 
-.streams-modal-card{
+.streams-modal-card {
   max-height: 75vh;
   overflow: hidden;
   display: flex;
@@ -28,6 +28,6 @@
   height: 100%;
 }
 
-.streams-modal-list-item{
+.streams-modal-list-item {
   margin-bottom: 1rem;
 }
