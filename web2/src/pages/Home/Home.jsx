@@ -48,21 +48,25 @@ const Home = ({ selectedSource, setSelectedSource }) => {
     setZonesModalOpen(true)
   }
 
+  const PresetAndAdd = () => {
+    if (cards.length < sources.length) {
+      return (
+        <div className="home-presets-container">
+          <div className="home-add-player-button" onClick={()=>{initSource(nextAvailableSource)}}>+</div>
+          <div style={{width: '1.25rem'}} />
+          <div className="home-presets-button" onClick={()=>setPresetsModalOpen(true)}>Presets</div>
+        </div>
+      )
+    } else {
+      return <div className="home-presets-button" onClick={()=>setPresetsModalOpen(true)}>Presets</div>
+    }
+  }
+
   return (
     <div className="home-outer">
       <div className="home-view">
-        {/* temp presets button thing */}
-        <div onClick={()=>setPresetsModalOpen(true)}>
-          Presets
-        </div>
-
-        {
-          cards
-        }
-
-        {cards.length < sources.length &&
-          <div className="home-add-player-button" onClick={()=>{initSource(nextAvailableSource)}}>+</div>
-        }
+        {cards}
+        <PresetAndAdd />
       </div>
 
       {zonesModalOpen && <ZonesModal sourceId={nextAvailableSource} setZoneModalOpen={(o)=>{setStreamsModalOpen(!o); setZonesModalOpen(o)}} onClose={()=>setZonesModalOpen(false)}/>}
