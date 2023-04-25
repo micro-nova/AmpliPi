@@ -8,15 +8,16 @@ import PlayerImage from "../PlayerImage/PlayerImage";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
 import StreamsModal from "../StreamsModal/StreamsModal";
 import ZonesModal from "../ZonesModal/ZonesModal";
+import { router } from "@/main";
 
-const PlayerCard = ({ sourceId, selectedSource, setSelectedPage, setSelectedSource }) => {
+const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
   const [streamModalOpen, setStreamModalOpen] = useState(false);
   const [zoneModalOpen, setZoneModalOpen] = useState(false);
   const selected = selectedSource === sourceId
 
   const select = () => {
     if (selected) {
-      setSelectedPage(1)
+      router.navigate('/player')
     }
 
     setSelectedSource(sourceId)
