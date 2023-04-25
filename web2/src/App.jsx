@@ -213,7 +213,7 @@ function App({ selectedPage }) {
   const Page = () => {
       switch(selectedPage) {
       default:
-        return <Home selectedSource={selectedSource} setSelectedPage={setSelectedPage} setSelectedSource={setSelectedSource} />
+        return <Home selectedSource={selectedSource} setSelectedSource={setSelectedSource} />
       case 1:
         return <Player selectedSource={selectedSource} />
       case 2:

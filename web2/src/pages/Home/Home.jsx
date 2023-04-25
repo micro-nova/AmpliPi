@@ -3,6 +3,7 @@ import "./Home.scss";
 import { useStatusStore } from '@/App.jsx'
 import ZonesModal from "@/components/ZonesModal/ZonesModal";
 import StreamsModal from "@/components/StreamsModal/StreamsModal";
+import PresetsModal from "@/components/PresetsModal/PresetsModal";
 import { useState } from "react";
 
 export const getSourceZones = (source_id, zones) => {
@@ -15,23 +16,23 @@ export const getSourceZones = (source_id, zones) => {
   return matches;
 };
 
-const Home = ({ selectedSource, setSelectedPage, setSelectedSource }) => {
+const Home = ({ selectedSource, setSelectedSource }) => {
   const sources = useStatusStore((s)=>s.status.sources)
   const clearSourceZones = useStatusStore((s)=>s.clearSourceZones)
   const [zonesModalOpen, setZonesModalOpen] = useState(false)
   const [streamsModalOpen, setStreamsModalOpen] = useState(false)
-  let playerCards = [];
+  const [presetsModalOpen, setPresetsModalOpen] = useState(false)
+  let cards = [];
   let nextAvailableSource = null;
 
   sources.forEach((source, i) => {
     if(source.input.toUpperCase() != "NONE" && source.input != "" && source.input != "local"){
-      playerCards.push(
+      cards.push(
         <PlayerCard
           key={i}
           sourceId={source.id}
           selectedSource={selectedSource}
           setSelectedSource={setSelectedSource}
-          setSelectedPage={setSelectedPage}
         />
       )
       } else {
@@ -47,21 +48,30 @@ const Home = ({ selectedSource, setSelectedPage, setSelectedSource }) => {
     setZonesModalOpen(true)
   }
 
+  const PresetAndAdd = () => {
+    if (cards.length < sources.length) {
+      return (
+        <div className="home-presets-container">
+          <div className="home-add-player-button" onClick={()=>{initSource(nextAvailableSource)}}>+</div>
+          <div style={{width: '1.25rem'}} />
+          <div className="home-presets-button" onClick={()=>setPresetsModalOpen(true)}>Presets</div>
+        </div>
+      )
+    } else {
+      return <div className="home-presets-button" onClick={()=>setPresetsModalOpen(true)}>Presets</div>
+    }
+  }
+
   return (
     <div className="home-outer">
       <div className="home-view">
-
-        {
-          playerCards
-        }
-
-        {playerCards.length < sources.length &&
-          <div className="home-add-player-button" onClick={()=>{initSource(nextAvailableSource)}}>+</div>
-        }
+        {cards}
+        <PresetAndAdd />
       </div>
 
       {zonesModalOpen && <ZonesModal sourceId={nextAvailableSource} setZoneModalOpen={(o)=>{setStreamsModalOpen(!o); setZonesModalOpen(o)}} onClose={()=>setZonesModalOpen(false)}/>}
       {streamsModalOpen && <StreamsModal sourceId={nextAvailableSource} setStreamModalOpen={(o)=>setStreamsModalOpen(o)} onClose={()=>setStreamsModalOpen(false)}/>}
+      {presetsModalOpen && <PresetsModal onClose={()=>setPresetsModalOpen(false)}/>}
 
     </div>
 

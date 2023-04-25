@@ -50,6 +50,10 @@ export const router = createHashRouter([
         element: <Settings openPage="sessions" />,
       },
       {
+        path: 'presets',
+        element: <Settings openPage="presets" />,
+      },
+      {
         path: 'config',
         element: <Settings openPage="config" />,
       },
