@@ -22,11 +22,11 @@ const GroupVolumeSlider = ({groupId}) => {
   for(const zoneId of group.zones) {
     zones.push(<ZoneVolumeSlider key={zoneId} zoneId={zoneId} />)
   }
-  const setVol = (vol) => {
+  const setVol = (vol, force = false) => {
 
     setGroupVol(groupId, vol)
 
-    if(sendingRequestCount <= 0) {
+    if(sendingRequestCount <= 0 || force) {
       sendingRequestCount += 1
       fetch(`/api/groups/${groupId}`, {
         method: 'PATCH',
@@ -58,10 +58,10 @@ const GroupVolumeSlider = ({groupId}) => {
 
         <VolumeSlider mute={group.mute} setMute={setMute} vol={volume} setVol={setVol} />
 
-        <IconButton onClick={()=>setSlidersOpen(!slidersOpen)}>
+        <IconButton style={{padding: "0px"}} onClick={()=>setSlidersOpen(!slidersOpen)}>
           {
-            slidersOpen ? <KeyboardArrowUpIcon className='groups-slider-expand-button' style={{width:"3rem", height:"3rem"}}/> :
-            <KeyboardArrowDownIcon className='groups-slider-expand-button' style={{width:"3rem", height:"3rem"}}/>
+            slidersOpen ? <KeyboardArrowUpIcon className='group-slider-expand-button' style={{width:"3rem", height:"3rem"}}/> :
+            <KeyboardArrowDownIcon className='group-slider-expand-button' style={{width:"3rem", height:"3rem"}}/>
           }
         </IconButton>
       </div>

@@ -14,11 +14,11 @@ const ZoneVolumeSlider = ({zoneId}) => {
   const setZoneVol = useStatusStore((s) => s.setZoneVol)
   const setZoneMute = useStatusStore((s) => s.setZoneMute)
 
-  const setVol = (vol) => {
+  const setVol = (vol, force=false) => {
 
     setZoneVol(zoneId, vol)
 
-    if (sendingRequestCount <= 0) {
+    if (sendingRequestCount <= 0 || force) {
       sendingRequestCount += 1
 
       fetch(`/api/zones/${zoneId}`, {

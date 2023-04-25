@@ -57,6 +57,10 @@ export const router = createHashRouter([
         path: 'config',
         element: <Settings openPage="config" />,
       },
+      {
+        path: 'about',
+        element: <Settings openPage="about" />,
+      },
       // TODO: maybe redirect to update page. this is only accessable via URL
       // {
       //   path: 'updates',

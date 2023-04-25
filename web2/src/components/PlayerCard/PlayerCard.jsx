@@ -9,10 +9,18 @@ import ZonesBadge from "../ZonesBadge/ZonesBadge";
 import StreamsModal from "../StreamsModal/StreamsModal";
 import ZonesModal from "../ZonesModal/ZonesModal";
 
-const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
+const PlayerCard = ({ sourceId, selectedSource, setSelectedPage, setSelectedSource }) => {
   const [streamModalOpen, setStreamModalOpen] = useState(false);
   const [zoneModalOpen, setZoneModalOpen] = useState(false);
   const selected = selectedSource === sourceId
+
+  const select = () => {
+    if (selected) {
+      setSelectedPage(1)
+    }
+
+    setSelectedSource(sourceId)
+  }
 
   return (
     <Card selected={selected}>
@@ -23,12 +31,12 @@ const PlayerCard = ({ sourceId, selectedSource, setSelectedSource }) => {
         <div className="content stream-name-container" onClick={()=>{setStreamModalOpen(true)}}>
           <StreamBadge sourceId={sourceId} />
         </div>
-        <div className="content album-art" onClick={() => setSelectedSource(sourceId)}>
+        <div className="content album-art" onClick={select}>
           <div>
             <PlayerImage sourceId={sourceId} />
           </div>
         </div>
-        <div className="content" onClick={() => setSelectedSource(sourceId)}>
+        <div className="content song-info" onClick={select}>
           <SongInfo sourceId={sourceId} />
         </div>
         <div className="content vol">

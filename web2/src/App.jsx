@@ -20,14 +20,17 @@ import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
 import LoadingPage from "@/pages/LoadingPage/LoadingPage";
 import { router } from "@/main"
+import DisconnectedIcon from './components/DisconnectedIcon/DisconnectedIcon'
 
 const UPDATE_INTERVAL = 1000;
 
-export const useStatusStore = create((set) => ({
+export const useStatusStore = create((set, get) => ({
   status: null,
+  skipUpdate: false,
   loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
   setZonesVol: (vol, zones, sourceId) => {
     set(produce((s) => {
+      s.skipUpdate = true
       applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
         // let zone = null
         // for (const z of s.status.zones) {
@@ -76,13 +79,25 @@ export const useStatusStore = create((set) => ({
       g.mute = mute
     }))
   },
-  fetch: async () => {
-    // TODO make this not crash the app if the server is down
-    const res = await fetch(`/api`)
-    set({ status: await res.json(), loaded: true })
+  fetch: () => {
+    if(get().skipUpdate){
+      set({skipUpdate: false})
+      return
+    }
+    fetch(`/api`).then((res)=>{
+      if(res.ok){
+        res.json().then(s => set({ status: s, loaded: true, disconnected: false }))
+      }
+      else{
+        set({disconnected: true})
+      }
+    }).catch((_) => {
+      set({disconnected: true})
+    })
   },
   setZoneVol: (zoneId, new_vol) => {
     set(produce((s) => {
+      s.skipUpdate = true
       s.status.zones[zoneId].vol_f = new_vol
     }))
   },
@@ -90,6 +105,7 @@ export const useStatusStore = create((set) => ({
     set(produce((s) => {
       let g = s.status.groups.filter((g) => g.id === groupId)[0]
       for (const i of g.zones) {
+        s.skipUpdate = true
         s.status.zones[i].vol_f = new_vol
       }
       g.vol_f = new_vol
@@ -119,6 +135,9 @@ export const useStatusStore = create((set) => ({
 }))
 
 export const getIcon = (type) => {
+  if (type === null || type === undefined) {
+    return internetradio
+  }
   switch (type.toUpperCase()) {
     case "SPOTIFY":
       return spotify
@@ -132,7 +151,7 @@ export const getIcon = (type) => {
     case "FM RADIO":
       return fmradio
 
-    case "SHAIRPORT":
+    case "AIRPLAY":
       return shairport
 
     case "PANDORA":
@@ -159,6 +178,7 @@ function App({ selectedPage }) {
   const [selectedSource, setSelectedSource] = useState(0);
   const isLoaded = useStatusStore((s) => s.loaded)
   const update = useStatusStore((s) => s.fetch)
+  const disconnected = useStatusStore((s) => s.disconnected)
 
   const setSelectedPage = (n) => {
     switch (n) {
@@ -177,7 +197,7 @@ function App({ selectedPage }) {
     }
   }
 
-  if (isLoaded == false) {
+  if (!isLoaded || disconnected) {
 
     return (
       useEffect(() => {
@@ -193,7 +213,7 @@ function App({ selectedPage }) {
   const Page = () => {
       switch(selectedPage) {
       default:
-        return <Home selectedSource={selectedSource} setSelectedSource={(i)=>{setSelectedSource(i); setSelectedPage(1)}} />
+        return <Home selectedSource={selectedSource} setSelectedPage={setSelectedPage} setSelectedSource={setSelectedSource} />
       case 1:
         return <Player selectedSource={selectedSource} />
       case 2:
@@ -213,6 +233,7 @@ function App({ selectedPage }) {
     }, []),
     (
       <div className="app">
+        <DisconnectedIcon/>
         <div style={{paddingBottom: '56px'}}>
           <Page />
         </div>
