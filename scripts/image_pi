@@ -131,21 +131,23 @@ if $write_img; then
   # bc truncates, add 0.5 to round
   est_time=$(echo "$img_size_mb/$write_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
   echo "Copying the image to the AmpliPi. This will take about $est_time minutes."
-  dd_opts="if=$img_file of=$pi_path"
 else
   emmc_size_mb=29820 # Taken from a CM3+ 32 GB model
   est_time=$(echo "$emmc_size_mb/$read_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
   echo "Reading the image from the AmpliPi. This will take about $est_time minutes."
-  dd_opts="if=$pi_path of=$img_file"
 fi
 
 # Actually do read/write
 echo "Go get a coffee or something :)"
 echo "Started at: $(date)"
-if $write_img && $compressed; then
-  xzcat "$img_file" | sudo dd of="$pi_path" bs=4MiB oflag=direct conv=fsync status=progress
+if $write_img; then
+  if $compressed; then
+    xzcat "$img_file" | sudo dd of="$pi_path" oflag=dsync bs=1M status=progress
+  else
+    sudo dd if="$img_file" of="$pi_path" oflag=dsync bs=1M status=progress
+  fi
 else
-  sudo dd "$dd_opts" bs=4MiB oflag=direct status=progress
+  sudo dd if="$pi_path" of="$img_file" bs=1M status=progress
 fi
 echo "Finished at: $(date)"
 
