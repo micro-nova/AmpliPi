@@ -161,13 +161,6 @@ class Api:
     "groups": [
     ],
     "presets" : [
-      {"id": MUTE_ALL_ID,
-        "name": "Mute All",
-        "state" : {
-          "zones" : [
-          ]
-        }
-      },
     ]
   }
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
