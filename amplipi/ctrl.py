@@ -98,6 +98,7 @@ class Api:
   config_file: str
   backup_config_file: str
   config_file_valid: bool
+  is_streamer: bool
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
 
@@ -147,10 +148,10 @@ class Api:
 
   STREAMER_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Input 1", "input": "local"},
-      {"id": 1, "name": "Input 2", "input": "local"},
-      {"id": 2, "name": "Input 3", "input": "local"},
-      {"id": 3, "name": "Input 4", "input": "local"}
+      {"id": 0, "name": "Input 1", "input": ""},
+      {"id": 1, "name": "Input 2", "input": ""},
+      {"id": 2, "name": "Input 3", "input": ""},
+      {"id": 3, "name": "Input 4", "input": ""}
     ],
     "streams": [
       {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
@@ -231,11 +232,12 @@ class Api:
       errors.append('error finding boards: {}'.format(exc))
 
     # check if we are a streamer
-    is_streamer = BoardType.STREAMER_SUPPORT in found_boards
+    self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards
 
     if not loaded_config:
-      print(errors[0])
-      if is_streamer:
+      if len(errors) > 0:
+        print(errors[0])
+      if self.is_streamer:
         print('using streamer config')
         self.status = models.Status.parse_obj(self.STREAMER_CONFIG)
       else:
@@ -258,14 +260,13 @@ class Api:
     self._update_sys_info() # TODO: does sys info need to be updated at init time?
 
     # detect missing zones
-    if self._mock_hw and not is_streamer:
+    if self._mock_hw and not self.is_streamer:
       # only allow 6 zones when mocked to simplify testing
       # add more if needed by specifying them in the config
       potential_zones = range(6)
-      pass
-    elif is_streamer:
+    elif self.is_streamer:
       # streamer has no zones
-      potential_zones = []
+      potential_zones = range(0)
     else:
       potential_zones = range(rt.MAX_ZONES)
     added_zone = False
@@ -291,22 +292,23 @@ class Api:
     # configure Aux and SPDIF
     utils.configure_inputs()
 
-    # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
-    for rca_id in RCAs:
-      sid, stream = utils.find(self.status.streams, rca_id)
-      if sid is None:
-        idx = rca_id - RCAs[0]
-        # try to use the old name in the source if it was renamed from the default name of 1-4
-        input_name = f'Input {idx + 1}'
-        try:
-          src_name = self.status.sources[idx].name
-          if not src_name.isdigit():
-            input_name = src_name
-        except Exception as e:
-          print(f'Error discovering old source name for conversion to RCA stream: {e}')
-          print(f'- Defaulting name to: {input_name}')
-        rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
-        self.status.streams.insert(idx, rca_stream)
+    if not self.is_streamer:
+      # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
+      for rca_id in RCAs:
+        sid, stream = utils.find(self.status.streams, rca_id)
+        if sid is None:
+          idx = rca_id - RCAs[0]
+          # try to use the old name in the source if it was renamed from the default name of 1-4
+          input_name = f'Input {idx + 1}'
+          try:
+            src_name = self.status.sources[idx].name
+            if not src_name.isdigit():
+              input_name = src_name
+          except Exception as e:
+            print(f'Error discovering old source name for conversion to RCA stream: {e}')
+            print(f'- Defaulting name to: {input_name}')
+          rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
+          self.status.streams.insert(idx, rca_stream)
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
