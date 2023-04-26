@@ -1,6 +1,5 @@
-import "./Config.scss"
+import "../PageBody.scss"
 import PageHeader from "@/components/PageHeader/PageHeader"
-import Card from "@/components/Card/Card"
 import { useState } from "react"
 import { Button } from "@mui/material"
 
@@ -57,7 +56,7 @@ const Config = ({ onClose }) => {
   return (
     <>
       <PageHeader title="Configuration and Reset" onClose={onClose} />
-      <div className="config-body">
+      <div className="page-body">
         <div>
           Upload Config
           <div>

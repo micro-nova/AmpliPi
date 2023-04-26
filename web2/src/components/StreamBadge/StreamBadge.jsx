@@ -1,7 +1,9 @@
 import "./StreamBadge.scss"
 import { useStatusStore, getIcon } from "@/App.jsx"
+import Chip from '@/components/Chip/Chip'
+import StreamsModal from "../StreamsModal/StreamsModal"
 
-const StreamBadge = ({ sourceId }) => {
+const StreamBadge = ({ sourceId, onClick }) => {
   const info = useStatusStore((s) => s.status.sources[sourceId].info)
   const name = info.name.split(" - ")[0]
   const type = info.name.split(" - ")[1]
@@ -9,10 +11,10 @@ const StreamBadge = ({ sourceId }) => {
   const icon = getIcon(type)
 
   return (
-    <div className="stream-badge">
-      <div className="stream-badge-name">{name}</div>
+    <Chip onClick={onClick}>
       <img src={icon} className="stream-badge-icon" alt="stream icon" />
-    </div>
+      <div className="stream-badge-name">{name}</div>
+    </Chip>
   )
 }
 

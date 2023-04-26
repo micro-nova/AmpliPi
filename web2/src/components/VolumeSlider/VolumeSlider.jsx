@@ -44,6 +44,7 @@ const VolumeSlider = ({ vol, mute, setVol, setMute }) => {
           setVol(val, true)
         }}
       />
+
     </div>
   )
 }

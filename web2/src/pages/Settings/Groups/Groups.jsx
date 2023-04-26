@@ -1,5 +1,5 @@
 import PageHeader from "@/components/PageHeader/PageHeader"
-import "./Groups.scss"
+import "../PageBody.scss"
 import { useStatusStore } from "@/App.jsx"
 import { useState } from "react"
 import { Fab } from "@mui/material"
@@ -66,8 +66,8 @@ const Groups = ({ onClose }) => {
   return (
     <>
       <PageHeader title="Groups" onClose={onClose} />
-      <div className="groups-body">{groupsListItems}</div>
-      <div className="add-group-button">
+      <div className="page-body">{groupsListItems}</div>
+      <div className="add-button">
         <Fab
           onClick={() => {
             setModalOpen(true)

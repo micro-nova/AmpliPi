@@ -1,5 +1,4 @@
 import Card from "@/components/Card/Card"
-import "./PlayerCard.scss"
 import StreamBadge from "@/components/StreamBadge/StreamBadge"
 import SongInfo from "../SongInfo/SongInfo"
 import CardVolumeSlider from "../CardVolumeSlider/CardVolumeSlider"
@@ -10,12 +9,17 @@ import StreamsModal from "../StreamsModal/StreamsModal"
 import ZonesModal from "../ZonesModal/ZonesModal"
 import { useStatusStore } from "@/App.jsx"
 import { router } from "@/main"
+import './PlayerCardFb.scss'
+import Chip from '@/components/Chip/Chip'
+import CloseIcon from '@mui/icons-material/Close'
+import { IconButton } from "@mui/material"
 
-const PlayerCard = ({ sourceId }) => {
+const PlayerCardFb = ({ sourceId }) => {
   const [streamModalOpen, setStreamModalOpen] = useState(false)
   const [zoneModalOpen, setZoneModalOpen] = useState(false)
   const setSelectedSource = useStatusStore((s) => s.setSelectedSource)
   const selected = useStatusStore((s) => s.selectedSource) === sourceId
+  const img_url = useStatusStore((s) => s.status.sources[sourceId].info.img_url)
 
   const select = () => {
     if (selected) {
@@ -25,42 +29,47 @@ const PlayerCard = ({ sourceId }) => {
     setSelectedSource(sourceId)
   }
 
+  const openStreams = () => {
+    setStreamModalOpen(true)
+  }
+
+  const openZones = () => {
+    setZoneModalOpen(true)
+  }
+
   return (
-    <Card selected={selected}>
-      <div className="outer">
-        <div
-            className="content stream-name-container"
+    <Card backgroundImage={img_url} selected={selected}>
+      <div className="container">
+        <div className="top">
+          <StreamBadge sourceId={sourceId} onClick={openStreams} />
+          <IconButton
             onClick={() => {
-              setStreamModalOpen(true)
+              // TODO: close the stream/source
+              // setZones()
+              // setGroups()
             }}
           >
-            <StreamBadge sourceId={sourceId} />
+            <CloseIcon
+              // className="zones-modal-button-icon"
+              style={{ width: "2rem", height: "2rem" }}
+            />
+          </IconButton>
         </div>
-        <div
-          className="content"
-          onClick={() => {
-            setZoneModalOpen(true)
-          }}
-        >
-          <ZonesBadge sourceId={sourceId} />
-        </div>
-        <div className="content album-art" onClick={select}>
-          <div className="image-container">
-            <PlayerImage sourceId={sourceId} />
+        <div className="content">
+          <div className="zones">
+            <ZonesBadge sourceId={sourceId} onClick={openZones} />
           </div>
-        </div>
-        <div className="content song-info" onClick={select}>
           <SongInfo sourceId={sourceId} />
         </div>
-        <div className="content vol">
-          <CardVolumeSlider
-            sourceId={sourceId}
-            onChange={(event, vol) => {
-              setVol(sourceId, event, vol)
-            }}
-          />
-        </div>
-        {streamModalOpen && (
+        <CardVolumeSlider
+          sourceId={sourceId}
+          onChange={(event, vol) => {
+            setVol(sourceId, event, vol)
+          }}
+        />
+      </div>
+
+      {streamModalOpen && (
           <StreamsModal
             sourceId={sourceId}
             setStreamModalOpen={setStreamModalOpen}
@@ -74,9 +83,8 @@ const PlayerCard = ({ sourceId }) => {
             onClose={() => setZoneModalOpen(false)}
           />
         )}
-      </div>
     </Card>
   )
 }
 
-export default PlayerCard
+export default PlayerCardFb

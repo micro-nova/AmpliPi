@@ -7,10 +7,7 @@ import Sessions from "./Sessions/Sessions"
 import Presets from "./Presets/Presets"
 import Config from "./Config/Config"
 import About from "./About/About"
-import { useState } from "react"
 import { router } from "@/main"
-import LoadingPage from "../LoadingPage/LoadingPage"
-import { useStatusStore } from "@/App"
 
 const PageListItem = ({ name, onClick }) => {
   return (
@@ -56,12 +53,6 @@ const Page = ({ openPage }) =>
   )
 
 const Settings = ({ openPage = "" }) => {
-  
-
-  const status = useStatusStore((s) => s.status)
-
-  if (status === null) return <LoadingPage />
-
   return (
     <div className="settings-outer">
       <div className="settings-header">Settings</div>

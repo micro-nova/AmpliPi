@@ -1,7 +1,8 @@
 @use "src/general.scss";
 
-.presets-body {
+.page-body {
   @include general.header-font;
+  font-size: 1.5rem;
   color: general.$text-color;
   display: flex;
   flex-direction: column;
@@ -9,7 +10,7 @@
   overflow-y: auto;
 }
 
-.add-preset-button {
+.add-button {
   position: fixed;
   margin: 1rem;
   right: 0;

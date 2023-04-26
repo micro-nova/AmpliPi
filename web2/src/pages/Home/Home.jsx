@@ -1,4 +1,5 @@
 import PlayerCard from "@/components/PlayerCard/PlayerCard"
+import PlayerCardFb from "@/components/PlayerCard/PlayerCardFb"
 import "./Home.scss"
 import { useStatusStore } from "@/App.jsx"
 import ZonesModal from "@/components/ZonesModal/ZonesModal"
@@ -33,7 +34,7 @@ const Home = ({}) => {
       source.input != "local"
     ) {
       cards.push(
-        <PlayerCard
+        <PlayerCardFb
           key={i}
           sourceId={source.id}
         />

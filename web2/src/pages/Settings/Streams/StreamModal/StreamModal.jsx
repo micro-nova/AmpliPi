@@ -194,11 +194,10 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
               onClose()
             }}
           >
-            {" "}
             <DoneIcon
               className="stream-button-icon"
               style={{ width: "3rem", height: "3rem" }}
-            />{" "}
+            />
           </IconButton>
           <IconButton
             onClick={() => {
@@ -206,11 +205,10 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
               onClose()
             }}
           >
-            {" "}
             <DeleteIcon
               className="stream-button-icon"
               style={{ width: "3rem", height: "3rem" }}
-            />{" "}
+            />
           </IconButton>
         </div>
       </Card>

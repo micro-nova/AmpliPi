@@ -21,7 +21,8 @@
 
 .streams-modal-body {
   padding: 1rem;
-  overflow-y: scroll;
+  overflow-y: auto;
+  // overflow-y: hidden;
   //the below is to push the scrollbar out of the card to hide it
   padding-right: 16px;
   width: 100%;

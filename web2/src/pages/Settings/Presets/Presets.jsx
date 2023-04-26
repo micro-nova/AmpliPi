@@ -1,5 +1,5 @@
 import PageHeader from "@/components/PageHeader/PageHeader"
-import "./Presets.scss"
+import "../PageBody.scss"
 import { useStatusStore } from "@/App.jsx"
 import { useState } from "react"
 import { Fab } from "@mui/material"
@@ -31,8 +31,8 @@ const Presets = ({ onClose }) => {
   return (
     <>
       <PageHeader title="Presets" onClose={onClose} />
-      <div className="presets-body">{presetListItems}</div>
-      <div className="add-preset-button">
+      <div className="page-body">{presetListItems}</div>
+      <div className="add-button">
         <Fab
           onClick={() => {
             setCreateModalOpen(true)
