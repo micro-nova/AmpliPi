@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-img_file=$HOME/mn/images/amplipi_1.8-2.img
+img_file=$HOME/mn/images/amplipi_0.2.1.img
 disk_base_path=/dev/disk/by-id/usb-RPi-MSD
 
 function check_for_pi() {
@@ -18,7 +18,6 @@ function check_for_pi() {
 
 # Connect to amplipi eMMC.
 # The Pi must have been powered on with the service USB plugged in.
-# TODO: Check for already-booted Pi
 if ! pi_path=$(check_for_pi); then
   sudo rpiboot
   printf "\nWaiting for the Pi's eMMC to show up"
@@ -46,10 +45,10 @@ fi
 root_dir=$(mktemp -d)
 sudo mount $pi_path-part2 $root_dir
 
-echo -e "\nDownloading resize2fs_once script"
-sudo wget -O $root_dir/etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
+echo -e "\nSetting up resize2fs_once"
+sudo wget -qO $root_dir/etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
 sudo chmod +x $root_dir/etc/init.d/resize2fs_once
-sudo ln -s $root_dir/etc/init.d/resize2fs_once $root_dir/etc/rc3.d/S01resize2fs_once
+sudo ln -s ../init.d/resize2fs_once $root_dir/etc/rc3.d/S01resize2fs_once
 
 echo -e "\nRemoving all log files"
 sudo find $root_dir/var/log -type f -exec rm {} \;
@@ -57,10 +56,11 @@ sudo find $root_dir/var/log -type f -exec rm {} \;
 echo "Resetting password to default"
 # TODO set password to 'raspberry'
 
-# TODO: need to set a unique machine-id on each unit
-#echo "Resetting /etc/machine-id"
-#sudo rm $root_dir/etc/machine-id
-#sudo dbus-uuidgen --ensure=$root_di/etc/machine-id
+echo "Setting a unique /etc/machine-id"
+old_id=$(cat $root_dir/etc/machine-id)
+echo "Old id=$old_id"
+sudo rm $root_dir/etc/machine-id
+sudo dbus-uuidgen --ensure=$root_dir/etc/machine-id
 
 echo "Cleaning up /home/pi"
 rm -f $root_dir/home/pi/.config/amplipi/default_password.txt
@@ -72,20 +72,19 @@ boot_dir=$(mktemp -d)
 sudo mount $pi_path-part1 $boot_dir
 # Remove any existing init= args, and add init_resize.sh as the init binary
 echo "Configuring resize2fs to run at boot."
-sudo sed -i 's/init=.* //g' $boot_dir/cmdline.txt
-sudo sed -i 's/ init=.*$//g' $boot_dir/cmdline.txt
-sudo sed -i "s@\(^.*$\)@\1 init=/usr/lib/raspi-config/init_resize.sh@" $boot_dir/cmdline.txt
+sudo sed -i 's/init=.* //;s/ init=.*$//' $boot_dir/cmdline.txt
+sudo sed -i 's@$@ init=/usr/lib/raspi-config/init_resize.sh@' $boot_dir/cmdline.txt
 sudo umount $boot_dir
 
 echo -e "\nRunning fsck on boot filesystem just in case."
-sudo fsck -fp $pi_path-part1
+sudo fsck -f $pi_path-part1
 if [[ $? -gt 1 ]]; then
   echo "\n${RED}ERROR:${NC} Couldn't auto-fix AmpliPi's boot filesystem, exiting."
   exit 3
 fi
 
 echo -e "\nRunning fsck on root filesystem - required by resize2fs."
-sudo fsck -fp $pi_path-part2
+sudo fsck -f $pi_path-part2
 if [[ $? -gt 1 ]]; then
   echo "\n${RED}ERROR:${NC} Couldn't auto-fix AmpliPi's root filesystem, exiting."
   exit 4
@@ -106,7 +105,8 @@ if [[ -z $fs_blk_cnt ]] || [[ -z $fs_blk_size ]]; then
   echo -e "\n${RED}ERROR:${NC} Couldn't read block count or size."
   exit 5
 fi
-fs_kib=$(($fs_blk_cnt*$fs_blk_size/1024))
+sector_size=512
+new_sectors=$(($fs_blk_cnt*$fs_blk_size/$sector_size))
 
 # Wait for filesystem changes to be complete (timeout after 10s)
 reread=false
@@ -122,16 +122,15 @@ if ! $reread; then
   exit 6
 fi
 
-echo -e "\nShrinking root partition to $fs_kib KiB."
-echo ",${fs_kib}KiB" | sudo sfdisk -N2 $pi_path
+echo -e "\nShrinking root partition to $new_sectors $sector_size-byte sectors."
+echo ",$new_sectors" | sudo sfdisk -N2 $pi_path
 
 # Print disk info, get last line, trim whitespace, return 3rd field
 echo -e "\nRoot partition shrunk, finding end of used space on disk."
 end_sector=$(sudo fdisk -l $pi_path | tail -1 | tr -s ' ' | cut -d ' ' -f 3)
-sector_size=512
 mb_chunks=$(($end_sector*$sector_size/1024**2 + 1)) # +1 because this math truncates
 
 echo -e "\nCopying $mb_chunks MiB from $pi_path"
 echo " to $img_file"
-sudo dd if=$pi_path of=$img_file bs=1MiB count=$mb_chunks status=progress
+sudo dd if=$pi_path of=$img_file bs=1048576 count=$mb_chunks status=progress
 sudo chown $USER:$USER $img_file
