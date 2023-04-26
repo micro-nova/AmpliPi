@@ -88,6 +88,7 @@ class Api:
   # pylint: disable=too-many-instance-attributes
   # pylint: disable=too-many-public-methods
 
+  # TODO: move these variables to the init, they should not be class variables.
   _initialized = False # we need to know when we initialized first
   _mock_hw: bool
   _mock_streams: bool
