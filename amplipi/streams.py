@@ -729,10 +729,14 @@ class DLNA(BaseStream):
           line = line.strip()
           if line:
             d = ast.literal_eval(line)
-        source.state = d['state']
-        source.album = d['album']
-        source.artist = d['artist']
-        source.track = d['title']
+        if 'state' in d:
+          source.state = d['state']
+        if 'album' in d:
+          source.album = d['album']
+        if 'artist' in d:
+          source.artist = d['artist']
+        if 'title' in d:
+          source.track = d['title']
         return source
     except Exception:
       pass
