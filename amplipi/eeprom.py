@@ -199,7 +199,7 @@ class EEPROM:
 
     return BoardType(self._read(BOARD_TYPE_ADDR, 1)[0])
 
-  def get_board_rev(self) -> Tuple[str, int]:
+  def get_board_rev(self) -> Tuple[int, str]:
     """Get board rev from EEPROM."""
     if self.get_format() not in SUPPORTED_FORMATS:
       raise UnsupportedFormatError("Unsupported format")
