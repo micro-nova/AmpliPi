@@ -35,7 +35,6 @@ from amplipi import models
 from amplipi import rt
 from amplipi import utils
 import amplipi.streams
-import amplipi.utils as utils
 from amplipi.eeprom import EEPROM, BoardType
 
 _DEBUG_API = False # print out a graphical state of the api after each call

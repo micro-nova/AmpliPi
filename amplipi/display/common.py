@@ -1,22 +1,27 @@
+"""Common external display libraries"""
+
 import os
 import subprocess
 from enum import Enum
 from typing import Tuple
 
 class Display:
+  """Abstract External Display
+  Used to display system information like password and IP address"""
+
   def init(self) -> bool:
     """Try initializing. Return True if success or False if failed.
     Must also clean up gpio before returning false."""
-    pass
+    raise NotImplementedError('Display.init')
 
   def run(self):
     """Called after a successful init. Should handle the rendering
     of a new image, displaying that image, and looping."""
-    pass
+    raise NotImplementedError('Display.run')
 
   def stop(self):
     """Called by exit handler. Stops the run method."""
-    pass
+    raise NotImplementedError('Display.stop')
 
 class Color(Enum):
   """ Colors used in the AmpliPi front-panel display """

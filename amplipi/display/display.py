@@ -1,3 +1,5 @@
+"""External display runner"""
+
 import argparse
 import sys
 
