@@ -59,12 +59,14 @@ const GroupVolumeSlider = ({ groupId }) => {
     <div className="group-volume-container">
       {group.name[0].toUpperCase() + group.name.slice(1)}
       <div className="group-zones-container">
+        <div className="group-volume-slider">
         <VolumeSlider
           mute={group.mute}
           setMute={setMute}
           vol={volume}
           setVol={setVol}
         />
+        </div>
 
         <IconButton
           style={{ padding: "0px" }}

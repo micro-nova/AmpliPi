@@ -1,18 +1,18 @@
 import "./Modal.scss"
+import StopProp from "@/components/StopProp/StopProp"
 
 const Modal = ({ children, className = "", onClose }) => {
   return (
     <div
       className={`modal_container ${className}`}
-      onClick={onClose}
+      onClick={(e) => {
+        onClose()
+        e.stopPropagation()
+      }}
     >
-      <div
-        onClick={(e) => {
-          e.stopPropagation()
-        }}
-      >
+      <StopProp>
         {children}
-      </div>
+      </StopProp>
     </div>
   )
 }

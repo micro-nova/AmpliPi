@@ -1,11 +1,11 @@
 import "./StreamsModal.scss"
 import Modal from "../Modal/Modal"
 import Card from "../Card/Card"
-import { useStatusStore } from "@/App"
+import { getIcon, useStatusStore } from "@/App"
 
 //TODO: fix RCA behavior
 
-const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
+const StreamsModal = ({ sourceId, setStreamModalOpen, onClose, showClosePlayer=false }) => {
   const streams = useStatusStore((state) => state.status.streams)
 
   const setStream = (streamId) => {
@@ -35,6 +35,7 @@ const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
   let streamsList = []
 
   for (const stream of streams) {
+    const icon = getIcon(stream.type)
     streamsList.push(
       <div
         className="streams-modal-list-item"
@@ -43,7 +44,22 @@ const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
         }}
         key={stream.id}
       >
-        {`${stream.name} - ${stream.type}`}
+        <img src={icon} className="streams-modal-icon" alt="stream icon" />
+        {stream.name}
+      </div>
+    )
+  }
+
+  if (showClosePlayer) {
+    streamsList.push(
+      <div
+        className="streams-modal-list-item"
+        onClick={() => {
+          removeStream()
+        }}
+        key="none"
+      >
+        Close Player
       </div>
     )
   }
@@ -52,18 +68,8 @@ const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
     <div
       className="streams-modal-list-item"
       onClick={() => {
-        removeStream()
-      }}
-      key="none"
-    >
-      Close Player
-    </div>
-  )
-  streamsList.push(
-    <div
-      className="streams-modal-list-item"
-      onClick={() => {
-        setStreamModalOpen(false)
+        // setStreamModalOpen(false)
+        onClose()
       }}
       key="cancel"
     >

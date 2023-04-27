@@ -8,6 +8,8 @@ import DoneIcon from "@mui/icons-material/Done"
 import { width } from "@mui/system"
 import { useStatusStore } from "@/App.jsx"
 import { getSourceZones } from "@/pages/Home/Home"
+import SpeakerIcon from '@mui/icons-material/Speaker';
+import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup';
 
 const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
   const zones = useStatusStore
@@ -64,6 +66,9 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
             defaultChecked={defaultSelected}
           />
         )}
+        <div className="zone-icon">
+          <SpeakerIcon />
+        </div>
         {zone.name}
       </div>
     )
@@ -78,6 +83,9 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
             defaultChecked={defaultSelected}
           />
         )}
+        <div className="group-icon">
+          <SpeakerGroupIcon />
+        </div>
         {group.name}
       </div>
     )
@@ -121,8 +129,6 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
         update: { mute: false, source_id: sourceId },
       }),
     })
-
-    setZoneModalOpen(false)
   }
 
   const setGroups = () => {
@@ -203,6 +209,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
             onClick={() => {
               setZones()
               setGroups()
+              setZoneModalOpen(false)
             }}
           >
             <DoneIcon

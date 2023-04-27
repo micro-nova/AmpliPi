@@ -10,9 +10,9 @@ import ZonesModal from "../ZonesModal/ZonesModal"
 import { useStatusStore } from "@/App.jsx"
 import { router } from "@/main"
 import './PlayerCardFb.scss'
-import Chip from '@/components/Chip/Chip'
 import CloseIcon from '@mui/icons-material/Close'
 import { IconButton } from "@mui/material"
+import StopProp from "@/components/StopProp/StopProp"
 
 const PlayerCardFb = ({ sourceId }) => {
   const [streamModalOpen, setStreamModalOpen] = useState(false)
@@ -38,22 +38,27 @@ const PlayerCardFb = ({ sourceId }) => {
   }
 
   return (
-    <Card backgroundImage={img_url} selected={selected}>
+    <Card backgroundImage={img_url} selected={selected} onClick={select}>
       <div className="container">
         <div className="top">
           <StreamBadge sourceId={sourceId} onClick={openStreams} />
-          <IconButton
-            onClick={() => {
-              // TODO: close the stream/source
-              // setZones()
-              // setGroups()
-            }}
-          >
-            <CloseIcon
-              // className="zones-modal-button-icon"
-              style={{ width: "2rem", height: "2rem" }}
-            />
-          </IconButton>
+          <StopProp>
+            <IconButton
+              onClick={()=>{fetch(`/api/sources/${sourceId}`, {
+                method: "PATCH",
+                headers: {
+                  "Content-type": "application/json",
+                },
+                body: JSON.stringify({ input: "None" }),
+              })}}
+            >
+              <CloseIcon
+                // className="zones-modal-button-icon"
+                style={{ width: "2rem", height: "2rem" }}
+              />
+            </IconButton>
+          </StopProp>
+
         </div>
         <div className="content">
           <div className="zones">
@@ -61,6 +66,7 @@ const PlayerCardFb = ({ sourceId }) => {
           </div>
           <SongInfo sourceId={sourceId} />
         </div>
+
         <CardVolumeSlider
           sourceId={sourceId}
           onChange={(event, vol) => {
@@ -74,6 +80,7 @@ const PlayerCardFb = ({ sourceId }) => {
             sourceId={sourceId}
             setStreamModalOpen={setStreamModalOpen}
             onClose={() => setStreamModalOpen(false)}
+            showClosePlayer={true}
           />
         )}
         {zoneModalOpen && (

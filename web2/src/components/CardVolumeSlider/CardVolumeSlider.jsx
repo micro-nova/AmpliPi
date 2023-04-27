@@ -84,6 +84,7 @@ const CardVolumeSlider = ({ sourceId }) => {
   }
 
   return (
+    <div className="volume-slider">
     <VolumeSlider
       vol={value}
       mute={mute}
@@ -93,6 +94,7 @@ const CardVolumeSlider = ({ sourceId }) => {
         setValue(val)
       }}
     />
+    </div>
   )
 }
 

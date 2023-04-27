@@ -41,3 +41,11 @@
 .zones-modal-button-icon {
   color: general.$controls-color;
 }
+
+.zones-icon {
+  @include general.circle(1.5rem, general.$zone-color);
+}
+
+.groups-icon {
+  @include general.circle(1.5rem, general.$group-color);
+}

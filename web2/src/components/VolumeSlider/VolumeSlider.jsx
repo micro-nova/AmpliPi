@@ -4,6 +4,7 @@ import VolumeMuteIcon from "@mui/icons-material/VolumeMute"
 import VolumeDownIcon from "@mui/icons-material/VolumeDown"
 import VolumeOffIcon from "@mui/icons-material/VolumeOff"
 import VolumeUpIcon from "@mui/icons-material/VolumeUp"
+import StopProp from "@/components/StopProp/StopProp"
 
 const VolIcon = ({ vol, mute }) => {
   if (mute) {
@@ -23,29 +24,33 @@ const VolIcon = ({ vol, mute }) => {
 }
 const VolumeSlider = ({ vol, mute, setVol, setMute }) => {
   return (
-    <div className="volume-slider-container">
-      <div
-        onClick={() => {
-          setMute(!mute)
-        }}
-      >
-        <VolIcon vol={vol} mute={mute} />
-      </div>
-      <Slider
-        className="volume-slider"
-        min={0}
-        step={0.01}
-        max={1}
-        value={vol}
-        onChange={(_, val) => {
-          setVol(val)
-        }}
-        onChangeCommitted={(_, val) => {
-          setVol(val, true)
-        }}
-      />
+    <StopProp>
+      <div className="volume-slider-container">
+        <div
+          onClick={(e) => {
+            setMute(!mute)
+          }}
+          className="volume-slider-icon-container"
+        >
+          <VolIcon vol={vol} mute={mute} />
+        </div>
+        <Slider
+          className="volume-slider"
+          min={0}
+          step={0.01}
+          max={1}
+          value={vol}
+          onChange={(_, val) => {
+            setVol(val)
+          }}
+          onChangeCommitted={(_, val) => {
+            setVol(val, true)
+          }}
+        />
 
-    </div>
+      </div>
+    </StopProp>
+
   )
 }
 

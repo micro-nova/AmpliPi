@@ -30,5 +30,16 @@
 }
 
 .streams-modal-list-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   margin-bottom: 1rem;
+  cursor: pointer;
+}
+
+.streams-modal-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 20%;
+  margin-right: 0.6rem;
 }

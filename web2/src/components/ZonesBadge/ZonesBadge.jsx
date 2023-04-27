@@ -1,8 +1,6 @@
 import "./ZonesBadge.scss"
-import { useState, useEffect } from "react"
 import { getSourceZones } from "@/pages/Home/Home.jsx"
 import { useStatusStore } from "@/App.jsx"
-import { chipClasses } from "@mui/material"
 import Chip from "../Chip/Chip"
 
 const ZoneChip = ({ zone, onClick }) => {
@@ -39,6 +37,7 @@ const ZonesBadge = ({ sourceId, onClick }) => {
   }
 
   return <div>{chips}</div>
+  
 }
 
 export default ZonesBadge

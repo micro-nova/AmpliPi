@@ -31,25 +31,27 @@ const Player = ({ }) => {
             trackClassName="player-info-track"
           />
           <MediaControl selectedSource={selectedSource} />
-          <Card className="player-volume-slider">
-            <CardVolumeSlider sourceId={selectedSource} />
-            <IconButton onClick={() => setExpanded(!expanded)}>
-              {expanded ? (
-                <KeyboardArrowUpIcon
-                  className="player-volume-expand-button"
-                  style={{ width: "3rem", height: "3rem" }}
-                />
-              ) : (
-                <KeyboardArrowDownIcon
-                  className="player-volume-expand-button"
-                  style={{ width: "3rem", height: "3rem" }}
-                />
-              )}
-            </IconButton>
-          </Card>
         </div>
-      </div>
+
+        <Card className="player-volume-slider">
+        <CardVolumeSlider sourceId={selectedSource} />
+        <IconButton onClick={() => setExpanded(!expanded)}>
+          {expanded ? (
+            <KeyboardArrowUpIcon
+              className="player-volume-expand-button"
+              style={{ width: "3rem", height: "3rem" }}
+            />
+          ) : (
+            <KeyboardArrowDownIcon
+              className="player-volume-expand-button"
+              style={{ width: "3rem", height: "3rem" }}
+            />
+          )}
+        </IconButton>
+      </Card>
       {expanded && <VolumeZones sourceId={selectedSource} />}
+
+      </div>
     </>
   )
 }

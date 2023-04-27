@@ -6,11 +6,8 @@
   border-radius: 18px;
 
   color: general.$text-color;
-
-  // width: min-content;
-  // height: min-content;
 }
 
-.card-selected {
-  background-color: general.$selected;
+.selected {
+  @include general.selected-shadow;
 }

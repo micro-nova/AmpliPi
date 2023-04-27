@@ -1,10 +1,13 @@
 import './Chip.scss'
+import StopProp from "@/components/StopProp/StopProp"
 
 const Chip = ({ children, onClick }) => {
   return (
-    <div className="chip" onClick={onClick}>
-      {children}
-    </div>
+    <StopProp>
+      <div className="chip" onClick={onClick}>
+        {children}
+      </div>
+    </StopProp>
   )
 }
 
