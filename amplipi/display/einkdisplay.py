@@ -46,7 +46,7 @@ class EInkDisplay(Display):
     self.ch = ascent + descent
 
     try:
-      self.epd = epd2in13_V3.EPD()
+      self.epd = self.epd.driver.EPD()
       self.height = self.epd.width  # rotated
       self.width = self.epd.height  # rotated
       self.epd.init()
@@ -55,7 +55,7 @@ class EInkDisplay(Display):
       return False
     except KeyboardInterrupt:
       print('CTRL+C')
-      epd2in13_V3.epdconfig.module_exit()
+      self.epd.driver.epdconfig.module_exit()
     return True
 
   def run(self):
@@ -104,7 +104,7 @@ class EInkDisplay(Display):
       print(f'Error: {e}')
     except KeyboardInterrupt:
       print('CTRL+C')
-      epd2in13_V3.epdconfig.module_exit()
+      self.epd.driver.module_exit()
 
   def update_display(self, host_name, password, ip_str):
     try:
@@ -125,7 +125,7 @@ class EInkDisplay(Display):
       print(f'Error: {e}')
     except KeyboardInterrupt:
       print('CTRL+C')
-      epd2in13_V3.epdconfig.module_exit()
+      self.epd.driver.epdconfig.module_exit()
 
   def pick_pass_font(self, password, max_length) -> ImageFont:
     try:
