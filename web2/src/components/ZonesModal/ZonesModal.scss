@@ -31,6 +31,10 @@
 
 .zones-modal-list-item {
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: center;
 }
 
 .zones-modal-footer {
@@ -42,10 +46,19 @@
   color: general.$controls-color;
 }
 
-.zones-icon {
-  @include general.circle(1.5rem, general.$zone-color);
+@mixin icon($color){
+  @include general.circle(2rem, $color);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-right: 0.4rem;
 }
 
-.groups-icon {
-  @include general.circle(1.5rem, general.$group-color);
+.zone-icon {
+  @include icon(general.$zone-color);
+}
+
+.group-icon {
+  @include icon(general.$group-color);
 }
