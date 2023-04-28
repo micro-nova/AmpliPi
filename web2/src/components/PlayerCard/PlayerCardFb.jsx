@@ -7,7 +7,7 @@ import PlayerImage from "../PlayerImage/PlayerImage"
 import ZonesBadge from "../ZonesBadge/ZonesBadge"
 import StreamsModal from "../StreamsModal/StreamsModal"
 import ZonesModal from "../ZonesModal/ZonesModal"
-import { useStatusStore } from "@/App.jsx"
+import { usePersistentStore, useStatusStore } from "@/App.jsx"
 import { router } from "@/main"
 import './PlayerCardFb.scss'
 import CloseIcon from '@mui/icons-material/Close'
@@ -17,8 +17,8 @@ import StopProp from "@/components/StopProp/StopProp"
 const PlayerCardFb = ({ sourceId }) => {
   const [streamModalOpen, setStreamModalOpen] = useState(false)
   const [zoneModalOpen, setZoneModalOpen] = useState(false)
-  const setSelectedSource = useStatusStore((s) => s.setSelectedSource)
-  const selected = useStatusStore((s) => s.selectedSource) === sourceId
+  const setSelectedSource = usePersistentStore((s) => s.setSelectedSource)
+  const selected = usePersistentStore((s) => s.selectedSource) === sourceId
   const img_url = useStatusStore((s) => s.status.sources[sourceId].info.img_url)
 
   const select = () => {

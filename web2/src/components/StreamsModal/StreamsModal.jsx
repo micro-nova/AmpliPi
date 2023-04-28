@@ -1,6 +1,5 @@
 import "./StreamsModal.scss"
-import Modal from "../Modal/Modal"
-import Card from "../Card/Card"
+import ModalCard from "@/components/ModalCard/ModalCard"
 import { getIcon, useStatusStore } from "@/App"
 
 //TODO: fix RCA behavior
@@ -78,12 +77,9 @@ const StreamsModal = ({ sourceId, setStreamModalOpen, onClose, showClosePlayer=f
   )
 
   return (
-    <Modal className="streams-modal" onClose={onClose}>
-      <Card className="streams-modal-card">
-        <div className="streams-modal-header">Select Stream</div>
-        <div className="streams-modal-body">{streamsList}</div>
-      </Card>
-    </Modal>
+    <ModalCard header="Select Stream" onClose={onClose}>
+      {streamsList}
+    </ModalCard>
   )
 }
 

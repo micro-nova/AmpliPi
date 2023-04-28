@@ -8,14 +8,15 @@ import PlayerImage from "../PlayerImage/PlayerImage"
 import ZonesBadge from "../ZonesBadge/ZonesBadge"
 import StreamsModal from "../StreamsModal/StreamsModal"
 import ZonesModal from "../ZonesModal/ZonesModal"
-import { useStatusStore } from "@/App.jsx"
+// import { useStatusStore } from "@/App.jsx"
+import { usePersistentStore } from "@/App.jsx"
 import { router } from "@/main"
 
 const PlayerCard = ({ sourceId }) => {
   const [streamModalOpen, setStreamModalOpen] = useState(false)
   const [zoneModalOpen, setZoneModalOpen] = useState(false)
-  const setSelectedSource = useStatusStore((s) => s.setSelectedSource)
-  const selected = useStatusStore((s) => s.selectedSource) === sourceId
+  const setSelectedSource = usePersistentStore((s) => s.setSelectedSource)
+  const selected = usePersistentStore((s) => s.selectedSource) === sourceId
 
   const select = () => {
     if (selected) {

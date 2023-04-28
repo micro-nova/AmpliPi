@@ -9,6 +9,7 @@ import lms from "@/assets/lms.png"
 import internetradio from "@/assets/internet_radio.png"
 import rca from "@/assets/rca_inputs.jpg"
 import { create } from "zustand"
+import { persist, createJSONStorage } from "zustand/middleware"
 import "@/App.scss"
 import Home from "@/pages/Home/Home"
 import Player from "@/pages/Player/Player"
@@ -20,16 +21,26 @@ import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
 import { router } from "@/main"
 import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon"
 
+export const usePersistentStore = create(
+  persist(
+    (set) => ({
+      selectedSource: 0,
+      setSelectedSource: (selected) => {
+        set({selectedSource: selected})
+      }
+    }),
+    {
+      name: 'persistent-store',
+      storage: createJSONStorage(() => localStorage)
+    }
+  )
+)
 
 export const useStatusStore = create((set, get) => ({
   status: null,
   skipUpdate: false,
   loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
   disconnected: true,
-  selectedSource: 0,
-  setSelectedSource: (selected) => {
-    set({selectedSource: selected})
-  },
   setZonesVol: (vol, zones, sourceId) => {
     set(
       produce((s) => {

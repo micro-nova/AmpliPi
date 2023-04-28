@@ -1,6 +1,7 @@
 import PageHeader from "@/components/PageHeader/PageHeader"
-import "./Streams.scss"
-import { useStatusStore } from "@/App.jsx"
+import '@/components/StreamsModal/StreamsModal.scss'
+import "../PageBody.scss"
+import { getIcon, useStatusStore } from "@/App.jsx"
 import { useState } from "react"
 import StreamModal from "./StreamModal/StreamModal"
 import Fab from "@mui/material/Fab"
@@ -39,9 +40,14 @@ const deleteStream = (stream) => {
 
 const StreamListItem = ({ stream }) => {
   const [showModal, setShowModal] = useState(false)
+  const icon = getIcon(stream.type)
   return (
     <>
-      <div onClick={() => setShowModal(true)}>{stream.name}</div>
+      <div className="streams-modal-list-item" onClick={() => setShowModal(true)}>
+        <img src={icon} className="streams-modal-icon" alt="stream icon" />
+        {stream.name}
+      </div>
+      
       {showModal && (
         <StreamModal
           stream={stream}
@@ -65,11 +71,11 @@ const Streams = ({ onClose }) => {
   return (
     <>
       <PageHeader title="Streams" onClose={onClose} />
-      <div className="streams-body">
+      <div className="page-body">
         {streams.map((stream) => {
           return <StreamListItem key={stream.id} stream={stream} />
         })}
-        <div className="add-stream-button">
+        <div className="add-button">
           <Fab onClick={() => setShowSelect(true)}>
             <AddIcon />
           </Fab>

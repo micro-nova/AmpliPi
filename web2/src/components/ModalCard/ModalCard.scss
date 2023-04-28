@@ -1,0 +1,30 @@
+@use "src/general.scss";
+
+.modal {
+  @include general.header-font;
+  font-size: 1.5rem;
+  color: general.$text-color;
+}
+
+.modal-card {
+  max-height: 75vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  margin: 0.5rem;
+  font-size: 3rem;
+  text-align: center;
+}
+
+.modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+  // overflow-y: hidden;
+  //the below is to push the scrollbar out of the card to hide it
+  // padding-right: 16px;
+  width: 100%;
+  height: 100%;
+}

@@ -86,8 +86,6 @@ const Home = ({}) => {
     setStreamsModalOpen(true)
   }
 
-
-
   return (
     <div className="home-outer">
       <div className="home-view">

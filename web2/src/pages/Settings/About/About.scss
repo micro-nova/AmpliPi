@@ -5,9 +5,18 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
+  text-align: center;
 
   color: general.$text-color;
 
   @include general.regular-font;
-  font-size: 1.5rem;
+  font-size: 1rem;
+}
+
+.link {
+  color: general.$text-color;
+}
+
+.links{
+  width: min-content;
 }

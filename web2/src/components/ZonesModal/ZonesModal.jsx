@@ -1,6 +1,5 @@
 import "./ZonesModal.scss"
-import Modal from "../Modal/Modal"
-import Card from "../Card/Card"
+import ModalCard from '@/components/ModalCard/ModalCard'
 import Checkbox from "@mui/material/Checkbox"
 import { useEffect, useState } from "react"
 import { IconButton } from "@mui/material"
@@ -197,29 +196,26 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
   })
 
   return (
-    <Modal className="zones-modal" onClose={onClose}>
-      <Card className="zones-modal-card">
-        <div className="zones-modal-header">Select Zones</div>
-        <div className="zones-modal-body">
-          {groupItems}
-          {zoneItems}
-        </div>
-        <div className="zones-modal-footer">
-          <IconButton
-            onClick={() => {
-              setZones()
-              setGroups()
-              setZoneModalOpen(false)
-            }}
-          >
-            <DoneIcon
-              className="zones-modal-button-icon"
-              style={{ width: "3rem", height: "3rem" }}
-            />
-          </IconButton>
-        </div>
-      </Card>
-    </Modal>
+    <ModalCard onClose={onClose} header="Selec Zones">
+      <div className="zones-modal-body">
+        {groupItems}
+        {zoneItems}
+      </div>
+      <div className="zones-modal-footer">
+        <IconButton
+          onClick={() => {
+            setZones()
+            setGroups()
+            setZoneModalOpen(false)
+          }}
+        >
+          <DoneIcon
+            className="zones-modal-button-icon"
+            style={{ width: "3rem", height: "3rem" }}
+          />
+        </IconButton>
+      </div>
+    </ModalCard>
   )
 }
 

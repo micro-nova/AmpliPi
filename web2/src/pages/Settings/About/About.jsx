@@ -9,28 +9,29 @@ const About = ({ onClose }) => {
     <>
       <PageHeader title="About" onClose={onClose} />
       <div className="about-body">
-        <a href="http://www.amplipi.com">Amplipi ™</a>
+        <a className="link" href="http://www.amplipi.com">Amplipi ™</a>
         <br />
-        by <a href="http://www.micro-nova.com">MicroNova</a> ©{" "}
+        by <a className="link" href="http://www.micro-nova.com">MicroNova</a> ©{" "}
         {new Date(Date.now()).getFullYear()}
         <br />
         Version: {info.version}
         <br />
         Latest: {info.latest_release}
         <br />
+        <div className="links">
         <ul>
           Links:
           <li>
-            <a href="/doc">Browsable API</a>
+            <a className="link" href="/doc">Browsable API</a>
           </li>
           <li>
-            <a href="https://github.com/micro-nova/AmpliPi">Github</a>
+            <a className="link" href="https://github.com/micro-nova/AmpliPi">Github</a>
           </li>
           <li>
-            <a href="https://amplipi.discourse.group/">Community</a>
+            <a className="link" href="https://amplipi.discourse.group/">Community</a>
           </li>
           <li>
-            <a href="https://github.com/micro-nova/AmpliPi/blob/main/COPYING">
+            <a className="link" href="https://github.com/micro-nova/AmpliPi/blob/main/COPYING">
               License
             </a>
           </li>
@@ -46,6 +47,7 @@ const About = ({ onClose }) => {
             </a>
           </li>
         </ul>
+        </div>
       </div>
     </>
   )
