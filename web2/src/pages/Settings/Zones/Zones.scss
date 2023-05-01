@@ -1,13 +1,5 @@
 @use "src/general.scss";
 
-.zones-body {
-  @include general.header-font;
-  color: general.$text-color;
-  display: flex;
-  flex-direction: column;
-  max-height: 95%;
-  overflow-y: auto;
-}
 
 .zones-zone-name {
   @include general.header-font;

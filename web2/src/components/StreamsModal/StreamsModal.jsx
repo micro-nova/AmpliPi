@@ -4,31 +4,51 @@ import { getIcon, useStatusStore } from "@/App"
 
 //TODO: fix RCA behavior
 
-const StreamsModal = ({ sourceId, setStreamModalOpen, onClose, showClosePlayer=false }) => {
+let applyAction = null
+
+export const executeApplyAction = () => {
+  if (applyAction !== null) applyAction()
+  applyAction = null
+}
+
+const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlayer=false, applyImmediately=true }) => {
   const streams = useStatusStore((state) => state.status.streams)
 
   const setStream = (streamId) => {
-    setStreamModalOpen(false)
+    const apply = () => {
+      fetch(`/api/sources/${sourceId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({ input: `stream=${streamId}` }),
+      })
+    }
 
-    fetch(`/api/sources/${sourceId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-type": "application/json",
-      },
-      body: JSON.stringify({ input: `stream=${streamId}` }),
-    })
+    if (applyImmediately) {
+      apply()
+    } else {
+      applyAction = apply
+    }
   }
 
   const removeStream = () => {
-    setStreamModalOpen(false)
+    const apply = () => {
+      fetch(`/api/sources/${sourceId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({ input: "None" }),
+      })
+    }
 
-    fetch(`/api/sources/${sourceId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-type": "application/json",
-      },
-      body: JSON.stringify({ input: "None" }),
-    })
+    if (applyImmediately) {
+      apply()
+    } else {
+      applyAction = apply
+    }
+
   }
 
   let streamsList = []
@@ -40,6 +60,8 @@ const StreamsModal = ({ sourceId, setStreamModalOpen, onClose, showClosePlayer=f
         className="streams-modal-list-item"
         onClick={() => {
           setStream(stream.id)
+          onApply()
+          onClose()
         }}
         key={stream.id}
       >
@@ -55,6 +77,8 @@ const StreamsModal = ({ sourceId, setStreamModalOpen, onClose, showClosePlayer=f
         className="streams-modal-list-item"
         onClick={() => {
           removeStream()
+          onApply()
+          onClose()
         }}
         key="none"
       >

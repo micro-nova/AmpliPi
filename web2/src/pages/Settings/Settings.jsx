@@ -63,6 +63,10 @@ const Page = ({ openPage }) =>
   )
 
 const Settings = ({ openPage = "" }) => {
+  if(openPage != "") {
+    return (<Page openPage={openPage} />)
+  }
+
   return (
     <div className="settings-outer">
       <div className="settings-header">Settings</div>
@@ -80,35 +84,35 @@ const Settings = ({ openPage = "" }) => {
         >
           <div className="zones-icon"><SpeakerIcon fontSize="inherit"/></div>
         </PageListItem>
-        
+
         <PageListItem
           name="Groups"
           onClick={() => router.navigate("/settings/groups")}
         >
           <div className="groups-icon"><SpeakerGroupIcon fontSize="inherit"/></div>
         </PageListItem>
-        
+
         <PageListItem
           name="Sessions"
           onClick={() => router.navigate("/settings/sessions")}
         >
           <div className="sessions-icon"><CableIcon fontSize="inherit"/></div>
         </PageListItem>
-        
+
         <PageListItem
           name="Presets"
           onClick={() => router.navigate("/settings/presets")}
         >
           <div className="presets-icon"><PlaylistAddIcon fontSize="inherit"/></div>
         </PageListItem>
-        
+
         <PageListItem
           name="Config and Reset"
           onClick={() => router.navigate("/settings/config")}
         >
           <div className="config-icon"><HandymanIcon fontSize="inherit"/></div>
         </PageListItem>
-        
+
         <PageListItem
           name="Updates"
           onClick={() => {
@@ -118,7 +122,7 @@ const Settings = ({ openPage = "" }) => {
         >
           <div className="update-icon"><UpdateIcon fontSize="inherit"/></div>
         </PageListItem>
-        
+
         <PageListItem
           name="About"
           onClick={() => router.navigate("/settings/about")}
@@ -126,7 +130,6 @@ const Settings = ({ openPage = "" }) => {
           <div className="about-icon"><InfoIcon fontSize="inherit"/></div>
         </PageListItem>
       </div>
-      <Page openPage={openPage} />
     </div>
   )
 }

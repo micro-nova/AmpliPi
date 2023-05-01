@@ -83,6 +83,8 @@ const CardVolumeSlider = ({ sourceId }) => {
     })
   }
 
+  console.log(zones.length)
+
   return (
     <div className="volume-slider">
     <VolumeSlider
@@ -93,6 +95,7 @@ const CardVolumeSlider = ({ sourceId }) => {
         setPlayerVol(val, force)
         setValue(val)
       }}
+      disabled={getSourceZones(sourceId, zones) == 0}
     />
     </div>
   )

@@ -1,4 +1,5 @@
 import "./Zones.scss"
+import "../PageBody.scss"
 import { useStatusStore } from "@/App.jsx"
 import { useState } from "react"
 import PageHeader from "@/components/PageHeader/PageHeader"
@@ -114,10 +115,10 @@ const Zones = ({ onClose }) => {
   })
 
   return (
-    <>
+    <div className="page-container">
       <PageHeader title="Zones" onClose={onClose} />
-      <div className="zones-body">{listItems}</div>
-    </>
+      <div className="page-body">{listItems}</div>
+    </div>
   )
 }
 

@@ -78,7 +78,6 @@ const PlayerCardFb = ({ sourceId }) => {
       {streamModalOpen && (
           <StreamsModal
             sourceId={sourceId}
-            setStreamModalOpen={setStreamModalOpen}
             onClose={() => setStreamModalOpen(false)}
             showClosePlayer={true}
           />

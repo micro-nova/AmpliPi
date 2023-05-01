@@ -18,41 +18,47 @@ const Player = ({ }) => {
   )
   const [expanded, setExpanded] = useState(false)
 
-  return (
-    <>
-      <StreamBar sourceId={selectedSource} />
-      <div className="player-outer">
-        <div className="player-inner">
-          <img src={img_url} className="player-album-art" />
-          <SongInfo
-            sourceId={selectedSource}
-            artistClassName="player-info-title"
-            albumClassName="player-info-album"
-            trackClassName="player-info-track"
-          />
-          <MediaControl selectedSource={selectedSource} />
-        </div>
+  console.log(selectedSource)
 
-        <Card className="player-volume-slider">
-          <CardVolumeSlider sourceId={selectedSource} />
-          <IconButton onClick={() => setExpanded(!expanded)}>
-            {expanded ? (
-            <KeyboardArrowUpIcon
+  if(selectedSource ==null) {
+
+    return (<div>fuck</div>)
+
+  }
+
+  return (
+    <div className="player-outer">
+      <StreamBar sourceId={selectedSource} />
+      <div className="player-inner">
+        <img src={img_url} className="player-album-art" />
+        <SongInfo
+          sourceId={selectedSource}
+          artistClassName="player-info-title"
+          albumClassName="player-info-album"
+          trackClassName="player-info-track"
+        />
+        <MediaControl selectedSource={selectedSource} />
+      </div>
+
+      <Card className="player-volume-slider">
+        <CardVolumeSlider sourceId={selectedSource} />
+        <IconButton onClick={() => setExpanded(!expanded)}>
+          {expanded ? (
+          <KeyboardArrowUpIcon
+            className="player-volume-expand-button"
+            style={{ width: "3rem", height: "3rem" }}
+          />
+          ) : (
+            <KeyboardArrowDownIcon
               className="player-volume-expand-button"
               style={{ width: "3rem", height: "3rem" }}
             />
-            ) : (
-              <KeyboardArrowDownIcon
-                className="player-volume-expand-button"
-                style={{ width: "3rem", height: "3rem" }}
-              />
-            )}
-          </IconButton>
-        </Card>
-        {expanded && <VolumeZones sourceId={selectedSource} />}
+          )}
+        </IconButton>
+      </Card>
+      {expanded && <VolumeZones sourceId={selectedSource} />}
 
-      </div>
-    </>
+    </div>
   )
 }
 

@@ -32,7 +32,7 @@
 
 .settings-card {
   max-height: 75vh;
-  overflow: hidden;
+  // overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -41,7 +41,6 @@
   background-color: general.$bg;
   height: 100vh;
   width: 100vw;
-  padding: 1rem;
 }
 
 @mixin settings-icon($color) {

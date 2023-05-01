@@ -18,24 +18,14 @@ const About = ({ onClose }) => {
         <br />
         Latest: {info.latest_release}
         <br />
-        <div className="links">
-        <ul>
+        <div className="about-links">
           Links:
-          <li>
             <a className="link" href="/doc">Browsable API</a>
-          </li>
-          <li>
             <a className="link" href="https://github.com/micro-nova/AmpliPi">Github</a>
-          </li>
-          <li>
             <a className="link" href="https://amplipi.discourse.group/">Community</a>
-          </li>
-          <li>
             <a className="link" href="https://github.com/micro-nova/AmpliPi/blob/main/COPYING">
               License
             </a>
-          </li>
-          <li>
             <a
               href={window.location.href}
               onClick={() => {
@@ -45,8 +35,6 @@ const About = ({ onClose }) => {
             >
               Logs
             </a>
-          </li>
-        </ul>
         </div>
       </div>
     </>

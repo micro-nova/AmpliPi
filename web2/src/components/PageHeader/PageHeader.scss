@@ -4,6 +4,11 @@
   margin: 0.5rem;
   font-size: 3rem;
   text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  justify-content: center;
 }
 
 .page-header-title {
@@ -13,12 +18,13 @@
 }
 
 .page-header-close {
-  position: absolute;
+  position: fixed;
   right: 0;
-  top: 0;
-  margin: 1rem;
+  margin-right: 1rem;
+  padding-top: 1.4rem;
   font-size: 4rem;
   @include general.header-font;
   color: general.$text-color;
   cursor: pointer;
+  font-size: 3rem;
 }

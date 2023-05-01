@@ -22,7 +22,7 @@ const VolIcon = ({ vol, mute }) => {
     return <VolumeUpIcon fontSize="2rem" className="volume-slider-icon" />
   }
 }
-const VolumeSlider = ({ vol, mute, setVol, setMute }) => {
+const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
   return (
     <StopProp>
       <div className="volume-slider-container">
@@ -35,6 +35,7 @@ const VolumeSlider = ({ vol, mute, setVol, setMute }) => {
           <VolIcon vol={vol} mute={mute} />
         </div>
         <Slider
+          disabled={disabled}
           className="volume-slider"
           min={0}
           step={0.01}

@@ -17,6 +17,10 @@
   color: general.$text-color;
 }
 
-.links{
-  width: min-content;
+.about-links{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  width: 100%;
 }

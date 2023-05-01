@@ -64,7 +64,7 @@ const Groups = ({ onClose }) => {
   })
 
   return (
-    <>
+    <div className="page-container">
       <PageHeader title="Groups" onClose={onClose} />
       <div className="page-body">{groupsListItems}</div>
       <div className="add-button">
@@ -84,7 +84,7 @@ const Groups = ({ onClose }) => {
           apply={addGroup}
         />
       )}
-    </>
+    </div>
   )
 }
 

@@ -1,4 +1,3 @@
-import PlayerCard from "@/components/PlayerCard/PlayerCard"
 import PlayerCardFb from "@/components/PlayerCard/PlayerCardFb"
 import "./Home.scss"
 import { useStatusStore } from "@/App.jsx"
@@ -6,6 +5,7 @@ import ZonesModal from "@/components/ZonesModal/ZonesModal"
 import StreamsModal from "@/components/StreamsModal/StreamsModal"
 import PresetsModal from "@/components/PresetsModal/PresetsModal"
 import { useState } from "react"
+import { executeApplyAction } from "@/components/StreamsModal/StreamsModal"
 
 export const getSourceZones = (source_id, zones) => {
   let matches = []
@@ -56,7 +56,7 @@ const Home = ({}) => {
   const [zonesModalOpen, setZonesModalOpen] = useState(false)
   const [streamsModalOpen, setStreamsModalOpen] = useState(false)
   const [presetsModalOpen, setPresetsModalOpen] = useState(false)
-  
+
   let cards = []
   let nextAvailableSource = null
 
@@ -78,7 +78,7 @@ const Home = ({}) => {
   })
 
   const initSource = (sourceId) => {
-    // clear source zones
+    // clear source zones for a source (on client and server)
     clearSourceZones(sourceId)
 
     // open first modal
@@ -96,20 +96,17 @@ const Home = ({}) => {
       {zonesModalOpen && (
         <ZonesModal
           sourceId={nextAvailableSource}
-          setZoneModalOpen={(o) => {
-            // setStreamsModalOpen(!o)
-            setZonesModalOpen(o)
-          }}
+          loadZonesGroups={false}
+          // on apply, we want to call
+          onApply={executeApplyAction}
           onClose={() => setZonesModalOpen(false)}
         />
       )}
       {streamsModalOpen && (
         <StreamsModal
           sourceId={nextAvailableSource}
-          setStreamModalOpen={(o) => {
-            setZonesModalOpen(!o)
-            setStreamsModalOpen(o)
-          }}
+          applyImmediately={false}
+          onApply={() => setZonesModalOpen(true)}
           onClose={() => setStreamsModalOpen(false)}
         />
       )}

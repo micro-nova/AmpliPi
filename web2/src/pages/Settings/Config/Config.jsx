@@ -3,9 +3,7 @@ import PageHeader from "@/components/PageHeader/PageHeader"
 import { useState } from "react"
 import { Button } from "@mui/material"
 
-//TODO: test these
-
-const UploadConfig = () => {
+const UploadConfig = (file) => {
   fetch("/api/load", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -54,8 +52,8 @@ const Config = ({ onClose }) => {
   }
 
   return (
-    <>
-      <PageHeader title="Configuration and Reset" onClose={onClose} />
+    <div className="page-container">
+      <PageHeader title="Config" onClose={onClose} />
       <div className="page-body">
         <div>
           Upload Config
@@ -65,7 +63,7 @@ const Config = ({ onClose }) => {
               accept=".json,application/json"
               onChange={onChange}
             />
-            <Button onClick={UploadConfig}>Upload</Button>
+            <Button onClick={()=>UploadConfig(file)}>Upload</Button>
           </div>
         </div>
         <div>
@@ -89,7 +87,7 @@ const Config = ({ onClose }) => {
           <Button onClick={HWShutdown}>Shutdown</Button>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

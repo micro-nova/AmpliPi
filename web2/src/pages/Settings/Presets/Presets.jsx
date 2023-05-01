@@ -29,7 +29,7 @@ const Presets = ({ onClose }) => {
   ))
 
   return (
-    <>
+    <div className="page-container">
       <PageHeader title="Presets" onClose={onClose} />
       <div className="page-body">{presetListItems}</div>
       <div className="add-button">
@@ -44,7 +44,7 @@ const Presets = ({ onClose }) => {
       {createModalOpen && (
         <CreatePresetModal onClose={() => setCreateModalOpen(false)} />
       )}
-    </>
+    </div>
   )
 }
 

@@ -235,9 +235,7 @@ function App({ selectedPage }) {
       </div>
       <MenuBar
         pageNumber={selectedPage}
-        onChange={(n) => {
-          setSelectedPage(n)
-        }}
+        onChange={setSelectedPage}
       />
     </div>
   )

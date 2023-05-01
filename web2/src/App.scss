@@ -1,11 +1,21 @@
 @use "src/general";
 
 .app {
+  // display: flex;
+  // width: 100vw;
   background-color: general.$bg;
-  padding-top: 0.6rem;
-  padding-bottom: 0.6rem;
+  // padding-top: 0.6rem;
+  // padding-bottom: 0.6rem;
   // padding: 0.6rem;
   // height: 100vh;
   // width: 100vw;
   // overflow: hidden;
+}
+
+// unused
+.app-container {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  background-color: green;
 }

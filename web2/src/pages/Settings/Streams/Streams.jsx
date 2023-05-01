@@ -47,7 +47,7 @@ const StreamListItem = ({ stream }) => {
         <img src={icon} className="streams-modal-icon" alt="stream icon" />
         {stream.name}
       </div>
-      
+
       {showModal && (
         <StreamModal
           stream={stream}
@@ -69,7 +69,7 @@ const Streams = ({ onClose }) => {
   const [selectedType, setSelectedType] = useState("")
 
   return (
-    <>
+    <div className="page-container">
       <PageHeader title="Streams" onClose={onClose} />
       <div className="page-body">
         {streams.map((stream) => {
@@ -103,7 +103,7 @@ const Streams = ({ onClose }) => {
           }}
         />
       )}
-    </>
+    </div>
   )
 }
 

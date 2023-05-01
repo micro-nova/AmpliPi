@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react"
-import Modal from "@/components/Modal/Modal"
-import Card from "@/components/Card/Card"
 import { CircularProgress, IconButton } from "@mui/material"
 import DoneIcon from "@mui/icons-material/Done"
 import DeleteIcon from "@mui/icons-material/Delete"
 import "./StreamModal.scss"
 import StreamTemplates from "../StreamTemplates.json"
+import ModalCard from "@/components/ModalCard/ModalCard"
 
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown"
@@ -117,102 +116,98 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
   )[0]
 
   return (
-    <Modal onClose={onClose}>
-      <Card className="stream-card">
+    <ModalCard onClose={onClose} header={stream.name}>
+      <div>
         <div>
-          <div className="stream-name">{stream.name}</div>
-
-          <div>
-            <TextField
-              name="Name"
-              desc={NAME_DESC}
-              defaultValue={streamFields.name}
-              onChange={(v) => {
-                setStreamFields({ ...streamFields, name: v })
-              }}
-            />
-            {
-              // Render fields from StreamFields.json
-              streamTemplate.fields.map((field) => {
-                switch (field.type) {
-                  case "text":
-                    return (
-                      <TextField
-                        key={field.name}
-                        name={field.name}
-                        desc={field.desc}
-                        required={field.required}
-                        defaultValue={streamFields[field.name]}
-                        onChange={(v) => {
-                          setStreamFields({ ...streamFields, [field.name]: v })
-                        }}
-                      />
-                    )
-                  case "bool":
-                    return (
-                      <BoolField
-                        key={field.name}
-                        name={field.name}
-                        desc={field.desc}
-                        defaultValue={streamFields[field.name]}
-                        onChange={(v) => {
-                          setStreamFields({ ...streamFields, [field.name]: v })
-                        }}
-                      />
-                    )
-                  case "internet-radio-search":
-                    return (
-                      <InternetRadioSearch
-                        key={field.name}
-                        onChange={(v) => {
-                          setStreamFields({
-                            ...streamFields,
-                            ["name"]: v.name,
-                            ["logo"]: v.logo,
-                            ["url"]: v.url,
-                          })
-                        }}
-                      />
-                    )
-                }
-              })
-            }
-            <BoolField
-              name="Disable"
-              desc={DISABLED_DESC}
-              defaultValue={streamFields.disabled}
-              onChange={(v) => {
-                setStreamFields({ ...streamFields, disabled: v })
-              }}
-            />
-          </div>
-        </div>
-        <div className="stream-buttons">
-          <IconButton
-            onClick={() => {
-              apply(streamFields)
-              onClose()
+          <TextField
+            name="Name"
+            desc={NAME_DESC}
+            defaultValue={streamFields.name}
+            onChange={(v) => {
+              setStreamFields({ ...streamFields, name: v })
             }}
-          >
-            <DoneIcon
-              className="stream-button-icon"
-              style={{ width: "3rem", height: "3rem" }}
-            />
-          </IconButton>
-          <IconButton
-            onClick={() => {
-              if (del) del(streamFields)
-              onClose()
+          />
+          {
+            // Render fields from StreamFields.json
+            streamTemplate.fields.map((field) => {
+              switch (field.type) {
+                case "text":
+                  return (
+                    <TextField
+                      key={field.name}
+                      name={field.name}
+                      desc={field.desc}
+                      required={field.required}
+                      defaultValue={streamFields[field.name]}
+                      onChange={(v) => {
+                        setStreamFields({ ...streamFields, [field.name]: v })
+                      }}
+                    />
+                  )
+                case "bool":
+                  return (
+                    <BoolField
+                      key={field.name}
+                      name={field.name}
+                      desc={field.desc}
+                      defaultValue={streamFields[field.name]}
+                      onChange={(v) => {
+                        setStreamFields({ ...streamFields, [field.name]: v })
+                      }}
+                    />
+                  )
+                case "internet-radio-search":
+                  return (
+                    <InternetRadioSearch
+                      key={field.name}
+                      onChange={(v) => {
+                        setStreamFields({
+                          ...streamFields,
+                          ["name"]: v.name,
+                          ["logo"]: v.logo,
+                          ["url"]: v.url,
+                        })
+                      }}
+                    />
+                  )
+              }
+            })
+          }
+          <BoolField
+            name="Disable"
+            desc={DISABLED_DESC}
+            defaultValue={streamFields.disabled}
+            onChange={(v) => {
+              setStreamFields({ ...streamFields, disabled: v })
             }}
-          >
-            <DeleteIcon
-              className="stream-button-icon"
-              style={{ width: "3rem", height: "3rem" }}
-            />
-          </IconButton>
+          />
         </div>
-      </Card>
-    </Modal>
+      </div>
+      <div className="stream-buttons">
+        <IconButton
+          onClick={() => {
+            apply(streamFields)
+            onClose()
+          }}
+        >
+          <DoneIcon
+            className="stream-button-icon"
+            style={{ width: "3rem", height: "3rem" }}
+          />
+        </IconButton>
+        <IconButton
+          onClick={() => {
+            if (del) del(streamFields)
+            onClose()
+          }}
+        >
+          <DeleteIcon
+            className="stream-button-icon"
+            style={{ width: "3rem", height: "3rem" }}
+          />
+        </IconButton>
+      </div>
+    </ModalCard>
   )
 }
 
