@@ -24,7 +24,7 @@ from amplipi.display.common import Color, Display, DefaultPass
 try:
   import board
   import pwmio
-  import RPi.GPIO as gpio
+  import RPi.GPIO as GPIO
 except (NotImplementedError, RuntimeError) as err:
   log.critical(err)
   log.critical('Only Raspberry Pi is currently supported')
@@ -131,8 +131,8 @@ class TFTDisplay(Display):
       return False
 
     # Get touch events
-    gpio.setup(self.t_irq_pin.id, gpio.IN, pull_up_down=gpio.PUD_UP)
-    gpio.add_event_detect(self.t_irq_pin.id, gpio.FALLING, callback=lambda _: self.touch_callback())
+    GPIO.setup(self.t_irq_pin.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(self.t_irq_pin.id, GPIO.FALLING, callback=lambda _: self.touch_callback())
 
     # Load image and convert to RGB
     mn_logo = Image.open('amplipi/display/imgs/micronova_320x240.png').convert('RGB')
@@ -353,7 +353,7 @@ class TFTDisplay(Display):
       self.pr.print_stats(sort='time')
 
     # Stop handling touch events
-    gpio.remove_event_detect(self.t_irq_pin.id)
+    GPIO.remove_event_detect(self.t_irq_pin.id)
 
     # Clear display on exit
     self.display.image(Image.new('RGB', (self.width, self.height)))
@@ -412,7 +412,7 @@ class TFTDisplay(Display):
   def touch_callback(self):
     # TODO: Debounce touches
     # Mask the interrupt since reading the position generates a false interrupt
-    gpio.remove_event_detect(self.t_irq_pin.id)
+    GPIO.remove_event_detect(self.t_irq_pin.id)
 
     # Average 16 values
     x_raw_list = []
@@ -461,7 +461,7 @@ class TFTDisplay(Display):
     else:
       log.debug('No valid points')
 
-    gpio.add_event_detect(self.t_irq_pin.id, gpio.FALLING, callback=lambda _: self.touch_callback())
+    GPIO.add_event_detect(self.t_irq_pin.id, GPIO.FALLING, callback=lambda _: self.touch_callback())
 
   def backlight(self, on: bool):
     if on:
