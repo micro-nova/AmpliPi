@@ -1,3 +1,8 @@
+"""Waveshare Eink Display Driver for the 2in13_V3
+
+originally developed by the Waveshare team
+"""
+
 # *****************************************************************************
 # * | File    :	  epd2in13_V3.py
 # * | Author    :   Waveshare team
@@ -31,7 +36,7 @@ import logging
 from time import sleep
 
 try:
-  import spidev
+  from spidev import SpiDev
   from RPi import GPIO
 except ImportError:
   pass
@@ -43,14 +48,14 @@ EPD_HEIGHT = 250
 logger = logging.getLogger(__name__)
 
 class RaspberryPi:
-  # modified for amplipi
+  """Raspberry Pi driver for display, modfied for AmpliPi and readability"""
   RST_PIN = 12
   DC_PIN = 39
   CS_PIN = 44
   BUSY_PIN = 38
 
   def __init__(self):
-    self.SPI = spidev.SpiDev()
+    self.spi = SpiDev()
 
   def digital_write(self, pin, value):
     GPIO.output(pin, value)
@@ -62,10 +67,10 @@ class RaspberryPi:
     sleep(delaytime / 1000.0)
 
   def spi_writebyte(self, data):
-    self.SPI.writebytes(data)
+    self.spi.writebytes(data)
 
   def spi_writebyte2(self, data):
-    self.SPI.writebytes2(data)
+    self.spi.writebytes2(data)
 
   def module_init(self):
     GPIO.setmode(GPIO.BCM)
@@ -74,14 +79,14 @@ class RaspberryPi:
     GPIO.setup(self.DC_PIN, GPIO.OUT)
     GPIO.setup(self.CS_PIN, GPIO.OUT)
     GPIO.setup(self.BUSY_PIN, GPIO.IN)
-    self.SPI.open(2, 1)
-    self.SPI.max_speed_hz = 4000000
-    self.SPI.mode = 0b00
+    self.spi.open(2, 1)
+    self.spi.max_speed_hz = 4000000
+    self.spi.mode = 0b00
     return 0
 
   def module_exit(self):
     logger.debug("spi end")
-    self.SPI.close()
+    self.spi.close()
 
     logger.debug("close 5V, Module enters 0 power consumption ...")
     GPIO.output(self.RST_PIN, 0)
@@ -90,17 +95,9 @@ class RaspberryPi:
     GPIO.cleanup([self.RST_PIN, self.DC_PIN, self.CS_PIN, self.BUSY_PIN])
 
 class EPD:
-  def __init__(self):
-    self.driver = RaspberryPi()
-    self.reset_pin = self.driver.RST_PIN
-    self.dc_pin = self.driver.DC_PIN
-    self.cs_pin = self.driver.CS_PIN
-    self.busy_pin = self.driver.BUSY_PIN
+  """Electronic paper driver"""
 
-    self.width = EPD_WIDTH
-    self.height = EPD_HEIGHT
-
-  lut_partial_update= [
+  PARTIAL_UPDATE = [
     0x0,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
     0x80,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
     0x40,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
@@ -122,7 +119,7 @@ class EPD:
     0x22,0x17,0x41,0x00,0x32,0x36,
   ]
 
-  lut_full_update = [
+  FULL_UPDATE = [
     0x80,0x4A,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
     0x40,0x4A,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
     0x80,0x4A,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
@@ -144,11 +141,18 @@ class EPD:
     0x22,0x17,0x41,0x0,0x32,0x36,
   ]
 
-  '''
-  function :Hardware reset
-  parameter:
-  '''
+  def __init__(self):
+    self.driver = RaspberryPi()
+    self.reset_pin = self.driver.RST_PIN
+    self.dc_pin = self.driver.DC_PIN
+    self.cs_pin = self.driver.CS_PIN
+    self.busy_pin = self.driver.BUSY_PIN
+
+    self.width = EPD_WIDTH
+    self.height = EPD_HEIGHT
+
   def reset(self):
+    """Reset display hardware"""
     self.driver.digital_write(self.reset_pin, 1)
     self.driver.delay_ms(20)
     self.driver.digital_write(self.reset_pin, 0)
@@ -156,23 +160,15 @@ class EPD:
     self.driver.digital_write(self.reset_pin, 1)
     self.driver.delay_ms(20)
 
-  '''
-  function :send command
-  parameter:
-   command : Command register
-  '''
   def send_command(self, command):
+    """Send simple command"""
     self.driver.digital_write(self.dc_pin, 0)
     self.driver.digital_write(self.cs_pin, 0)
     self.driver.spi_writebyte([command])
     self.driver.digital_write(self.cs_pin, 1)
 
-  '''
-  function :send data
-  parameter:
-   data : Write data
-  '''
   def send_data(self, data):
+    """Write data to display"""
     self.driver.digital_write(self.dc_pin, 1)
     self.driver.digital_write(self.cs_pin, 0)
     self.driver.spi_writebyte([data])
@@ -180,59 +176,42 @@ class EPD:
 
   # send a lot of data
   def send_data2(self, data):
+    """Write lots of data to display
+
+    Buffered and more efficient than send_data.
+    Use this to write full images to the display."""
     self.driver.digital_write(self.dc_pin, 1)
     self.driver.digital_write(self.cs_pin, 0)
     self.driver.spi_writebyte2(data)
     self.driver.digital_write(self.cs_pin, 1)
 
-  '''
-  function :Wait until the busy_pin goes LOW
-  parameter:
-  '''
-  def ReadBusy(self):
+  def wait_done(self):
+    """Wait until the busy_pin goes LOW"""
     logger.debug("e-Paper busy")
     while(self.driver.digital_read(self.busy_pin) == 1):    # 0: idle, 1: busy
       self.driver.delay_ms(10)
     logger.debug("e-Paper busy release")
 
-  '''
-  function : Turn On Display
-  parameter:
-  '''
-  def TurnOnDisplay(self):
+  def enable_display(self):
+    """Turn on display"""
     self.send_command(0x22) # Display Update Control
     self.send_data(0xC7)
     self.send_command(0x20) # Activate Display Update Sequence
-    self.ReadBusy()
+    self.wait_done()
 
-  '''
-  function : Turn On Display Part
-  parameter:
-  '''
-  def TurnOnDisplayPart(self):
+  def enable_partial_display(self):
+    """Turn on display, partial"""
     self.send_command(0x22) # Display Update Control
     self.send_data(0x0f)  # fast:0x0c, quality:0x0f, 0xcf
     self.send_command(0x20) # Activate Display Update Sequence
-    self.ReadBusy()
+    self.wait_done()
 
-  '''
-  function : Set lut
-  parameter:
-    lut : lut data
-  '''
-  def Lut(self, lut):
+  def set_lut(self, lut):
+    """Send lut data and configuration"""
     self.send_command(0x32)
     for i in range(0, 153):
       self.send_data(lut[i])
-    self.ReadBusy()
-
-  '''
-  function : Send lut data and configuration
-  parameter:
-    lut : lut data
-  '''
-  def SetLut(self, lut):
-    self.Lut(lut)
+    self.wait_done()
     self.send_command(0x3f)
     self.send_data(lut[153])
     self.send_command(0x03)   # gate voltage
@@ -244,15 +223,8 @@ class EPD:
     self.send_command(0x2c)   # VCOM
     self.send_data(lut[158])
 
-  '''
-  function : Setting the display window
-  parameter:
-    xstart : X-axis starting position
-    ystart : Y-axis starting position
-    xend : End position of X-axis
-    yend : End position of Y-axis
-  '''
-  def SetWindow(self, x_start, y_start, x_end, y_end):
+  def set_window(self, x_start, y_start, x_end, y_end):
+    """Configure the display window"""
     self.send_command(0x44) # SET_RAM_X_ADDRESS_START_END_POSITION
     # x point must be the multiple of 8 or the last 3 bits will be ignored
     self.send_data((x_start>>3) & 0xFF)
@@ -264,13 +236,8 @@ class EPD:
     self.send_data(y_end & 0xFF)
     self.send_data((y_end >> 8) & 0xFF)
 
-  '''
-  function : Set Cursor
-  parameter:
-    x : X-axis starting position
-    y : Y-axis starting position
-  '''
-  def SetCursor(self, x, y):
+  def set_cursor(self, x, y):
+    """ Set cursor position in x and y"""
     self.send_command(0x4E) # SET_RAM_X_ADDRESS_COUNTER
     # x point must be the multiple of 8 or the last 3 bits will be ignored
     self.send_data(x & 0xFF)
@@ -279,19 +246,16 @@ class EPD:
     self.send_data(y & 0xFF)
     self.send_data((y >> 8) & 0xFF)
 
-  '''
-  function : Initialize the e-Paper register
-  parameter:
-  '''
   def init(self):
-    if (self.driver.module_init() != 0):
+    """ Initialize e-Paper's registers"""
+    if self.driver.module_init() != 0:
       return -1
     # EPD hardware init start
     self.reset()
 
-    self.ReadBusy()
+    self.wait_done()
     self.send_command(0x12)  #SWRESET
-    self.ReadBusy()
+    self.wait_done()
 
     self.send_command(0x01) #Driver output control
     self.send_data(0xf9)
@@ -301,8 +265,8 @@ class EPD:
     self.send_command(0x11) #data entry mode
     self.send_data(0x03)
 
-    self.SetWindow(0, 0, self.width-1, self.height-1)
-    self.SetCursor(0, 0)
+    self.set_window(0, 0, self.width-1, self.height-1)
+    self.set_cursor(0, 0)
 
     self.send_command(0x3c)
     self.send_data(0x05)
@@ -314,38 +278,30 @@ class EPD:
     self.send_command(0x18)
     self.send_data(0x80)
 
-    self.ReadBusy()
+    self.wait_done()
 
-    self.SetLut(self.lut_full_update)
+    self.set_lut(self.FULL_UPDATE)
     return 0
 
-  '''
-  function : Display images
-  parameter:
-    image : Image data
-  '''
-  def getbuffer(self, image):
+  def get_buffer(self, image):
+    """ Get display buffer"""
     img = image
     imwidth, imheight = img.size
-    if(imwidth == self.width and imheight == self.height):
+    if imwidth == self.width and imheight == self.height:
       img = img.convert('1')
-    elif(imwidth == self.height and imheight == self.width):
+    elif imwidth == self.height and imheight == self.width:
       # image has correct dimensions, but needs to be rotated
       img = img.rotate(90, expand=True).convert('1')
     else:
-      logger.warning("Wrong image dimensions: must be " + str(self.width) + "x" + str(self.height))
+      logger.warning(f"Wrong image dimensions: must be {self.width}x{self.height}")
       # return a blank buffer
       return [0x00] * (int(self.width/8) * self.height)
 
     buf = bytearray(img.tobytes('raw'))
     return buf
 
-  '''
-  function : Sends the image buffer in RAM to e-Paper and displays
-  parameter:
-    image : Image data
-  '''
   def display(self, image):
+    """Send image buffer in RAM to e-Paper and displays"""
     if self.width%8 == 0:
       linewidth = int(self.width/8)
     else:
@@ -355,19 +311,15 @@ class EPD:
     for j in range(0, self.height):
       for i in range(0, linewidth):
         self.send_data(image[i + j * linewidth])
-    self.TurnOnDisplay()
+    self.enable_display()
 
-  '''
-  function : Sends the image buffer in RAM to e-Paper and partial refresh
-  parameter:
-    image : Image data
-  '''
-  def displayPartial(self, image):
+  def display_partial(self, image):
+    """Send image buffer in RAM to e-Paper and perform partial refresh"""
     self.driver.digital_write(self.reset_pin, 0)
     self.driver.delay_ms(1)
     self.driver.digital_write(self.reset_pin, 1)
 
-    self.SetLut(self.lut_partial_update)
+    self.set_lut(self.PARTIAL_UPDATE)
     self.send_command(0x37)
     self.send_data(0x00)
     self.send_data(0x00)
@@ -386,56 +338,45 @@ class EPD:
     self.send_command(0x22)
     self.send_data(0xC0)
     self.send_command(0x20)
-    self.ReadBusy()
+    self.wait_done()
 
-    self.SetWindow(0, 0, self.width - 1, self.height - 1)
-    self.SetCursor(0, 0)
+    self.set_window(0, 0, self.width - 1, self.height - 1)
+    self.set_cursor(0, 0)
 
     self.send_command(0x24) # WRITE_RAM
     # for j in range(0, self.height):
     #   for i in range(0, linewidth):
     #     self.send_data(image[i + j * linewidth])
     self.send_data2(image)
-    self.TurnOnDisplayPart()
+    self.enable_partial_display()
 
-  '''
-  function : Refresh a base image
-  parameter:
-    image : Image data
-  '''
-  def displayPartBaseImage(self, image):
+  def display_partial_base(self, base_image):
+    """Refresh the base image with @image
+
+    Base image is the common portion of image that is not being refreshed
+    """
     self.send_command(0x24)
-    self.send_data2(image)
+    self.send_data2(base_image)
 
     self.send_command(0x26)
-    self.send_data2(image)
-    self.TurnOnDisplay()
+    self.send_data2(base_image)
+    self.enable_display()
 
-  '''
-  function : Clear screen
-  parameter:
-  '''
-  def Clear(self, color):
+  def clear(self, color):
+    """Clear screen"""
     if self.width%8 == 0:
       linewidth = int(self.width/8)
     else:
       linewidth = int(self.width/8) + 1
-    # logger.debug(linewidth)
 
     self.send_command(0x24)
     self.send_data2([color] * int(self.height * linewidth))
-    self.TurnOnDisplay()
+    self.enable_display()
 
-  '''
-  function : Enter sleep mode
-  parameter:
-  '''
   def sleep(self):
+    """ Enter deep sleep mode """
     self.send_command(0x10) #enter deep sleep
     self.send_data(0x01)
 
     self.driver.delay_ms(2000)
     self.driver.module_exit()
-
-### END OF FILE ###
-

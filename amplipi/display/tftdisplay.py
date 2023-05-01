@@ -59,6 +59,7 @@ class TFTDisplay(Display):
     self.args = args
     self.profile = False
     self._touch_test_passed = False
+    self._ok = False
 
     # Configuration for extra TFT pins:
     self.clk_pin = board.SCLK if args.test_board else board.SCLK_2
@@ -185,8 +186,8 @@ class TFTDisplay(Display):
     use_debug_port = False
     disp_start_time = time.time()
     _sleep_timer = time.time()
-    run = True
-    while frame_num < 10 and run:
+    self._ok = True
+    while frame_num < 10 and self._ok:
       frame_start_time = time.time()
 
       log.debug(f'Active screen = {self._active_screen}')
@@ -346,7 +347,7 @@ class TFTDisplay(Display):
       # If the test timeout is 0, ignore testing
       if self.args.test_timeout > 0.0:
         if self._touch_test_passed or (time.time() - disp_start_time) > self.args.test_timeout:
-          run = False
+          self._ok = False
 
     if self.profile:
       self.pr.disable()
@@ -361,6 +362,9 @@ class TFTDisplay(Display):
 
     if self.args.test_timeout > 0.0 and not self._touch_test_passed:
       sys.exit(2)  # Exit with an error code >0 to indicate test failure
+
+  def stop(self):
+    self._ok = False
 
   def read_xpt2046(self, tx_buf: bytearray, rx_buf: bytearray):
     # Try to access SPI, wait if someone else (i.e. screen) is busy
