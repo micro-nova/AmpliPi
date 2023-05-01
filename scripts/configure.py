@@ -231,6 +231,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   }
 }
 
+def _check_and_update_streamer(env):
+  """Check if this is a streamer (no preamp firmware)"""
+  is_streamer_path = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'is_streamer')
+  env['is_streamer'] = os.path.exists(is_streamer_path)
+
 def _check_and_setup_platform():
   script_dir = os.path.dirname(os.path.realpath(__file__))
   env = {
@@ -241,6 +246,7 @@ def _check_and_setup_platform():
     'script_dir': script_dir,
     'base_dir': script_dir.rsplit('/', 1)[0],
     'is_amplipi': False,
+    'is_streamer': False,
     'arch': 'unknown',
   }
 
@@ -262,6 +268,8 @@ def _check_and_setup_platform():
       env['platform_supported'] = True
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
+
+  check_and_update_streamer(env)
 
   return env
 
@@ -799,26 +807,26 @@ def _fw_ver_from_filename(name: str) -> int:
   return 0
 
 def _update_firmware(env: dict, progress) -> List[Task]:
-  """ If on AmpliPi hardware, update to the latest firmware """
-  task = Task('Flash latest firmware')
-  latest_ver = 0
-  latest_file = ''
-  for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
-    ver = _fw_ver_from_filename(f)
-    if ver > latest_ver:
-      latest_ver = ver
-      latest_file = f
-  if latest_ver > 0:
-    if env['is_amplipi']:
+  """ If on AmpliPi with preamp hardware, update to the latest firmware """
+  task = Task('Flash latest preamp firmware')
+  if env['is_amplipi'] and not env['is_streamer']:
+    latest_ver = 0
+    latest_file = ''
+    for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
+      ver = _fw_ver_from_filename(f)
+      if ver > latest_ver:
+        latest_ver = ver
+        latest_file = f
+    if latest_ver > 0:
       os.chdir(env['base_dir'])
       task.margs = [f'bash scripts/program_firmware {latest_file}'.split()]
       task.run()
     else:
-      task.output = 'Not on AmpliPi'
+      task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
       task.success = False
   else:
-    task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
-    task.success = False
+    task.output = 'Not on AmpliPi with Preamp - No firmware update necessary'
+    task.success = True
   progress([task])
   return [task]
 
@@ -917,6 +925,10 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_web(env, restart_updater, progress)
     if failed():
       return False
+    # The is_streamer detection will happen in the update_web task
+    # we need to refresh this detection, just in case the flag changed
+    # the update_firmware task depends on this flag
+    _check_and_update_streamer(env)
   if display:
     tasks += _update_display(env, progress)
     if failed():

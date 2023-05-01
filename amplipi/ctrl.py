@@ -26,6 +26,7 @@ from enum import Enum
 
 from copy import deepcopy
 import os # files
+from pathlib import Path
 import time
 
 import threading
@@ -227,6 +228,18 @@ class Api:
     # check if we are a streamer
     self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards
 
+    # make a config flag to recognize this unit's subtype
+    # this helps the updater make good decisions
+    is_streamer_path = Path(USER_CONFIG_DIR, 'is_streamer')
+    try:
+      if self.is_streamer:
+        is_streamer_path.touch()
+      elif is_streamer_path.exists():
+        os.remove(is_streamer_path)
+    except Exception as exc:
+      print("Error setting is_streamer flag: {exc}")
+
+    # load a good default config depending on the unit subtype
     if not loaded_config:
       if len(errors) > 0:
         print(errors[0])
