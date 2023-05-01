@@ -318,7 +318,7 @@ class Api:
 
     # add/remove dynamic bluetooth stream
     bt_streams = [sid for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.Bluetooth)]
-    if amplipi.streams.Bluetooth.is_hw_available():
+    if amplipi.streams.Bluetooth.is_hw_available() and not self._mock_hw:
       print('bluetooth dongle available')
       # make sure one stream is available
       if len(bt_streams) == 0:
