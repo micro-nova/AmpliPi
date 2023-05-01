@@ -269,7 +269,7 @@ def _check_and_setup_platform():
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
 
-  check_and_update_streamer(env)
+  _check_and_update_streamer(env)
 
   return env
 
@@ -912,7 +912,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       print('OS dependency install step failed, exiting...')
       return False
   if python_deps:
-    with open(os.path.join(env['base_dir'], 'requirements.txt')) as req:
+    with open(os.path.join(env['base_dir'], 'requirements.txt'), encoding='utf-8') as req:
       deps = req.read().splitlines()
       # TODO: embed python progress reporting
       py_tasks = _install_python_deps(env, deps)
