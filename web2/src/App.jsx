@@ -64,9 +64,7 @@ export const useStatusStore = create((set, get) => ({
             }
           }
         })
-
-        // pre-emptive unmute
-
+        updateGroupVols(s)
       })
     )
   },

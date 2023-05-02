@@ -3,6 +3,7 @@ import Modal from "@/components/Modal/Modal"
 import Card from "@/components/Card/Card"
 import { useStatusStore } from "@/App"
 import { useState } from "react"
+import { Divider } from "@mui/material"
 
 const timeSince = (timeStamp) => {
   var now = new Date(),
@@ -39,15 +40,18 @@ const PresetItem = ({ index, onClick, presetState }) => {
   // show checkmark if presetState is 'done'
   // show spinner if presetState is 'loading'
   return (
-    <div className="preset-item" onClick={() => onClick(index)}>
-      <div className="preset-name-and-last-used">
-        <div>{name}</div>
-        <div className="preset-item-last-used">{last_used}</div>
-      </div>
+    <>
+      <div className="preset-item" onClick={() => onClick(index)}>
+        <div className="preset-name-and-last-used">
+          <div>{name}</div>
+          <div className="preset-item-last-used">{last_used}</div>
+        </div>
 
-      {presetState === "done" && <div className="preset-item-icon">✓</div>}
-      {presetState === "loading" && <div className="preset-item-icon">⏳</div>}
-    </div>
+        {presetState === "done" && <div className="preset-item-icon">✓</div>}
+        {presetState === "loading" && <div className="preset-item-icon">⏳</div>}
+      </div>
+      <Divider/>
+    </>
   )
 }
 
