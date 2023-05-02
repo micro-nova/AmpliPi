@@ -162,7 +162,7 @@ class EPD:
     self.driver.digital_write(self.reset_pin, 1)
     self.driver.delay_ms(20)
     self.driver.digital_write(self.reset_pin, 0)
-    self.driver.delay_ms(2)
+    self.driver.delay_ms(20)
     self.driver.digital_write(self.reset_pin, 1)
     self.driver.delay_ms(20)
 
