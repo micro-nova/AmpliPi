@@ -19,7 +19,6 @@ import produce from "immer"
 import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
 import { router } from "@/main"
-import { zoneIdToZone } from "./utils/APIHelper"
 import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon"
 
 export const usePersistentStore = create(
@@ -234,10 +233,10 @@ function App({ selectedPage }) {
       case 1:
         router.navigate("/player")
         break
-      // case 2:
-      //   router.navigate("/browser")
-      //   break
       case 2:
+        router.navigate("/browser")
+        break
+      case 3:
         router.navigate("/settings")
         break
     }
