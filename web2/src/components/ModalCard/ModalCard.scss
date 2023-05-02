@@ -11,16 +11,20 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  max-width: 30rem;
+  width: 90vw;
 }
 
 .modal-header {
   margin: 0.5rem;
+  margin-bottom: 0;
   font-size: 3rem;
   text-align: center;
 }
 
 .modal-body {
   padding: 1rem;
+  padding-top: 0;
   overflow-y: auto;
   // overflow-y: hidden;
   //the below is to push the scrollbar out of the card to hide it
