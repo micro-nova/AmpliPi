@@ -1,5 +1,4 @@
 import "./StreamBar.scss"
-import spotify from "@/assets/spotify.png"
 
 import { useStatusStore, getIcon } from "@/App.jsx"
 
