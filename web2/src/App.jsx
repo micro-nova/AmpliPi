@@ -218,10 +218,10 @@ function App({ selectedPage }) {
       case 1:
         router.navigate("/player")
         break
+      // case 2:
+      //   router.navigate("/browser")
+      //   break
       case 2:
-        router.navigate("/browser")
-        break
-      case 3:
         router.navigate("/settings")
         break
     }

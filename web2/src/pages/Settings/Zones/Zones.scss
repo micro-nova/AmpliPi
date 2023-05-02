@@ -6,21 +6,48 @@
   color: general.$text-color;
   font-size: 2rem;
   margin: 0.5rem;
+  margin-bottom: 0;
 }
 
 .zones-zone-column {
   display: flex;
   flex-direction: column;
   margin: 0.5rem;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 .zones-zone-row {
   display: flex;
   flex-direction: row;
+  align-items: center;
   margin: 0.5rem;
 }
 
 .zones-zone-expand-button {
   color: general.$controls-color;
   cursor: pointer;
+  font-size: 3rem;
+}
+
+.zones-zone-expand-icon {
+  margin-bottom: -1rem;
+}
+
+.zones-input {
+  margin-left: 0.5rem;
+}
+
+.zones-zone-icon {
+  @include general.circle(2.75rem, general.$zone-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+}
+
+.zone-content-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
 }

@@ -1,5 +1,5 @@
 import PageHeader from "@/components/PageHeader/PageHeader"
-import '@/components/StreamsModal/StreamsModal.scss'
+import "./Streams.scss"
 import "../PageBody.scss"
 import { getIcon, useStatusStore } from "@/App.jsx"
 import { useState } from "react"
@@ -8,6 +8,7 @@ import Fab from "@mui/material/Fab"
 import AddIcon from "@mui/icons-material/Add"
 import TypeSelectModal from "./TypeSelectModal/TypeSelectModal"
 import StreamTemplates from "./StreamTemplates.json"
+import { Divider } from "@mui/material"
 
 const initEmptyStream = (type) => {
   const streamTemplate = StreamTemplates.filter((t) => t.type === type)[0]
@@ -43,10 +44,11 @@ const StreamListItem = ({ stream }) => {
   const icon = getIcon(stream.type)
   return (
     <>
-      <div className="streams-modal-list-item" onClick={() => setShowModal(true)}>
-        <img src={icon} className="streams-modal-icon" alt="stream icon" />
+      <div className="stream-modal-list-item" onClick={() => setShowModal(true)}>
+        <img src={icon} className="stream-modal-icon" alt="stream icon" />
         {stream.name}
       </div>
+      <Divider/>
 
       {showModal && (
         <StreamModal

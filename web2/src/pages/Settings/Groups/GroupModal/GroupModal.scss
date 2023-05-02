@@ -1,10 +1,13 @@
 @use "src/general.scss";
 
-.group-name {
+.group-input-title {
   @include general.header-font;
   color: general.$text-color;
-  font-size: 2rem;
-  margin: 0.5rem;
+}
+
+.group-name-input {
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .group-card {
@@ -14,10 +17,17 @@
 
 .group-multi {
   width: 90%;
-  margin: 1rem;
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
   color: general.$text-color;
 }
 
 .group-button-icon {
   color: general.$controls-color;
+}
+
+.group-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }

@@ -209,13 +209,16 @@ const CreatePresetModal = ({ onClose }) => {
 
   return (
     <ModalCard onClose={onClose} header="Create Preset">
-      Name
+      <div>Name</div>
       <input
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
       <br />
+      <div>
+        Properties
+      </div>
       <div>
         <FormControlLabel
           label={"Show Inactive"}
@@ -229,17 +232,19 @@ const CreatePresetModal = ({ onClose }) => {
         />
       </div>
       <StructuredDictAsTree dict={tree} />
-      <IconButton
-          onClick={() => {
-            savePreset()
-            onClose()
-          }}
-        >
-          <DoneIcon
-            className="group-button-icon"
-            style={{ width: "3rem", height: "3rem" }}
-          />
+      <div className="create-preset-buttons">
+        <IconButton
+            onClick={() => {
+              savePreset()
+              onClose()
+            }}
+          >
+            <DoneIcon
+              className="group-button-icon"
+              style={{ width: "3rem", height: "3rem" }}
+            />
         </IconButton>
+      </div>
     </ModalCard>
   )
 }
