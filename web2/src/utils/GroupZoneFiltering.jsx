@@ -9,7 +9,6 @@ export const getFittestGroup = (zones, groups) => {
   for (const group of groups) {
 
     let fitness = groupZoneMatchCount(zones, group)
-    console.log(`${group.name}, ${group.zones}, ${fitness}`)
     if (fitness > bestFitness) {
       bestFitness = fitness
       best = group

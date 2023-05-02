@@ -16,6 +16,7 @@ const GroupVolumeSlider = ({ groupId, sourceId, groupsLeft }) => {
   const group = useStatusStore(s => s.status.groups.filter(g => g.id === groupId)[0])
   const volume = group.vol_f
   const setGroupVol = useStatusStore(s => s.setGroupVol)
+  const updateGroupVols = useStatusStore(s => s.updateGroupVols)
   const setGroupMute = useStatusStore(s => s.setGroupMute)
   const [slidersOpen, setSlidersOpen] = useState(false)
   

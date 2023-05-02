@@ -83,8 +83,6 @@ const CardVolumeSlider = ({ sourceId }) => {
     })
   }
 
-  console.log(zones.length)
-
   return (
     <div className="volume-slider">
     <VolumeSlider
