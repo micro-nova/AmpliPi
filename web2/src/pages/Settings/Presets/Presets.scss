@@ -1,18 +1,16 @@
 @use "src/general.scss";
 
-.presets-item-container{
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
 .presets-item-icon{
   @include general.circle(2.5rem, general.$preset-color);
-  font-size: 2rem;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-left: 1rem;
   margin-right: 0.5rem;
+  font-size: 2rem;
+}
+
+.presets-item-container{
+  display: flex;
+  flex-direction: row;
+  margin: 0.5rem;
 }
