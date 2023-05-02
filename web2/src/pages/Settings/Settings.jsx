@@ -92,12 +92,12 @@ const Settings = ({ openPage = "" }) => {
           <div className="groups-icon"><SpeakerGroupIcon fontSize="inherit"/></div>
         </PageListItem>
 
-        <PageListItem
+        {/* <PageListItem
           name="Sessions"
           onClick={() => router.navigate("/settings/sessions")}
         >
           <div className="sessions-icon"><CableIcon fontSize="inherit"/></div>
-        </PageListItem>
+        </PageListItem> */}
 
         <PageListItem
           name="Presets"

@@ -29,7 +29,7 @@ const MenuBar = ({ onChange, pageNumber }) => {
       >
         <BottomNavigationAction label="Home" icon={<HomeIcon />} />
         <BottomNavigationAction label="Player" icon={<AlbumIcon />} />
-        <BottomNavigationAction label="Browser" icon={<QueueMusicIcon />} />
+        {/* <BottomNavigationAction label="Browser" icon={<QueueMusicIcon />} /> */}
         <BottomNavigationAction
           label="Settings"
           icon={
