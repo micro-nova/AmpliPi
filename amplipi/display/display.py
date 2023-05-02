@@ -3,13 +3,15 @@
 import argparse
 import sys
 
+from loguru import logger as log
+
 from amplipi import formatter
 from amplipi.display.einkdisplay import EInkDisplay
 from amplipi.display.tftdisplay import TFTDisplay
 
 if __name__ == '__main__':
   if 'venv' not in sys.prefix:
-    print(f"Warning: Did you mean to run {__file__} from amplipi's venv?\n")
+    log.warning(f"Did you mean to run {__file__} from amplipi's venv?\n")
 
   parser = argparse.ArgumentParser(description='Display AmpliPi information on a TFT display.',
                                    formatter_class=formatter.AmpliPiHelpFormatter)
@@ -30,10 +32,20 @@ if __name__ == '__main__':
                       help='if >0, perform a hardware test and exit on success or timeout')
   args = parser.parse_args()
 
-  displays = [TFTDisplay(args), EInkDisplay(args)]
-  for d in displays:
+  args.log = args.log.upper()
+  log.remove()
+  log.add(sys.stderr, level=args.log)
+  log.info(f'Running display with args={args}')
+
+  displays = [TFTDisplay(args), EInkDisplay(args.iface, args.log)]
+  success = False
+  while not success and len(displays) > 0:
+    d = displays.pop()
     # we use init to determine if the display is physically present
-    if d.init():
+    if d and d.init():
       # successful init, run this display
+      success = True
       d.run()
-      break
+
+if not success:
+  log.error(f"Display failed to initialize. Exiting.")

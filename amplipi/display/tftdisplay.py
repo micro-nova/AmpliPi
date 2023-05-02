@@ -61,6 +61,10 @@ class TFTDisplay(Display):
     self._touch_test_passed = False
     self._ok = False
 
+    # configure the logger
+    log.remove()
+    log.add(sys.stderr, level=args.log)
+
     # Configuration for extra TFT pins:
     self.clk_pin = board.SCLK if args.test_board else board.SCLK_2
     self.mosi_pin = board.MOSI if args.test_board else board.MOSI_2

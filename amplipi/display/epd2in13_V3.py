@@ -32,8 +32,9 @@ originally developed by the Waveshare team
 # THE SOFTWARE.
 #
 
-import logging
+import sys
 from time import sleep
+from loguru import logger as log
 
 try:
   from spidev import SpiDev
@@ -45,8 +46,6 @@ except ImportError:
 EPD_WIDTH  = 122
 EPD_HEIGHT = 250
 
-logger = logging.getLogger(__name__)
-
 class RaspberryPi:
   """Raspberry Pi driver for display, modfied for AmpliPi and readability"""
   RST_PIN = 12
@@ -55,10 +54,11 @@ class RaspberryPi:
   BUSY_PIN = 38
 
   def __init__(self):
+    self._initialized = False
     self.spi = SpiDev()
 
   def __del__(self):
-    if self.spi and self.spi.is_open:
+    if self._initialized:
       self.module_exit()
 
   def digital_write(self, pin, value):
@@ -86,12 +86,13 @@ class RaspberryPi:
     self.spi.open(2, 1)
     self.spi.max_speed_hz = 4000000
     self.spi.mode = 0b00
+    self._initialized = True
 
   def module_exit(self):
-    logger.debug("spi end")
+    log.debug("spi end")
     self.spi.close()
 
-    logger.debug("close 5V, Module enters 0 power consumption ...")
+    log.debug("close 5V, Module enters 0 power consumption ...")
     GPIO.output(self.RST_PIN, 0)
     GPIO.output(self.DC_PIN, 0)
 
@@ -144,7 +145,9 @@ class EPD:
     0x22,0x17,0x41,0x0,0x32,0x36,
   ]
 
-  def __init__(self):
+  def __init__(self, log_level='WARNING'):
+    log.remove()
+    log.add(sys.stderr, level=log_level)
     self.driver = RaspberryPi()
     self.reset_pin = self.driver.RST_PIN
     self.dc_pin = self.driver.DC_PIN
@@ -188,12 +191,16 @@ class EPD:
     self.driver.spi_writebyte2(data)
     self.driver.digital_write(self.cs_pin, 1)
 
+  def _is_bus_busy(self):
+    return self.driver.digital_read(self.busy_pin) == 1
+
   def wait_done(self):
     """Wait until the busy_pin goes LOW"""
-    logger.debug("e-Paper busy")
-    while(self.driver.digital_read(self.busy_pin) == 1):    # 0: idle, 1: busy
-      self.driver.delay_ms(10)
-    logger.debug("e-Paper busy release")
+    if self._is_bus_busy():
+      log.debug("e-Paper busy")
+      while self._is_bus_busy():
+        self.driver.delay_ms(10)
+      log.debug("e-Paper busy release")
 
   def enable_display(self):
     """Turn on display"""
@@ -296,7 +303,7 @@ class EPD:
       # image has correct dimensions, but needs to be rotated
       img = img.rotate(90, expand=True).convert('1')
     else:
-      logger.warning(f"Wrong image dimensions: must be {self.width}x{self.height}")
+      log.warning(f"Wrong image dimensions: must be {self.width}x{self.height}")
       # return a blank buffer
       return [0x00] * (int(self.width/8) * self.height)
 
