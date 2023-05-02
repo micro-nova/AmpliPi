@@ -57,6 +57,10 @@ class RaspberryPi:
   def __init__(self):
     self.spi = SpiDev()
 
+  def __del__(self):
+    if self.spi and self.spi.is_open:
+      self.module_exit()
+
   def digital_write(self, pin, value):
     GPIO.output(pin, value)
 
@@ -82,7 +86,6 @@ class RaspberryPi:
     self.spi.open(2, 1)
     self.spi.max_speed_hz = 4000000
     self.spi.mode = 0b00
-    return 0
 
   def module_exit(self):
     logger.debug("spi end")
