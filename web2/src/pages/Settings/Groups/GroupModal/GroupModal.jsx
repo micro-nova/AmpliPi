@@ -26,7 +26,8 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
   return (
     <ModalCard onClose={onClose} header="Edit Group">
 
-      {/* <div className="group-name">{group.name}</div> */}
+      <div className="group-input-title">Name</div>
+      <div className="group-name-input">
         <input
           type="text"
           value={groupName}
@@ -34,7 +35,8 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
             setGroupName(e.target.value)
           }}
         />
-       <br />
+      </div>
+      <div className="group-input-title">Zones</div>
       <Select
         className="group-multi"
         multiple
@@ -60,11 +62,10 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
             onClose()
           }}
         >
-          {" "}
           <DeleteIcon
             className="group-button-icon"
             style={{ width: "3rem", height: "3rem" }}
-          />{" "}
+          />
         </IconButton>
         <IconButton
           onClick={() => {
@@ -72,11 +73,10 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
             onClose()
           }}
         >
-          {" "}
           <DoneIcon
             className="group-button-icon"
             style={{ width: "3rem", height: "3rem" }}
-          />{" "}
+          />
         </IconButton>
       </div>
     </ModalCard>

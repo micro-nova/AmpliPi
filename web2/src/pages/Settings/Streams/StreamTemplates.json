@@ -103,11 +103,13 @@
   {
     "name": "Bluetooth Device",
     "type": "bluetooth",
+    "noCreate": true,
     "fields": []
   },
   {
     "name": "RCA Input",
     "type": "rca",
+    "noCreate": true,
     "fields": []
   }
 ]

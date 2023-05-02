@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { CircularProgress, IconButton } from "@mui/material"
+import { Divider } from "@mui/material"
 import DoneIcon from "@mui/icons-material/Done"
 import DeleteIcon from "@mui/icons-material/Delete"
 import "./StreamModal.scss"
@@ -12,6 +13,7 @@ const DISABLED_DESC = "Don't show this stream in the input dropdown"
 
 const TextField = ({ name, desc, defaultValue, onChange }) => {
   return (
+    <>
     <div className="stream-field">
       <div className="stream-field-name">{name}</div>
       <input
@@ -23,12 +25,16 @@ const TextField = ({ name, desc, defaultValue, onChange }) => {
       />
       <div className="stream-field-desc">{desc}</div>
     </div>
+    <Divider/>
+    </>
   )
 }
 
 const BoolField = ({ name, desc, defaultValue, onChange }) => {
   return (
-    <div className="stream-field">
+    <>
+    <div>
+      <div className="stream-field-bool">
       <div className="stream-field-name">{name}</div>
       <input
         type="checkbox"
@@ -37,8 +43,11 @@ const BoolField = ({ name, desc, defaultValue, onChange }) => {
           onChange(e.target.checked)
         }}
       />
+      </div>
       <div className="stream-field-desc">{desc}</div>
     </div>
+    <Divider/>
+    </>
   )
 }
 

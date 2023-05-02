@@ -2,7 +2,7 @@ import Modal from '@/components/Modal/Modal'
 import Card from '@/components/Card/Card'
 import './ModalCard.scss'
 
-const ModalCard = ({ header, children, onClose }) => {
+const ModalCard = ({ header, children, onClose}) => {
   return (
     <Modal className="modal" onClose={onClose}>
       <Card className="modal-card">

@@ -5,31 +5,33 @@
   color: general.$text-color;
   font-size: 2rem;
   margin: 0.5rem;
+  margin-bottom: 0;
 }
 
 .stream-card {
   @include general.header-font;
-  width: 50vw;
-  min-width: 25em;
+  max-width: 25em;
+  width: 90vw;
   padding: 1rem;
+}
+
+.stream-field-bool {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .stream-field-name {
   @include general.regular-font;
   color: general.$text-color;
   font-size: 1.5rem;
+  margin-right: 1rem;
 }
 
 .stream-field-desc {
   @include general.regular-font;
   color: general.$text-color;
-  font-size: 0.9rem;
-}
-
-.stream-multi {
-  width: 90%;
-  margin: 1rem;
-  color: general.$text-color;
+  font-size: 0.8rem;
 }
 
 .stream-button-icon {
@@ -55,4 +57,10 @@
   color: general.$text-color;
   font-size: 1rem;
   margin: 0.5rem;
+}
+
+.stream-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
