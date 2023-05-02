@@ -9,7 +9,8 @@ from amplipi import formatter
 from amplipi.display.einkdisplay import EInkDisplay
 from amplipi.display.tftdisplay import TFTDisplay
 
-if __name__ == '__main__':
+def main():
+  """Run the available external display"""
   if 'venv' not in sys.prefix:
     log.warning(f"Did you mean to run {__file__} from amplipi's venv?\n")
 
@@ -38,14 +39,17 @@ if __name__ == '__main__':
   log.info(f'Running display with args={args}')
 
   displays = [TFTDisplay(args), EInkDisplay(args.iface, args.log)]
-  success = False
-  while not success and len(displays) > 0:
-    d = displays.pop()
+  initialized = False
+  while not initialized and len(displays) > 0:
+    disp = displays.pop()
     # we use init to determine if the display is physically present
-    if d and d.init():
+    if disp and disp.init():
       # successful init, run this display
-      success = True
-      d.run()
+      initialized = True
+      disp.run()
 
-if not success:
-  log.error(f"Display failed to initialize. Exiting.")
+  if not initialized:
+    log.error("Display failed to initialize. Exiting.")
+
+if __name__ == '__main__':
+  main()
