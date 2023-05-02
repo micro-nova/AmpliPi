@@ -218,9 +218,9 @@ const Page = ({ selectedPage }) => {
       return <Home />
     case 1:
       return <Player />
-    // case 2:
-    //   return <div></div>
     case 2:
+      return <div></div>
+    case 3:
       return <Settings />
   }
 }

@@ -6,7 +6,7 @@ import AlbumIcon from "@mui/icons-material/Album"
 import SettingsIcon from "@mui/icons-material/Settings"
 import QueueMusicIcon from "@mui/icons-material/QueueMusic"
 import Badge from "@mui/material/Badge"
-import { useStatusStore } from "@/App"
+import { useStatusStore, usePersistentStore } from "@/App"
 
 const MenuBar = ({ onChange, pageNumber }) => {
   const updateAvailable = useStatusStore(
@@ -19,6 +19,9 @@ const MenuBar = ({ onChange, pageNumber }) => {
         }) < 0
   )
 
+  const selectedSource = usePersistentStore((s) => s.selectedSource)
+  const sourceIsStopped = useStatusStore(s => s.status.sources[selectedSource].info.state) === 'stopped'
+
   return (
     <div className="bar">
       <BottomNavigation
@@ -28,8 +31,8 @@ const MenuBar = ({ onChange, pageNumber }) => {
         }}
       >
         <BottomNavigationAction label="Home" icon={<HomeIcon />} />
-        <BottomNavigationAction label="Player" icon={<AlbumIcon />} />
-        {/* <BottomNavigationAction label="Browser" icon={<QueueMusicIcon />} /> */}
+        {!sourceIsStopped && <BottomNavigationAction label="Player" icon={<AlbumIcon />} />}
+        { false && <BottomNavigationAction label="Browser" icon={<QueueMusicIcon />} />}
         <BottomNavigationAction
           label="Settings"
           icon={
