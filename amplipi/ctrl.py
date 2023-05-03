@@ -26,6 +26,7 @@ from enum import Enum
 
 from copy import deepcopy
 import os # files
+from pathlib import Path
 import time
 
 import threading
@@ -35,6 +36,7 @@ from amplipi import models
 from amplipi import rt
 from amplipi import utils
 import amplipi.streams
+from amplipi.eeprom import EEPROM, BoardType
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -86,6 +88,7 @@ class Api:
   # pylint: disable=too-many-instance-attributes
   # pylint: disable=too-many-public-methods
 
+  # TODO: move these variables to the init, they should not be class variables.
   _initialized = False # we need to know when we initialized first
   _mock_hw: bool
   _mock_streams: bool
@@ -96,6 +99,7 @@ class Api:
   config_file: str
   backup_config_file: str
   config_file_valid: bool
+  is_streamer: bool
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
 
@@ -142,6 +146,24 @@ class Api:
       },
     ]
   }
+
+  STREAMER_CONFIG = { # This is the system state response that will come back from the amplipi box
+    "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
+      {"id": 0, "name": "Input 1", "input": ""},
+      {"id": 1, "name": "Input 2", "input": ""},
+      {"id": 2, "name": "Input 3", "input": ""},
+      {"id": 3, "name": "Input 4", "input": ""}
+    ],
+    "streams": [
+      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+    ],
+    "zones": [ # this is an array of zones, array length depends on # of boxes connected
+    ],
+    "groups": [
+    ],
+    "presets" : [
+    ]
+  }
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
   # with this reinit will be called connect and will attempt to load the configutation and connect to an AmpliPi (mocked or real)
   # returning a boolean on whether or not it was successful
@@ -160,7 +182,19 @@ class Api:
     self._delay_saves = settings.delay_saves
     self._settings = settings
 
-    # Create firmware interface. If one already exists delete then re-init.
+    # try to get a list of available boards to determine if we are a streamer
+    # the preamp hardware is not available on a streamer
+    # we need to know this before trying to intiialize the firmware
+    found_boards = []
+    try:
+      found_boards = EEPROM.get_available_devices(0)
+    except Exception as exc:
+      print(f'Error finding boards: {exc}')
+
+    # check if we are a streamer
+    self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards
+
+    # Create firmware interface if needed. If one already exists delete then re-init.
     if self._initialized:
       # we need to make sure to mute every zone before resetting the fw
       zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones], update=models.ZoneUpdate(mute=True))
@@ -169,7 +203,7 @@ class Api:
         del self._rt # remove the low level hardware connection
       except AttributeError:
         pass
-    self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi() # reset the fw
+    self._rt = rt.Mock() if settings.mock_ctrl or self.is_streamer else rt.Rpi() # reset the fw
 
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(settings.config_file, 'a', encoding='utf-8'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -196,10 +230,27 @@ class Api:
           self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
           errors.append(f'error loading config file: {exc}')
 
+    # make a config flag to recognize this unit's subtype
+    # this helps the updater make good decisions
+    is_streamer_path = Path(USER_CONFIG_DIR, 'is_streamer')
+    try:
+      if self.is_streamer:
+        is_streamer_path.touch()
+      elif is_streamer_path.exists():
+        os.remove(is_streamer_path)
+    except Exception as exc:
+      print("Error setting is_streamer flag: {exc}")
+
+    # load a good default config depending on the unit subtype
     if not loaded_config:
-      print(errors[0])
-      print('using default config')
-      self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
+      if len(errors) > 0:
+        print(errors[0])
+      if self.is_streamer:
+        print('using streamer config')
+        self.status = models.Status.parse_obj(self.STREAMER_CONFIG)
+      else:
+        print('using default config')
+        self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
 
     # populate system info
@@ -217,13 +268,17 @@ class Api:
     self._update_sys_info() # TODO: does sys info need to be updated at init time?
 
     # detect missing zones
-    if self._mock_hw:
+    if self._mock_hw and not self.is_streamer:
       # only allow 6 zones when mocked to simplify testing
       # add more if needed by specifying them in the config
       potential_zones = range(6)
+    elif self.is_streamer:
+      # streamer has no zones
+      potential_zones = range(0)
     else:
       potential_zones = range(rt.MAX_ZONES)
     added_zone = False
+
     for zid in potential_zones:
       _, zone = utils.find(self.status.zones, zid)
       if zone is None and self._rt.exists(zid):
@@ -245,22 +300,23 @@ class Api:
     # configure Aux and SPDIF
     utils.configure_inputs()
 
-    # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
-    for rca_id in RCAs:
-      sid, stream = utils.find(self.status.streams, rca_id)
-      if sid is None:
-        idx = rca_id - RCAs[0]
-        # try to use the old name in the source if it was renamed from the default name of 1-4
-        input_name = f'Input {idx + 1}'
-        try:
-          src_name = self.status.sources[idx].name
-          if not src_name.isdigit():
-            input_name = src_name
-        except Exception as e:
-          print(f'Error discovering old source name for conversion to RCA stream: {e}')
-          print(f'- Defaulting name to: {input_name}')
-        rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
-        self.status.streams.insert(idx, rca_stream)
+    if not self.is_streamer:
+      # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
+      for rca_id in RCAs:
+        sid, stream = utils.find(self.status.streams, rca_id)
+        if sid is None:
+          idx = rca_id - RCAs[0]
+          # try to use the old name in the source if it was renamed from the default name of 1-4
+          input_name = f'Input {idx + 1}'
+          try:
+            src_name = self.status.sources[idx].name
+            if not src_name.isdigit():
+              input_name = src_name
+          except Exception as e:
+            print(f'Error discovering old source name for conversion to RCA stream: {e}')
+            print(f'- Defaulting name to: {input_name}')
+          rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
+          self.status.streams.insert(idx, rca_stream)
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
@@ -277,7 +333,7 @@ class Api:
 
     # add/remove dynamic bluetooth stream
     bt_streams = [sid for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.Bluetooth)]
-    if amplipi.streams.Bluetooth.is_hw_available():
+    if amplipi.streams.Bluetooth.is_hw_available() and not self._mock_hw:
       print('bluetooth dongle available')
       # make sure one stream is available
       if len(bt_streams) == 0:
