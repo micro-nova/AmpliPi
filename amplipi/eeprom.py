@@ -1,4 +1,6 @@
-"""Module for reading and writing to Amplipi EEPROM."""
+"""Module for reading and writing to Amplipi EEPROMs.
+
+These are used to identify features and device types among other things."""
 
 from dataclasses import dataclass
 from enum import Enum
