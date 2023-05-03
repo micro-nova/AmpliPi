@@ -1,6 +1,7 @@
 import "./StreamsModal.scss"
 import ModalCard from "@/components/ModalCard/ModalCard"
 import { getIcon, useStatusStore } from "@/App"
+import { Divider } from "@mui/material"
 
 //TODO: fix RCA behavior
 
@@ -56,34 +57,38 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
   for (const stream of streams) {
     const icon = getIcon(stream.type)
     streamsList.push(
-      <div
-        className="streams-modal-list-item"
-        onClick={() => {
-          setStream(stream.id)
-          onApply()
-          onClose()
-        }}
-        key={stream.id}
-      >
-        <img src={icon} className="streams-modal-icon" alt="stream icon" />
-        {stream.name}
-      </div>
+      <>
+        <div
+          className="streams-modal-list-item"
+          onClick={() => {
+            setStream(stream.id)
+            onApply()
+            onClose()
+          }}
+          key={stream.id}
+        >
+          <img src={icon} className="streams-modal-icon" alt="stream icon" />
+          {stream.name}
+        </div>
+
+        <Divider/>
+      </>
     )
   }
 
   if (showClosePlayer) {
     streamsList.push(
-      <div
-        className="streams-modal-list-item"
-        onClick={() => {
-          removeStream()
-          onApply()
-          onClose()
-        }}
-        key="none"
-      >
-        Close Player
-      </div>
+        <div
+          className="streams-modal-list-item"
+          onClick={() => {
+            removeStream()
+            onApply()
+            onClose()
+          }}
+          key="none"
+        >
+          Close Player
+        </div>
     )
   }
 

@@ -76,8 +76,8 @@ const Config = ({ onClose }) => {
         </div>
         <Divider />
         <div>
-          Factory Reset
-          <div className="config-desc">{"Resets the preamp hardware and controller software using the default configuration file. This will reset all zone names and streams back to their original configuration. We recommend downloading the current configuration beforehand."}</div>
+          Factory Config
+          <div className="config-desc">{"Resets Amplipi to the factory default configuration. We recommend downloading the current configuration beforehand."}</div>
           <Button onClick={FactoryReset}>Reset</Button>
         </div>
         <Divider />

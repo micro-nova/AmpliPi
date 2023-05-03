@@ -13,17 +13,20 @@ import Card from "@/components/Card/Card"
 
 const Player = ({ }) => {
   const selectedSource = usePersistentStore((s) => s.selectedSource)
+  // TODO: dont index into sources. id isn't guarenteed to line up with order
   const img_url = useStatusStore(
     (s) => s.status.sources[selectedSource].info.img_url
   )
+  const sourceIsStopped = useStatusStore(s => s.status.sources[selectedSource].info.state) === 'stopped'
   const [expanded, setExpanded] = useState(false)
 
-  console.log(selectedSource)
-
-  if(selectedSource ==null) {
-
-    return (<div>fuck</div>)
-
+  if (sourceIsStopped) {
+    return (
+      <div className="player-outer">
+        <div className="player-stopped-message">No Player Selected!</div>
+      </div>
+    
+    )
   }
 
   return (

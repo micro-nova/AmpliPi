@@ -36,6 +36,18 @@ export const usePersistentStore = create(
   )
 )
 
+const updateGroupVols = (s) => {
+  s.status.groups.forEach(g => {
+    if (g.zones.length > 1) {
+      const vols = g.zones.map(id => s.status.zones[id].vol_f)
+      let calculated_vol = Math.min(...vols) * .5 + Math.max(...vols) * .5
+      g.vol_f = calculated_vol
+    } else if (g.zones.length == 1) {
+      g.vol_f = s.status.zones[id].vol_f
+    }
+  })
+}
+
 export const useStatusStore = create((set, get) => ({
   status: null,
   skipUpdate: false,
@@ -52,9 +64,7 @@ export const useStatusStore = create((set, get) => ({
             }
           }
         })
-
-        // pre-emptive unmute
-
+        updateGroupVols(s)
       })
     )
   },
@@ -124,18 +134,21 @@ export const useStatusStore = create((set, get) => ({
       produce((s) => {
         s.skipUpdate = true
         s.status.zones[zoneId].vol_f = new_vol
+
+        updateGroupVols(s)
       })
     )
   },
   setGroupVol: (groupId, new_vol) => {
     set(
       produce((s) => {
-        let g = s.status.groups.filter((g) => g.id === groupId)[0]
+        const g = s.status.groups.filter((g) => g.id === groupId)[0]
         for (const i of g.zones) {
           s.skipUpdate = true
           s.status.zones[i].vol_f = new_vol
         }
-        g.vol_f = new_vol
+
+        updateGroupVols(s)
       })
     )
   },
@@ -225,10 +238,10 @@ function App({ selectedPage }) {
       case 1:
         router.navigate("/player")
         break
-      // case 2:
-      //   router.navigate("/browser")
-      //   break
       case 2:
+        router.navigate("/browser")
+        break
+      case 3:
         router.navigate("/settings")
         break
     }
