@@ -47,7 +47,6 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       newZones.push(id)
     }
     setCheckedZoneIds(newZones)
-    // TODO: recompute checked groups
     computeCheckedGroups(newZones)
   }
 
@@ -65,8 +64,6 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       })
     }
     setCheckedZoneIds(newZones)
-
-    // TODO: recompute checked groups
     computeCheckedGroups(newZones)
   }
 
