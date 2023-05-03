@@ -4,9 +4,10 @@
 * Streams
   * Add Bluetooth stream
 * API
-  * Added support for units without zones
+  * Add support for units without zones
 * Hardware
-  * Added support for EEPROMS on boards to identify board type and revision
+  * Add support for EEPROMS on boards to identify board type and revision
+  * Add support for E-Ink display
 
 ## 0.2.1
 * System
