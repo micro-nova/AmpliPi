@@ -13,49 +13,71 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
     .getState()
     .status.zones.filter((zone) => !zone.disabled)
   const groups = useStatusStore.getState().status.groups
-  const [checkedZones, setCheckedZones] = useState(
+  const [checkedZonesIds, setCheckedZoneIds] = useState(
     zones
     .filter((zone) => zone.source_id === sourceId && loadZonesGroups)
     .map((zone) => zone.id)
   )
-  const [checkedGroups, setCheckedGroups] = useState(
+  const [checkedGroupIds, setCheckedGroupIds] = useState(
     groups
     .filter((group) => group.source_id === sourceId && loadZonesGroups)
     .map((group) => group.id)
   )
 
+  const computeCheckedGroups = (newCheckedZonesIds) => {
+    let newGroups = []
+    // groups.forEach(g => {
+    //   if (g.zones.every(id => checkedZonesIds.includes(id))) {
+    //     newGroups.push(g.id)
+    //   }
+    // })
+
+    newGroups = groups.filter(g => g.zones.every(id => newCheckedZonesIds.includes(id))).map(g => g.id)
+
+    setCheckedGroupIds(newGroups)
+  }
+
   const handleChangeZone = (id) => {
-    if (checkedZones.includes(id)) {
-      let newList = checkedZones.filter((item) => item != id)
-      setCheckedZones(newList)
+    let newZones = [...checkedZonesIds]
+    if (checkedZonesIds.includes(id)) {
+      // currently checked. uncheck
+      newZones = newZones.filter(item => item != id)
     } else {
-      setCheckedZones([...checkedZones, id])
+      // currently unchecked. check
+      newZones.push(id)
     }
+    setCheckedZoneIds(newZones)
+    // TODO: recompute checked groups
+    computeCheckedGroups(newZones)
   }
 
   const handleChangeGroup = (id) => {
-    if (checkedGroups.includes(id)) {
-      let newList = checkedGroups.filter((item) => item != id)
-      setCheckedGroups(newList)
+    const group = groups.filter(g => g.id === id)[0]
+    let newZones = [...checkedZonesIds]
+
+    if (checkedGroupIds.includes(id)) {
+      // currently checked. unckeck associated zones
+      group.zones.forEach(zid => newZones = newZones.filter(new_zid => new_zid !== zid))
     } else {
-      setCheckedGroups([...checkedGroups, id])
+      // currently unchecked. check associated zones
+      group.zones.forEach(zid => {
+        if (!newZones.includes(zid)) newZones.push(zid)
+      })
     }
+    setCheckedZoneIds(newZones)
+
+    // TODO: recompute checked groups
+    computeCheckedGroups(newZones)
   }
 
-  // const clearSelected = () => {
-  //   setCheckedZones(Array(false).fill(checkedZones.length))
-  //   setCheckedGroups(Array(false).fill(checkedGroups.length))
-  // }
-
-  const ZonesModalZoneItem = ({ zone, selectable, defaultSelected }) => {
+  const ZonesModalZoneItem = ({ zone, defaultSelected, checked }) => {
     return (
       <div className="zones-modal-list-item" key={zone.id}>
-        {selectable && (
-          <Checkbox
-            onChange={() => handleChangeZone(zone.id)}
-            defaultChecked={defaultSelected}
-          />
-        )}
+        <Checkbox
+          checked={checked}
+          onChange={() => handleChangeZone(zone.id)}
+          defaultChecked={defaultSelected}
+        />
         <div className="zone-icon">
           <SpeakerIcon />
         </div>
@@ -64,15 +86,14 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
     )
   }
 
-  const ZonesModalGroupItem = ({ group, selectable, defaultSelected }) => {
+  const ZonesModalGroupItem = ({ group, defaultSelected, checked }) => {
     return (
       <div className="zones-modal-list-item" key={group.id}>
-        {selectable && (
-          <Checkbox
-            onChange={() => handleChangeGroup(group.id)}
-            defaultChecked={defaultSelected}
-          />
-        )}
+        <Checkbox
+          checked={checked}
+          onChange={() => handleChangeGroup(group.id)}
+          defaultChecked={defaultSelected}
+        />
         <div className="group-icon">
           <SpeakerGroupIcon />
         </div>
@@ -88,7 +109,7 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
     for (const zone of zones.filter((zone) => {
       return zone.source_id == sourceId
     })) {
-      if (!checkedZones.includes(zone.id)) {
+      if (!checkedZonesIds.includes(zone.id)) {
         removeList.push(zone.id)
       }
     }
@@ -96,7 +117,7 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
     for (const zone of zones.filter((zone) => {
       return zone.source_id != sourceId
     })) {
-      if (checkedZones.includes(zone.id)) {
+      if (checkedZonesIds.includes(zone.id)) {
         addList.push(zone.id)
       }
     }
@@ -128,7 +149,7 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
     for (const group of groups.filter((group) => {
       return group.source_id == sourceId
     })) {
-      if (!checkedGroups.includes(group.id)) {
+      if (!checkedGroupIds.includes(group.id)) {
         removeList.push(group.id)
       }
     }
@@ -136,7 +157,7 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
     for (const group of groups.filter((group) => {
       return group.source_id != sourceId
     })) {
-      if (checkedGroups.includes(group.id)) {
+      if (checkedGroupIds.includes(group.id)) {
         addList.push(group.id)
       }
     }
@@ -164,24 +185,26 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
 
   const groupItems = groups.map((group) => {
     let selected = false
+    const checked = checkedGroupIds.includes(group.id)
     if (group.source_id == sourceId) {
       selected = true
     }
     return ZonesModalGroupItem({
       group: group,
-      selectable: true,
+      checked: checked,
       defaultSelected: selected,
     })
   })
 
   const zoneItems = zones.map((zone) => {
     let selected = false
+    const checked = checkedZonesIds.includes(zone.id)
     if (zone.source_id == sourceId) {
       selected = true
     }
     return ZonesModalZoneItem({
       zone: zone,
-      selectable: true,
+      checked: checked,
       defaultSelected: selected,
     })
   })
