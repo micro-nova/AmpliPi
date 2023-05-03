@@ -143,6 +143,9 @@ def virtual_output_device(vsid: int) -> str:
   assert vsid < 12, "only 12 virtual outputs are supported"
   # dev = f'plughw:CARD=Loopback_{lb_id},DEV={lb_dev_in}'.replace('_0', '') # use the loopback dmixer (plughw and hw don't work here)
   dev = f'lb{vsid}c'
+  if dev in available_outputs():
+    return dev
+  return 'default' # for now we want basic streams to play for testing
 
 def configure_inputs():
   """ The IEC598 and Aux inputs are being muted/misconfigured during system startup
