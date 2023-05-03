@@ -134,6 +134,16 @@ def available_outputs():
     print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
   return outputs
 
+
+def virtual_output_device(vsid: int) -> str:
+  """ Get a virtual source's corresponding ALSA output device string """
+  # NOTE: we use the other side (DEV=1) for devices 6-11 since we only have 6 loopbacks
+  lb_id = vsid % 6
+  lb_dev_in = vsid // 6
+  assert vsid < 12, "only 12 virtual outputs are supported"
+  # dev = f'plughw:CARD=Loopback_{lb_id},DEV={lb_dev_in}'.replace('_0', '') # use the loopback dmixer (plughw and hw don't work here)
+  dev = f'lb{vsid}c'
+
 def configure_inputs():
   """ The IEC598 and Aux inputs are being muted/misconfigured during system startup
 
@@ -147,12 +157,25 @@ def configure_inputs():
     except Exception as e:
       print(f'Failed to configure inputs: {e}')
 
-def output_device(sid: int) -> str:
-  """ Get a source's corresponding ALSA output device string """
-  dev = 'ch' + str(sid)
+def virtual_connection_device(vsid: int) -> Optional[str]:
+  """ Get a virtual source's corresponding connection (capture device) string for use with alsaloop """
+  # NOTE: we use the other side (DEV=0) for devices 6-11 since we only have 6 loopbacks
+  lb_id = vsid % 6
+  lb_dev_in = vsid // 6
+  lb_dev_out = {0:1, 1:0}[lb_dev_in] # loopback output is on the opposite side
+  assert vsid < 12, "only 12 virtual outputs are supported"
+  #dev = f'hw:CARD=Loopback_{lb_id},DEV={lb_dev_out}'.replace('_0', '') # here we use the hw side
+  dev = f'lb{vsid}p'
+  if dev in available_outputs():
+    return dev.replace('CARD=', '').replace('DEV=', '') # alsaloop doesn't like these specifiers
+  return None
+
+def real_output_device(sid: int) -> str:
+  """ Get the plug ALSA device connected directly to an output DAC """
+  dev = f'ch{sid}'
   if dev in available_outputs():
     return dev
-  return 'default' # fallback to default
+  return 'default'
 
 def zones_from_groups(status: models.Status, groups: List[int]) -> Set[int]:
   """ Get the set of zones from some groups """

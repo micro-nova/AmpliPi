@@ -579,6 +579,11 @@ class Api:
               if stream.is_connected():
                 stream.disconnect()
               stream.connect(idx)
+              # potentially deactivate the old stream to save resources
+              # NOTE: old_stream and new stream could be the same if force_update is True
+              if old_stream and old_stream != stream and old_stream.is_activated():
+                if not old_stream.is_persistent(): # type: ignore
+                  old_stream.deactivate() # type: ignore
             except Exception as iexc:
               print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
               stream.disconnect()
@@ -599,6 +604,9 @@ class Api:
             # TODO: should this stream id validation happen in the Source model?
             src.input = last_input
             raise Exception(f'StreamID specified by "{src.input}" not found')
+          elif old_stream and old_stream.is_activated():
+            if not old_stream.is_persistent(): # type: ignore
+              old_stream.deactivate() # type: ignore
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
           if rt_needs_update or force_update:
             src_cfg = self._get_source_config()
@@ -938,7 +946,14 @@ class Api:
     except Exception as exc:
       return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
     try:
-      stream.send_cmd(cmd)
+      if cmd in ['activate', 'deactivate']:
+        if isinstance(stream, amplipi.streams.PersistentStream):
+          if cmd == 'activate':
+            stream.activate()
+          else:
+            stream.deactivate()
+      else:
+        stream.send_cmd(cmd)
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
     return ApiResponse.ok()
