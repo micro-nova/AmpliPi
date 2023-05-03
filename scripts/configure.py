@@ -933,7 +933,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_display(env, progress)
     if failed():
       return False
-  if audiodetector:
+  if audiodetector and not env['is_streamer']:
     tasks += _update_audiodetector(env, progress)
     if failed():
       return False
