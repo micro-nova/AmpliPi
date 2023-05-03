@@ -79,8 +79,8 @@ class TFTDisplay(Display):
 
     self.led = None
 
-    self._active_screen = 0
-    self._sleep_timer = 0
+    self.active_screen = 0
+    self.sleep_timer = 0
     self.disp_start_time = 0
 
     self.width = 0
@@ -136,8 +136,8 @@ class TFTDisplay(Display):
       return False
 
     # Get touch events
-    GPIO.setup(self.t_irq_pin.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(self.t_irq_pin.id, GPIO.FALLING, callback=lambda _: self.touch_callback())
+    GPIO.setup(board.D38.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(board.D38.id, GPIO.FALLING, callback=self.touch_callback)
 
     # Load image and convert to RGB
     mn_logo = Image.open('amplipi/display/imgs/micronova_320x240.png').convert('RGB')
@@ -171,9 +171,6 @@ class TFTDisplay(Display):
       self.pr = cProfile.Profile()
       self.pr.enable()
 
-    self.disp_start_time = time.time()
-    self._sleep_timer = time.time()
-
     return True
 
   def run(self):
@@ -185,17 +182,18 @@ class TFTDisplay(Display):
     sources: List[models.Source] = []
     zones: List[models.Zone] = []
 
+    self.disp_start_time = time.time()
+    self.sleep_timer = time.time()
+
     frame_num = 0
     frame_times = []
     use_debug_port = False
-    disp_start_time = time.time()
-    _sleep_timer = time.time()
     self._ok = True
     while frame_num < 10 and self._ok:
       frame_start_time = time.time()
 
-      log.debug(f'Active screen = {self._active_screen}')
-      if self._active_screen == 0:
+      log.debug(f'Active screen = {self.active_screen}')
+      if self.active_screen == 0:
         # Get AmpliPi status
         if use_debug_port:
           primary_url, secondary_url = self.API_URL_DEBUG, self.API_URL
@@ -320,19 +318,18 @@ class TFTDisplay(Display):
           self.draw.text((self.width / 2 - 1, text_y), msg, anchor='mm', align='center', font=self.font, fill=text_c)
           self.image.paste(self.ap_logo, box=(0, self.height - self.ap_logo.size[1]))
 
-        # if self.args.sleep_time > 0 and time.time() - _sleep_timer > self.args.sleep_time:
-        if 0 < self.args.sleep_time < time.time() - _sleep_timer:
+        if 0 < self.args.sleep_time < time.time() - self.sleep_timer:
           # Transition to sleep mode, clear screen
           log.debug('Clearing screen then sleeping')
           self.backlight(False)
           self.draw.rectangle((0, 0, self.width - 1, self.height - 1), fill=Color.BLACK.value)
           self.display.image(self.image)
-          self._active_screen = 1
+          self.active_screen = 1
         else:
           # Send the updated image to the display
           self.display.image(self.image)
           self.backlight(True)
-      elif self._active_screen == 1:
+      elif self.active_screen == 1:
         # Sleeping, wait for touch to wake up
         log.debug('Sleeping...')
 
@@ -350,7 +347,7 @@ class TFTDisplay(Display):
 
       # If the test timeout is 0, ignore testing
       if self.args.test_timeout > 0.0:
-        if self._touch_test_passed or (time.time() - disp_start_time) > self.args.test_timeout:
+        if self._touch_test_passed or (time.time() - self.disp_start_time) > self.args.test_timeout:
           self._ok = False
 
     if self.profile:
@@ -417,7 +414,7 @@ class TFTDisplay(Display):
     t = (v1 - v0) * factor - 273.15
     return t
 
-  def touch_callback(self):
+  def touch_callback(self, channel):
     # TODO: Debounce touches
     # Mask the interrupt since reading the position generates a false interrupt
     GPIO.remove_event_detect(self.t_irq_pin.id)
@@ -461,15 +458,15 @@ class TFTDisplay(Display):
         #  self._active_screen = (self._active_screen + 1) % NUM_SCREENS
         # if x < (width/4):
         #  self._active_screen = (self._active_screen - 1) % NUM_SCREENS
-        self._active_screen = 0  # 'Wake up' the screen
-        _sleep_timer = time.time()
+        self.active_screen = 0  # 'Wake up' the screen
+        self.sleep_timer = time.time()
         # TODO: Redraw screen instantly, don't wait for next display period
       else:
         log.debug(f'Not enough inliers: {inlier_count} of 16')
     else:
       log.debug('No valid points')
 
-    GPIO.add_event_detect(self.t_irq_pin.id, GPIO.FALLING, callback=lambda _: self.touch_callback())
+    GPIO.add_event_detect(self.t_irq_pin.id, GPIO.FALLING, callback=self.touch_callback)
 
   def backlight(self, on: bool):
     if on:
