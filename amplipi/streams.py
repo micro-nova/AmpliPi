@@ -1111,7 +1111,7 @@ class Bluetooth(BaseStream):
   def is_hw_available():
     """Determines if a bluetooth dongle is present"""
     try:
-      if subprocess.run('which bluetoothctl'.split()).returncode != 0:
+      if subprocess.run('which bluetoothctl'.split(), check=False).returncode != 0:
         return False
       # bluetoothctl show seems to hang sometimes when hardware is not available
       # add a timeout so that we don't get stuck waiting
