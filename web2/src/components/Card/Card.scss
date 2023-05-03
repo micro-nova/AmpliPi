@@ -1,0 +1,13 @@
+@use "src/general";
+
+.card {
+  @include general.low-shadow;
+  background-color: general.$primary;
+  border-radius: 18px;
+
+  color: general.$text-color;
+}
+
+.selected {
+  @include general.selected-shadow;
+}

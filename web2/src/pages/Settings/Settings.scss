@@ -1,0 +1,86 @@
+@use "src/general";
+
+.settings-outer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 1rem;
+}
+
+.settings-header {
+  @include general.header-font;
+  font-size: 4rem;
+  color: general.$text-color;
+}
+
+.settings-list-item {
+  @include general.header-font;
+  font-size: 2rem;
+  color: general.$text-color;
+  margin: 1rem;
+  cursor: pointer;
+}
+
+.settings-list-item-inner {
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.settings-card {
+  max-height: 75vh;
+  // overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-page-container {
+  background-color: general.$bg;
+  height: 100vh;
+  width: 100vw;
+}
+
+@mixin settings-icon($color) {
+  @include general.circle(3rem, $color);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-right: 1rem;
+  font-size: 2.5rem
+}
+
+.streams-icon{
+ @include settings-icon(general.$stream-color);
+}
+
+.zones-icon{
+  @include settings-icon(general.$zone-color);
+}
+
+.groups-icon{
+  @include settings-icon(general.$group-color);
+}
+
+.sessions-icon{
+  @include settings-icon(general.$session-color);
+}
+
+.presets-icon{
+  @include settings-icon(general.$preset-color);
+}
+
+.config-icon{
+  @include settings-icon(general.$config-color);
+}
+
+.about-icon{
+  @include settings-icon(general.$about-color);
+}
+
+.update-icon{
+  @include settings-icon(general.$update-color);
+}

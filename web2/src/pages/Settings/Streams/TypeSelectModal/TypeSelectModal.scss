@@ -1,0 +1,27 @@
+@use "src/general.scss";
+
+.type-select-title {
+  @include general.header-font;
+  color: general.$text-color;
+  font-size: 2rem;
+  margin: 0.5rem;
+}
+
+.type-select-card {
+  width: 90vw;
+  max-width: 20em;
+  padding: 1rem;
+}
+
+.type-icon {
+  width: 3rem;
+}
+
+.type-select-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  margin-top: 0.75rem;
+  cursor: pointer;
+}

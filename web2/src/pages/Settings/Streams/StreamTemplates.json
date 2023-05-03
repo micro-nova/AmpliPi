@@ -1,0 +1,115 @@
+[
+  {
+    "name": "AirPlay Device",
+    "type": "airplay",
+    "fields": [
+      {
+        "title": "Airplay2",
+        "description": "Make this stream Airplay2; only one Airplay2 stream can be running at a time.",
+        "name": "ap2",
+        "type": "bool"
+      }
+    ]
+  },
+  {
+    "name": "DLNA",
+    "type": "dlna",
+    "fields": []
+  },
+  {
+    "name": "FM Radio Station",
+    "type": "fmradio",
+    "fields": [
+      {
+        "title": "Frequency",
+        "description": "Enter an FM frequency 87.5 to 107.9. Requires an RTL-SDR compatible USB dongle.",
+        "name": "freq",
+        "type": "text",
+        "required": true
+      },
+      {
+        "title": "Station Logo",
+        "description": "Default built-in logo is: static/imgs/fmradio.png",
+        "name": "logo",
+        "type": "text"
+      }
+    ]
+  },
+  {
+    "name": "Internet Radio Station",
+    "type": "internetradio",
+    "fields": [
+      {
+        "name": "search",
+        "type": "internet-radio-search"
+      },
+      {
+        "title": "URL",
+        "description": "Enter the URL of the radio station.",
+        "name": "url",
+        "type": "text",
+        "required": true
+      },
+      {
+        "title": "Station Logo",
+        "description": "Default built-in logo is: static/imgs/internetradio.png",
+        "name": "logo",
+        "type": "text"
+      }
+    ]
+  },
+  {
+    "name": "LMS Client",
+    "type": "lms",
+    "fields": [
+      {
+        "title": "Server",
+        "description": "Optional LMS server hostname (without port). Example: mylmsserver",
+        "name": "server",
+        "type": "text"
+      }
+    ]
+  },
+  {
+    "name": "Pandora Station",
+    "type": "pandora",
+    "fields": [
+      {
+        "title": "Station ID",
+        "description": "Station ID is the numeric section of a Pandora station link. Example: ID = 4610303469018478727 from https://www.pandora.com/station/play/4610303469018478727",
+        "name": "station",
+        "type": "text",
+        "required": true
+      },
+      {
+        "title": "Pandora Username",
+        "name": "user",
+        "type": "text",
+        "required": true
+      },
+      {
+        "title": "Pandora Password",
+        "name": "password",
+        "type": "text",
+        "required": true
+      }
+    ]
+  },
+  {
+    "name": "Spotify Device",
+    "type": "spotify",
+    "fields": []
+  },
+  {
+    "name": "Bluetooth Device",
+    "type": "bluetooth",
+    "noCreate": true,
+    "fields": []
+  },
+  {
+    "name": "RCA Input",
+    "type": "rca",
+    "noCreate": true,
+    "fields": []
+  }
+]

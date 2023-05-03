@@ -1,0 +1,6 @@
+@use "src/general";
+
+.zone-volume-container {
+  @include general.header-font;
+  font-size: 1rem;
+}

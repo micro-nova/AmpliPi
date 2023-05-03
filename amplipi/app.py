@@ -61,12 +61,13 @@ from multiprocessing import Queue
 # amplipi
 import amplipi.utils as utils
 import amplipi.models as models
-from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs, USER_CONFIG_DIR # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
 STATIC_DIR = os.path.abspath('web/static')
 GENERATED_DIR = os.path.abspath('web/generated')
+WEB_DIR = os.path.abspath('web2/dist')
 
 app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
 templates = Jinja2Templates(TEMPLATE_DIR)
@@ -734,32 +735,62 @@ def doc():
   # TODO: add hosted python docs as well
   return FileResponse(f'{TEMPLATE_DIR}/rest-api-doc.html')
 
-# Website
+class RawHTML:
+  """ Workaround for an HTML string, Jinja will escape normal strings """
+  def __init__(self, html):
+    self.html = html
+  def __html__(self):
+    return self.html
 
-@app.get('/', include_in_schema=False)
-@app.get('/{src}', include_in_schema=False)
-def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
-  """ Webapp main view """
-  state = ctrl.get_state()
-  context = {
-    # needed for template to make response
-    'request': request,
-    # simplified amplipi state
-    'cur_src': src,
-    'sources': state.sources,
-    'zones': state.zones,
-    'groups': state.groups,
-    'presets': state.presets,
-    'inputs': [ctrl.get_inputs(src) for src in state.sources],
-    'unused_groups': [unused_groups(ctrl, src.id) for src in state.sources if src.id is not None],
-    'unused_zones': [unused_zones(ctrl, src.id) for src in state.sources if src.id is not None],
-    'ungrouped_zones': [ungrouped_zones(ctrl, src.id) for src in state.sources if src.id is not None],
-    'song_info': [src.info for src in state.sources if src.info is not None], # src.info should never be None
-    'version': state.info.version if state.info else 'unknown',
-    'min_vol': models.MIN_VOL_F,
-    'max_vol': models.MAX_VOL_F,
-  }
-  return templates.TemplateResponse('index.html.j2', context, media_type='text/html')
+# Identity - allows ui customization
+identity : Dict[str, Union[str, RawHTML]] = {
+  'name': 'AmpliPi',
+  'website': 'http://www.amplipi.com',
+  'html_logo': '<span class="text-white">Ampli</span><span class="text-danger">Pi</span>'
+}
+# Load fields from special identity file (if it exists), falling back to default values above
+try:
+  with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8') as identity_file:
+    potential_identity = json.load(identity_file)
+    for key, val in identity.items():
+      identity[key] = potential_identity.get(key, val)
+except FileNotFoundError:
+  pass
+except Exception as e:
+  print(f'Error loading identity file: {e}')
+# escape html fields
+for key in identity:
+  if 'html' in key:
+    identity[key] = RawHTML(identity[key])
+
+# Website
+app.mount('/', StaticFiles(directory=WEB_DIR, html=True), name='web')
+
+# @app.get('/', include_in_schema=False)
+# @app.get('/{src}', include_in_schema=False)
+# def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
+#   """ Webapp main view """
+#   state = ctrl.get_state()
+#   context = {
+#     # needed for template to make response
+#     'request': request,
+#     'identity': identity,
+#     # simplified amplipi state
+#     'cur_src': src,
+#     'sources': state.sources,
+#     'zones': state.zones,
+#     'groups': state.groups,
+#     'presets': state.presets,
+#     'inputs': [ctrl.get_inputs(src) for src in state.sources],
+#     'unused_groups': [unused_groups(ctrl, src.id) for src in state.sources if src.id is not None],
+#     'unused_zones': [unused_zones(ctrl, src.id) for src in state.sources if src.id is not None],
+#     'ungrouped_zones': [ungrouped_zones(ctrl, src.id) for src in state.sources if src.id is not None],
+#     'song_info': [src.info for src in state.sources if src.info is not None], # src.info should never be None
+#     'version': state.info.version if state.info else 'unknown',
+#     'min_vol': models.MIN_VOL_F,
+#     'max_vol': models.MAX_VOL_F,
+#   }
+#   return templates.TemplateResponse('index.html.j2', context, media_type='text/html')
 
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings: models.AppSettings = models.AppSettings()) -> FastAPI:
   """ Create the AmpliPi web app with a specific configuration """

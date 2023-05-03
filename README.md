@@ -29,10 +29,10 @@ Most of these digital streaming services are provided by other open-source proje
 |Plexamp|No|No|No|[Plexamp](https://plexamp.com/)|See [#200](http://github.com/micro-nova/AmpliPi/issues/200)|
 |FM Radio|Yes|No|Yes|[rtl-sdr](https://osmocom.org/projects/rtl-sdr/wiki/Rtl-sdr)/[redsea](https://github.com/windytan/redsea)|Requires [RTL SDR](https://www.rtl-sdr.com/buy-rtl-sdr-dvb-t-dongles/) compatible USB device|
 |LMS|Yes|Yes|No|[squeezelite](https://github.com/ralph-irving/squeezelite)|Requires separate LMS Server|
+|Bluetooth|Yes|No|Yes|[bluezero](https://github.com/ukBaz/python-bluezero)|See [Bluetooth docs](docs/BLUETOOTH.md)|
 |Google Cast|No||||Need to investigate|
 |Offline Music|No||||See [#66](http://github.com/micro-nova/AmpliPi/issues/66)|
 |TIDAL|No||||See [#87](http://github.com/micro-nova/AmpliPi/issues/87)|
-|Bluetooth|No||||See [#150](http://github.com/micro-nova/AmpliPi/issues/150)|
 
 In the future we plan to integrate with several home automation systems. Below is their current status.
 
@@ -108,10 +108,10 @@ To update you AmpliPi to the latest version:
 1. Click the **Update** button
 
 If you don't see an update button, you have an older version of AmpliPi. It will take a couple more steps to update this time around.
-1. Download this [update](https://github.com/micro-nova/AmpliPi/releases/download/0.1.7/amplipi-update-0.1.7.tar.gz).
-1. Click the browse button to select the downloaded amplipi-update-0.1.7.tar.gz file.
+1. From a laptop or desktop computer download this [update](https://github.com/micro-nova/AmpliPi/archive/refs/tags/0.1.9-uv-hotfix.tar.gz).
+1. Click the browse button to select the downloaded AmpliPi-0.1.9-uv-hotfix.tar.gz file.
 1. Click upload software to start the update, when it is finished it will navigate to the updated web app.
-1. Please be patient, updates can take 10-15 minutes and progress info will be reported slowly.
+1. Please be patient, updates can take 20-30 minutes and progress info will be reported slowly.
 1. The update will mistakenly fail with the message "`Error checking version: NetworkError when attempting to fetch resource`". Just go back to the app at [amplipi.local](http://amplipi.local) to enjoy the new feaures.
 
 For custom changes or offline updating, a .tar.gz file can also be uploaded

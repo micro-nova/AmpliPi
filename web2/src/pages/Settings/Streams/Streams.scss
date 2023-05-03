@@ -1,0 +1,17 @@
+@use "src/general.scss";
+
+.stream-modal-list-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  margin-top: 0.75rem;
+  cursor: pointer;
+}
+
+.stream-modal-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 20%;
+  margin-right: 0.6rem;
+}

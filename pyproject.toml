@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "amplipi"
-version = "0.1.9"
+version = "0.2.1"
 description = "A Pi-based whole house audio controller"
 authors = [
   "Lincoln Lorenz <lincoln@micro-nova.com>",
@@ -31,6 +31,7 @@ include = [
   "requirements.txt",
   "AUTHORS",
   "config/*.conf",
+  "config/bluetooth/*",
   "config/*.rules",
   "debs/**/*",
   "fw/*.sh", # no need to add full source tree

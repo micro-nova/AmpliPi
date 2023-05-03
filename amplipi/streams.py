@@ -22,6 +22,8 @@ a consistent interface.
 """
 
 import os
+import traceback
+from re import sub
 import sys
 import subprocess
 import time
@@ -293,7 +295,10 @@ class RCA(BaseStream):
     self.index = index
 
   def reconfig(self, **kwargs):
-    self.name = kwargs['name']
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
 
   def info(self) -> models.SourceInfo:
     src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=self.full_name(), state='stopped')
@@ -338,6 +343,8 @@ class AirPlay(PersistentStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
@@ -419,10 +426,11 @@ class AirPlay(PersistentStream):
       if self.proc.wait(1) != 0:
         print('killing shairport-sync')
         self.proc.kill()
-    try:
-      subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
-    except Exception as e:
-      print(f'Error removing airplay config files: {e}')
+    if self.src:
+      try:
+        subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
+      except Exception as e:
+        print(f'Error removing airplay config files: {e}')
     self._disconnect()
     self.proc = None
 
@@ -504,6 +512,8 @@ class Spotify(PersistentStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
@@ -632,6 +642,8 @@ class Pandora(PersistentStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     pb_fields = ['user', 'password', 'station']
     fields = list(pb_fields) + ['name']
     for k,v in kwargs.items():
@@ -758,6 +770,8 @@ class DLNA(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
@@ -836,7 +850,7 @@ class InternetRadio(BaseStream):
   def reconfig(self, **kwargs):
     reconnect_needed = False
     ir_fields = ['url', 'logo']
-    fields = list(ir_fields) + ['name']
+    fields = list(ir_fields) + ['name', 'disabled']
     for k,v in kwargs.items():
       if k in fields and self.__dict__[k] != v:
         self.__dict__[k] = v
@@ -931,7 +945,10 @@ class Plexamp(BaseStream):
     super().__init__('plexamp', name, disabled=disabled, mock=mock)
 
   def reconfig(self, **kwargs):
-    self.name = kwargs['name']
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
+    if 'name' in kwargs:
+      self.disabled = kwargs['name']
 
   def connect(self, src):
     """ Connect plexamp output to a given audio source
@@ -958,6 +975,8 @@ class FilePlayer(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs:
       self.name = kwargs['name']
     if 'url' in kwargs:
@@ -1020,7 +1039,7 @@ class FMRadio(BaseStream):
   def reconfig(self, **kwargs):
     reconnect_needed = False
     ir_fields = ['freq', 'logo']
-    fields = list(ir_fields) + ['name']
+    fields = list(ir_fields) + ['name', 'disabled']
     for k, v in kwargs.items():
       if k in fields and self.__dict__[k] != v:
         self.__dict__[k] = v
@@ -1106,11 +1125,13 @@ class LMS(PersistentStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
     if 'server' in kwargs and kwargs['server'] != self.server:
-      self.name = kwargs['server']
+      self.server = kwargs['server']
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
@@ -1141,15 +1162,16 @@ class LMS(PersistentStream):
                   '-f', f'{src_config_folder}/lms_log.txt',
                   '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
                 ]
-      if self.server is not None:
+      if self.server:
         # specify the server to connect to (if unspecified squeezelite starts in discovery mode)
         server = self.server
         # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
-        if 'localhost' ==  server or server.startswith('localhost:'):
+        if 'localhost' ==  server:
           # squeezelite does not support localhost and requires the actual hostname
-          # NOTE: :9000 is assumed unless otherwise specified
+          # NOTE: port 9000 is assumed
           server.replace('localhost', socket.gethostname())
         lms_args += [ '-s', server]
+      # TODO: allow port to be specified with server (embedding it in the server URL does not work)
 
       self.proc = subprocess.Popen(args=lms_args)
     except Exception as exc:
@@ -1169,9 +1191,111 @@ class LMS(PersistentStream):
     )
     return source
 
+class Bluetooth(BaseStream):
+  """ A source for Bluetooth streams, which requires an external Bluetooth USB dongle """
+
+  def __init__(self, name, disabled=False, mock=False):
+    super().__init__('bluetooth', name, disabled=disabled, mock=mock)
+    self.logo = "static/imgs/bluetooth.png"
+    self.bt_proc = None
+    self.supported_cmds = ['play', 'pause', 'next', 'prev', 'stop']
+
+  def __del__(self):
+    self.disconnect()
+
+  @staticmethod
+  def is_hw_available():
+    """Determines if a bluetooth dongle is present"""
+    try:
+      if subprocess.run('which bluetoothctl'.split()).returncode != 0:
+        return False
+      # bluetoothctl show seems to hang sometimes when hardware is not available
+      # add a timeout so that we don't get stuck waiting
+      btcmd_proc = subprocess.run('bluetoothctl show'.split(), stdout=subprocess.PIPE, timeout=0.5, check=True)
+      return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
+    except Exception as e:
+      print(f'Error checking for bluetooth hardware: {e}')
+      return False
+
+  def connect(self, src):
+    """ Connect a bluealsa-aplay process with audio output to a given audio source """
+    print(f'connecting {self.name} to {src}...')
+
+    if self.mock:
+      self._connect(src)
+      return
+
+    # Power on Bluetooth and enable discoverability
+    subprocess.run(args='bluetoothctl power on'.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='bluetoothctl discoverable on'.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='sudo btmgmt fast-conn on'.split(), preexec_fn=os.setpgrp)
+
+    # Start metadata watcher
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
+    os.system(f'mkdir -p {src_config_folder}')
+    song_info_path = f'{src_config_folder}/currentSong'
+    device_info_path = f'{src_config_folder}/btDevice'
+    btmeta_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path} ' \
+                  f'--device-info={device_info_path} --output-device={utils.output_device(src)}'
+    self.bt_proc = subprocess.Popen(args=btmeta_args.split(), preexec_fn=os.setpgrp)
+
+    self._connect(src)
+    return
+
+  def _is_running(self):
+    if self.bt_proc:
+      return self.bt_proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_running():
+      os.killpg(os.getpgid(self.bt_proc.pid), signal.SIGKILL)
+      self.bt_proc = None
+
+      # Power off Bluetooth and disable discoverability
+      subprocess.run(args='bluetoothctl discoverable off'.split(), preexec_fn=os.setpgrp)
+      subprocess.run(args='bluetoothctl power off'.split(), preexec_fn=os.setpgrp)
+
+      self._disconnect()
+
+  def info(self) -> models.SourceInfo:
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+    loc = f'{src_config_folder}/currentSong'
+    source = models.SourceInfo(name=self.full_name(),
+                               state=self.state,
+                               img_url=self.logo,
+                               supported_cmds=self.supported_cmds)
+    try:
+      with open(loc, 'r') as file:
+        data = json.loads(file.read())
+        source.artist = data['artist']
+        source.track = data['title']
+        source.album = data['album']
+        source.state = data['status']
+        return source
+    except Exception as e:
+      print(f'bluetooth: exception {e}')
+      traceback.print_exc()
+    return source
+
+  def send_cmd(self, cmd):
+    print(f'bluetooth: sending command {cmd}')
+    try:
+      if cmd in self.supported_cmds and self.src is not None:
+        src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+        device_info_path = f'{src_config_folder}/btDevice'
+        btcmd_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --command={cmd} --device-info={device_info_path}'
+        subprocess.run(args=btcmd_args.split(), preexec_fn=os.setpgrp)
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception as e:
+      print(f'bluetooth: exception {e}')
+      raise RuntimeError(f'Command {cmd} failed to send: {e}') from e
+      traceback.print_exc()
+
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-                  FilePlayer, FMRadio, LMS]
+                  FilePlayer, FMRadio, LMS, Bluetooth]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
@@ -1202,4 +1326,6 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
   if stream.type == 'lms':
     return LMS(name, args.get('server'), disabled=disabled, mock=mock)
+  elif stream.type == 'bluetooth':
+    return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)

@@ -1,0 +1,64 @@
+@use "src/general.scss";
+
+.presets-modal {
+  @include general.header-font;
+  font-size: 1.5rem;
+  color: general.$text-color;
+}
+
+.presets-modal-card {
+  max-height: 75vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.presets-modal-header {
+  margin: 0.5rem;
+  font-size: 3rem;
+  text-align: center;
+}
+
+.presets-modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+  //the below is to push the scrollbar out of the card to hide it
+  padding-right: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.presets-modal-list-item {
+  margin-bottom: 1rem;
+  cursor: pointer;
+}
+
+.preset-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  cursor: pointer;
+  // align-items: center;
+  // padding: 0.5rem;
+  // border: 1px solid #000000;
+  // border-radius: 5px;
+  // margin-bottom: 0.5rem;
+}
+
+.preset-name-and-last-used {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.preset-item-last-used {
+  // just want to make the font smaller
+  color: general.$select-color-gray;
+  font-size: 1.25rem;
+  padding-left: 8px;
+}
+
+.preset-item-icon {
+  font-size: 1.5rem;
+  padding-right: 2rem;
+}

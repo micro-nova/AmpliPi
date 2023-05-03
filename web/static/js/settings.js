@@ -19,6 +19,7 @@ const STREAM_TYPES_ = {
   pandora:        new Stream("pandora", "Pandora Station"),
   plexamp:        new Stream("plexamp", "Plexamp"),
   spotify:        new Stream("spotify", "Spotify Device"),
+  bluetooth:      new Stream("blueooth", "Bluetooth Device"),
   rca:            new Stream("rca", "RCA Input"),
 };
 
@@ -195,6 +196,15 @@ $(function() {
           </div>
         `;
         break;
+      case STREAM_TYPES_.lms:
+          html += `
+          <div class="form-group">
+            <label for="lms_server">LMS Server</label>
+            <input type="text" class="form-control" name="server" id="lms_server" value="${s.server ? s.server : ''}" data-required="false">
+            <small id="serverHelp" class="form-text text-muted">Optional LMS server hostname (without port).  Example: <b>mylmsserver</b></small>
+          </div>
+          `;
+          break;
       case STREAM_TYPES_.pandora:
         html += `
           <div class="form-group">
@@ -230,6 +240,12 @@ $(function() {
             <input type="text" class="form-control" name="token" id="plexamp_token" style="background-color: #adb5bd;" value="${s.token}" data-required="true" readonly>
           </div>
         `;
+        break;
+        case STREAM_TYPES_.bluetooth:
+        // TODO: there can be exactly zero or one bluetooth streams. how do we limit the stream count? also, should they even be nameable? what purpose is a name other than "bluetooth"
+        html += `
+
+        `
         break;
     }
 
@@ -316,6 +332,16 @@ $(function() {
             <small id="logoHelp" class="form-text text-muted">Optionally provide an image URL for the station.</small>
           </div>`;
         break;
+
+      case STREAM_TYPES_.lms:
+        html += `
+        <div class="form-group">
+          <label for="new_lms_server">LMS Server</label>
+          <input type="text" class="form-control" name="server" id="new_lms_server" data-required="false">
+          <small id="serverHelp" class="form-text text-muted">Optional LMS server hostname (without port). Example: <b>mylmsserver</b></small>
+        </div>
+        `;
+        break;
       case STREAM_TYPES_.pandora:
         html += `
           <div class="form-group">
@@ -350,6 +376,7 @@ $(function() {
             <input type="text" class="form-control" name="token" id="new_plexamp_token" style="background-color: #adb5bd;" value="" data-required="true" readonly>
           </div>`;
         break;
+
     }
     html += `
           <button type="submit" class="btn btn-secondary" aria-describedby="submitHelp">Add Stream</button>

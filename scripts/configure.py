@@ -187,6 +187,47 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'spotify' : {
     'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
+  },
+  'bluetooth' : {
+    'amplipi_only' : True,
+    'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
+              'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4' ],
+    'script' : [
+      # referencing arm here is okay because bluetooth is marked as 'amplipi_only'
+      'sudo cp bin/arm/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
+      'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
+      'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
+      # TODO: investigate where to put these services
+      'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
+      'sudo cp streams/bluetooth_agent /usr/local/bin/',
+      'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
+
+      # Install SBC
+      'if ! [ -e /usr/local/lib/libsbc.so.1.3.1 ]',
+      'then',
+        'echo Installing SBC...',
+        'pushd $(mktemp --directory)',
+        'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
+        'cd sbc',
+        'git checkout 8dc5d5ba381512ad5b1afa45c63ec6b0a3833244',  # sbc release 2.0
+        'sudo ./bootstrap-configure',
+        'sudo ./configure',
+        'sudo make',
+        'sudo make install',
+        'popd',
+      'else',
+        'echo SBC already installed, skipping installation.',
+      'fi',
+
+      # Add pi user to bluetooth group so we don't need to run sudo
+      'sudo usermod -G bluetooth -a pi',
+
+      'sudo chmod +x /usr/local/bin/bluetooth_agent',
+
+      'sudo systemctl enable bluetooth',
+      'sudo systemctl enable bluealsa',
+      'sudo systemctl enable bluetooth_agent',
+    ]
   }
 }
 
@@ -288,6 +329,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   scripts: Dict[str, List[str]] = {}
   for dep in deps:
     install_steps = _os_deps[dep]
+    if install_steps.get('amplipi_only', False) and not env['is_amplipi']:
+      continue
     if 'copy' in install_steps:
       files += install_steps['copy']
     if 'apt' in install_steps:
@@ -320,8 +363,11 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
         'sudo udevadm trigger -s sound -c add'.split(), # trigger an 'add' action on the 'sound' subsystem
         'udevadm settle'.split(),                       # wait for udev rules to fire and settle
       ]).run()])
-    # set usb soundcard to 100% volume
-    tasks += print_progress([Task('set usb soundcard to 100% volume', 'amixer -Dusb71 cset numid=8 100%'.split()).run()])
+    # disable pulseaudio (it was muting some inputs and is not needed)
+    tasks += print_progress([Task('disable pulseaudio', multiargs=[
+        'systemctl --user mask pulseaudio.socket'.split(),
+        'systemctl --user mask pulseaudio.service'.split(),
+      ]).run()])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
@@ -851,7 +897,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
 
   env = _check_and_setup_platform()
   if not env['platform_supported']:
-    tasks[0].output = f'untested platform: {platform.platform()}. Please fix this this script and make a PR to github.com/micro-nova/AmpliPi'
+    tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
   else:
     tasks[0].output = str(env)
     tasks[0].success = True

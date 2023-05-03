@@ -672,6 +672,42 @@ def test_patch_stream_rename(client, sid):
   assert s is not None
   assert s['name'] == 'patched-name'
 
+@pytest.mark.parametrize('sid', base_stream_ids())
+@pytest.mark.parametrize('disable', [True, False])
+def test_patch_stream_disable(client, sid, disable):
+  """ Try disabling a stream """
+  last_state = status_copy(client)
+  rv = client.patch('/api/streams/{}'.format(sid), json={'disabled': disable})
+  if find(last_state['streams'], sid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was disabled
+  s = find(jrv['streams'], sid)
+  assert s is not None
+  assert s['disabled'] == disable
+
+@pytest.mark.parametrize('ap2', [True, False])
+def test_patch_stream_ap2(client, ap2):
+  """ Try configuring the ap2 field of an airplay stream """
+  last_state = status_copy(client)
+  sid = AP_STREAM_ID
+  rv = client.patch('/api/streams/{}'.format(sid), json={'ap2': ap2})
+  if find(last_state['streams'], sid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was configured to ap2
+  s = find(jrv['streams'], sid)
+  assert s is not None
+  assert s['ap2'] == ap2
+
 # /streams/{streamId} delete-stream
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_delete_stream(client, sid):

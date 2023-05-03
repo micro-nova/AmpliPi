@@ -1,17 +1,29 @@
 # AmpliPi Software Releases
 
-## 0.2.X Upcoming
-* web App
+## Upcoming release
+* Streams
+  * Add Bluetooth stream
+
+## 0.2.1
+* System
+  * Fix python dependencies to specific versions
+* Streams
+  * Fix LMS Server parameter
+* Docs
+  * Update 9/12V supply register descriptions
+
+## 0.2.0
+* Web App
   * Reject scroll events to volume sliders
   * Improve version display
 * Streams
-  * Simplify stream serialization
   * Switch to Spotifyd Spotify client
   * Add MPRIS metadata/command interface
-  * Add LMS Client
+  * Add LMS Client (no metadata yet)
   * Make Airplay use MPRIS
   * Add single Airplay2 to Airplay stream
   * Add default icon for internet radio
+  * Simplify stream serialization
 * API
   * Robustify config loading
   * Make RCA inputs look like streams

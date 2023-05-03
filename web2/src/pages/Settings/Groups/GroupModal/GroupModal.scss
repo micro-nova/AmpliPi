@@ -1,0 +1,33 @@
+@use "src/general.scss";
+
+.group-input-title {
+  @include general.header-font;
+  color: general.$text-color;
+}
+
+.group-name-input {
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.group-card {
+  width: 50vw;
+  min-width: 25em;
+}
+
+.group-multi {
+  width: 90%;
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
+  color: general.$text-color;
+}
+
+.group-button-icon {
+  color: general.$controls-color;
+}
+
+.group-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}

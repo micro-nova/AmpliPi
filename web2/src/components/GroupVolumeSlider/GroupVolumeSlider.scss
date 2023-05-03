@@ -1,0 +1,27 @@
+@use "src/general";
+
+.group-volume-container {
+  @include general.header-font;
+  font-size: 1rem;
+}
+
+.group-volume-children-container {
+  padding-left: 1rem;
+}
+
+.group-zones-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+}
+
+.group-slider-expand-button {
+  color: general.$controls-color;
+  padding: 0;
+}
+
+.group-volume-slider {
+  width: 100%;
+  margin: 0 1rem;
+}

@@ -242,6 +242,9 @@ class Api:
           if z.id not in muted_zones:
             mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
 
+    # configure Aux and SPDIF
+    utils.configure_inputs()
+
     # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
     for rca_id in RCAs:
       sid, stream = utils.find(self.status.streams, rca_id)
@@ -271,6 +274,26 @@ class Api:
           print(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
     self._sync_stream_info() # need to update the status with the new streams
+
+    # add/remove dynamic bluetooth stream
+    bt_streams = [sid for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.Bluetooth)]
+    if amplipi.streams.Bluetooth.is_hw_available():
+      print('bluetooth dongle available')
+      # make sure one stream is available
+      if len(bt_streams) == 0:
+        print('no bt streams present. creating one')
+        self.create_stream(models.Stream(type='bluetooth', name='Bluetooth'), internal=True)
+      elif len(bt_streams) > 1:
+        print('bt streams present. removing all but one')
+        for s in bt_streams[1:]:
+          self.delete_stream(s, internal=True)
+    else:
+      print('bluetooth dongle unavailable')
+      if len(bt_streams) > 0:
+        print('bt streams present. removing all')
+        for s in bt_streams:
+          self.delete_stream(s, internal=True)
+
 
     # configure all sources so that they are in a known state
     # only models.MAX_SOURCES are supported, keep the config from adding extra
@@ -325,10 +348,18 @@ class Api:
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()
-    # mute all audio
-    all_muted = [True] * len(self.status.zones)
-    for z in self.status.zones[::6]:
-      self._rt.update_zone_mutes(z.id, all_muted)
+    # lower the volume on any unmuted zone to limit popping
+    # behind the scenes the firmware will gradually lower the volume until the output is effectively muted
+    # muting is more likely to cause popping
+    # we use the low level rt calls to avoid changing the configuration
+    vol_changes = False
+    for z in self.status.zones:
+      if not z.mute:
+        self._rt.update_zone_vol(z.id, models.MIN_VOL_DB)
+        vol_changes = True
+    if vol_changes:
+      # wait for the changes to take effect (we observed a tiny pop without this)
+      time.sleep(0.080)
     # put the firmware in a reset state
     self._rt.reset()
 

@@ -468,6 +468,7 @@ class Stream(Base):
   * file
   * fmradio
   * lms
+  * bluetooth
   * rca
   """)
   # TODO: how to support different stream types
@@ -576,6 +577,13 @@ class Stream(Base):
             'name': 'Family',
             'type': 'lms',
           }
+        },
+        'Add LMS Client connected specifically to mylmsserver': {
+          'value': {
+            'name': 'Family',
+            'type': 'lms',
+            'server': 'mylmsserver',
+          }
         }
       },
       'examples': {
@@ -639,6 +647,8 @@ class StreamUpdate(BaseUpdate):
   logo: Optional[str]
   freq: Optional[str]
   server: Optional[str]
+  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
+  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
 
   class Config:
     schema_extra = {
