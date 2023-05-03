@@ -4,17 +4,30 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  width: 100%;
+  // width: 100%;
   justify-content: center;
+  margin-left: 0.5rem;
+  margin-right: 0.75rem;
 }
 
 .volume-slider-icon {
   font-size: 2rem;
-  margin-right: 0.5rem;
-  margin-left: 0.75rem;
+  margin-right: 0.75rem;
+  // margin-left: 0.5rem;
+  padding-bottom: -2px;
   cursor: pointer;
 }
 
 .volume-slider-mute {
   color: general.$mute-color;
+}
+
+.volume-slider-icon-container {
+  padding: 0;
+  margin: 0;
+  height: min-content;
+  width: min-content;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }

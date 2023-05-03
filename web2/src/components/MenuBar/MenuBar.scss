@@ -4,4 +4,5 @@
   position: fixed;
   bottom: 0;
   width: 100%;
+  @include general.low-shadow-up;
 }

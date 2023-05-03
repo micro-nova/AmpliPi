@@ -1,83 +1,99 @@
 import "./ZonesModal.scss"
-import Modal from "../Modal/Modal"
-import Card from "../Card/Card"
+import ModalCard from '@/components/ModalCard/ModalCard'
 import Checkbox from "@mui/material/Checkbox"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { IconButton } from "@mui/material"
 import DoneIcon from "@mui/icons-material/Done"
-import { width } from "@mui/system"
 import { useStatusStore } from "@/App.jsx"
-import { getSourceZones } from "@/pages/Home/Home"
+import SpeakerIcon from '@mui/icons-material/Speaker'
+import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup'
 
-const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
+const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=true }) => {
   const zones = useStatusStore
     .getState()
     .status.zones.filter((zone) => !zone.disabled)
   const groups = useStatusStore.getState().status.groups
-  const [checkedZones, setCheckedZones] = useState(
+  const [checkedZonesIds, setCheckedZoneIds] = useState(
     zones
-      .map((zone) => {
-        if (zone.source_id == sourceId) {
-          return zone.id
-        }
-      })
-      .filter((item) => {
-        return item != undefined
-      })
+    .filter((zone) => zone.source_id === sourceId && loadZonesGroups)
+    .map((zone) => zone.id)
   )
-  const [checkedGroups, setCheckedGroups] = useState(
+  const [checkedGroupIds, setCheckedGroupIds] = useState(
     groups
-      .map((group) => {
-        if (group.source_id == sourceId) {
-          return group.id
-        }
-      })
-      .filter((item) => {
-        return item != undefined
-      })
+    .filter((group) => group.source_id === sourceId && loadZonesGroups)
+    .map((group) => group.id)
   )
 
+  const computeCheckedGroups = (newCheckedZonesIds) => {
+    let newGroups = []
+    // groups.forEach(g => {
+    //   if (g.zones.every(id => checkedZonesIds.includes(id))) {
+    //     newGroups.push(g.id)
+    //   }
+    // })
+
+    newGroups = groups.filter(g => g.zones.every(id => newCheckedZonesIds.includes(id))).map(g => g.id)
+
+    setCheckedGroupIds(newGroups)
+  }
+
   const handleChangeZone = (id) => {
-    if (checkedZones.includes(id)) {
-      let newList = checkedZones.filter((item) => item != id)
-      setCheckedZones(newList)
+    let newZones = [...checkedZonesIds]
+    if (checkedZonesIds.includes(id)) {
+      // currently checked. uncheck
+      newZones = newZones.filter(item => item != id)
     } else {
-      setCheckedZones([...checkedZones, id])
+      // currently unchecked. check
+      newZones.push(id)
     }
+    setCheckedZoneIds(newZones)
+    computeCheckedGroups(newZones)
   }
 
   const handleChangeGroup = (id) => {
-    if (checkedGroups.includes(id)) {
-      let newList = checkedGroups.filter((item) => item != id)
-      setCheckedGroups(newList)
+    const group = groups.filter(g => g.id === id)[0]
+    let newZones = [...checkedZonesIds]
+
+    if (checkedGroupIds.includes(id)) {
+      // currently checked. unckeck associated zones
+      group.zones.forEach(zid => newZones = newZones.filter(new_zid => new_zid !== zid))
     } else {
-      setCheckedGroups([...checkedGroups, id])
+      // currently unchecked. check associated zones
+      group.zones.forEach(zid => {
+        if (!newZones.includes(zid)) newZones.push(zid)
+      })
     }
+    setCheckedZoneIds(newZones)
+    computeCheckedGroups(newZones)
   }
 
-  const ZonesModalZoneItem = ({ zone, selectable, defaultSelected }) => {
+  const ZonesModalZoneItem = ({ zone, defaultSelected, checked }) => {
     return (
       <div className="zones-modal-list-item" key={zone.id}>
-        {selectable && (
-          <Checkbox
-            onChange={() => handleChangeZone(zone.id)}
-            defaultChecked={defaultSelected}
-          />
-        )}
+        <Checkbox
+          checked={checked}
+          onChange={() => handleChangeZone(zone.id)}
+          defaultChecked={defaultSelected}
+        />
+        <div className="zone-icon">
+          <SpeakerIcon />
+        </div>
         {zone.name}
       </div>
     )
   }
 
-  const ZonesModalGroupItem = ({ group, selectable, defaultSelected }) => {
+  const ZonesModalGroupItem = ({ group, defaultSelected, checked }) => {
     return (
       <div className="zones-modal-list-item" key={group.id}>
-        {selectable && (
-          <Checkbox
-            onChange={() => handleChangeGroup(group.id)}
-            defaultChecked={defaultSelected}
-          />
-        )}
+        <Checkbox
+          checked={checked}
+          onChange={() => handleChangeGroup(group.id)}
+          defaultChecked={defaultSelected}
+        />
+        <div className="group-icon">
+          <SpeakerGroupIcon />
+        </div>
         {group.name}
       </div>
     )
@@ -90,7 +106,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
     for (const zone of zones.filter((zone) => {
       return zone.source_id == sourceId
     })) {
-      if (!checkedZones.includes(zone.id)) {
+      if (!checkedZonesIds.includes(zone.id)) {
         removeList.push(zone.id)
       }
     }
@@ -98,7 +114,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
     for (const zone of zones.filter((zone) => {
       return zone.source_id != sourceId
     })) {
-      if (checkedZones.includes(zone.id)) {
+      if (checkedZonesIds.includes(zone.id)) {
         addList.push(zone.id)
       }
     }
@@ -121,8 +137,6 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
         update: { mute: false, source_id: sourceId },
       }),
     })
-
-    setZoneModalOpen(false)
   }
 
   const setGroups = () => {
@@ -132,7 +146,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
     for (const group of groups.filter((group) => {
       return group.source_id == sourceId
     })) {
-      if (!checkedGroups.includes(group.id)) {
+      if (!checkedGroupIds.includes(group.id)) {
         removeList.push(group.id)
       }
     }
@@ -140,7 +154,7 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
     for (const group of groups.filter((group) => {
       return group.source_id != sourceId
     })) {
-      if (checkedGroups.includes(group.id)) {
+      if (checkedGroupIds.includes(group.id)) {
         addList.push(group.id)
       }
     }
@@ -168,51 +182,52 @@ const ZonesModal = ({ sourceId, setZoneModalOpen, onClose }) => {
 
   const groupItems = groups.map((group) => {
     let selected = false
+    const checked = checkedGroupIds.includes(group.id)
     if (group.source_id == sourceId) {
       selected = true
     }
     return ZonesModalGroupItem({
       group: group,
-      selectable: true,
+      checked: checked,
       defaultSelected: selected,
     })
   })
 
   const zoneItems = zones.map((zone) => {
     let selected = false
+    const checked = checkedZonesIds.includes(zone.id)
     if (zone.source_id == sourceId) {
       selected = true
     }
     return ZonesModalZoneItem({
       zone: zone,
-      selectable: true,
+      checked: checked,
       defaultSelected: selected,
     })
   })
 
   return (
-    <Modal className="zones-modal" onClose={onClose}>
-      <Card className="zones-modal-card">
-        <div className="zones-modal-header">Select Zones</div>
-        <div className="zones-modal-body">
-          {groupItems}
-          {zoneItems}
-        </div>
-        <div className="zones-modal-footer">
-          <IconButton
-            onClick={() => {
-              setZones()
-              setGroups()
-            }}
-          >
-            <DoneIcon
-              className="zones-modal-button-icon"
-              style={{ width: "3rem", height: "3rem" }}
-            />
-          </IconButton>
-        </div>
-      </Card>
-    </Modal>
+    <ModalCard onClose={onClose} header="Select Zones">
+      <div className="zones-modal-body">
+        {groupItems}
+        {zoneItems}
+      </div>
+      <div className="zones-modal-footer">
+        <IconButton
+          onClick={() => {
+            setZones()
+            setGroups()
+            onApply()
+            onClose()
+          }}
+        >
+          <DoneIcon
+            className="zones-modal-button-icon"
+            style={{ width: "3rem", height: "3rem" }}
+          />
+        </IconButton>
+      </div>
+    </ModalCard>
   )
 }
 

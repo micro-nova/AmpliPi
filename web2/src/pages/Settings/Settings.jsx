@@ -7,15 +7,22 @@ import Sessions from "./Sessions/Sessions"
 import Presets from "./Presets/Presets"
 import Config from "./Config/Config"
 import About from "./About/About"
-import { useState } from "react"
 import { router } from "@/main"
-import LoadingPage from "../LoadingPage/LoadingPage"
-import { useStatusStore } from "@/App"
+import Divider from "@mui/material/Divider"
+import SpeakerIcon from '@mui/icons-material/Speaker';
+import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import UpdateIcon from '@mui/icons-material/Update';
+import HandymanIcon from '@mui/icons-material/Handyman';
+import CableIcon from '@mui/icons-material/Cable';
+import InfoIcon from '@mui/icons-material/Info';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 
-const PageListItem = ({ name, onClick }) => {
+const PageListItem = ({ name, onClick, children }) => {
   return (
     <div className="settings-list-item" onClick={onClick}>
-      {name}
+      <div className="settings-list-item-inner">{children} {name}</div>
+      <Divider />
     </div>
   )
 }
@@ -56,11 +63,9 @@ const Page = ({ openPage }) =>
   )
 
 const Settings = ({ openPage = "" }) => {
-  
-
-  const status = useStatusStore((s) => s.status)
-
-  if (status === null) return <LoadingPage />
+  if(openPage != "") {
+    return (<Page openPage={openPage} />)
+  }
 
   return (
     <div className="settings-outer">
@@ -69,40 +74,62 @@ const Settings = ({ openPage = "" }) => {
         <PageListItem
           name="Streams"
           onClick={() => router.navigate("/settings/streams")}
-        />
+        >
+          <div className="streams-icon"><VolumeUpIcon fontSize="inherit"/></div>
+        </PageListItem>
+
         <PageListItem
           name="Zones"
           onClick={() => router.navigate("/settings/zones")}
-        />
+        >
+          <div className="zones-icon"><SpeakerIcon fontSize="inherit"/></div>
+        </PageListItem>
+
         <PageListItem
           name="Groups"
           onClick={() => router.navigate("/settings/groups")}
-        />
-        <PageListItem
+        >
+          <div className="groups-icon"><SpeakerGroupIcon fontSize="inherit"/></div>
+        </PageListItem>
+
+        {/* <PageListItem
           name="Sessions"
           onClick={() => router.navigate("/settings/sessions")}
-        />
+        >
+          <div className="sessions-icon"><CableIcon fontSize="inherit"/></div>
+        </PageListItem> */}
+
         <PageListItem
           name="Presets"
           onClick={() => router.navigate("/settings/presets")}
-        />
+        >
+          <div className="presets-icon"><PlaylistAddIcon fontSize="inherit"/></div>
+        </PageListItem>
+
         <PageListItem
-          name="Configuration and Reset"
+          name="Config and Reset"
           onClick={() => router.navigate("/settings/config")}
-        />
+        >
+          <div className="config-icon"><HandymanIcon fontSize="inherit"/></div>
+        </PageListItem>
+
         <PageListItem
           name="Updates"
           onClick={() => {
             window.location.href =
               "http://" + window.location.hostname + ":5001/update"
           }}
-        />
+        >
+          <div className="update-icon"><UpdateIcon fontSize="inherit"/></div>
+        </PageListItem>
+
         <PageListItem
           name="About"
           onClick={() => router.navigate("/settings/about")}
-        />
+        >
+          <div className="about-icon"><InfoIcon fontSize="inherit"/></div>
+        </PageListItem>
       </div>
-      <Page openPage={openPage} />
     </div>
   )
 }

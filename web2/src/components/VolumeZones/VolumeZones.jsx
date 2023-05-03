@@ -5,47 +5,39 @@ import ZoneVolumeSlider from "../ZoneVolumeSlider/ZoneVolumeSlider"
 import GroupVolumeSlider from "../GroupVolumeSlider/GroupVolumeSlider"
 import Card from "../Card/Card"
 
+import { getFittestRep } from '@/utils/GroupZoneFiltering'
+
 const VolumeZones = ({ sourceId }) => {
-  const zones = getSourceZones(sourceId, useStatusStore.getState().status.zones)
-  const groups = getSourceZones(
-    sourceId,
-    useStatusStore.getState().status.groups
-  )
+  const zones = getSourceZones(sourceId, useStatusStore(s => s.status.zones))
+  const groups = getSourceZones(sourceId, useStatusStore(s => s.status.groups))
 
-  const ZoneVolumeSliders = []
-  const GroupVolumeSliders = []
+  // compute the best representation of the zones and groups
+  const {zones: zonesLeft, groups: usedGroups} = getFittestRep(zones, groups)
 
-  for (const group of groups) {
-    if (group.source_id == sourceId) {
-      GroupVolumeSliders.push(
-        <Card className="group-vol-card" key={group.id}>
-          <GroupVolumeSlider groupId={group.id} />
-        </Card>
-      )
-    }
+  const groupsLeft = groups.filter(g => !usedGroups.map(ug => ug.id).includes(g.id))
+
+  const groupVolumeSliders = []
+  for (const group of usedGroups) {
+    groupVolumeSliders.push(
+      <Card className="group-vol-card" key={group.id}>
+        <GroupVolumeSlider groupId={group.id} sourceId={sourceId} groupsLeft={groupsLeft} />
+      </Card>
+    )
   }
 
-  for (const zone of zones) {
-    let grouped = false
-
-    for (const group of groups) {
-      if (group.zones.includes(zone.id)) {
-        grouped = true
-      }
-    }
-    if (!grouped) {
-      ZoneVolumeSliders.push(
-        <Card className="zone-vol-card" key={zone.id}>
-          <ZoneVolumeSlider zoneId={zone.id} />
-        </Card>
-      )
-    }
-  }
+  const zoneVolumeSliders = []
+  zonesLeft.forEach(zone => {
+    zoneVolumeSliders.push(
+      <Card className="zone-vol-card" key={zone.id}>
+        <ZoneVolumeSlider zoneId={zone.id} />
+      </Card>
+    )
+  })
 
   return (
     <div className="volume-sliders-container">
-      {GroupVolumeSliders}
-      {ZoneVolumeSliders}
+      {groupVolumeSliders}
+      {zoneVolumeSliders}
     </div>
   )
 }

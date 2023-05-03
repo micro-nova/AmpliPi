@@ -1,17 +1,16 @@
 @use "src/general.scss";
 
-.presets-body {
-  @include general.header-font;
-  color: general.$text-color;
+.presets-item-icon{
+  @include general.circle(2.5rem, general.$preset-color);
   display: flex;
-  flex-direction: column;
-  height: 95%;
-  overflow-y: auto;
+  justify-content: center;
+  align-items: center;
+  margin-right: 0.5rem;
+  font-size: 2rem;
 }
 
-.add-preset-button {
-  position: fixed;
-  margin: 1rem;
-  right: 0;
-  bottom: 0;
+.presets-item-container{
+  display: flex;
+  flex-direction: row;
+  margin: 0.5rem;
 }

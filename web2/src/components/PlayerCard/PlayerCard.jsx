@@ -8,14 +8,15 @@ import PlayerImage from "../PlayerImage/PlayerImage"
 import ZonesBadge from "../ZonesBadge/ZonesBadge"
 import StreamsModal from "../StreamsModal/StreamsModal"
 import ZonesModal from "../ZonesModal/ZonesModal"
-import { useStatusStore } from "@/App.jsx"
+// import { useStatusStore } from "@/App.jsx"
+import { usePersistentStore } from "@/App.jsx"
 import { router } from "@/main"
 
 const PlayerCard = ({ sourceId }) => {
   const [streamModalOpen, setStreamModalOpen] = useState(false)
   const [zoneModalOpen, setZoneModalOpen] = useState(false)
-  const setSelectedSource = useStatusStore((s) => s.setSelectedSource)
-  const selected = useStatusStore((s) => s.selectedSource) === sourceId
+  const setSelectedSource = usePersistentStore((s) => s.setSelectedSource)
+  const selected = usePersistentStore((s) => s.selectedSource) === sourceId
 
   const select = () => {
     if (selected) {
@@ -29,6 +30,14 @@ const PlayerCard = ({ sourceId }) => {
     <Card selected={selected}>
       <div className="outer">
         <div
+            className="content stream-name-container"
+            onClick={() => {
+              setStreamModalOpen(true)
+            }}
+          >
+            <StreamBadge sourceId={sourceId} />
+        </div>
+        <div
           className="content"
           onClick={() => {
             setZoneModalOpen(true)
@@ -36,16 +45,8 @@ const PlayerCard = ({ sourceId }) => {
         >
           <ZonesBadge sourceId={sourceId} />
         </div>
-        <div
-          className="content stream-name-container"
-          onClick={() => {
-            setStreamModalOpen(true)
-          }}
-        >
-          <StreamBadge sourceId={sourceId} />
-        </div>
         <div className="content album-art" onClick={select}>
-          <div>
+          <div className="image-container">
             <PlayerImage sourceId={sourceId} />
           </div>
         </div>

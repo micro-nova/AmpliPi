@@ -3,8 +3,7 @@ import { useState, useEffect } from "react"
 import { useStatusStore } from "@/App"
 import produce from "immer"
 
-import Modal from "@/components/Modal/Modal"
-import Card from "@/components/Card/Card"
+import ModalCard from '@/components/ModalCard/ModalCard'
 import DoneIcon from "@mui/icons-material/Done"
 import "./CreatePresetModal.scss"
 
@@ -209,44 +208,44 @@ const CreatePresetModal = ({ onClose }) => {
   if (tree === null) return <div />
 
   return (
-    <Modal onClose={onClose}>
-      <Card>
-        <div>
-          <div className="preset-name">Create Preset</div>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <br />
-          <div>
-            <IconButton
-              onClick={() => {
-                savePreset()
-                onClose()
-              }}
-            >
-              {" "}
-              <DoneIcon
-                className="group-button-icon"
-                style={{ width: "3rem", height: "3rem" }}
-              />{" "}
-            </IconButton>
-            <FormControlLabel
-              label={"Show Inactive"}
-              control={
-                <Switch
-                  onClick={(e) =>
-                    setTree(buildTreeDict(status, e.target.checked))
-                  }
-                />
+    <ModalCard onClose={onClose} header="Create Preset">
+      <div>Name</div>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <br />
+      <div>
+        Properties
+      </div>
+      <div>
+        <FormControlLabel
+          label={"Show Inactive"}
+          control={
+            <Switch
+              onClick={(e) =>
+                setTree(buildTreeDict(status, e.target.checked))
               }
             />
-          </div>
-          <StructuredDictAsTree dict={tree} />
-        </div>
-      </Card>
-    </Modal>
+          }
+        />
+      </div>
+      <StructuredDictAsTree dict={tree} />
+      <div className="create-preset-buttons">
+        <IconButton
+            onClick={() => {
+              savePreset()
+              onClose()
+            }}
+          >
+            <DoneIcon
+              className="group-button-icon"
+              style={{ width: "3rem", height: "3rem" }}
+            />
+        </IconButton>
+      </div>
+    </ModalCard>
   )
 }
 

@@ -84,6 +84,7 @@ const CardVolumeSlider = ({ sourceId }) => {
   }
 
   return (
+    <div className="volume-slider">
     <VolumeSlider
       vol={value}
       mute={mute}
@@ -92,7 +93,9 @@ const CardVolumeSlider = ({ sourceId }) => {
         setPlayerVol(val, force)
         setValue(val)
       }}
+      disabled={getSourceZones(sourceId, zones) == 0}
     />
+    </div>
   )
 }
 

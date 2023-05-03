@@ -1,50 +1,94 @@
 import "./StreamsModal.scss"
-import Modal from "../Modal/Modal"
-import Card from "../Card/Card"
-import { useStatusStore } from "@/App"
+import ModalCard from "@/components/ModalCard/ModalCard"
+import { getIcon, useStatusStore } from "@/App"
+import { Divider } from "@mui/material"
 
 //TODO: fix RCA behavior
 
-const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
+let applyAction = null
+
+export const executeApplyAction = () => {
+  if (applyAction !== null) applyAction()
+  applyAction = null
+}
+
+const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlayer=false, applyImmediately=true }) => {
   const streams = useStatusStore((state) => state.status.streams)
 
   const setStream = (streamId) => {
-    setStreamModalOpen(false)
+    const apply = () => {
+      fetch(`/api/sources/${sourceId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({ input: `stream=${streamId}` }),
+      })
+    }
 
-    fetch(`/api/sources/${sourceId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-type": "application/json",
-      },
-      body: JSON.stringify({ input: `stream=${streamId}` }),
-    })
+    if (applyImmediately) {
+      apply()
+    } else {
+      applyAction = apply
+    }
   }
 
   const removeStream = () => {
-    setStreamModalOpen(false)
+    const apply = () => {
+      fetch(`/api/sources/${sourceId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({ input: "None" }),
+      })
+    }
 
-    fetch(`/api/sources/${sourceId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-type": "application/json",
-      },
-      body: JSON.stringify({ input: "None" }),
-    })
+    if (applyImmediately) {
+      apply()
+    } else {
+      applyAction = apply
+    }
+
   }
 
   let streamsList = []
 
   for (const stream of streams) {
+    const icon = getIcon(stream.type)
     streamsList.push(
-      <div
-        className="streams-modal-list-item"
-        onClick={() => {
-          setStream(stream.id)
-        }}
-        key={stream.id}
-      >
-        {`${stream.name} - ${stream.type}`}
-      </div>
+      <>
+        <div
+          className="streams-modal-list-item"
+          onClick={() => {
+            setStream(stream.id)
+            onApply()
+            onClose()
+          }}
+          key={stream.id}
+        >
+          <img src={icon} className="streams-modal-icon" alt="stream icon" />
+          {stream.name}
+        </div>
+
+        <Divider/>
+      </>
+    )
+  }
+
+  if (showClosePlayer) {
+    streamsList.push(
+        <div
+          className="streams-modal-list-item"
+          onClick={() => {
+            removeStream()
+            onApply()
+            onClose()
+          }}
+          key="none"
+        >
+          Close Player
+        </div>
     )
   }
 
@@ -52,18 +96,8 @@ const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
     <div
       className="streams-modal-list-item"
       onClick={() => {
-        removeStream()
-      }}
-      key="none"
-    >
-      Close Player
-    </div>
-  )
-  streamsList.push(
-    <div
-      className="streams-modal-list-item"
-      onClick={() => {
-        setStreamModalOpen(false)
+        // setStreamModalOpen(false)
+        onClose()
       }}
       key="cancel"
     >
@@ -72,12 +106,9 @@ const StreamsModal = ({ sourceId, setStreamModalOpen, onClose }) => {
   )
 
   return (
-    <Modal className="streams-modal" onClose={onClose}>
-      <Card className="streams-modal-card">
-        <div className="streams-modal-header">Select Stream</div>
-        <div className="streams-modal-body">{streamsList}</div>
-      </Card>
-    </Modal>
+    <ModalCard header="Select Stream" onClose={onClose}>
+      {streamsList}
+    </ModalCard>
   )
 }
 

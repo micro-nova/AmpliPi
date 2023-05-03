@@ -1,17 +1,7 @@
 @use "src/general.scss";
 
-.config-header {
-  @include general.header-font;
+.config-desc{
+  @include general.regular-font;
   color: general.$text-color;
-  margin: 0.5rem;
-  font-size: 3rem;
-  text-align: center;
-}
-
-.config-body {
-  @include general.header-font;
-  color: general.$text-color;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  font-size: 0.75rem;
 }

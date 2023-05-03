@@ -21,7 +21,7 @@
 
 .presets-modal-body {
   padding: 1rem;
-  overflow-y: scroll;
+  overflow-y: auto;
   //the below is to push the scrollbar out of the card to hide it
   padding-right: 16px;
   width: 100%;
@@ -30,12 +30,14 @@
 
 .presets-modal-list-item {
   margin-bottom: 1rem;
+  cursor: pointer;
 }
 
 .preset-item {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  cursor: pointer;
   // align-items: center;
   // padding: 0.5rem;
   // border: 1px solid #000000;

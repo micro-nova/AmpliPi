@@ -21,7 +21,8 @@
 
 .streams-modal-body {
   padding: 1rem;
-  overflow-y: scroll;
+  overflow-y: auto;
+  // overflow-y: hidden;
   //the below is to push the scrollbar out of the card to hide it
   padding-right: 16px;
   width: 100%;
@@ -29,5 +30,17 @@
 }
 
 .streams-modal-list-item {
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  margin-top: 0.75rem;
+  cursor: pointer;
+}
+
+.streams-modal-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 20%;
+  margin-right: 0.6rem;
 }

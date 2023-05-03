@@ -1,10 +1,12 @@
 import PageHeader from "@/components/PageHeader/PageHeader"
+import "../PageBody.scss"
 import "./Groups.scss"
 import { useStatusStore } from "@/App.jsx"
 import { useState } from "react"
-import { Fab } from "@mui/material"
+import { Divider, Fab } from "@mui/material"
 import AddIcon from "@mui/icons-material/Add"
 import GroupModal from "./GroupModal/GroupModal"
+import { SpeakerGroup } from "@mui/icons-material"
 
 const GroupListItem = ({ group, zones }) => {
   const [modalOpen, setModalOpen] = useState(false)
@@ -23,6 +25,10 @@ const GroupListItem = ({ group, zones }) => {
 
   return (
     <>
+    <div className="groups-group-item">
+      <div className="groups-group-icon">
+        <SpeakerGroup fontSize="inherit"/>
+      </div>
       <div
         className="groups-group-name"
         onClick={() => {
@@ -42,6 +48,8 @@ const GroupListItem = ({ group, zones }) => {
           apply={editGroup}
         />
       )}
+    </div>
+    <Divider />
     </>
   )
 }
@@ -64,10 +72,10 @@ const Groups = ({ onClose }) => {
   })
 
   return (
-    <>
+    <div className="page-container">
       <PageHeader title="Groups" onClose={onClose} />
-      <div className="groups-body">{groupsListItems}</div>
-      <div className="add-group-button">
+      <div className="page-body">{groupsListItems}</div>
+      <div className="add-button">
         <Fab
           onClick={() => {
             setModalOpen(true)
@@ -84,7 +92,7 @@ const Groups = ({ onClose }) => {
           apply={addGroup}
         />
       )}
-    </>
+    </div>
   )
 }
 

@@ -1,12 +1,12 @@
 import "./Zones.scss"
+import "../PageBody.scss"
 import { useStatusStore } from "@/App.jsx"
 import { useState } from "react"
 import PageHeader from "@/components/PageHeader/PageHeader"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp"
-import { Button, TextField } from "@mui/material"
-
-//TODO: styling
+import { Button, Divider, TextField } from "@mui/material"
+import Speaker from "@mui/icons-material/Speaker"
 
 const ZoneListItem = ({ zone }) => {
   const [open, setOpen] = useState(false)
@@ -34,26 +34,30 @@ const ZoneListItem = ({ zone }) => {
   return (
     <div className="zones-zone-column">
       <div className="zones-zone-row">
+        <div className="zones-zone-icon"><Speaker fontSize="inherit"/></div>
         <div className="zones-zone-name">{zone.name}</div>
+        <div className="zones-zone-expand-button">
         {open ? (
           <KeyboardArrowUpIcon
-            className="zones-zone-expand-button"
-            style={{ width: "3rem", height: "3rem" }}
+            className="zones-zone-expand-icon"
+            fontSize="inherit"
             onClick={() => setOpen(!open)}
           />
         ) : (
           <KeyboardArrowDownIcon
-            className="zones-zone-expand-button"
-            style={{ width: "3rem", height: "3rem" }}
+            className="zones-zone-expand-icon"
+            fontSize="inherit"
             onClick={() => setOpen(!open)}
           />
         )}
+        </div>
       </div>
       {open && (
-        <div>
+        <div className="zone-content-container">
           <div>
             Name:
             <input
+              className="zones-input"
               type="text"
               name="Name"
               value={name}
@@ -65,6 +69,7 @@ const ZoneListItem = ({ zone }) => {
           <div>
             Max Volume:
             <input
+              className="zones-input"
               type="text"
               name="Max Volume"
               value={vol_max}
@@ -76,6 +81,7 @@ const ZoneListItem = ({ zone }) => {
           <div>
             Min Volume:
             <input
+              className="zones-input"
               type="text"
               name="Min Volume"
               value={vol_min}
@@ -87,6 +93,7 @@ const ZoneListItem = ({ zone }) => {
           <div>
             Disabled:
             <input
+              className="zones-input"
               type="checkbox"
               name="Disabled"
               checked={disabled}
@@ -102,6 +109,7 @@ const ZoneListItem = ({ zone }) => {
           </div>
         </div>
       )}
+      <Divider />
     </div>
   )
 }
@@ -114,10 +122,10 @@ const Zones = ({ onClose }) => {
   })
 
   return (
-    <>
+    <div className="page-container">
       <PageHeader title="Zones" onClose={onClose} />
-      <div className="zones-body">{listItems}</div>
-    </>
+      <div className="page-body">{listItems}</div>
+    </div>
   )
 }
 

@@ -21,7 +21,8 @@
 
 .zones-modal-body {
   padding: 1rem;
-  overflow-y: scroll;
+  overflow-y: auto;
+  // overflow-y: scroll;
   //the below is to push the scrollbar out of the card to hide it
   padding-right: 16px;
   width: 100%;
@@ -30,6 +31,10 @@
 
 .zones-modal-list-item {
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: center;
 }
 
 .zones-modal-footer {
@@ -39,4 +44,21 @@
 
 .zones-modal-button-icon {
   color: general.$controls-color;
+}
+
+@mixin icon($color){
+  @include general.circle(2rem, $color);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-right: 0.4rem;
+}
+
+.zone-icon {
+  @include icon(general.$zone-color);
+}
+
+.group-icon {
+  @include icon(general.$group-color);
 }

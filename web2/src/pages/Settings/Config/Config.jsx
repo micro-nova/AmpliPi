@@ -1,12 +1,10 @@
+import "../PageBody.scss"
 import "./Config.scss"
 import PageHeader from "@/components/PageHeader/PageHeader"
-import Card from "@/components/Card/Card"
 import { useState } from "react"
-import { Button } from "@mui/material"
+import { Button, Divider } from "@mui/material"
 
-//TODO: test these
-
-const UploadConfig = () => {
+const UploadConfig = (file) => {
   fetch("/api/load", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -55,42 +53,54 @@ const Config = ({ onClose }) => {
   }
 
   return (
-    <>
-      <PageHeader title="Configuration and Reset" onClose={onClose} />
-      <div className="config-body">
+    <div className="page-container">
+      <PageHeader title="Config" onClose={onClose} />
+      <div className="page-body">
         <div>
           Upload Config
+          <div className="config-desc">{"Uploads the selected configuration file."}</div>
           <div>
             <input
               type="file"
               accept=".json,application/json"
               onChange={onChange}
             />
-            <Button onClick={UploadConfig}>Upload</Button>
+            <Button onClick={()=>UploadConfig(file)}>Upload</Button>
           </div>
         </div>
+        <Divider />
         <div>
           Download Config
+          <div className="config-desc">{"Downloads the current configuration."}</div>
           <Button onClick={DownloadConfig}>Download</Button>
         </div>
+        <Divider />
         <div>
-          Factory Reset
+          Factory Config
+          <div className="config-desc">{"Resets Amplipi to the factory default configuration. We recommend downloading the current configuration beforehand."}</div>
           <Button onClick={FactoryReset}>Reset</Button>
         </div>
+        <Divider />
         <div>
           HW Reset
+          <div className="config-desc">{"Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)"}</div>
           <Button onClick={HWReset}>Reset</Button>
         </div>
+        <Divider />
         <div>
           HW Reboot
+          <div className="config-desc">{"Reboots the Raspberry Pi-based controller"}</div>
           <Button onClick={HWReboot}>Reboot</Button>
         </div>
+        <Divider />
         <div>
           HW Shutdown
+          <div className="config-desc">{"Trigger a shutdown of the Raspberry Pi-based controller"}</div>
           <Button onClick={HWShutdown}>Shutdown</Button>
         </div>
+        <Divider />
       </div>
-    </>
+    </div>
   )
 }
 

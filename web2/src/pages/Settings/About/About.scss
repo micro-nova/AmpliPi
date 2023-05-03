@@ -5,8 +5,22 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
+  text-align: center;
 
   color: general.$text-color;
 
   @include general.regular-font;
+  font-size: 1rem;
+}
+
+.link {
+  color: general.$text-color;
+}
+
+.about-links{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  width: 100%;
 }

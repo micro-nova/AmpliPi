@@ -45,9 +45,17 @@
   flex-direction: row;
   align-items: center;
   color: general.$controls-color;
-  width: 65vw;
+  width: 90vw;
 }
 
 .player-volume-expand-button {
   color: general.$controls-color;
+}
+
+.player-stopped-message {
+  color: general.$text-color;
+  font-size: 2.5rem;
+  font-weight: medium;
+  @include general.header-font;
+  padding: 0.5rem;
 }
