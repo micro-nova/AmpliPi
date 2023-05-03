@@ -182,7 +182,19 @@ class Api:
     self._delay_saves = settings.delay_saves
     self._settings = settings
 
-    # Create firmware interface. If one already exists delete then re-init.
+    # try to get a list of available boards to determine if we are a streamer
+    # the preamp hardware is not available on a streamer
+    # we need to know this before trying to intiialize the firmware
+    found_boards = []
+    try:
+      found_boards = EEPROM.get_available_devices(0)
+    except Exception as exc:
+      print(f'Error finding boards: {exc}')
+
+    # check if we are a streamer
+    self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards
+
+    # Create firmware interface if needed. If one already exists delete then re-init.
     if self._initialized:
       # we need to make sure to mute every zone before resetting the fw
       zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones], update=models.ZoneUpdate(mute=True))
@@ -191,7 +203,7 @@ class Api:
         del self._rt # remove the low level hardware connection
       except AttributeError:
         pass
-    self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi() # reset the fw
+    self._rt = rt.Mock() if settings.mock_ctrl or self.is_streamer else rt.Rpi() # reset the fw
 
     # test open the config file, this will throw an exception if there are issues writing to the file
     with open(settings.config_file, 'a', encoding='utf-8'): # use append more to make sure we have read and write permissions, but won't overrite the file
@@ -217,16 +229,6 @@ class Api:
         except Exception as exc:
           self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
           errors.append(f'error loading config file: {exc}')
-
-    # try to get a list of available boards
-    found_boards = []
-    try:
-      found_boards = EEPROM.get_available_devices(0)
-    except Exception as exc:
-      errors.append('error finding boards: {}'.format(exc))
-
-    # check if we are a streamer
-    self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards
 
     # make a config flag to recognize this unit's subtype
     # this helps the updater make good decisions
