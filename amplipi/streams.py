@@ -1118,7 +1118,8 @@ class Bluetooth(BaseStream):
       btcmd_proc = subprocess.run('bluetoothctl show'.split(), check=True, stdout=subprocess.PIPE, timeout=0.5)
       return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
     except Exception as e:
-      print(f'Error checking for bluetooth hardware: {e}')
+      if 'timed out' not in str(e): # a timeout indicates bluetooth module is missing
+        print(f'Error checking for bluetooth hardware: {e}')
       return False
 
   def connect(self, src):
