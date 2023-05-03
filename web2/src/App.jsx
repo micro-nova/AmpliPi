@@ -94,16 +94,23 @@ export const useStatusStore = create((set, get) => ({
     )
   },
   fetch: () => {
-    if (get().skipUpdate) {
-      set({ skipUpdate: false })
-      return
-    }
+    // if (get().skipUpdate) {
+    //   set({ skipUpdate: false })
+    //   return
+    // }
     fetch(`/api`)
       .then((res) => {
         if (res.ok) {
           res
             .json()
-            .then((s) => set({ status: s, loaded: true, disconnected: false }))
+            .then((s) => {
+              if (get().skipUpdate) {
+                set({ skipUpdate: false })
+              } else {
+                set({ status: s, loaded: true, disconnected: false })
+              }
+              
+            })
         } else {
           set({ disconnected: true })
         }
