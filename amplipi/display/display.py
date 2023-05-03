@@ -38,10 +38,11 @@ def main():
   log.add(sys.stderr, level=args.log)
   log.info(f'Running display with args={args}')
 
+  # TFTDisplay needs to be test initialized first to avoid PIN misconfiguration
   displays = [TFTDisplay(args), EInkDisplay(args.iface, args.log)]
   initialized = False
   while not initialized and len(displays) > 0:
-    disp = displays.pop()
+    disp = displays.pop(0)
     # we use init to determine if the display is physically present
     if disp and disp.init():
       # successful init, run this display
