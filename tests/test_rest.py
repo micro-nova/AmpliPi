@@ -1010,6 +1010,7 @@ def test_zeroconf():
 
   # get default network interface
   iface = ni.gateways()['default'][ni.AF_INET][1]
+  FAKE_PORT = 9898
 
   # first time ni.ifaddresses is called in the CI system it fails
   try:
@@ -1027,7 +1028,7 @@ def test_zeroconf():
 
   # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
   event = Event()
-  zc_reg = Process(target=amplipi.app.advertise_service, args=(9898,event))
+  zc_reg = Process(target=amplipi.app.advertise_service, args=(FAKE_PORT,event))
   zc_reg.start()
   sleep(4) # wait for a bit to make sure the service is started
 
@@ -1057,7 +1058,7 @@ def test_zeroconf():
 
   # check advertisememts
   assert AMPLIPI_ZC_NAME in services_advertised
-  assert services_advertised[AMPLIPI_ZC_NAME].port == 9898
+  assert services_advertised[AMPLIPI_ZC_NAME].port == FAKE_PORT
 
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_set_zone_vol(client, zid):
