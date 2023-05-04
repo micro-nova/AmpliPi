@@ -11,8 +11,6 @@ import tempfile
 import os
 from copy import deepcopy # copy test config
 
-import time
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -1008,7 +1006,7 @@ def test_zeroconf():
   # TODO: migrate this test into its own module
   from zeroconf import Zeroconf, ServiceStateChange, ServiceBrowser, IPVersion
   from time import sleep
-  from multiprocessing import Process, Queue
+  from multiprocessing import Process, Event
 
   # get default network interface
   iface = ni.gateways()['default'][ni.AF_INET][1]
@@ -1028,8 +1026,8 @@ def test_zeroconf():
         services_advertised[name] = info
 
   # advertise amplipi-api service (start this before the listener to verify it can be found after advertisement)
-  q = Queue()
-  zc_reg = Process(target=amplipi.app.advertise_service, args=(9898,q))
+  event = Event()
+  zc_reg = Process(target=amplipi.app.advertise_service, args=(9898,event))
   zc_reg.start()
   sleep(4) # wait for a bit to make sure the service is started
 
@@ -1051,7 +1049,7 @@ def test_zeroconf():
   AMPLIPI_ZC_NAME = f'amplipi-{mac_addr}._amplipi._tcp.local.'
 
   # stop the advertiser
-  q.put('done')
+  event.set()
   zc_reg.join()
 
   # stop the listener
