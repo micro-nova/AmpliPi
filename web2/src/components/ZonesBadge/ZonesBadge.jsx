@@ -67,7 +67,6 @@ const ZonesBadge = ({ sourceId, onClick }) => {
   const { width, height } = windowDimensions
   const amount = 2 + Math.max(2 * Math.floor((width - 550) / 220), 0)
 
-  console.log(amount)
 
   if (combined.length >= amount) {
     for (let i = 0; i < amount-1; i++) {

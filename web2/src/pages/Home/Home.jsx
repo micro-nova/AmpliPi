@@ -53,6 +53,8 @@ const PresetAndAdd = ({cards, nextAvailableSource, setPresetsModalOpen, sources,
   }
 }
 
+let zoneModalSourceId = null
+
 const Home = ({}) => {
   const sources = useStatusStore((s) => s.status.sources)
   const clearSourceZones = useStatusStore((s) => s.clearSourceZones)
@@ -98,7 +100,7 @@ const Home = ({}) => {
 
       {zonesModalOpen && (
         <ZonesModal
-          sourceId={nextAvailableSource}
+          sourceId={zoneModalSourceId}
           loadZonesGroups={false}
           // on apply, we want to call
           onApply={executeApplyAction}
@@ -109,7 +111,10 @@ const Home = ({}) => {
         <StreamsModal
           sourceId={nextAvailableSource}
           applyImmediately={false}
-          onApply={() => setZonesModalOpen(true)}
+          onApply={(operatingSourceId) => {
+            zoneModalSourceId = operatingSourceId
+            setZonesModalOpen(true)
+          }}
           onClose={() => setStreamsModalOpen(false)}
         />
       )}

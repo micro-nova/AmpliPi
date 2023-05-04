@@ -1,7 +1,9 @@
 import "./StreamsModal.scss"
 import ModalCard from "@/components/ModalCard/ModalCard"
-import { getIcon, useStatusStore } from "@/App"
+import { useStatusStore } from "@/App"
 import { Divider } from "@mui/material"
+import { getIcon } from "@/utils/getIcon"
+import { getSourceInputType } from "@/utils/getSourceInputType"
 
 //TODO: fix RCA behavior
 
@@ -12,12 +14,62 @@ export const executeApplyAction = () => {
   applyAction = null
 }
 
-const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlayer=false, applyImmediately=true }) => {
-  const streams = useStatusStore((state) => state.status.streams)
+const StreamsModal = ({ sourceId, onApply=(_)=>{}, onClose=()=>{}, showClosePlayer=false, applyImmediately=true }) => {
+  const streams = useStatusStore(state => state.status.streams)
+  const zones = useStatusStore(state => state.status.zones)
+  const sources = useStatusStore(state => state.status.sources)
 
-  const setStream = (streamId) => {
+  const setStream = (stream) => {
+    const streamId = stream.id
+
+    let currentSourceId = sourceId
+    // RCA can only be used on its associated source, so swap if necessary
+    const moveSource = stream.type === 'rca' && stream.index != sourceId
+    if (moveSource) {
+      // TODO: this should be a new endpoint. could benefit from combining the stream/zone transfer into one operation.
+      currentSourceId = stream.index
+      // move whatever is here to the original source
+
+    }
+
     const apply = () => {
-      fetch(`/api/sources/${sourceId}`, {
+      if (moveSource) {
+        const from = sourceId
+        const to = currentSourceId
+        const zoneIds = zones.filter(z => z.source_id === from).map(z => z.id)
+        const fromStreamInput = sources[from].input
+
+        // move zones
+        fetch("/api/zones", {
+          method: "PATCH",
+          headers: {
+            "Content-type": "application/json",
+          },
+          body: JSON.stringify({
+            "zones": zoneIds,
+            "update": {
+              "source_id": to,
+            }
+          })
+        })
+
+        // move stream
+        const streamType = getSourceInputType(sources[from])
+        // only move digital streams; rca, none, unknown don't need to be moved
+        if (streamType === "digital") {
+          fetch(`/api/sources/${to}`, {
+            method: "PATCH",
+            headers: {
+              "Content-type": "application/json",
+            },
+            body: JSON.stringify({
+              "input": fromStreamInput
+            })
+          })
+        }
+      }
+
+      fetch(`/api/sources/${currentSourceId}`, {
         method: "PATCH",
         headers: {
           "Content-type": "application/json",
@@ -31,6 +83,8 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
     } else {
       applyAction = apply
     }
+
+    return currentSourceId
   }
 
   const removeStream = () => {
@@ -50,6 +104,7 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
       applyAction = apply
     }
 
+    return sourceId
   }
 
   let streamsList = []
@@ -61,8 +116,7 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
         <div
           className="streams-modal-list-item"
           onClick={() => {
-            setStream(stream.id)
-            onApply()
+            onApply(setStream(stream))
             onClose()
           }}
           key={stream.id}
@@ -81,11 +135,10 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
         <div
           className="streams-modal-list-item"
           onClick={() => {
-            removeStream()
-            onApply()
+            onApply(removeStream())
             onClose()
           }}
-          key="none"
+          key={-1}
         >
           Close Player
         </div>
@@ -99,7 +152,7 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
         // setStreamModalOpen(false)
         onClose()
       }}
-      key="cancel"
+      key={-2}
     >
       Cancel
     </div>

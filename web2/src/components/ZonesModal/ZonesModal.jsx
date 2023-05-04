@@ -73,7 +73,6 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
         <Checkbox
           checked={checked}
           onChange={() => handleChangeZone(zone.id)}
-          defaultChecked={defaultSelected}
         />
         <div className="zone-icon">
           <SpeakerIcon />
@@ -89,7 +88,6 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
         <Checkbox
           checked={checked}
           onChange={() => handleChangeGroup(group.id)}
-          defaultChecked={defaultSelected}
         />
         <div className="group-icon">
           <SpeakerGroupIcon />
@@ -215,9 +213,11 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       <div className="zones-modal-footer">
         <IconButton
           onClick={() => {
+            // TODO: verify order. 
+            // actually it probably doesn't matter
+            onApply()
             setZones()
             setGroups()
-            onApply()
             onClose()
           }}
         >

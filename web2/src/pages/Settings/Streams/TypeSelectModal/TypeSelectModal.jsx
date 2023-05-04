@@ -3,7 +3,7 @@ import StreamTemplates from "../StreamTemplates.json"
 import Modal from "@/components/Modal/Modal"
 import Card from "@/components/Card/Card"
 import { Divider } from "@mui/material"
-import { getIcon } from "@/App.jsx"
+import { getIcon } from "@/utils/getIcon"
 
 const TypeSelectModal = ({ onClose, onSelect }) => {
   return (

@@ -36,7 +36,6 @@ export const getFittestGroup = (zones, groups) => {
 export const getFittestGroups = (zones, groups) => {
   let bestFitness = 0
   let best = []
-  console.log(`best: ${best}`)
   for (const group of groups) {
 
     let fitness = groupZoneMatchCount(zones, group)
@@ -44,10 +43,8 @@ export const getFittestGroups = (zones, groups) => {
       if (fitness > bestFitness) {
           bestFitness = fitness
           best = [group]
-          console.log(`best: ${best}`)
         } else if (fitness == bestFitness) {
           best.push(group)
-          console.log(`best: ${best}`)
         }
     }
 
@@ -56,7 +53,6 @@ export const getFittestGroups = (zones, groups) => {
   let newZones = zones
   let newGroups = groups
 
-  console.log(`best: ${best}`)
   for (const bestGroup of best) {
     newZones = newZones.filter(zone => !bestGroup.zones.includes(zone.id))
     newGroups = newGroups.filter(group => group !== bestGroup)
@@ -95,8 +91,6 @@ export const getFittestRep = (zones, groups) => {
   let groupsLeft = [...groups]
   let usedGroups = []
   let res = getFittestGroups(zonesLeft, groupsLeft)
-  console.log(`res.best: ${res.best}`)
-  console.log(res.best.length)
   while (res.best.length > 0) {
     usedGroups.push(...res.best)
     zonesLeft = res.zones

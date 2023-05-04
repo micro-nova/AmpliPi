@@ -1,6 +1,7 @@
 import "./StreamBadge.scss"
-import { useStatusStore, getIcon } from "@/App.jsx"
+import { useStatusStore } from "@/App.jsx"
 import Chip from '@/components/Chip/Chip'
+import { getIcon } from "@/utils/getIcon"
 
 const StreamBadge = ({ sourceId, onClick }) => {
   const info = useStatusStore((s) => s.status.sources[sourceId].info)
