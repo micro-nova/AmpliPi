@@ -22,7 +22,7 @@ This initializes the webapplication found in app.py.
 """
 
 import os
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Event
 import uvicorn
 import amplipi.app
 
@@ -36,13 +36,14 @@ application = amplipi.app.create_app(delay_saves=True, mock_ctrl=MOCK_CTRL, mock
 
 # advertise the service here, to avoid adding bloat to underlying app, especially for test startup
 # this needs to be done as a separate process to avoid interfering with webserver (ZeroConf makes its own event loop)
-zc_que: "Queue[str]" = Queue()
-zc_reg = Process(target=amplipi.app.advertise_service, args=(PORT, zc_que))
+zc_event = Event()
+zc_reg = Process(target=amplipi.app.advertise_service, args=(PORT, zc_event))
 zc_reg.start()
 
 @application.on_event('shutdown')
 def on_shutdown():
-  zc_que.put('done')
+  """ Notify the mdns advertisement to shutdown"""
+  zc_event.set()
   zc_reg.join()
 
 if __name__ == '__main__':

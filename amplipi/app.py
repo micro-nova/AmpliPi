@@ -57,7 +57,8 @@ from time import sleep
 import netifaces as ni
 from socket import gethostname, inet_aton
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
-from multiprocessing import Queue
+from multiprocessing import Event, Queue
+from multiprocessing.synchronize import Event as SyncEvent
 
 # amplipi
 import amplipi.utils as utils
@@ -828,26 +829,28 @@ def get_ip_info(iface: str = 'eth0') -> Tuple[Optional[str], Optional[str]]:
   except:
     return None, None
 
-def advertise_service(port, que: Queue):
+def advertise_service(port, event: SyncEvent):
   """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar'
       Expected to be run as a seperate process, eg:
 
-          q = Queue()
-          ad = Process(target=amplipi.app.advertise_service, args=(5000, q))
+          event = multiprocessing.Event()
+          ad = Process(target=amplipi.app.advertise_service, args=(5000, event))
           ad.start()
           ...
-          q.put('done')
+          event.set()
           ad.join()
+      NOTE: multiprocessing.Event() is a function that returns a multiprocessing.synchronize.Event type
+      Here the type is aliased to SyncEvent
   """
   def ok():
     """ Was a stop requested by the parent process? """
-    return que.empty()
+    return not event.is_set()
 
   while ok():
     try:
       _advertise_service(port, ok)
-    except Exception as e:
-      print(f'Failed to advertise AmpliPi service: {e}')
+    except Exception as exc:
+      print(f'Failed to advertise AmpliPi service: {exc}')
       # delay for a bit after a failure
       delay_ct = 300
       while ok() and delay_ct > 0:
