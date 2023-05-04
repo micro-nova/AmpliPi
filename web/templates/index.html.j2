@@ -98,8 +98,10 @@
         <select id="settings-sel" class="custom-select" style="display: none" autocomplete="off"
                 onchange="$(this.value).siblings('div').removeClass('active'); $(this.value).addClass('active');">
           <option value="#settings-tab-inputs">Inputs</option>
+          {%if zones%}
           <option value="#settings-tab-zones">Zones</option>
           <option value="#settings-tab-groups">Groups</option>
+          {%endif %}
           <option value="#settings-tab-config">Configuration and Reset</option>
           <option value="#settings-tab-updates">Updates</option>
         </select>
@@ -265,7 +267,7 @@
           </a>
           <div class="card-body">
             <div id="g{{ group['id'] }}-vol" class="volume {% if group['mute'] %} muted {% endif %}"  data-group="{{ group['id'] }}" data-source="{{src.id}}">
-              <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ group['vol_f'] }}"  step="0.01" class="volume-range">
+              <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ group['vol_f'] }}" step="0.01" class="volume-range">
               <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                 <i class="fa {% if group['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
               </div>
@@ -283,7 +285,7 @@
                 <h6 class="card-header">{{ zone['name'] }}</h6>
                 <div class="card-body">
                   <div id="g{{ group['id'] }}-z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}"  data-source="{{src.id}}">
-                    <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}"  step="0.01" class="volume-range">
+                    <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}" step="0.01" class="volume-range">
                     <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                       <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
                     </div>
@@ -305,7 +307,7 @@
           <h6 class="card-header">{{ zone['name'] }}</h6>
           <div class="card-body">
             <div id="z{{ zone['id'] }}-vol" class="volume {% if zone['mute'] %} muted {% endif %}" data-zone="{{ zone['id'] }}" data-source="{{src.id}}">
-              <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}"  step="0.01" class="volume-range">
+              <input type="range" min="{{ min_vol }}" max="{{ max_vol }}" value="{{ zone['vol_f'] }}" step="0.01" class="volume-range">
               <div class="icon" onclick="debounce(250, onMuteToggle)(this);">
                 <i class="fa {% if zone['mute'] %} fa-volume-mute {% else %} fa-volume-up {% endif %} icon-size" aria-hidden="true"></i>
               </div>
@@ -318,6 +320,7 @@
           </div>
         </div>
         {% endfor %}
+        {%if zones%}
         <div class="card add-group">
           <h6 class="card-header">Add</h6>
           <div class="card-body">
@@ -341,6 +344,7 @@
             </div>
           </div>
         </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>

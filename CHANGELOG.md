@@ -1,15 +1,38 @@
 # AmpliPi Software Releases
 
-## 0.1.X Upcoming
-* web App
-  * Reject scroll events to volume sliders
-  * Cleanup version display
+## Upcoming release
 * Streams
-  * Robustify config loading to handle missing streams
-  * Simplify stream serialization
-  * Swich to Spotifyd Spotify client
+  * Add Bluetooth stream
+* API
+  * Add support for units without zones
+* Hardware
+  * Add support for EEPROMS on boards to identify board type and revision
+  * Add support for E-Ink display
+
+## 0.2.1
+* System
+  * Fix python dependencies to specific versions
+* Streams
+  * Fix LMS Server parameter
+* Docs
+  * Update 9/12V supply register descriptions
+
+## 0.2.0
+* Web App
+  * Reject scroll events to volume sliders
+  * Improve version display
+* Streams
+  * Switch to Spotifyd Spotify client
   * Add MPRIS metadata/command interface
-  * Add LMS Client
+  * Add LMS Client (no metadata yet)
+  * Make Airplay use MPRIS
+  * Add single Airplay2 to Airplay stream
+  * Add default icon for internet radio
+  * Simplify stream serialization
+* API
+  * Robustify config loading
+  * Make RCA inputs look like streams
+  * Make zones removable
 
 ## 0.1.9
 * Web App

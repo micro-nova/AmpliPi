@@ -60,6 +60,8 @@ class Client:
     except:
       return False
 
+RCA_INPUTS = { sid: 996 + sid for sid in range(4) }
+
 BEATLES_RADIO = {
   'id': 1001,
   'name': 'Beatles Radio',
@@ -125,7 +127,7 @@ def setup(client: Client, exp_unit: bool):
         'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
       }
     ]
-  PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, 'local', -40) for src in range(4)]
+  PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, f'stream={RCA_INPUTS[src]}', -40) for src in range(4)]
   PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
 
   """ Configure AmpliPi for testing by loading a simple known configuration """

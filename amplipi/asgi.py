@@ -23,6 +23,7 @@ This initializes the webapplication found in app.py.
 
 import os
 from multiprocessing import Process, Queue
+import uvicorn
 import amplipi.app
 
 MOCK_CTRL = os.environ.get('MOCK_CTRL', 'False').lower() == 'true'
@@ -43,3 +44,7 @@ zc_reg.start()
 def on_shutdown():
   zc_que.put('done')
   zc_reg.join()
+
+if __name__ == '__main__':
+  """ Debug the webserver """
+  uvicorn.run(application, host='0.0.0.0', port=PORT)

@@ -46,8 +46,14 @@ MAX_VOL_DB = 0
 MIN_DB_RANGE = 20
 """ Smallest allowed difference between a zone's vol_max and vol_min """
 
-MAX_SOURCES = 12
+MAX_SOURCES = 8
 """ Maximum allowed sources including virtual sources """
+
+MAX_REAL_SOURCES = 4
+""" Maximum sources excluding virtual sources """
+
+SOURCE_DISCONNECTED = -1
+""" Indicate no source connection, simulated in SW by muting zone for now """
 
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """
@@ -58,7 +64,7 @@ class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
   Name = Field(description='Friendly name')
-  SourceId = Field(ge=0, le=MAX_SOURCES, description='id of the connected source')
+  SourceId = Field(ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
@@ -73,8 +79,7 @@ class fields(SimpleNamespace):
   Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
 
-  * Digital Stream ('stream=SID') where SID is the ID of the connected stream
-  * Analog RCA Input ('local') connects to the RCA inputs associated
+  * Digital or Analog Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 
@@ -84,7 +89,7 @@ class fields_w_default(SimpleNamespace):
   These are needed because there is ambiguity where an optional field has a default value
   """
   # TODO: less duplication
-  SourceId = Field(default=0, ge=0, le=MAX_SOURCES, description='id of the connected source')
+  SourceId = Field(default=0, ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
@@ -133,7 +138,7 @@ class Source(Base):
     """ Get a source's connected stream if any """
     try:
       sinput = str(self.input)
-      if 'stream=' in sinput:
+      if sinput.startswith('stream='):
         return int(sinput.split('=')[1])
       return None
     except ValueError:
@@ -178,7 +183,7 @@ class Source(Base):
           'value': {
             'id' : 3,
             'name': '3',
-            'input': 'local',
+            'input': 'stream=999',
             'info': {
               'img_url': 'static/imgs/rca_inputs.svg',
               'state': 'unknown',
@@ -190,13 +195,13 @@ class Source(Base):
 
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
-  input: Optional[str] # 'None', 'local', 'stream=ID' # TODO: add helpers to get stream_id
+  input: Optional[str] = fields.AudioInput
 
   class Config:
     schema_extra = {
       'examples': {
-        'Update Input to RCA input': {
-          'value': {'input': 'local'}
+        'Update Input to RCA Input 2': {
+          'value': {'input': 'stream=997'}
         },
         'Update name': {
           'value': {'name': 'J2'}
@@ -209,7 +214,7 @@ class SourceUpdate(BaseUpdate):
 
 class SourceUpdateWithId(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
-  id : int = Field(ge=0,le=MAX_SOURCES)
+  id : int = Field(ge=0,le=MAX_SOURCES-1)
 
   def as_update(self) -> SourceUpdate:
     """ Convert to SourceUpdate """
@@ -467,6 +472,8 @@ class Stream(Base):
   * file
   * fmradio
   * lms
+  * bluetooth
+  * rca
   """)
   # TODO: how to support different stream types
   user: Optional[str] = Field(description='User login')
@@ -478,6 +485,9 @@ class Stream(Base):
   client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
   token: Optional[str] = Field(description='Plexamp token for server.json')
   server: Optional[str] = Field(description='Server url')
+  index: Optional[int] = Field(description='RCA index')
+  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
+  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
 
   # add examples for each type of stream
   class Config:
@@ -540,7 +550,8 @@ class Stream(Base):
         'Add AirPlay': {
           'value': {
             'name': 'AmpliPi',
-            'type': 'airplay'
+            'type': 'airplay',
+            'ap2': True
           }
         },
         "Play single file or announcement" : {
@@ -569,6 +580,13 @@ class Stream(Base):
           'value': {
             'name': 'Family',
             'type': 'lms',
+          }
+        },
+        'Add LMS Client connected specifically to mylmsserver': {
+          'value': {
+            'name': 'Family',
+            'type': 'lms',
+            'server': 'mylmsserver',
           }
         }
       },
@@ -633,6 +651,8 @@ class StreamUpdate(BaseUpdate):
   logo: Optional[str]
   freq: Optional[str]
   server: Optional[str]
+  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
+  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
 
   class Config:
     schema_extra = {
@@ -766,7 +786,7 @@ class Announcement(BaseModel):
   media : str = Field(description="URL to media to play as the announcement")
   vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB, overrides vol_f')
   vol_f: float = Field(default=0.5, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
-  source_id: int = Field(default=3, ge=0, le=3, description='Source to announce with')
+  source_id: int = Field(default=3, ge=0, le=MAX_SOURCES-1, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
 
@@ -822,10 +842,10 @@ class Info(BaseModel):
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
-  sources: List[Source] = [Source(id=i, name=str(i), pipe_to=i % 4 if i >= 4 else None) for i in range(8)]
+  sources: List[Source] = [Source(id=i, name=str(i), pipe_to=i % 4 if i >= MAX_REAL_SOURCES else None) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
-  streams: List[Stream] = []
+  streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(MAX_REAL_SOURCES)]
   presets: List[Preset] = []
   info: Optional[Info]
 

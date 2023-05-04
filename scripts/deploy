@@ -180,7 +180,7 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
-ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display$opts" || echo ""
+ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display --audiodetector$opts" || echo ""
 
 echo -e "Waiting for AmpliPi to restart\n"
 restart_finished=false

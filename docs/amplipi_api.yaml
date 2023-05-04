@@ -2317,7 +2317,7 @@ paths:
                   value:
                     id: 3
                     name: '3'
-                    input: local
+                    input: stream=999
                     info:
                       img_url: static/imgs/rca_inputs.svg
                       state: unknown
@@ -2363,9 +2363,9 @@ paths:
             schema:
               $ref: '#/components/schemas/SourceUpdate'
             examples:
-              Update Input to RCA input:
+              Update Input to RCA Input 2:
                 value:
-                  input: local
+                  input: stream=997
               Update name:
                 value:
                   name: J2
@@ -5329,9 +5329,11 @@ paths:
                 value:
                   name: AmpliPi
                   type: airplay
+                  ap2: true
               Play single file or announcement:
                 value:
                   name: Play NASA Announcement
+                  type: fileplayer
                   url: https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3
               Add FM Radio Station:
                 value:
@@ -5339,6 +5341,15 @@ paths:
                   type: fmradio
                   freq: '100.1'
                   logo: static/imgs/fmradio.png
+              Add LMS Client connected specifically to amplipi:
+                value:
+                  name: Test
+                  server: localhost
+                  type: lms
+              Add LMS Client:
+                value:
+                  name: Family
+                  type: lms
         required: true
       responses:
         '200':
@@ -5466,6 +5477,18 @@ paths:
         name: sid
         in: path
         examples:
+          TV:
+            value: 996
+            summary: TV - rca
+          Record Player:
+            value: 997
+            summary: Record Player - rca
+          Input 3:
+            value: 998
+            summary: Input 3 - rca
+          Input 4:
+            value: 999
+            summary: Input 4 - rca
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
@@ -5557,6 +5580,18 @@ paths:
         name: sid
         in: path
         examples:
+          TV:
+            value: 996
+            summary: TV - rca
+          Record Player:
+            value: 997
+            summary: Record Player - rca
+          Input 3:
+            value: 998
+            summary: Input 3 - rca
+          Input 4:
+            value: 999
+            summary: Input 4 - rca
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
@@ -6011,6 +6046,18 @@ paths:
         name: sid
         in: path
         examples:
+          TV:
+            value: 996
+            summary: TV - rca
+          Record Player:
+            value: 997
+            summary: Record Player - rca
+          Input 3:
+            value: 998
+            summary: Input 3 - rca
+          Input 4:
+            value: 999
+            summary: Input 4 - rca
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
@@ -6054,6 +6101,7 @@ paths:
               Upgrade groove salad stream quality:
                 value:
                   url: http://ice2.somafm.com/groovesalad-64-aac
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -6485,6 +6533,18 @@ paths:
         name: sid
         in: path
         examples:
+          TV:
+            value: 996
+            summary: TV - rca
+          Record Player:
+            value: 997
+            summary: Record Player - rca
+          Input 3:
+            value: 998
+            summary: Input 3 - rca
+          Input 4:
+            value: 999
+            summary: Input 4 - rca
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
@@ -6942,10 +7002,15 @@ paths:
         \ options:\n  * Play Stream: **play**\n  * Pause Stream: **pause**\n  * Skip\
         \ to next song: **next**\n  * Stop Stream: **stop**\n  * Like/Love Current\
         \ Song: **love**\n  * Ban Current Song (pandora only): **ban**\n  * Shelve\
-        \ Current Song (pandora only): **shelve**\n\nCurrently only available with\
-        \ Pandora streams"
+        \ Current Song (pandora only): **shelve**\n\nSupported commands are reported\
+        \ in an attached stream's info.stream_cmds"
       operationId: exec_command_api_streams__sid___cmd__post
       parameters:
+      - required: true
+        schema:
+          $ref: '#/components/schemas/StreamCommand'
+        name: cmd
+        in: path
       - description: Stream ID
         required: true
         schema:
@@ -6956,6 +7021,18 @@ paths:
         name: sid
         in: path
         examples:
+          TV:
+            value: 996
+            summary: TV - rca
+          Record Player:
+            value: 997
+            summary: Record Player - rca
+          Input 3:
+            value: 998
+            summary: Input 3 - rca
+          Input 4:
+            value: 999
+            summary: Input 4 - rca
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
@@ -6980,11 +7057,6 @@ paths:
           Downstairs:
             value: 1008
             summary: Downstairs - spotify
-      - required: true
-        schema:
-          $ref: '#/components/schemas/StreamCommand'
-        name: cmd
-        in: path
       responses:
         '200':
           description: Successful Response
@@ -8057,6 +8129,7 @@ paths:
                       mute: true
                     - id: 5
                       mute: true
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -9470,9 +9543,9 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: 0.0
+          minimum: -1.0
           type: integer
-          description: id of the connected source
+          description: id of the connected source, or -1 for no connection
         zones:
           title: Zones
           type: array
@@ -9553,9 +9626,9 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: 0.0
+          minimum: -1.0
           type: integer
-          description: id of the connected source
+          description: id of the connected source, or -1 for no connection
         zones:
           title: Zones
           type: array
@@ -9615,9 +9688,9 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: 0.0
+          minimum: -1.0
           type: integer
-          description: id of the connected source
+          description: id of the connected source, or -1 for no connection
         zones:
           title: Zones
           type: array
@@ -9917,10 +9990,10 @@ components:
         input:
           title: Input
           type: string
-          description: "Connected audio source\n\n  * Digital Stream ('stream=SID')\
-            \ where SID is the ID of the connected stream\n  * Analog RCA Input ('local')\
-            \ connects to the RCA inputs associated\n  * Nothing ('') behind the scenes\
-            \ this is muxed to a digital output\n  "
+          description: "Connected audio source\n\n  * Digital or Analog Stream ('stream=SID')\
+            \ where SID is the ID of the connected stream (rca inputs are now just\
+            \ the RCA stream type)\n  * Nothing ('') behind the scenes this is muxed\
+            \ to a digital output\n  "
           default: ''
         info:
           title: Info
@@ -9954,7 +10027,7 @@ components:
           value:
             id: 3
             name: '3'
-            input: local
+            input: stream=999
             info:
               img_url: static/imgs/rca_inputs.svg
               state: unknown
@@ -10003,11 +10076,16 @@ components:
         input:
           title: Input
           type: string
+          description: "Connected audio source\n\n  * Digital or Analog Stream ('stream=SID')\
+            \ where SID is the ID of the connected stream (rca inputs are now just\
+            \ the RCA stream type)\n  * Nothing ('') behind the scenes this is muxed\
+            \ to a digital output\n  "
+          default: ''
       description: 'Partial reconfiguration of an audio Source '
       examples:
-        Update Input to RCA input:
+        Update Input to RCA Input 2:
           value:
-            input: local
+            input: stream=997
         Update name:
           value:
             name: J2
@@ -10027,16 +10105,21 @@ components:
         input:
           title: Input
           type: string
+          description: "Connected audio source\n\n  * Digital or Analog Stream ('stream=SID')\
+            \ where SID is the ID of the connected stream (rca inputs are now just\
+            \ the RCA stream type)\n  * Nothing ('') behind the scenes this is muxed\
+            \ to a digital output\n  "
+          default: ''
         id:
           title: Id
-          maximum: 4.0
+          maximum: 3.0
           minimum: 0.0
           type: integer
       description: 'Partial reconfiguration of a specific audio Source '
       examples:
-        Update Input to RCA input:
+        Update Input to RCA Input 2:
           value:
-            input: local
+            input: stream=997
         Update name:
           value:
             name: J2
@@ -10136,7 +10219,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Stream'
-          default: []
+          default:
+          - id: 996
+            name: Input 1
+            type: rca
+            index: 0
+          - id: 997
+            name: Input 2
+            type: rca
+            index: 1
+          - id: 998
+            name: Input 3
+            type: rca
+            index: 2
+          - id: 999
+            name: Input 4
+            type: rca
+            index: 3
         presets:
           title: Presets
           type: array
@@ -10565,7 +10664,7 @@ components:
           title: Type
           type: string
           description: "stream type\n\n  * pandora\n  * airplay\n  * dlna\n  * internetradio\n\
-            \  * spotify\n  * plexamp\n  * file\n  * fmradio\n  "
+            \  * spotify\n  * plexamp\n  * file\n  * fmradio\n  * lms\n  * rca\n  "
         user:
           title: User
           type: string
@@ -10598,6 +10697,23 @@ components:
           title: Token
           type: string
           description: Plexamp token for server.json
+        server:
+          title: Server
+          type: string
+          description: Server url
+        index:
+          title: Index
+          type: integer
+          description: RCA index
+        disabled:
+          title: Disabled
+          type: boolean
+          description: Soft disable use of this stream. It won't be shown as a selectable
+            option
+        ap2:
+          title: Ap2
+          type: boolean
+          description: Is Airplay stream AirPlay2?
       description: 'Digital stream such as Pandora, AirPlay or Spotify '
       creation_examples:
         Add Beatles Internet Radio Station:
@@ -10643,9 +10759,11 @@ components:
           value:
             name: AmpliPi
             type: airplay
+            ap2: true
         Play single file or announcement:
           value:
             name: Play NASA Announcement
+            type: fileplayer
             url: https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3
         Add FM Radio Station:
           value:
@@ -10653,6 +10771,15 @@ components:
             type: fmradio
             freq: '100.1'
             logo: static/imgs/fmradio.png
+        Add LMS Client connected specifically to amplipi:
+          value:
+            name: Test
+            server: localhost
+            type: lms
+        Add LMS Client:
+          value:
+            name: Family
+            type: lms
       examples:
         Regina Spektor Radio:
           value:
@@ -10729,6 +10856,9 @@ components:
         freq:
           title: Freq
           type: string
+        server:
+          title: Server
+          type: string
       description: 'Reconfiguration of a Stream '
       examples:
         Change account info:
@@ -10782,9 +10912,9 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: 0.0
+          minimum: -1.0
           type: integer
-          description: id of the connected source
+          description: id of the connected source, or -1 for no connection
           default: 0
         mute:
           title: Mute
@@ -10859,9 +10989,9 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: 0.0
+          minimum: -1.0
           type: integer
-          description: id of the connected source
+          description: id of the connected source, or -1 for no connection
         mute:
           title: Mute
           type: boolean
@@ -10928,9 +11058,9 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: 0.0
+          minimum: -1.0
           type: integer
-          description: id of the connected source
+          description: id of the connected source, or -1 for no connection
         mute:
           title: Mute
           type: boolean

@@ -1,0 +1,122 @@
+#!/usr/bin/python3
+# https://gist.github.com/Pindar/e259bec5c3ab862f4ff5f1fbcb11bfc1
+
+""" Bluetooth Agent
+
+Handles pairing and authorization of Bluetooth devices. Allows the host to automatically
+pair and accept A2DP, HFP, HSP and AVRCP connections from Bluetooth devices.
+"""
+
+import dbus
+import dbus.mainloop.glib
+import dbus.service
+from gi.repository import GLib
+
+BUS_NAME = 'org.bluez'
+ADAPTER_IFACE = 'org.bluez.Adapter1'
+ADAPTER_ROOT = '/org/bluez/hci'
+AGENT_IFACE = 'org.bluez.Agent1'
+AGENT_MNGR_IFACE = 'org.bluez.AgentManager1'
+AGENT_PATH = "/my/app/agent"
+AGENT_MNGR_PATH = '/org/bluez'
+CAPABILITY = 'NoInputNoOutput'
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+bus = dbus.SystemBus()
+
+
+def configure_adapter(idx=0):
+  """ Enable discoverable and pairable for the bluetooth adapter with index idx. """
+  path = f'{ADAPTER_ROOT}{idx}'
+  adapter_object = bus.get_object(BUS_NAME, path)
+  adapter_props = dbus.Interface(adapter_object, dbus.PROPERTIES_IFACE)
+  adapter_props.Set(ADAPTER_IFACE,
+                         'DiscoverableTimeout', dbus.UInt32(0))
+  adapter_props.Set(ADAPTER_IFACE,
+                         'Discoverable', True)
+  adapter_props.Set(ADAPTER_IFACE,
+                         'PairableTimeout', dbus.UInt32(0))
+  adapter_props.Set(ADAPTER_IFACE,
+                         'Pairable', True)
+
+class Rejected(dbus.DBusException):
+  _dbus_error_name = "org.bluez.Error.Rejected"
+
+class Agent(dbus.service.Object):
+  exit_on_release = True
+
+  def set_exit_on_release(self, exit_on_release):
+    self.exit_on_release = exit_on_release
+
+  @dbus.service.method(AGENT_IFACE, in_signature="", out_signature="")
+  def Release(self):
+    print("Release")
+    if self.exit_on_release:
+      mainloop.quit()
+
+  @dbus.service.method(AGENT_IFACE, in_signature="os", out_signature="")
+  def AuthorizeService(self, device, uuid):
+    print(f"AuthorizeService ({device}, {uuid})")
+    if uuid.lower() == "0000110d-0000-1000-8000-00805f9b34fb":
+      print("Authorized A2DP Service")
+      return
+    if uuid.lower() == "0000111e-0000-1000-8000-00805f9b34fb":
+      print("Authorized HFP Service")
+      return
+    if uuid.lower() == "00001108-0000-1000-8000-00805f9b34fb":
+      print("Authorized HSP Service")
+      return
+    if uuid.lower() == "0000110e-0000-1000-8000-00805f9b34fb":
+      print("Authorized AVRCP Service")
+      return
+    print("Rejecting non-A2DP Service, %s", uuid.lower())
+    raise Rejected("Connection rejected")
+
+  @dbus.service.method(AGENT_IFACE, in_signature="o", out_signature="s")
+  def RequestPinCode(self, device):
+    print(f"RequestPinCode ({device})")
+    return "0000"
+
+  @dbus.service.method(AGENT_IFACE, in_signature="o", out_signature="u")
+  def RequestPasskey(self, device):
+    print(f"RequestPassKey ({device})")
+    return dbus.UInt32("password")
+
+  @dbus.service.method(AGENT_IFACE, in_signature="ouq", out_signature="")
+  def DisplayPasskey(self, device, passkey, entered):
+    print(f"DisplayPassKey ({device}, {passkey} entered {entered})")
+
+  @dbus.service.method(AGENT_IFACE, in_signature="os", out_signature="")
+  def DisplayPinCode(self, device, pincode):
+    print(f"DisplayPinCode ({device}, {pincode})")
+
+  @dbus.service.method(AGENT_IFACE, in_signature="ou", out_signature="")
+  def RequestConfirmation(self, device, passkey):
+    print(f"RequestConfirmation ({device}, {passkey})")
+
+  @dbus.service.method(AGENT_IFACE, in_signature="o", out_signature="")
+  def RequestAuthorization(self, device):
+    """ Called when device tries to pair when CAPABILITY=NoInputNoOutput."""
+    print(f"RequestAuthorization ({device})")
+    # mac = ':'.join(device.split('/')[-1].split('_')[1:])
+
+    # this was causing issues after upgrading to python3... not sure how it ever worked
+    # raise Rejected("Pairing rejected")
+
+
+  @dbus.service.method(AGENT_IFACE, in_signature="", out_signature="")
+  def Cancel(self):
+    print("Cancel")
+
+
+if __name__ == '__main__':
+  agent = Agent(bus, AGENT_PATH)
+  agnt_mngr = dbus.Interface(bus.get_object(BUS_NAME, AGENT_MNGR_PATH),
+                             AGENT_MNGR_IFACE)
+  agnt_mngr.RegisterAgent(AGENT_PATH, CAPABILITY)
+  print("A2DP Agent Registered")
+  agnt_mngr.RequestDefaultAgent(AGENT_PATH)
+
+  configure_adapter()
+  mainloop = GLib.MainLoop()
+  mainloop.run()

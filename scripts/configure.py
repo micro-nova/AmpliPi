@@ -122,8 +122,22 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'pianobar']
   },
   'airplay' : {
-    'apt' : [ 'shairport-sync' ],
-    'copy' : [{'from': 'bin/ARCH/shairport-sync-metadata-reader', 'to': 'streams/shairport-sync-metadata-reader'}],
+    'apt' : [ 'shairport-sync'],
+    'copy' : [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
+              {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
+    'script': [
+        'if which nqptp  > /dev/null; then exit 0; fi',
+        'pushd $(mktemp --directory)',
+        'git clone https://github.com/mikebrady/nqptp.git',
+        'pushd nqptp',
+        'autoreconf -fi',
+        './configure --with-systemd-startup',
+        'make',
+        'sudo make install',
+        'sudo systemctl enable nqptp && sudo systemctl restart nqptp',
+        'popd',
+        'popd',
+    ]
   },
   'internet_radio' : {
     'apt' : [ 'vlc' ]
@@ -182,8 +196,54 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'spotify' : {
     'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
+  },
+  'bluetooth' : {
+    'amplipi_only' : True,
+    'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
+              'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4' ],
+    'script' : [
+      # referencing arm here is okay because bluetooth is marked as 'amplipi_only'
+      'sudo cp bin/arm/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
+      'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
+      'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
+      # TODO: investigate where to put these services
+      'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
+      'sudo cp streams/bluetooth_agent /usr/local/bin/',
+      'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
+
+      # Install SBC
+      'if ! [ -e /usr/local/lib/libsbc.so.1.3.1 ]',
+      'then',
+        'echo Installing SBC...',
+        'pushd $(mktemp --directory)',
+        'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
+        'cd sbc',
+        'git checkout 8dc5d5ba381512ad5b1afa45c63ec6b0a3833244',  # sbc release 2.0
+        'sudo ./bootstrap-configure',
+        'sudo ./configure',
+        'sudo make',
+        'sudo make install',
+        'popd',
+      'else',
+        'echo SBC already installed, skipping installation.',
+      'fi',
+
+      # Add pi user to bluetooth group so we don't need to run sudo
+      'sudo usermod -G bluetooth -a pi',
+
+      'sudo chmod +x /usr/local/bin/bluetooth_agent',
+
+      'sudo systemctl enable bluetooth',
+      'sudo systemctl enable bluealsa',
+      'sudo systemctl enable bluetooth_agent',
+    ]
   }
 }
+
+def _check_and_update_streamer(env):
+  """Check if this is a streamer (no preamp firmware)"""
+  is_streamer_path = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'is_streamer')
+  env['is_streamer'] = os.path.exists(is_streamer_path)
 
 def _check_and_setup_platform():
   script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -195,6 +255,7 @@ def _check_and_setup_platform():
     'script_dir': script_dir,
     'base_dir': script_dir.rsplit('/', 1)[0],
     'is_amplipi': False,
+    'is_streamer': False,
     'arch': 'unknown',
   }
 
@@ -216,6 +277,8 @@ def _check_and_setup_platform():
       env['platform_supported'] = True
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
+
+  _check_and_update_streamer(env)
 
   return env
 
@@ -277,6 +340,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   scripts: Dict[str, List[str]] = {}
   for dep in deps:
     install_steps = _os_deps[dep]
+    if install_steps.get('amplipi_only', False) and not env['is_amplipi']:
+      continue
     if 'copy' in install_steps:
       files += install_steps['copy']
     if 'apt' in install_steps:
@@ -294,9 +359,6 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
     tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
-    if 'shairport-sync-metadata-reader' in _to:
-      # windows messes up permissions
-      tasks += print_progress([Task(f"make {_to} executable", f"chmod +x {_to}".split()).run()])
   if env['is_amplipi']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"
@@ -312,8 +374,11 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
         'sudo udevadm trigger -s sound -c add'.split(), # trigger an 'add' action on the 'sound' subsystem
         'udevadm settle'.split(),                       # wait for udev rules to fire and settle
       ]).run()])
-    # set usb soundcard to 100% volume
-    tasks += print_progress([Task('set usb soundcard to 100% volume', 'amixer -Dusb71 cset numid=8 100%'.split()).run()])
+    # disable pulseaudio (it was muting some inputs and is not needed)
+    tasks += print_progress([Task('disable pulseaudio', multiargs=[
+        'systemctl --user mask pulseaudio.socket'.split(),
+        'systemctl --user mask pulseaudio.service'.split(),
+      ]).run()])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
@@ -433,6 +498,23 @@ Type=simple
 WorkingDirectory={directory}
 ExecStart={directory}/venv/bin/python -m amplipi.display.display
 Restart=on-abort
+
+[Install]
+WantedBy=default.target
+"""
+
+def _audiodetector_service(directory: str):
+  return f"""\
+[Unit]
+Description=Amplipi RCA Input Audio Detector
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={directory}/config/srcs
+ExecStart={directory}/amplipi/audiodetector/audiodetector
+Restart=on-failure
+RestartSec=10
 
 [Install]
 WantedBy=default.target
@@ -677,6 +759,23 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+def _update_audiodetector(env: dict, progress) -> List[Task]:
+  """ Create and run the RCA input audio detector service if on AmpliPi hardware """
+  def print_progress(tasks):
+    progress(tasks)
+    return tasks
+  if not env['is_amplipi']:
+    return [Task(name='Update Audio Detector', output = 'Not on AmpliPi', success=False)]
+  tasks = []
+  tasks += print_progress([Task('Build audiodetector', f'make -C {env["base_dir"]}/amplipi/audiodetector'.split()).run()])
+  tasks += print_progress(_create_service('amplipi-audiodetector', _audiodetector_service(env['base_dir'])))
+  tasks += print_progress(_restart_service('amplipi-audiodetector'))
+  tasks += print_progress(_enable_service('amplipi-audiodetector'))
+  # start the user manager at boot, instead of after first login
+  # this is needed so the user systemd services start at boot
+  tasks += print_progress(_enable_linger(env['user']))
+  return tasks
+
 def _check_password(env: dict, progress) -> List[Task]:
   """ If a random default password hasn't been generated, generate, set, and
       store one. This is just for older AmpliPi versions that didn't get a
@@ -717,26 +816,26 @@ def _fw_ver_from_filename(name: str) -> int:
   return 0
 
 def _update_firmware(env: dict, progress) -> List[Task]:
-  """ If on AmpliPi hardware, update to the latest firmware """
-  task = Task('Flash latest firmware')
-  latest_ver = 0
-  latest_file = ''
-  for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
-    ver = _fw_ver_from_filename(f)
-    if ver > latest_ver:
-      latest_ver = ver
-      latest_file = f
-  if latest_ver > 0:
-    if env['is_amplipi']:
+  """ If on AmpliPi with preamp hardware, update to the latest firmware """
+  task = Task('Flash latest preamp firmware')
+  if env['is_amplipi'] and not env['is_streamer']:
+    latest_ver = 0
+    latest_file = ''
+    for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
+      ver = _fw_ver_from_filename(f)
+      if ver > latest_ver:
+        latest_ver = ver
+        latest_file = f
+    if latest_ver > 0:
       os.chdir(env['base_dir'])
       task.margs = [f'bash scripts/program_firmware {latest_file}'.split()]
       task.run()
     else:
-      task.output = 'Not on AmpliPi'
+      task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
       task.success = False
   else:
-    task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
-    task.success = False
+    task.output = 'Not on AmpliPi with Preamp - No firmware update necessary'
+    task.success = True
   progress([task])
   return [task]
 
@@ -791,7 +890,8 @@ def add_tests(env, progress) -> List[Task]:
   return tasks
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
-            display=True, firmware=True, password=True, progress=print_task_results) -> bool:
+            display=True, audiodetector=True, firmware=True, password=True,
+            progress=print_task_results) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -803,7 +903,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
 
   env = _check_and_setup_platform()
   if not env['platform_supported']:
-    tasks[0].output = f'untested platform: {platform.platform()}. Please fix this this script and make a PR to github.com/micro-nova/AmpliPi'
+    tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
   else:
     tasks[0].output = str(env)
     tasks[0].success = True
@@ -821,7 +921,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       print('OS dependency install step failed, exiting...')
       return False
   if python_deps:
-    with open(os.path.join(env['base_dir'], 'requirements.txt')) as req:
+    with open(os.path.join(env['base_dir'], 'requirements.txt'), encoding='utf-8') as req:
       deps = req.read().splitlines()
       # TODO: embed python progress reporting
       py_tasks = _install_python_deps(env, deps)
@@ -834,8 +934,16 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_web(env, restart_updater, progress)
     if failed():
       return False
+    # The is_streamer detection will happen in the update_web task
+    # we need to refresh this detection, just in case the flag changed
+    # the update_firmware task depends on this flag
+    _check_and_update_streamer(env)
   if display:
     tasks += _update_display(env, progress)
+    if failed():
+      return False
+  if audiodetector and not env['is_streamer']:
+    tasks += _update_audiodetector(env, progress)
     if failed():
       return False
   if firmware:
@@ -875,6 +983,8 @@ if __name__ == '__main__':
   # --restart-updater is needed by the web updater and hasn't been changed to --reboot to simplify updgrade/downgrade logic
   parser.add_argument('--display', action='store_true', default=False,
     help="Install and run the front-panel display service")
+  parser.add_argument('--audiodetector', action='store_true', default=False,
+    help="Install and run the RCA input audio detector service")
   parser.add_argument('--firmware', action='store_true', default=False,
     help="Flash the latest firmware")
   parser.add_argument('--password', action='store_true', default=False,
@@ -887,5 +997,6 @@ if __name__ == '__main__':
   if sys.version_info.major < 3 or sys.version_info.minor < 7:
     print('  WARNING: minimum python version is 3.7')
   install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
-          display=flags.display, firmware=flags.firmware, password=flags.password,
+          display=flags.display, audiodetector=flags.audiodetector,
+          firmware=flags.firmware, password=flags.password,
           restart_updater=flags.restart_updater)

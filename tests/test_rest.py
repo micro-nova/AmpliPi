@@ -11,6 +11,8 @@ import tempfile
 import os
 from copy import deepcopy # copy test config
 
+import time
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -25,16 +27,23 @@ import netifaces as ni
 
 TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
 
+NO_SOURCE = -1 # Allows a zone to be disconnected from any source
+
 # add several groups and most of the default streams to the config
 TEST_CONFIG['groups'] = [
   {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
   {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
   {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
 ]
+RCAs =  amplipi.ctrl.RCAs
 AP_STREAM_ID = 1000
 P_STREAM_ID = 1001
 TEST_CONFIG['streams'] = [
-  {"id": AP_STREAM_ID, "name": "AmpliPi", "type": "shairport"},
+  {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0},
+  {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1},
+  {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2},
+  {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3},
+  {"id": AP_STREAM_ID, "name": "AmpliPi", "type": "shairport", "ap2": False},
   {"id": P_STREAM_ID, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
   {"id": 1002, "name": "AmpliPi", "type": "spotify"},
   {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
@@ -222,7 +231,10 @@ def check_config(expected, actual):
         assert iact["name"] == exp_ids[iact["id"]]["name"], f'{iact["name"]} does not match expected={exp_ids[iact["id"]]["name"]}'
     else:
       assert t in actual, f'missing field {t}, it is still expected to be generated empty even though it not specified in the expected configuration'
-      assert len(actual[t]) == 0, f'{t} should be empty since it is not preset in expected config'
+      if t == 'streams':
+        assert len(actual[t]) == 4, f'{t} should be populated by the 4 default RCA streams'
+      else:
+        assert len(actual[t]) == 0, f'{t} should be empty since it is not preset in expected config'
 
 def test_load_og_config(client):
   """ Reload the initial configuration """
@@ -256,6 +268,24 @@ def test_load_stream_missing_config(client):
     check_config(amplipi.models.Status().dict(), rv.json())
     assert status['sources'][0]['input'] == ''
 
+def test_load_old_config(client):
+  """ Test that an old config has its RCA input names updated """
+  # convert the config into something that looks like an old config
+  source_names = ['tv', 'record player', 'cd player', 'jukebox']
+  old_config = base_config_copy()
+  for i in range(4):
+    rca_stream = old_config['streams'].pop(0)
+    assert rca_stream['type'] == 'rca'
+  for src in old_config['sources']:
+    src['name'] = source_names[src['id']]
+  # load the old config, the value returned should be a config that has been converted
+  rv = client.post('/api/load', json=old_config)
+  assert rv.status_code == HTTPStatus.OK
+  status = rv.json()
+  for s in status['streams']:
+    if s['type'] == 'rca':
+      assert s['name'] == source_names[s['index']], print('old source name was not converted to rca stream name')
+
 def test_load_multi_config(client):
   """ Load multiple configurations """
   # create a test config with a multiple connected stream
@@ -264,8 +294,8 @@ def test_load_multi_config(client):
   if 'streams' in multi_stream_cfg:
     multi_stream_cfg['sources'][0]['input'] = sinputs[0]
     multi_stream_cfg['sources'][1]['input'] = sinputs[1]
-    assert multi_stream_cfg['streams'][0]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
-    assert multi_stream_cfg['streams'][1]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
+    assert multi_stream_cfg['streams'][4]['id'] == AP_STREAM_ID, f"Test config expects a stream with id={AP_STREAM_ID}"
+    assert multi_stream_cfg['streams'][5]['id'] == P_STREAM_ID, f"Test config expects a stream with id={P_STREAM_ID}"
   # create a simple config with a single stream connected, with metadata representing raw config load
   single_stream_cfg = amplipi.models.Status().dict()
   single_stream_cfg['sources'][0] = {
@@ -286,6 +316,10 @@ def test_load_multi_config(client):
     }
   }
   single_stream_cfg['streams'] = [
+    {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0},
+    {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1},
+    {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2},
+    {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3},
     {"id": 2000, 'name': 'Groove Salad', "type": "internetradio",
      "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"}
   ]
@@ -374,13 +408,19 @@ def test_patch_source_name(client, sid):
   assert s['name'] == 'patched-name'
 
 @pytest.mark.parametrize('src_id', base_source_ids())
-@pytest.mark.parametrize('_input', ['stream=1001', 'stream=-1', 'local', '']) # add a non-existent stream
+@pytest.mark.parametrize('_input', ['stream=1001', 'stream=-1', 'stream=RCA', 'stream=WRONG_RCA', '']) # add a non-existent stream
 def test_patch_source_input(client, src_id, _input):
   """ Try changing a source's input """
   last_state = status_copy(client)
+  wrong_rca = False
+  if 'WRONG_RCA' in _input:
+    wrong_rca = True
+    _input = _input.replace('WRONG_RCA', str(RCAs[src_id-1]))
+  elif 'RCA' in _input:
+    _input = _input.replace('RCA', str(RCAs[src_id]))
   stream_id = int(_input.split('stream=')[1]) if _input and 'stream=' in _input else -1
   rv = client.patch('/api/sources/{}'.format(src_id), json={'input': _input})
-  if _input == 'local' or _input == '' or find(last_state['streams'], stream_id):
+  if _input == '' or (find(last_state['streams'], stream_id) and not wrong_rca):
     assert rv.status_code == HTTPStatus.OK
     jrv = rv.json()
     s = find(jrv['sources'], src_id)
@@ -459,6 +499,30 @@ def test_patch_zone_mute_disable(client, zid):
   s = find(jrv['zones'], zid)
   assert s is not None
   assert s['mute'] == True # a disabled zone overrides/forces mute
+
+@pytest.mark.parametrize('zid', base_zone_ids())
+def test_patch_zone_mute_disconnect(client, zid):
+  """ Unmute then disconnect a zone """
+  rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False, 'vol_f': 0.5})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['mute'] == False
+  assert s['vol_f'] == 0.5
+  rv = client.patch('/api/zones/{}'.format(zid), json={'source_id': NO_SOURCE})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['source_id'] == -1
+  assert s['mute'] == True
+  rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['mute'] == True # a disconnected zone overrides/forces mute
 
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_patch_zones(client, sid):
@@ -555,7 +619,11 @@ def test_delete_group(client, gid):
 # test streams
 def base_stream_ids():
   """ Return all of the stream IDs belonging to each of the streams in the base config """
-  return [ s['id'] for s in base_config()['streams']]
+  return [s['id'] for s in base_config()['streams']]
+
+def removable_stream_ids():
+  """ Only removable streams (RCAs are exempt) """
+  return [s for s in base_stream_ids() if s not in RCAs]
 
 # /stream post-stream
 def test_create_pandora(client):
@@ -604,13 +672,49 @@ def test_patch_stream_rename(client, sid):
   assert s is not None
   assert s['name'] == 'patched-name'
 
+@pytest.mark.parametrize('sid', base_stream_ids())
+@pytest.mark.parametrize('disable', [True, False])
+def test_patch_stream_disable(client, sid, disable):
+  """ Try disabling a stream """
+  last_state = status_copy(client)
+  rv = client.patch('/api/streams/{}'.format(sid), json={'disabled': disable})
+  if find(last_state['streams'], sid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was disabled
+  s = find(jrv['streams'], sid)
+  assert s is not None
+  assert s['disabled'] == disable
+
+@pytest.mark.parametrize('ap2', [True, False])
+def test_patch_stream_ap2(client, ap2):
+  """ Try configuring the ap2 field of an airplay stream """
+  last_state = status_copy(client)
+  sid = AP_STREAM_ID
+  rv = client.patch('/api/streams/{}'.format(sid), json={'ap2': ap2})
+  if find(last_state['streams'], sid):
+    assert rv.status_code == HTTPStatus.OK
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was configured to ap2
+  s = find(jrv['streams'], sid)
+  assert s is not None
+  assert s['ap2'] == ap2
+
 # /streams/{streamId} delete-stream
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_delete_stream(client, sid):
   """ Try deleting a stream  """
   last_state = status_copy(client)
   rv = client.delete('/api/streams/{}'.format(sid))
-  if find(last_state['streams'], sid):
+  if find(last_state['streams'], sid) and sid in removable_stream_ids():
     assert rv.status_code == HTTPStatus.OK
   else:
     assert rv.status_code != HTTPStatus.OK
@@ -630,12 +734,15 @@ def test_delete_connected_stream(client, sid):
   """ Delete a connected stream and make sure it gets disconnected from the source it is connected to"""
   last_state = status_copy(client)
   rv = client.patch('/api/sources/0', json={'input': f'stream={sid}'})
-  if find(last_state['streams'], sid):
+  if find(last_state['streams'], sid) and sid not in RCAs[1:4]:
     assert rv.status_code == HTTPStatus.OK
   else:
     assert rv.status_code != HTTPStatus.OK
     return
   rv = client.delete(f'/api/streams/{sid}')
+  if sid in RCAs:
+    assert rv.status_code != HTTPStatus.OK
+    return
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json() # get the system state returned
   assert jrv['sources'][0]['input'] == ''
@@ -760,7 +867,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
     # check for streams that are used but unavailable
     effected_source_inputs = { s.get('input', None) for s in p['state'].get('sources', [])}
     for _input in effected_source_inputs:
-      if _input in ['', 'local']:
+      if _input in ['']:
         pass
       elif 'stream=' in _input:
         stream_id = int(_input.split('stream=')[1])

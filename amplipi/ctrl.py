@@ -26,21 +26,25 @@ from enum import Enum
 
 from copy import deepcopy
 import os # files
+from pathlib import Path
 import time
 
 import threading
 import wrapt
 
-import amplipi.models as models
-import amplipi.rt as rt
+from amplipi import models
+from amplipi import rt
+from amplipi import utils
 import amplipi.streams
-import amplipi.utils as utils
+from amplipi.eeprom import EEPROM, BoardType
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
 USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 MUTE_ALL_ID = 10000
 LMS_DEFAULTS = [1000, 1001, 1002, 1003]
+LAST_PRESET_ID = 9999
+RCAs = [996, 997, 998, 999]
 
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
@@ -85,6 +89,7 @@ class Api:
   # pylint: disable=too-many-instance-attributes
   # pylint: disable=too-many-public-methods
 
+  # TODO: move these variables to the init, they should not be class variables.
   _initialized = False # we need to know when we initialized first
   _mock_hw: bool
   _mock_streams: bool
@@ -95,10 +100,10 @@ class Api:
   config_file: str
   backup_config_file: str
   config_file_valid: bool
+  is_streamer: bool
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
 
-  _LAST_PRESET_ID = 9999
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
       {"id":  0, "name":  "Input 1", "input": ""},
@@ -114,6 +119,10 @@ class Api:
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
     "streams": [
+      {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0, "disabled": False},
+      {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1, "disabled": False},
+      {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2, "disabled": False},
+      {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3, "disabled": False},
       {"id": LMS_DEFAULTS[0], "name": "Music 1", "type": "lms", "server": "localhost"},
       {"id": LMS_DEFAULTS[1], "name": "Music 2", "type": "lms", "server": "localhost"},
       {"id": LMS_DEFAULTS[2], "name": "Music 3", "type": "lms", "server": "localhost"},
@@ -146,6 +155,32 @@ class Api:
       },
     ]
   }
+
+  STREAMER_CONFIG = { # This is the system state response that will come back from the amplipi box
+    "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
+      {"id": 0, "name": "Input 1", "input": ""},
+      {"id": 1, "name": "Input 2", "input": ""},
+      {"id": 2, "name": "Input 3", "input": ""},
+      {"id": 3, "name": "Input 4", "input": ""},
+      # add temporary virtual sources
+      {"id":  4, "name":  "Input 5", "input": f"stream={LMS_DEFAULTS[0]}", "pipe_to": 0},
+      {"id":  5, "name":  "Input 6", "input": f"stream={LMS_DEFAULTS[1]}", "pipe_to": 1},
+      {"id":  6, "name":  "Input 7", "input": f"stream={LMS_DEFAULTS[2]}", "pipe_to": 2},
+      {"id":  7, "name":  "Input 8", "input": f"stream={LMS_DEFAULTS[3]}", "pipe_to": 3},
+    ],
+    "streams": [
+      {"id": LMS_DEFAULTS[0], "name": "Music 1", "type": "lms", "server": "localhost"},
+      {"id": LMS_DEFAULTS[1], "name": "Music 2", "type": "lms", "server": "localhost"},
+      {"id": LMS_DEFAULTS[2], "name": "Music 3", "type": "lms", "server": "localhost"},
+      {"id": LMS_DEFAULTS[3], "name": "Music 4", "type": "lms", "server": "localhost"},
+    ],
+    "zones": [ # this is an array of zones, array length depends on # of boxes connected
+    ],
+    "groups": [
+    ],
+    "presets" : [
+    ]
+  }
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
   # with this reinit will be called connect and will attempt to load the configutation and connect to an AmpliPi (mocked or real)
   # returning a boolean on whether or not it was successful
@@ -164,7 +199,19 @@ class Api:
     self._delay_saves = settings.delay_saves
     self._settings = settings
 
-    # Create firmware interface. If one already exists delete then re-init.
+    # try to get a list of available boards to determine if we are a streamer
+    # the preamp hardware is not available on a streamer
+    # we need to know this before trying to intiialize the firmware
+    found_boards = []
+    try:
+      found_boards = EEPROM.get_available_devices(0)
+    except Exception as exc:
+      print(f'Error finding boards: {exc}')
+
+    # check if we are a streamer
+    self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards
+
+    # Create firmware interface if needed. If one already exists delete then re-init.
     if self._initialized:
       # we need to make sure to mute every zone before resetting the fw
       zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones], update=models.ZoneUpdate(mute=True))
@@ -173,10 +220,10 @@ class Api:
         del self._rt # remove the low level hardware connection
       except AttributeError:
         pass
-    self._rt = rt.Mock() if settings.mock_ctrl else rt.Rpi() # reset the fw
+    self._rt = rt.Mock() if settings.mock_ctrl or self.is_streamer else rt.Rpi() # reset the fw
 
     # test open the config file, this will throw an exception if there are issues writing to the file
-    with open(settings.config_file, 'a'): # use append more to make sure we have read and write permissions, but won't overrite the file
+    with open(settings.config_file, 'a', encoding='utf-8'): # use append more to make sure we have read and write permissions, but won't overrite the file
       pass
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
@@ -195,15 +242,32 @@ class Api:
             self.status = models.Status.parse_file(cfg_path)
             loaded_config = True
             break
-          errors.append('config file "{}" does not exist'.format(cfg_path))
+          errors.append(f'config file "{cfg_path}" does not exist')
         except Exception as exc:
           self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
-          errors.append('error loading config file: {}'.format(exc))
+          errors.append(f'error loading config file: {exc}')
 
+    # make a config flag to recognize this unit's subtype
+    # this helps the updater make good decisions
+    is_streamer_path = Path(USER_CONFIG_DIR, 'is_streamer')
+    try:
+      if self.is_streamer:
+        is_streamer_path.touch()
+      elif is_streamer_path.exists():
+        os.remove(is_streamer_path)
+    except Exception as exc:
+      print("Error setting is_streamer flag: {exc}")
+
+    # load a good default config depending on the unit subtype
     if not loaded_config:
-      print(errors[0])
-      print('using default config')
-      self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
+      if len(errors) > 0:
+        print(errors[0])
+      if self.is_streamer:
+        print('using streamer config')
+        self.status = models.Status.parse_obj(self.STREAMER_CONFIG)
+      else:
+        print('using default config')
+        self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
       self.save()
 
     # populate system info
@@ -221,13 +285,17 @@ class Api:
     self._update_sys_info() # TODO: does sys info need to be updated at init time?
 
     # detect missing zones
-    if self._mock_hw:
+    if self._mock_hw and not self.is_streamer:
       # only allow 6 zones when mocked to simplify testing
       # add more if needed by specifying them in the config
       potential_zones = range(6)
+    elif self.is_streamer:
+      # streamer has no zones
+      potential_zones = range(0)
     else:
       potential_zones = range(rt.MAX_ZONES)
     added_zone = False
+
     for zid in potential_zones:
       _, zone = utils.find(self.status.zones, zid)
       if zone is None and self._rt.exists(zid):
@@ -245,6 +313,27 @@ class Api:
         for z in self.status.zones:
           if z.id not in muted_zones:
             mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
+
+    # configure Aux and SPDIF
+    utils.configure_inputs()
+
+    if not self.is_streamer:
+      # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
+      for rca_id in RCAs:
+        sid, stream = utils.find(self.status.streams, rca_id)
+        if sid is None:
+          idx = rca_id - RCAs[0]
+          # try to use the old name in the source if it was renamed from the default name of 1-4
+          input_name = f'Input {idx + 1}'
+          try:
+            src_name = self.status.sources[idx].name
+            if not src_name.isdigit():
+              input_name = src_name
+          except Exception as e:
+            print(f'Error discovering old source name for conversion to RCA stream: {e}')
+            print(f'- Defaulting name to: {input_name}')
+          rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
+          self.status.streams.insert(idx, rca_stream)
 
     # configure all streams into a known state
     self.streams: Dict[int, amplipi.streams.AnyStream] = {}
@@ -264,22 +353,62 @@ class Api:
     while len(self.status.sources) < 8:
       sid = len(self.status.sources)
       print(f'Config is missing source {sid}, adding it back')
-      pipe_to = sid % 4 if sid >= 4 else None # the last four sources just connect to the first four
+      pipe_to = sid % 4 if sid >= models.MAX_REAL_SOURCES else None # the last four sources just connect to the first four
       if pipe_to is None:
         name = f'Input {sid + 1}'
       else:
         name = f'Virtual input {sid + 1}'
       self.status.sources.append(models.Source(id=sid, name=name, input='', pipe_to=pipe_to))
     # setup the last four sources to use host lms
-    if len(lms_streams) >= 4:
-      for src in self.status.sources[4:8]:
+    if len(lms_streams) >= models.MAX_REAL_SOURCES:
+      for src in self.status.sources[models.MAX_REAL_SOURCES:models.MAX_SOURCES]:
         if src.id is not None:
-          lms = lms_streams[src.id - 4]
+          lms = lms_streams[src.id - models.MAX_REAL_SOURCES]
           src.input = f'stream={lms.id}'
 
+    # add/remove dynamic bluetooth stream
+    bt_streams = [sid for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.Bluetooth)]
+    if amplipi.streams.Bluetooth.is_hw_available() and not self._mock_hw:
+      print('bluetooth dongle available')
+      # make sure one stream is available
+      if len(bt_streams) == 0:
+        print('no bt streams present. creating one')
+        self.create_stream(models.Stream(type='bluetooth', name='Bluetooth'), internal=True)
+      elif len(bt_streams) > 1:
+        print('bt streams present. removing all but one')
+        for s in bt_streams[1:]:
+          self.delete_stream(s, internal=True)
+    else:
+      print('bluetooth dongle unavailable')
+      if len(bt_streams) > 0:
+        print('bt streams present. removing all')
+        for s in bt_streams:
+          self.delete_stream(s, internal=True)
+
     # configure all sources so that they are in a known state
-    for i, src in enumerate(self.status.sources):
-      assert i == src.id, 'source index does not march ordering, invalid configuration'
+    # only models.MAX_SOURCES are supported, keep the config from adding extra
+    # this helps us transition from weird and experimental configs
+    try:
+      self.status.sources[:] = self.status.sources[0:models.MAX_SOURCES]
+    except Exception as exc:
+      print(f'Error configuring sources: using all defaults')
+      self.status.sources[:] = [models.Source(id=i, name=f'Input {i+1}') for i in range(models.MAX_REAL_SOURCES)]
+    # populate any missing sources, to match the underlying system's capabilities
+    for sid in range(len(self.status.sources), models.MAX_SOURCES):
+      print(f'Error: missing source {sid}, inserting default source')
+      if sid < models.MAX_REAL_SOURCES:
+        self.status.sources.insert(sid, models.Source(id=sid, name=f'Input {sid+1}'))
+      else:
+        aliased_sid = sid - models.MAX_REAL_SOURCES
+        self.status.sources.insert(sid, models.Source(id=sid, name=f'Input {sid+1}', \
+                                                      input=f"stream={LMS_DEFAULTS[aliased_sid]}", pipe_to=aliased_sid))
+    # sequentially number sources if necessary
+    for sid, src in enumerate(self.status.sources):
+      if src.id != sid:
+        print(f'Error: source at index {sid} is not sequentially numbered, fixing')
+        src.id = sid
+    # configure all of the sources, now that they are layed out as expected
+    for src in self.status.sources:
       if src.id is not None:
         try:
           update = models.SourceUpdate(input=src.input)
@@ -290,8 +419,8 @@ class Api:
           update = models.SourceUpdate(input='')
           try:
             self.set_source(src.id, update, force_update=True, internal=True)
-          except Exception as e2:
-            print(f'Error configuring source {src.id}: {e2}')
+          except Exception as e_empty:
+            print(f'Error configuring source {src.id}: {e_empty}')
             print(f'Source {src.id} left uninitialized')
 
     # configure all of the zones so that they are in a known state
@@ -314,9 +443,20 @@ class Api:
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()
-    # put the firmware in a reset state (should mute all audio)
+    # lower the volume on any unmuted zone to limit popping
+    # behind the scenes the firmware will gradually lower the volume until the output is effectively muted
+    # muting is more likely to cause popping
+    # we use the low level rt calls to avoid changing the configuration
+    vol_changes = False
+    for z in self.status.zones:
+      if not z.mute:
+        self._rt.update_zone_vol(z.id, models.MIN_VOL_DB)
+        vol_changes = True
+    if vol_changes:
+      # wait for the changes to take effect (we observed a tiny pop without this)
+      time.sleep(0.080)
+    # put the firmware in a reset state
     self._rt.reset()
-    print('controller shutdown complete')
 
   def save(self) -> None:
     """ Saves the system state to json"""
@@ -326,11 +466,11 @@ class Api:
         if os.path.exists(self.backup_config_file):
           os.remove(self.backup_config_file)
         os.rename(self.config_file, self.backup_config_file)
-      with open(self.config_file, 'w') as cfg:
+      with open(self.config_file, 'w', encoding='utf-8') as cfg:
         cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as exc:
-      print('Error saving config: {}'.format(exc))
+      print(f'Error saving config: {exc}')
 
   def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
@@ -349,16 +489,26 @@ class Api:
     else:
       self.save()
 
-  @staticmethod
-  def _is_digital(src_type: str) -> bool:
-    """Determines whether a source type, @src_type, is analog or digital
+  def _is_digital(self, sinput: str) -> bool:
+    """Determines whether a source input, @sinput, is analog or digital
+    @sinput is expected to be one of the following:
 
-      'local' is the analog input, anything else is some sort of digital streaming source.
-      The runtime only has the concept of digital or analog
+    | str                  | meaning  | analog or digital? |
+    | -------------------- | -------- | ------------------ |
+    | ''                   | no input | digital            |
+    | 'stream={stream_id}' | a stream | analog or digital (depending on stream_id's stream type) |
+
+    The runtime only has the concept of digital or analog.
+    The system defaults to digital as an undriven analog input acts as an antenna,
+     producing a small amount of white noise.
     """
-    return src_type != 'local'
+    try:
+      sid = int(sinput.replace('stream=',''))
+      return sid not in RCAs
+    except:
+      return True
 
-  def get_inputs(self, src: models.Source) -> Dict[str, str]:
+  def get_inputs(self, src: models.Source) -> Dict[Optional[str], str]:
     """Gets a dictionary of the possible inputs for a source
 
       Returns:
@@ -367,22 +517,26 @@ class Api:
         Get the possible inputs for any source (only one stream)
 
         >>> my_amplipi.get_inputs()
-        { None, '', 'local', 'Local', 'stream=9449' }
+        { None: '', 'stream=9449': 'Matt and Kim Radio' }
     """
-    inputs: Dict[str, str] = {'': ''}
-    is_virtual = src.pipe_to is not None
-    if not is_virtual:
-      inputs['local'] = f'{src.name} - rca'
-    streams = self.get_state().streams
-    for stream in streams:
+    inputs: Dict[Optional[str], str] = {None: ''}
+    for sid, stream in self.streams.items():
+      connectable = stream.requires_src() in [None, src.id] # TODO: remove this filter when sources can dynamically change output
       # we don't want users to switch to the always on LMS streams
-      if not (stream.type == 'lms' and stream.id in LMS_DEFAULTS):
-        inputs[f'stream={stream.id}'] = f'{stream.name} - {stream.type}'
-    if src.id is not None and len(self.status.sources) >= 8:
-      aliasing_source = self.status.sources[src.id + 4]
-      _, aliased_stream = utils.find(streams, aliasing_source.get_stream())
-      if aliased_stream:
-        inputs[''] = aliased_stream.name
+      if stream.stype == 'lms' and sid in LMS_DEFAULTS:
+        connectable = False
+      connected = src.get_stream()
+      if sid == connected:
+        assert connectable, print(f'Source {src} has invalid input: stream={connected}')
+      if (sid == connected or not stream.disabled) and connectable:
+        inputs[f'stream={sid}'] = stream.full_name()
+    # show aliased source instead of the None input when we have virtual sources
+    if src.id is not None and len(self.status.sources) > src.id + models.MAX_REAL_SOURCES:
+      aliasing_source = self.status.sources[src.id + models.MAX_REAL_SOURCES]
+      aliased_stream_id = aliasing_source.get_stream()
+      if aliased_stream_id is not None:
+        aliased_stream = self.streams[aliased_stream_id]
+        inputs[None] = aliased_stream.name
     return inputs
 
   def _check_is_online(self) -> bool:
@@ -390,7 +544,7 @@ class Api:
     try:
       with open(os.path.join(USER_CONFIG_DIR, 'online'), encoding='utf-8') as fonline:
         online = 'online' in fonline.readline()
-    except Exception as exc:
+    except Exception:
       pass
     return online
 
@@ -399,7 +553,7 @@ class Api:
     try:
       with open(os.path.join(USER_CONFIG_DIR, 'latest_release'), encoding='utf-8') as flatest:
         release = flatest.readline().strip()
-    except Exception as exc:
+    except Exception:
       pass
     return release
 
@@ -434,9 +588,9 @@ class Api:
       self._update_src_info(src)
     # use the aliased sources info when input is None
     if len(self.status.sources) >= 8:
-      for i, src in enumerate(self.status.sources[0:4]):
+      for i, src in enumerate(self.status.sources[0:models.MAX_REAL_SOURCES]):
         if src.input == '' or src.input is None:
-          src.info = self.status.sources[i + 4].info
+          src.info = self.status.sources[i + models.MAX_REAL_SOURCES].info
     return self.status
 
   def get_info(self) -> models.Info:
@@ -479,22 +633,28 @@ class Api:
       return self.streams.get(idx, None)
     return None
 
-  def _update_src_info(self, src):
+  def _update_src_info(self, src: models.Source):
     """ Update a source's status and song metadata """
     stream_inst = self.get_stream(src)
     if stream_inst is not None:
       src.info = stream_inst.info()
-    elif src.input == 'local' and src.id is not None:
-      # RCA, name mimics the steam's formatting
-      src.info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=f'{src.name} - rca', state='unknown')
     else:
       src.info = models.SourceInfo(img_url='static/imgs/disconnected.png', name='None', state='stopped')
+
+  def _get_source_config(self, sources: Optional[List[models.Source]] = None) -> List[bool]:
+    """ Convert the preamp's source configuration """
+    if not sources:
+      sources = self.status.sources
+    src_cfg = [True] * models.MAX_REAL_SOURCES
+    for s, src in enumerate(sources):
+      src_cfg[s] = self._is_digital(src.input)
+    return src_cfg
 
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
 
       Args:
-        id (int): source id [0,3]
+        sid (int): source id [0,3]
         update: changes to source
         force_update: bool, update source even if no changes have been made (for hw startup)
         internal: called by a higher-level ctrl function:
@@ -512,20 +672,39 @@ class Api:
         if input_updated or force_update:
           # shutdown old stream
           old_stream = self.get_stream(src)
-          if old_stream:
+          if old_stream and old_stream.is_connected():
             old_stream.disconnect()
           # start new stream
           last_input = src.input
           src.input = input_ # reconfigure the input so get_stream knows which stream to get
           stream = self.get_stream(src)
           if stream:
-            # update the streams last connected source to have no input, since we have stolen its input
+            stolen_from: Optional[models.Source] = None
             if stream.src is not None and stream.src != idx:
-              other_src = self.status.sources[stream.src]
-              print('stealing {} from source {}'.format(stream.name, other_src.name))
-              other_src.input = ''
-            stream.disconnect()
-            stream.connect(idx)
+              # update the streams last connected source to have no input, since we have stolen its input
+              stolen_from = self.status.sources[stream.src]
+              print(f'stealing {stream.name} from source {stolen_from.name}')
+              stolen_from.input = ''
+            try:
+              if stream.is_connected():
+                stream.disconnect()
+              stream.connect(idx)
+            except Exception as iexc:
+              print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
+              stream.disconnect()
+              if old_stream:
+                print(f'Trying to get back to the previous input: {old_stream.name}')
+                old_stream.connect(idx)
+                src.input = last_input
+              else:
+                src.input = ''
+              # connect the stream back to its old source
+              if stolen_from and stolen_from.id is not None:
+                print(f"Trying to revert src {stolen_from.id}'s input to {stream.name}")
+                stream.connect(stolen_from.id)
+                stolen_from.input = input_
+              # now that we recovered, show that this failed
+              raise iexc
           elif src.input and 'stream=' in src.input: # invalid stream id?
             # TODO: should this stream id validation happen in the Source model?
             src.input = last_input
@@ -533,17 +712,14 @@ class Api:
           rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
           virtual = src.pipe_to is not None
           if (rt_needs_update or force_update) and not virtual:
-            # get the current underlying type of each of the sources, for configuration of the runtime
-            src_cfg = [self._is_digital(self.status.sources[s].input) for s in range(4)]
-            # update this source
-            src_cfg[idx] = self._is_digital(input_)
+            src_cfg = self._get_source_config()
             if not self._rt.update_sources(src_cfg):
               raise Exception('failed to set source')
           self._update_src_info(src) # synchronize the source's info
           # use the aliased sources info when input is None
           if len(self.status.sources) >= 8:
             if input_ == '' or input_ is None:
-              src.info = self.status.sources[idx + 4].info
+              src.info = self.status.sources[idx + models.MAX_REAL_SOURCES].info
         if not internal:
           self.mark_changes()
       else:
@@ -580,17 +756,22 @@ class Api:
         zone.name = name
         zone.disabled = disabled
 
-        # any disabled zone should not be able to play anything, mute it to be sure
-        if zone.disabled and not mute:
+        # parse and check the source id
+        sid = utils.parse_int(source_id, range(models.SOURCE_DISCONNECTED, models.MAX_SOURCES))
+
+        # any zone disabled by source disconnection or a 'disabled' flag should not be able to play anything
+        implicit_mute = zone.disabled or sid == models.SOURCE_DISCONNECTED
+        if implicit_mute and not mute:
           mute = True
           update_mutes = True
 
-        # update the zone's associated source
-        sid = utils.parse_int(source_id, range(len(self.status.sources)))
+        # update the zone's associated source (defaulting to source 0 if disconnected)
         zones = self.status.zones
-        if update_source_id or force_update:
-          zone_sources = [zone.source_id % 4 for zone in zones]
-          zone_sources[idx] = sid % 4 # there are only 4 real sources, virtual sources are mapped
+        if update_source_id or force_update :
+          zone_sources = [zone.source_id for zone in zones]
+          zone_sources[idx] = max(sid, 0) # default disconnected zones to source 0
+          # this is setting the state for all zones
+          # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
           if self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
@@ -798,6 +979,8 @@ class Api:
   def create_stream(self, data: models.Stream, internal=False) -> models.Stream:
     """ Create a new stream """
     try:
+      if not internal and data.type == 'rca':
+        raise Exception(f'Unable to create protected RCA stream, the RCA streams for each RCA input {RCAs} already exist')
       # Make a new stream and add it to streams
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
@@ -837,6 +1020,10 @@ class Api:
     try:
       if sid in LMS_DEFAULTS and isinstance(self.streams[sid], amplipi.streams.LMS):
         raise Exception(f'Protected stream {sid} cannot be deleted')
+      # RCA streams are intrinsic to the hardware and can't be removed
+      if sid in RCAs and isinstance(self.streams[sid], amplipi.streams.RCA):
+        msg = f'Protected stream {sid} cannot be removed, use disabled=True to hide it'
+        raise Exception(msg)
       # if input is connected to a source change that input to nothing
       for src in self.status.sources:
         if src.get_stream() == sid and src.id is not None:
@@ -850,34 +1037,27 @@ class Api:
       if not internal:
         self.mark_changes()
       return ApiResponse.ok()
-    except KeyError as exc:
+    except KeyError :
       msg = f'delete stream failed: {sid} does not exist'
-      if internal:
-        raise Exception(msg) from exc
-      return ApiResponse.error(msg)
     except Exception as exc:
-      msg = f'delete stream failed: {exc}'
-      if internal:
-        raise Exception(msg) from exc
-      return ApiResponse.error(msg)
+      msg =  f'delete stream failed: {exc}'
+    if internal:
+      raise Exception(msg)
+    return ApiResponse.error(msg)
 
   @save_on_success
   def exec_stream_command(self, sid: int, cmd: str) -> ApiResponse:
     """Sets play/pause on a specific pandora source """
-    # TODO: this needs to be handled inside the stream itself, each stream can have a set of commands available
     if int(sid) not in self.streams:
-      return ApiResponse.error('Stream id {} does not exist'.format(sid))
-
+      return ApiResponse.error(f'Stream id {sid} does not exist')
     try:
       stream = self.streams[sid]
     except Exception as exc:
-      return ApiResponse.error('Unable to get stream {}: {}'.format(sid, exc))
-
+      return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
     try:
       stream.send_cmd(cmd)
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
-
     return ApiResponse.ok()
 
   @save_on_success
@@ -894,7 +1074,7 @@ class Api:
     stat_dir = root + '.config/pianobar/stationList'
 
     try:
-      with open(stat_dir, 'r') as file:
+      with open(stat_dir, 'r', encoding='utf-8') as file:
         stations = {}
         for line in file.readlines():
           line = line.strip()
@@ -1001,7 +1181,7 @@ class Api:
     for group in preset_state.groups or []:
       _, groups_to_update = utils.find(self.status.groups, group.id)
       if groups_to_update is None:
-        raise NameError('group {} does not exist'.format(group.id))
+        raise NameError(f'group {group.id} does not exist')
       self.set_group(group.id, group.as_update(), internal=True)
       if group.mute is not None:
         # use the updated group's zones just in case the group's zones were just changed
@@ -1056,10 +1236,10 @@ class Api:
 
       # update last config preset for restore capabilities (creating if missing)
       # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
-      last_pid, _ = utils.find(self.status.presets, self._LAST_PRESET_ID)
+      last_pid, _ = utils.find(self.status.presets, LAST_PRESET_ID)
       status = self.status
       last_config = models.Preset(
-        id=9999,
+        id=LAST_PRESET_ID,
         name='Restore last config',
         last_used=None, # this need to be in javascript time format
         state=models.PresetState(
@@ -1129,7 +1309,7 @@ class Api:
       time.sleep(0.1)
       if stream_inst.state in ['stopped', 'disconnected']:
         break
-    resp4 = self.load_preset(self._LAST_PRESET_ID, internal=True)
+    resp4 = self.load_preset(LAST_PRESET_ID, internal=True)
     resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
     if resp5.code != ApiCode.OK:
       return resp5

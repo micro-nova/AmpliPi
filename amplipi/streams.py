@@ -22,37 +22,40 @@ a consistent interface.
 """
 
 import os
+import traceback
 from re import sub
 import sys
 import subprocess
 import time
-from typing import Union, Optional
+from typing import Union, Optional, List
 import threading
 
-# Used by InternetRadio and Spotify
+import ast
 import json
 import signal
-import ast
 import socket
 import hashlib # md5 for string -> MAC generation
 
-import amplipi.models as models
-import amplipi.utils as utils
+from amplipi import models
+from amplipi import utils
 from amplipi.mpris import MPRIS
+
+# We use Popen for long running process control this error is not useful:
+# pylint: disable=consider-using-with
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
-  with open(filename, 'wt') as cfg_file:
+  with open(filename, 'wt', encoding='utf-8') as cfg_file:
     for key, value in config.items():
       cfg_file.write(f'{key}={value}\n')
 
 def write_sp_config_file(filename, config):
   """ Write a shairport config file (@filename) with a hierarchy of grouped key=value pairs given by @config """
-  with open(filename, 'wt') as cfg_file:
+  with open(filename, 'wt', encoding='utf-8') as cfg_file:
     for group, gconfig in config.items():
       cfg_file.write(f'{group} =\n{{\n')
       for key, value in gconfig.items():
-        if type(value) is str:
+        if isinstance(value, str):
           cfg_file.write(f'  {key} = "{value}"\n')
         else:
           cfg_file.write(f'  {key} = {value}\n')
@@ -60,8 +63,7 @@ def write_sp_config_file(filename, config):
 
 def uuid_gen():
   """ Generates a UUID for use in DLNA and Plexamp streams """
-  u_args = 'uuidgen'
-  uuid_proc = subprocess.run(args=u_args, capture_output=True)
+  uuid_proc = subprocess.run(args='uuidgen', capture_output=True, check=False)
   uuid_str = str(uuid_proc).split(',')
   c_check = uuid_str[0]
   val = uuid_str[2]
@@ -73,13 +75,18 @@ def uuid_gen():
 
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
-  def __init__(self, stype, name, mock=False):
+  def __init__(self, stype: str, name: str, only_src=None, disabled: bool=False, mock=False):
     self.name = name
-    self.proc = None
+    self.disabled = disabled
+    self.proc: Optional[subprocess.Popen] = None
     self.mock = mock
-    self.src = None
+    self.src: Optional[int] = None
+    self.only_src: Optional[int] = only_src
     self.state = 'disconnected'
     self.stype = stype
+
+  def __del__(self):
+    self.disconnect()
 
   def __str__(self):
     connection = f' connected to src={self.src}' if self.src else ''
@@ -99,15 +106,47 @@ class BaseStream:
     self.state = 'disconnected'
     self.src = None
 
+  def disconnect(self):
+    """ Disconnect the stream from an output source """
+    if self._is_running() and self.proc is not None:
+      try:
+        self.proc.kill()
+      except Exception:
+        pass
+    self._disconnect()
+
   def _connect(self, src):
     print(f'{self.name} connected to {src}')
     self.state = 'connected'
     self.src = src
 
+  def is_connected(self) -> bool:
+    return self.src is not None
+
+  def connect(self, src: int):
+    """ Connect the stream to an output source """
+    self._connect(src)
+
+  def reconfig(self, **kwargs):
+    """ Reconfigure a potentially running stream """
+
   def _is_running(self):
     if self.proc:
       return self.proc.poll() is None
     return False
+
+  def info(self) -> models.SourceInfo:
+    """ Get stream info and song metadata """
+    return models.SourceInfo(
+      name=self.full_name(),
+      state=self.state)
+
+  def requires_src(self) -> Optional[int]:
+    """ Check if this stream needs to be connected to a specific source
+
+    returns that source's id or None for any source
+    """
+    return self.only_src
 
   def send_cmd(self, cmd: str) -> None:
     """ Generic send_cmd function. If not implemented in a stream,
@@ -115,18 +154,70 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
+class RCA(BaseStream):
+  """ A built-in RCA input """
+  def __init__(self, name: str, index: int, disabled: bool = False, mock: bool = False):
+    super().__init__('rca', name, only_src=index, disabled=disabled, mock=mock)
+    # for serialiation the stream model's field needs to map to a stream's fields
+    # index is needed for serialization
+    self.index = index
+
+  def reconfig(self, **kwargs):
+    if 'name' in kwargs and kwargs['name'] != self.name:
+      self.name = kwargs['name']
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
+
+  def info(self) -> models.SourceInfo:
+    src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=self.full_name(), state='stopped')
+    playing = False
+    status_file = f'{utils.get_folder("config")}/srcs/rca_status'
+    try:
+      if self.src is not None:
+        with open(status_file, mode='rb') as file:
+          status_all = file.read()[0]
+          playing = (status_all & (0b11 << (self.src * 2))) != 0
+    except FileNotFoundError as error:
+      print(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
+    except Exception as error:
+      print(f'Error getting RCA audio status:\n  {error}')
+    src_info.state = "playing" if playing else "stopped"
+    return src_info
+
+  def connect(self, src):
+    if src != self.only_src:
+      raise Exception(f"Unable to connect RCA {self.only_src} to src {src}, can only be connected to {self.only_src}")
+    self._connect(src)
+
+  def disconnect(self):
+    self._disconnect()
+
 class AirPlay(BaseStream):
   """ An AirPlay Stream """
-  def __init__(self, name, mock=False):
-    super().__init__('airplay', name, mock)
-    self.proc2 = None
-    # TODO: see here for adding play/pause functionality: https://github.com/mikebrady/shairport-sync/issues/223
-    # TLDR: rebuild with some flag and run shairport-sync as a daemon, then use another process to control it
+  def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
+    super().__init__('airplay', name, disabled=disabled, mock=mock)
+    self.mpris = None
+    self.ap2 = ap2
+    self.ap2_exists = False
+    self.supported_cmds = [
+      'play',
+      'pause',
+      'next',
+      'prev'
+      ]
+    self.STATE_TIMEOUT = 300 # seconds
+    self._connect_time = 0
+    self._coverart_dir = ''
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
+      reconnect_needed = True
+    if 'ap2' in kwargs and kwargs['ap2'] != self.ap2:
+      self.ap2 = kwargs['ap2']
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
@@ -142,9 +233,28 @@ class AirPlay(BaseStream):
     """ Connect an AirPlay device to a given audio source
     This creates an AirPlay streaming option based on the configuration
     """
+
+    # if stream is airplay2 check for other airplay2s and error if found
+    # pgrep has it's own process that will include the process name so we sub 1 from the results
+    if self.ap2:
+      if len(os.popen("pgrep -f shairport-sync-ap2").read().strip().splitlines())-1 > 0:
+        self.ap2_exists = True
+        self._connect(src)
+        print('Another Airplay 2 stream is already in use, unable to start, mocking connection.')
+        return
+      else:
+        # this persists when you restart a stream so we also set it to false
+        self.ap2_exists = False
+
     if self.mock:
       self._connect(src)
       return
+
+    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'rm -f {src_config_folder}/currentSong')
+    self._connect_time = time.time()
+    self._coverart_dir = f'{utils.get_folder("web")}/generated/{src}'
+
     config = {
       'general': {
         'name': self.name,
@@ -153,81 +263,141 @@ class AirPlay(BaseStream):
         'drift': 2000, # allow this number of frames of drift away from exact synchronisation before attempting to correct it
         'resync_threshold': 0, # a synchronisation error greater than this will cause resynchronisation; 0 disables it
         'log_verbosity': 0, # "0" means no debug verbosity, "3" is most verbose.
+        'mpris_service_bus': 'Session',
       },
       'metadata':{
         'enabled': 'yes',
         'include_cover_art': 'yes',
-        'pipe_name': f'{utils.get_folder("config")}/srcs/{src}/shairport-sync-metadata',
-        'pipe_timeout': 5000,
+        'cover_art_cache_directory': self._coverart_dir,
       },
       'alsa': {
         'output_device': utils.output_device(src), # alsa output device
         'audio_backend_buffer_desired_length': 11025 # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
       },
     }
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
-    os.system(f'rm -f {src_config_folder}/currentSong')
-    web_dir = f"{utils.get_folder('web/generated')}/shairport/srcs/{src}"
+
     # make all of the necessary dir(s)
-    os.system(f'rm -r -f {web_dir}')
-    os.system(f'mkdir -p {web_dir}')
+    os.system(f'rm -r -f {self._coverart_dir}')
+    os.system(f'mkdir -p {self._coverart_dir}')
     os.system(f'mkdir -p {src_config_folder}')
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
-    shairport_args = f'shairport-sync -c {config_file}'.split(' ')
-    meta_args = [f"{utils.get_folder('streams')}/shairport_metadata.bash", src_config_folder, web_dir]
+    shairport_args = f"{utils.get_folder('streams')}/shairport-sync{'-ap2' if self.ap2 else ''} -c {config_file}".split(' ')
     print(f'shairport_args: {shairport_args}')
-    print(f'meta_args: {meta_args}')
-    # TODO: figure out how to get status from shairport
+
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    self.proc2 = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    try:
+      mpris_name = 'ShairportSync'
+      # If there are multiple shairport-sync processes, add the pid to the mpris name
+      # shairport sync only adds the pid to the mpris name if it cannot use the default name
+      if len(os.popen("pgrep shairport-sync").read().strip().splitlines()) > 1:
+        mpris_name += f".i{self.proc.pid}"
+      self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
+    except Exception as exc:
+      print(f'Error starting airplay MPRIS reader: {exc}')
     self._connect(src)
 
   def disconnect(self):
+    print(f'disconnecting {self.name}!')
+    if self.mpris:
+      self.mpris.close()
+    self.mpris = None
     if self._is_running():
-      os.killpg(os.getpgid(self.proc2.pid), signal.SIGKILL)
-      self.proc.kill()
+      self.proc.stdin.close()
+      print('stopping shairport-sync')
+      self.proc.terminate()
+      if self.proc.wait(1) != 0:
+        print('killing shairport-sync')
+        self.proc.kill()
+    if self.src:
+      try:
+        subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
+      except Exception as e:
+        print(f'Error removing airplay config files: {e}')
     self._disconnect()
-    self.proc2 = None
     self.proc = None
 
   def info(self) -> models.SourceInfo:
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
-    loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=self.full_name(), state=self.state)
-    source.img_url = 'static/imgs/shairport.png'
+    source = models.SourceInfo(
+      name=f"Connect to {self.name} on Airplay{'2' if self.ap2 else ''}",
+      state=self.state,
+      img_url='static/imgs/shairport.png'
+    )
+
+    # if stream is airplay2 and other airplay2s exist show error message
+    if self.ap2:
+      if self.ap2_exists:
+        source.name = 'An Airplay2 stream already exists!\n Please disconnect it and try again.'
+        return source
+
+    if not self.mpris:
+      print(f'Airplay: No MPRIS object for {self.name}!')
+      return source
+
     try:
-      with open(loc, 'r') as file:
-        for line in file.readlines():
-          if line:
-            data = line.split(',,,')
-            for i in range(len(data)):
-              data[i] = data[i].strip('".')
-            source.artist = data[0]
-            source.track = data[1]
-            source.album = data[2]
-            if 'False' in data[3]:
-              source.state = 'playing'
-            else:
-              source.state = 'paused'
-            if int(data[4]):
-              source.img_url = f"/generated/shairport/srcs/{self.src}/{data[5]}"
-    except Exception as exc:
-      print(f'Failed to get currentSong - it may not exist: {exc}')
+      md = self.mpris.metadata()
+
+      if self.mpris.is_playing():
+        source.state = 'playing'
+      else:
+        # if we've been paused for a while and the state has changed since connecting, then say
+        # we're stopped since shairport-sync doesn't really differentiate between paused and stopped
+        if self._connect_time < md.state_changed_time and time.time() - md.state_changed_time < self.STATE_TIMEOUT:
+          source.state = 'paused'
+        else:
+          source.state = 'stopped'
+
+      if source.state != 'stopped':
+        source.artist = md.artist
+        source.track = md.title
+        source.album = md.album
+        source.supported_cmds=list(self.supported_cmds)
+
+        if md.title != '':
+          #if there is a title, attempt to get coverart
+          images = os.listdir(self._coverart_dir)
+          if len(images) > 0:
+            source.img_url = f'generated/{self.src}/{images[0]}'
+        else:
+          source.track = "No metadata available"
+
+
+    except Exception as e:
+      print(f"error in airplay: {e}")
+
     return source
+
+  def send_cmd(self, cmd):
+    try:
+      if cmd in self.supported_cmds:
+        if cmd == 'play':
+          self.mpris.play_pause()
+        elif cmd == 'pause':
+          self.mpris.play_pause()
+        elif cmd == 'next':
+          self.mpris.next()
+        elif cmd == 'prev':
+          self.mpris.previous()
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception as e:
+      print(f"error in shairport: {e}")
 
 class Spotify(BaseStream):
   """ A Spotify Stream """
-  def __init__(self, name, mock=False):
-    super().__init__('spotify', name, mock)
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+    super().__init__('spotify', name, disabled=disabled, mock=mock)
 
-    self.connect_port = None
-    self.mpris = None
-    self.proc_pid = None
+    self.connect_port: Optional[int] = None
+    self.mpris: Optional[MPRIS] = None
+    self.proc_pid: Optional[int] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
@@ -267,7 +437,7 @@ class Spotify(BaseStream):
     with open(toml_useful, 'r') as TOML:
       data = TOML.read()
       data = data.replace('device_name_in_spotify_connect', f'{self.name.replace(" ", "-")}')
-      data = data.replace("alsa_audio_device", f"ch{src}")
+      data = data.replace("alsa_audio_device", utils.output_device(src))
       data = data.replace('1234', f'{self.connect_port}')
     with open(toml_useful, 'w') as TOML:
       TOML.write(data)
@@ -279,7 +449,7 @@ class Spotify(BaseStream):
       self.proc = subprocess.Popen(args=spotify_args, cwd=f'{src_config_folder}')
       time.sleep(0.1) # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', src)
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{src_config_folder}/metadata.txt')
 
       self._connect(src)
     except Exception as exc:
@@ -292,6 +462,8 @@ class Spotify(BaseStream):
       pass
     self._disconnect()
     self.connect_port = None
+    if self.mpris:
+      del self.mpris
     self.mpris = None
     self.proc = None
 
@@ -301,7 +473,8 @@ class Spotify(BaseStream):
       state=self.state,
       img_url='static/imgs/spotify.png' # report generic spotify image in place of unspecified album art
     )
-
+    if self.mpris is None:
+      return source
     try:
       md = self.mpris.metadata()
 
@@ -337,8 +510,8 @@ class Spotify(BaseStream):
 
 class Pandora(BaseStream):
   """ A Pandora Stream """
-  def __init__(self, name, user, password, station, mock=False):
-    super().__init__('pandora', name, mock)
+  def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
+    super().__init__('pandora', name, disabled=disabled, mock=mock)
     self.user = user
     self.password = password
     self.station = station
@@ -357,6 +530,8 @@ class Pandora(BaseStream):
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     pb_fields = ['user', 'password', 'station']
     fields = list(pb_fields) + ['name']
     for k,v in kwargs.items():
@@ -370,8 +545,6 @@ class Pandora(BaseStream):
       time.sleep(0.1) # delay a bit, is this needed?
       self.connect(last_src)
 
-  def __del__(self):
-    self.disconnect()
 
   def connect(self, src):
     """ Connect pandora output to a given audio source
@@ -439,7 +612,7 @@ class Pandora(BaseStream):
       img_url='static/imgs/pandora.png'
     )
     try:
-      with open(loc, 'r') as file:
+      with open(loc, 'r', encoding='utf-8') as file:
         for line in file.readlines():
           line = line.strip()
           if line:
@@ -465,7 +638,7 @@ class Pandora(BaseStream):
     """
     try:
       if cmd in self.supported_cmds:
-        with open(self.ctrl, 'w') as file:
+        with open(self.ctrl, 'w', encoding='utf-8') as file:
           file.write(self.supported_cmds[cmd]['cmd'])
           file.flush()
         expected_state = self.supported_cmds[cmd]['state']
@@ -474,7 +647,7 @@ class Pandora(BaseStream):
       elif 'station' in cmd:
         station_id = int(cmd.replace('station=', ''))
         if station_id is not None:
-          with open(self.ctrl, 'w') as file:
+          with open(self.ctrl, 'w', encoding='utf-8') as file:
             file.write('s')
             file.flush()
             file.write(f'{station_id}\n')
@@ -489,13 +662,15 @@ class Pandora(BaseStream):
 
 class DLNA(BaseStream):
   """ A DLNA Stream """
-  def __init__(self, name, mock=False):
-    super().__init__('dlna', name, mock)
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+    super().__init__('dlna', name, disabled=disabled, mock=mock)
     self.proc2 = None
     self.uuid = 0
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
@@ -549,15 +724,19 @@ class DLNA(BaseStream):
     loc = f'{src_config_folder}/currentSong'
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/dlna.png')
     try:
-      with open(loc, 'r') as file:
+      with open(loc, 'r', encoding='utf-8') as file:
         for line in file.readlines():
           line = line.strip()
           if line:
-            d = eval(line)
-        source.state = d['state']
-        source.album = d['album']
-        source.artist = d['artist']
-        source.track = d['title']
+            d = ast.literal_eval(line)
+        if 'state' in d:
+          source.state = d['state']
+        if 'album' in d:
+          source.album = d['album']
+        if 'artist' in d:
+          source.artist = d['artist']
+        if 'title' in d:
+          source.track = d['title']
         return source
     except Exception:
       pass
@@ -565,8 +744,8 @@ class DLNA(BaseStream):
 
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
-  def __init__(self, name, url, logo, mock=False):
-    super().__init__('internet radio', name, mock)
+  def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
+    super().__init__('internet radio', name, disabled=disabled, mock=mock)
     self.url = url
     self.logo = logo
     self.supported_cmds = ['play', 'stop']
@@ -574,7 +753,7 @@ class InternetRadio(BaseStream):
   def reconfig(self, **kwargs):
     reconnect_needed = False
     ir_fields = ['url', 'logo']
-    fields = list(ir_fields) + ['name']
+    fields = list(ir_fields) + ['name', 'disabled']
     for k,v in kwargs.items():
       if k in fields and self.__dict__[k] != v:
         self.__dict__[k] = v
@@ -585,9 +764,6 @@ class InternetRadio(BaseStream):
       self.disconnect()
       time.sleep(0.1) # delay a bit, is this needed?
       self.connect(last_src)
-
-  def __del__(self):
-    self.disconnect()
 
   def connect(self, src):
     """ Connect a VLC output to a given audio source
@@ -627,10 +803,12 @@ class InternetRadio(BaseStream):
     loc = f'{src_config_folder}/currentSong'
     source = models.SourceInfo(name=self.full_name(),
                               state=self.state,
-                              img_url=self.logo,
+                              img_url='static/imgs/internet_radio.png',
                               supported_cmds=self.supported_cmds)
+    if self.logo:
+      source.img_url = self.logo
     try:
-      with open(loc, 'r') as file:
+      with open(loc, 'r', encoding='utf-8') as file:
         data = json.loads(file.read())
         source.artist = data['artist']
         source.track = data['track']
@@ -663,26 +841,17 @@ class InternetRadio(BaseStream):
       pass
 
 class Plexamp(BaseStream):
-  """ A Plexamp Stream """
-  def __init__(self, name, client_id, token, mock=False):
-    super().__init__('plexamp', name, mock)
-    self.client_id = client_id
-    self.token = token
+  """ A Plexamp Stream
+  TODO: old plexamp interface was disabled, integrate support for new PlexAmp
+  """
+  def __init__(self, name: str, client_id, token, disabled: bool = False, mock: bool = False):
+    super().__init__('plexamp', name, disabled=disabled, mock=mock)
 
   def reconfig(self, **kwargs):
-    reconnect_needed = False
-    if 'name' in kwargs and kwargs['name'] != self.name:
-      self.name = kwargs['name']
-      reconnect_needed = True
-    if reconnect_needed:
-      if self._is_running():
-        last_src = self.src
-        self.disconnect()
-        time.sleep(0.1) # delay a bit, is this needed?
-        self.connect(last_src)
-
-  def __del__(self):
-    self.disconnect()
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
+    if 'name' in kwargs:
+      self.disabled = kwargs['name']
 
   def connect(self, src):
     """ Connect plexamp output to a given audio source
@@ -692,84 +861,25 @@ class Plexamp(BaseStream):
       self._connect(src)
       return
 
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
-    mpd_template = f'{utils.get_folder("streams")}/mpd.conf'
-    plexamp_template = f'{utils.get_folder("streams")}/server.json'
-    plexamp_home = src_config_folder
-    plexamp_config_folder = f'{plexamp_home}/.config/Plexamp'
-    mpd_conf_file = f'{plexamp_home}/mpd.conf'
-    server_json_file = f'{plexamp_config_folder}/server.json'
-    # make all of the necessary dir(s)
-    os.system(f'mkdir -p {plexamp_config_folder}')
-    os.system(f'cp {mpd_template} {mpd_conf_file}')
-    os.system(f'cp {plexamp_template} {server_json_file}')
-    self.uuid = uuid_gen()
-    # server.json config (Proper server.json file must be copied over for this to work)
-    with open(server_json_file) as json_file:
-      contents = json.load(json_file)
-      r_token = contents['user']['token']
-      if r_token != '_': # Dummy value from template
-        self.token = r_token
-
-    # Double quotes required for Python -> JSON translation
-    json_config = {
-      "player": {
-        "name": f"{self.name}",
-        "identifier": f"{self.client_id}"
-      },
-      "user": {
-        "token": self.token
-      },
-      "state": "null",
-      "server": "null",
-      "audio": {
-        "normalize": "false",
-        "crossfade": "false",
-        "mpd_path": f"{mpd_conf_file}"
-      }
-    }
-
-    with open(server_json_file, 'w') as new_json:
-      json.dump(json_config, new_json, indent=2)
-
-    # mpd.conf creation
-    with open(mpd_conf_file, 'r') as MPD:
-      data = MPD.read()
-      data = data.replace('ch', f'ch{src}')
-      data = data.replace('GENERIC_LOGFILE_LOCATION', f'{plexamp_config_folder}/mpd.log')
-    with open(mpd_conf_file, 'w') as MPD:
-      MPD.write(data)
-    # PROCESS
-    plexamp_args = ['/usr/bin/node', '/home/pi/plexamp/server/server.prod.js']
-    try:
-      self.proc = subprocess.Popen(args=plexamp_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'HOME' : plexamp_home})
-      time.sleep(0.1) # Delay a bit
-      self._connect(src)
-    except Exception as exc:
-      print(f'error starting plexamp: {exc}')
-
   def disconnect(self):
-    if self._is_running():
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
     self._disconnect()
-    self.proc = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    source.track = "Not currently supported"
     return source
 
 class FilePlayer(BaseStream):
   """ An Single one shot file player - initially intended for use as a part of the PA Announcements """
-  def __init__(self, name, url:str, mock=False):
-    super().__init__('file player', name, mock)
+  def __init__(self, name: str, url: str, disabled: bool = False, mock: bool = False):
+    super().__init__('file player', name, disabled=disabled, mock=mock)
     self.url = url
     self.bkg_thread = None
 
-  def __del__(self):
-    self.disconnect()
-
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs:
       self.name = kwargs['name']
     if 'url' in kwargs:
@@ -824,16 +934,16 @@ class FilePlayer(BaseStream):
 
 class FMRadio(BaseStream):
   """ An FMRadio Stream using RTLSDR """
-  def __init__(self, name, freq, logo, mock=False):
-    super().__init__('fm radio', name, mock)
+  def __init__(self, name: str, freq, logo: Optional[str] = None, disabled: bool = False, mock: bool = False):
+    super().__init__('fm radio', name, disabled=disabled, mock=mock)
     self.freq = freq
     self.logo = logo
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
     ir_fields = ['freq', 'logo']
-    fields = list(ir_fields) + ['name']
-    for k,v in kwargs.items():
+    fields = list(ir_fields) + ['name', 'disabled']
+    for k, v in kwargs.items():
       if k in fields and self.__dict__[k] != v:
         self.__dict__[k] = v
         if k in ir_fields:
@@ -843,9 +953,6 @@ class FMRadio(BaseStream):
       self.disconnect()
       time.sleep(0.1) # delay a bit, is this needed?
       self.connect(last_src)
-
-  def __del__(self):
-    self.disconnect()
 
   def connect(self, src):
     """ Connect a fmradio.py output to a given audio source """
@@ -883,7 +990,7 @@ class FMRadio(BaseStream):
       self.logo = "static/imgs/fmradio.png"
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url=self.logo)
     try:
-      with open(loc, 'r') as file:
+      with open(loc, 'r', encoding='utf-8') as file:
         data = json.loads(file.read())
         # Example JSON: "station": "Mixx96.1", "callsign": "KXXO", "prog_type": "Soft rock", "radiotext": "        x96.1"
         #print(json.dumps(data))
@@ -912,17 +1019,19 @@ class FMRadio(BaseStream):
 
 class LMS(BaseStream):
   """ An LMS Stream using squeezelite"""
-  def __init__(self, name, server=None, mock=False):
-    super().__init__('lms', name, mock)
+  def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
+    super().__init__('lms', name, disabled=disabled, mock=mock)
     self.server : Optional[str] = server
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+    if 'disabled' in kwargs:
+      self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
     if 'server' in kwargs and kwargs['server'] != self.server:
-      self.name = kwargs['server']
+      self.server = kwargs['server']
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
@@ -930,9 +1039,6 @@ class LMS(BaseStream):
         self.disconnect()
         time.sleep(0.1) # delay a bit, is this needed?
         self.connect(last_src)
-
-  def __del__(self):
-    self.disconnect()
 
   def connect(self, src):
     """ Connect a sqeezelite output to a given audio source
@@ -962,15 +1068,16 @@ class LMS(BaseStream):
                   '-f', f'{src_config_folder}/lms_log.txt',
                   '-i', f'{src_config_folder}/lms_remote', # specify this to avoid collisions, even if unused
                 ]
-      if self.server is not None:
+      if self.server:
         # specify the server to connect to (if unspecified squeezelite starts in discovery mode)
         server = self.server
         # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
-        if 'localhost' ==  server or server.startswith('localhost:'):
+        if 'localhost' ==  server:
           # squeezelite does not support localhost and requires the actual hostname
-          # NOTE: :9000 is assumed unless otherwise specified
+          # NOTE: port 9000 is assumed
           server.replace('localhost', socket.gethostname())
         lms_args += [ '-s', server]
+      # TODO: allow port to be specified with server (embedding it in the server URL does not work)
 
       self.proc = subprocess.Popen(args=lms_args)
       self._connect(src)
@@ -992,31 +1099,142 @@ class LMS(BaseStream):
     )
     return source
 
+class Bluetooth(BaseStream):
+  """ A source for Bluetooth streams, which requires an external Bluetooth USB dongle """
+
+  def __init__(self, name, disabled=False, mock=False):
+    super().__init__('bluetooth', name, disabled=disabled, mock=mock)
+    self.logo = "static/imgs/bluetooth.png"
+    self.bt_proc = None
+    self.supported_cmds = ['play', 'pause', 'next', 'prev', 'stop']
+
+  def __del__(self):
+    self.disconnect()
+
+  @staticmethod
+  def is_hw_available():
+    """Determines if a bluetooth dongle is present"""
+    try:
+      if subprocess.run('which bluetoothctl'.split(), check=False).returncode != 0:
+        return False
+      # bluetoothctl show seems to hang sometimes when hardware is not available
+      # add a timeout so that we don't get stuck waiting
+      btcmd_proc = subprocess.run('bluetoothctl show'.split(), check=True, stdout=subprocess.PIPE, timeout=0.5)
+      return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
+    except Exception as e:
+      if 'timed out' not in str(e): # a timeout indicates bluetooth module is missing
+        print(f'Error checking for bluetooth hardware: {e}')
+      return False
+
+  def connect(self, src):
+    """ Connect a bluealsa-aplay process with audio output to a given audio source """
+    print(f'connecting {self.name} to {src}...')
+
+    if self.mock:
+      self._connect(src)
+      return
+
+    # Power on Bluetooth and enable discoverability
+    subprocess.run(args='bluetoothctl power on'.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='bluetoothctl discoverable on'.split(), preexec_fn=os.setpgrp)
+    subprocess.run(args='sudo btmgmt fast-conn on'.split(), preexec_fn=os.setpgrp)
+
+    # Start metadata watcher
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
+    os.system(f'mkdir -p {src_config_folder}')
+    song_info_path = f'{src_config_folder}/currentSong'
+    device_info_path = f'{src_config_folder}/btDevice'
+    btmeta_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path} ' \
+                  f'--device-info={device_info_path} --output-device={utils.output_device(src)}'
+    self.bt_proc = subprocess.Popen(args=btmeta_args.split(), preexec_fn=os.setpgrp)
+
+    self._connect(src)
+    return
+
+  def _is_running(self):
+    if self.bt_proc:
+      return self.bt_proc.poll() is None
+    return False
+
+  def disconnect(self):
+    if self._is_running():
+      os.killpg(os.getpgid(self.bt_proc.pid), signal.SIGKILL)
+      self.bt_proc = None
+
+      # Power off Bluetooth and disable discoverability
+      subprocess.run(args='bluetoothctl discoverable off'.split(), preexec_fn=os.setpgrp)
+      subprocess.run(args='bluetoothctl power off'.split(), preexec_fn=os.setpgrp)
+
+      self._disconnect()
+
+  def info(self) -> models.SourceInfo:
+    src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+    loc = f'{src_config_folder}/currentSong'
+    source = models.SourceInfo(name=self.full_name(),
+                               state=self.state,
+                               img_url=self.logo,
+                               supported_cmds=self.supported_cmds)
+    try:
+      with open(loc, 'r') as file:
+        data = json.loads(file.read())
+        source.artist = data['artist']
+        source.track = data['title']
+        source.album = data['album']
+        source.state = data['status']
+        return source
+    except Exception as e:
+      print(f'bluetooth: exception {e}')
+      traceback.print_exc()
+    return source
+
+  def send_cmd(self, cmd):
+    print(f'bluetooth: sending command {cmd}')
+    try:
+      if cmd in self.supported_cmds and self.src is not None:
+        src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+        device_info_path = f'{src_config_folder}/btDevice'
+        btcmd_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --command={cmd} --device-info={device_info_path}'
+        subprocess.run(args=btcmd_args.split(), preexec_fn=os.setpgrp)
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception as e:
+      print(f'bluetooth: exception {e}')
+      raise RuntimeError(f'Command {cmd} failed to send: {e}') from e
+      traceback.print_exc()
+
 # Simple handling of stream types before we have a type heirarchy
-AnyStream = Union[AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp, FilePlayer, FMRadio, LMS]
+AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
+                  FilePlayer, FMRadio, LMS, Bluetooth]
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
 
   we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
   """
+  # pylint: disable=too-many-return-statements
   args = stream.dict(exclude_none=True)
+  name = args.pop('name')
+  disabled = args.pop('disabled', False)
+  if stream.type == 'rca':
+    return RCA(name, args['index'], disabled=disabled, mock=mock)
   if stream.type == 'pandora':
-    return Pandora(args['name'], args['user'], args['password'], station=args.get('station'), mock=mock)
-  elif stream.type == 'shairport' or stream.type == 'airplay': # handle older configs
-    return AirPlay(args['name'], mock=mock)
-  elif stream.type == 'spotify':
-    return Spotify(args['name'], mock=mock)
-  elif stream.type == 'dlna':
-    return DLNA(args['name'], mock=mock)
-  elif stream.type == 'internetradio':
-    return InternetRadio(args['name'], args['url'], args.get('logo'), mock=mock)
-  elif stream.type == 'plexamp':
-    return Plexamp(args['name'], args['client_id'], args['token'], mock=mock)
-  elif stream.type == 'fileplayer':
-    return FilePlayer(args['name'], args['url'], mock=mock)
-  elif stream.type == 'fmradio':
-    return FMRadio(args['name'], args['freq'], args.get('logo'), mock=mock)
-  elif stream.type == 'lms':
-    return LMS(args['name'], args.get('server'), mock=mock)
+    return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock)
+  if stream.type in ['shairport', 'airplay']: # handle older configs
+    return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock)
+  if stream.type == 'spotify':
+    return Spotify(name, disabled=disabled, mock=mock)
+  if stream.type == 'dlna':
+    return DLNA(name, disabled=disabled, mock=mock)
+  if stream.type == 'internetradio':
+    return InternetRadio(name, args['url'], args.get('logo'), disabled=disabled, mock=mock)
+  if stream.type == 'plexamp':
+    return Plexamp(name, args['client_id'], args['token'], disabled=disabled, mock=mock)
+  if stream.type == 'fileplayer':
+    return FilePlayer(name, args['url'], disabled=disabled, mock=mock)
+  if stream.type == 'fmradio':
+    return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
+  if stream.type == 'lms':
+    return LMS(name, args.get('server'), disabled=disabled, mock=mock)
+  elif stream.type == 'bluetooth':
+    return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)

@@ -1,0 +1,9 @@
+[Unit]
+Description=BluezALSA proxy
+Requires=bluetooth.service
+After=bluetooth.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/bluealsa -p a2dp-source -p a2dp-sink

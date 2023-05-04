@@ -61,7 +61,7 @@ from multiprocessing import Queue
 # amplipi
 import amplipi.utils as utils
 import amplipi.models as models
-from amplipi.ctrl import Api, ApiResponse, ApiCode, USER_CONFIG_DIR # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs, USER_CONFIG_DIR # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
@@ -96,7 +96,7 @@ def check_srcs_equal(id1: Optional[int], id2: Optional[int]) -> bool:
   """ Check if two sources are equal """
   if id1 is None or id2 is None:
     return id1 == id2
-  return (id1 % 4) == (id2 % 4)
+  return (id1 % models.MAX_REAL_SOURCES) == (id2 % models.MAX_REAL_SOURCES)
 
 # Helper functions
 def unused_groups(ctrl: Api, src: int) -> Dict[int, str]:
@@ -137,7 +137,7 @@ class params(SimpleNamespace):
   """ Describe standard path ID's for each api type """
   # pylint: disable=too-few-public-methods
   # pylint: disable=invalid-name
-  SourceID = Path(..., ge=0, le=models.MAX_SOURCES, description="Source ID")
+  SourceID = Path(..., ge=0, le=models.MAX_SOURCES-1, description="Source ID")
   ZoneID = Path(..., ge=0, le=35, description="Zone ID")
   GroupID = Path(..., ge=0, description="Stream ID")
   StreamID = Path(..., ge=0, description="Stream ID")
@@ -165,6 +165,8 @@ def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   This will reset all zone names and streams back to their original configuration.
   We recommend downloading the current configuration beforehand.
   """
+  if ctrl.is_streamer:
+    return load_config(models.Status(**ctrl.STREAMER_CONFIG), ctrl)
   return load_config(models.Status(**ctrl.DEFAULT_CONFIG), ctrl)
 
 @api.post('/api/reset', tags=['status'])
@@ -240,6 +242,7 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
     if resp.code == ApiCode.OK:
       # general commands return None to indicate success
       return ctrl.get_state()
+    print(f"Error: {resp.msg}")
     # TODO: refine error codes based on error message
     raise HTTPException(404, resp.msg)
   return resp
@@ -260,6 +263,11 @@ def get_source(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> mod
 @api.patch('/api/sources/{sid}', tags=['source'])
 def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Status:
   """ Update a source's configuration (source=**sid**) """
+  if update.input == 'local':
+    # correct older api requests to use RCA inputs as a stream
+    valid_update = update.copy()
+    valid_update.input = f'stream={RCAs[sid]}'
+    print(f'correcting deprecated use of RCA inputs from {update} to {valid_update}')
   return code_response(ctrl, ctrl.set_source(sid, update))
 
 @api.get('/api/sources/{sid}/image/{height}', tags=['source'],
@@ -399,10 +407,11 @@ def delete_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> 
   """ Delete a stream """
   return code_response(ctrl, ctrl.delete_stream(sid))
 
+# The following is a specific endpoint to api/stream/{} and needs to be placed before the catch all exec_command
+
 @api.post('/api/streams/{sid}/station={station}', tags=['stream'])
 def change_station(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, station: int = params.StationID) -> models.Status:
   """ Change station on a pandora stream (stream=**sid**) """
-  # This is a specific version of exec command, it needs to be placed before the genertic version so the path is resolved properly
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=f'station={station}'))
 
 @api.post('/api/streams/{sid}/{cmd}', tags=['stream'])
@@ -418,7 +427,7 @@ def exec_command(cmd: models.StreamCommand, ctrl: Api = Depends(get_ctrl), sid: 
     * Ban Current Song (pandora only): **ban**
     * Shelve Current Song (pandora only): **shelve**
 
-  Currently only available with Pandora streams"""
+  Supported commands are reported in an attached stream's info.stream_cmds"""
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=cmd))
 
 # presets
@@ -768,8 +777,8 @@ for key in identity:
 def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
   """ Webapp main view """
   state = ctrl.get_state()
-  displayed_sources = [src for src in state.sources if src.id is not None and src.id < 4]
-  displayed_source_ids = [src.id for src in state.sources if src.id is not None and src.id < 4]
+  displayed_sources = [src for src in state.sources if src.id is not None and src.id < models.MAX_REAL_SOURCES]
+  displayed_source_ids = [src.id for src in state.sources if src.id is not None and src.id < models.MAX_REAL_SOURCES]
   context = {
     # needed for template to make response
     'request': request,

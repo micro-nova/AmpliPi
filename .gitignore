@@ -147,8 +147,14 @@ poetry.lock
 
 # Copied architecture specific files
 streams/shairport-sync-metadata-reader
+streams/shairport-sync-ap2
+streams/shairport-sync
+streams/spotifyd
+streams/squeezelite
 streams/vollibrespot
 streams/vollibrespot.tar.xz
+streams/squeezelite
+streams/spotifyd
 gmrender-resurrect
 
 # Amplipi Web
@@ -158,3 +164,6 @@ web/uploads/*
 # Firmware builds
 fw/preamp/Debug
 fw/preamp/Release
+
+# RCA input audio detector
+rca_status
