@@ -267,7 +267,8 @@ class PersistentStream(BaseStream):
     if virt_dev is None or self.mock:
       print('  pretending to connect to loopback (unavailable)')
     else:
-      args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split()
+      # args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split()
+      args = f'{sys.executable} {utils.get_folder("streams")}/process_monitor.py alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split()
       try:
         print(f'  starting connection via: {" ".join(args)}')
         self._cproc = subprocess.Popen(args=args)
@@ -281,8 +282,11 @@ class PersistentStream(BaseStream):
     if self._cproc:
       print(f'  stopping connection {self.vsrc} -> {self.src}')
       try:
-        self._cproc.kill()
-      except Exception:
+        # must use terminate as kill() cannot be intercepted
+        self._cproc.terminate()
+
+      except Exception as e:
+        print(f'PersistentStream disconnect error: {e}')
         pass
     self.src = None
 
