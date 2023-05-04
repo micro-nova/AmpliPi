@@ -53,7 +53,6 @@ from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
 # mdns service advertisement
-from time import sleep
 import netifaces as ni
 from socket import gethostname, inet_aton
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
@@ -850,12 +849,28 @@ def advertise_service(port, event: SyncEvent):
     try:
       _advertise_service(port, ok)
     except Exception as exc:
-      print(f'Failed to advertise AmpliPi service: {exc}')
-      # delay for a bit after a failure
-      delay_ct = 300
-      while ok() and delay_ct > 0:
-        sleep(0.1)
-        delay_ct -= 1
+      if not 'change registration' in str(exc):
+        print(f'Failed to advertise AmpliPi service, retrying in 30s: {exc}')
+        # delay for a bit after a failure
+        delay_ct = 300
+        while ok() and delay_ct > 0:
+          sleep(0.1)
+          delay_ct -= 1
+
+def _find_best_iface(ifaces: List[str], ok: Callable) -> Union[Tuple[str, str,str], \
+                                                               Tuple[None, None, None]]:
+  # Try to find the best interface to advertise on,
+  # retrying in case DHCP resolution is delayed
+  ip_addr, mac_addr = None, None
+  retry_count = 5
+  while ok() and not (ip_addr and mac_addr) and retry_count > 0:
+    for iface in ifaces:
+      ip_addr, mac_addr = get_ip_info(iface)
+      if ip_addr and mac_addr:
+        return ip_addr, mac_addr, iface
+    sleep(2) # wait a bit in case this was started before DHCP was started
+    retry_count -= 1
+  return None, None, None
 
 def _advertise_service(port: int, ok: Callable) -> None:
   """ Underlying advertisement, can throw Exceptions when network is not connected """
@@ -863,7 +878,8 @@ def _advertise_service(port: int, ok: Callable) -> None:
   hostname = f'{gethostname()}.local'
   url = f'http://{hostname}'
 
-  # search for the best interface to advertise on
+  # enumerate interface to advertise on, starting with the pi defaults first
+  # ordering is important, as the pi defaults will be tried first
   ifaces = ['eth0', 'wlan0'] # default pi interfaces
   try:
     for iface in ni.interfaces():
@@ -872,25 +888,15 @@ def _advertise_service(port: int, ok: Callable) -> None:
   except:
     pass
 
-  # Try to find the best interface to advertise on,
-  # retrying in case DHCP resolution is delayed
-  ip_addr, mac_addr = None, None
-  good_iface: Optional[str] = None
-  retry_count = 5
-  while ok() and not (ip_addr and mac_addr) and retry_count > 0:
-    for iface in ifaces:
-      ip_addr, mac_addr = get_ip_info(iface)
-      if ip_addr and mac_addr:
-        good_iface = iface
-        break # take the first good interface found
-    sleep(2) # wait a bit in case this was started before DHCP was started
-    retry_count -= 1
+  ip_addr, mac_addr, good_iface = _find_best_iface(ifaces, ok)
 
   if not ip_addr:
     print(f'AmpliPi zeroconf - unable to register service on one of {ifaces}, \
             they all are either not available or have no IP address.')
     print(f'AmpliPi zeroconf - is this running on AmpliPi?')
-    ip_addr = '0.0.0.0' # Any hosted ip on this device
+    # Fallback to any hosted ip on this device.
+    # This will be resolved to an ip address by the advertisement
+    ip_addr = '0.0.0.0'
   if port != 80:
     url += f':{port}'
 
@@ -925,19 +931,19 @@ def _advertise_service(port: int, ok: Callable) -> None:
   zeroconf.register_service(info)
   print('AmpliPi zeroconf - finished registering service')
   try:
+    # poll for changes to the IP address
+    # this attempts to handle events like router/switch resets
     while ok():
       delay_ct = 100
       while ok() and delay_ct > 0:
         sleep(0.1)
-      if ok() and good_iface:
-        # check if the ip changed
-        new_ip_addr, _ = get_ip_info(iface)
+        delay_ct -= 1
+      if ok():
+        new_ip_addr, _, new_iface = _find_best_iface(ifaces, ok)
         if new_ip_addr != ip_addr:
-          print(f'AmpliPi zeroconf - IP address changed from {ip_addr} to {new_ip_addr}')
-          print(f'AmpliPi zeroconf - Registration change needed')
+          print(f'AmpliPi zeroconf - IP address changed from {ip_addr} ({good_iface}) to {new_ip_addr} ({new_iface})')
+          print('AmpliPi zeroconf - Registration change needed')
           raise Exception("change registration")
-  except:
-    pass
   finally:
     print('AmpliPi zeroconf - unregistering service')
     zeroconf.unregister_service(info)

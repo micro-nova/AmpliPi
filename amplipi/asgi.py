@@ -35,7 +35,8 @@ PORT = int(os.environ.get('WEB_PORT', '80'))
 application = amplipi.app.create_app(delay_saves=True, mock_ctrl=MOCK_CTRL, mock_streams=MOCK_STREAMS)
 
 # advertise the service here, to avoid adding bloat to underlying app, especially for test startup
-# this needs to be done as a separate process to avoid interfering with webserver (ZeroConf makes its own event loop)
+# NOTE: Zeroconf advertisements need to be done as a separate process to avoid blocking the
+#   webserver startup since behind the scenes zeroconf makes its own event loop.
 zc_event = Event()
 zc_reg = Process(target=amplipi.app.advertise_service, args=(PORT, zc_event))
 zc_reg.start()
