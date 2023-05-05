@@ -709,12 +709,14 @@ class Api:
             # TODO: should this stream id validation happen in the Source model?
             src.input = last_input
             raise Exception(f'StreamID specified by "{src.input}" not found')
-          rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
-          virtual = src.pipe_to is not None
-          if (rt_needs_update or force_update) and not virtual:
-            src_cfg = self._get_source_config()
-            if not self._rt.update_sources(src_cfg):
-              raise Exception('failed to set source')
+          if not self.is_streamer:
+            # configure the source's input mux
+            rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
+            virtual = src.pipe_to is not None
+            if (rt_needs_update or force_update) and not virtual:
+              src_cfg = self._get_source_config()
+              if not self._rt.update_sources(src_cfg):
+                raise Exception('failed to set source')
           self._update_src_info(src) # synchronize the source's info
           # use the aliased sources info when input is None
           if len(self.status.sources) >= 8:
