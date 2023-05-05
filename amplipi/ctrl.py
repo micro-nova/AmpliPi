@@ -719,7 +719,7 @@ class Api:
                 raise Exception('failed to set source')
           self._update_src_info(src) # synchronize the source's info
           # use the aliased sources info when input is None
-          if len(self.status.sources) >= 8:
+          if len(self.status.sources) >= 8 and sid < models.MAX_REAL_SOURCES:
             if input_ == '' or input_ is None:
               src.info = self.status.sources[idx + models.MAX_REAL_SOURCES].info
         if not internal:
