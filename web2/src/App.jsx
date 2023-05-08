@@ -164,6 +164,29 @@ export const useStatusStore = create((set, get) => ({
       })
     )
   },
+
+  // for updating client side state
+  moveZonesStreamLocal: (fromId, toId) => {
+    set(
+      produce(s => {
+        s.status.zones.forEach(z => {
+          if (z.source_id === fromId) {
+            console.log(`moving zone ${z.id} from ${z.source_id} to ${toId}`)
+            z.source_id = toId
+          }
+        })
+        
+        for (let i = 0; i < 4; i++) {
+          console.log(s.status.zones[i].source_id)
+        }
+        // s.status.zones.forEach(z => {
+        //   if (z.source_id === )
+        // })
+        s.status.sources[toId].input = s.status.sources[fromId].input
+        s.status.sources[fromId].input = 'None'
+      })
+    )
+  },
 }))
 
 

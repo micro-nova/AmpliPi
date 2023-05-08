@@ -8,7 +8,27 @@ import { useStatusStore } from "@/App.jsx"
 import SpeakerIcon from '@mui/icons-material/Speaker'
 import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup'
 
-const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=true }) => {
+let useRcaSourceId = false
+let rcaSourceId = -1
+let rcaStatus = null
+
+const clearRcaSourceId = () => {
+  useRcaSourceId = false
+  rcaSourceId = -1
+  rcaStatus = null
+}
+
+export const setRcaStatus = (status) => {
+  rcaStatus = status
+}
+
+
+export const setRcaSourceId = (id) => {
+  rcaSourceId = id
+  useRcaSourceId = true
+}
+
+const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=true }) => {
   const zones = useStatusStore
     .getState()
     .status.zones.filter((zone) => !zone.disabled)
@@ -98,22 +118,39 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
   }
 
   const setZones = () => {
+    // redefine sourceId
+    console.log("setZone")
+    if (useRcaSourceId) {
+      console.log(`using ${rcaSourceId} instead of ${sourceId}`)
+    } else {
+      console.log(`using ${sourceId}`)
+    }
+    const sid = useRcaSourceId ? rcaSourceId : sourceId
+    const zs = useRcaSourceId ? rcaStatus.zones : zones
+    console.log(`zonesmodal operating on source ${sid}`)
+
     let removeList = []
     let addList = []
-
-    for (const zone of zones.filter((zone) => {
-      return zone.source_id == sourceId
+    for (let i = 0; i < 4; i++) {
+      console.log(zs[i])
+    }
+    
+    for (const zone of zs.filter((zone) => {
+      return zone.source_id == sid
     })) {
       if (!checkedZonesIds.includes(zone.id)) {
         removeList.push(zone.id)
+        console.log(`queue removal of zone ${zone.id}`)
+        console.log(`because ${zone.id} is not in checkedZonesIds`)
       }
     }
 
-    for (const zone of zones.filter((zone) => {
-      return zone.source_id != sourceId
+    for (const zone of zs.filter((zone) => {
+      return zone.source_id != sid
     })) {
       if (checkedZonesIds.includes(zone.id)) {
         addList.push(zone.id)
+        console.log(`queue addition of zone ${zone.id}`)
       }
     }
 
@@ -122,7 +159,9 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       headers: {
         "Content-type": "application/json",
       },
-      body: JSON.stringify({ zones: removeList, update: { source_id: -1 } }),
+      body: JSON.stringify({
+        zones: removeList, update: { source_id: -1 }
+      }),
     })
 
     fetch(`/api/zones`, {
@@ -132,50 +171,9 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       },
       body: JSON.stringify({
         zones: addList,
-        update: { mute: false, source_id: sourceId },
+        update: { mute: false, source_id: sid },
       }),
     })
-  }
-
-  const setGroups = () => {
-    let removeList = []
-    let addList = []
-
-    for (const group of groups.filter((group) => {
-      return group.source_id == sourceId
-    })) {
-      if (!checkedGroupIds.includes(group.id)) {
-        removeList.push(group.id)
-      }
-    }
-
-    for (const group of groups.filter((group) => {
-      return group.source_id != sourceId
-    })) {
-      if (checkedGroupIds.includes(group.id)) {
-        addList.push(group.id)
-      }
-    }
-
-    for (const i of removeList) {
-      fetch(`/api/groups/${i}`, {
-        method: "PATCH",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({ source_id: -1 }),
-      })
-    }
-
-    for (const i of addList) {
-      fetch(`/api/groups/${i}`, {
-        method: "PATCH",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({ source_id: sourceId, mute: false }),
-      })
-    }
   }
 
   const groupItems = groups.map((group) => {
@@ -205,7 +203,12 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
   })
 
   return (
-    <ModalCard onClose={onClose} header="Select Zones">
+    <ModalCard 
+      onClose={() => {
+        onClose()
+        clearRcaSourceId()
+      }}
+      header="Select Zones">
       <div className="zones-modal-body">
         {groupItems}
         {zoneItems}
@@ -213,12 +216,18 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       <div className="zones-modal-footer">
         <IconButton
           onClick={() => {
-            // TODO: verify order. 
-            // actually it probably doesn't matter
-            onApply()
-            setZones()
-            setGroups()
-            onClose()
+            if (onApply !== null) {
+              onApply().then(() => {
+                setZones()
+                onClose()
+                clearRcaSourceId()
+              })
+            } else {
+              setZones()
+              onClose()
+              clearRcaSourceId()
+            }
+
           }}
         >
           <DoneIcon

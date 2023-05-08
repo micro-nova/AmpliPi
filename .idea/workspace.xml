@@ -6,6 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="15a9dea8-88f2-4709-9b9e-9b956407a60a" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/streams/MPRIS_metadata_reader.py" beforeDir="false" afterPath="$PROJECT_DIR$/streams/MPRIS_metadata_reader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/src/components/CardVolumeSlider/CardVolumeSlider.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/components/CardVolumeSlider/CardVolumeSlider.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/src/components/StreamsModal/StreamsModal.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/components/StreamsModal/StreamsModal.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/src/components/ZonesModal/ZonesModal.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/components/ZonesModal/ZonesModal.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/src/pages/Home/Home.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/pages/Home/Home.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web2/src/utils/APIHelper.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/web2/src/utils/APIHelper.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
