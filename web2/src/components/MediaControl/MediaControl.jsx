@@ -14,7 +14,7 @@ const MediaControl = ({ selectedSource }) => {
   // const source = status.sources[selectedSource]
   const source = useStatusStore((s) => s.status.sources[selectedSource])
 
-  const enabled = "media-control"
+  const enabled = "media-control media-control-enabled"
   const disabled = "media-control media-control-disabled"
   const streamId = source.input.split("=")[1] // TODO: what if this is rca? or is rca a stream now
 
