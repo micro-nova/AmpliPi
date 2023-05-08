@@ -199,12 +199,17 @@ class EPD:
   def _is_bus_busy(self):
     return self.driver.digital_read(self.busy_pin) == 1
 
-  def wait_done(self):
+  def wait_done(self, timeout_s = 5):
     """Wait until the busy_pin goes LOW"""
     if self._is_bus_busy():
+      timeout_ms = timeout_s * 1000
+      waited_ms = 0
       log.debug("e-Paper busy")
-      while self._is_bus_busy():
+      while self._is_bus_busy() and waited_ms < timeout_ms:
         self.driver.delay_ms(10)
+        waited_ms += 10
+      if self._is_bus_busy():
+        raise Exception("e-Paper stuck busy, hardware failure?")
       log.debug("e-Paper busy release")
 
   def enable_display(self):
