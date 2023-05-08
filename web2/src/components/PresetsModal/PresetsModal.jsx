@@ -4,6 +4,8 @@ import Card from "@/components/Card/Card"
 import { useStatusStore } from "@/App"
 import { useState } from "react"
 import { Divider } from "@mui/material"
+import List from "@/components/List/List"
+import ListItem from "@/components/List/ListItem/ListItem"
 
 const timeSince = (timeStamp) => {
   var now = new Date(),
@@ -41,7 +43,7 @@ const PresetItem = ({ index, onClick, presetState }) => {
   // show spinner if presetState is 'loading'
   return (
     <>
-      <div className="preset-item" onClick={() => onClick(index)}>
+      <ListItem onClick={() => onClick(index)}>
         <div className="preset-name-and-last-used">
           <div>{name}</div>
           <div className="preset-item-last-used">{last_used}</div>
@@ -49,8 +51,7 @@ const PresetItem = ({ index, onClick, presetState }) => {
 
         {presetState === "done" && <div className="preset-item-icon">✓</div>}
         {presetState === "loading" && <div className="preset-item-icon">⏳</div>}
-      </div>
-      <Divider/>
+      </ListItem>
     </>
   )
 }
@@ -76,7 +77,6 @@ const PresetsModal = ({ onClose }) => {
       presetStates.map((state, i) => (i === index ? "loading" : state))
     )
     const id = presets[index].id
-    console.log(`/api/presets/${id}/load`)
     fetch(`/api/presets/${id}/load`, {
       method: "POST",
       accept: "application/json",
@@ -106,7 +106,9 @@ const PresetsModal = ({ onClose }) => {
     <Modal className="presets-modal" onClose={onClose}>
       <Card className="presets-modal-card">
         <div className="presets-modal-header">Select Preset</div>
-        <div className="presets-modal-body">{presetItems}</div>
+        <div className="presets-modal-body">
+          <List>{presetItems}</List>
+          </div>
       </Card>
     </Modal>
   )

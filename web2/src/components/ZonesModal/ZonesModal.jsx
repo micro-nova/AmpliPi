@@ -7,6 +7,11 @@ import DoneIcon from "@mui/icons-material/Done"
 import { useStatusStore } from "@/App.jsx"
 import SpeakerIcon from '@mui/icons-material/Speaker'
 import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup'
+import ListItem from '@/components/List/ListItem/ListItem.jsx'
+import List from '@/components/List/List.jsx'
+import { Close } from "@mui/icons-material"
+
+const LIST_ITEM_FONT_SIZE = "1.5rem"
 
 const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=true }) => {
   const zones = useStatusStore
@@ -69,33 +74,29 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
 
   const ZonesModalZoneItem = ({ zone, defaultSelected, checked }) => {
     return (
-      <div className="zones-modal-list-item" key={zone.id}>
+      <ListItem name={zone.name} nameFontSize={LIST_ITEM_FONT_SIZE} onClick={()=>handleChangeZone(zone.id)} key={zone.id}>
         <Checkbox
           checked={checked}
           onChange={() => handleChangeZone(zone.id)}
-          defaultChecked={defaultSelected}
         />
         <div className="zone-icon">
           <SpeakerIcon />
         </div>
-        {zone.name}
-      </div>
+      </ListItem>
     )
   }
 
   const ZonesModalGroupItem = ({ group, defaultSelected, checked }) => {
     return (
-      <div className="zones-modal-list-item" key={group.id}>
+      <ListItem name={group.name} nameFontSize={LIST_ITEM_FONT_SIZE} onClick={()=>handleChangeGroup(group.id)} key={group.id}>
         <Checkbox
           checked={checked}
           onChange={() => handleChangeGroup(group.id)}
-          defaultChecked={defaultSelected}
         />
         <div className="group-icon">
           <SpeakerGroupIcon />
         </div>
-        {group.name}
-      </div>
+      </ListItem>
     )
   }
 
@@ -207,26 +208,20 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
   })
 
   return (
-    <ModalCard onClose={onClose} header="Select Zones">
-      <div className="zones-modal-body">
-        {groupItems}
-        {zoneItems}
-      </div>
-      <div className="zones-modal-footer">
-        <IconButton
-          onClick={() => {
-            setZones()
-            setGroups()
-            onApply()
-            onClose()
-          }}
-        >
-          <DoneIcon
-            className="zones-modal-button-icon"
-            style={{ width: "3rem", height: "3rem" }}
-          />
-        </IconButton>
-      </div>
+    <ModalCard
+      onClose={onClose}
+      onCancel={onClose}
+      onAccept={()=>{
+        setZones()
+        setGroups()
+        onApply()
+        onClose()
+      }}
+      header="Select Zones">
+        <List>
+          {groupItems}
+          {zoneItems}
+        </List>
     </ModalCard>
   )
 }

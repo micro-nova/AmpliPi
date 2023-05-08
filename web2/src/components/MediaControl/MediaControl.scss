@@ -28,6 +28,12 @@
   color: #858585;
 }
 
+.media-control-enabled {
+  color: general.$controls-color;
+  cursor: pointer;
+  @include general.button-hover;
+}
+
 .media-step-backward {
   font-size: 3rem;
   color: general.$controls-color;

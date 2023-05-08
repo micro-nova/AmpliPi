@@ -1,9 +1,12 @@
 import "./StreamsModal.scss"
 import ModalCard from "@/components/ModalCard/ModalCard"
 import { getIcon, useStatusStore } from "@/App"
-import { Divider } from "@mui/material"
+import List from "@/components/List/List"
+import ListItem from "../List/ListItem/ListItem"
 
 //TODO: fix RCA behavior
+
+const LIST_ITEM_FONT_SIZE = "1.5rem"
 
 let applyAction = null
 
@@ -12,7 +15,7 @@ export const executeApplyAction = () => {
   applyAction = null
 }
 
-const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlayer=false, applyImmediately=true }) => {
+const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, applyImmediately=true }) => {
   const streams = useStatusStore((state) => state.status.streams)
 
   const setStream = (streamId) => {
@@ -57,57 +60,31 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
   for (const stream of streams) {
     const icon = getIcon(stream.type)
     streamsList.push(
-      <>
-        <div
-          className="streams-modal-list-item"
-          onClick={() => {
-            setStream(stream.id)
-            onApply()
-            onClose()
-          }}
-          key={stream.id}
-        >
-          <img src={icon} className="streams-modal-icon" alt="stream icon" />
-          {stream.name}
-        </div>
-
-        <Divider/>
-      </>
-    )
-  }
-
-  if (showClosePlayer) {
-    streamsList.push(
-        <div
-          className="streams-modal-list-item"
-          onClick={() => {
-            removeStream()
-            onApply()
-            onClose()
-          }}
-          key="none"
-        >
-          Close Player
-        </div>
+      <ListItem
+        name={stream.name}
+        key={stream.id}
+        onClick={() => {
+          setStream(stream.id)
+          onApply()
+          onClose()
+        }
+      }
+      nameFontSize = {LIST_ITEM_FONT_SIZE}
+      >
+        <img src={icon} className="streams-modal-icon" alt="stream icon" />
+      </ListItem>
     )
   }
 
   streamsList.push(
-    <div
-      className="streams-modal-list-item"
-      onClick={() => {
-        // setStreamModalOpen(false)
-        onClose()
-      }}
-      key="cancel"
-    >
-      Cancel
-    </div>
+    <ListItem name="Cancel" onClick={onClose} key="cancel" nameFontSize = {LIST_ITEM_FONT_SIZE}/>
   )
 
   return (
     <ModalCard header="Select Stream" onClose={onClose}>
+      <List>
       {streamsList}
+      </List>
     </ModalCard>
   )
 }
