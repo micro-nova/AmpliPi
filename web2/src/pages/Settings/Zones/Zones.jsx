@@ -7,6 +7,8 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp"
 import { Button, Divider, TextField } from "@mui/material"
 import Speaker from "@mui/icons-material/Speaker"
+import List from "@/components/List/List"
+import ListItem from "@/components/List/ListItem/ListItem"
 
 const ZoneListItem = ({ zone }) => {
   const [open, setOpen] = useState(false)
@@ -32,6 +34,7 @@ const ZoneListItem = ({ zone }) => {
   }
 
   return (
+    <ListItem>
     <div className="zones-zone-column">
       <div className="zones-zone-row">
         <div className="zones-zone-icon"><Speaker fontSize="inherit"/></div>
@@ -109,8 +112,8 @@ const ZoneListItem = ({ zone }) => {
           </div>
         </div>
       )}
-      <Divider />
     </div>
+    </ListItem>
   )
 }
 
@@ -124,7 +127,9 @@ const Zones = ({ onClose }) => {
   return (
     <div className="page-container">
       <PageHeader title="Zones" onClose={onClose} />
-      <div className="page-body">{listItems}</div>
+      <div className="page-body">
+        <List>{listItems}</List>
+      </div>
     </div>
   )
 }

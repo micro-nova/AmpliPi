@@ -208,7 +208,15 @@ const CreatePresetModal = ({ onClose }) => {
   if (tree === null) return <div />
 
   return (
-    <ModalCard onClose={onClose} header="Create Preset">
+    <ModalCard
+      onClose={onClose}
+      header="Create Preset"
+      onAccept={() => {
+        savePreset()
+        onClose()
+      }}
+      onCancel={onClose}
+    >
       <div>Name</div>
       <input
         type="text"
@@ -232,19 +240,6 @@ const CreatePresetModal = ({ onClose }) => {
         />
       </div>
       <StructuredDictAsTree dict={tree} />
-      <div className="create-preset-buttons">
-        <IconButton
-            onClick={() => {
-              savePreset()
-              onClose()
-            }}
-          >
-            <DoneIcon
-              className="group-button-icon"
-              style={{ width: "3rem", height: "3rem" }}
-            />
-        </IconButton>
-      </div>
     </ModalCard>
   )
 }

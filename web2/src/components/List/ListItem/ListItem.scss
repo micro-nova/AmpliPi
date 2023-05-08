@@ -1,0 +1,27 @@
+@use 'src/general.scss';
+
+.list-item-container{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.5rem;
+  border-bottom: 1px solid general.$secondary;
+  @include general.button-hover;
+}
+
+.list-item-container:last-child {
+  border-bottom: none;
+}
+
+.list-item-child{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  margin-right: 0.25rem;
+}
+
+.list-item-name{
+  @include general.header-font;
+}

@@ -26,44 +26,27 @@ const EditPresetModal = ({ onClose, preset }) => {
   }
 
   return (
-    <ModalCard onClose={onClose}>
-        <div>
-          <div className="preset-name">Edit Preset</div>
-          <div className="preset-name-input-container">
-            <div>Name</div>
-            <input
-              className="preset-name-input"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <br />
-          <div className="edit-preset-buttons">
-            <IconButton
-              onClick={() => {
-                editPreset()
-                onClose()
-              }}
-            >
-              <DoneIcon
-                className="group-button-icon"
-                style={{ width: "3rem", height: "3rem" }}
-              />
-            </IconButton>
-            <IconButton
-              onClick={() => {
-                deletePreset()
-                onClose()
-              }}
-            >
-              <DeleteIcon
-                className="group-button-icon"
-                style={{ width: "3rem", height: "3rem" }}
-              />
-            </IconButton>
-          </div>
-        </div>
+    <ModalCard
+      onClose={onClose}
+      onDelete={() => {
+        deletePreset()
+        onClose()
+      }}
+      onAccept={() => {
+        editPreset()
+        onClose()
+      }}
+    >
+      <div className="preset-name">Edit Preset</div>
+      <div className="preset-name-input-container">
+        <div>Name</div>
+        <input
+          className="preset-name-input"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
     </ModalCard>
   )
 }
