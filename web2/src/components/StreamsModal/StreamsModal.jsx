@@ -8,10 +8,8 @@ import { setRcaSourceId } from "../ZonesModal/ZonesModal"
 import { moveSourceContents, setSourceStream } from "@/utils/APIHelper"
 import { setRcaStatus } from "../ZonesModal/ZonesModal"
 
-//TODO: fix RCA behavior
 
 let applyAction = null
-let statusModified = null
 
 export const executeApplyAction = () => {
   if (applyAction !== null) {
@@ -44,7 +42,7 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
     const apply = () => {
       if (moveSource) {
         // move then set new stream
-        statusModified = JSON.parse(JSON.stringify(status))
+        const statusModified = JSON.parse(JSON.stringify(status))
         return moveSourceContents(status, currentSourceId, sourceId).then(() => {
           statusModified.zones.forEach(z => {
             if (z.source_id === currentSourceId) {
