@@ -13,7 +13,30 @@ import { Close } from "@mui/icons-material"
 
 const LIST_ITEM_FONT_SIZE = "1.5rem"
 
-const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=true }) => {
+// temp values used during rca operations
+let useRcaSourceId = false
+let rcaSourceId = -1
+let rcaStatus = null
+
+// called by StreamsModal when an rca is no longer being selected/configured
+const clearRcaSourceId = () => {
+  useRcaSourceId = false
+  rcaSourceId = -1
+  rcaStatus = null
+}
+
+// called by StreamsModal when an rca is selected
+export const setRcaStatus = (status) => {
+  rcaStatus = status
+}
+
+// called by StreamsModal when an rca is selected
+export const setRcaSourceId = (id) => {
+  rcaSourceId = id
+  useRcaSourceId = true
+}
+
+const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=true }) => {
   const zones = useStatusStore
     .getState()
     .status.zones.filter((zone) => !zone.disabled)
@@ -30,15 +53,7 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
   )
 
   const computeCheckedGroups = (newCheckedZonesIds) => {
-    let newGroups = []
-    // groups.forEach(g => {
-    //   if (g.zones.every(id => checkedZonesIds.includes(id))) {
-    //     newGroups.push(g.id)
-    //   }
-    // })
-
-    newGroups = groups.filter(g => g.zones.every(id => newCheckedZonesIds.includes(id))).map(g => g.id)
-
+    const newGroups = groups.filter(g => g.zones.every(id => newCheckedZonesIds.includes(id))).map(g => g.id)
     setCheckedGroupIds(newGroups)
   }
 
@@ -101,19 +116,24 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
   }
 
   const setZones = () => {
+    // redefine sourceId
+
+    const sid = useRcaSourceId ? rcaSourceId : sourceId
+    const zs = useRcaSourceId ? rcaStatus.zones : zones
+
     let removeList = []
     let addList = []
 
-    for (const zone of zones.filter((zone) => {
-      return zone.source_id == sourceId
+    for (const zone of zs.filter((zone) => {
+      return zone.source_id == sid
     })) {
       if (!checkedZonesIds.includes(zone.id)) {
         removeList.push(zone.id)
       }
     }
 
-    for (const zone of zones.filter((zone) => {
-      return zone.source_id != sourceId
+    for (const zone of zs.filter((zone) => {
+      return zone.source_id != sid
     })) {
       if (checkedZonesIds.includes(zone.id)) {
         addList.push(zone.id)
@@ -125,7 +145,9 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       headers: {
         "Content-type": "application/json",
       },
-      body: JSON.stringify({ zones: removeList, update: { source_id: -1 } }),
+      body: JSON.stringify({
+        zones: removeList, update: { source_id: -1 }
+      }),
     })
 
     fetch(`/api/zones`, {
@@ -135,50 +157,9 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       },
       body: JSON.stringify({
         zones: addList,
-        update: { mute: false, source_id: sourceId },
+        update: { mute: false, source_id: sid },
       }),
     })
-  }
-
-  const setGroups = () => {
-    let removeList = []
-    let addList = []
-
-    for (const group of groups.filter((group) => {
-      return group.source_id == sourceId
-    })) {
-      if (!checkedGroupIds.includes(group.id)) {
-        removeList.push(group.id)
-      }
-    }
-
-    for (const group of groups.filter((group) => {
-      return group.source_id != sourceId
-    })) {
-      if (checkedGroupIds.includes(group.id)) {
-        addList.push(group.id)
-      }
-    }
-
-    for (const i of removeList) {
-      fetch(`/api/groups/${i}`, {
-        method: "PATCH",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({ source_id: -1 }),
-      })
-    }
-
-    for (const i of addList) {
-      fetch(`/api/groups/${i}`, {
-        method: "PATCH",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({ source_id: sourceId, mute: false }),
-      })
-    }
   }
 
   const groupItems = groups.map((group) => {
@@ -212,10 +193,18 @@ const ZonesModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, loadZonesGroups=
       onClose={onClose}
       onCancel={onClose}
       onAccept={()=>{
-        setZones()
-        setGroups()
-        onApply()
-        onClose()
+        if (onApply !== null) {
+          onApply().then(() => {
+            setZones()
+            onClose()
+            clearRcaSourceId()
+          })
+        } else {
+          setZones()
+          onClose()
+          clearRcaSourceId()
+        }
+
       }}
       header="Select Zones">
         <List>

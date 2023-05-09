@@ -69,6 +69,7 @@ const CardVolumeSlider = ({ sourceId }) => {
     .map((z) => z.mute)
     .reduce((a, b) => a && b, true)
 
+  
   const setMute = (mute) => {
     setZonesMute(mute, zones, sourceId)
     fetch(`/api/zones`, {

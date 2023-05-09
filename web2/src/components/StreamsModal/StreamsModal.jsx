@@ -1,32 +1,65 @@
 import "./StreamsModal.scss"
 import ModalCard from "@/components/ModalCard/ModalCard"
-import { getIcon, useStatusStore } from "@/App"
+import { useStatusStore } from "@/App"
+import { Divider } from "@mui/material"
+import { getIcon } from "@/utils/getIcon"
+import { getSourceInputType } from "@/utils/getSourceInputType"
+import { setRcaSourceId } from "../ZonesModal/ZonesModal"
+import { moveSourceContents, setSourceStream } from "@/utils/APIHelper"
+import { setRcaStatus } from "../ZonesModal/ZonesModal"
 import List from "@/components/List/List"
 import ListItem from "../List/ListItem/ListItem"
 
-//TODO: fix RCA behavior
 
 const LIST_ITEM_FONT_SIZE = "1.5rem"
 
 let applyAction = null
 
 export const executeApplyAction = () => {
-  if (applyAction !== null) applyAction()
-  applyAction = null
+  if (applyAction !== null) {
+    const temp = applyAction
+    applyAction = null
+    return temp()
+  }
 }
 
-const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, applyImmediately=true }) => {
-  const streams = useStatusStore((state) => state.status.streams)
+const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlayer=false, applyImmediately=true }) => {
+  const streams = useStatusStore(state => state.status.streams)
+  const zones = useStatusStore(state => state.status.zones)
+  const sources = useStatusStore(state => state.status.sources)
+  const status = useStatusStore(state => state.status)
 
-  const setStream = (streamId) => {
+  const setStream = (stream) => {
+    const streamId = stream.id
+
+    let currentSourceId = sourceId
+    // RCA can only be used on its associated source, so swap if necessary
+    const moveSource = stream.type === 'rca' && stream.index != sourceId
+    if (moveSource) {
+      // TODO: this should be a new endpoint. could benefit from combining the stream/zone transfer into one operation.
+      currentSourceId = stream.index
+      // notify ZonesModal that we are using a different sourceId
+      setRcaSourceId(currentSourceId)
+      // move whatever is here to the original source
+    }
+
     const apply = () => {
-      fetch(`/api/sources/${sourceId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({ input: `stream=${streamId}` }),
-      })
+      if (moveSource) {
+        // move then set new stream
+        const statusModified = JSON.parse(JSON.stringify(status))
+        return moveSourceContents(status, currentSourceId, sourceId).then(() => {
+          statusModified.zones.forEach(z => {
+            if (z.source_id === currentSourceId) {
+              z.source_id = sourceId
+            }
+          })
+          setRcaStatus(statusModified)
+          setSourceStream(currentSourceId, streamId)
+        })
+      } else {
+        // just set new stream
+        return setSourceStream(currentSourceId, streamId)
+      }
     }
 
     if (applyImmediately) {
@@ -34,25 +67,6 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, applyImmediate
     } else {
       applyAction = apply
     }
-  }
-
-  const removeStream = () => {
-    const apply = () => {
-      fetch(`/api/sources/${sourceId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({ input: "None" }),
-      })
-    }
-
-    if (applyImmediately) {
-      apply()
-    } else {
-      applyAction = apply
-    }
-
   }
 
   let streamsList = []

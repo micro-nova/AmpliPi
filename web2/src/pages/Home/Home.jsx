@@ -109,7 +109,14 @@ const Home = ({}) => {
         <StreamsModal
           sourceId={nextAvailableSource}
           applyImmediately={false}
-          onApply={() => setZonesModalOpen(true)}
+          // onApply={(operatingSourceId) => {
+          //   zoneModalSourceId = operatingSourceId
+          //   setZonesModalOpen(true)
+          // }}
+          onApply={() => {
+            // zoneModalSourceId = operatingSourceId
+            setZonesModalOpen(true)
+          }}
           onClose={() => setStreamsModalOpen(false)}
         />
       )}

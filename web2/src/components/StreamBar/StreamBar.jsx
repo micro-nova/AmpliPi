@@ -1,6 +1,7 @@
 import "./StreamBar.scss"
 
-import { useStatusStore, getIcon } from "@/App.jsx"
+import { useStatusStore } from "@/App.jsx"
+import { getIcon } from "@/utils/getIcon"
 
 const StreamBar = ({ sourceId }) => {
   const nametype = useStatusStore(
