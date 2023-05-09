@@ -1,13 +1,20 @@
-import './Modal.scss'
+import "./Modal.scss"
+import StopProp from "@/components/StopProp/StopProp"
 
-const Modal = ({children, className, onClose}) => {
-    return (
-        <div className={`modal_container ${className}`} onClick={()=>{onClose()}}>
-            <div onClick={(e)=>{e.stopPropagation()}}>
-            {children}
-            </div>
-        </div>
-    )
+const Modal = ({ children, className = "", onClose }) => {
+  return (
+    <div
+      className={`modal_container ${className}`}
+      onClick={(e) => {
+        onClose()
+        e.stopPropagation()
+      }}
+    >
+      <StopProp>
+        {children}
+      </StopProp>
+    </div>
+  )
 }
 
 export default Modal

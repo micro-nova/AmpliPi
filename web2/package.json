@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pretty": "prettier --no-semi --write \"./**/*.{js,jsx,ts,tsx,json,css,scss}\""
   },
   "dependencies": {
     "@emotion/react": "^11.10.6",
@@ -19,9 +20,11 @@
     "@mui/system": "^5.11.15",
     "babel-plugin-macros": "^3.1.0",
     "immer": "^9.0.21",
+    "ramda": "^0.29.0",
     "react": "^18.2.0",
     "react-cookie": "^4.1.1",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.10.0",
     "zustand": "^4.3.7"
   },
   "devDependencies": {
@@ -29,6 +32,7 @@
     "@types/react-dom": "^18.0.11",
     "@vitejs/plugin-react": "^3.1.0",
     "https": "^1.0.0",
+    "prettier": "^2.8.8",
     "sass": "^1.59.3",
     "vite": "^4.2.0"
   }

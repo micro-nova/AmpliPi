@@ -35,7 +35,7 @@ class MPRISMetadataReader:
     self.ok = True
 
 
-  def sigterm_handler(self):
+  def sigterm_handler(self, _1: None, _2: None):
     """Handle sigterm."""
     if self.debug:
       print(f"MPRIS metadata process for {self.service_suffix} exiting", flush=True)

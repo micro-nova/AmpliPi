@@ -1,0 +1,10 @@
+@use "src/general.scss";
+
+.presets-item-icon{
+  @include general.circle(2.5rem, general.$preset-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 0.5rem;
+  font-size: 2rem;
+}

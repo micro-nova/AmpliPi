@@ -1,17 +1,10 @@
-@use "src/general.scss";
+@use 'src/general.scss';
 
-.groups-body {
-  @include general.header-font;
-  color: general.$text-color;
+.groups-group-icon{
+  @include general.circle(2.5rem, general.$group-color);
   display: flex;
-  flex-direction: column;
-  height: 95%;
-  overflow-y: auto;
-}
-
-.add-group-button{
-  position: fixed;
-  margin: 1rem;
-  right: 0;
-  bottom: 0;
+  justify-content: center;
+  align-items: center;
+  margin-right: 0.5rem;
+  font-size: 2rem;
 }

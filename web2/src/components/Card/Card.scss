@@ -1,17 +1,13 @@
-@use 'src/general';
+@use "src/general";
 
 .card {
-    @include general.low-shadow;
-    background-color: general.$primary;
-    border-radius: 18px;
+  @include general.low-shadow;
+  background-color: general.$primary;
+  border-radius: 18px;
 
-    color: general.$text-color;
-
-    // width: min-content;
-    // height: min-content;
+  color: general.$text-color;
 }
 
-.card-selected {
-    background-color: general.$selected;
+.selected {
+  @include general.selected-shadow;
 }
-

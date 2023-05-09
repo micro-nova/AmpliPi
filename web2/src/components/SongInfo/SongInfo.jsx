@@ -1,14 +1,13 @@
-import './SongInfo.scss'
-import { useStatusStore } from '@/App.jsx'
+import "./SongInfo.scss"
+import { useStatusStore } from "@/App.jsx"
 
-const SongInfo = ({ 
-  sourceId, 
-  artistClassName, 
-  albumClassName, 
-  trackClassName 
+const SongInfo = ({
+  sourceId,
+  artistClassName,
+  albumClassName,
+  trackClassName,
 }) => {
-
-  const info = useStatusStore(state => state.status.sources[sourceId].info)
+  const info = useStatusStore((state) => state.status.sources[sourceId].info)
 
   artistClassName = "artist-name " + artistClassName
   albumClassName = "album-name " + albumClassName
@@ -20,7 +19,7 @@ const SongInfo = ({
       <div className={albumClassName}>{info.album}</div>
       <div className={trackClassName}>{info.track}</div>
     </div>
-  );
+  )
 }
 
-export default SongInfo;
+export default SongInfo

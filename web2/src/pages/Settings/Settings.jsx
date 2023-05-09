@@ -1,57 +1,140 @@
-import "./Settings.scss";
-import Modal from '@/components/Modal/Modal'
-import Streams from './Streams/Streams'
-import Zones from './Zones/Zones'
-import Groups from './Groups/Groups'
-import Sessions from './Sessions/Sessions'
-import Config from './Config/Config'
-import { useState } from "react";
-const PageListItem = ({name, onClick}) => {
+import "./Settings.scss"
+import Modal from "@/components/Modal/Modal"
+import Streams from "./Streams/Streams"
+import Zones from "./Zones/Zones"
+import Groups from "./Groups/Groups"
+import Sessions from "./Sessions/Sessions"
+import Presets from "./Presets/Presets"
+import Config from "./Config/Config"
+import About from "./About/About"
+import { router } from "@/main"
+import Divider from "@mui/material/Divider"
+import SpeakerIcon from '@mui/icons-material/Speaker';
+import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import UpdateIcon from '@mui/icons-material/Update';
+import HandymanIcon from '@mui/icons-material/Handyman';
+import CableIcon from '@mui/icons-material/Cable';
+import InfoIcon from '@mui/icons-material/Info';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import ListItem from "@/components/List/ListItem/ListItem";
+import List from "@/components/List/List";
+
+const PageListItem = ({ name, onClick, children }) => {
   return (
     <div className="settings-list-item" onClick={onClick}>
-      {name}
+      <div className="settings-list-item-inner">{children} {name}</div>
+      <Divider />
     </div>
   )
 }
-const Settings = ({}) => {
-  const [openPage, setOpenPage] = useState("")
-  const close = () => setOpenPage("")
-  let CorePage = ({}) => {
-      switch(openPage) {
-        case "Streams":
-          return <Streams onClose={close}/>
-        case "Zones":
-          return <Zones onClose={close}/>
-        case "Groups":
-          return <Groups onClose={close}/>
-        case "Sessions":
-          return <Sessions onClose={close}/>
-        case "Configuration and Reset":
-          return <Config onClose={close}/>
-        default:
-          return <div></div>
-      }
+
+const close = () => router.navigate("/settings")
+
+const CorePage = ({ openPage }) => {
+  switch (openPage) {
+    case "streams":
+      return <Streams onClose={close} />
+    case "zones":
+      return <Zones onClose={close} />
+    case "groups":
+      return <Groups onClose={close} />
+    case "sessions":
+      return <Sessions onClose={close} />
+    case "presets":
+      return <Presets onClose={close} />
+    case "config":
+      return <Config onClose={close} />
+    case "about":
+      return <About onClose={close} />
+    default:
+      return <div></div>
   }
-  // wrap in modal if page is open
-  const Page = () => openPage === "" ? <div /> :
+}
+
+// wrap in modal if page is open
+const Page = ({ openPage }) =>
+  openPage === "" ? (
+    <div />
+  ) : (
     <Modal onClose={close}>
       <div className="settings-page-container">
-        <CorePage />
+        <CorePage openPage={openPage} />
       </div>
     </Modal>
-  return(
-  <div className="settings-outer">
-    <div className="settings-header">Settings</div>
-    <div className="settings-body">
-      <PageListItem name="Streams" onClick={()=>setOpenPage("Streams")}/>
-      <PageListItem name="Zones" onClick={()=>setOpenPage("Zones")}/>
-      <PageListItem name="Groups" onClick={()=>setOpenPage("Groups")}/>
-      <PageListItem name="Sessions" onClick={()=>setOpenPage("Sessions")}/>
-      <PageListItem name="Configuration and Reset" onClick={()=>setOpenPage("Configuration and Reset")}/>
-      <PageListItem name="Updates" onClick={()=>{window.location.href=window.location.href.slice(0, window.location.href.length-1)+':5001/update'}}/>
+  )
+
+const Settings = ({ openPage = "" }) => {
+  if(openPage != "") {
+    return (<Page openPage={openPage} />)
+  }
+
+  return (
+    <div className="settings-outer">
+      <div className="settings-header">Settings</div>
+      <div className="settings-body">
+        <List>
+          <ListItem
+            name="Streams"
+            onClick={() => router.navigate("/settings/streams")}
+          >
+            <div className="streams-icon"><VolumeUpIcon fontSize="inherit"/></div>
+          </ListItem>
+
+          <ListItem
+            name="Zones"
+            onClick={() => router.navigate("/settings/zones")}
+          >
+            <div className="zones-icon"><SpeakerIcon fontSize="inherit"/></div>
+          </ListItem>
+
+          <ListItem
+            name="Groups"
+            onClick={() => router.navigate("/settings/groups")}
+          >
+            <div className="groups-icon"><SpeakerGroupIcon fontSize="inherit"/></div>
+          </ListItem>
+
+          {/* <ListItem
+            name="Sessions"
+            onClick={() => router.navigate("/settings/sessions")}
+          >
+            <div className="sessions-icon"><CableIcon fontSize="inherit"/></div>
+          </ListItem> */}
+
+          <ListItem
+            name="Presets"
+            onClick={() => router.navigate("/settings/presets")}
+          >
+            <div className="presets-icon"><PlaylistAddIcon fontSize="inherit"/></div>
+          </ListItem>
+
+          <ListItem
+            name="Configuration"
+            onClick={() => router.navigate("/settings/config")}
+          >
+            <div className="config-icon"><HandymanIcon fontSize="inherit"/></div>
+          </ListItem>
+
+          <ListItem
+            name="Updates"
+            onClick={() => {
+              window.location.href =
+                "http://" + window.location.hostname + ":5001/update"
+            }}
+          >
+            <div className="update-icon"><UpdateIcon fontSize="inherit"/></div>
+          </ListItem>
+
+          <ListItem
+            name="About"
+            onClick={() => router.navigate("/settings/about")}
+          >
+            <div className="about-icon"><InfoIcon fontSize="inherit"/></div>
+          </ListItem>
+        </List>
+      </div>
     </div>
-    <Page />
-  </div>
   )
 }
-export default Settings;
+export default Settings
