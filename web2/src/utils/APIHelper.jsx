@@ -13,31 +13,6 @@ export const moveSourceContents = (status, fromId, toId) => {
   const fromStreamInput = fromSource.input
   const streamType = getSourceInputType(fromSource)
 
-  // move zones
-  
-  // return fetch('/api/zones', {
-  //   method: 'PATCH',
-  //   headers: {'Content-type': 'application/json'},
-  //   body: JSON.stringify({
-  //     'zones': zoneIds,
-  //     'update': {
-  //       'source_id': toId
-  //     }
-  //   })
-  // }).then(() => {
-  //   // move stream
-  //   if (streamType === 'digital') {
-  //     fetch(`/api/sources/${toId}`, {
-  //       method: 'PATCH',
-  //       headers: {'Content-type': 'application/json'},
-  //       body: JSON.stringify({
-  //         'input': fromStreamInput
-  //       })
-  //     })
-  //   }
-  // })
-  console.log(`moving zones: ${zoneIds} to source: ${toId}`)
-
   if (streamType === 'digital') {
     return fetch(`/api/sources/${toId}`, {
       method: 'PATCH',

@@ -39,18 +39,15 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
       // notify ZonesModal that we are using a different sourceId
       setRcaSourceId(currentSourceId)
       // move whatever is here to the original source
-      console.log(`will move ${currentSourceId} to ${sourceId}`)
     }
 
     const apply = () => {
       if (moveSource) {
         // move then set new stream
-        // moveZonesStreamLocal(currentSourceId, sourceId)
         statusModified = JSON.parse(JSON.stringify(status))
         return moveSourceContents(status, currentSourceId, sourceId).then(() => {
           statusModified.zones.forEach(z => {
             if (z.source_id === currentSourceId) {
-              console.log(`moving zone ${z.id} from ${z.source_id} to ${sourceId}`)
               z.source_id = sourceId
             }
           })

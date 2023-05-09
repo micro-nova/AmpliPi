@@ -8,21 +8,24 @@ import { useStatusStore } from "@/App.jsx"
 import SpeakerIcon from '@mui/icons-material/Speaker'
 import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup'
 
+// temp values used during rca operations
 let useRcaSourceId = false
 let rcaSourceId = -1
 let rcaStatus = null
 
+// called by StreamsModal when an rca is no longer being selected/configured
 const clearRcaSourceId = () => {
   useRcaSourceId = false
   rcaSourceId = -1
   rcaStatus = null
 }
 
+// called by StreamsModal when an rca is selected
 export const setRcaStatus = (status) => {
   rcaStatus = status
 }
 
-
+// called by StreamsModal when an rca is selected
 export const setRcaSourceId = (id) => {
   rcaSourceId = id
   useRcaSourceId = true
@@ -45,15 +48,7 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
   )
 
   const computeCheckedGroups = (newCheckedZonesIds) => {
-    let newGroups = []
-    // groups.forEach(g => {
-    //   if (g.zones.every(id => checkedZonesIds.includes(id))) {
-    //     newGroups.push(g.id)
-    //   }
-    // })
-
-    newGroups = groups.filter(g => g.zones.every(id => newCheckedZonesIds.includes(id))).map(g => g.id)
-
+    const newGroups = groups.filter(g => g.zones.every(id => newCheckedZonesIds.includes(id))).map(g => g.id)
     setCheckedGroupIds(newGroups)
   }
 
@@ -119,29 +114,18 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
 
   const setZones = () => {
     // redefine sourceId
-    console.log("setZone")
-    if (useRcaSourceId) {
-      console.log(`using ${rcaSourceId} instead of ${sourceId}`)
-    } else {
-      console.log(`using ${sourceId}`)
-    }
+
     const sid = useRcaSourceId ? rcaSourceId : sourceId
     const zs = useRcaSourceId ? rcaStatus.zones : zones
-    console.log(`zonesmodal operating on source ${sid}`)
 
     let removeList = []
     let addList = []
-    for (let i = 0; i < 4; i++) {
-      console.log(zs[i])
-    }
     
     for (const zone of zs.filter((zone) => {
       return zone.source_id == sid
     })) {
       if (!checkedZonesIds.includes(zone.id)) {
         removeList.push(zone.id)
-        console.log(`queue removal of zone ${zone.id}`)
-        console.log(`because ${zone.id} is not in checkedZonesIds`)
       }
     }
 
@@ -150,7 +134,6 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
     })) {
       if (checkedZonesIds.includes(zone.id)) {
         addList.push(zone.id)
-        console.log(`queue addition of zone ${zone.id}`)
       }
     }
 

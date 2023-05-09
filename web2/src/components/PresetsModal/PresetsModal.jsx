@@ -76,7 +76,6 @@ const PresetsModal = ({ onClose }) => {
       presetStates.map((state, i) => (i === index ? "loading" : state))
     )
     const id = presets[index].id
-    console.log(`/api/presets/${id}/load`)
     fetch(`/api/presets/${id}/load`, {
       method: "POST",
       accept: "application/json",
