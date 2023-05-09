@@ -93,6 +93,14 @@ export const useStatusStore = create((set, get) => ({
       })
     )
   },
+  setSourceState: (sourceId, state) => {
+    set(
+      produce((s) => {
+        s.skipUpdate = true
+        s.status.sources[sourceId].info.state = state
+      })
+    )
+  },
   fetch: () => {
     // if (get().skipUpdate) {
     //   set({ skipUpdate: false })
@@ -109,7 +117,7 @@ export const useStatusStore = create((set, get) => ({
               } else {
                 set({ status: s, loaded: true, disconnected: false })
               }
-              
+
             })
         } else {
           set({ disconnected: true })

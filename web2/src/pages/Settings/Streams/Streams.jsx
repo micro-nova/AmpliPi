@@ -10,6 +10,8 @@ import TypeSelectModal from "./TypeSelectModal/TypeSelectModal"
 import StreamTemplates from "./StreamTemplates.json"
 import { Divider } from "@mui/material"
 import { getIcon } from "@/utils/getIcon"
+import List from "@/components/List/List"
+import ListItem from "@/components/List/ListItem/ListItem"
 
 const initEmptyStream = (type) => {
   const streamTemplate = StreamTemplates.filter((t) => t.type === type)[0]
@@ -44,12 +46,8 @@ const StreamListItem = ({ stream }) => {
   const [showModal, setShowModal] = useState(false)
   const icon = getIcon(stream.type)
   return (
-    <>
-      <div className="stream-modal-list-item" onClick={() => setShowModal(true)}>
-        <img src={icon} className="stream-modal-icon" alt="stream icon" />
-        {stream.name}
-      </div>
-      <Divider/>
+    <ListItem key={stream.id} name={stream.name} onClick={() => setShowModal(true)}>
+      <img src={icon} className="stream-modal-icon" alt="stream icon" />
 
       {showModal && (
         <StreamModal
@@ -61,7 +59,7 @@ const StreamListItem = ({ stream }) => {
           del={deleteStream}
         />
       )}
-    </>
+    </ListItem>
   )
 }
 
@@ -75,9 +73,11 @@ const Streams = ({ onClose }) => {
     <div className="page-container">
       <PageHeader title="Streams" onClose={onClose} />
       <div className="page-body">
-        {streams.map((stream) => {
-          return <StreamListItem key={stream.id} stream={stream} />
-        })}
+        <List>
+          {streams.map((stream) => {
+            return <StreamListItem key={stream.id} stream={stream} />
+          })}
+        </List>
         <div className="add-button">
           <Fab onClick={() => setShowSelect(true)}>
             <AddIcon />

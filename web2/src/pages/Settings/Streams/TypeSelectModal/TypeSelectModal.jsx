@@ -4,6 +4,8 @@ import Modal from "@/components/Modal/Modal"
 import Card from "@/components/Card/Card"
 import { Divider } from "@mui/material"
 import { getIcon } from "@/utils/getIcon"
+import List from "@/components/List/List"
+import ListItem from "@/components/List/ListItem/ListItem"
 
 const TypeSelectModal = ({ onClose, onSelect }) => {
   return (
@@ -14,20 +16,16 @@ const TypeSelectModal = ({ onClose, onSelect }) => {
           <div>
             {StreamTemplates.filter(t=>!t.noCreate).map((t) => {
               return (
-                <>
-                <div
-                  className="type-select-item"
+                <ListItem
                   key={t.type}
+                  name={t.name}
                   onClick={() => {
                     onSelect(t.type)
                     onClose()
                   }}
                 >
                   <img className="type-icon" src={getIcon(t.type)}/>
-                  {t.name}
-                </div>
-                <Divider/>
-                </>
+                </ListItem>
               )
             })}
           </div>

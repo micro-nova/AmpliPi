@@ -17,6 +17,8 @@ import HandymanIcon from '@mui/icons-material/Handyman';
 import CableIcon from '@mui/icons-material/Cable';
 import InfoIcon from '@mui/icons-material/Info';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import ListItem from "@/components/List/ListItem/ListItem";
+import List from "@/components/List/List";
 
 const PageListItem = ({ name, onClick, children }) => {
   return (
@@ -71,64 +73,66 @@ const Settings = ({ openPage = "" }) => {
     <div className="settings-outer">
       <div className="settings-header">Settings</div>
       <div className="settings-body">
-        <PageListItem
-          name="Streams"
-          onClick={() => router.navigate("/settings/streams")}
-        >
-          <div className="streams-icon"><VolumeUpIcon fontSize="inherit"/></div>
-        </PageListItem>
+        <List>
+          <ListItem
+            name="Streams"
+            onClick={() => router.navigate("/settings/streams")}
+          >
+            <div className="streams-icon"><VolumeUpIcon fontSize="inherit"/></div>
+          </ListItem>
 
-        <PageListItem
-          name="Zones"
-          onClick={() => router.navigate("/settings/zones")}
-        >
-          <div className="zones-icon"><SpeakerIcon fontSize="inherit"/></div>
-        </PageListItem>
+          <ListItem
+            name="Zones"
+            onClick={() => router.navigate("/settings/zones")}
+          >
+            <div className="zones-icon"><SpeakerIcon fontSize="inherit"/></div>
+          </ListItem>
 
-        <PageListItem
-          name="Groups"
-          onClick={() => router.navigate("/settings/groups")}
-        >
-          <div className="groups-icon"><SpeakerGroupIcon fontSize="inherit"/></div>
-        </PageListItem>
+          <ListItem
+            name="Groups"
+            onClick={() => router.navigate("/settings/groups")}
+          >
+            <div className="groups-icon"><SpeakerGroupIcon fontSize="inherit"/></div>
+          </ListItem>
 
-        {/* <PageListItem
-          name="Sessions"
-          onClick={() => router.navigate("/settings/sessions")}
-        >
-          <div className="sessions-icon"><CableIcon fontSize="inherit"/></div>
-        </PageListItem> */}
+          {/* <ListItem
+            name="Sessions"
+            onClick={() => router.navigate("/settings/sessions")}
+          >
+            <div className="sessions-icon"><CableIcon fontSize="inherit"/></div>
+          </ListItem> */}
 
-        <PageListItem
-          name="Presets"
-          onClick={() => router.navigate("/settings/presets")}
-        >
-          <div className="presets-icon"><PlaylistAddIcon fontSize="inherit"/></div>
-        </PageListItem>
+          <ListItem
+            name="Presets"
+            onClick={() => router.navigate("/settings/presets")}
+          >
+            <div className="presets-icon"><PlaylistAddIcon fontSize="inherit"/></div>
+          </ListItem>
 
-        <PageListItem
-          name="Config and Reset"
-          onClick={() => router.navigate("/settings/config")}
-        >
-          <div className="config-icon"><HandymanIcon fontSize="inherit"/></div>
-        </PageListItem>
+          <ListItem
+            name="Configuration"
+            onClick={() => router.navigate("/settings/config")}
+          >
+            <div className="config-icon"><HandymanIcon fontSize="inherit"/></div>
+          </ListItem>
 
-        <PageListItem
-          name="Updates"
-          onClick={() => {
-            window.location.href =
-              "http://" + window.location.hostname + ":5001/update"
-          }}
-        >
-          <div className="update-icon"><UpdateIcon fontSize="inherit"/></div>
-        </PageListItem>
+          <ListItem
+            name="Updates"
+            onClick={() => {
+              window.location.href =
+                "http://" + window.location.hostname + ":5001/update"
+            }}
+          >
+            <div className="update-icon"><UpdateIcon fontSize="inherit"/></div>
+          </ListItem>
 
-        <PageListItem
-          name="About"
-          onClick={() => router.navigate("/settings/about")}
-        >
-          <div className="about-icon"><InfoIcon fontSize="inherit"/></div>
-        </PageListItem>
+          <ListItem
+            name="About"
+            onClick={() => router.navigate("/settings/about")}
+          >
+            <div className="about-icon"><InfoIcon fontSize="inherit"/></div>
+          </ListItem>
+        </List>
       </div>
     </div>
   )

@@ -7,6 +7,8 @@ import { Divider, Fab } from "@mui/material"
 import AddIcon from "@mui/icons-material/Add"
 import GroupModal from "./GroupModal/GroupModal"
 import { SpeakerGroup } from "@mui/icons-material"
+import List from "@/components/List/List"
+import ListItem from "@/components/List/ListItem/ListItem"
 
 const GroupListItem = ({ group, zones }) => {
   const [modalOpen, setModalOpen] = useState(false)
@@ -24,18 +26,11 @@ const GroupListItem = ({ group, zones }) => {
   }
 
   return (
-    <>
-    <div className="groups-group-item">
+    <ListItem name={group.name} onClick={() => {
+      setModalOpen(true)
+    }}>
       <div className="groups-group-icon">
         <SpeakerGroup fontSize="inherit"/>
-      </div>
-      <div
-        className="groups-group-name"
-        onClick={() => {
-          setModalOpen(true)
-        }}
-      >
-        {group.name}
       </div>
       {modalOpen && (
         <GroupModal
@@ -48,9 +43,7 @@ const GroupListItem = ({ group, zones }) => {
           apply={editGroup}
         />
       )}
-    </div>
-    <Divider />
-    </>
+    </ListItem>
   )
 }
 
@@ -74,7 +67,11 @@ const Groups = ({ onClose }) => {
   return (
     <div className="page-container">
       <PageHeader title="Groups" onClose={onClose} />
-      <div className="page-body">{groupsListItems}</div>
+      <div className="page-body">
+      <List>
+        {groupsListItems}
+      </List>
+      </div>
       <div className="add-button">
         <Fab
           onClick={() => {

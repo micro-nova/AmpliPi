@@ -7,6 +7,11 @@ import DoneIcon from "@mui/icons-material/Done"
 import { useStatusStore } from "@/App.jsx"
 import SpeakerIcon from '@mui/icons-material/Speaker'
 import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup'
+import ListItem from '@/components/List/ListItem/ListItem.jsx'
+import List from '@/components/List/List.jsx'
+import { Close } from "@mui/icons-material"
+
+const LIST_ITEM_FONT_SIZE = "1.5rem"
 
 // temp values used during rca operations
 let useRcaSourceId = false
@@ -84,7 +89,7 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
 
   const ZonesModalZoneItem = ({ zone, defaultSelected, checked }) => {
     return (
-      <div className="zones-modal-list-item" key={zone.id}>
+      <ListItem name={zone.name} nameFontSize={LIST_ITEM_FONT_SIZE} onClick={()=>handleChangeZone(zone.id)} key={zone.id}>
         <Checkbox
           checked={checked}
           onChange={() => handleChangeZone(zone.id)}
@@ -92,14 +97,13 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
         <div className="zone-icon">
           <SpeakerIcon />
         </div>
-        {zone.name}
-      </div>
+      </ListItem>
     )
   }
 
   const ZonesModalGroupItem = ({ group, defaultSelected, checked }) => {
     return (
-      <div className="zones-modal-list-item" key={group.id}>
+      <ListItem name={group.name} nameFontSize={LIST_ITEM_FONT_SIZE} onClick={()=>handleChangeGroup(group.id)} key={group.id}>
         <Checkbox
           checked={checked}
           onChange={() => handleChangeGroup(group.id)}
@@ -107,8 +111,7 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
         <div className="group-icon">
           <SpeakerGroupIcon />
         </div>
-        {group.name}
-      </div>
+      </ListItem>
     )
   }
 
@@ -120,7 +123,7 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
 
     let removeList = []
     let addList = []
-    
+
     for (const zone of zs.filter((zone) => {
       return zone.source_id == sid
     })) {
@@ -186,39 +189,28 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
   })
 
   return (
-    <ModalCard 
-      onClose={() => {
-        onClose()
-        clearRcaSourceId()
+    <ModalCard
+      onClose={onClose}
+      onCancel={onClose}
+      onAccept={()=>{
+        if (onApply !== null) {
+          onApply().then(() => {
+            setZones()
+            onClose()
+            clearRcaSourceId()
+          })
+        } else {
+          setZones()
+          onClose()
+          clearRcaSourceId()
+        }
+
       }}
       header="Select Zones">
-      <div className="zones-modal-body">
-        {groupItems}
-        {zoneItems}
-      </div>
-      <div className="zones-modal-footer">
-        <IconButton
-          onClick={() => {
-            if (onApply !== null) {
-              onApply().then(() => {
-                setZones()
-                onClose()
-                clearRcaSourceId()
-              })
-            } else {
-              setZones()
-              onClose()
-              clearRcaSourceId()
-            }
-
-          }}
-        >
-          <DoneIcon
-            className="zones-modal-button-icon"
-            style={{ width: "3rem", height: "3rem" }}
-          />
-        </IconButton>
-      </div>
+        <List>
+          {groupItems}
+          {zoneItems}
+        </List>
     </ModalCard>
   )
 }

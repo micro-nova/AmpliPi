@@ -7,7 +7,12 @@ import { getSourceInputType } from "@/utils/getSourceInputType"
 import { setRcaSourceId } from "../ZonesModal/ZonesModal"
 import { moveSourceContents, setSourceStream } from "@/utils/APIHelper"
 import { setRcaStatus } from "../ZonesModal/ZonesModal"
+import { getIcon, useStatusStore } from "@/App"
+import List from "@/components/List/List"
+import ListItem from "../List/ListItem/ListItem"
 
+
+const LIST_ITEM_FONT_SIZE = "1.5rem"
 
 let applyAction = null
 
@@ -70,41 +75,31 @@ const StreamsModal = ({ sourceId, onApply=()=>{}, onClose=()=>{}, showClosePlaye
   for (const stream of streams) {
     const icon = getIcon(stream.type)
     streamsList.push(
-      <>
-        <div
-          className="streams-modal-list-item"
-          onClick={() => {
-            onApply()
-            setStream(stream)
-            onClose()
-          }}
-          key={stream.id}
-        >
-          <img src={icon} className="streams-modal-icon" alt="stream icon" />
-          {stream.name}
-        </div>
-
-        <Divider/>
-      </>
+      <ListItem
+        name={stream.name}
+        key={stream.id}
+        onClick={() => {
+          setStream(stream.id)
+          onApply()
+          onClose()
+        }
+      }
+      nameFontSize = {LIST_ITEM_FONT_SIZE}
+      >
+        <img src={icon} className="streams-modal-icon" alt="stream icon" />
+      </ListItem>
     )
   }
 
   streamsList.push(
-    <div
-      className="streams-modal-list-item"
-      onClick={() => {
-        // setStreamModalOpen(false)
-        onClose()
-      }}
-      key={-2}
-    >
-      Cancel
-    </div>
+    <ListItem name="Cancel" onClick={onClose} key="cancel" nameFontSize = {LIST_ITEM_FONT_SIZE}/>
   )
 
   return (
     <ModalCard header="Select Stream" onClose={onClose}>
+      <List>
       {streamsList}
+      </List>
     </ModalCard>
   )
 }

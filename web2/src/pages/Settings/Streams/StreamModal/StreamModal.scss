@@ -52,15 +52,12 @@
   height: 100%;
 }
 
-.internet-radio-title {
+.internet-radio-name{
   @include general.header-font;
   color: general.$text-color;
-  font-size: 1rem;
+  font-size: 1.5rem;
   margin: 0.5rem;
-}
-
-.stream-buttons {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }

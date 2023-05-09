@@ -4,6 +4,7 @@
   @include general.header-font;
   font-size: 1.5rem;
   color: general.$text-color;
+  cursor: default; //overrides the cursor pointer from a list-item
 }
 
 .modal-card {
@@ -18,7 +19,7 @@
 .modal-header {
   margin: 0.5rem;
   margin-bottom: 0;
-  font-size: 3rem;
+  font-size: 2.5rem;
   text-align: center;
 }
 
@@ -26,9 +27,24 @@
   padding: 1rem;
   padding-top: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   // overflow-y: hidden;
   //the below is to push the scrollbar out of the card to hide it
   // padding-right: 16px;
   width: 100%;
-  height: 100%;
+  // height: 100%;
+}
+
+.modal-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  font-size: 3.5rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.modal-footer-button {
+  cursor: pointer;
+  @include general.button-hover;
 }

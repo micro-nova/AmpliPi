@@ -17,6 +17,8 @@ $text-color: #ffffff;
 $select-color-gray: #bdbdbd; // for preset used_last
 $mute-color: #dc3545;
 
+$page-header-height: 3rem;
+
 // fonts
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans&family=Raleway&display=swap");
 
@@ -52,3 +54,9 @@ $mute-color: #dc3545;
   background-color: $color;
 }
 
+@mixin button-hover{
+  &:hover  {
+    background-color: $secondary;
+    border-radius: 1rem;
+  }
+}
