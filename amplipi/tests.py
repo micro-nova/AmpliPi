@@ -60,7 +60,7 @@ class Client:
     except:
       return False
 
-RCA_INPUTS = { sid: 996 + sid for sid in models.MAX_REAL_SOURCES }
+RCA_INPUTS = { sid: 996 + sid for sid in range(models.MAX_REAL_SOURCES) }
 
 BEATLES_RADIO = {
   'id': 1001,
