@@ -7,7 +7,6 @@ import { getSourceInputType } from "@/utils/getSourceInputType"
 import { setRcaSourceId } from "../ZonesModal/ZonesModal"
 import { moveSourceContents, setSourceStream } from "@/utils/APIHelper"
 import { setRcaStatus } from "../ZonesModal/ZonesModal"
-import { getIcon, useStatusStore } from "@/App"
 import List from "@/components/List/List"
 import ListItem from "../List/ListItem/ListItem"
 

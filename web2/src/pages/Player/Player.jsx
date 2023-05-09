@@ -10,17 +10,19 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp"
 import { useState } from "react"
 import VolumeZones from "@/components/VolumeZones/VolumeZones"
 import Card from "@/components/Card/Card"
+import { getSourceInputType } from "@/utils/getSourceInputType"
 
 const Player = ({ }) => {
-  const selectedSource = usePersistentStore((s) => s.selectedSource)
+  const selectedSourceId = usePersistentStore((s) => s.selectedSource)
   // TODO: dont index into sources. id isn't guarenteed to line up with order
   const img_url = useStatusStore(
-    (s) => s.status.sources[selectedSource].info.img_url
+    (s) => s.status.sources[selectedSourceId].info.img_url
   )
-  const sourceIsStopped = useStatusStore(s => s.status.sources[selectedSource].info.state) === 'stopped'
+  const selectedSource = useStatusStore(s => s.status.sources[selectedSourceId])
+  const sourceIsInactive = getSourceInputType(selectedSource) === 'none'
   const [expanded, setExpanded] = useState(false)
 
-  if (sourceIsStopped) {
+  if (sourceIsInactive) {
     return (
       <div className="player-outer">
         <div className="player-stopped-message">No Player Selected!</div>
@@ -31,20 +33,20 @@ const Player = ({ }) => {
 
   return (
     <div className="player-outer">
-      <StreamBar sourceId={selectedSource} />
+      <StreamBar sourceId={selectedSourceId} />
       <div className="player-inner">
         <img src={img_url} className="player-album-art" />
         <SongInfo
-          sourceId={selectedSource}
+          sourceId={selectedSourceId}
           artistClassName="player-info-title"
           albumClassName="player-info-album"
           trackClassName="player-info-track"
         />
-        <MediaControl selectedSource={selectedSource} />
+        <MediaControl selectedSource={selectedSourceId} />
       </div>
 
       <Card className="player-volume-slider">
-        <CardVolumeSlider sourceId={selectedSource} />
+        <CardVolumeSlider sourceId={selectedSourceId} />
         <IconButton onClick={() => setExpanded(!expanded)}>
           {expanded ? (
           <KeyboardArrowUpIcon
@@ -59,7 +61,7 @@ const Player = ({ }) => {
           )}
         </IconButton>
       </Card>
-      {expanded && <VolumeZones sourceId={selectedSource} />}
+      {expanded && <VolumeZones sourceId={selectedSourceId} />}
 
     </div>
   )

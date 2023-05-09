@@ -2,6 +2,7 @@
 export const getSourceInputType = (source) => {
   // can return:
   // none, rca, digital, unknown
+  if (source.input == undefined) return "unknown"
   const input = source.input.toLowerCase()
 
   if (input === "none" || input === "" || input === "local") {
