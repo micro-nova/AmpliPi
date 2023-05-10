@@ -164,13 +164,12 @@ def loop_test(client: Client, test_name: str):
   if status is None:
     return
   if len(status.zones) == 0:
-    print('unable to run preamp test on streamer')
-    sys.exit(1)
+    raise Exception('unable to run preamp test on streamer')
   stages = [pst for pst in status.presets if pst.name.startswith(test_name) and pst.id is not None]
   if len(stages) == 0:
     print(f"test '{test_name}' not found")
     return
-  elif test_name == 'preout':
+  if test_name == 'preout':
     print("""Use a pair of headphones to connect to each of the 6 channels.
 
     - Verify both left and right sides are playing music for each channel
@@ -261,11 +260,9 @@ def preamp_test(ap1: Client, exp_unit: bool = False):
   ap2 = get_analog_tester_client()
   status = ap1.get_status()
   if status is None:
-    print('failed to get AmpliPi status')
-    sys.exit(1)
+    raise Exception('failed to get AmpliPi status')
   if len(status.zones) == 0:
-    print('unable to run preamp test on streamer')
-    sys.exit(1)
+    raise Exception('unable to run preamp test on streamer')
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
   try_analog = not exp_unit # the analog tester is not needed for expansion units
   if try_analog and ap2.available():
@@ -344,7 +341,7 @@ if __name__ == '__main__':
 
   old_config = setup(ap, exp_unit=args.expansion)
   if not old_config:
-    print('failed to configure amplitpi for testing, exiting')
+    print('failed to configure amplipi for testing, exiting')
     sys.exit(1)
   try:
     print(f"Running test '{args.test}'. Press Ctrl-C to stop.")
@@ -356,11 +353,14 @@ if __name__ == '__main__':
       streamer_test(ap)
     else:
       loop_test(ap, args.test)
-  except KeyboardInterrupt: # TODO: handle other signals kill and sighup
-    try:
-      if ap.available() and ap.load_config(old_config):
-        print('\nRestored previous configuration.')
-      else:
-        print('\nFailed to restore configuration. Left in testing state.')
-    except:
-      print('\nError restoring configuration. Left in testing state.')
+  except KeyboardInterrupt:
+    pass
+  except Exception as e:
+    print('Failed to test {args.test}: {e}')
+  try:
+    if ap.available() and ap.load_config(old_config):
+      print('\nRestored previous configuration.')
+    else:
+      print('\nFailed to restore configuration. Left in testing state.')
+  except:
+    print('\nError restoring configuration. Left in testing state.')
