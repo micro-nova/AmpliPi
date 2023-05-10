@@ -884,6 +884,7 @@ def add_tests(env, progress) -> List[Task]:
   directory = pathlib.Path.home().joinpath('Desktop', 'tests')
   tasks += _create_dir(str(directory))
 
+  tasks += [Task('Remove old tests', [f'rm {str(directory)}/*'], shell=True).run()]
   for test in tests:
     tasks += [_add_desktop_icon(env, directory, test[0], test[1])]
   progress(tasks)
