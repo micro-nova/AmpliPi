@@ -295,7 +295,7 @@ def streamer_test(ap1: Client):
     print('failed to get AmpliPi status')
     sys.exit(1)
   print('Test will play Digital 1 Left... Digital 4 Right')
-  print('- Verify that each side and all 4 sources are played out of each of the 6 zones')
+  print('- Verify that each side of all 4 sources are played out the corresponding RCA outputs')
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
   while True:
     for msg in digital_msgs:
