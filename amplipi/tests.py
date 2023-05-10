@@ -294,6 +294,9 @@ def streamer_test(ap1: Client):
   if status is None:
     print('failed to get AmpliPi status')
     sys.exit(1)
+  if len(status.zones) != 0:
+    raise Exception("""Unit has zones. It may not have detected it was a streamer unit.
+      Do a factory reset and try testing again.""")
   print('Test will play Digital 1 Left... Digital 4 Right')
   print('- Verify that each side of all 4 sources are played out the corresponding RCA outputs')
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
