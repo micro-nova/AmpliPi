@@ -1,0 +1,39 @@
+\documentclass{article}
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+ }
+
+\usepackage{minted}
+%\usepackage[utf8]{inputenc}
+%\usepackage[english]{babel}
+\usepackage{markdown}
+\markdownSetup{
+  contentBlocks,
+  taskLists,
+  underscores = false,
+  pipeTables,
+  tableCaptions,
+}
+\title{AmpliPi Home Audio Controller - Test Checklists}
+\author{MicroNova}
+\date{May 2023}
+%\setlength\parindent{0pt}
+\begin{document}
+
+%\maketitle
+%\setkeys{Gin}{width=.99\linewidth}
+%\newpage
+
+\pagenumbering{arabic}
+
+\markdownInput{TESTING.md}
+\newpage
+\markdownInput{TESTING_EXPANDER.md}
+\newpage
+\markdownInput{TESTING_STREAMER.md}
+
+\end{document}
