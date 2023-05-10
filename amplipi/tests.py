@@ -12,6 +12,8 @@ import requests
 
 from amplipi import models
 
+API_TIMEOUT = 2
+
 class Client:
   """ Simple AmpliPi client interface
 
@@ -23,35 +25,35 @@ class Client:
 
   def reset(self) -> bool:
     """ Reset firmware """
-    return requests.post(f'{self.url}/reset').ok
+    return requests.post(f'{self.url}/reset', timeout=API_TIMEOUT).ok
 
   def load_config(self, cfg: models.Status) -> Optional[models.Status]:
     """ Load a configuration """
-    resp = requests.post(f'{self.url}/load', json=cfg.dict())
+    resp = requests.post(f'{self.url}/load', json=cfg.dict(), timeout=API_TIMEOUT)
     if resp.ok:
       return models.Status(**resp.json())
     return None
 
   def load_preset(self, pid: int) -> bool:
     """ Load a preset configuration """
-    resp = requests.post(f'{self.url}/presets/{pid}/load')
+    resp = requests.post(f'{self.url}/presets/{pid}/load', timeout=API_TIMEOUT)
     return resp.ok
 
   def create_preset(self, pst: models.Preset) -> bool:
     """ Create a new preset configuration """
-    resp = requests.post(f'{self.url}/preset', json=pst.dict())
+    resp = requests.post(f'{self.url}/preset', json=pst.dict(), timeout=API_TIMEOUT)
     return resp.ok
 
   def get_status(self) -> Optional[models.Status]:
     """ Get the system state """
-    resp = requests.get(self.url)
+    resp = requests.get(self.url, timeout=API_TIMEOUT)
     if resp.ok:
       return models.Status(**resp.json())
     return None
 
   def announce(self, announcement: models.Announcement) -> bool:
     """ Announce something """
-    return requests.post(f'{self.url}/announce', json=announcement.dict()).ok
+    return requests.post(f'{self.url}/announce', json=announcement.dict(), timeout=API_TIMEOUT).ok
 
   def available(self) -> bool:
     """ Check connection """
@@ -81,6 +83,7 @@ def all_zones(exp_unit: bool = False) -> Sequence[int]:
   return range(18) if exp_unit else range(12)
 
 def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
+  """ Configure AmpliPi for testing by loading a simple known configuration """
   def pst_all_zones_to_src(name: str, src: int, _input: str, vol=-50):
     """ Create a preset that connects all zones to @src"""
     return {
@@ -98,7 +101,7 @@ def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
 
   is_streamer = len(status.zones) == 0
   if is_streamer:
-    PRESETS = [
+    presets = [
       {
         'name': 'inputs-in',
         'state': {
@@ -107,7 +110,7 @@ def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
       }
     ]
   else:
-    PRESETS = [
+    presets = [
       {
         'name': 'led-0 mute all',
         'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
@@ -137,22 +140,21 @@ def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
 
     # set volume on zoneX
     for zid in all_zones(exp_unit):
-      PRESETS += [
+      presets += [
         {
           'name': f'led-{zid + 1} enable zone {zid + 1}',
           'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
         }
       ]
-    PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, f'stream={RCA_INPUTS[src]}', -40) for src in range(4)]
-    PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
+    presets += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, f'stream={RCA_INPUTS[src]}', -40) for src in range(4)]
+    presets += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
 
-  """ Configure AmpliPi for testing by loading a simple known configuration """
   prev_cfg = client.get_status()
   if is_streamer:
     client.load_config(models.Status(zones=[], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
   else:
     client.load_config(models.Status(zones=[models.Zone(id=z, name=f'Zone {z + 1}') for z in all_zones(exp_unit)], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
-  for pst in PRESETS:
+  for pst in presets:
     client.create_preset(models.Preset(**pst))
   print('waiting for config file to be written')
   sleep(6)
@@ -244,7 +246,7 @@ def inputs_test(ap1: Client):
     if not analog_tester_avail:
       sleep(5)
     else:
-      ap2.announce(models.Announcement(source_id=3, media=f'web/static/audio/aux_in.mp3'))
+      ap2.announce(models.Announcement(source_id=3, media='web/static/audio/aux_in.mp3'))
 
     # select the Optical input on this device and play audio through it to all zones
     set_pcm("IEC958 In")
@@ -253,7 +255,7 @@ def inputs_test(ap1: Client):
     if not analog_tester_avail:
       sleep(5)
     else:
-      ap2.announce(models.Announcement(source_id=0, media=f'web/static/audio/optical_in.mp3'))
+      ap2.announce(models.Announcement(source_id=0, media='web/static/audio/optical_in.mp3'))
 
 def preamp_test(ap1: Client, exp_unit: bool = False):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
@@ -276,7 +278,6 @@ def preamp_test(ap1: Client, exp_unit: bool = False):
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
   analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3') for src in range(4)]
   while True:
-    # TODO: verify fw version
     if try_analog and ap2.available():
       for msg in analog_msgs:
         pst = presets[msg.source_id]
