@@ -11,6 +11,7 @@ import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
 import { router } from "@/main"
 import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon"
 
+// holds onto the selectedSource state so that it persists between refreshes
 export const usePersistentStore = create(
   persist(
     (set) => ({
@@ -26,18 +27,7 @@ export const usePersistentStore = create(
   )
 )
 
-const updateGroupVols = (s) => {
-  s.status.groups.forEach(g => {
-    if (g.zones.length > 1) {
-      const vols = g.zones.map(id => s.status.zones[id].vol_f)
-      let calculated_vol = Math.min(...vols) * .5 + Math.max(...vols) * .5
-      g.vol_f = calculated_vol
-    } else if (g.zones.length == 1) {
-      g.vol_f = s.status.zones[id].vol_f
-    }
-  })
-}
-
+// holds onto non-persistent state
 export const useStatusStore = create((set, get) => ({
   status: null,
   skipUpdate: false,
@@ -174,7 +164,17 @@ export const useStatusStore = create((set, get) => ({
   },
 }))
 
-
+const updateGroupVols = (s) => {
+  s.status.groups.forEach(g => {
+    if (g.zones.length > 1) {
+      const vols = g.zones.map(id => s.status.zones[id].vol_f)
+      let calculated_vol = Math.min(...vols) * .5 + Math.max(...vols) * .5
+      g.vol_f = calculated_vol
+    } else if (g.zones.length == 1) {
+      g.vol_f = s.status.zones[id].vol_f
+    }
+  })
+}
 
 const Page = ({ selectedPage }) => {
   switch (selectedPage) {
