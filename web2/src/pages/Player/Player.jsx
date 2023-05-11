@@ -12,14 +12,16 @@ import VolumeZones from "@/components/VolumeZones/VolumeZones"
 import Card from "@/components/Card/Card"
 import { getSourceInputType } from "@/utils/getSourceInputType"
 
-const Player = ({ }) => {
+const Player = ({}) => {
   const selectedSourceId = usePersistentStore((s) => s.selectedSource)
   // TODO: dont index into sources. id isn't guarenteed to line up with order
   const img_url = useStatusStore(
     (s) => s.status.sources[selectedSourceId].info.img_url
   )
-  const selectedSource = useStatusStore(s => s.status.sources[selectedSourceId])
-  const sourceIsInactive = getSourceInputType(selectedSource) === 'none'
+  const selectedSource = useStatusStore(
+    (s) => s.status.sources[selectedSourceId]
+  )
+  const sourceIsInactive = getSourceInputType(selectedSource) === "none"
   const [expanded, setExpanded] = useState(false)
 
   if (sourceIsInactive) {
@@ -27,7 +29,6 @@ const Player = ({ }) => {
       <div className="player-outer">
         <div className="player-stopped-message">No Player Selected!</div>
       </div>
-    
     )
   }
 
@@ -49,10 +50,10 @@ const Player = ({ }) => {
         <CardVolumeSlider sourceId={selectedSourceId} />
         <IconButton onClick={() => setExpanded(!expanded)}>
           {expanded ? (
-          <KeyboardArrowUpIcon
-            className="player-volume-expand-button"
-            style={{ width: "3rem", height: "3rem" }}
-          />
+            <KeyboardArrowUpIcon
+              className="player-volume-expand-button"
+              style={{ width: "3rem", height: "3rem" }}
+            />
           ) : (
             <KeyboardArrowDownIcon
               className="player-volume-expand-button"
@@ -62,7 +63,6 @@ const Player = ({ }) => {
         </IconButton>
       </Card>
       {expanded && <VolumeZones sourceId={selectedSourceId} />}
-
     </div>
   )
 }

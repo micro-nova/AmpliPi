@@ -4,11 +4,8 @@
   color: general.$text-color;
   font-size: 1rem;
   font-weight: medium;
-  // text-align: center;
   white-space: nowrap;
   text-overflow: ellipsis;
-  // max-width: 8rem;
-
   @include general.header-font;
   cursor: pointer;
 }
@@ -20,12 +17,4 @@
   flex-direction: column;
   flex-wrap: wrap;
   max-height: 6rem;
-  // min-width: 0px;
 }
-
-// .zone-chip {
-//   background-color: general.$secondary;
-//   border-radius: 10rem;
-//   padding: 0.3rem 0.5rem;
-//   margin: 0.25rem;
-// }

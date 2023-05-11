@@ -8,7 +8,6 @@ import PlayerImage from "../PlayerImage/PlayerImage"
 import ZonesBadge from "../ZonesBadge/ZonesBadge"
 import StreamsModal from "../StreamsModal/StreamsModal"
 import ZonesModal from "../ZonesModal/ZonesModal"
-// import { useStatusStore } from "@/App.jsx"
 import { usePersistentStore } from "@/App.jsx"
 import { router } from "@/main"
 
@@ -30,12 +29,12 @@ const PlayerCard = ({ sourceId }) => {
     <Card selected={selected}>
       <div className="outer">
         <div
-            className="content stream-name-container"
-            onClick={() => {
-              setStreamModalOpen(true)
-            }}
-          >
-            <StreamBadge sourceId={sourceId} />
+          className="content stream-name-container"
+          onClick={() => {
+            setStreamModalOpen(true)
+          }}
+        >
+          <StreamBadge sourceId={sourceId} />
         </div>
         <div
           className="content"

@@ -8,8 +8,26 @@ import QueueMusicIcon from "@mui/icons-material/QueueMusic"
 import Badge from "@mui/material/Badge"
 import { useStatusStore, usePersistentStore } from "@/App"
 import { getSourceInputType } from "@/utils/getSourceInputType"
+import { router } from "@/main"
 
-const MenuBar = ({ onChange, pageNumber }) => {
+const MenuBar = ({ pageNumber }) => {
+  const setSelectedPage = (n) => {
+    switch (n) {
+      default:
+        router.navigate("/home")
+        break
+      case 1:
+        router.navigate("/player")
+        break
+      case 2:
+        router.navigate("/browser")
+        break
+      case 3:
+        router.navigate("/settings")
+        break
+    }
+  }
+
   const updateAvailable = useStatusStore(
     (s) =>
       s.status.info.version
@@ -20,20 +38,28 @@ const MenuBar = ({ onChange, pageNumber }) => {
         }) < 0
   )
 
-  const selectedSource = usePersistentStore((s) => s.selectedSource)
-  const sourceIsInactive = getSourceInputType(selectedSource) === 'none'
+  const selectedSourceId = usePersistentStore((s) => s.selectedSource)
+  const selectedSource = useStatusStore(s => s.status.sources[selectedSourceId])
+  const sourceInputType = getSourceInputType(selectedSource)
+  console.log(`sourceInputType MenuBar: ${sourceInputType}`)
+  const sourceIsInactive =
+    sourceInputType === "none" || sourceInputType == "unknown"
 
   return (
     <div className="bar">
       <BottomNavigation
         value={pageNumber}
         onChange={(event, num) => {
-          onChange(num)
+          setSelectedPage(num)
         }}
       >
         <BottomNavigationAction label="Home" icon={<HomeIcon />} />
-        {!sourceIsInactive && <BottomNavigationAction label="Player" icon={<AlbumIcon />} />}
-        { false && <BottomNavigationAction label="Browser" icon={<QueueMusicIcon />} />}
+        {!sourceIsInactive && (
+          <BottomNavigationAction label="Player" icon={<AlbumIcon />} />
+        )}
+        {false && (
+          <BottomNavigationAction label="Browser" icon={<QueueMusicIcon />} />
+        )}
         <BottomNavigationAction
           label="Settings"
           icon={

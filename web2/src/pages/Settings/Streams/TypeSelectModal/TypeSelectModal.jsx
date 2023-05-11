@@ -2,9 +2,7 @@ import "./TypeSelectModal.scss"
 import StreamTemplates from "../StreamTemplates.json"
 import Modal from "@/components/Modal/Modal"
 import Card from "@/components/Card/Card"
-import { Divider } from "@mui/material"
 import { getIcon } from "@/utils/getIcon"
-import List from "@/components/List/List"
 import ListItem from "@/components/List/ListItem/ListItem"
 
 const TypeSelectModal = ({ onClose, onSelect }) => {
@@ -14,7 +12,7 @@ const TypeSelectModal = ({ onClose, onSelect }) => {
         <Card className="type-select-card">
           <div className="type-select-title">Select A Stream Type</div>
           <div>
-            {StreamTemplates.filter(t=>!t.noCreate).map((t) => {
+            {StreamTemplates.filter((t) => !t.noCreate).map((t) => {
               return (
                 <ListItem
                   key={t.type}
@@ -24,7 +22,7 @@ const TypeSelectModal = ({ onClose, onSelect }) => {
                     onClose()
                   }}
                 >
-                  <img className="type-icon" src={getIcon(t.type)}/>
+                  <img className="type-icon" src={getIcon(t.type)} />
                 </ListItem>
               )
             })}

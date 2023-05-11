@@ -1,4 +1,3 @@
-
 export const getSourceInputType = (source) => {
   // can return:
   // none, rca, digital, unknown
@@ -9,7 +8,7 @@ export const getSourceInputType = (source) => {
     return "none"
   }
 
-  const split = input.split('=')
+  const split = input.split("=")
   if (split.length !== 2) {
     console.log(`WARNING: unknown source input: ${input}`)
     return "unknown"
@@ -20,6 +19,4 @@ export const getSourceInputType = (source) => {
   } else {
     return "digital"
   }
-
-  
 }

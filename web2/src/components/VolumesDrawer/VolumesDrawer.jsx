@@ -5,6 +5,7 @@ import { getSourceZones } from '@/pages/Home/Home'
 import ZoneVolumeSlider from '../ZoneVolumeSlider/ZoneVolumeSlider';
 import GroupVolumeSlider from '../GroupVolumeSlider/GroupVolumeSlider';
 
+// container for volume sliders on player page
 const VolumesDrawer = ({ open, onClose, sourceId }) => {
   const zones = getSourceZones(sourceId, useStatusStore.getState().status.zones)
   const groups = getSourceZones(sourceId, useStatusStore.getState().status.groups)

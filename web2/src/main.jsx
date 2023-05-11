@@ -4,15 +4,11 @@ import App from "./App"
 import Settings from "./pages/Settings/Settings"
 import Poller from "./Poller"
 import "./index.scss"
-import { ThemeProvider, createTheme } from '@mui/material/styles'
-import CssBaseline from '@mui/material/CssBaseline'
-import './general.scss'
+import { ThemeProvider, createTheme } from "@mui/material/styles"
+import CssBaseline from "@mui/material/CssBaseline"
+import "./general.scss"
 
-import {
-  createHashRouter,
-  RouterProvider,
-  Navigate,
-} from "react-router-dom"
+import { createHashRouter, RouterProvider, Navigate } from "react-router-dom"
 
 export const router = createHashRouter([
   {
@@ -83,9 +79,9 @@ export const router = createHashRouter([
 
 const darkTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: "dark",
     background: {
-      paper: '#2a2a2a' // TODO: no good way of getting this from scss...
+      paper: "#2a2a2a", // TODO: no good way of getting this from scss...
     },
   },
 })

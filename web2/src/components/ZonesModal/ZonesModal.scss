@@ -1,18 +1,6 @@
 @use "src/general.scss";
 
-.zones-modal-list-item {
-  margin-bottom: 1rem;
-  display: flex;
-  flex-direction: row;
-  justify-content: start;
-  align-items: center;
-}
-
-.zones-modal-button-icon {
-  color: general.$controls-color;
-}
-
-@mixin icon($color){
+@mixin icon($color) {
   @include general.circle(2rem, $color);
   display: flex;
   flex-direction: row;

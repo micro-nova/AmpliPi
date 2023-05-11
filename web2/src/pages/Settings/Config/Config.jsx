@@ -58,44 +58,60 @@ const Config = ({ onClose }) => {
       <div className="page-body">
         <div>
           Upload Config
-          <div className="config-desc">{"Uploads the selected configuration file."}</div>
+          <div className="config-desc">
+            {"Uploads the selected configuration file."}
+          </div>
           <div>
             <input
               type="file"
               accept=".json,application/json"
               onChange={onChange}
             />
-            <Button onClick={()=>UploadConfig(file)}>Upload</Button>
+            <Button onClick={() => UploadConfig(file)}>Upload</Button>
           </div>
         </div>
         <Divider />
         <div>
           Download Config
-          <div className="config-desc">{"Downloads the current configuration."}</div>
+          <div className="config-desc">
+            {"Downloads the current configuration."}
+          </div>
           <Button onClick={DownloadConfig}>Download</Button>
         </div>
         <Divider />
         <div>
           Factory Config
-          <div className="config-desc">{"Resets Amplipi to the factory default configuration. We recommend downloading the current configuration beforehand."}</div>
+          <div className="config-desc">
+            {
+              "Resets Amplipi to the factory default configuration. We recommend downloading the current configuration beforehand."
+            }
+          </div>
           <Button onClick={FactoryReset}>Reset</Button>
         </div>
         <Divider />
         <div>
           HW Reset
-          <div className="config-desc">{"Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)"}</div>
+          <div className="config-desc">
+            {
+              "Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)"
+            }
+          </div>
           <Button onClick={HWReset}>Reset</Button>
         </div>
         <Divider />
         <div>
           HW Reboot
-          <div className="config-desc">{"Reboots the Raspberry Pi-based controller"}</div>
+          <div className="config-desc">
+            {"Reboots the Raspberry Pi-based controller"}
+          </div>
           <Button onClick={HWReboot}>Reboot</Button>
         </div>
         <Divider />
         <div>
           HW Shutdown
-          <div className="config-desc">{"Trigger a shutdown of the Raspberry Pi-based controller"}</div>
+          <div className="config-desc">
+            {"Trigger a shutdown of the Raspberry Pi-based controller"}
+          </div>
           <Button onClick={HWShutdown}>Shutdown</Button>
         </div>
         <Divider />

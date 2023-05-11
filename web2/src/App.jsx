@@ -8,7 +8,6 @@ import Settings from "@/pages/Settings/Settings"
 import produce from "immer"
 import { getSourceZones } from "@/pages/Home/Home"
 import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider"
-import { router } from "@/main"
 import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon"
 
 // holds onto the selectedSource state so that it persists between refreshes
@@ -17,12 +16,12 @@ export const usePersistentStore = create(
     (set) => ({
       selectedSource: 0,
       setSelectedSource: (selected) => {
-        set({selectedSource: selected})
-      }
+        set({ selectedSource: selected })
+      },
     }),
     {
-      name: 'persistent-store',
-      storage: createJSONStorage(() => localStorage)
+      name: "persistent-store",
+      storage: createJSONStorage(() => localStorage),
     }
   )
 )
@@ -99,16 +98,13 @@ export const useStatusStore = create((set, get) => ({
     fetch(`/api`)
       .then((res) => {
         if (res.ok) {
-          res
-            .json()
-            .then((s) => {
-              if (get().skipUpdate) {
-                set({ skipUpdate: false })
-              } else {
-                set({ status: s, loaded: true, disconnected: false })
-              }
-
-            })
+          res.json().then((s) => {
+            if (get().skipUpdate) {
+              set({ skipUpdate: false })
+            } else {
+              set({ status: s, loaded: true, disconnected: false })
+            }
+          })
         } else {
           set({ disconnected: true })
         }
@@ -165,10 +161,10 @@ export const useStatusStore = create((set, get) => ({
 }))
 
 const updateGroupVols = (s) => {
-  s.status.groups.forEach(g => {
+  s.status.groups.forEach((g) => {
     if (g.zones.length > 1) {
-      const vols = g.zones.map(id => s.status.zones[id].vol_f)
-      let calculated_vol = Math.min(...vols) * .5 + Math.max(...vols) * .5
+      const vols = g.zones.map((id) => s.status.zones[id].vol_f)
+      let calculated_vol = Math.min(...vols) * 0.5 + Math.max(...vols) * 0.5
       g.vol_f = calculated_vol
     } else if (g.zones.length == 1) {
       g.vol_f = s.status.zones[id].vol_f
@@ -189,34 +185,14 @@ const Page = ({ selectedPage }) => {
   }
 }
 
-function App({ selectedPage }) {
-  const setSelectedPage = (n) => {
-    switch (n) {
-      default:
-        router.navigate("/home")
-        break
-      case 1:
-        router.navigate("/player")
-        break
-      case 2:
-        router.navigate("/browser")
-        break
-      case 3:
-        router.navigate("/settings")
-        break
-    }
-  }
-
+const App = ({ selectedPage }) => {
   return (
     <div className="app">
       <DisconnectedIcon />
       <div style={{ paddingBottom: "56px" }}>
-        <Page selectedPage={selectedPage}/>
+        <Page selectedPage={selectedPage} />
       </div>
-      <MenuBar
-        pageNumber={selectedPage}
-        onChange={setSelectedPage}
-      />
+      <MenuBar pageNumber={selectedPage} />
     </div>
   )
 }

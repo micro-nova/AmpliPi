@@ -1,15 +1,14 @@
 import { create } from "zustand"
 import { useState, useEffect } from "react"
 import { useStatusStore } from "@/App"
+import { getSourceInputType } from "@/utils/getSourceInputType"
 import produce from "immer"
 
-import ModalCard from '@/components/ModalCard/ModalCard'
-import DoneIcon from "@mui/icons-material/Done"
+import ModalCard from "@/components/ModalCard/ModalCard"
 import "./CreatePresetModal.scss"
 
 import Checkbox from "@mui/material/Checkbox"
 import Switch from "@mui/material/Switch"
-import IconButton from "@mui/material/IconButton"
 import FormControlLabel from "@mui/material/FormControlLabel"
 import Box from "@mui/material/Box"
 
@@ -107,7 +106,7 @@ const buildTreeDict = (status, showInactive = false) => {
 
   const statusClone = JSON.parse(JSON.stringify(status))
   const sourceDicts = statusClone.sources
-    .filter((source) => showInactive || source.info.state !== "stopped")
+    .filter((source) => showInactive || getSourceInputType(source) !== "none")
     .map(dictWithOptions)
   const top = baseDict(false, "All", sourceDicts)
   return top
@@ -224,17 +223,13 @@ const CreatePresetModal = ({ onClose }) => {
         onChange={(e) => setName(e.target.value)}
       />
       <br />
-      <div>
-        Properties
-      </div>
+      <div>Properties</div>
       <div>
         <FormControlLabel
           label={"Show Inactive"}
           control={
             <Switch
-              onClick={(e) =>
-                setTree(buildTreeDict(status, e.target.checked))
-              }
+              onClick={(e) => setTree(buildTreeDict(status, e.target.checked))}
             />
           }
         />

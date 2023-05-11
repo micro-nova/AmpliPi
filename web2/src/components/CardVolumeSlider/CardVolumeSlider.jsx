@@ -1,5 +1,3 @@
-import Slider from "@mui/material/Slider"
-import { useState, useEffect } from "react"
 import "./CardVolumeSlider.scss"
 import { getSourceZones } from "@/pages/Home/Home"
 import { useStatusStore } from "@/App"
@@ -32,6 +30,8 @@ export const applyPlayerVol = (vol, zones, sourceId, apply) => {
 }
 
 let sendingPacketCount = 0
+
+// main volume slider on player and volume slider on player card
 
 const CardVolumeSlider = ({ sourceId }) => {
   const zones = useStatusStore((s) => s.status.zones)

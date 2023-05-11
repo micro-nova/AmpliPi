@@ -1,12 +1,7 @@
 import { useState } from "react"
 
-import Modal from "@/components/Modal/Modal"
-import Card from "@/components/Card/Card"
-import DoneIcon from "@mui/icons-material/Done"
-import DeleteIcon from "@mui/icons-material/Delete"
-import IconButton from "@mui/material/IconButton"
 import "./EditPresetModal.scss"
-import ModalCard from "@/components/ModalCard/ModalCard.jsx";
+import ModalCard from "@/components/ModalCard/ModalCard.jsx"
 
 const EditPresetModal = ({ onClose, preset }) => {
   const [name, setName] = useState(preset.name)

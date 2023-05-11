@@ -1,15 +1,12 @@
 import "./ZonesModal.scss"
-import ModalCard from '@/components/ModalCard/ModalCard'
+import ModalCard from "@/components/ModalCard/ModalCard"
 import Checkbox from "@mui/material/Checkbox"
 import { useState } from "react"
-import { IconButton } from "@mui/material"
-import DoneIcon from "@mui/icons-material/Done"
 import { useStatusStore } from "@/App.jsx"
-import SpeakerIcon from '@mui/icons-material/Speaker'
-import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup'
-import ListItem from '@/components/List/ListItem/ListItem.jsx'
-import List from '@/components/List/List.jsx'
-import { Close } from "@mui/icons-material"
+import SpeakerIcon from "@mui/icons-material/Speaker"
+import SpeakerGroupIcon from "@mui/icons-material/SpeakerGroup"
+import ListItem from "@/components/List/ListItem/ListItem.jsx"
+import List from "@/components/List/List.jsx"
 
 const LIST_ITEM_FONT_SIZE = "1.5rem"
 
@@ -36,24 +33,31 @@ export const setRcaSourceId = (id) => {
   useRcaSourceId = true
 }
 
-const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=true }) => {
+const ZonesModal = ({
+  sourceId,
+  onApply = null,
+  onClose = () => {},
+  loadZonesGroups = true,
+}) => {
   const zones = useStatusStore
     .getState()
     .status.zones.filter((zone) => !zone.disabled)
   const groups = useStatusStore.getState().status.groups
   const [checkedZonesIds, setCheckedZoneIds] = useState(
     zones
-    .filter((zone) => zone.source_id === sourceId && loadZonesGroups)
-    .map((zone) => zone.id)
+      .filter((zone) => zone.source_id === sourceId && loadZonesGroups)
+      .map((zone) => zone.id)
   )
   const [checkedGroupIds, setCheckedGroupIds] = useState(
     groups
-    .filter((group) => group.source_id === sourceId && loadZonesGroups)
-    .map((group) => group.id)
+      .filter((group) => group.source_id === sourceId && loadZonesGroups)
+      .map((group) => group.id)
   )
 
   const computeCheckedGroups = (newCheckedZonesIds) => {
-    const newGroups = groups.filter(g => g.zones.every(id => newCheckedZonesIds.includes(id))).map(g => g.id)
+    const newGroups = groups
+      .filter((g) => g.zones.every((id) => newCheckedZonesIds.includes(id)))
+      .map((g) => g.id)
     setCheckedGroupIds(newGroups)
   }
 
@@ -61,7 +65,7 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
     let newZones = [...checkedZonesIds]
     if (checkedZonesIds.includes(id)) {
       // currently checked. uncheck
-      newZones = newZones.filter(item => item != id)
+      newZones = newZones.filter((item) => item != id)
     } else {
       // currently unchecked. check
       newZones.push(id)
@@ -71,15 +75,17 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
   }
 
   const handleChangeGroup = (id) => {
-    const group = groups.filter(g => g.id === id)[0]
+    const group = groups.filter((g) => g.id === id)[0]
     let newZones = [...checkedZonesIds]
 
     if (checkedGroupIds.includes(id)) {
       // currently checked. unckeck associated zones
-      group.zones.forEach(zid => newZones = newZones.filter(new_zid => new_zid !== zid))
+      group.zones.forEach(
+        (zid) => (newZones = newZones.filter((new_zid) => new_zid !== zid))
+      )
     } else {
       // currently unchecked. check associated zones
-      group.zones.forEach(zid => {
+      group.zones.forEach((zid) => {
         if (!newZones.includes(zid)) newZones.push(zid)
       })
     }
@@ -89,7 +95,12 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
 
   const ZonesModalZoneItem = ({ zone, defaultSelected, checked }) => {
     return (
-      <ListItem name={zone.name} nameFontSize={LIST_ITEM_FONT_SIZE} onClick={()=>handleChangeZone(zone.id)} key={zone.id}>
+      <ListItem
+        name={zone.name}
+        nameFontSize={LIST_ITEM_FONT_SIZE}
+        onClick={() => handleChangeZone(zone.id)}
+        key={zone.id}
+      >
         <Checkbox
           checked={checked}
           onChange={() => handleChangeZone(zone.id)}
@@ -103,7 +114,12 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
 
   const ZonesModalGroupItem = ({ group, defaultSelected, checked }) => {
     return (
-      <ListItem name={group.name} nameFontSize={LIST_ITEM_FONT_SIZE} onClick={()=>handleChangeGroup(group.id)} key={group.id}>
+      <ListItem
+        name={group.name}
+        nameFontSize={LIST_ITEM_FONT_SIZE}
+        onClick={() => handleChangeGroup(group.id)}
+        key={group.id}
+      >
         <Checkbox
           checked={checked}
           onChange={() => handleChangeGroup(group.id)}
@@ -146,7 +162,8 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
         "Content-type": "application/json",
       },
       body: JSON.stringify({
-        zones: removeList, update: { source_id: -1 }
+        zones: removeList,
+        update: { source_id: -1 },
       }),
     })
 
@@ -192,7 +209,7 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
     <ModalCard
       onClose={onClose}
       onCancel={onClose}
-      onAccept={()=>{
+      onAccept={() => {
         if (onApply !== null) {
           onApply().then(() => {
             setZones()
@@ -204,13 +221,13 @@ const ZonesModal = ({ sourceId, onApply=null, onClose=()=>{}, loadZonesGroups=tr
           onClose()
           clearRcaSourceId()
         }
-
       }}
-      header="Select Zones">
-        <List>
-          {groupItems}
-          {zoneItems}
-        </List>
+      header="Select Zones"
+    >
+      <List>
+        {groupItems}
+        {zoneItems}
+      </List>
     </ModalCard>
   )
 }

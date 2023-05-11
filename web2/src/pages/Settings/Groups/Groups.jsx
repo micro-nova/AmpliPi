@@ -3,7 +3,7 @@ import "../PageBody.scss"
 import "./Groups.scss"
 import { useStatusStore } from "@/App.jsx"
 import { useState } from "react"
-import { Divider, Fab } from "@mui/material"
+import { Fab } from "@mui/material"
 import AddIcon from "@mui/icons-material/Add"
 import GroupModal from "./GroupModal/GroupModal"
 import { SpeakerGroup } from "@mui/icons-material"
@@ -26,11 +26,14 @@ const GroupListItem = ({ group, zones }) => {
   }
 
   return (
-    <ListItem name={group.name} onClick={() => {
-      setModalOpen(true)
-    }}>
+    <ListItem
+      name={group.name}
+      onClick={() => {
+        setModalOpen(true)
+      }}
+    >
       <div className="groups-group-icon">
-        <SpeakerGroup fontSize="inherit"/>
+        <SpeakerGroup fontSize="inherit" />
       </div>
       {modalOpen && (
         <GroupModal
@@ -68,9 +71,7 @@ const Groups = ({ onClose }) => {
     <div className="page-container">
       <PageHeader title="Groups" onClose={onClose} />
       <div className="page-body">
-      <List>
-        {groupsListItems}
-      </List>
+        <List>{groupsListItems}</List>
       </div>
       <div className="add-button">
         <Fab

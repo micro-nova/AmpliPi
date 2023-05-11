@@ -11,7 +11,7 @@ const VolIcon = ({ vol, mute }) => {
     return (
       <VolumeOffIcon
         fontSize="2rem"
-        className="volume-slider-icon volume-slider-mute"
+        className="volume-slider-icon volume-slider-mute-icon"
       />
     )
   } else if (vol <= 0.2) {
@@ -22,6 +22,8 @@ const VolIcon = ({ vol, mute }) => {
     return <VolumeUpIcon fontSize="2rem" className="volume-slider-icon" />
   }
 }
+
+// generic volume slider used by other volume sliders
 const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
   return (
     <StopProp>
@@ -48,10 +50,8 @@ const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
             setVol(val, true)
           }}
         />
-
       </div>
     </StopProp>
-
   )
 }
 

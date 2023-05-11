@@ -11,6 +11,7 @@ import { getFittestRep } from '@/utils/GroupZoneFiltering'
 
 let sendingRequestCount = 0
 
+// volume slider for a group in the volumes drawer
 const GroupVolumeSlider = ({ groupId, sourceId, groupsLeft }) => {
   const group = useStatusStore(s => s.status.groups.filter(g => g.id === groupId)[0])
   const volume = group.vol_f
