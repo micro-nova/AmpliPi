@@ -12,48 +12,48 @@ import requests
 
 from amplipi import models
 
-API_TIMEOUT = 2
-
 class Client:
   """ Simple AmpliPi client interface
 
   TODO: create full fledged client for full AmpliPi API
   """
+  DEFAULT_TIMEOUT = 2
+  ANNOUCE_TIMEOUT = 10 # requests don't return until announcement is finished
 
   def __init__(self, url='http://localhost/api'):
     self.url = url
 
   def reset(self) -> bool:
     """ Reset firmware """
-    return requests.post(f'{self.url}/reset', timeout=API_TIMEOUT).ok
+    return requests.post(f'{self.url}/reset', timeout=self.DEFAULT_TIMEOUT).ok
 
   def load_config(self, cfg: models.Status) -> Optional[models.Status]:
     """ Load a configuration """
-    resp = requests.post(f'{self.url}/load', json=cfg.dict(), timeout=API_TIMEOUT)
+    resp = requests.post(f'{self.url}/load', json=cfg.dict(), timeout=self.DEFAULT_TIMEOUT)
     if resp.ok:
       return models.Status(**resp.json())
     return None
 
   def load_preset(self, pid: int) -> bool:
     """ Load a preset configuration """
-    resp = requests.post(f'{self.url}/presets/{pid}/load', timeout=API_TIMEOUT)
+    resp = requests.post(f'{self.url}/presets/{pid}/load', timeout=self.DEFAULT_TIMEOUT)
     return resp.ok
 
   def create_preset(self, pst: models.Preset) -> bool:
     """ Create a new preset configuration """
-    resp = requests.post(f'{self.url}/preset', json=pst.dict(), timeout=API_TIMEOUT)
+    resp = requests.post(f'{self.url}/preset', json=pst.dict(), timeout=self.DEFAULT_TIMEOUT)
     return resp.ok
 
   def get_status(self) -> Optional[models.Status]:
     """ Get the system state """
-    resp = requests.get(self.url, timeout=API_TIMEOUT)
+    resp = requests.get(self.url, timeout=self.DEFAULT_TIMEOUT)
     if resp.ok:
       return models.Status(**resp.json())
     return None
 
   def announce(self, announcement: models.Announcement) -> bool:
     """ Announce something """
-    return requests.post(f'{self.url}/announce', json=announcement.dict(), timeout=API_TIMEOUT).ok
+    return requests.post(f'{self.url}/announce', json=announcement.dict(), timeout=self.ANNOUCE_TIMEOUT).ok
 
   def available(self) -> bool:
     """ Check connection """
@@ -80,6 +80,7 @@ EXTRA_INPUTS_PLAYBACK = {
 }
 
 def all_zones(exp_unit: bool = False) -> Sequence[int]:
+  """Get a list of all available zones based on if this is an @exp_unit"""
   return range(18) if exp_unit else range(12)
 
 def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
