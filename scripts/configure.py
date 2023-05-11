@@ -868,6 +868,7 @@ def add_tests(env, progress) -> List[Task]:
   ]
   if env['is_streamer']:
     tests += [('Streamer', './hw/tests/built_in.bash streamer')]
+    tests += [('Config Streamer', 'venv/bin/python ./hw/tests/config_streamer.py')]
   else:
     tests += [
       ('Program Main', './hw/tests/program_preamps.bash'),

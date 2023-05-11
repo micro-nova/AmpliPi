@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+""" Interactively configure the Streamer's EEPROM"""
+import os
+import re
+import subprocess
+import sys
+from typing import Optional, Tuple, Union
+
+# Add the amplipi directory to PATH
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from amplipi.eeprom import BoardInfo, BoardType, EEPROM, UnitType
+
+BOARD_REV_RE = re.compile(r"(\d+)([A-z])")
+
+def main() -> None:
+  """Write board info to eeprom, using user input for serial number and board revision"""
+  serial: Optional[int] = None
+  board_rev : Union[Tuple[int, str], Tuple[None, None]] = (None, None)
+  try:
+    serial_input = input("Enter streamer serial number (ie: 1234):")
+    serial = int(serial_input)
+    board_rev_input = input("Enter streamer board revision (ie: 1a):").strip()
+    board_rev_match = BOARD_REV_RE.fullmatch(board_rev_input)
+    if board_rev_match and len(board_rev_match.groups()) == 2:
+      board_rev = (int(board_rev_match.group(1)), board_rev_match.group(2))
+    else:
+      print(f'Failed to parse board revision from "{board_rev_input}"')
+  except ValueError as e:
+    print(f'Failed to read serial number from "{serial_input}": {e}')
+  except (KeyboardInterrupt, EOFError):
+    print("Failed to read input")
+
+  if not serial or not board_rev[0]:
+    sys.exit(1)
+
+  try:
+    print(f"Writing streamer config to eeprom: serial={serial}, board_rev={board_rev[0]}{board_rev[1]}")
+    eeprom = EEPROM(1, BoardType.STREAMER_SUPPORT)
+    eeprom.write_board_info(BoardInfo(serial=serial, unit_type=UnitType.STREAMER, board_type=BoardType.STREAMER_SUPPORT, board_rev=board_rev))
+  except Exception as e:
+    print(f"Failed to write board info to eeprom: {e}")
+    sys.exit(1)
+
+  try:
+    print(f"Restarting amplipi to detect streamer capability")
+    subprocess.run("sudo systemctl --user restart amplipi".split(), check=True)
+  except Exception as e:
+    print(f"Failed to restart amplipi: {e}")
+
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    print(main.__doc__)
+  else:
+    main()

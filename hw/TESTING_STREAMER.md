@@ -8,12 +8,13 @@
 | rev |                |                  |
 |  QC |                |                  |
 
+- [ ] Config Streamer
 
 - [ ] USB Ports
 
-|   | TOP | BOTTOM | INT |
-|---|-----|--------|-----|
-| ✓ |     |        |     |
+|   | TOP | BOTTOM |
+|---|-----|--------|
+| ✓ |     |        |
 
 - [ ] Ethernet
 - [ ] Inputs

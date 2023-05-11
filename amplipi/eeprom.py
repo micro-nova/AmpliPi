@@ -172,7 +172,7 @@ class EEPROM:
     if self.get_format() not in SUPPORTED_FORMATS:
       raise UnsupportedFormatError("Unsupported format")
     self._write_number(1, BOARD_REV_ADDR, rev[0])
-    self._write_letter(BOARD_REV_ADDR+1, rev[1])
+    self._write_letter(BOARD_REV_ADDR+1, rev[1].upper())
 
   def get_format(self) -> int:
     """Check EEPROM format."""
