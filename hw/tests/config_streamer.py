@@ -10,7 +10,8 @@ from typing import Optional, Tuple, Union
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from amplipi.eeprom import BoardInfo, BoardType, EEPROM, UnitType
 
-BOARD_REV_RE = re.compile(r"(\d+)([A-z])")
+BOARD_REV_RE = re.compile(r"(\d+)([A-z])") # accept lower or uppser case change designator
+                                           # we will uppercase later
 
 def main() -> None:
   """Write board info to eeprom, using user input for serial number and board revision"""
@@ -30,20 +31,20 @@ def main() -> None:
   except (KeyboardInterrupt, EOFError):
     print("Failed to read input")
 
-  if not serial or not board_rev[0]:
+  if serial is None or board_rev[0] is None:
     sys.exit(1)
 
   try:
     print(f"Writing streamer config to eeprom: serial={serial}, board_rev={board_rev[0]}{board_rev[1]}")
-    eeprom = EEPROM(1, BoardType.STREAMER_SUPPORT)
+    eeprom = EEPROM(0, BoardType.STREAMER_SUPPORT)
     eeprom.write_board_info(BoardInfo(serial=serial, unit_type=UnitType.STREAMER, board_type=BoardType.STREAMER_SUPPORT, board_rev=board_rev))
   except Exception as e:
     print(f"Failed to write board info to eeprom: {e}")
     sys.exit(1)
 
   try:
-    print(f"Restarting amplipi to detect streamer capability")
-    subprocess.run("sudo systemctl --user restart amplipi".split(), check=True)
+    print("Restarting amplipi to detect streamer capability")
+    subprocess.run("systemctl --user restart amplipi".split(), check=True)
   except Exception as e:
     print(f"Failed to restart amplipi: {e}")
 
