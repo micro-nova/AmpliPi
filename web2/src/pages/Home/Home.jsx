@@ -84,8 +84,6 @@ const Home = ({}) => {
     clearSourceZones(sourceId)
 
     // open first modal
-    // setZonesModalOpen(true) // TODO: change to stream modal
-    console.log("hi")
     setStreamsModalOpen(true)
   }
 
@@ -115,14 +113,7 @@ const Home = ({}) => {
         <StreamsModal
           sourceId={nextAvailableSource}
           applyImmediately={false}
-          // onApply={(operatingSourceId) => {
-          //   zoneModalSourceId = operatingSourceId
-          //   setZonesModalOpen(true)
-          // }}
-          onApply={() => {
-            // zoneModalSourceId = operatingSourceId
-            setZonesModalOpen(true)
-          }}
+          onApply={() => setZonesModalOpen(true)}
           onClose={() => setStreamsModalOpen(false)}
         />
       )}
