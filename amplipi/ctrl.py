@@ -205,8 +205,15 @@ class Api:
     found_boards = []
     try:
       found_boards = EEPROM.get_available_devices(0)
+      if found_boards:
+        print(f'Found boards:')
     except Exception as exc:
       print(f'Error finding boards: {exc}')
+    try:
+      for board in found_boards:
+        print(f' - {EEPROM(0, board).get_board_info()}')
+    except Exception as exc:
+      print(f'Error showing board info: {exc}')
 
     # check if we are a streamer
     self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards

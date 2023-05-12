@@ -8,7 +8,7 @@ from time import sleep
 from typing import List, Tuple
 import smbus2 as smbus
 try:
-  import RPi.GPIO as GPIO
+  from RPi import GPIO
 except Exception:
   pass
 
@@ -40,6 +40,12 @@ class BoardInfo:
   unit_type: UnitType
   board_type: BoardType
   board_rev: Tuple[int, str]
+
+  def __str__(self):
+    board_type = f"{str(self.board_type).replace('BoardType.','').lower()}"
+    unit = f"{str(self.unit_type).replace('UnitType.','').lower()}"
+    rev = f"{self.board_rev[0]}{self.board_rev[1]}"
+    return f'{board_type}: unit={unit} rev={rev} serial={self.serial}'
 
 
 class EEPROMWriteError(Exception):
