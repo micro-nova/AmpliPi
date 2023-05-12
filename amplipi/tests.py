@@ -224,6 +224,11 @@ def inputs_test(ap1: Client):
     print('Preset id not available')
     sys.exit(1)
 
+  if len(status.zones) > 0:
+    print("""Connect speakers to any zone""")
+  else:
+    print("""Connect powered speakers with RCA inputs to source 1""")
+
   print("""
   Alternating between outputting Optical and Aux left and right audio
 
@@ -301,6 +306,8 @@ def streamer_test(ap1: Client):
       Do a factory reset and try testing again.""")
   print('Test will play Digital 1 Left... Digital 4 Right')
   print('- Verify that each side of all 4 sources are played out the corresponding RCA outputs')
+  print('  ex. Digital 1 Left should be played out on the RCA output 1')
+  print('  NOTE: Requires a powered speaker with an RCA cable input')
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
   while True:
     for msg in digital_msgs:

@@ -8,6 +8,11 @@
 | rev |                |                  |
 |  QC |                |                  |
 
+- Test Setup:
+    - Plug in Ethernet, Aux, Optical, and Power
+    - Click "Test Streamer" on Destktop
+    - The tests found below should now be available
+
 - [ ] Config Streamer
 
 - [ ] USB Ports
@@ -32,5 +37,12 @@
 - [ ] Display (manual)
     - [ ] Shows correct IP (when ethernet connected)
     - [ ] Show Disconnected (when ethernet disconnected)
+
+- Test Setup:
+    - Navigate back to the tester pi
+    - The tests below should now be available
+
+- [ ] Amplipi - Under Test
+    - Verify unit branding matches web interface
 
 - [ ] Service USB
