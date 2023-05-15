@@ -290,7 +290,7 @@ class TFTDisplay(Display):
           xp = xs - round(0.5 * cw)  # Shift playing arrow back a bit
           ys = 4 * ch + round(0.5 * ch)
           self.draw.line(((cw, ys - 3), (self.width - 2 * cw, ys - 3)), width=2, fill=Color.LIGHTGRAY.value)
-          for i, src in enumerate(sources):
+          for i, src in enumerate(sources[:4]):
             sinfo = sources[i].info
             if sinfo is not None:
               if sinfo.state == 'playing':
