@@ -653,7 +653,7 @@ class Api:
     if not sources:
       sources = self.status.sources
     src_cfg = [True] * models.MAX_REAL_SOURCES
-    for s, src in enumerate(sources):
+    for s, src in enumerate(sources[:models.MAX_REAL_SOURCES]):
       src_cfg[s] = self._is_digital(src.input)
     return src_cfg
 
