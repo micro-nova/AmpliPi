@@ -524,9 +524,9 @@ class Api:
         Get the possible inputs for any source (only one stream)
 
         >>> my_amplipi.get_inputs()
-        { None: '', 'stream=9449': 'Matt and Kim Radio' }
+        { '': '', 'stream=9449': 'Matt and Kim Radio' }
     """
-    inputs: Dict[Optional[str], str] = {None: ''}
+    inputs: Dict[Optional[str], str] = {'': ''}
     for sid, stream in self.streams.items():
       connectable = stream.requires_src() in [None, src.id] # TODO: remove this filter when sources can dynamically change output
       # we don't want users to switch to the always on LMS streams
@@ -543,7 +543,7 @@ class Api:
       aliased_stream_id = aliasing_source.get_stream()
       if aliased_stream_id is not None:
         aliased_stream = self.streams[aliased_stream_id]
-        inputs[None] = aliased_stream.name
+        inputs[''] = aliased_stream.name
     return inputs
 
   def _check_is_online(self) -> bool:
