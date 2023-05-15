@@ -1,8 +1,10 @@
 import cProfile
+import json
+import os
 import socket
 import sys
 import time
-from typing import List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 # pylint: disable=wrong-import-position
 import busio
@@ -30,6 +32,8 @@ except (NotImplementedError, RuntimeError) as err:
   log.critical('Only Raspberry Pi is currently supported')
   sys.exit(1)
 
+
+USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 
 class TFTDisplay(Display):
   # Number of screens to scroll through
@@ -139,10 +143,27 @@ class TFTDisplay(Display):
     GPIO.setup(board.D38.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(board.D38.id, GPIO.FALLING, callback=self.touch_callback)
 
-    # Load image and convert to RGB
-    mn_logo = Image.open('amplipi/display/imgs/micronova_320x240.png').convert('RGB')
-    self.ap_logo = Image.open('amplipi/display/imgs/amplipi_320x126.png').convert('RGB')
-    self.display.image(mn_logo)
+    # Identity - allows display customization
+    identity : Dict[str, str] = {
+      'name': 'AmpliPi',
+      'touch_logo': 'amplipi/display/imgs/amplipi_320x126.png'
+    }
+    # Load fields from special identity file (if it exists), falling back to default values above
+    try:
+      with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8') as identity_file:
+        potential_identity = json.load(identity_file)
+        for key, val in identity.items():
+          identity[key] = potential_identity.get(key, val)
+    except FileNotFoundError:
+      pass
+    except Exception as e:
+      print(f'Error loading identity file: {e}')
+
+    try:
+      self.ap_logo = Image.open(identity['touch_logo']).convert('RGB')
+    except Exception:
+      # default to a black image
+      self.ap_logo = Image.new('RGB', (320 , 126))
 
     # Turn on display backlight now that an image is loaded
     # Anything duty cycle less than 100% causes flickering
