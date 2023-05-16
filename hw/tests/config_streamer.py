@@ -2,7 +2,7 @@
 """ Interactively configure the Streamer's EEPROM"""
 import os
 import re
-import subprocess
+import requests
 import sys
 from typing import Optional, Tuple, Union
 
@@ -43,10 +43,12 @@ def main() -> None:
     sys.exit(1)
 
   try:
-    print("Restarting amplipi to detect streamer capability")
-    subprocess.run("systemctl --user restart amplipi".split(), check=True)
+    print("Resetting amplipi to detect streamer capability")
+    response = requests.post('http://0.0.0.0/api/factory_reset', timeout=10)
+    if not response.ok:
+      print(f"Failed to reset amplipi: {response.text}")
   except Exception as e:
-    print(f"Failed to restart amplipi: {e}")
+    print(f"Failed to reset amplipi: {e}")
 
 if __name__ == "__main__":
   if len(sys.argv) > 1:
