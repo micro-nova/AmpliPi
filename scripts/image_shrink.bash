@@ -51,7 +51,7 @@ sudo chmod +x $root_dir/etc/init.d/resize2fs_once
 sudo ln -s ../init.d/resize2fs_once $root_dir/etc/rc3.d/S01resize2fs_once
 
 echo -e "\nRemoving all log files"
-sudo find $root_dir/var/log -type f -exec rm {} \;
+sudo find $root_dir/var/log -type f -delete
 
 echo "Resetting password to default"
 # TODO set password to 'raspberry'
