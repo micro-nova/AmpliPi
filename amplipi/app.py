@@ -617,7 +617,7 @@ def generate_openapi_spec(add_test_docs=True):
   }
   openapi_schema['info']['license'] = {
     'name': 'GPL',
-    'url':  'https://github.com/micro-nova/AmpliPi/blob/master/COPYING',
+    'url':  'https://github.com/micro-nova/AmpliPi/blob/main/COPYING',
   }
 
   # Manually add examples present in pydancticModel.schema_extra into openAPI schema
