@@ -1,4 +1,4 @@
-import './Chip.scss'
+import "./Chip.scss"
 import StopProp from "@/components/StopProp/StopProp"
 
 const Chip = ({ children, onClick }) => {

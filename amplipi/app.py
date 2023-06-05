@@ -70,7 +70,7 @@ GENERATED_DIR = os.path.abspath('web/generated')
 WEB_DIR = os.path.abspath('web2/dist')
 
 app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
-templates = Jinja2Templates(TEMPLATE_DIR)
+# templates = Jinja2Templates(TEMPLATE_DIR)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

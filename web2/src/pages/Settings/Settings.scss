@@ -50,37 +50,37 @@
   justify-content: center;
   align-items: center;
   margin-right: 1rem;
-  font-size: 2.5rem
+  font-size: 2.5rem;
 }
 
-.streams-icon{
- @include settings-icon(general.$stream-color);
+.streams-icon {
+  @include settings-icon(general.$stream-color);
 }
 
-.zones-icon{
+.zones-icon {
   @include settings-icon(general.$zone-color);
 }
 
-.groups-icon{
+.groups-icon {
   @include settings-icon(general.$group-color);
 }
 
-.sessions-icon{
+.sessions-icon {
   @include settings-icon(general.$session-color);
 }
 
-.presets-icon{
+.presets-icon {
   @include settings-icon(general.$preset-color);
 }
 
-.config-icon{
+.config-icon {
   @include settings-icon(general.$config-color);
 }
 
-.about-icon{
+.about-icon {
   @include settings-icon(general.$about-color);
 }
 
-.update-icon{
+.update-icon {
   @include settings-icon(general.$update-color);
 }

@@ -1,12 +1,10 @@
-import Slider from "@mui/material/Slider"
-import { useState, useEffect } from "react"
 import "./ZoneVolumeSlider.scss"
-import { getSourceZones } from "@/pages/Home/Home"
 import { useStatusStore } from "@/App"
 import VolumeSlider from "../VolumeSlider/VolumeSlider"
 
 let sendingRequestCount = 0
 
+// Volume slider for individual zone in volume drawer
 const ZoneVolumeSlider = ({ zoneId }) => {
   const zoneName = useStatusStore((s) => s.status.zones[zoneId].name)
   const volume = useStatusStore((s) => s.status.zones[zoneId].vol_f)

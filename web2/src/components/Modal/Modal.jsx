@@ -10,9 +10,7 @@ const Modal = ({ children, className = "", onClose }) => {
         e.stopPropagation()
       }}
     >
-      <StopProp>
-        {children}
-      </StopProp>
+      <StopProp>{children}</StopProp>
     </div>
   )
 }

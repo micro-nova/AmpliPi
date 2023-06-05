@@ -1,6 +1,5 @@
 import "./PageHeader.scss"
-import CloseIcon from '@mui/icons-material/Close';
-
+import CloseIcon from "@mui/icons-material/Close"
 
 const PageHeader = ({ title, onClose }) => {
   return (

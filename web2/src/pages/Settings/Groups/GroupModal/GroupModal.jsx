@@ -1,5 +1,5 @@
 import { useState } from "react"
-import ModalCard from '@/components/ModalCard/ModalCard'
+import ModalCard from "@/components/ModalCard/ModalCard"
 import { IconButton } from "@mui/material"
 import DoneIcon from "@mui/icons-material/Done"
 import DeleteIcon from "@mui/icons-material/Delete"
@@ -36,7 +36,6 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
         onClose()
       }}
     >
-
       <div className="group-input-title">Name</div>
       <div className="group-name-input">
         <input
@@ -67,7 +66,6 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
         })}
       </Select>
     </ModalCard>
-
   )
 }
 

@@ -7,7 +7,7 @@ import { Fab } from "@mui/material"
 import AddIcon from "@mui/icons-material/Add"
 import CreatePresetModal from "./CreatePresetModal/CreatePresetModal"
 import EditPresetModal from "./EditPresetModal/EditPresetModal"
-import {PlaylistAdd} from "@mui/icons-material"
+import { PlaylistAdd } from "@mui/icons-material"
 import List from "@/components/List/List"
 import ListItem from "@/components/List/ListItem/ListItem"
 
@@ -15,12 +15,14 @@ const PresetListItem = ({ preset }) => {
   const [presetOpen, setPresetOpen] = useState(false)
 
   return (
-      <ListItem name={preset.name} onClick={() => setPresetOpen(true)}>
-        <div className="presets-item-icon"><PlaylistAdd fontSize="inherit" /></div>
-        {presetOpen && (
-          <EditPresetModal onClose={() => setPresetOpen(false)} preset={preset} />
-        )}
-      </ListItem>
+    <ListItem name={preset.name} onClick={() => setPresetOpen(true)}>
+      <div className="presets-item-icon">
+        <PlaylistAdd fontSize="inherit" />
+      </div>
+      {presetOpen && (
+        <EditPresetModal onClose={() => setPresetOpen(false)} preset={preset} />
+      )}
+    </ListItem>
   )
 }
 

@@ -1,5 +1,4 @@
 import "./PlayerImage.scss"
-import { useState, useEffect } from "react"
 import { useStatusStore } from "@/App"
 
 const PlayerImage = ({ sourceId }) => {

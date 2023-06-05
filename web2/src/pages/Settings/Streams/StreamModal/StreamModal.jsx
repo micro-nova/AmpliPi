@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react"
-import { CircularProgress, IconButton } from "@mui/material"
+import { CircularProgress } from "@mui/material"
 import { Divider } from "@mui/material"
-import DoneIcon from "@mui/icons-material/Done"
-import DeleteIcon from "@mui/icons-material/Delete"
 import "./StreamModal.scss"
 import StreamTemplates from "../StreamTemplates.json"
 import ModalCard from "@/components/ModalCard/ModalCard"
@@ -14,18 +12,18 @@ const DISABLED_DESC = "Don't show this stream in the input dropdown"
 const TextField = ({ name, desc, defaultValue, onChange }) => {
   return (
     <>
-    <div className="stream-field">
-      <div className="stream-field-name">{name}</div>
-      <input
-        type="text"
-        defaultValue={defaultValue}
-        onChange={(e) => {
-          onChange(e.target.value)
-        }}
-      />
-      <div className="stream-field-desc">{desc}</div>
-    </div>
-    <Divider/>
+      <div className="stream-field">
+        <div className="stream-field-name">{name}</div>
+        <input
+          type="text"
+          defaultValue={defaultValue}
+          onChange={(e) => {
+            onChange(e.target.value)
+          }}
+        />
+        <div className="stream-field-desc">{desc}</div>
+      </div>
+      <Divider />
     </>
   )
 }
@@ -33,20 +31,20 @@ const TextField = ({ name, desc, defaultValue, onChange }) => {
 const BoolField = ({ name, desc, defaultValue, onChange }) => {
   return (
     <>
-    <div>
-      <div className="stream-field-bool">
-      <div className="stream-field-name">{name}</div>
-      <input
-        type="checkbox"
-        defaultChecked={defaultValue}
-        onChange={(e) => {
-          onChange(e.target.checked)
-        }}
-      />
+      <div>
+        <div className="stream-field-bool">
+          <div className="stream-field-name">{name}</div>
+          <input
+            type="checkbox"
+            defaultChecked={defaultValue}
+            onChange={(e) => {
+              onChange(e.target.checked)
+            }}
+          />
+        </div>
+        <div className="stream-field-desc">{desc}</div>
       </div>
-      <div className="stream-field-desc">{desc}</div>
-    </div>
-    <Divider/>
+      <Divider />
     </>
   )
 }

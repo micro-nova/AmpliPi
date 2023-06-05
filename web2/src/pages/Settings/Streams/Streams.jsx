@@ -8,7 +8,6 @@ import Fab from "@mui/material/Fab"
 import AddIcon from "@mui/icons-material/Add"
 import TypeSelectModal from "./TypeSelectModal/TypeSelectModal"
 import StreamTemplates from "./StreamTemplates.json"
-import { Divider } from "@mui/material"
 import { getIcon } from "@/utils/getIcon"
 import List from "@/components/List/List"
 import ListItem from "@/components/List/ListItem/ListItem"
@@ -46,7 +45,11 @@ const StreamListItem = ({ stream }) => {
   const [showModal, setShowModal] = useState(false)
   const icon = getIcon(stream.type)
   return (
-    <ListItem key={stream.id} name={stream.name} onClick={() => setShowModal(true)}>
+    <ListItem
+      key={stream.id}
+      name={stream.name}
+      onClick={() => setShowModal(true)}
+    >
       <img src={icon} className="stream-modal-icon" alt="stream icon" />
 
       {showModal && (

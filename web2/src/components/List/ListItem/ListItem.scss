@@ -1,6 +1,6 @@
-@use 'src/general.scss';
+@use "src/general.scss";
 
-.list-item-container{
+.list-item-container {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -14,7 +14,7 @@
   border-bottom: none;
 }
 
-.list-item-child{
+.list-item-child {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -22,6 +22,6 @@
   margin-right: 0.25rem;
 }
 
-.list-item-name{
+.list-item-name {
   @include general.header-font;
 }

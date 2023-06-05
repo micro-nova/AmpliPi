@@ -6,8 +6,6 @@ import StreamsModal from "@/components/StreamsModal/StreamsModal"
 import PresetsModal from "@/components/PresetsModal/PresetsModal"
 import { useState } from "react"
 import { executeApplyAction } from "@/components/StreamsModal/StreamsModal"
-import { Button, Fab, IconButton } from "@mui/material"
-import { Add } from "@mui/icons-material"
 
 export const getSourceZones = (source_id, zones) => {
   let matches = []
@@ -19,7 +17,13 @@ export const getSourceZones = (source_id, zones) => {
   return matches
 }
 
-const PresetAndAdd = ({cards, nextAvailableSource, setPresetsModalOpen, sources, initSource}) => {
+const PresetAndAdd = ({
+  cards,
+  nextAvailableSource,
+  setPresetsModalOpen,
+  sources,
+  initSource,
+}) => {
   if (cards.length < sources.length) {
     return (
       <div className="home-presets-container">
@@ -69,12 +73,7 @@ const Home = ({}) => {
       source.input != "" &&
       source.input != "local"
     ) {
-      cards.push(
-        <PlayerCardFb
-          key={i}
-          sourceId={source.id}
-        />
-      )
+      cards.push(<PlayerCardFb key={i} sourceId={source.id} />)
     } else {
       nextAvailableSource = source.id
     }
@@ -85,7 +84,6 @@ const Home = ({}) => {
     clearSourceZones(sourceId)
 
     // open first modal
-    // setZonesModalOpen(true) // TODO: change to stream modal
     setStreamsModalOpen(true)
   }
 
@@ -93,7 +91,13 @@ const Home = ({}) => {
     <div className="home-outer">
       <div className="home-view">
         {cards}
-        <PresetAndAdd cards={cards} nextAvailableSource={nextAvailableSource} setPresetsModalOpen={setPresetsModalOpen} sources={sources} initSource={initSource} />
+        <PresetAndAdd
+          cards={cards}
+          nextAvailableSource={nextAvailableSource}
+          setPresetsModalOpen={setPresetsModalOpen}
+          sources={sources}
+          initSource={initSource}
+        />
       </div>
 
       {zonesModalOpen && (
@@ -109,14 +113,7 @@ const Home = ({}) => {
         <StreamsModal
           sourceId={nextAvailableSource}
           applyImmediately={false}
-          // onApply={(operatingSourceId) => {
-          //   zoneModalSourceId = operatingSourceId
-          //   setZonesModalOpen(true)
-          // }}
-          onApply={() => {
-            // zoneModalSourceId = operatingSourceId
-            setZonesModalOpen(true)
-          }}
+          onApply={() => setZonesModalOpen(true)}
           onClose={() => setStreamsModalOpen(false)}
         />
       )}

@@ -3,7 +3,6 @@ import Modal from "@/components/Modal/Modal"
 import Card from "@/components/Card/Card"
 import { useStatusStore } from "@/App"
 import { useState } from "react"
-import { Divider } from "@mui/material"
 import List from "@/components/List/List"
 import ListItem from "@/components/List/ListItem/ListItem"
 
@@ -50,7 +49,9 @@ const PresetItem = ({ index, onClick, presetState }) => {
         </div>
 
         {presetState === "done" && <div className="preset-item-icon">✓</div>}
-        {presetState === "loading" && <div className="preset-item-icon">⏳</div>}
+        {presetState === "loading" && (
+          <div className="preset-item-icon">⏳</div>
+        )}
       </ListItem>
     </>
   )
@@ -108,7 +109,7 @@ const PresetsModal = ({ onClose }) => {
         <div className="presets-modal-header">Select Preset</div>
         <div className="presets-modal-body">
           <List>{presetItems}</List>
-          </div>
+        </div>
       </Card>
     </Modal>
   )

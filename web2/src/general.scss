@@ -47,15 +47,15 @@ $page-header-height: 3rem;
 }
 
 // utils
-@mixin circle($radius, $color){
+@mixin circle($radius, $color) {
   width: $radius;
   height: $radius;
   border-radius: 50%;
   background-color: $color;
 }
 
-@mixin button-hover{
-  &:hover  {
+@mixin button-hover {
+  &:hover {
     background-color: $secondary;
     border-radius: 1rem;
   }

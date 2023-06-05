@@ -33,8 +33,3 @@
   cursor: pointer;
   @include general.button-hover;
 }
-
-.media-step-backward {
-  font-size: 3rem;
-  color: general.$controls-color;
-}
