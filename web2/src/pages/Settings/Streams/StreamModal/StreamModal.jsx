@@ -92,7 +92,7 @@ const InternetRadioSearch = ({ onChange }) => {
       fetch("http://all.api.radio-browser.info/json/servers").then((res) =>
         res.json().then(async (s) => {
           for (const i of s) {
-            const res = await fetch(i.ip)
+            const res = await fetch('https://' + i.name)
             if (res.ok && res.status === 200) {
               setHost(i.name)
               break
