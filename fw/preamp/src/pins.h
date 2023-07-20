@@ -41,6 +41,7 @@ extern const Pin i2c2_scl_;             // Internal I2C bus SCL
 extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 
 // Pin configuration
+void initSrcEnPins();
 void initPins();
 void configUARTPins();
 void configI2C1Pins();
