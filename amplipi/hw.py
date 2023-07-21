@@ -49,9 +49,9 @@ class FwVersion:
   dirty: bool
 
   def __init__(self, major: int = 0, minor: int = 0, git_hash: int = 0, dirty: bool = False):
-    if not 0 < major < 255 or not 0 < minor < 255:
-      raise ValueError('Major and minor version must be in the range [0,255]')
-    if not 0 < git_hash < 0xFFFFFFF:
+    if not 0 <= major <= 255 or not 0 <= minor <= 255:
+      raise ValueError(f'Major and minor version must be in the range [0,255]. Found: {major}.{minor}')
+    if not 0 <= git_hash <= 0xFFFFFFF:
       raise ValueError('Hash must be an unsigned 28-bit value')
     self.major = major
     self.minor = minor
