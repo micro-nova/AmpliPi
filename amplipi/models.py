@@ -811,6 +811,7 @@ class Info(BaseModel):
   mock_streams: bool = Field(default=False, description='Are streams being faked? Used for testing.')
   online: bool = Field(default=False, description='can the system connect to the internet?')
   latest_release: str = Field(default='unknown', description='Latest software release available from GitHub')
+  admin_password_hash: Optional[str] = Field(description='An optional Argon2id hash of a password for the update interface. Recommended params: m=19456,t=2,p=1')
   fw: List[FirmwareInfo] = Field(default=[], description='firmware information for each connected controller or expansion unit')
 
   class Config:
@@ -824,6 +825,7 @@ class Info(BaseModel):
             'mock_streams': False,
             'online': True,
             'latest_release': '0.1.8',
+            'admin_password_hash': '$argon2id$v=19$m=19456,t=2,p=1$bWljcm9ub3Zh$e9tlH+uUmDuNk4kXdGrX9NnBLk7uHjJMs7lmZ6EEoBg',
             'fw': [
               {
                 "version": "1.6",

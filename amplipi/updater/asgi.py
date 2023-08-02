@@ -34,10 +34,12 @@ import queue
 import pathlib
 import shutil
 import asyncio
+
 # web framework
 import requests
-from fastapi import FastAPI, Request, File, UploadFile
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException, status, Depends
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sse_starlette.sse import EventSourceResponse
 from starlette.responses import FileResponse
 # web server
@@ -45,6 +47,7 @@ import uvicorn
 # models
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
+from argon2 import PasswordHasher
 
 app = FastAPI()
 sse_messages: queue.Queue = queue.Queue()
@@ -59,10 +62,42 @@ real_path = os.path.realpath(__file__)
 dir_path = os.path.dirname(real_path)
 app.mount("/static", StaticFiles(directory=f"{dir_path}/static"), name="static")
 
-HOME = f"{os.environ.get('HOME')}/amplipi-dev" # standard install directory
+INSTALL_DIR = os.getenv('INSTALL_DIR', os.getcwd())
+
+# if we have a broken configuration, the updater should still function
+# as a failsafe
+try:
+  with open(f"{INSTALL_DIR}/house.json") as f:
+    config = json.load(f)
+except:
+  config = {"info": {}}
+
+# The `auto_error` arg below prevents the HTTPBasic middleware from prompting for a password
+# when initial loading of a page while an admin hash is not configured.
+security = HTTPBasic(auto_error = True if 'admin_password_hash' in config['info'].keys() else False)
+
+def check_password(credentials: HTTPBasicCredentials = Depends(security)):
+  """ Checks a supplied password against a Argon hash & stored in the app settings.
+
+  Returns True if correct; if false, raises an HTTPException.
+  """
+  if 'admin_password_hash' not in config['info'].keys():
+    # we have no password configured; do not bother authenticating
+    return True
+  current_password_bytes = credentials.password.encode("utf8")
+  correct_password_hash = config['info']['admin_password_hash']
+  try:
+    ph = PasswordHasher()
+    return ph.verify(correct_password_hash, current_password_bytes)
+  except:
+    raise HTTPException(
+      status_code = status.HTTP_401_UNAUTHORIZED,
+      detail = "Incorrect password",
+      headers = { "WWW-Authenticate": "Basic" }
+    )
 
 @app.get('/update')
-def get_index():
+def get_index(creds: HTTPBasicCredentials = Depends(check_password)):
   """ Get the update website """
   # FileResponse knows nothing about the static mount
   return FileResponse(f'{dir_path}/static/index.html')
@@ -76,7 +111,7 @@ def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None
     upload_file.file.close()
 
 @app.post("/update/upload")
-async def start_upload(file: UploadFile = File(...)):
+async def start_upload(file: UploadFile = File(...), creds: HTTPBasicCredentials = Depends(check_password)):
   """ Start a upload based update """
   print(file.filename)
   try:
@@ -99,7 +134,7 @@ def download(url, file_name):
     # TODO: verify file has amplipi version
 
 @app.post("/update/download")
-async def download_update(info: ReleaseInfo ):
+async def download_update(info: ReleaseInfo, creds: HTTPBasicCredentials = Depends(check_password)):
   """ Download the update """
   print(f'downloading update from: {info.url}')
   try:
@@ -112,13 +147,13 @@ async def download_update(info: ReleaseInfo ):
 
 @app.get('/update/restart') # an old version accidentally used get instead of post
 @app.post('/update/restart')
-def restart():
+def restart(creds: HTTPBasicCredentials = Depends(check_password)):
   """ Restart the OS and all of the AmpliPi services including the updater.
 
   This is typically done at the end of an update
   """
   # start the restart, and return immediately (hopefully before the restart process begins)
-  subprocess.Popen(f'python3 {HOME}/scripts/configure.py --restart-updater'.split())
+  subprocess.Popen(f'python3 {INSTALL_DIR}/scripts/configure.py --restart-updater'.split())
   return 200
 
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
@@ -206,7 +241,7 @@ def install_thread():
   _sse_info('starting installation')
 
   try:
-    extract_to_home(HOME)
+    extract_to_home(INSTALL_DIR)
     _sse_info('done copying software')
   except Exception as e:
     _sse_failed(f'installation failed, error extracting release: {e}')
@@ -215,7 +250,7 @@ def install_thread():
   try:
     # use the configure script provided by the new install to configure the installation
     time.sleep(1) # update was just copied in, add a small delay to make sure we are accessing the new files
-    sys.path.insert(0, f'{HOME}/scripts')
+    sys.path.insert(0, f'{INSTALL_DIR}/scripts')
     import configure # we want the new configure! # pylint: disable=import-error,import-outside-toplevel
     def progress_sse(tasks):
       for task in tasks:
@@ -239,7 +274,7 @@ def install_thread():
     return
 
 @app.get('/update/install')
-def install():
+def install(creds: HTTPBasicCredentials = Depends(security)):
   """ Start the install after update is downloaded """
   t = threading.Thread(target=install_thread)
   t.start()
