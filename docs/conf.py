@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'AmpliPi Home Audio'
-copyright = '2022, MicroNova LLC'
+copyright = '2023, MicroNova LLC'
 author = 'Jason Gorski, Lincoln Lorenz, Jeremy Bowers, Michael Bowers, Mark Bowers'
 
 # The full version, including alpha/beta/rc tags
