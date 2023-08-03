@@ -63,29 +63,40 @@ dir_path = os.path.dirname(real_path)
 app.mount("/static", StaticFiles(directory=f"{dir_path}/static"), name="static")
 
 INSTALL_DIR = os.getenv('INSTALL_DIR', os.getcwd())
+USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 
 # if we have a broken configuration, the updater should still function
-# as a failsafe
+# as a failsafe. This structure & some code was copied from
+# https://github.com/micro-nova/AmpliPi/blob/8368a4a79f536757d7f301612494b6788355aafc/amplipi/app.py#L753
+# except that we don't handle typing or HTML here - this is MVP updater code.
+identity = {
+  'name': 'AmpliPi',
+  'website': 'http://www.amplipi.com',
+  'html_logo': '<span class="text-white">Ampli</span><span class="text-danger">Pi</span>',
+}
 try:
-  with open(f"{INSTALL_DIR}/house.json") as f:
-    config = json.load(f)
-except:
-  config = {"info": {}}
+  with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8') as f:
+    proposed_identity = json.load(f)
+    identity.update(proposed_identity)
+except FileNotFoundError:
+  pass
+except Exception as e:
+  print(f'Error loading identity file: {e}')
 
 # The `auto_error` arg below prevents the HTTPBasic middleware from prompting for a password
 # when initial loading of a page while an admin hash is not configured.
-security = HTTPBasic(auto_error = True if 'admin_password_hash' in config['info'].keys() else False)
+security = HTTPBasic(auto_error = True if 'admin_password_hash' in identity.keys() else False)
 
 def check_password(credentials: HTTPBasicCredentials = Depends(security)):
   """ Checks a supplied password against a Argon hash & stored in the app settings.
 
   Returns True if correct; if false, raises an HTTPException.
   """
-  if 'admin_password_hash' not in config['info'].keys():
+  if 'admin_password_hash' not in identity.keys():
     # we have no password configured; do not bother authenticating
     return True
   current_password_bytes = credentials.password.encode("utf8")
-  correct_password_hash = config['info']['admin_password_hash']
+  correct_password_hash = identity['admin_password_hash']
   try:
     ph = PasswordHasher()
     return ph.verify(correct_password_hash, current_password_bytes)
