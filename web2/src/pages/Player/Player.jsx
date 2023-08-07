@@ -1,11 +1,14 @@
-import StreamBar from '@/components/StreamBar/StreamBar'
-import SongInfo from '@/components/SongInfo/SongInfo'
-import MediaControl from '@/components/MediaControl/MediaControl'
-import './Player.scss'
-import { useStatusStore } from '@/App.jsx'
+import React from "react";
+import StreamBar from "@/components/StreamBar/StreamBar";
+import SongInfo from "@/components/SongInfo/SongInfo";
+import MediaControl from "@/components/MediaControl/MediaControl";
+import "./Player.scss";
+import { useStatusStore } from "@/App.jsx";
+
+import PropTypes from "prop-types";
 
 const Player = ({ selectedSource }) => {
-    const img_url = useStatusStore((s) => s.status.sources[selectedSource].info.img_url)
+    const img_url = useStatusStore((s) => s.status.sources[selectedSource].info.img_url);
 
     return (
         <>
@@ -18,7 +21,10 @@ const Player = ({ selectedSource }) => {
                 </div>
             </div>
         </>
-    )
-}
+    );
+};
+Player.propTypes = {
+    selectedSource: PropTypes.any.isRequired,
+};
 
-export default Player
+export default Player;
