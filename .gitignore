@@ -142,6 +142,9 @@ dmypy.json
 # vscode
 *.code-workspace
 
+# vi
+*.swp
+
 # Poetry
 poetry.lock
 
