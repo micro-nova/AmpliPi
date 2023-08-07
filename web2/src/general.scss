@@ -1,34 +1,62 @@
-// TODO: add colors and mixins here
-$bg:                    #202020;
-$primary:               #2A2A2A;
-$secondary:             #4A4A4A;
-$selected:              #424242;
-$stream-color:          #757575;
-$zone-color:            #003ACE;
-$group-color:           #04BC00;
-$config-color:          #FFD600;
-$update-color:          #0096FF;
-$sessions-color:        #EB00FF;
-$controls-color:        #F2F2F2;
-$icon-deselected-color: #8D8D8D;
-$volume-slider-color:   #0096FF;
-$text-color:            #FFFFFF;
+$bg: #1d1d1d; // was 202020
+$primary: #2a2a2a; // 2a2a2a
+$secondary: #383838;
+$selected: #333333; // 424242
+$stream-color: #757575;
+$zone-color: #003ace;
+$group-color: #04bc00;
+$config-color: #ffd600;
+$update-color: #0096ff;
+$session-color: #eb00ff;
+$about-color: #000000;
+$preset-color: #ff6d00;
+$controls-color: #f2f2f2;
+$icon-deselected-color: #8d8d8d;
+$volume-slider-color: #0096ff;
+$text-color: #ffffff;
+$select-color-gray: #bdbdbd; // for preset used_last
+$mute-color: #dc3545;
+
+$page-header-height: 3rem;
 
 // fonts
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans&family=Raleway&display=swap");
+
 @mixin header-font {
-    font-family: 'Raleway'
+  font-family: "Raleway";
 }
 @mixin regular-font {
-    font-family: 'open sans'
+  font-family: "open sans";
 }
 
 // shadows
 @mixin low-shadow {
-    box-shadow: 0px 5px 15px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 5px 15px 4px rgba(0, 0, 0, 0.25);
+}
+@mixin low-shadow-up {
+  box-shadow: 0px -5px 15px 4px rgba(0, 0, 0, 0.25);
+}
+@mixin selected-shadow {
+  box-shadow: 0px 0px 15px 0px #0095ff7e;
 }
 @mixin high-shadow {
-    box-shadow: 0px 12px 15px 1px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 12px 15px 1px rgba(0, 0, 0, 0.25);
 }
 @mixin icon-shadow {
-    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+// utils
+@mixin circle($radius, $color) {
+  width: $radius;
+  height: $radius;
+  border-radius: 50%;
+  background-color: $color;
+}
+
+@mixin button-hover {
+  &:hover {
+    background-color: $secondary;
+    border-radius: 1rem;
+  }
 }

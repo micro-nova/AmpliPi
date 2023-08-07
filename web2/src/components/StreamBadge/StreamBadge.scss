@@ -1,15 +1,19 @@
-@use 'src/general';
+@use "src/general";
 
-.stream-badge{
+.stream-badge {
   width: fit-content;
   height: fit-content;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
+  cursor: pointer;
+  background-color: general.$secondary;
+  border-radius: 10rem;
+  padding: 0.4rem;
 }
 
-.stream-badge-name{
+.stream-badge-name {
   color: general.$text-color;
   white-space: nowrap;
   font-size: 1rem;
@@ -17,9 +21,9 @@
   @include general.header-font;
 }
 
-.stream-badge-icon{
+.stream-badge-icon {
   width: 2rem;
   height: 2rem;
-  border-radius: 50%;
-  margin-right: 10;
+  border-radius: 20%;
+  margin-right: 0.4rem;
 }

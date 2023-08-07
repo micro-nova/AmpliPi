@@ -1,0 +1,25 @@
+@use "src/general.scss";
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.page-body {
+  @include general.header-font;
+  font-size: 1.5rem;
+  color: general.$text-color;
+  display: flex;
+  flex-direction: column;
+  // height: 100%;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.add-button {
+  position: fixed;
+  margin: 1rem;
+  right: 0;
+  bottom: 0;
+}

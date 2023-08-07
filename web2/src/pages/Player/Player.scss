@@ -1,40 +1,61 @@
-
+@use "@/general.scss";
 
 .player-outer {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .player-inner {
-    width: fit-content;
-    height: fit-content;
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    justify-content: flex-start;
+  width: fit-content;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  justify-content: flex-start;
 }
 
 .player-album-art {
-    align-self: center;
-    max-width: 22rem;
-    max-height: 22rem;
+  align-self: center;
+  max-width: 22rem;
+  max-height: 22rem;
+  border-radius: 2.5%;
 }
 
 .player-info-title {
-    font-size: 2.5rem;
-    // margin-top: 0.25rem;
+  font-size: 1.5rem;
+  // margin-top: 0.25rem;
 }
 
 .player-info-album {
-    font-size: 1rem;
-    // margin-top: 0.25rem;
+  font-size: 0.75rem;
+  // margin-top: 0.25rem;
 }
 
 .player-info-track {
-    font-size: 2.5rem;
-    // margin-top: 0.25rem;
+  font-size: 1.5rem;
+  // margin-top: 0.25rem;
+}
+
+.player-volume-slider {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  color: general.$controls-color;
+  width: 90vw;
+}
+
+.player-volume-expand-button {
+  color: general.$controls-color;
+}
+
+.player-stopped-message {
+  color: general.$text-color;
+  font-size: 2.5rem;
+  font-weight: medium;
+  @include general.header-font;
+  padding: 0.5rem;
 }

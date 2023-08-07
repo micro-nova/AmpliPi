@@ -1,33 +1,8 @@
 @use "src/general.scss";
 
-.streams-modal{
-  @include general.header-font;
-  font-size: 1.5rem;
-  color: general.$text-color;
-}
-
-.streams-modal-card{
-  max-height: 75vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.streams-modal-header {
-  margin: 0.5rem;
-  font-size: 3rem;
-  text-align: center;
-}
-
-.streams-modal-body {
-  padding: 1rem;
-  overflow-y: scroll;
-  //the below is to push the scrollbar out of the card to hide it
-  padding-right: 16px;
-  width: 100%;
-  height: 100%;
-}
-
-.streams-modal-list-item{
-  margin-bottom: 1rem;
+.streams-modal-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 20%;
+  margin-right: 0.6rem;
 }

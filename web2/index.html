@@ -2,10 +2,21 @@
 
 <html lang="en">
   <head>
+    <script>
+      try{
+        eval("const foo = null ?? 'string'");
+      }
+      catch(e){
+        document.open()
+        document.write("<h1>Sorry, this browser version is no longer supported, please update your browser.</h1>");
+        document.close()
+      }
+    </script>
+
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <title>Amplipi - Home Audio</title>
   </head>
   <body style="margin: 0;">
     <div id="root"></div>

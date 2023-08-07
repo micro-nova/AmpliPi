@@ -1,0 +1,7 @@
+@use "src/general.scss";
+
+.config-desc {
+  @include general.regular-font;
+  color: general.$text-color;
+  font-size: 0.75rem;
+}

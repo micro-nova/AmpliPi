@@ -1,0 +1,10 @@
+@use "src/general.scss";
+
+.groups-group-icon {
+  @include general.circle(2.5rem, general.$group-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 0.5rem;
+  font-size: 2rem;
+}

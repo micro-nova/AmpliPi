@@ -86,10 +86,19 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'systemd-journal-remote',      # Remote/web based log access
              'jq',                          # JSON parser used in check-release script
              # pygobject dependencies (Spotifyd)
-             'libgirepository1.0-dev', 'libcairo2-dev'
+             'libgirepository1.0-dev', 'libcairo2-dev',
             ],
   },
   'web' : {
+    'script' : [
+      'curl -sL https://deb.nodesource.com/setup_19.x | sudo -E bash -', # Run script to add nodejs repo
+      'sudo apt-get install -y nodejs --allow-change-held-packages',     # Install nodejs
+      'export NODE_OPTIONS=--max_old_space_size=800',                    # Increase nodejs memory limit
+      'pushd web2',                                                      # Change to web directory
+      'npm install',                                                     # Install nodejs dependencies
+      'npm run build',                                                   # Build the web app
+      'popd',                                                            # Change back to previous directory
+    ],
   },
   'logging' : {
     'script' : [
@@ -302,6 +311,12 @@ class Task:
         break
     return self
 
+def _setup_loopbacks(base_dir) -> List[Task]:
+  """ Configure ALSA loopbacks using snd_aloop kernel module """
+  return [Task('copy loopback module configuration', multiargs=[
+              f'sudo cp {base_dir}/config/modules.conf /etc/modules'.split(),
+              f'sudo cp {base_dir}/config/sound.conf /etc/modprobe.d/sound.conf'.split(),
+          ]).run()]
 
 def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   def print_progress(tasks):
@@ -373,6 +388,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     # setup crontab - Replace the entire Pi user's crontab with AmpliPi's config/crontab
     # and point it to the AmpliPi install location's script directory.
     tasks += print_progress([Task("Setting up crontab", [f"cat {env['base_dir']}/config/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts@' | crontab -"], shell=True).run()])
+    # setup loopbacks
+    tasks += print_progress(_setup_loopbacks(env['base_dir']))
   # install debian packages
   tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
 
@@ -388,9 +405,12 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     tasks += print_progress([Task(f'remove {dep} temporary script', args=clean, wd=env['base_dir']).run()])
 
   # cleanup
-  # shairport-sync install sets up a daemon we need to stop, remove it
-  tasks += print_progress(_stop_service('shairport-sync', system=True))
-  tasks += print_progress(_disable_service('shairport-sync', system=True))
+  sp_check_tasks, sp_active = _service_status('shairport-sync', system=True)
+  tasks += sp_check_tasks
+  if sp_active:
+    # shairport-sync install sets up a daemon we need to stop, remove it
+    tasks += print_progress(_stop_service('shairport-sync', system=True))
+    tasks += print_progress(_disable_service('shairport-sync', system=True))
 
   return tasks
 

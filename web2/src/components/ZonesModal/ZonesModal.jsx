@@ -1,183 +1,252 @@
 import React from "react";
 import "./ZonesModal.scss";
-import Modal from "../Modal/Modal";
-import Card from "../Card/Card";
+import ModalCard from "@/components/ModalCard/ModalCard";
 import Checkbox from "@mui/material/Checkbox";
-import { IconButton } from "@mui/material";
-import DoneIcon from "@mui/icons-material/Done";
-// import { width } from "@mui/system";
+import { useState } from "react";
 import { useStatusStore } from "@/App.jsx";
-// import { getSourceZones } from "@/pages/Home/Home";
+import SpeakerIcon from "@mui/icons-material/Speaker";
+import SpeakerGroupIcon from "@mui/icons-material/SpeakerGroup";
+import ListItem from "@/components/List/ListItem/ListItem.jsx";
+import List from "@/components/List/List.jsx";
 
 import PropTypes from "prop-types";
 
-const ZonesModal = ({ sourceId, setZoneModalOpen }) => {
-    const zones = useStatusStore.getState().status.zones;
-    const groups = useStatusStore.getState().status.groups;
-    let usedZones = [];
-    let usedGroups = [];
-    let listItems = [];
-    let selectedZones = [];
-    let selectedGroups = [];
+const LIST_ITEM_FONT_SIZE = "1.5rem"
 
-    const ZonesModalZoneItem = ({ zone, selectable, selected }) => {
-        return(
-            <div
-                className="zones-modal-list-item"
-                key={zone.id}
-            >
-                {selectable && <Checkbox
-                    onChange={(event) => {
-                        if (event.target.checked) {
-                            selectedZones.push(zone.id);
-                        } else {
-                            const index = selectedZones.indexOf(zone.id);
-                            if (index > -1) {
-                                selectedZones.splice(index, 1);
-                            }
-                        }
-                    }}
-                    defaultChecked={selected}
-                />}
-                {zone.name}
-            </div>
-        );
-    };
+// temp values used during rca operations
+let useRcaSourceId = false
+let rcaSourceId = -1
+let rcaStatus = null
+
+// called by StreamsModal when an rca is no longer being selected/configured
+const clearRcaSourceId = () => {
+  useRcaSourceId = false
+  rcaSourceId = -1
+  rcaStatus = null
+}
+
+// called by StreamsModal when an rca is selected
+export const setRcaStatus = (status) => {
+  rcaStatus = status
+}
+
+// called by StreamsModal when an rca is selected
+export const setRcaSourceId = (id) => {
+  rcaSourceId = id
+  useRcaSourceId = true
+}
+
+const ZonesModal = ({
+  sourceId,
+  onApply = null,
+  onClose = () => {},
+  loadZonesGroups = true,
+}) => {
+  const zones = useStatusStore
+    .getState()
+    .status.zones.filter((zone) => !zone.disabled)
+  const groups = useStatusStore.getState().status.groups
+  const [checkedZonesIds, setCheckedZoneIds] = useState(
+    zones
+      .filter((zone) => zone.source_id === sourceId && loadZonesGroups)
+      .map((zone) => zone.id)
+  )
+  const [checkedGroupIds, setCheckedGroupIds] = useState(
+    groups
+      .filter((group) => group.source_id === sourceId && loadZonesGroups)
+      .map((group) => group.id)
+  )
+
+  const computeCheckedGroups = (newCheckedZonesIds) => {
+    const newGroups = groups
+      .filter((g) => g.zones.every((id) => newCheckedZonesIds.includes(id)))
+      .map((g) => g.id)
+    setCheckedGroupIds(newGroups)
+  }
+
+  const handleChangeZone = (id) => {
+    let newZones = [...checkedZonesIds]
+    if (checkedZonesIds.includes(id)) {
+      // currently checked. uncheck
+      newZones = newZones.filter((item) => item != id)
+    } else {
+      // currently unchecked. check
+      newZones.push(id)
+    }
+    setCheckedZoneIds(newZones)
+    computeCheckedGroups(newZones)
+  }
+
+  const handleChangeGroup = (id) => {
+    const group = groups.filter((g) => g.id === id)[0]
+    let newZones = [...checkedZonesIds]
+
+    if (checkedGroupIds.includes(id)) {
+      // currently checked. unckeck associated zones
+      group.zones.forEach(
+        (zid) => (newZones = newZones.filter((new_zid) => new_zid !== zid))
+      )
+    } else {
+      // currently unchecked. check associated zones
+      group.zones.forEach((zid) => {
+        if (!newZones.includes(zid)) newZones.push(zid)
+      })
+    }
+    setCheckedZoneIds(newZones)
+    computeCheckedGroups(newZones)
+  }
+
+  const ZonesModalZoneItem = ({ zone, defaultSelected, checked }) => {
+    return (
+      <ListItem
+        name={zone.name}
+        nameFontSize={LIST_ITEM_FONT_SIZE}
+        onClick={() => handleChangeZone(zone.id)}
+        key={zone.id}
+      >
+        <Checkbox
+          checked={checked}
+          onChange={() => handleChangeZone(zone.id)}
+        />
+        <div className="zone-icon">
+          <SpeakerIcon />
+        </div>
+      </ListItem>
+    );
+  };
     ZonesModalZoneItem.propTypes = {
         zone: PropTypes.any.isRequired,
         selectable: PropTypes.bool.isRequired,
         selected: PropTypes.bool.isRequired,
     };
 
-    const ZonesModalGroupItem = ({ group, selectable, selected }) => {
-        return(
-            <div
-                className="zones-modal-list-item"
-                key={group.id}
-            >
-                {selectable && <Checkbox
-                    onChange={(event) => {
-                        if (event.target.checked) {
-                            selectedGroups.push(group.id);
-                        } else {
-                            const index = selectedGroups.indexOf(group.id);
-                            if (index > -1) {
-                                selectedGroups.splice(index, 1);
-                            }
-                        }
-                    }}
-                    defaultChecked={selected}
-                />}
-                {group.name}
-            </div>
-        );
-    };
+  const ZonesModalGroupItem = ({ group, defaultSelected, checked }) => {
+    return (
+      <ListItem
+        name={group.name}
+        nameFontSize={LIST_ITEM_FONT_SIZE}
+        onClick={() => handleChangeGroup(group.id)}
+        key={group.id}
+      >
+        <Checkbox
+          checked={checked}
+          onChange={() => handleChangeGroup(group.id)}
+        />
+        <div className="group-icon">
+          <SpeakerGroupIcon />
+        </div>
+      </ListItem>
+    );
+  };
     ZonesModalGroupItem.propTypes = {
         group: PropTypes.any.isRequired,
         selectable: PropTypes.bool.isRequired,
         selected: PropTypes.bool.isRequired,
     };
 
-    const setZones = (zoneIds) => {
-        let removeList = [];
+  const setZones = () => {
+    // redefine sourceId
 
-        for(const zone of usedZones){
-            if(!zoneIds.includes(zone.id)){
-                removeList.push(zone.id);
-            }
-        }
+    const sid = useRcaSourceId ? rcaSourceId : sourceId
+    const zs = useRcaSourceId ? rcaStatus.zones : zones
 
-        fetch("/api/zones", {
-            method: "PATCH",
-            headers: {
-                "Content-type": "application/json",
-            },
-            body: JSON.stringify({ zones: removeList, update:{source_id:-1} }),
-        });
+    let removeList = []
+    let addList = []
 
-        fetch("/api/zones", {
-            method: "PATCH",
-            headers: {
-                "Content-type": "application/json",
-            },
-            body: JSON.stringify({ zones: zoneIds, update:{mute: false, source_id:sourceId} }),
-        });
-
-        setZoneModalOpen(false);
-    };
-
-    const setGroups = (groupIds) => {
-        let removeList = [];
-
-        for(const group of usedGroups){
-            if(!groupIds.includes(group.id)){
-                removeList.push(group.id);
-            }
-        }
-
-        for (const i of removeList) {
-            fetch(`/api/groups/${i}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-type": "application/json",
-                },
-                body: JSON.stringify({ source_id: -1 }),
-            });
-        }
-
-        for (const i of groupIds) {
-            fetch(`/api/groups/${i}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-type": "application/json",
-                },
-                body: JSON.stringify({ source_id: sourceId, mute: false }),
-            });
-        }
-    };
-
-    for (const zone of zones) {
-        let selected = false;
-        if (zone.source_id == sourceId) {
-            selected = true;
-            selectedZones.push(zone.id);
-            usedZones.push(zone);
-        }
-
-        listItems.push(
-            ZonesModalZoneItem({ zone: zone, selectable: true, selected: selected })
-        );
+    for (const zone of zs.filter((zone) => {
+      return zone.source_id == sid
+    })) {
+      if (!checkedZonesIds.includes(zone.id)) {
+        removeList.push(zone.id)
+      }
     }
 
-    for (const group of groups) {
-        let selected = false;
-        if (group.source_id == sourceId) {
-            selected = true;
-            selectedGroups.push(group.id);
-            usedGroups.push(group);
-        }
-        listItems.push(
-            ZonesModalGroupItem({ group: group, selectable: true, selected: selected })
-        );
+    for (const zone of zs.filter((zone) => {
+      return zone.source_id != sid
+    })) {
+      if (checkedZonesIds.includes(zone.id)) {
+        addList.push(zone.id)
+      }
     }
 
-    return (
-        <Modal className="zones-modal">
-            <Card className="zones-modal-card">
-                <div className="zones-modal-header">Select Zones</div>
-                <div className="zones-modal-body">{listItems}</div>
-                <div className="zones-modal-footer">
-                    <IconButton onClick={()=>{setZones(selectedZones); setGroups(selectedGroups);}}>
-                        <DoneIcon className="zones-modal-button-icon" style={{width:"3rem", height:"3rem"}}/>
-                    </IconButton>
-                </div>
-            </Card>
-        </Modal>
-    );
+    fetch(`/api/zones`, {
+      method: "PATCH",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        zones: removeList,
+        update: { source_id: -1 },
+      }),
+    })
+
+    fetch(`/api/zones`, {
+      method: "PATCH",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        zones: addList,
+        update: { mute: false, source_id: sid },
+      }),
+    })
+  }
+
+  const groupItems = groups.map((group) => {
+    let selected = false
+    const checked = checkedGroupIds.includes(group.id)
+    if (group.source_id == sourceId) {
+      selected = true
+    }
+    return ZonesModalGroupItem({
+      group: group,
+      checked: checked,
+      defaultSelected: selected,
+    })
+  })
+
+  const zoneItems = zones.map((zone) => {
+    let selected = false
+    const checked = checkedZonesIds.includes(zone.id)
+    if (zone.source_id == sourceId) {
+      selected = true
+    }
+    return ZonesModalZoneItem({
+      zone: zone,
+      checked: checked,
+      defaultSelected: selected,
+    })
+  })
+  
+  return (
+    <ModalCard
+      onClose={onClose}
+      onCancel={onClose}
+      onAccept={() => {
+        if (onApply !== null) {
+          onApply().then(() => {
+            setZones()
+            onClose()
+            clearRcaSourceId()
+          })
+        } else {
+          setZones()
+          onClose()
+          clearRcaSourceId()
+        }
+      }}
+      header="Select Zones"
+    >
+      <List>
+        {groupItems}
+        {zoneItems}
+      </List>
+    </ModalCard>
+  )
 };
 ZonesModal.propTypes = {
     sourceId: PropTypes.any.isRequired,
     setZoneModalOpen: PropTypes.func.isRequired,
 };
 
-export default ZonesModal;
+export default ZonesModal

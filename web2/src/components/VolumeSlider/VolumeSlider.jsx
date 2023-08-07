@@ -1,88 +1,72 @@
 import React from "react";
+
 import Slider from "@mui/material/Slider";
-import { getSourceZones } from "@/pages/Home/Home";
-import { useStatusStore } from "@/App";
 import "./VolumeSlider.scss";
+import VolumeMuteIcon from "@mui/icons-material/VolumeMute";
+import VolumeDownIcon from "@mui/icons-material/VolumeDown";
+import VolumeOffIcon from "@mui/icons-material/VolumeOff";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import StopProp from "@/components/StopProp/StopProp";
 
 import PropTypes from "prop-types";
 
-const getPlayerVol = (sourceId, zones) => {
-    let vol = 0;
-    let n = 0;
-    for (const i of getSourceZones(sourceId, zones)) {
-        n += 1;
-        vol += i.vol_f;
-    }
-
-    const avg = vol / n;
-
-    if (isNaN(avg)) {
-        return 0;
-    } else {
-        return avg;
-    }
-};
-
-export const applyPlayerVol = (vol, zones, sourceId, apply) => {
-    let delta = vol - getPlayerVol(sourceId, zones);
-
-    for (let i of getSourceZones(sourceId, zones)) {
-        let set_pt = Math.max(0, Math.min(1, i.vol_f + delta));
-        apply(i.id, set_pt);
-    }
-};
-
-
-let sendingPacketCount = 0;
-
-const VolumeSlider = ({sourceId}) => {
-    const zones = useStatusStore((s) => s.status.zones);
-    const setZonesVol = useStatusStore((s) => s.setZonesVol);
-
-    const setPlayerVolRaw = (vol) => applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
-        console.log(`going to send packet: ${sendingPacketCount}`);
-        sendingPacketCount += 1;
-        console.log(`sending packet: ${sendingPacketCount}`);
-        fetch(`/api/zones/${zone_id}`, {
-            method: "PATCH",
-            headers: {
-                "Content-type": "application/json",
-            },
-            body: JSON.stringify({ vol_f: new_vol }),
-        }).then(() => {sendingPacketCount -= 1; console.log(`packet sent: ${sendingPacketCount}`);});
-    });
-
-    const setPlayerVol = (vol) => {
-        if (sendingPacketCount <= 0) {
-            setPlayerVolRaw(vol);
-            console.log("updating vol");
-        } else {
-            console.log("skipping vol update, " + sendingPacketCount + " already sending");
-        }
-    };
-
-    const value = getPlayerVol(sourceId, zones);
-
-    const setValue = (vol) => {
-        setZonesVol(vol, zones, sourceId);
-    };
-
+const VolIcon = ({ vol, mute }) => {
+  if (mute) {
     return (
-    // React.useEffect(() => {
-    //   setValue(vol);
-    // }, [vol]),
+      <VolumeOffIcon
+        fontSize="2rem"
+        className="volume-slider-icon volume-slider-mute-icon"
+      />
+    )
+  } else if (vol <= 0.2) {
+    return <VolumeMuteIcon fontSize="2rem" className="volume-slider-icon" />
+  } else if (vol <= 0.5) {
+    return <VolumeDownIcon fontSize="2rem" className="volume-slider-icon" />
+  } else {
+    return <VolumeUpIcon fontSize="2rem" className="volume-slider-icon" />
+  }
+}
+
+// generic volume slider used by other volume sliders
+const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
+  return (
+    <StopProp>
+      <div className="volume-slider-container">
+        <div
+          onClick={(e) => {
+            setMute(!mute)
+          }}
+          className="volume-slider-icon-container"
+        >
+          <VolIcon vol={vol} mute={mute} />
+        </div>
         <Slider
-            className="volume-slider"
-            min={0}
-            step={0.01}
-            max={1}
-            value={value}
-            onChange={(event, val)=>{setPlayerVol(val); setValue(val);}}
+          disabled={disabled}
+          className="volume-slider"
+          min={0}
+          step={0.01}
+          max={1}
+          value={vol}
+          onChange={(_, val) => {
+            setVol(val)
+          }}
+          onChangeCommitted={(_, val) => {
+            setVol(val, true)
+          }}
         />
-    );
+      </div>
+    </StopProp>
+  );
 };
 VolumeSlider.propTypes = {
-    sourceId: PropTypes.any.isRequired,
+    vol: PropTypes.number.isRequired,
+    mute: PropTypes.bool.isRequired,
+    setVol: PropTypes.func.isRequired,
+    setMute: PropTypes.func.isRequired,
+    disabled: PropTypes.bool,
+};
+VolumeSlider.defaultProps = {
+    disabled: false,
 };
 
-export default VolumeSlider;
+export default VolumeSlider

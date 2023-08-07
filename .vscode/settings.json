@@ -31,5 +31,9 @@
     // and updates this list every time a .h file is opened.
     // This setting just forces all *.h files to be treated as C files.
     "*.h": "c"
-  }
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.autopep8"
+  },
+  "python.formatting.provider": "none"
 }
