@@ -1,5 +1,12 @@
-const StopProp = ({ children }) => {
-  return <div onClick={(e) => e.stopPropagation()}>{children}</div>
-}
+import React from "react";
 
-export default StopProp
+import PropTypes from "prop-types";
+
+const StopProp = ({ children }) => {
+    return <div onClick={(e) => e.stopPropagation()}>{children}</div>;
+};
+StopProp.propTypes = {
+    children: PropTypes.any.isRequired,
+};
+
+export default StopProp;
