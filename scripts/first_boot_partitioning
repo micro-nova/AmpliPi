@@ -1,0 +1,78 @@
+#!/bin/sh
+# create a partition scheme on first bootup that looks like this:
+# - boot partition, original size
+# - system partition #1, 10G
+# - system partition #2, 10G
+# - state & /home partition, 10G
+# this scheme permits us to install new operating systems over the air and in the future
+# simplify upgrades. during time of implementation, we have not roadmapped this OTA functionality yet.
+# ref: https://github.com/micro-nova/AmpliPi/issues/489
+#
+# A lot of this script was inspired by (or copied from) Raspberry Pi's init_resize.sh; cheers yall.
+# ref: https://github.com/RPi-Distro/raspi-config/blob/408bde537671de6df2d9b91564e67132f98ffa71/usr/lib/raspi-config/init_resize.sh
+# ref: https://github.com/RPi-Distro/raspi-config/blob/408bde537671de6df2d9b91564e67132f98ffa71/LICENSE
+
+echo "starting first boot partitioning tasks..."
+
+# bail if any command uses an unset variable
+set -u
+
+# spit out the execution of each line; in case we do bail we know where it failed
+set -x
+
+# kernel panic messages will quickly overwhelm the screen if we don't trap the exit during
+# potential troubleshooting
+trap 'sleep 10' EXIT
+
+# set up stuff a regular init might help with
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t tmpfs tmp /run
+mkdir -p /run/systemd
+mount /boot
+mount / -o remount,ro
+
+ROOT_PART_DEV=$(findmnt / -o source -n)
+ROOT_PART_NAME=$(echo "${ROOT_PART_DEV}" | cut -d "/" -f 3)
+ROOT_DEV_NAME=$(echo /sys/block/*/"${ROOT_PART_NAME}" | cut -d "/" -f 4)
+ROOT_DEV="/dev/${ROOT_DEV_NAME}"
+
+# sanity checks. Should any of these conditions be true, users must manage their own
+# partitioning or reflash.
+partprobe
+blkid ${ROOT_DEV}p3
+if [ $? -eq 0 ] ; then
+  echo "${0}: detected a third partition; exiting."
+  exit 1
+fi
+
+# bail if anything exits with a non-zero exit status
+set -e
+
+# Actually partition.
+parted ${ROOT_DEV} --align optimal --script resizepart 2 34% # system partition 1
+parted ${ROOT_DEV} --align optimal --script mkpart primary 34% 67% # system partition 2
+parted ${ROOT_DEV} --align optimal --script mkpart primary 67% 100% # /home
+
+partprobe ${ROOT_DEV}
+
+# e2fsck _will_ return nonzero on this run.
+set +e
+e2fsck -f ${ROOT_DEV}p2
+if [ $? -ge 3 ]; then
+  echo "${0}: e2fsck -f ${ROOT_DEV}p2 failed; exiting"
+  exit 2
+fi
+set -e
+# resize2fs actually needs the filesystem RW
+mount / -o remount,rw
+resize2fs ${ROOT_DEV}p2
+
+sed -i 's| init=/home/pi/amplipi-dev/first_boot_partitioning||' /boot/cmdline.txt
+
+sync
+
+# fancy reboot for when we're actually init; lines from reboot_pi() in init_resize.sh
+echo b > /proc/sysrq-trigger
+sleep 5
+exit 0
