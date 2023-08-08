@@ -72,10 +72,10 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
 };
 GroupModal.propTypes = {
     group: PropTypes.any.isRequired,
-    zones: PropTypes.any.isRequired,
-    onClose: PropTypes.any.isRequired,
-    del: PropTypes.any.isRequired,
-    apply: PropTypes.any.isRequired,
+    zones: PropTypes.array.isRequired,
+    onClose: PropTypes.func.isRequired,
+    del: PropTypes.func.isRequired,
+    apply: PropTypes.func.isRequired,
 };
 
 export default GroupModal;

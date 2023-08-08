@@ -38,9 +38,9 @@ export const setRcaSourceId = (id) => {
 
 const ZonesModal = ({
     sourceId,
-    onApply = null,
-    onClose = () => {},
-    loadZonesGroups = true,
+    onApply,
+    onClose,
+    loadZonesGroups,
 }) => {
     const zones = useStatusStore
         .getState()
@@ -262,11 +262,12 @@ const ZonesModal = ({
 };
 ZonesModal.propTypes = {
     sourceId: PropTypes.any.isRequired,
-    onApply: PropTypes.func.isRequired,
-    onClose: PropTypes.func.isRequired,
-    loadZonesGroups: PropTypes.any.isRequired,
+    onApply: PropTypes.func,
+    onClose: PropTypes.func,
+    loadZonesGroups: PropTypes.bool,
 };
 ZonesModal.defaultProps = {
+    onApply: null,
     onClose: () => {},
     loadZonesGroups: true,
 };
