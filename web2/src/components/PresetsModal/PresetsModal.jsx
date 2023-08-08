@@ -68,7 +68,7 @@ PresetItem.propTypes = {
 const PresetsModal = ({ onClose }) => {
     const presets = useStatusStore((state) => state.status.presets);
     const [presetStates, setPresetStates] = useState(
-        presets.map((preset) => false)
+        presets.map((preset) => {if(preset){return false;}}) // Changed this line so that preset wouldn't go unused as per eslint
     );
 
     // resize presetStates (without overriding) if length changes

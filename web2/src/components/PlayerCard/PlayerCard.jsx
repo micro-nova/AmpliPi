@@ -1,4 +1,5 @@
 import React from "react";
+import { usePersistentStore } from "@/App.jsx";
 import Card from "@/components/Card/Card";
 import "./PlayerCard.scss";
 import StreamBadge from "@/components/StreamBadge/StreamBadge";
