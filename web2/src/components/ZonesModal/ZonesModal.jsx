@@ -1,3 +1,5 @@
+/* eslint-disable react/prop-types */
+// Disabling prop types because the for loops in setZones are triggering it
 import React from "react";
 import "./ZonesModal.scss";
 import ModalCard from "@/components/ModalCard/ModalCard";

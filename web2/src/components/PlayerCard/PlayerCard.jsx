@@ -13,7 +13,7 @@ import { router } from "@/main";
 
 import PropTypes from "prop-types";
 
-const PlayerCard = ({ sourceId }) => {
+const PlayerCard = ({ sourceId, setVol }) => {
     const [streamModalOpen, setStreamModalOpen] = React.useState(false);
     const [zoneModalOpen, setZoneModalOpen] = React.useState(false);
     const setSelectedSource = usePersistentStore((s) => s.setSelectedSource);
@@ -81,6 +81,7 @@ const PlayerCard = ({ sourceId }) => {
     );
 };
 PlayerCard.propTypes = {
+    setVol: PropTypes.func.isRequired,
     sourceId: PropTypes.any.isRequired,
 };
 

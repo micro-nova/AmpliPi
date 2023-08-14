@@ -16,7 +16,7 @@ import StopProp from "@/components/StopProp/StopProp";
 
 import PropTypes from "prop-types";
 
-const PlayerCardFb = ({ sourceId }) => {
+const PlayerCardFb = ({ sourceId, setVol }) => {
     const [streamModalOpen, setStreamModalOpen] = useState(false);
     const [zoneModalOpen, setZoneModalOpen] = useState(false);
     const setSelectedSource = usePersistentStore((s) => s.setSelectedSource);
@@ -94,6 +94,7 @@ const PlayerCardFb = ({ sourceId }) => {
     );
 };
 PlayerCardFb.propTypes = {
+    setVol: PropTypes.func.isRequired,
     sourceId: PropTypes.any.isRequired,
 };
 
