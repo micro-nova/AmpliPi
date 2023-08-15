@@ -12,7 +12,7 @@
 # ref: https://github.com/RPi-Distro/raspi-config/blob/408bde537671de6df2d9b91564e67132f98ffa71/usr/lib/raspi-config/init_resize.sh
 # ref: https://github.com/RPi-Distro/raspi-config/blob/408bde537671de6df2d9b91564e67132f98ffa71/LICENSE
 
-echo "starting first boot partitioning tasks..."
+echo "${0}: starting first boot partitioning tasks..."
 
 # bail if any command uses an unset variable
 set -u
@@ -21,8 +21,9 @@ set -u
 set -x
 
 # kernel panic messages will quickly overwhelm the screen if we don't trap the exit during
-# potential troubleshooting
-trap 'sleep 10' EXIT
+# potential troubleshooting. it feels most sane to "try again" with a reboot; our other option
+# is to halt.
+trap 'sleep 5; mount -o remount,ro / ; umount /boot ; sleep 5; echo b > /proc/sysrq-trigger; sleep 5' EXIT
 
 # set up stuff a regular init might help with
 mount -t proc proc /proc
@@ -30,7 +31,7 @@ mount -t sysfs sys /sys
 mount -t tmpfs tmp /run
 mkdir -p /run/systemd
 mount /boot
-mount / -o remount,ro
+mount -o remount,rw /
 
 ROOT_PART_DEV=$(findmnt / -o source -n)
 ROOT_PART_NAME=$(echo "${ROOT_PART_DEV}" | cut -d "/" -f 3)
@@ -42,37 +43,44 @@ ROOT_DEV="/dev/${ROOT_DEV_NAME}"
 partprobe
 blkid ${ROOT_DEV}p3
 if [ $? -eq 0 ] ; then
-  echo "${0}: detected a third partition; exiting."
+  echo "${0}: detected a third partition; removing this script from initial boot & exiting."
+  sed -i 's/ init=\/home\/pi\/amplipi-dev\/scripts\/first_boot_partitioning//' /boot/cmdline.txt
   exit 1
 fi
 
 # bail if anything exits with a non-zero exit status
 set -e
 
-# Actually partition.
-parted ${ROOT_DEV} --align optimal --script resizepart 2 34% # system partition 1
+# Set up our partitioning scheme.
 parted ${ROOT_DEV} --align optimal --script mkpart primary 34% 67% # system partition 2
 parted ${ROOT_DEV} --align optimal --script mkpart primary 67% 100% # /home
-
 partprobe ${ROOT_DEV}
+# copy system partition 1 to system partition 2, and resize both filesystems to fill
+echo "${0}: creating recovery partition..."
+mount -o remount,ro /
+sleep 5
+dd if=${ROOT_DEV}p2 of=${ROOT_DEV}p3 bs=2M oflag=dsync status=progress
+mount -o remount,rw /
+parted ${ROOT_DEV} --align optimal --script resizepart 2 34% # system partition 1
 
-# e2fsck _will_ return nonzero on this run.
-set +e
-e2fsck -f ${ROOT_DEV}p2
-if [ $? -ge 3 ]; then
-  echo "${0}: e2fsck -f ${ROOT_DEV}p2 failed; exiting"
-  exit 2
-fi
-set -e
-# resize2fs actually needs the filesystem RW
-mount / -o remount,rw
-resize2fs ${ROOT_DEV}p2
+# then repair and expand our filesystems within these partitions
+for PART in ${ROOT_DEV}p2 ${ROOT_DEV}p3; do
+    # we don't run e2fsck on the mounted root partition.
+    if [ ${PART} != ${ROOT_DEV}p2 ]; then
+        # e2fsck sometimes returns >0 when it's successful.
+        set +e
+        e2fsck -f ${PART}
+        if [ $? -ge 3 ]; then
+          echo "${0}: e2fsck -f ${PART} failed; continuing anyways."
+        fi
+        set -e
+    fi
 
-sed -i 's| init=/home/pi/amplipi-dev/first_boot_partitioning||' /boot/cmdline.txt
+    resize2fs ${PART}
+done
+
+sed -i 's/ init=\/home\/pi\/amplipi-dev\/scripts\/first_boot_partitioning//' /boot/cmdline.txt
 
 sync
 
-# fancy reboot for when we're actually init; lines from reboot_pi() in init_resize.sh
-echo b > /proc/sysrq-trigger
-sleep 5
-exit 0
+sleep 3
