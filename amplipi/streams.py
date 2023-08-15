@@ -1191,7 +1191,7 @@ class LMS(PersistentStream):
       name=self.full_name(),
       state=self.state,
       img_url='static/imgs/lms.png',
-      track='check LMS for song info',
+      track='check LMS for song info'
     )
     return source
 
