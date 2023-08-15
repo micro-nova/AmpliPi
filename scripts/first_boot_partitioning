@@ -51,10 +51,20 @@ fi
 # bail if anything exits with a non-zero exit status
 set -e
 
-# Set up our partitioning scheme.
-parted ${ROOT_DEV} --align optimal --script mkpart primary 34% 67% # system partition 2
-parted ${ROOT_DEV} --align optimal --script mkpart primary 67% 100% # /home
+# Set up our partitioning scheme, 4 total partitions:
+# #    % Name
+# 1  <1% /boot
+# 2 ~33% system partition 1
+# 3 ~33% system partition 2
+# 4 ~33% /home
+#
+# At this point (directly after first imaging) p1 and p2 already exist.
+# p1 we will leave unchanged, p2 is currently shrunk as small as possible.
+# Leave p2 shrunk for now so as to reduce copy time.
+parted ${ROOT_DEV} --align optimal --script mkpart primary 34% 67% # Create system partition 2
+parted ${ROOT_DEV} --align optimal --script mkpart primary 67% 100% # Create /home
 partprobe ${ROOT_DEV}
+
 # copy system partition 1 to system partition 2, and resize both filesystems to fill
 echo "${0}: creating recovery partition..."
 mount -o remount,ro /
