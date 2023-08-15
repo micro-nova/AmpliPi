@@ -44,7 +44,7 @@ partprobe
 blkid ${ROOT_DEV}p3
 if [ $? -eq 0 ] ; then
   echo "${0}: detected a third partition; removing this script from initial boot & exiting."
-  sed -i 's/ init=\/home\/pi\/amplipi-dev\/scripts\/first_boot_partitioning//' /boot/cmdline.txt
+  sed -i 's| init=/home/pi/amplipi-dev/scripts/first_boot_partitioning||' /boot/cmdline.txt
   exit 1
 fi
 
@@ -75,7 +75,7 @@ parted ${ROOT_DEV} --align optimal --script resizepart 2 34% # system partition 
 
 # then repair and expand our filesystems within these partitions
 for PART in ${ROOT_DEV}p2 ${ROOT_DEV}p3; do
-    # we don't run e2fsck on the mounted root partition.
+    # we don't run e2fsck on the mounted root partition, because it is mounted.
     if [ ${PART} != ${ROOT_DEV}p2 ]; then
         # e2fsck sometimes returns >0 when it's successful.
         set +e
@@ -89,7 +89,7 @@ for PART in ${ROOT_DEV}p2 ${ROOT_DEV}p3; do
     resize2fs ${PART}
 done
 
-sed -i 's/ init=\/home\/pi\/amplipi-dev\/scripts\/first_boot_partitioning//' /boot/cmdline.txt
+sed -i 's| init=/home/pi/amplipi-dev/scripts/first_boot_partitioning||' /boot/cmdline.txt
 
 sync
 
