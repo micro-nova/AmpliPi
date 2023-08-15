@@ -6,7 +6,7 @@ import Home from "@/pages/Home/Home";
 import Player from "@/pages/Player/Player";
 import MenuBar from "./components/MenuBar/MenuBar";
 import produce from "immer";
-import { applyPlayerVol } from "./components/VolumeSlider/VolumeSlider";
+import { applyPlayerVol } from "./components/CardVolumeSlider/CardVolumeSlider";
 import { persist, createJSONStorage } from "zustand/middleware";
 import Settings from "@/pages/Settings/Settings";
 import { getSourceZones } from "@/pages/Home/Home";
