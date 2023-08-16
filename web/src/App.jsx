@@ -1,6 +1,5 @@
 import React from "react";
 import { create } from "zustand";
-import { init as initApm } from "@elastic/apm-rum";
 // import { useCookies } from "react-cookie";
 import "@/App.scss";
 import Home from "@/pages/Home/Home";
@@ -16,13 +15,6 @@ import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon";
 import PropTypes from "prop-types";
 
 // const UPDATE_INTERVAL = 1000; Commented out while unused
-
-var apm = initApm({
-    serviceName: "Amplipi",
-    serverUrl: "http://localhost:8200",
-    serviceVersion: "",
-    environment: "Amplipi"
-});
 
 // holds onto the selectedSource state so that it persists between refreshes
 export const usePersistentStore = create(
