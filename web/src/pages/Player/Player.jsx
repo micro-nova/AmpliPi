@@ -11,9 +11,11 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { useState } from "react";
 import VolumeZones from "@/components/VolumeZones/VolumeZones";
 import Card from "@/components/Card/Card";
+import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import { getSourceInputType } from "@/utils/getSourceInputType";
 
 const Player = () => {
+    const [streamsModalOpen, setStreamsModalOpen] = React.useState(false);
     const selectedSourceId = usePersistentStore((s) => s.selectedSource);
     // TODO: dont index into sources. id isn't guarenteed to line up with order
     const img_url = useStatusStore(
@@ -35,8 +37,14 @@ const Player = () => {
 
     return (
         <div className="player-outer">
+            {streamsModalOpen && (
+                <StreamsModal
+                    sourceId={selectedSourceId}
+                    onClose={() => setStreamsModalOpen(false)}
+                />
+            )}
             <StreamBar sourceId={selectedSourceId} />
-            <div className="player-inner">
+            <div className="player-inner" onClick={() => {setStreamsModalOpen(true);}}>
                 <img src={img_url} className="player-album-art" />
                 <SongInfo
                     sourceId={selectedSourceId}
