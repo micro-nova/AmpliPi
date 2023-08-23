@@ -17,11 +17,15 @@ import PropTypes from "prop-types";
 
 // const UPDATE_INTERVAL = 1000; Commented out while unused
 
-var apm = initApm({
-  serviceName: "Amplipi",
-  serverUrl: "http://localhost:8200",
-  serviceVersion: "",
-  environment: "Amplipi"
+const debugDoc = await fetch("http://localhost:5001/debug");
+const debug = (debugDoc && debugDoc["debug"]) ? true : false;
+
+var apm = initApm({ // eslint-disable-line no-unused-vars
+    active: debug,
+    serviceName: "Amplipi",
+    serverUrl: debugDoc["apmHost"] ? debugDoc["apmHost"] : "",
+    serviceVersion: debugDoc["version"] ? debugDoc["version"] : "",
+    environment: debugDoc["environment"] ? debugDoc["environment"] : ""
 });
 
 // holds onto the selectedSource state so that it persists between refreshes

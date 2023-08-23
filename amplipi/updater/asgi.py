@@ -245,6 +245,17 @@ def install():
   t.start()
   return {}
 
+@app.get('/debug')
+def debug():
+  """ Returns debug status and configuration. """
+  debug_file = pathlib.Path(pathlib.Path.home() + "/.config/amplipi/debug.json")
+  if not debug_file.exists():
+    return {}
+  try:
+    return debug_file.read_text()
+  except:
+    return {}
+
 if __name__ == '__main__':
   uvicorn.run(app, host="0.0.0.0", port=8000)
 
