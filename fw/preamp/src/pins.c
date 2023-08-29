@@ -93,7 +93,7 @@ const Pin i2c1_sda_ = {'B', 7};
 const Pin i2c2_scl_ = {'B', 10};
 const Pin i2c2_sda_ = {'B', 11};
 
-void initSrcEnPins() {
+void initPins() {
   // Enable peripheral clocks for GPIO ports
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
@@ -106,64 +106,8 @@ void initSrcEnPins() {
   aInit.GPIO_Pin = (1 << zone_src_[0][0].pin) | (1 << zone_src_[0][2].pin) |
                    (1 << zone_src_[1][0].pin) | (1 << zone_src_[1][1].pin) |
                    (1 << zone_src_[1][3].pin) | (1 << zone_src_[5][1].pin) |
-                   (1 << zone_src_[5][2].pin) | (1 << zone_src_[5][3].pin);
-  aInit.GPIO_Mode  = GPIO_Mode_OUT;
-  aInit.GPIO_Speed = GPIO_Speed_2MHz;
-  aInit.GPIO_OType = GPIO_OType_OD;
-  aInit.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOA, &aInit);
-
-  // Setup IO pin directions PORT B
-  GPIO_InitTypeDef bInit;
-  bInit.GPIO_Pin = (1 << zone_src_[2][1].pin) | (1 << zone_src_[2][2].pin) |
-                   (1 << zone_src_[2][3].pin) | (1 << zone_src_[3][1].pin) |
-                   (1 << zone_src_[4][1].pin) | (1 << zone_src_[4][3].pin) |
-                   (1 << src_ad_[0][0].pin) | (1 << src_ad_[1][0].pin);
-  bInit.GPIO_Mode  = GPIO_Mode_OUT;
-  bInit.GPIO_Speed = GPIO_Speed_2MHz;
-  bInit.GPIO_OType = GPIO_OType_OD;
-  bInit.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOB, &bInit);
-
-  // Setup IO pin directions PORT C
-  GPIO_InitTypeDef cInit;
-  cInit.GPIO_Pin = (1 << zone_src_[1][2].pin) | (1 << zone_src_[2][0].pin) |
-                   (1 << zone_src_[3][0].pin) | (1 << zone_src_[3][2].pin) |
-                   (1 << zone_src_[3][3].pin) | (1 << zone_src_[4][2].pin) |
-                   (1 << zone_src_[5][0].pin) | (1 << src_ad_[2][0].pin) |
-                   (1 << src_ad_[3][0].pin) | (1 << src_ad_[1][1].pin) |
-                   (1 << src_ad_[2][1].pin) | (1 << src_ad_[3][1].pin);
-  cInit.GPIO_Mode  = GPIO_Mode_OUT;
-  cInit.GPIO_Speed = GPIO_Speed_2MHz;
-  cInit.GPIO_OType = GPIO_OType_OD;
-  cInit.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOC, &cInit);
-
-  // Setup IO pin directions PORT D
-  GPIO_InitTypeDef dInit = {
-      .GPIO_Pin   = 1 << src_ad_[0][1].pin,
-      .GPIO_Mode  = GPIO_Mode_OUT,
-      .GPIO_Speed = GPIO_Speed_2MHz,
-      .GPIO_OType = GPIO_OType_OD,
-      .GPIO_PuPd  = GPIO_PuPd_NOPULL,
-  };
-  GPIO_Init(GPIOD, &dInit);
-
-  // Setup IO pin directions PORT F
-  GPIO_InitTypeDef fInit;
-  fInit.GPIO_Pin = (1 << zone_src_[0][1].pin) | (1 << zone_src_[0][3].pin) |
-                   (1 << zone_src_[4][0].pin);
-  fInit.GPIO_Mode  = GPIO_Mode_OUT;
-  fInit.GPIO_Speed = GPIO_Speed_2MHz;
-  fInit.GPIO_OType = GPIO_OType_OD;
-  fInit.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOF, &fInit);
-}
-
-void initPins() {
-  // Setup IO pin directions PORT A
-  GPIO_InitTypeDef aInit;
-  aInit.GPIO_Pin = (1 << zone_mute_[3].pin) | (1 << zone_mute_[4].pin) |
+                   (1 << zone_src_[5][2].pin) | (1 << zone_src_[5][3].pin) |
+                   (1 << zone_mute_[3].pin) | (1 << zone_mute_[4].pin) |
                    (1 << zone_standby_[5].pin);
   aInit.GPIO_Mode  = GPIO_Mode_OUT;
   aInit.GPIO_Speed = GPIO_Speed_2MHz;
@@ -173,8 +117,12 @@ void initPins() {
 
   // Setup IO pin directions PORT B
   GPIO_InitTypeDef bInit;
-  bInit.GPIO_Pin = (1 << zone_mute_[0].pin) | (1 << zone_standby_[0].pin) |
-                   (1 << zone_standby_[1].pin) | (1 << zone_standby_[2].pin);
+  bInit.GPIO_Pin = (1 << zone_src_[2][1].pin) | (1 << zone_src_[2][2].pin) |
+                   (1 << zone_src_[2][3].pin) | (1 << zone_src_[3][1].pin) |
+                   (1 << zone_src_[4][1].pin) | (1 << zone_src_[4][3].pin) |
+                   (1 << zone_mute_[0].pin) | (1 << zone_standby_[0].pin) |
+                   (1 << zone_standby_[1].pin) | (1 << zone_standby_[2].pin) |
+                   (1 << src_ad_[0][0].pin) | (1 << src_ad_[1][0].pin);
   bInit.GPIO_Mode  = GPIO_Mode_OUT;
   bInit.GPIO_Speed = GPIO_Speed_2MHz;
   bInit.GPIO_OType = GPIO_OType_PP;
@@ -183,17 +131,34 @@ void initPins() {
 
   // Setup IO pin directions PORT C
   GPIO_InitTypeDef cInit;
-  cInit.GPIO_Pin = (1 << zone_mute_[1].pin) | (1 << zone_mute_[2].pin) | 
-                   (1 << zone_standby_[3].pin) | (1 << zone_standby_[4].pin);
+  cInit.GPIO_Pin = (1 << zone_src_[1][2].pin) | (1 << zone_src_[2][0].pin) |
+                   (1 << zone_src_[3][0].pin) | (1 << zone_src_[3][2].pin) |
+                   (1 << zone_src_[3][3].pin) | (1 << zone_src_[4][2].pin) |
+                   (1 << zone_src_[5][0].pin) | (1 << zone_mute_[1].pin) |
+                   (1 << zone_mute_[2].pin) | (1 << zone_standby_[3].pin) |
+                   (1 << zone_standby_[4].pin) | (1 << src_ad_[2][0].pin) |
+                   (1 << src_ad_[3][0].pin) | (1 << src_ad_[1][1].pin) |
+                   (1 << src_ad_[2][1].pin) | (1 << src_ad_[3][1].pin);
   cInit.GPIO_Mode  = GPIO_Mode_OUT;
   cInit.GPIO_Speed = GPIO_Speed_2MHz;
   cInit.GPIO_OType = GPIO_OType_PP;
   cInit.GPIO_PuPd  = GPIO_PuPd_NOPULL;
   GPIO_Init(GPIOC, &cInit);
 
+  // Setup IO pin directions PORT D
+  GPIO_InitTypeDef dInit = {
+      .GPIO_Pin   = 1 << src_ad_[0][1].pin,
+      .GPIO_Mode  = GPIO_Mode_OUT,
+      .GPIO_Speed = GPIO_Speed_2MHz,
+      .GPIO_OType = GPIO_OType_PP,
+      .GPIO_PuPd  = GPIO_PuPd_NOPULL,
+  };
+  GPIO_Init(GPIOD, &dInit);
+
   // Setup IO pin directions PORT F
   GPIO_InitTypeDef fInit;
-  fInit.GPIO_Pin = (1 << zone_mute_[5].pin) |
+  fInit.GPIO_Pin = (1 << zone_src_[0][1].pin) | (1 << zone_src_[0][3].pin) |
+                   (1 << zone_src_[4][0].pin) | (1 << zone_mute_[5].pin) |
                    (1 << exp_nrst_.pin) | (1 << exp_boot0_.pin);
   fInit.GPIO_Mode  = GPIO_Mode_OUT;
   fInit.GPIO_Speed = GPIO_Speed_2MHz;

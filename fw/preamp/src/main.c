@@ -31,7 +31,6 @@ int main(void) {
   // TODO: Setup watchdog
 
   // RESET AND PIN SETUP
-  initSrcEnPins();
   initPins();                   // UART and I2C require GPIO pins
   writePin(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are
                                 // reset by the controller board
