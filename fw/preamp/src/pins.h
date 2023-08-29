@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PINS_H_
-#define PINS_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -49,5 +48,3 @@ void configI2C2PinsAsGPIO();
 
 void writePin(Pin pp, bool set);
 bool readPin(Pin pp);
-
-#endif /* PINS_H_ */

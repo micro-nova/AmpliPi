@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SERIAL_H_
-#define SERIAL_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -46,5 +45,3 @@ void debug_print(char* str);
 #define debug_putchar(c)
 #define debug_print(str)
 #endif
-
-#endif /* SERIAL_H_ */

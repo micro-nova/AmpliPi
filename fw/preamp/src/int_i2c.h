@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef INT_I2C_H_
-#define INT_I2C_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -29,5 +28,3 @@ void updateInternalI2C();
 
 bool    isDPotSMBus();
 uint8_t isInternalI2CDevPresent(uint8_t addr);
-
-#endif /* INT_I2C_H_ */

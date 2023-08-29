@@ -19,8 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ADC_H_
-#define ADC_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -71,5 +70,3 @@ int16_t getHV2Temp_f8();
 int16_t getAmp1Temp_f8();
 int16_t getAmp2Temp_f8();
 int16_t getPiTemp_f8();
-
-#endif /* ADC_H_ */

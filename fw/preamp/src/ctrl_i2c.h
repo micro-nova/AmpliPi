@@ -16,8 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef CTRL_I2C_H_
-#define CTRL_I2C_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -60,5 +59,3 @@ typedef union {
 void ctrlI2CInit();
 bool ctrlI2CAddrMatch();
 void ctrlI2CTransact();
-
-#endif /* CTRL_I2C_H_ */

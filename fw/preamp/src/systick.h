@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SYSTICK_H_
-#define SYSTICK_H_
+#pragma once
 
 #include <stdint.h>
 
@@ -28,5 +27,3 @@
 void     systickInit();
 void     delayMs(uint32_t t);
 uint32_t millis(void);
-
-#endif /* SYSTICK_H_ */

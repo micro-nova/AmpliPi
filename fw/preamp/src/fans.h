@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FANS_H_
-#define FANS_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -54,5 +53,3 @@ bool    fansOn();
 
 uint8_t updateFans(bool linear);
 bool    getFanOnFromDuty();
-
-#endif /* FANS_H_ */

@@ -26,8 +26,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef AUDIO_MUX_H_
-#define AUDIO_MUX_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -57,5 +56,3 @@ size_t  getZoneSource(size_t zone);
 
 void      setSourceAD(size_t src, InputType type);
 InputType getSourceAD(size_t src);
-
-#endif /* AUDIO_MUX_H_ */

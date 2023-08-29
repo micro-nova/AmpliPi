@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PWR_GPIO_H_
-#define PWR_GPIO_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -55,5 +54,3 @@ bool get9vEn();
 bool get12vEn();
 void setFanOn(bool on);
 bool getFanOn();
-
-#endif /* PWR_GPIO_H_ */

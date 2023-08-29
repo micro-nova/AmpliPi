@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef I2C_H_
-#define I2C_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -38,5 +37,3 @@ void deinitI2C2();
 uint32_t writeByteI2C2(I2CDev dev, uint8_t val);
 uint8_t  readRegI2C2(I2CReg r);
 uint32_t writeRegI2C2(I2CReg r, uint8_t data);
-
-#endif /* I2C_H_ */

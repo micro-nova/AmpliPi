@@ -18,13 +18,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef VERSION_H_
-#define VERSION_H_
+#pragma once
 
 #include "stdint.h"
 
 extern const uint8_t VERSION_MAJOR_;
 extern const uint8_t VERSION_MINOR_;
 extern const uint8_t GIT_HASH_[4];  // GIT_HASH[4] LSB is dirty bit
-
-#endif /* VERSION_H_ */

@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LEDS_H_
-#define LEDS_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -40,5 +39,3 @@ Leds getLeds();
 
 void initLeds();
 void updateLeds();
-
-#endif /* LEDS_H_ */
