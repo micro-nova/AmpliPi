@@ -1,3 +1,4 @@
+// clang-format off
 /**
   ******************************************************************************
   * @file    Project/STM32F0xx_StdPeriph_Templates/stm32f0xx_conf.h 
@@ -33,7 +34,7 @@
 /* Comment the line below to disable peripheral header file inclusion */
 //#include "stm32f0xx_adc.h"
 //#include "stm32f0xx_can.h"
-#include "stm32f0xx_cec.h"
+//#include "stm32f0xx_cec.h"
 //#include "stm32f0xx_crc.h"
 //#include "stm32f0xx_crs.h"
 //#include "stm32f0xx_comp.h"
@@ -46,7 +47,7 @@
 //#include "stm32f0xx_syscfg.h"
 #include "stm32f0xx_i2c.h"
 //#include "stm32f0xx_iwdg.h"
-#include "stm32f0xx_pwr.h"
+//#include "stm32f0xx_pwr.h"
 #include "stm32f0xx_rcc.h"
 //#include "stm32f0xx_rtc.h"
 //#include "stm32f0xx_spi.h"
@@ -81,3 +82,4 @@
 #endif /* __STM32F0XX_CONF_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+// clang-format on

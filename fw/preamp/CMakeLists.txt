@@ -25,15 +25,12 @@ add_executable(${PROJECT_NAME}.elf
   src/pins.c
   src/pwr_gpio.c
   src/serial.c
-  src/system_stm32f0xx.c
   src/systick.c
 
   startup/startup_stm32.s
 
-  StdPeriph_Driver/src/stm32f0xx_cec.c
   StdPeriph_Driver/src/stm32f0xx_gpio.c
   StdPeriph_Driver/src/stm32f0xx_i2c.c
-  StdPeriph_Driver/src/stm32f0xx_pwr.c
   StdPeriph_Driver/src/stm32f0xx_rcc.c
   StdPeriph_Driver/src/stm32f0xx_usart.c
 )
@@ -60,10 +57,7 @@ set(ARM_FLAGS
 target_compile_options(${PROJECT_NAME}.elf PRIVATE
   ${ARM_FLAGS}
   -std=c11
-  -fmessage-length=0
-  -ffunction-sections
-  #-fdata-sections
-  #-fno-exceptions
+  -ffunction-sections # Generate a section for each function so the linker can remove unused functions.
   -Wall
   -Wextra
   -Werror

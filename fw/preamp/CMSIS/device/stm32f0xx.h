@@ -1,3 +1,4 @@
+// clang-format off
 /**
   ******************************************************************************
   * @file    stm32f0xx.h
@@ -477,7 +478,7 @@ typedef enum IRQn
   */
 
 #include "core_cm0.h"
-#include "system_stm32f0xx.h"
+//#include "system_stm32f0xx.h"
 #include <stdint.h>
 
 /** @addtogroup Exported_types
@@ -5705,3 +5706,4 @@ typedef struct
   */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+// clang-format on
