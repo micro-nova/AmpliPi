@@ -10,7 +10,7 @@ const amplipiurl = process.env.AMPLIPI_URL || "http://127.0.0.1";
 // https://vitejs.dev/config/
 export default defineConfig({
   build: {
-    target: 'esnext'
+    target: 'es2022'
   },
   resolve: {
     alias: {

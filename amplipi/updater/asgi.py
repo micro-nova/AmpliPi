@@ -49,14 +49,6 @@ from pydantic import BaseModel
 app = FastAPI()
 sse_messages: queue.Queue = queue.Queue()
 
-if pathlib.Path.home().joinpath(".config/amplipi/debug.json").exists():
-  from fastapi.middleware.cors import CORSMiddleware
-  app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"]
-  )
-
 class ReleaseInfo(BaseModel):
   """ Software Release Information """
   url: str
@@ -252,18 +244,6 @@ def install():
   t = threading.Thread(target=install_thread)
   t.start()
   return {}
-
-@app.get('/debug')
-def debug():
-  """ Returns debug status and configuration. """
-  debug_file = pathlib.Path.home().joinpath(".config/amplipi/debug.json")
-  if not debug_file.exists():
-    return {}
-  try:
-    with open(debug_file) as f:
-        return json.load(f)
-  except:
-    return {}
 
 if __name__ == '__main__':
   uvicorn.run(app, host="0.0.0.0", port=8000)

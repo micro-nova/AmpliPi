@@ -17,18 +17,22 @@ import PropTypes from "prop-types";
 
 // const UPDATE_INTERVAL = 1000; Commented out while unused
 
-const r = await fetch("http://" + window.location.hostname + ":5001/debug");
-const debugDocText = await r.text();
-const debugDoc = JSON.parse(debugDocText);
-const debug = (debugDoc && debugDoc["debug"]) ? true : false;
+try {
+    const r = await fetch("/debug");
+    const debugDocText = await r.text();
+    const debugDoc = JSON.parse(debugDocText);
+    const debug = (debugDoc && debugDoc["debug"]) ? true : false;
 
-var apm = initApm({ // eslint-disable-line no-unused-vars
-    active: debug,
-    serviceName: "Amplipi",
-    serverUrl: debugDoc["apmHost"] ? debugDoc["apmHost"] : "",
-    serviceVersion: debugDoc["version"] ? debugDoc["version"] : "",
-    environment: debugDoc["environment"] ? debugDoc["environment"] : ""
-});
+    var apm = initApm({ // eslint-disable-line no-unused-vars
+        active: debug,
+        serviceName: "Amplipi",
+        serverUrl: debugDoc["apmHost"] ? debugDoc["apmHost"] : "",
+        serviceVersion: debugDoc["version"] ? debugDoc["version"] : "",
+        environment: debugDoc["environment"] ? debugDoc["environment"] : ""
+    });
+} catch (error) {
+    console.error("Could not check or set debug status: ", error)
+}
 
 // holds onto the selectedSource state so that it persists between refreshes
 export const usePersistentStore = create(

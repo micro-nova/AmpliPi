@@ -38,6 +38,7 @@ from functools import lru_cache
 import asyncio
 import json
 import yaml
+import pathlib
 from subprocess import Popen
 from time import sleep
 
@@ -49,7 +50,6 @@ from fastapi.openapi.utils import get_openapi # docs
 from fastapi.staticfiles import StaticFiles
 from fastapi.routing import APIRoute, APIRouter
 from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
@@ -472,6 +472,18 @@ def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -
 def get_info(ctrl: Api = Depends(get_ctrl)) -> models.Info:
   """ Get additional information """
   return code_response(ctrl, ctrl.get_info())
+
+@app.get('/debug')
+def debug():
+  """ Returns debug status and configuration. """
+  debug_file = pathlib.Path.home().joinpath(".config/amplipi/debug.json")
+  if not debug_file.exists():
+    return {}
+  try:
+    with open(debug_file) as f:
+        return json.load(f)
+  except:
+    return {}
 
 # include all routes above
 
