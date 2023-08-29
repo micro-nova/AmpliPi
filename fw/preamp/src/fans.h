@@ -31,16 +31,14 @@
 // - Thermistors with FAN_ON PWM control (Power Board 3.A)
 // - Thermistors with DPOT linear voltage control (Power Board 4.A)
 // - Overridden (forced on) by the Pi
-typedef enum
-{
+typedef enum {
   FAN_CTRL_MAX6644,
   FAN_CTRL_PWM,
   FAN_CTRL_LINEAR,
   FAN_CTRL_FORCED,
 } FanCtrl;
 
-typedef enum
-{
+typedef enum {
   DPOT_NONE,
   DPOT_MCP4017,
   DPOT_MCP40D17,

@@ -25,10 +25,10 @@
 #include <stdint.h>
 
 // Uncomment the line below to use the debugger
-//#define DEBUG_OVER_UART2
+// #define DEBUG_OVER_UART2
 
 // Uncomment the line below to enabling debug messages on UART1 to the Pi
-//#define DEBUG_PRINT
+// #define DEBUG_PRINT
 
 void setUartPassthrough(bool passthrough);
 bool getUartPassthrough();

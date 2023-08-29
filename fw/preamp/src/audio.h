@@ -36,8 +36,7 @@
 #define NUM_SRCS  4
 #define NUM_ZONES 6
 
-typedef enum
-{
+typedef enum {
   IT_ANALOG,
   IT_DIGITAL
 } InputType;

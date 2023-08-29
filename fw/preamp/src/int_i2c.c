@@ -158,7 +158,7 @@ uint8_t isInternalI2CDevPresent(uint8_t addr) {
   return i2c_dev_present_[addr];
 }
 
-//#define SCAN_I2C
+// #define SCAN_I2C
 #ifdef SCAN_I2C
 
 #ifdef DEBUG_PRINT
