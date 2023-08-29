@@ -86,6 +86,7 @@ target_link_options(${PROJECT_NAME}.elf PRIVATE
   -T${CMAKE_CURRENT_LIST_DIR}/LinkerScript.ld
   -Wl,--gc-sections
   -Wl,-Map,${PROJECT_NAME}.map
+  -Wl,--print-memory-usage
 
   # nosys adds _sbrk() for sprintf(), nano reduces the code size
   # Needed if DEBUG_PRINT is defined
@@ -105,10 +106,10 @@ add_dependencies(${PROJECT_NAME}.elf gitversion)
 target_sources(${PROJECT_NAME}.elf PRIVATE ${version_c_file})
 target_include_directories(${PROJECT_NAME}.elf PRIVATE src)
 
-# Print firmware size
-add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
-  COMMAND ${CMAKE_SIZE_UTIL} -B "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.elf"
-)
+# Print firmware size (replaced with -Wl,--print-memory-usage, TBD if this should be kept.)
+#add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
+#  COMMAND ${CMAKE_SIZE_UTIL} -B "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.elf"
+#)
 
 # Generate bin file and disassembly
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES
