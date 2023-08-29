@@ -183,12 +183,12 @@ void setZoneSource(size_t zone, size_t src) {
 
   // Disconnect zone from all sources first
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    writePin(zone_src_[zone][src], false);
+    writePin(zone_src_[zone][src], true);
   }
 
   // Connect a zone to a source
   if (src < NUM_SRCS) {
-    writePin(zone_src_[zone][src], true);
+    writePin(zone_src_[zone][src], false);
   }
 
   // Restore mute status
@@ -198,7 +198,7 @@ void setZoneSource(size_t zone, size_t src) {
 size_t getZoneSource(size_t zone) {
   // Assume only one source is ever selected
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    if (readPin(zone_src_[zone][src])) {
+    if (!readPin(zone_src_[zone][src])) {
       return src;
     }
   }
@@ -208,19 +208,19 @@ size_t getZoneSource(size_t zone) {
 // Each source can select between a digital or analog input
 void setSourceAD(size_t src, InputType type) {
   // Disable both mux inputs first
-  writePin(src_ad_[src][IT_ANALOG], false);
-  writePin(src_ad_[src][IT_DIGITAL], false);
+  writePin(src_ad_[src][IT_ANALOG], true);
+  writePin(src_ad_[src][IT_DIGITAL], true);
 
   // Enable selected input
-  writePin(src_ad_[src][type], true);
+  writePin(src_ad_[src][type], false);
 }
 
 InputType getSourceAD(size_t src) {
   // Assume only one input is ever selected
   if (readPin(src_ad_[src][IT_DIGITAL])) {
-    return IT_DIGITAL;
+    return IT_ANALOG;
   }
-  return IT_ANALOG;
+  return IT_DIGITAL;
 }
 
 void initAudio() {
