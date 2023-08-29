@@ -94,7 +94,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'curl -sL https://deb.nodesource.com/setup_19.x | sudo -E bash -', # Run script to add nodejs repo
       'sudo apt-get install -y nodejs --allow-change-held-packages',     # Install nodejs
       'export NODE_OPTIONS=--max_old_space_size=800',                    # Increase nodejs memory limit
-      'pushd web2',                                                      # Change to web directory
+      'pushd web',                                                      # Change to web directory
       'npm install',                                                     # Install nodejs dependencies
       'npm run build',                                                   # Build the web app
       'popd',                                                            # Change back to previous directory

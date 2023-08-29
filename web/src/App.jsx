@@ -17,7 +17,9 @@ import PropTypes from "prop-types";
 
 // const UPDATE_INTERVAL = 1000; Commented out while unused
 
-const debugDoc = await fetch("http://localhost:5001/debug");
+const r = await fetch("http://" + window.location.hostname + ":5001/debug");
+const debugDocText = await r.text();
+const debugDoc = JSON.parse(debugDocText);
 const debug = (debugDoc && debugDoc["debug"]) ? true : false;
 
 var apm = initApm({ // eslint-disable-line no-unused-vars

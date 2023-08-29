@@ -49,6 +49,7 @@ from fastapi.openapi.utils import get_openapi # docs
 from fastapi.staticfiles import StaticFiles
 from fastapi.routing import APIRoute, APIRouter
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
@@ -67,7 +68,7 @@ from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs, USER_CONFIG_DIR # we d
 TEMPLATE_DIR = os.path.abspath('web/templates')
 STATIC_DIR = os.path.abspath('web/static')
 GENERATED_DIR = os.path.abspath('web/generated')
-WEB_DIR = os.path.abspath('web2/dist')
+WEB_DIR = os.path.abspath('web/dist')
 
 app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
 # templates = Jinja2Templates(TEMPLATE_DIR)
