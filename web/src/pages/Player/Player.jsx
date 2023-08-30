@@ -24,6 +24,7 @@ const Player = () => {
     );
     const sourceIsInactive = getSourceInputType(selectedSource) === "none";
     const [expanded, setExpanded] = useState(false);
+    const [alone, setAlone] = useState(false);
 
     if (sourceIsInactive) {
         return (
@@ -47,7 +48,7 @@ const Player = () => {
                 <MediaControl selectedSource={selectedSourceId} />
             </div>
 
-            <Card className="player-volume-slider">
+            {!alone && <Card className="player-volume-slider">
                 <CardVolumeSlider sourceId={selectedSourceId} />
                 <IconButton onClick={() => setExpanded(!expanded)}>
                     {expanded ? (
@@ -62,8 +63,8 @@ const Player = () => {
                         />
                     )}
                 </IconButton>
-            </Card>
-            {expanded && <VolumeZones sourceId={selectedSourceId} />}
+            </Card>}
+            <VolumeZones open={(expanded || alone)} setAlone={setAlone} sourceId={selectedSourceId} />
         </div>
     );
 };

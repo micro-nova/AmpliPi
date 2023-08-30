@@ -10,7 +10,7 @@ import { getFittestRep } from "@/utils/GroupZoneFiltering";
 
 import PropTypes from "prop-types";
 
-const VolumeZones = ({ sourceId }) => {
+const VolumeZones = ({ sourceId, open, setAlone }) => {
     const zones = getSourceZones(
         sourceId,
         useStatusStore((s) => s.status.zones)
@@ -28,6 +28,13 @@ const VolumeZones = ({ sourceId }) => {
     );
 
     const groupVolumeSliders = [];
+    // console.log(`usedGroups: ${(usedGroups.length <= 1)}`)
+    // console.log(`zonesLeft: ${(zonesLeft.length <= 1)}`)
+    if(((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length < 0) && (zonesLeft.length < 0))){
+      setAlone(true);
+    } else {
+      setAlone(false);
+    }
     for (const group of usedGroups) {
         groupVolumeSliders.push(
             <Card className="group-vol-card" key={group.id}>
@@ -49,15 +56,19 @@ const VolumeZones = ({ sourceId }) => {
         );
     });
 
-    return (
-        <div className="volume-sliders-container">
-            {groupVolumeSliders}
-            {zoneVolumeSliders}
-        </div>
-    );
+    if(open){
+      return (
+          <div className="volume-sliders-container">
+              {groupVolumeSliders}
+              {zoneVolumeSliders}
+          </div>
+      );
+    }
 };
 VolumeZones.propTypes = {
     sourceId: PropTypes.any.isRequired,
+    open: PropTypes.bool.isRequired,
+    setAlone: PropTypes.func.isRequired,
 };
 
 export default VolumeZones;
