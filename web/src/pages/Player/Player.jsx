@@ -43,8 +43,8 @@ const Player = () => {
                     onClose={() => setStreamsModalOpen(false)}
                 />
             )}
-            <StreamBar sourceId={selectedSourceId} />
-            <div className="player-inner" onClick={() => {setStreamsModalOpen(true);}}>
+            <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
+            <div className="player-inner">
                 <img src={img_url} className="player-album-art" />
                 <SongInfo
                     sourceId={selectedSourceId}
