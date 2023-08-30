@@ -10,6 +10,7 @@
     "pretty": "prettier --no-semi --write \"./**/*.{js,jsx,ts,tsx,json,css,scss}\""
   },
   "dependencies": {
+    "@elastic/apm-rum": "^5.14.0",
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
