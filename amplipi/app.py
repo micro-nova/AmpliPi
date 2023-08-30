@@ -38,6 +38,7 @@ from functools import lru_cache
 import asyncio
 import json
 import yaml
+import pathlib
 from subprocess import Popen
 from time import sleep
 
@@ -67,7 +68,7 @@ from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs, USER_CONFIG_DIR # we d
 TEMPLATE_DIR = os.path.abspath('web/templates')
 STATIC_DIR = os.path.abspath('web/static')
 GENERATED_DIR = os.path.abspath('web/generated')
-WEB_DIR = os.path.abspath('web2/dist')
+WEB_DIR = os.path.abspath('web/dist')
 
 app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
 # templates = Jinja2Templates(TEMPLATE_DIR)
@@ -160,6 +161,8 @@ def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   This will reset all zone names and streams back to their original configuration.
   We recommend downloading the current configuration beforehand.
   """
+  if ctrl.is_streamer:
+    return load_config(models.Status(**ctrl.STREAMER_CONFIG), ctrl)
   return load_config(models.Status(**ctrl.DEFAULT_CONFIG), ctrl)
 
 @api.post('/api/reset', tags=['status'])
@@ -472,6 +475,18 @@ def get_info(ctrl: Api = Depends(get_ctrl)) -> models.Info:
   """ Get additional information """
   return code_response(ctrl, ctrl.get_info())
 
+@app.get('/debug')
+def debug():
+  """ Returns debug status and configuration. """
+  debug_file = pathlib.Path.home().joinpath(".config/amplipi/debug.json")
+  if not debug_file.exists():
+    return {}
+  try:
+    with open(debug_file) as f:
+        return json.load(f)
+  except:
+    return {}
+
 # include all routes above
 
 app.include_router(api)
@@ -610,7 +625,7 @@ def generate_openapi_spec(add_test_docs=True):
   }
   openapi_schema['info']['license'] = {
     'name': 'GPL',
-    'url':  'https://github.com/micro-nova/AmpliPi/blob/master/COPYING',
+    'url':  'https://github.com/micro-nova/AmpliPi/blob/main/COPYING',
   }
 
   # Manually add examples present in pydancticModel.schema_extra into openAPI schema

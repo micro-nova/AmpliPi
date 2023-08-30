@@ -17,41 +17,43 @@ class Client:
 
   TODO: create full fledged client for full AmpliPi API
   """
+  DEFAULT_TIMEOUT = 2
+  ANNOUCE_TIMEOUT = 10 # requests don't return until announcement is finished
 
   def __init__(self, url='http://localhost/api'):
     self.url = url
 
   def reset(self) -> bool:
     """ Reset firmware """
-    return requests.post(f'{self.url}/reset').ok
+    return requests.post(f'{self.url}/reset', timeout=self.DEFAULT_TIMEOUT).ok
 
   def load_config(self, cfg: models.Status) -> Optional[models.Status]:
     """ Load a configuration """
-    resp = requests.post(f'{self.url}/load', json=cfg.dict())
+    resp = requests.post(f'{self.url}/load', json=cfg.dict(), timeout=self.DEFAULT_TIMEOUT)
     if resp.ok:
       return models.Status(**resp.json())
     return None
 
   def load_preset(self, pid: int) -> bool:
     """ Load a preset configuration """
-    resp = requests.post(f'{self.url}/presets/{pid}/load')
+    resp = requests.post(f'{self.url}/presets/{pid}/load', timeout=self.DEFAULT_TIMEOUT)
     return resp.ok
 
   def create_preset(self, pst: models.Preset) -> bool:
     """ Create a new preset configuration """
-    resp = requests.post(f'{self.url}/preset', json=pst.dict())
+    resp = requests.post(f'{self.url}/preset', json=pst.dict(), timeout=self.DEFAULT_TIMEOUT)
     return resp.ok
 
   def get_status(self) -> Optional[models.Status]:
     """ Get the system state """
-    resp = requests.get(self.url)
+    resp = requests.get(self.url, timeout=self.DEFAULT_TIMEOUT)
     if resp.ok:
       return models.Status(**resp.json())
     return None
 
   def announce(self, announcement: models.Announcement) -> bool:
     """ Announce something """
-    return requests.post(f'{self.url}/announce', json=announcement.dict()).ok
+    return requests.post(f'{self.url}/announce', json=announcement.dict(), timeout=self.ANNOUCE_TIMEOUT).ok
 
   def available(self) -> bool:
     """ Check connection """
@@ -78,9 +80,11 @@ EXTRA_INPUTS_PLAYBACK = {
 }
 
 def all_zones(exp_unit: bool = False) -> Sequence[int]:
+  """Get a list of all available zones based on if this is an @exp_unit"""
   return range(18) if exp_unit else range(12)
 
-def setup(client: Client, exp_unit: bool):
+def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
+  """ Configure AmpliPi for testing by loading a simple known configuration """
   def pst_all_zones_to_src(name: str, src: int, _input: str, vol=-50):
     """ Create a preset that connects all zones to @src"""
     return {
@@ -91,49 +95,67 @@ def setup(client: Client, exp_unit: bool):
       }
     }
 
-  PRESETS = [
-    {
-      'name': 'led-0 mute all',
-      'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
-    },
-    # mute all
-    {
-      'name': 'amp-0 mute all',
-      'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
-    },
-    # play music
-    {
-      'name': 'amp-1 play',
-      'state': {
-        'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-        'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
-      }
-    },
-    # play music
-    {
-      'name': 'preout-0 play',
-      'state': {
-        'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-        'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
-      }
-    },
-  ]
+  status = client.get_status()
+  if not status:
+    print("Unable to connect to AmpliPi")
+    return None
 
-  # set volume on zoneX
-  for zid in all_zones(exp_unit):
-    PRESETS += [
+  is_streamer = len(status.zones) == 0
+  if is_streamer:
+    presets = [
       {
-        'name': f'led-{zid + 1} enable zone {zid + 1}',
-        'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
+        'name': 'inputs-in',
+        'state': {
+          'sources': [{'id': 0, 'input': f'stream={EXTRA_INPUTS_PLAYBACK["id"]}'}],
+        }
       }
     ]
-  PRESETS += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, f'stream={RCA_INPUTS[src]}', -40) for src in range(4)]
-  PRESETS += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
+  else:
+    presets = [
+      {
+        'name': 'led-0 mute all',
+        'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
+      },
+      # mute all
+      {
+        'name': 'amp-0 mute all',
+        'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
+      },
+      # play music
+      {
+        'name': 'amp-1 play',
+        'state': {
+          'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
+          'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
+        }
+      },
+      # play music
+      {
+        'name': 'preout-0 play',
+        'state': {
+          'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
+          'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
+        }
+      },
+    ]
 
-  """ Configure AmpliPi for testing by loading a simple known configuration """
+    # set volume on zoneX
+    for zid in all_zones(exp_unit):
+      presets += [
+        {
+          'name': f'led-{zid + 1} enable zone {zid + 1}',
+          'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
+        }
+      ]
+    presets += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, f'stream={RCA_INPUTS[src]}', -40) for src in range(4)]
+    presets += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
+
   prev_cfg = client.get_status()
-  client.load_config(models.Status(zones=[models.Zone(id=z, name=f'Zone {z + 1}') for z in all_zones(exp_unit)], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
-  for pst in PRESETS:
+  if is_streamer:
+    client.load_config(models.Status(zones=[], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
+  else:
+    client.load_config(models.Status(zones=[models.Zone(id=z, name=f'Zone {z + 1}') for z in all_zones(exp_unit)], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
+  for pst in presets:
     client.create_preset(models.Preset(**pst))
   print('waiting for config file to be written')
   sleep(6)
@@ -144,11 +166,13 @@ def loop_test(client: Client, test_name: str):
   status = client.get_status()
   if status is None:
     return
+  if len(status.zones) == 0:
+    raise Exception('unable to run preamp test on streamer')
   stages = [pst for pst in status.presets if pst.name.startswith(test_name) and pst.id is not None]
   if len(stages) == 0:
     print(f"test '{test_name}' not found")
     return
-  elif test_name == 'preout':
+  if test_name == 'preout':
     print("""Use a pair of headphones to connect to each of the 6 channels.
 
     - Verify both left and right sides are playing music for each channel
@@ -192,18 +216,23 @@ def inputs_test(ap1: Client):
     print('No analog tester available, please manually connect audio to the aux and optical inputs')
   status = ap1.get_status()
   if status is None:
-    print('failed to get AmpliPi status')
-    sys.exit(1)
+    return None
+
   preset = [pst for pst in status.presets if pst.name == 'inputs-in'][0]
 
   if not preset.id:
     print('Preset id not available')
     sys.exit(1)
 
+  if len(status.zones) > 0:
+    print("""Connect speakers to any zone""")
+  else:
+    print("""Connect powered speakers with RCA inputs to source 1""")
+
   print("""
   Alternating between outputting Optical and Aux left and right audio
 
-  - Verify that both Auxillary and Optical In left and right channels are announced out the speaker
+  - Verify that both Auxillary and Optical In left and right channels are announced
   """)
 
   def set_pcm(src):
@@ -223,7 +252,7 @@ def inputs_test(ap1: Client):
     if not analog_tester_avail:
       sleep(5)
     else:
-      ap2.announce(models.Announcement(source_id=3, media=f'web/static/audio/aux_in.mp3'))
+      ap2.announce(models.Announcement(source_id=3, media='web/static/audio/aux_in.mp3'))
 
     # select the Optical input on this device and play audio through it to all zones
     set_pcm("IEC958 In")
@@ -232,15 +261,16 @@ def inputs_test(ap1: Client):
     if not analog_tester_avail:
       sleep(5)
     else:
-      ap2.announce(models.Announcement(source_id=0, media=f'web/static/audio/optical_in.mp3'))
+      ap2.announce(models.Announcement(source_id=0, media='web/static/audio/optical_in.mp3'))
 
 def preamp_test(ap1: Client, exp_unit: bool = False):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
   ap2 = get_analog_tester_client()
   status = ap1.get_status()
   if status is None:
-    print('failed to get AmpliPi status')
-    sys.exit(1)
+    raise Exception('failed to get AmpliPi status')
+  if len(status.zones) == 0:
+    raise Exception('unable to run preamp test on streamer')
   presets = [pst for pst in status.presets if pst.name.startswith('preamp-analog-in-') and pst.id is not None]
   try_analog = not exp_unit # the analog tester is not needed for expansion units
   if try_analog and ap2.available():
@@ -254,7 +284,6 @@ def preamp_test(ap1: Client, exp_unit: bool = False):
   digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
   analog_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/analog{src+1}.mp3') for src in range(4)]
   while True:
-    # TODO: verify fw version
     if try_analog and ap2.available():
       for msg in analog_msgs:
         pst = presets[msg.source_id]
@@ -263,6 +292,24 @@ def preamp_test(ap1: Client, exp_unit: bool = False):
           ap1.load_preset(pst.id)
           # play analog announcement on other amplipi (its four source outputs are connected to ap1's analog inputs)
           ap2.announce(msg)
+    for msg in digital_msgs:
+      ap1.announce(msg)
+
+def streamer_test(ap1: Client):
+  """ Test the streamer board's audio, playing 4 different audio sources then looping """
+  status = ap1.get_status()
+  if status is None:
+    print('failed to get AmpliPi status')
+    sys.exit(1)
+  if len(status.zones) != 0:
+    raise Exception("""Unit has zones. It may not have detected it was a streamer unit.
+      Do a factory reset and try testing again.""")
+  print('Test will play Digital 1 Left... Digital 4 Right')
+  print('- Verify that each side of all 4 sources are played out the corresponding RCA outputs')
+  print('  ex. Digital 1 Left should be played out on the RCA output 1')
+  print('  NOTE: Requires a powered speaker with an RCA cable input')
+  digital_msgs = [models.Announcement(source_id=src, media=f'web/static/audio/digital{src+1}.mp3', vol=-30) for src in range(4)]
+  while True:
     for msg in digital_msgs:
       ap1.announce(msg)
 
@@ -281,7 +328,7 @@ def exit_handler(_, _1):
 
 if __name__ == '__main__':
 
-  tests = ['led', 'amp', 'preout', 'preamp', 'inputs']
+  tests = ['led', 'amp', 'preout', 'preamp', 'inputs', 'streamer']
 
   parser = argparse.ArgumentParser('Test audio functionality')
   parser.add_argument('test', help=f'Test to run ({tests})')
@@ -305,19 +352,27 @@ if __name__ == '__main__':
   signal.signal(signal.SIGHUP, exit_handler)
 
   old_config = setup(ap, exp_unit=args.expansion)
+  if not old_config:
+    print('failed to configure amplipi for testing, exiting')
+    sys.exit(1)
   try:
     print(f"Running test '{args.test}'. Press Ctrl-C to stop.")
     if args.test == 'preamp':
       preamp_test(ap, exp_unit=args.expansion)
     elif args.test == 'inputs':
       inputs_test(ap)
+    elif args.test == 'streamer':
+      streamer_test(ap)
     else:
       loop_test(ap, args.test)
-  except KeyboardInterrupt: # TODO: handle other signals kill and sighup
-    try:
-      if ap.available() and ap.load_config(old_config):
-        print('\nRestored previous configuration.')
-      else:
-        print('\nFailed to restore configuration. Left in testing state.')
-    except:
-      print('\nError restoring configuration. Left in testing state.')
+  except KeyboardInterrupt:
+    pass
+  except Exception as e:
+    print('Failed to test {args.test}: {e}')
+  try:
+    if ap.available() and ap.load_config(old_config):
+      print('\nRestored previous configuration.')
+    else:
+      print('\nFailed to restore configuration. Left in testing state.')
+  except:
+    print('\nError restoring configuration. Left in testing state.')

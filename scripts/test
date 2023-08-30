@@ -5,8 +5,8 @@ cd "$( dirname "$0" )/.."
 source venv/bin/activate
 
 # Run pylint to check for code issues
-pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
-pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
+pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*,RPi.GPIO.*"
+pylint -E amplipi --generated-members "signal.Signals,GPIO.*,RPi.GPIO.*"
 
 # Lint with mypy, static type checker
 mypy amplipi --ignore-missing-imports

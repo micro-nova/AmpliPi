@@ -1,0 +1,1 @@
+These fonts were vendored from [https://github.com/google/fonts] and include the relevant license files for each. They were vendored to provide a good user experience when operating on an air-gapped network.
