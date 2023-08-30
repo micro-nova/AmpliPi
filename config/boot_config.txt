@@ -44,6 +44,7 @@
 
 # Uncomment some or all of these to enable the optional hardware interfaces
 dtparam=i2c_arm=on,i2c_arm_baudrate=100000
+dtparam=i2c_vc=on
 dtparam=i2s=on
 dtparam=spi=on
 

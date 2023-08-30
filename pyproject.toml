@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "amplipi"
-version = "0.2.1+fcc4ae9-cleanup-and-doc-dirty"
+version = "0.2.1+731258c-Webapp2-RUM-dirty"
 description = "A Pi-based whole house audio controller"
 authors = [
   "Lincoln Lorenz <lincoln@micro-nova.com>",
@@ -53,14 +53,6 @@ amplipi_install_deps = 'amplipi.scripts:configure'
 
 [tool.poetry.urls]
 "Issues" = "https://github.com/micro-nova/AmpliPi/issues"
-
-[tool.poetry.dependencies]
-python = "^3.6"
-Flask = "^1.1.2"
-smbus2 = "^0.4.1"
-pyserial = "^3.5"
-deepdiff = "^5.2.3"
-python-vlc = "^3.0.11115"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
