@@ -843,7 +843,7 @@ class Status(BaseModel):
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
-  streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(4)]
+  streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(MAX_SOURCES)]
   presets: List[Preset] = []
   info: Optional[Info]
 

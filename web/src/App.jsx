@@ -1,5 +1,6 @@
 import React from "react";
 import { create } from "zustand";
+import { init as initApm } from "@elastic/apm-rum";
 // import { useCookies } from "react-cookie";
 import "@/App.scss";
 import Home from "@/pages/Home/Home";
@@ -15,6 +16,23 @@ import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon";
 import PropTypes from "prop-types";
 
 // const UPDATE_INTERVAL = 1000; Commented out while unused
+
+try {
+    const r = await fetch("/debug");
+    const debugDocText = await r.text();
+    const debugDoc = JSON.parse(debugDocText);
+    const debug = (debugDoc && debugDoc["debug"]) ? true : false;
+
+    var apm = initApm({ // eslint-disable-line no-unused-vars
+        active: debug,
+        serviceName: "Amplipi",
+        serverUrl: debugDoc["apmHost"] ? debugDoc["apmHost"] : "",
+        serviceVersion: debugDoc["version"] ? debugDoc["version"] : "",
+        environment: debugDoc["environment"] ? debugDoc["environment"] : ""
+    });
+} catch (error) {
+    console.error("Could not check or set debug status: ", error)
+}
 
 // holds onto the selectedSource state so that it persists between refreshes
 export const usePersistentStore = create(

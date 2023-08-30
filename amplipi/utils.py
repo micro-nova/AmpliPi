@@ -27,6 +27,7 @@ import os
 import re
 import subprocess
 import shlex
+import pathlib
 from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 
 import pkg_resources # version
@@ -65,8 +66,10 @@ def updated_val(update: Optional[VT], val: VT) -> Tuple[VT, bool]:
 
 BT_co = TypeVar("BT_co", bound='models.Base', covariant=True)
 
-def find(items: Iterable[BT_co], item_id: int, key='id') -> Union[Tuple[int, BT_co], Tuple[None, None]]:
+def find(items: Iterable[BT_co], item_id: Optional[int], key='id') -> Union[Tuple[int, BT_co], Tuple[None, None]]:
   """ Find an item by id """
+  if item_id is None:
+    return None, None
   for i, item in enumerate(items):
     if item.__dict__[key] == item_id:
       return i, item
@@ -313,3 +316,7 @@ def vol_db_to_float(vol: int, db_min: int = models.MIN_VOL_DB, db_max: int = mod
   vol_f = (vol - db_min) * range_f / range_db + models.MIN_VOL_F
   vol_f_clamped = clamp(vol_f, models.MIN_VOL_F, models.MAX_VOL_F)
   return vol_f_clamped
+
+def debug_enabled() -> bool:
+  """ Returns true or false if debug is enabled """
+  return pathlib.Path.home().joinpath(".config/amplipi/debug.json").exists()
