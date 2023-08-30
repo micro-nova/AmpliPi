@@ -240,6 +240,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   }
 }
 
+def _check_and_update_streamer(env):
+  """Check if this is a streamer (no preamp firmware)"""
+  is_streamer_path = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'is_streamer')
+  env['is_streamer'] = os.path.exists(is_streamer_path)
+
 def _check_and_setup_platform():
   script_dir = os.path.dirname(os.path.realpath(__file__))
   env = {
@@ -250,6 +255,7 @@ def _check_and_setup_platform():
     'script_dir': script_dir,
     'base_dir': script_dir.rsplit('/', 1)[0],
     'is_amplipi': False,
+    'is_streamer': False,
     'arch': 'unknown',
   }
 
@@ -271,6 +277,8 @@ def _check_and_setup_platform():
       env['platform_supported'] = True
       env['has_apt'] = True
       env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
+
+  _check_and_update_streamer(env)
 
   return env
 
@@ -819,26 +827,26 @@ def _fw_ver_from_filename(name: str) -> int:
   return 0
 
 def _update_firmware(env: dict, progress) -> List[Task]:
-  """ If on AmpliPi hardware, update to the latest firmware """
-  task = Task('Flash latest firmware')
-  latest_ver = 0
-  latest_file = ''
-  for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
-    ver = _fw_ver_from_filename(f)
-    if ver > latest_ver:
-      latest_ver = ver
-      latest_file = f
-  if latest_ver > 0:
-    if env['is_amplipi']:
+  """ If on AmpliPi with preamp hardware, update to the latest firmware """
+  task = Task('Flash latest preamp firmware')
+  if env['is_amplipi'] and not env['is_streamer']:
+    latest_ver = 0
+    latest_file = ''
+    for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
+      ver = _fw_ver_from_filename(f)
+      if ver > latest_ver:
+        latest_ver = ver
+        latest_file = f
+    if latest_ver > 0:
       os.chdir(env['base_dir'])
       task.margs = [f'bash scripts/program_firmware {latest_file}'.split()]
       task.run()
     else:
-      task.output = 'Not on AmpliPi'
+      task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
       task.success = False
   else:
-    task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
-    task.success = False
+    task.output = 'Not on AmpliPi with Preamp - No firmware update necessary'
+    task.success = True
   progress([task])
   return [task]
 
@@ -865,28 +873,35 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
-    ('Program Main', './hw/tests/program_preamps.bash'),
-    ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
-    ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
-    ('Amplifier', './hw/tests/built_in.bash amp'),
-    ('LEDs', './hw/tests/built_in.bash led'),
-    ('Preamp', './hw/tests/built_in.bash preamp'),
-    ('Expander Preamp', './hw/tests/built_in.bash preamp --expansion'),
-    ('Inputs', './hw/tests/built_in.bash inputs'),
-    ('Preouts', './hw/tests/built_in.bash preout'),
-    ('Display', './hw/tests/display.bash --wait'),
     ('Ethernet', './hw/tests/ethernet.bash --wait'),
     ('USB Ports', './hw/tests/usb.py'),
-    ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
-    ('Fans and Power', './hw/tests/fans.bash'),
-    ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'), # just for info, not a specific test
+    ('Inputs', './hw/tests/built_in.bash inputs'),
   ]
+  if env['is_streamer']:
+    tests += [('Streamer', './hw/tests/built_in.bash streamer')]
+    tests += [('Config Streamer', './hw/tests/config_streamer.bash')]
+  else:
+    tests += [
+      ('Program Main', './hw/tests/program_preamps.bash'),
+      ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
+      ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
+      ('Amplifier', './hw/tests/built_in.bash amp'),
+      ('LEDs', './hw/tests/built_in.bash led'),
+      ('Preamp', './hw/tests/built_in.bash preamp'),
+      ('Expander Preamp', './hw/tests/built_in.bash preamp --expansion'),
+      ('Preouts', './hw/tests/built_in.bash preout'),
+      ('Display', './hw/tests/display.bash --wait'),
+      ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
+      ('Fans and Power', './hw/tests/fans.bash'),
+      ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'), # just for info, not a specific test
+    ]
   tasks = []
 
   # create the ~/tests directory if it doesn't already exist
   directory = pathlib.Path.home().joinpath('Desktop', 'tests')
   tasks += _create_dir(str(directory))
 
+  tasks += [Task('Remove old tests', [f'rm {str(directory)}/*'], shell=True).run()]
   for test in tests:
     tasks += [_add_desktop_icon(env, directory, test[0], test[1])]
   progress(tasks)
@@ -914,8 +929,6 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if failed():
     return False
   tasks += fix_file_props(env, progress)
-  if env['is_amplipi']:
-    tasks += add_tests(env, progress)
   if failed():
     return False
   if os_deps:
@@ -924,7 +937,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
       print('OS dependency install step failed, exiting...')
       return False
   if python_deps:
-    with open(os.path.join(env['base_dir'], 'requirements.txt')) as req:
+    with open(os.path.join(env['base_dir'], 'requirements.txt'), encoding='utf-8') as req:
       deps = req.read().splitlines()
       # TODO: embed python progress reporting
       py_tasks = _install_python_deps(env, deps)
@@ -937,14 +950,20 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_web(env, restart_updater, progress)
     if failed():
       return False
+    # The is_streamer detection will happen in the update_web task
+    # we need to refresh this detection, just in case the flag changed
+    # the update_firmware task depends on this flag
+    _check_and_update_streamer(env)
   if display:
     tasks += _update_display(env, progress)
     if failed():
       return False
-  if audiodetector:
+  if audiodetector and not env['is_streamer']:
     tasks += _update_audiodetector(env, progress)
     if failed():
       return False
+  if env['is_amplipi']:
+      tasks += add_tests(env, progress)
   if firmware:
     tasks += _update_firmware(env, progress)
     if failed():

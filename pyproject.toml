@@ -54,14 +54,6 @@ amplipi_install_deps = 'amplipi.scripts:configure'
 [tool.poetry.urls]
 "Issues" = "https://github.com/micro-nova/AmpliPi/issues"
 
-[tool.poetry.dependencies]
-python = "^3.6"
-Flask = "^1.1.2"
-smbus2 = "^0.4.1"
-pyserial = "^3.5"
-deepdiff = "^5.2.3"
-python-vlc = "^3.0.11115"
-
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
 

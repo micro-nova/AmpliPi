@@ -133,15 +133,17 @@ bool open_storage(const char *path, int *fd) {
 }
 
 bool write_data(int fd, AudioStatus *status) {
+  static bool        write_once      = true;
   static AudioStatus status_previous = {.all = 0};
-  // Only write data on change
-  if (status->all != status_previous.all) {
+  // Only write data on change, plus once at startup.
+  if (status->all != status_previous.all || write_once) {
     lseek(fd, 0, SEEK_SET);
     if (write(fd, status, 1) != 1) {
       perror("write");
       return false;
     }
     status_previous.all = status->all;
+    write_once          = false;
   }
   return true;
 }
