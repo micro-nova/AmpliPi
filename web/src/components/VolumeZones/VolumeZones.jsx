@@ -28,9 +28,8 @@ const VolumeZones = ({ sourceId, open, setAlone }) => {
     );
 
     const groupVolumeSliders = [];
-    // console.log(`usedGroups: ${(usedGroups.length <= 1)}`)
-    // console.log(`zonesLeft: ${(zonesLeft.length <= 1)}`)
-    if(((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length < 0) && (zonesLeft.length < 0))){
+    // This is a bootleg XOR statement, only works if there is
+    if(((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length > 0) && (zonesLeft.length > 0))){
       setAlone(true);
     } else {
       setAlone(false);
