@@ -20,6 +20,8 @@
 
 .volume-slider-mute-icon {
   color: general.$mute-color;
+  cursor: pointer;
+  @include general.button-hover;
 }
 
 .volume-slider-icon-container {
