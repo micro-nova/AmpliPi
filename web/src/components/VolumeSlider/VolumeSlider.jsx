@@ -8,7 +8,11 @@ import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import StopProp from "@/components/StopProp/StopProp";
 
+import LockOpenOutlinedIcon from '@mui/icons-material/LockOpenOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+
 import PropTypes from "prop-types";
+import { IconButton } from "@mui/material";
 
 const VolIcon = ({ vol, mute }) => {
     if (mute) {
@@ -32,10 +36,19 @@ VolIcon.propTypes = {
 };
 
 // generic volume slider used by other volume sliders
-const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
+const VolumeSlider = ({ vol, mute, lock, setVol, setMute, setLock, disabled }) => {
     return (
         <StopProp>
             <div className="volume-slider-container">
+                <div
+                    onClick={() => {
+                        setLock(!lock);
+                    }}
+                    className="volume-slider-icon-container"
+                >
+                  {!lock && <IconButton><LockOpenOutlinedIcon /></IconButton>}
+                  {lock && <IconButton><LockOutlinedIcon /></IconButton>}
+                </div>
                 <div
                     onClick={() => {
                         setMute(!mute);
@@ -65,11 +78,15 @@ const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
 VolumeSlider.propTypes = {
     vol: PropTypes.number.isRequired,
     mute: PropTypes.bool.isRequired,
+    lock: PropTypes.bool,
     setVol: PropTypes.func.isRequired,
     setMute: PropTypes.func.isRequired,
+    setLock: PropTypes.func,
     disabled: PropTypes.bool,
 };
 VolumeSlider.defaultProps = {
+    lock: false,
+    setLock: () => {},
     disabled: false,
 };
 

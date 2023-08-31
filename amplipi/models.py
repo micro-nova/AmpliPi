@@ -98,6 +98,7 @@ class fields_w_default(SimpleNamespace):
   GroupVolume = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume')
   GroupVolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
+  Lock = Field(default=False, description='Set to true if you want to prevent volume changes')
 
 class Base(BaseModel):
   """ Base class for AmpliPi Models
@@ -227,6 +228,7 @@ class Zone(Base):
   vol_min: int = fields_w_default.VolumeMin
   vol_max: int = fields_w_default.VolumeMax
   disabled: bool = fields_w_default.Disabled
+  lock: bool = fields_w_default.Lock
 
   def as_update(self) -> 'ZoneUpdate':
     """ Convert to ZoneUpdate """
