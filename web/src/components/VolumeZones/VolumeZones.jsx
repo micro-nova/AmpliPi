@@ -28,7 +28,7 @@ const VolumeZones = ({ sourceId, open, setAlone }) => {
     );
 
     const groupVolumeSliders = [];
-    // This is a bootleg XOR statement, only works if there is
+    // This is a bootleg XOR statement, only works if there is exactly one zone or exactly one group, no more than that and not both
     if(((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length > 0) && (zonesLeft.length > 0))){
       setAlone(true);
     } else {
