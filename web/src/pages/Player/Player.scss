@@ -9,6 +9,11 @@
   justify-content: flex-start;
 }
 
+.stream-title {
+  cursor: pointer;
+  @include general.button-hover;
+}
+
 .player-inner {
   width: fit-content;
   height: fit-content;

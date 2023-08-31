@@ -13,6 +13,7 @@ import VolumeZones from "@/components/VolumeZones/VolumeZones";
 import Card from "@/components/Card/Card";
 import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import { getSourceInputType } from "@/utils/getSourceInputType";
+import Chip from "@/components/Chip/Chip";
 
 const Player = () => {
     const [streamsModalOpen, setStreamsModalOpen] = React.useState(false);
@@ -43,7 +44,11 @@ const Player = () => {
                     onClose={() => setStreamsModalOpen(false)}
                 />
             )}
-            <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
+            <div className="stream-title" >
+              <Chip>
+                <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
+              </Chip>
+            </div>
             <div className="player-inner">
                 <img src={img_url} className="player-album-art" />
                 <SongInfo
