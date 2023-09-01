@@ -1268,7 +1268,7 @@ def test_set_group_vol(client, gid):
     assert patched_group is not None
     return patched_group
 
-  # if a group has no zones, voluem control won't work as expected
+  # if a group has no zones, volume control won't work as expected
   if no_groups:
     no_zones = False
   else:
