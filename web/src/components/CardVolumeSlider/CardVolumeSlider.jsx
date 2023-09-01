@@ -87,10 +87,31 @@ const CardVolumeSlider = ({ sourceId }) => {
         });
     };
 
+    const lock = getSourceZones(sourceId, zones)
+        .map((z) => z.lock)
+        .reduce((a, b) => a && b, true);
+
+
+    const setLock = (lock) => {
+        setZonesLock(lock, zones, sourceId);
+        fetch("/api/zones", {
+            method: "PATCH",
+            headers: {
+                "Content-type": "application/json",
+            },
+            body: JSON.stringify({
+                zones: getSourceZones(sourceId, zones).map((z) => z.id),
+                update: { lock: lock },
+            }),
+        });
+    };
+
     return (
         <div className="volume-slider">
             <VolumeSlider
                 vol={value}
+                lock={lock}
+                setLock={setLock}
                 mute={mute}
                 setMute={setMute}
                 setVol={(val, force = false) => {

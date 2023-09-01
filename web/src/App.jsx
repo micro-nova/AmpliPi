@@ -95,6 +95,30 @@ export const useStatusStore = create((set, get) => ({
             })
         );
     },
+    setZonesLock: (lock, zones, source_id) => {
+        set(
+            produce((s) => {
+                for (const i of getSourceZones(source_id, zones)) {
+                    for (const j of s.status.zones) {
+                        if (j.id === i.id) {
+                            j.lock = lock;
+                        }
+                    }
+                }
+            })
+        );
+    },
+    setZoneLock: (zid, lock) => {
+        set(
+            produce((s) => {
+                for (const i of s.status.zones) {
+                    if (i.id === zid) {
+                        i.lock = lock;
+                    }
+                }
+            })
+        );
+    },
     setGroupMute: (gid, mute) => {
         set(
             produce((s) => {

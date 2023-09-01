@@ -72,6 +72,7 @@ class fields(SimpleNamespace):
   GroupVolume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Average output volume')
   GroupVolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number')
   Disabled = Field(description='Set to true if not connected to a speaker')
+  Locked = Field(description='Set to true to make volume level static')
   Zones = Field(description='Set of zone ids belonging to a group')
   Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
@@ -249,6 +250,7 @@ class Zone(Base):
             'vol_min': MIN_VOL_DB,
             'vol_max': MAX_VOL_DB,
             'disabled': False,
+            'lock': False,
           }
         },
         'Dining Room' : {
@@ -261,6 +263,7 @@ class Zone(Base):
             'vol_min': int(0.1 * (MAX_VOL_DB + MIN_VOL_DB)),
             'vol_max': int(0.8 * (MAX_VOL_DB + MIN_VOL_DB)),
             'disabled': False,
+            'lock': False,
           }
         },
       }
@@ -275,6 +278,7 @@ class ZoneUpdate(BaseUpdate):
   vol_min: Optional[int] = fields.VolumeMin
   vol_max: Optional[int] = fields.VolumeMax
   disabled: Optional[bool] = fields.Disabled
+  lock: Optional[bool] = fields.Lock
 
   class Config:
     schema_extra = {
@@ -1007,6 +1011,7 @@ class Status(BaseModel):
                           'type': 'internetradio',
                           'url': 'http://www.beatlesradio.com:8000/stream/1/'}],
             'zones': [ { 'disabled': False,
+                        'lock': False,
                         'id': 0,
                         'mute': True,
                         'name': 'Software Office',
@@ -1016,6 +1021,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 1,
                         'mute': True,
                         'name': 'Upstairs Living Room',
@@ -1025,6 +1031,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 2,
                         'mute': True,
                         'name': 'Upstairs Dining',
@@ -1034,6 +1041,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 3,
                         'mute': True,
                         'name': 'Upstairs Laundry',
@@ -1043,6 +1051,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 4,
                         'mute': True,
                         'name': 'Upstairs Kitchen High',
@@ -1052,6 +1061,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 5,
                         'mute': True,
                         'name': 'Upstairs Master Bath',
@@ -1061,6 +1071,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 6,
                         'mute': True,
                         'name': 'Upstairs Kitchen Low HV',
@@ -1070,6 +1081,7 @@ class Status(BaseModel):
                         'vol_max': -30,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 7,
                         'mute': True,
                         'name': 'Hardware Office HV',
@@ -1079,6 +1091,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 8,
                         'mute': True,
                         'name': 'Basement Workshop HV',
@@ -1088,6 +1101,7 @@ class Status(BaseModel):
                         'vol_max': -10,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 9,
                         'mute': True,
                         'name': 'Screened Room HV',
@@ -1097,6 +1111,7 @@ class Status(BaseModel):
                         'vol_max': -15,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 10,
                         'mute': True,
                         'name': 'Upstairs Deck Living HV',
@@ -1106,6 +1121,7 @@ class Status(BaseModel):
                         'vol_max': -15,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 11,
                         'mute': True,
                         'name': 'Upstairs Main Bedroom HV',
@@ -1115,6 +1131,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 12,
                         'mute': True,
                         'name': 'Downstairs Living Room',
@@ -1124,6 +1141,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 13,
                         'mute': True,
                         'name': 'Downstairs Dining',
@@ -1133,6 +1151,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 14,
                         'mute': True,
                         'name': 'Downstairs Bath',
@@ -1142,6 +1161,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 15,
                         'mute': True,
                         'name': 'Downstairs Laundry',
@@ -1151,6 +1171,7 @@ class Status(BaseModel):
                         'vol_max': -20,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 16,
                         'mute': True,
                         'name': 'Upstairs Main Bath',
@@ -1160,6 +1181,7 @@ class Status(BaseModel):
                         'vol_max': -30,
                         'vol_min': -70},
                       { 'disabled': False,
+                        'lock': False,
                         'id': 17,
                         'mute': True,
                         'name': 'Downstairs Bedroom',

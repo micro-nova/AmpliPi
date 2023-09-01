@@ -58,7 +58,7 @@ const VolumeSlider = ({ vol, mute, lock, setVol, setMute, setLock, disabled }) =
                     <VolIcon vol={vol} mute={mute} />
                 </div>
                 <Slider
-                    disabled={disabled}
+                    disabled={disabled || lock}
                     className="volume-slider"
                     min={0}
                     step={0.01}
