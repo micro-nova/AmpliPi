@@ -64,15 +64,16 @@ class fields(SimpleNamespace):
   SourceId = Field(ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
+  Lock = Field(description='Set to true to make volume level static')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
   VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
   VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
+  GroupLock = Field(description='Set to true to make volume level static for all zones')
   GroupVolume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Average output volume')
   GroupVolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number')
   Disabled = Field(description='Set to true if not connected to a speaker')
-  Locked = Field(description='Set to true to make volume level static')
   Zones = Field(description='Set of zone ids belonging to a group')
   Groups = Field(description='List of group ids')
   AudioInput = Field('', description="""Connected audio source
@@ -89,6 +90,7 @@ class fields_w_default(SimpleNamespace):
   # TODO: less duplication
   SourceId = Field(default=0, ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
   Mute = Field(default=True, description='Set to true if output is muted')
+  Lock = Field(default=False, description='Set to true to prevent volume changes')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
   VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
@@ -96,10 +98,10 @@ class fields_w_default(SimpleNamespace):
   VolumeMax = Field(default=MAX_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Max output volume in dB')
   GroupMute = Field(default=True, description='Set to true if output is all zones muted')
+  GroupLock = Field(default=False, description='Set to true to prevent volume changes on all zones')
   GroupVolume = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume')
   GroupVolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
-  Lock = Field(default=False, description='Set to true if you want to prevent volume changes')
 
 class Base(BaseModel):
   """ Base class for AmpliPi Models
@@ -224,12 +226,12 @@ class Zone(Base):
   """ Audio output to a stereo pair of speakers, typically belonging to a room """
   source_id: int = fields_w_default.SourceId
   mute: bool = fields_w_default.Mute
+  lock: bool = fields_w_default.Lock
   vol: int = fields_w_default.Volume
   vol_f: float = fields_w_default.VolumeF
   vol_min: int = fields_w_default.VolumeMin
   vol_max: int = fields_w_default.VolumeMax
   disabled: bool = fields_w_default.Disabled
-  lock: bool = fields_w_default.Lock
 
   def as_update(self) -> 'ZoneUpdate':
     """ Convert to ZoneUpdate """
@@ -245,12 +247,12 @@ class Zone(Base):
             'name': 'Living Room',
             'source_id': 1,
             'mute' : False,
+            'lock': False,
             'vol': pcnt2Vol(0.69),
             'vol_f': 0.69,
             'vol_min': MIN_VOL_DB,
             'vol_max': MAX_VOL_DB,
             'disabled': False,
-            'lock': False,
           }
         },
         'Dining Room' : {
@@ -258,12 +260,12 @@ class Zone(Base):
             'name': 'Dining Room',
             'source_id': 2,
             'mute' : True,
+            'lock': False,
             'vol': pcnt2Vol(0.19),
             'vol_f': 0.19,
             'vol_min': int(0.1 * (MAX_VOL_DB + MIN_VOL_DB)),
             'vol_max': int(0.8 * (MAX_VOL_DB + MIN_VOL_DB)),
             'disabled': False,
-            'lock': False,
           }
         },
       }
@@ -273,12 +275,12 @@ class ZoneUpdate(BaseUpdate):
   """ Reconfiguration of a Zone """
   source_id: Optional[int] = fields.SourceId
   mute: Optional[bool] = fields.Mute
+  lock: Optional[bool] = fields.Lock
   vol: Optional[int] = fields.Volume
   vol_f: Optional[float] = fields.VolumeF
   vol_min: Optional[int] = fields.VolumeMin
   vol_max: Optional[int] = fields.VolumeMax
   disabled: Optional[bool] = fields.Disabled
-  lock: Optional[bool] = fields.Lock
 
   class Config:
     schema_extra = {
@@ -307,6 +309,11 @@ class ZoneUpdate(BaseUpdate):
         'Mute': {
           'value': {
             'mute': True
+          }
+        },
+        'Lock': {
+          'value': {
+            'lock': False
           }
         },
         'Change max volume': {
@@ -359,6 +366,7 @@ class Group(Base):
   source_id: Optional[int] = fields.SourceId
   zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
   mute: Optional[bool] = fields.GroupMute
+  lock: Optional[bool] = fields.GroupLock
   vol_delta: Optional[int] = fields.GroupVolume
   vol_f: Optional[float] = fields.GroupVolumeF
 
@@ -411,6 +419,7 @@ class GroupUpdate(BaseUpdate):
   source_id: Optional[int] = fields.SourceId
   zones: Optional[List[int]] = fields.Zones
   mute: Optional[bool] = fields.GroupMute
+  lock: Optional[bool] = fields.GroupLock
   vol_delta: Optional[int] = fields.GroupVolume
   vol_f: Optional[float] = fields.GroupVolumeF
 
@@ -446,6 +455,11 @@ class GroupUpdate(BaseUpdate):
         'Mute': {
           'value': {
             'mute': True
+          }
+        },
+        'Lock': {
+          'value': {
+            'lock': False
           }
         }
       },
@@ -733,7 +747,7 @@ class Preset(Base):
               ]
             }
           }
-        }
+        },
       },
       'examples': {
         'Mute All': {
@@ -748,6 +762,22 @@ class Preset(Base):
                 {'id': 3, 'mute': True},
                 {'id': 4, 'mute': True},
                 {'id': 5, 'mute': True}
+              ]
+            }
+          }
+        },
+        'Lock All': {
+          'value': {
+            'id': 10000,
+            'name': 'Lock All',
+            'state': {
+              'zones': [
+                {'id': 0, 'lock': True},
+                {'id': 1, 'lock': True},
+                {'id': 2, 'lock': True},
+                {'id': 3, 'lock': True},
+                {'id': 4, 'lock': True},
+                {'id': 5, 'lock': True}
               ]
             }
           }
@@ -776,6 +806,19 @@ class PresetUpdate(BaseUpdate):
                 {'id': 1, 'mute': True},
                 {'id': 2, 'mute': True},
                 {'id': 5, 'mute': True}
+              ]
+            }
+          }
+        },
+        'Only lock some': {
+          'value': {
+            'name': 'Lock Some',
+            'state': {
+              'zones': [
+                {'id': 0, 'lock': True},
+                {'id': 1, 'lock': True},
+                {'id': 2, 'lock': True},
+                {'id': 5, 'lock': True}
               ]
             }
           }
@@ -860,12 +903,14 @@ class Status(BaseModel):
           'value': {
             'groups': [ { 'id': 100,
                           'mute': True,
+                          'lock': False,
                           'name': 'Upstairs',
                           'vol_delta': -39,
                           'vol_f': 0.51,
                           'zones': [0, 1, 2, 3, 4, 5, 6, 7, 11, 16]},
                         { 'id': 102,
                           'mute': True,
+                          'lock': False,
                           'name': 'Outside',
                           'source_id': 1,
                           'vol_delta': -41,
@@ -873,12 +918,14 @@ class Status(BaseModel):
                           'zones': [9, 10]},
                         { 'id': 103,
                           'mute': True,
+                          'lock': False,
                           'name': 'Offices',
                           'vol_delta': -54,
                           'vol_f': 0.33,
                           'zones': [0, 7]},
                         { 'id': 104,
                           'mute': True,
+                          'lock': False,
                           'name': 'Downstairs',
                           'source_id': 1,
                           'vol_delta': -57,
@@ -886,18 +933,21 @@ class Status(BaseModel):
                           'zones': [12, 13, 14, 15, 17]},
                         { 'id': 105,
                           'mute': True,
+                          'lock': False,
                           'name': 'Main Unit',
                           'vol_delta': -39,
                           'vol_f': 0.51,
                           'zones': [0, 1, 2, 3, 4, 5]},
                         { 'id': 106,
                           'mute': True,
+                          'lock': False,
                           'name': 'Expander 1 (HV)',
                           'vol_delta': -39,
                           'vol_f': 0.515,
                           'zones': [6, 7, 8, 9, 10, 11]},
                         { 'id': 107,
                           'mute': True,
+                          'lock': False,
                           'name': 'Expander 2',
                           'vol_delta': -58,
                           'vol_f': 0.275,
@@ -938,7 +988,28 @@ class Status(BaseModel):
                                                 {'id': 14, 'mute': True},
                                                 {'id': 15, 'mute': True},
                                                 {'id': 16, 'mute': True},
-                                                {'id': 17, 'mute': True}]}}
+                                                {'id': 17, 'mute': True}]}},
+                          { 'id': 20000,
+                          'last_used': 1658242203,
+                          'name': 'Lock All',
+                          'state': { 'zones': [ {'id': 0, 'lock': True},
+                                                {'id': 1, 'lock': True},
+                                                {'id': 2, 'lock': True},
+                                                {'id': 3, 'lock': True},
+                                                {'id': 4, 'lock': True},
+                                                {'id': 5, 'lock': True},
+                                                {'id': 6, 'lock': True},
+                                                {'id': 7, 'lock': True},
+                                                {'id': 8, 'lock': True},
+                                                {'id': 9, 'lock': True},
+                                                {'id': 10, 'lock': True},
+                                                {'id': 11, 'lock': True},
+                                                {'id': 12, 'lock': True},
+                                                {'id': 13, 'lock': True},
+                                                {'id': 14, 'lock': True},
+                                                {'id': 15, 'lock': True},
+                                                {'id': 16, 'lock': True},
+                                                {'id': 17, 'lock': True}]}}
                         ],
             'sources': [ { 'id': 0,
                           'info': { 'img_url': 'static/imgs/disconnected.png',
