@@ -34,6 +34,7 @@ TEST_CONFIG['groups'] = [
   {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
   {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
   {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
+  {"id": 103, "name": "Empty",   "zones": [],     "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
 ]
 RCAs =  amplipi.ctrl.RCAs
 AP_STREAM_ID = 1000
@@ -1267,24 +1268,30 @@ def test_set_group_vol(client, gid):
     assert patched_group is not None
     return patched_group
 
+  # if a group has no zones, volume control won't work as expected
+  if no_groups:
+    no_zones = False
+  else:
+    no_zones = len(group['zones']) == 0
+
   # set group dB volume, expect it to match the above test volume
   for i, db in enumerate(vol_db):
     g = patch_group({'vol_delta': db})
-    assert g is None or g['vol_delta'] == db
-    assert g is None or g['vol_f'] == vol_f[i]
+    assert g is None or no_zones or g['vol_delta'] == db
+    assert g is None or no_zones or g['vol_f'] == vol_f[i]
 
   # set group float volume, expect it to match the calculated volume in dB
   for i, fv in enumerate(vol_f):
     g = patch_group({'vol_f': fv})
-    assert g is None or g['vol_delta'] == vol_db[i]
-    assert g is None or g['vol_f'] == fv
+    assert g is None or no_zones or g['vol_delta'] == vol_db[i]
+    assert g is None or no_zones or g['vol_f'] == fv
 
   # set group dB volume and DIFFERENT float volume, expect the dB to override the float
   for i, db in enumerate(vol_db):
     fv = vol_f[-i-1] # grab elements in reverse order
     g = patch_group({'vol_delta': db, 'vol_f': fv})
-    assert g is None or g['vol_delta'] == db
-    assert g is None or g['vol_f'] == vol_f[i]
+    assert g is None or no_zones or g['vol_delta'] == db
+    assert g is None or no_zones or g['vol_f'] == vol_f[i]
 
   # set group volume to below minimum and above maximum, expect failure
   patch_group({'vol_delta': amplipi.models.MIN_VOL_DB - 1}, expect_failure=True)

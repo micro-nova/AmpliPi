@@ -817,7 +817,10 @@ class Api:
         group.source_id = sources.pop() # TODO: how should we handle different sources in the group?
       else: # multiple sources
         group.source_id = None
-      group.vol_f = (vols[0] + vols[-1]) / 2 # group volume is the midpoint between the highest and lowest source
+      if vols:
+        group.vol_f = (vols[0] + vols[-1]) / 2 # group volume is the midpoint between the highest and lowest source
+      else:
+        group.vol_f = models.MIN_VOL_F
       group.vol_delta = utils.vol_float_to_db(group.vol_f)
 
   def set_group(self, gid, update: models.GroupUpdate, internal: bool = False) -> ApiResponse:
