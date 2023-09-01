@@ -1,40 +1,14 @@
 import React from "react";
 import "./VolumesZones.scss";
-import { useStatusStore } from "@/App.jsx";
-import { getSourceZones } from "@/pages/Home/Home";
 import ZoneVolumeSlider from "../ZoneVolumeSlider/ZoneVolumeSlider";
 import GroupVolumeSlider from "../GroupVolumeSlider/GroupVolumeSlider";
 import Card from "../Card/Card";
 
-import { getFittestRep } from "@/utils/GroupZoneFiltering";
-
 import PropTypes from "prop-types";
 
-const VolumeZones = ({ sourceId, open, setAlone }) => {
-    const zones = getSourceZones(
-        sourceId,
-        useStatusStore((s) => s.status.zones)
-    );
-    const groups = getSourceZones(
-        sourceId,
-        useStatusStore((s) => s.status.groups)
-    );
-
-    // compute the best representation of the zones and groups
-    const { zones: zonesLeft, groups: usedGroups } = getFittestRep(zones, groups);
-
-    const groupsLeft = groups.filter(
-        (g) => !usedGroups.map((ug) => ug.id).includes(g.id)
-    );
-
+const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft }) => {
     const groupVolumeSliders = [];
-    // This is a bootleg XOR statement, only works if there is exactly one zone or exactly one group, no more than that and not both
-    if(((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length > 0) && (zonesLeft.length > 0))){
-      setAlone(true);
-    } else {
-      setAlone(false);
-    }
-    for (const group of usedGroups) {
+    for (const group of groups) {
         groupVolumeSliders.push(
             <Card className="group-vol-card" key={group.id}>
                 <GroupVolumeSlider
@@ -47,7 +21,7 @@ const VolumeZones = ({ sourceId, open, setAlone }) => {
     }
 
     const zoneVolumeSliders = [];
-    zonesLeft.forEach((zone) => {
+    zones.forEach((zone) => {
         zoneVolumeSliders.push(
             <Card className="zone-vol-card" key={zone.id}>
                 <ZoneVolumeSlider zoneId={zone.id} />
@@ -67,7 +41,9 @@ const VolumeZones = ({ sourceId, open, setAlone }) => {
 VolumeZones.propTypes = {
     sourceId: PropTypes.any.isRequired,
     open: PropTypes.bool.isRequired,
-    setAlone: PropTypes.func.isRequired,
+    zones: PropTypes.array.isRequired,
+    groups: PropTypes.array.isRequired,
+    groupsLeft: PropTypes.array.isRequired,
 };
 
 export default VolumeZones;
