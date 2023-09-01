@@ -64,7 +64,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                 </div>
                 <div className="content">
                     <div className="zones">
-                        <ZonesBadge sourceId={sourceId} onClick={openZones} />
+                      <ZonesBadge sourceId={sourceId} onClick={openZones} />
                     </div>
                     <SongInfo sourceId={sourceId} />
                 </div>

@@ -19,8 +19,6 @@
   font-size: 1rem;
   font-weight: medium;
   @include general.header-font;
-  cursor: pointer;
-  @include general.button-hover;
 }
 
 .stream-badge-icon {

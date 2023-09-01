@@ -12,7 +12,6 @@
 
 .zones-container {
   cursor: pointer;
-  @include general.button-hover;
   display: flex;
   justify-content: space-between;
   padding-right: 0.5rem;
