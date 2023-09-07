@@ -12,6 +12,9 @@ import { useState } from "react";
 import VolumeZones from "@/components/VolumeZones/VolumeZones";
 import Card from "@/components/Card/Card";
 import { getSourceInputType } from "@/utils/getSourceInputType";
+import { getSourceZones } from "@/pages/Home/Home";
+
+import { getFittestRep } from "@/utils/GroupZoneFiltering";
 
 const Player = () => {
     const selectedSourceId = usePersistentStore((s) => s.selectedSource);
@@ -31,7 +34,25 @@ const Player = () => {
                 <div className="player-stopped-message">No Player Selected!</div>
             </div>
         );
-    }
+    };
+
+    const zones = getSourceZones(
+        selectedSourceId,
+        useStatusStore((s) => s.status.zones)
+    );
+    const groups = getSourceZones(
+        selectedSourceId,
+        useStatusStore((s) => s.status.groups)
+    );
+
+    // compute the best representation of the zones and groups
+    const { zones: zonesLeft, groups: usedGroups } = getFittestRep(zones, groups);
+
+    const groupsLeft = groups.filter(
+        (g) => !usedGroups.map((ug) => ug.id).includes(g.id)
+    );
+    // This is a bootleg XOR statement, only works if there is exactly one zone or exactly one group, no more than that and not both
+    const alone = ((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length > 0) && (zonesLeft.length > 0));
 
     return (
         <div className="player-outer">
@@ -47,7 +68,7 @@ const Player = () => {
                 <MediaControl selectedSource={selectedSourceId} />
             </div>
 
-            <Card className="player-volume-slider">
+            {!alone && <Card className="player-volume-slider">
                 <CardVolumeSlider sourceId={selectedSourceId} />
                 <IconButton onClick={() => setExpanded(!expanded)}>
                     {expanded ? (
@@ -62,8 +83,8 @@ const Player = () => {
                         />
                     )}
                 </IconButton>
-            </Card>
-            {expanded && <VolumeZones sourceId={selectedSourceId} />}
+            </Card>}
+            <VolumeZones open={(expanded || alone)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
         </div>
     );
 };
