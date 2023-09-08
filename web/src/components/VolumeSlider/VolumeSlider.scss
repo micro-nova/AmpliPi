@@ -15,13 +15,11 @@
   margin-right: 0.75rem;
   // margin-left: 0.5rem;
   padding-bottom: -2px;
-  cursor: pointer;
   @include general.button-hover;
 }
 
 .volume-slider-mute-icon {
   color: general.$mute-color;
-  cursor: pointer;
   @include general.button-hover;
 }
 
