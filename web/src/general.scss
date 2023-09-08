@@ -69,6 +69,7 @@ $page-header-height: 3rem;
 }
 
 @mixin button-hover {
+  cursor: pointer;
   &:hover {
     background-color: $secondary;
     border-radius: 1rem;
