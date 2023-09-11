@@ -44,7 +44,7 @@
   border-style: solid;
   border-radius: 1rem;
   background-color: general.$bg;
-  cursor: pointer;
+
   @include general.button-hover;
 }
 
@@ -64,7 +64,6 @@
   border-style: solid;
   border-radius: 1rem;
   background-color: general.$bg;
-  cursor: pointer;
 
   @include general.button-hover;
 }

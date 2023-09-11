@@ -30,6 +30,5 @@
 
 .media-control-enabled {
   color: general.$controls-color;
-  cursor: pointer;
   @include general.button-hover;
 }
