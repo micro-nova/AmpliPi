@@ -72,6 +72,7 @@ PresetAndAdd.propTypes = {
 
 const Home = () => {
     const sources = useStatusStore((s) => s.status.sources);
+    const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
     const clearSourceZones = useStatusStore((s) => s.clearSourceZones);
     const [zonesModalOpen, setZonesModalOpen] = React.useState(false);
     const [streamsModalOpen, setStreamsModalOpen] = React.useState(false);
@@ -83,8 +84,8 @@ const Home = () => {
     sources.forEach((source, i) => {
         if (
             source.input.toUpperCase() != "NONE" &&
-      source.input != "" &&
-      source.input != "local"
+            source.input != "" &&
+            source.input != "local"
         ) {
             cards.push(<PlayerCardFb key={i} sourceId={source.id} />);
         } else {
@@ -125,8 +126,8 @@ const Home = () => {
             {streamsModalOpen && (
                 <StreamsModal
                     sourceId={nextAvailableSource}
-                    applyImmediately={false}
-                    onApply={() => setZonesModalOpen(true)}
+                    applyImmediately={is_streamer}
+                    onApply={() => {if(!is_streamer) setZonesModalOpen(true)}}
                     onClose={() => setStreamsModalOpen(false)}
                 />
             )}

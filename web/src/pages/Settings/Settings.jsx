@@ -9,6 +9,7 @@ import Presets from "./Presets/Presets";
 import Config from "./Config/Config";
 import About from "./About/About";
 import { router } from "@/main";
+import { useStatusStore } from "@/App";
 // import Divider from "@mui/material/Divider";
 import SpeakerIcon from "@mui/icons-material/Speaker";
 import SpeakerGroupIcon from "@mui/icons-material/SpeakerGroup";
@@ -81,6 +82,8 @@ Page.propTypes = {
 };
 
 const Settings = ({ openPage }) => {
+    const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
+
     if (openPage != "") {
         return <Page openPage={openPage} />;
     }
@@ -99,23 +102,25 @@ const Settings = ({ openPage }) => {
                         </div>
                     </ListItem>
 
-                    <ListItem
-                        name="Zones"
-                        onClick={() => router.navigate("/settings/zones")}
-                    >
-                        <div className="zones-icon">
-                            <SpeakerIcon fontSize="inherit" />
-                        </div>
-                    </ListItem>
+                    { !is_streamer && (<>
+                        <ListItem
+                            name="Zones"
+                            onClick={() => router.navigate("/settings/zones")}
+                        >
+                            <div className="zones-icon">
+                                <SpeakerIcon fontSize="inherit" />
+                            </div>
+                        </ListItem>
 
-                    <ListItem
-                        name="Groups"
-                        onClick={() => router.navigate("/settings/groups")}
-                    >
-                        <div className="groups-icon">
-                            <SpeakerGroupIcon fontSize="inherit" />
-                        </div>
-                    </ListItem>
+                        <ListItem
+                            name="Groups"
+                            onClick={() => router.navigate("/settings/groups")}
+                        >
+                            <div className="groups-icon">
+                                <SpeakerGroupIcon fontSize="inherit" />
+                            </div>
+                        </ListItem>
+                    </>)}
 
                     {/* <ListItem
             name="Sessions"

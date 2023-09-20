@@ -22,6 +22,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
     const setSelectedSource = usePersistentStore((s) => s.setSelectedSource);
     const selected = usePersistentStore((s) => s.selectedSource) === sourceId;
     const img_url = useStatusStore((s) => s.status.sources[sourceId].info.img_url);
+    const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
 
     const select = () => {
         if (selected) {
@@ -63,18 +64,22 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                     </StopProp>
                 </div>
                 <div className="content">
-                    <div className="zones">
-                      <ZonesBadge sourceId={sourceId} onClick={openZones} />
-                    </div>
+                    { !is_streamer && (
+                        <div className="zones">
+                          <ZonesBadge sourceId={sourceId} onClick={openZones} />
+                        </div>
+                    )}
                     <SongInfo sourceId={sourceId} />
                 </div>
 
-                <CardVolumeSlider
-                    sourceId={sourceId}
-                    onChange={(event, vol) => {
-                        setVol(sourceId, event, vol);
-                    }}
-                />
+                { !is_streamer && (
+                    <CardVolumeSlider
+                        sourceId={sourceId}
+                        onChange={(event, vol) => {
+                            setVol(sourceId, event, vol);
+                        }}
+                    />
+                )}
             </div>
 
             {streamModalOpen && (

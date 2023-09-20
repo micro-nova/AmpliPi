@@ -18,6 +18,7 @@ const PlayerCard = ({ sourceId, setVol }) => {
     const [zoneModalOpen, setZoneModalOpen] = React.useState(false);
     const setSelectedSource = usePersistentStore((s) => s.setSelectedSource);
     const selected = usePersistentStore((s) => s.selectedSource) === sourceId;
+    const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
 
     const select = () => {
         if (selected) {
@@ -38,14 +39,16 @@ const PlayerCard = ({ sourceId, setVol }) => {
                 >
                     <StreamBadge sourceId={sourceId} />
                 </div>
-                <div
-                    className="content"
-                    onClick={() => {
-                        setZoneModalOpen(true);
-                    }}
-                >
-                    <ZonesBadge sourceId={sourceId} />
-                </div>
+                {!is_streamer && (
+                    <div
+                        className="content"
+                        onClick={() => {
+                            setZoneModalOpen(true);
+                        }}
+                    >
+                        <ZonesBadge sourceId={sourceId} />
+                    </div>
+                )}
                 <div className="content album-art" onClick={select}>
                     <div className="image-container">
                         <PlayerImage sourceId={sourceId} />
@@ -54,14 +57,16 @@ const PlayerCard = ({ sourceId, setVol }) => {
                 <div className="content song-info" onClick={select}>
                     <SongInfo sourceId={sourceId} />
                 </div>
-                <div className="content vol">
-                    <CardVolumeSlider
-                        sourceId={sourceId}
-                        onChange={(event, vol) => {
-                            setVol(sourceId, event, vol);
-                        }}
-                    />
-                </div>
+                {!is_streamer && (
+                    <div className="content vol">
+                        <CardVolumeSlider
+                            sourceId={sourceId}
+                            onChange={(event, vol) => {
+                                setVol(sourceId, event, vol);
+                            }}
+                        />
+                    </div>
+                )}
                 {streamModalOpen && (
                     <StreamsModal
                         sourceId={sourceId}

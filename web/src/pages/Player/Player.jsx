@@ -27,6 +27,7 @@ const Player = () => {
     );
     const sourceIsInactive = getSourceInputType(selectedSource) === "none";
     const [expanded, setExpanded] = useState(false);
+    const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
 
     if (sourceIsInactive) {
         return (
@@ -68,7 +69,8 @@ const Player = () => {
                 <MediaControl selectedSource={selectedSourceId} />
             </div>
 
-            {!alone && <Card className="player-volume-slider">
+            {!alone && !is_streamer && (
+                <Card className="player-volume-slider">
                 <CardVolumeSlider sourceId={selectedSourceId} />
                 <IconButton onClick={() => setExpanded(!expanded)}>
                     {expanded ? (
@@ -83,7 +85,8 @@ const Player = () => {
                         />
                     )}
                 </IconButton>
-            </Card>}
+                </Card>
+            )}
             <VolumeZones open={(expanded || alone)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
         </div>
     );
