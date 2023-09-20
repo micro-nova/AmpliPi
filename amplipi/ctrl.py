@@ -267,6 +267,7 @@ class Api:
       mock_ctrl=self._mock_hw,
       mock_streams=self._mock_streams,
       config_file=self.config_file,
+      is_streamer=self.is_streamer,
       version=utils.detect_version(),
     )
     for major, minor, ghash, dirty in self._rt.read_versions():
