@@ -18,13 +18,9 @@
     "**/.git/subtree-cache/**": true,
     "**/venv/lib/**": true
   },
-  "[cpp]": {
+  "[c][cpp]": {
     "editor.formatOnSave": true,
-    "editor.rulers": [80]
-  },
-  "[c]": {
-    "editor.formatOnSave": true,
-    "editor.rulers": [80]
+    "editor.rulers": [100]
   },
   "files.associations": {
     // The C/C++ extension treats *.h files as "non-standard" C files,
@@ -34,6 +30,10 @@
   },
   "[python]": {
     "editor.defaultFormatter": "ms-python.autopep8"
+  },
+  "markdownlint.config": {
+    "default": true,
+    "MD033": { "allowed_elements": ["table", "thead", "tbody", "th", "tr", "td", "b"] },
   },
   "python.formatting.provider": "none"
 }
