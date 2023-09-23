@@ -19,6 +19,10 @@ then any expansion units that were detected will be programmed.
   -h, --help        Print this help text.
 "
 
+RED='\033[0;31m'
+GRN='\033[0;32m'
+NC='\033[0m'
+
 file=''             # Firmware .bin file to program
 remote_host=''      # Hostname/url to program remotely through ssh
 remote_path=''      # Location of the amplipi install directory on the remote
@@ -64,6 +68,12 @@ if $build; then
   printf "Building preamp firmware.\n\n"
   cmake -S fw/preamp -B fw/preamp/build
   cmake --build fw/preamp/build -j $(nproc)
+  status=$?
+  printf "Status=$status\n"
+  if (( $status > 0 )); then
+    printf "\n${RED}Failed to build firmware, exiting without programming anything.${NC}\n"
+    exit 3
+  fi
   printf "\n"
 fi
 
