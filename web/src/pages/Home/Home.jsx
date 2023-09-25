@@ -37,7 +37,7 @@ const PresetAndAdd = ({
                 <div
                     className="home-add-player-button"
                     onClick={() => {
-                        initSource(nextAvailableSource);
+                        initSource(nextAvailableSource.current);
                     }}
                 >
           +

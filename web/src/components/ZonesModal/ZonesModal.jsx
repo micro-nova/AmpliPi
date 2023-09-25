@@ -50,12 +50,12 @@ const ZonesModal = ({
     const groups = useStatusStore.getState().status.groups;
     const [checkedZonesIds, setCheckedZoneIds] = useState(
         zones
-            .filter((zone) => zone.source_id === sourceId && loadZonesGroups)
+            .filter((zone) => zone.source_id === sourceId.current && loadZonesGroups)
             .map((zone) => zone.id)
     );
     const [checkedGroupIds, setCheckedGroupIds] = useState(
         groups
-            .filter((group) => group.source_id === sourceId && loadZonesGroups)
+            .filter((group) => group.source_id === sourceId.current && loadZonesGroups)
             .map((group) => group.id)
     );
 
@@ -165,7 +165,7 @@ const ZonesModal = ({
     const setZones = () => {
     // redefine sourceId
 
-        const sid = useRcaSourceId ? rcaSourceId : sourceId;
+        const sid = useRcaSourceId ? rcaSourceId : sourceId.current;
         const zs = useRcaSourceId ? rcaStatus.zones : zones;
 
         let removeList = [];
@@ -213,7 +213,7 @@ const ZonesModal = ({
     const groupItems = groups.map((group) => {
         let selected = false;
         const checked = checkedGroupIds.includes(group.id);
-        if (group.source_id == sourceId) {
+        if (group.source_id == sourceId.current) {
             selected = true;
         }
         return ZonesModalGroupItem({
@@ -226,7 +226,7 @@ const ZonesModal = ({
     const zoneItems = zones.map((zone) => {
         let selected = false;
         const checked = checkedZonesIds.includes(zone.id);
-        if (zone.source_id == sourceId) {
+        if (zone.source_id == sourceId.current) {
             selected = true;
         }
         return ZonesModalZoneItem({
