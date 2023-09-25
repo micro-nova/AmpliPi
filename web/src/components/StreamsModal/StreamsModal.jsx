@@ -34,9 +34,9 @@ const StreamsModal = ({
 
     const setStream = (stream) => {
         const streamId = stream.id;
-        let currentSourceId = sourceId;
+        let currentSourceId = sourceId.current;
         // RCA can only be used on its associated source, so swap if necessary
-        const moveSource = stream.type === "rca" && stream.index != sourceId;
+        const moveSource = stream.type === "rca" && stream.index != sourceId.current;
         if (moveSource) {
             currentSourceId = stream.index;
             // notify ZonesModal that we are using a different sourceId
@@ -52,7 +52,7 @@ const StreamsModal = ({
                     () => {
                         statusModified.zones.forEach((z) => {
                             if (z.source_id === currentSourceId) {
-                                z.source_id = sourceId;
+                                z.source_id = sourceId.current;
                             }
                         });
                         setRcaStatus(statusModified);
@@ -62,8 +62,8 @@ const StreamsModal = ({
                 );
             } else {
                 // just set new stream
-                console.log(`not move source. streamId: ${streamId}`);
-                return setSourceStream(currentSourceId, streamId);
+                console.log(`not move source. streamId: ${streamId}, sourceId.current: ${sourceId.current}`);
+                return setSourceStream(sourceId.current, streamId);
             }
         };
 

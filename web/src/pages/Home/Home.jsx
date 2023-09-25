@@ -5,6 +5,7 @@ import { useStatusStore } from "@/App.jsx";
 import ZonesModal from "@/components/ZonesModal/ZonesModal";
 import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import PresetsModal from "@/components/PresetsModal/PresetsModal";
+import StreamerOutputModal from "@/components/StreamerOutputModal/StreamerOutputModal";
 import { executeApplyAction } from "@/components/StreamsModal/StreamsModal";
 
 import PropTypes from "prop-types";
@@ -77,9 +78,11 @@ const Home = () => {
     const [zonesModalOpen, setZonesModalOpen] = React.useState(false);
     const [streamsModalOpen, setStreamsModalOpen] = React.useState(false);
     const [presetsModalOpen, setPresetsModalOpen] = React.useState(false);
+    const [streamerOutputModalOpen, setStreamerOutputModalOpen] = React.useState(false);
+
+    const nextAvailableSource = React.useRef(null);
 
     let cards = [];
-    let nextAvailableSource = null;
 
     sources.forEach((source, i) => {
         if (
@@ -89,7 +92,7 @@ const Home = () => {
         ) {
             cards.push(<PlayerCardFb key={i} sourceId={source.id} />);
         } else {
-            nextAvailableSource = source.id;
+            nextAvailableSource.current = source.id;
         }
     });
 
@@ -123,11 +126,19 @@ const Home = () => {
                     onClose={() => setZonesModalOpen(false)}
                 />
             )}
+            {streamerOutputModalOpen && (
+                <StreamerOutputModal
+                    sourceId={nextAvailableSource}
+                    onApply={executeApplyAction}
+                    onClose={() => setStreamerOutputModalOpen(false)}
+                />
+            )}
+
             {streamsModalOpen && (
                 <StreamsModal
                     sourceId={nextAvailableSource}
-                    applyImmediately={is_streamer}
-                    onApply={() => {if(!is_streamer) setZonesModalOpen(true)}}
+                    applyImmediately={false}
+                    onApply={() => {is_streamer ? setStreamerOutputModalOpen(true) : setZonesModalOpen(true)}}
                     onClose={() => setStreamsModalOpen(false)}
                 />
             )}
