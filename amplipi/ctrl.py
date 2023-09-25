@@ -149,10 +149,10 @@ class Api:
 
   STREAMER_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Input 1", "input": ""},
-      {"id": 1, "name": "Input 2", "input": ""},
-      {"id": 2, "name": "Input 3", "input": ""},
-      {"id": 3, "name": "Input 4", "input": ""},
+      {"id": 0, "name": "Output 1", "input": ""},
+      {"id": 1, "name": "Output 2", "input": ""},
+      {"id": 2, "name": "Output 3", "input": ""},
+      {"id": 3, "name": "Output 4", "input": ""},
     ],
     "streams": [
       {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg", "disabled": False},

@@ -75,7 +75,7 @@ const StreamerOutputModal = ({
         <ModalCard
             onClose={onClose}
             onCancel={onClose}
-            header="Select Outputs"
+            header="Select Output"
         >
             <List>
                 {outputItems}
