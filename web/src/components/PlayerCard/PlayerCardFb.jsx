@@ -105,7 +105,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
     );
 };
 PlayerCardFb.propTypes = {
-    setVol: PropTypes.func.isRequired,
+    setVol: PropTypes.func,
     sourceId: PropTypes.any.isRequired,
 };
 

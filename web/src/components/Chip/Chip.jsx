@@ -15,7 +15,7 @@ const Chip = ({ children, onClick }) => {
 };
 Chip.propTypes = {
     children: PropTypes.any.isRequired,
-    onClick: PropTypes.func.isRequired,
+    onClick: PropTypes.func,
 };
 
 export default Chip;

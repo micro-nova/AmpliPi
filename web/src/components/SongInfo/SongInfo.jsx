@@ -26,9 +26,9 @@ const SongInfo = ({
 };
 SongInfo.propTypes = {
     sourceId: PropTypes.any.isRequired,
-    artistClassName: PropTypes.string.isRequired,
-    albumClassName: PropTypes.string.isRequired,
-    trackClassName : PropTypes.string.isRequired
+    artistClassName: PropTypes.string,
+    albumClassName: PropTypes.string,
+    trackClassName : PropTypes.string
 };
 
 export default SongInfo;
