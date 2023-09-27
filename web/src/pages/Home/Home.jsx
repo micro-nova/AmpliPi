@@ -37,7 +37,7 @@ const PresetAndAdd = ({
                 <div
                     className="home-add-player-button"
                     onClick={() => {
-                        initSource(nextAvailableSource.current);
+                        initSource(nextAvailableSource);
                     }}
                 >
           +
@@ -80,8 +80,7 @@ const Home = () => {
     const [presetsModalOpen, setPresetsModalOpen] = React.useState(false);
     const [streamerOutputModalOpen, setStreamerOutputModalOpen] = React.useState(false);
 
-    const nextAvailableSource = React.useRef(null);
-
+    let nextAvailableSource = null;
     let cards = [];
 
     sources.forEach((source, i) => {
@@ -92,7 +91,7 @@ const Home = () => {
         ) {
             cards.push(<PlayerCardFb key={i} sourceId={source.id} />);
         } else {
-            nextAvailableSource.current = source.id;
+            nextAvailableSource = source.id;
         }
     });
 

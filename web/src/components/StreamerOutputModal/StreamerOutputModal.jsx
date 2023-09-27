@@ -15,7 +15,6 @@ import PropTypes from "prop-types";
 const LIST_ITEM_FONT_SIZE = "1.5rem";
 
 const StreamerOutputModal = ({
-    sourceId,
     onApply,
     onClose,
 }) => {
@@ -31,8 +30,7 @@ const StreamerOutputModal = ({
                 name={output.name}
                 nameFontSize={LIST_ITEM_FONT_SIZE}
                 onClick={() => {
-                    sourceId.current = output.id;
-                    onApply();
+                    onApply(output.id);
                     onClose();
                 }}
                 key={output.id}
@@ -53,7 +51,6 @@ const StreamerOutputModal = ({
     // };
 
     const setOutput = (output) => {
-        console.log(output);
         fetch(`/api/sources/${output.id}`, {
             method: "PATCH",
             headers: {
@@ -84,7 +81,6 @@ const StreamerOutputModal = ({
     );
 };
 StreamerOutputModal.propTypes = {
-    sourceId: PropTypes.object.isRequired,
     onApply: PropTypes.func.isRequired,
     onClose: PropTypes.func.isRequired,
 };

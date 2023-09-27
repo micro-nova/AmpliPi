@@ -15,11 +15,11 @@ const LIST_ITEM_FONT_SIZE = "1.5rem";
 
 let applyAction = null;
 
-export const executeApplyAction = () => {
+export const executeApplyAction = (customSourceId) => {
     if (applyAction !== null) {
         const temp = applyAction;
         applyAction = null;
-        return temp();
+        return temp(customSourceId);
     }
 };
 
@@ -34,9 +34,9 @@ const StreamsModal = ({
 
     const setStream = (stream) => {
         const streamId = stream.id;
-        let currentSourceId = sourceId.current;
+        let currentSourceId = sourceId;
         // RCA can only be used on its associated source, so swap if necessary
-        const moveSource = stream.type === "rca" && stream.index != sourceId.current;
+        const moveSource = stream.type === "rca" && stream.index != sourceId;
         if (moveSource) {
             currentSourceId = stream.index;
             // notify ZonesModal that we are using a different sourceId
@@ -44,7 +44,7 @@ const StreamsModal = ({
             // move whatever is here to the original source
         }
 
-        const apply = () => {
+        const apply = (customSourceId) => {
             if (moveSource) {
                 // move then set new stream
                 const statusModified = JSON.parse(JSON.stringify(status));
@@ -52,7 +52,7 @@ const StreamsModal = ({
                     () => {
                         statusModified.zones.forEach((z) => {
                             if (z.source_id === currentSourceId) {
-                                z.source_id = sourceId.current;
+                                z.source_id = sourceId;
                             }
                         });
                         setRcaStatus(statusModified);
@@ -60,10 +60,13 @@ const StreamsModal = ({
                         setSourceStream(currentSourceId, streamId);
                     }
                 );
+            } else if (typeof customSourceId == "number") { // 0 is falsy, but a valid index
+                console.log(`setting custom source. streamId: ${streamId}, customSourceId: ${customSourceId}`);
+                return setSourceStream(customSourceId, streamId);
             } else {
                 // just set new stream
-                console.log(`not move source. streamId: ${streamId}, sourceId.current: ${sourceId.current}`);
-                return setSourceStream(sourceId.current, streamId);
+                console.log(`not move source. streamId: ${streamId}, sourceId: ${sourceId}`);
+                return setSourceStream(sourceId, streamId);
             }
         };
 
@@ -101,8 +104,7 @@ const StreamsModal = ({
     );
 };
 StreamsModal.propTypes = {
-    setStreamModalOpen: PropTypes.func.isRequired,
-    sourceId: PropTypes.any.isRequired,
+    sourceId: PropTypes.number.isRequired,
     onApply: PropTypes.func,
     onClose: PropTypes.func,
     applyImmediately: PropTypes.bool,
