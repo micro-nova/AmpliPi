@@ -13,6 +13,7 @@ import "./PlayerCardFb.scss";
 import CloseIcon from "@mui/icons-material/Close";
 import { IconButton } from "@mui/material";
 import StopProp from "@/components/StopProp/StopProp";
+import StreamerOutputBadge from "../StreamerOutputBadge/StreamerOutputBadge";
 
 import PropTypes from "prop-types";
 
@@ -67,6 +68,11 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                     { !is_streamer && (
                         <div className="zones">
                           <ZonesBadge sourceId={sourceId} onClick={openZones} />
+                        </div>
+                    )}
+                    { is_streamer && (
+                        <div className="streamer-outputs">
+                            <StreamerOutputBadge sourceId={sourceId} />
                         </div>
                     )}
                     <SongInfo sourceId={sourceId} />
