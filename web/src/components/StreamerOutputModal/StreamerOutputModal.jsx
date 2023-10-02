@@ -35,7 +35,7 @@ const StreamerOutputModal = ({
                 }}
                 key={output.id}
             >
-                <div className="zone-icon">
+                <div className="streamer-output-icon">
                     <SpeakerIcon />
                 </div>
             </ListItem>

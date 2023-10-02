@@ -25,7 +25,7 @@ const StreamerOutputBadge = ({ sourceId, onClick }) => {
     );
 
     const chip = <StreamerOutputChip key={sourceId} onClick={onClick} streamerOutput={output} />
-    return <div className="zones-container">{chip}</div>;
+    return <div className="streamer-output-container">{chip}</div>;
 };
 StreamerOutputBadge.propTypes = {
     sourceId: PropTypes.any.isRequired,

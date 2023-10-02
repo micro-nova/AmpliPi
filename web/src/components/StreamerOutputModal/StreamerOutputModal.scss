@@ -9,10 +9,6 @@
   margin-right: 0.4rem;
 }
 
-.zone-icon {
+.streamer-output-icon {
   @include icon(general.$zone-color);
-}
-
-.group-icon {
-  @include icon(general.$group-color);
 }
