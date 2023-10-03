@@ -1,0 +1,23 @@
+@use "src/general";
+
+.stream-bar {
+  width: 100%;
+  height: fit-content;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center; // or center? maybe center text and keep icon to the right?
+}
+
+.stream-bar-name {
+  color: general.$text-color;
+  font-size: 2.5rem;
+  font-weight: medium;
+  @include general.header-font;
+  padding: 0.5rem;
+}
+
+.stream-bar-icon {
+  width: 4rem;
+  height: 4rem;
+}

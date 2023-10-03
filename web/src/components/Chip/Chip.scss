@@ -1,0 +1,11 @@
+@use "src/general";
+
+.chip {
+  display: flex;
+  align-items: center;
+  background-color: #1a1a1aa6;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  margin: 0.25rem;
+  @include general.highlight-hover;
+}

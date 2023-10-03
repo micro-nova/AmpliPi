@@ -1,0 +1,14 @@
+@use "src/general.scss";
+
+@mixin icon($color) {
+  @include general.circle(2rem, $color);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-right: 0.4rem;
+}
+
+.streamer-output-icon {
+  @include icon(general.$zone-color);
+}

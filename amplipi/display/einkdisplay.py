@@ -38,6 +38,7 @@ class EInkDisplay(Display):
     self.refresh_interval = 10
     self.temp_fonts: List = []
     self._ok = False
+    self._log_level = log_level
     log.remove()
     log.add(sys.stderr, level=log_level)
 
@@ -58,7 +59,7 @@ class EInkDisplay(Display):
     self.char_height = ascent + descent
 
     try:
-      self.epd = epd2in13_V3.EPD()
+      self.epd = epd2in13_V3.EPD(self._log_level)
       self.height = self.epd.width  # rotated
       self.width = self.epd.height  # rotated
       self.epd.init()
@@ -70,8 +71,6 @@ class EInkDisplay(Display):
   def run(self):
     self._ok = True
     try:
-      self.epd.init()
-
       default_pass = DefaultPass()
       info = SysInfo(None, None, None)
 

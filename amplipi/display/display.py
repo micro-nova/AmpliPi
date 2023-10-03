@@ -44,13 +44,20 @@ def main():
   while not initialized and len(displays) > 0:
     disp = displays.pop(0)
     # we use init to determine if the display is physically present
-    if disp and disp.init():
-      # successful init, run this display
-      initialized = True
-      disp.run()
+    log.debug(f'Trying to initialize {type(disp)}')
+    try:
+      if disp and disp.init():
+        # successful init, run this display
+        initialized = True
+        disp.run()
+      else:
+        log.debug(f'Failed to initialize {type(disp)}')
+    except Exception as exc:
+      log.debug(f'Failed to initialize {type(disp)}: {exc}')
 
   if not initialized:
     log.error("Display failed to initialize. Exiting.")
+    sys.exit(-1) # expose failure to make the service restart
 
 if __name__ == '__main__':
   main()

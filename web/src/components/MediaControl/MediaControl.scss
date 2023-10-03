@@ -1,0 +1,34 @@
+@use "src/general";
+
+.media-outer {
+  width: 100%;
+  height: fit-content;
+  // background-color: red;
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.media-inner {
+  width: fit-content;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.media-control {
+  font-size: 3.5rem;
+  color: general.$controls-color;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.media-control-disabled {
+  color: #858585;
+}
+
+.media-control-enabled {
+  color: general.$controls-color;
+  @include general.button-hover;
+}

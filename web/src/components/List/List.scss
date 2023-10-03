@@ -1,0 +1,8 @@
+@use "src/general.scss";
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  justify-content: start;
+}

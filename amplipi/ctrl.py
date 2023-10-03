@@ -105,10 +105,10 @@ class Api:
 
   DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Player 1", "input": "",},
-      {"id": 1, "name": "Player 2", "input": "",},
-      {"id": 2, "name": "Player 3", "input": "",},
-      {"id": 3, "name": "Player 4", "input": "",},
+      {"id": 0, "name": "Input 1", "input": ""},
+      {"id": 1, "name": "Input 2", "input": ""},
+      {"id": 2, "name": "Input 3", "input": ""},
+      {"id": 3, "name": "Input 4", "input": ""},
     ],
     # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
     #       this does not make sense because JSON only allows string based keys
@@ -149,13 +149,13 @@ class Api:
 
   STREAMER_CONFIG = { # This is the system state response that will come back from the amplipi box
     "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Input 1", "input": ""},
-      {"id": 1, "name": "Input 2", "input": ""},
-      {"id": 2, "name": "Input 3", "input": ""},
-      {"id": 3, "name": "Input 4", "input": ""}
+      {"id": 0, "name": "Output 1", "input": ""},
+      {"id": 1, "name": "Output 2", "input": ""},
+      {"id": 2, "name": "Output 3", "input": ""},
+      {"id": 3, "name": "Output 4", "input": ""},
     ],
     "streams": [
-      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg", "disabled": False},
     ],
     "zones": [ # this is an array of zones, array length depends on # of boxes connected
     ],
@@ -188,8 +188,15 @@ class Api:
     found_boards = []
     try:
       found_boards = EEPROM.get_available_devices(0)
+      if found_boards:
+        print(f'Found boards:')
     except Exception as exc:
       print(f'Error finding boards: {exc}')
+    try:
+      for board in found_boards:
+        print(f' - {EEPROM(0, board).get_board_info()}')
+    except Exception as exc:
+      print(f'Error showing board info: {exc}')
 
     # check if we are a streamer
     self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards
@@ -260,6 +267,7 @@ class Api:
       mock_ctrl=self._mock_hw,
       mock_streams=self._mock_streams,
       config_file=self.config_file,
+      is_streamer=self.is_streamer,
       version=utils.detect_version(),
     )
     for major, minor, ghash, dirty in self._rt.read_versions():
@@ -350,7 +358,6 @@ class Api:
         for s in bt_streams:
           self.delete_stream(s, internal=True)
 
-
     # configure all sources so that they are in a known state
     # only models.MAX_SOURCES are supported, keep the config from adding extra
     # this helps us transition from weird and experimental configs
@@ -358,11 +365,11 @@ class Api:
       self.status.sources[:] = self.status.sources[0:models.MAX_SOURCES]
     except Exception as exc:
       print(f'Error configuring sources: using all defaults')
-      self.status.sources[:] = [models.Source(id=i, name=f'Player {i+1}') for i in range(models.MAX_SOURCES)]
+      self.status.sources[:] = [models.Source(id=i, name=f'Input {i+1}') for i in range(models.MAX_SOURCES)]
     # populate any missing sources, to match the underlying system's capabilities
     for sid in range(len(self.status.sources), models.MAX_SOURCES):
       print(f'Error: missing source {sid}, inserting default source')
-      self.status.sources.insert(sid, models.Source(id=sid, name=f'Player {sid+1}'))
+      self.status.sources.insert(sid, models.Source(id=sid, name=f'Input {sid+1}'))
     # sequentially number sources if necessary
     for sid, src in enumerate(self.status.sources):
       if src.id != sid:
@@ -469,7 +476,7 @@ class Api:
     except:
       return True
 
-  def get_inputs(self, src: models.Source) -> Dict[Union[str, None], str]:
+  def get_inputs(self, src: models.Source) -> Dict[Optional[str], str]:
     """Gets a dictionary of the possible inputs for a source
 
       Returns:
@@ -478,9 +485,9 @@ class Api:
         Get the possible inputs for any source (only one stream)
 
         >>> my_amplipi.get_inputs()
-        { None, '', 'stream=9449' }
+        { '': '', 'stream=9449': 'Matt and Kim Radio' }
     """
-    inputs: Dict[Union[str, None], str] = {None: ''}
+    inputs: Dict[Optional[str], str] = {'': ''}
     for sid, stream in self.streams.items():
       connectable = stream.requires_src() in [None, src.id] # TODO: remove this filter when sources can dynamically change output
       connected = src.get_stream()
@@ -635,6 +642,11 @@ class Api:
               if stream.is_connected():
                 stream.disconnect()
               stream.connect(idx)
+              # potentially deactivate the old stream to save resources
+              # NOTE: old_stream and new stream could be the same if force_update is True
+              if old_stream and old_stream != stream and old_stream.is_activated():
+                if not old_stream.is_persistent(): # type: ignore
+                  old_stream.deactivate() # type: ignore
             except Exception as iexc:
               print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
               stream.disconnect()
@@ -655,11 +667,15 @@ class Api:
             # TODO: should this stream id validation happen in the Source model?
             src.input = last_input
             raise Exception(f'StreamID specified by "{src.input}" not found')
-          rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
-          if rt_needs_update or force_update:
-            src_cfg = self._get_source_config()
-            if not self._rt.update_sources(src_cfg):
-              raise Exception('failed to set source')
+          elif old_stream and old_stream.is_activated():
+            if not old_stream.is_persistent(): # type: ignore
+              old_stream.deactivate() # type: ignore
+          if not self.is_streamer:
+            rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
+            if rt_needs_update or force_update:
+              src_cfg = self._get_source_config()
+              if not self._rt.update_sources(src_cfg):
+                raise Exception('failed to set source')
           self._update_src_info(src) # synchronize the source's info
         if not internal:
           self.mark_changes()
@@ -997,7 +1013,14 @@ class Api:
     except Exception as exc:
       return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
     try:
-      stream.send_cmd(cmd)
+      if cmd in ['activate', 'deactivate']:
+        if isinstance(stream, amplipi.streams.PersistentStream):
+          if cmd == 'activate':
+            stream.activate()
+          else:
+            stream.deactivate()
+      else:
+        stream.send_cmd(cmd)
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
     return ApiResponse.ok()

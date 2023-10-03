@@ -1,0 +1,18 @@
+@use "@/general.scss";
+
+.volume-sliders-container {
+  width: 85vw;
+  color: general.$controls-color;
+}
+
+.zone-vol-card {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  color: general.$controls-color;
+}
+
+.group-vol-card {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  color: general.$controls-color;
+}

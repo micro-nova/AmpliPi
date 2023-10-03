@@ -1,0 +1,21 @@
+@use "src/general";
+
+.zone-text {
+  color: general.$text-color;
+  font-size: 1rem;
+  font-weight: medium;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  @include general.header-font;
+  cursor: pointer;
+}
+
+.zones-container {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  padding-right: 0.5rem;
+  flex-direction: column;
+  flex-wrap: wrap;
+  max-height: 6rem;
+}

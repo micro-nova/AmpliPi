@@ -1,0 +1,63 @@
+@use "src/general.scss";
+
+.stream-name {
+  @include general.header-font;
+  color: general.$text-color;
+  font-size: 2rem;
+  margin: 0.5rem;
+  margin-bottom: 0;
+}
+
+.stream-card {
+  @include general.header-font;
+  max-width: 25em;
+  width: 90vw;
+  padding: 1rem;
+}
+
+.stream-field-bool {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.stream-field-name {
+  @include general.regular-font;
+  color: general.$text-color;
+  font-size: 1.5rem;
+  margin-right: 1rem;
+}
+
+.stream-field-desc {
+  @include general.regular-font;
+  color: general.$text-color;
+  font-size: 0.8rem;
+}
+
+.stream-button-icon {
+  color: general.$controls-color;
+}
+
+.internet-radio-result {
+  width: 100%;
+  height: 2rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: left;
+  margin: 0.5rem;
+}
+
+.internet-radio-image {
+  height: 100%;
+}
+
+.internet-radio-name {
+  @include general.header-font;
+  color: general.$text-color;
+  font-size: 1.5rem;
+  margin: 0.5rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}

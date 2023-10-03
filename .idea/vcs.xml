@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/fw/sam/arduinosam" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/fw/sam/bossa" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/fw/sam/libraries/adafruit-gfx-library" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/fw/sam/libraries/adafruit_busio" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/fw/sam/libraries/adafruit_ili9341" vcs="Git" />
+  </component>
+</project>

@@ -76,7 +76,10 @@ class RaspberryPi:
   def spi_writebyte2(self, data):
     self.spi.writebytes2(data)
 
-  def module_init(self):
+  def module_init(self) -> bool:
+    if self._initialized:
+      log.error("Tried to reinitialize Raspberry Pi Display driver")
+      return False
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     GPIO.setup(self.RST_PIN, GPIO.OUT)
@@ -86,7 +89,9 @@ class RaspberryPi:
     self.spi.open(2, 1)
     self.spi.max_speed_hz = 4000000
     self.spi.mode = 0b00
+    log.debug("Initialized Raspberry Pi Display driver")
     self._initialized = True
+    return True
 
   def module_exit(self):
     log.debug("spi end")
@@ -194,12 +199,17 @@ class EPD:
   def _is_bus_busy(self):
     return self.driver.digital_read(self.busy_pin) == 1
 
-  def wait_done(self):
+  def wait_done(self, timeout_s = 5):
     """Wait until the busy_pin goes LOW"""
     if self._is_bus_busy():
+      timeout_ms = timeout_s * 1000
+      waited_ms = 0
       log.debug("e-Paper busy")
-      while self._is_bus_busy():
+      while self._is_bus_busy() and waited_ms < timeout_ms:
         self.driver.delay_ms(10)
+        waited_ms += 10
+      if self._is_bus_busy():
+        raise Exception("e-Paper stuck busy, hardware failure?")
       log.debug("e-Paper busy release")
 
   def enable_display(self):
@@ -258,8 +268,7 @@ class EPD:
 
   def init(self):
     """ Initialize e-Paper's registers"""
-    if self.driver.module_init() != 0:
-      return -1
+    self.driver.module_init()
     # EPD hardware init start
     self.reset()
 
@@ -291,7 +300,6 @@ class EPD:
     self.wait_done()
 
     self.set_lut(self.FULL_UPDATE)
-    return 0
 
   def get_buffer(self, image):
     """ Get display buffer"""

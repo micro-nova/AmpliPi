@@ -687,6 +687,8 @@ class StreamCommand(str, Enum):
   LOVE = 'love'
   BAN = 'ban'
   SHELVE = 'shelve'
+  ACTIVATE = 'activate'
+  DEACTIVATE = 'deactivate'
 
 class PresetState(BaseModel):
   """ A set of partial configuration changes to make to sources, zones, and groups """
@@ -809,6 +811,7 @@ class Info(BaseModel):
   config_file: str = Field(default='unknown', description='config file location')
   mock_ctrl: bool = Field(default=False, description='Is the controller being mocked? Indicates AmpliPi hardware is not connected')
   mock_streams: bool = Field(default=False, description='Are streams being faked? Used for testing.')
+  is_streamer: bool = Field(default=False, description='Are we a streamer unit?')
   online: bool = Field(default=False, description='can the system connect to the internet?')
   latest_release: str = Field(default='unknown', description='Latest software release available from GitHub')
   fw: List[FirmwareInfo] = Field(default=[], description='firmware information for each connected controller or expansion unit')
@@ -822,6 +825,7 @@ class Info(BaseModel):
             'version': '0.1.8',
             'mock_ctrl': False,
             'mock_streams': False,
+            'is_streamer': False,
             'online': True,
             'latest_release': '0.1.8',
             'fw': [
@@ -841,7 +845,7 @@ class Status(BaseModel):
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
-  streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(4)]
+  streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(MAX_SOURCES)]
   presets: List[Preset] = []
   info: Optional[Info]
 
@@ -908,6 +912,7 @@ class Status(BaseModel):
                       'latest_release': '0.1.9',
                       'mock_ctrl': False,
                       'mock_streams': False,
+                      'is_streamer': False,
                       'online': True,
                       'version': '0.1.9'},
             'presets': [ { 'id': 10000,

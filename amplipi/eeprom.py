@@ -8,7 +8,7 @@ from time import sleep
 from typing import List, Tuple
 import smbus2 as smbus
 try:
-  import RPi.GPIO as GPIO
+  from RPi import GPIO
 except Exception:
   pass
 
@@ -40,6 +40,12 @@ class BoardInfo:
   unit_type: UnitType
   board_type: BoardType
   board_rev: Tuple[int, str]
+
+  def __str__(self):
+    board_type = f"{str(self.board_type).replace('BoardType.','').lower()}"
+    unit = f"{str(self.unit_type).replace('UnitType.','').lower()}"
+    rev = f"{self.board_rev[0]}{self.board_rev[1]}"
+    return f'{board_type}: unit={unit} rev={rev} serial={self.serial}'
 
 
 class EEPROMWriteError(Exception):
@@ -172,7 +178,7 @@ class EEPROM:
     if self.get_format() not in SUPPORTED_FORMATS:
       raise UnsupportedFormatError("Unsupported format")
     self._write_number(1, BOARD_REV_ADDR, rev[0])
-    self._write_letter(BOARD_REV_ADDR+1, rev[1])
+    self._write_letter(BOARD_REV_ADDR+1, rev[1].upper())
 
   def get_format(self) -> int:
     """Check EEPROM format."""
