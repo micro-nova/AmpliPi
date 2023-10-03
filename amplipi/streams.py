@@ -1245,7 +1245,7 @@ class Bluetooth(BaseStream):
     song_info_path = f'{src_config_folder}/currentSong'
     device_info_path = f'{src_config_folder}/btDevice'
     btmeta_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path} ' \
-                  f'--device-info={device_info_path} --output-device={utils.output_device(src)}'
+                  f'--device-info={device_info_path} --output-device={utils.real_output_device(src)}'
     self.bt_proc = subprocess.Popen(args=btmeta_args.split(), preexec_fn=os.setpgrp)
 
     self._connect(src)
