@@ -19,6 +19,7 @@ from adafruit_rgb_display import ili9341
 from loguru import logger as log
 
 from amplipi import models
+from amplipi.utils import get_identity
 from amplipi.display.common import Color, Display, DefaultPass
 
 # If this is run on anything other than a Raspberry Pi,
@@ -143,21 +144,7 @@ class TFTDisplay(Display):
     GPIO.setup(board.D38.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(board.D38.id, GPIO.FALLING, callback=self.touch_callback)
 
-    # Identity - allows display customization
-    identity : Dict[str, str] = {
-      'name': 'AmpliPi',
-      'touch_logo': 'amplipi/display/imgs/amplipi_320x126.png'
-    }
-    # Load fields from special identity file (if it exists), falling back to default values above
-    try:
-      with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8') as identity_file:
-        potential_identity = json.load(identity_file)
-        for key, val in identity.items():
-          identity[key] = potential_identity.get(key, val)
-    except FileNotFoundError:
-      pass
-    except Exception as e:
-      print(f'Error loading identity file: {e}')
+    identity = get_identity()
 
     try:
       self.ap_logo = Image.open(identity['touch_logo']).convert('RGB')

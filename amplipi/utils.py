@@ -29,12 +29,16 @@ import subprocess
 import shlex
 import pathlib
 from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
+from fastapi import HTTPException, status, Depends
 
 import pkg_resources # version
 
 from amplipi import models
 
 # pylint: disable=bare-except
+
+USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+IDENTITY_FILE = os.path.join(USER_CONFIG_DIR, "identity")
 
 # Helper functions
 def encode(pydata):
@@ -320,3 +324,38 @@ def vol_db_to_float(vol: int, db_min: int = models.MIN_VOL_DB, db_max: int = mod
 def debug_enabled() -> bool:
   """ Returns true or false if debug is enabled """
   return pathlib.Path.home().joinpath(".config/amplipi/debug.json").exists()
+
+def get_identity() -> dict:
+  """ Returns the identity file contents """
+  identity : Dict[str, str] = {
+    'name': 'AmpliPi',
+    'website': 'http://www.amplipi.com',
+    'touch_logo': 'amplipi/display/imgs/amplipi_320x126.png'
+  }
+  # Load fields from special identity file (if it exists), falling back to default values above
+  try:
+    with open(IDENTITY_FILE, encoding='utf-8') as identity_file:
+      potential_identity = json.load(identity_file)
+      identity.update(potential_identity)
+  except FileNotFoundError as e:
+    print(f'Error loading identity file: {e}')
+    print('Creating an identity file from defaults.')
+    os.makedirs(USER_CONFIG_DIR, mode=0o700, exist_ok=True)
+    with open(IDENTITY_FILE, encoding='utf-8', mode='w') as repair_file:
+      json.dump(identity, repair_file)
+  except json.JSONDecodeError as e:
+    print(f'Error loading identity file as JSON: {e}')
+    print('Moving the old one to a backup and creating an identity file from defaults.')
+    os.rename(IDENTITY_FILE, f"{IDENTITY_FILE}.{time.time()}")
+    with open(IDENTITY_FILE, encoding='utf-8', mode='w') as repair_file:
+      json.dump(identity, repair_file)
+  except Exception as e:
+    print(f'Error loading identity file: {e}')
+    raise e
+  return identity
+
+def set_identity(settings: Dict):
+  identity = get_identity()
+  identity.update(settings)
+  with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8', mode='w') as identity_file:
+    json.dump(identity, identity_file)

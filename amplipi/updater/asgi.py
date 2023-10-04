@@ -37,9 +37,8 @@ import asyncio
 
 # web framework
 import requests
-from fastapi import FastAPI, Request, File, UploadFile, HTTPException, status, Depends
+from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter
 from fastapi.staticfiles import StaticFiles
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sse_starlette.sse import EventSourceResponse
 from starlette.responses import FileResponse
 # web server
@@ -47,9 +46,15 @@ import uvicorn
 # models
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
-from argon2 import PasswordHasher
 
+from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, user_password_set, NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
+
+deps = [Depends(CookieOrParamAPIKey)] if user_password_set("admin") else []
 app = FastAPI()
+router = APIRouter(dependencies=deps)
+
+app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
+
 sse_messages: queue.Queue = queue.Queue()
 
 class ReleaseInfo(BaseModel):
@@ -83,32 +88,8 @@ except FileNotFoundError:
 except Exception as e:
   print(f'Error loading identity file: {e}')
 
-# The `auto_error` arg below prevents the HTTPBasic middleware from prompting for a password
-# when initial loading of a page while an admin hash is not configured.
-security = HTTPBasic(auto_error = True if 'admin_password_hash' in identity.keys() else False)
-
-def check_password(credentials: HTTPBasicCredentials = Depends(security)):
-  """ Checks a supplied password against a Argon hash & stored in the app settings.
-
-  Returns True if correct; if false, raises an HTTPException.
-  """
-  if 'admin_password_hash' not in identity.keys():
-    # we have no password configured; do not bother authenticating
-    return True
-  current_password_bytes = credentials.password.encode("utf8")
-  correct_password_hash = identity['admin_password_hash']
-  try:
-    ph = PasswordHasher()
-    return ph.verify(correct_password_hash, current_password_bytes)
-  except:
-    raise HTTPException(
-      status_code = status.HTTP_401_UNAUTHORIZED,
-      detail = "Incorrect password",
-      headers = { "WWW-Authenticate": "Basic" }
-    )
-
-@app.get('/update')
-def get_index(creds: HTTPBasicCredentials = Depends(check_password)):
+@router.get('/update')
+def get_index():
   """ Get the update website """
   # FileResponse knows nothing about the static mount
   return FileResponse(f'{dir_path}/static/index.html')
@@ -121,8 +102,8 @@ def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None
   finally:
     upload_file.file.close()
 
-@app.post("/update/upload")
-async def start_upload(file: UploadFile = File(...), creds: HTTPBasicCredentials = Depends(check_password)):
+@router.post("/update/upload")
+async def start_upload(file: UploadFile = File(...)):
   """ Start a upload based update """
   print(file.filename)
   try:
@@ -144,8 +125,8 @@ def download(url, file_name):
     file.write(response.content)
     # TODO: verify file has amplipi version
 
-@app.post("/update/download")
-async def download_update(info: ReleaseInfo, creds: HTTPBasicCredentials = Depends(check_password)):
+@router.post("/update/download")
+async def download_update(info: ReleaseInfo):
   """ Download the update """
   print(f'downloading update from: {info.url}')
   try:
@@ -156,9 +137,9 @@ async def download_update(info: ReleaseInfo, creds: HTTPBasicCredentials = Depen
     print(e)
     return 500
 
-@app.get('/update/restart') # an old version accidentally used get instead of post
-@app.post('/update/restart')
-def restart(creds: HTTPBasicCredentials = Depends(check_password)):
+@router.get('/update/restart') # an old version accidentally used get instead of post
+@router.post('/update/restart')
+def restart():
   """ Restart the OS and all of the AmpliPi services including the updater.
 
   This is typically done at the end of an update
@@ -169,7 +150,7 @@ def restart(creds: HTTPBasicCredentials = Depends(check_password)):
 
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
 
-@app.get('/update/version')
+@router.get('/update/version')
 def get_version():
   """ Get the AmpliPi software version from the project TOML file """
   # Assume the application is running in its base directory and check the pyproject.toml file
@@ -207,7 +188,7 @@ def _sse_done(msg):
 def _sse_failed(msg):
   _sse_message('failed', msg)
 
-@app.route('/update/install/progress')
+@router.route('/update/install/progress')
 async def progress(req: Request):
   """ SSE Progress server """
   async def stream():
@@ -284,12 +265,35 @@ def install_thread():
     _sse_failed(f'installation failed, error configuring update: {e}')
     return
 
-@app.get('/update/install')
-def install(creds: HTTPBasicCredentials = Depends(security)):
+@router.get('/update/install')
+def install():
   """ Start the install after update is downloaded """
   t = threading.Thread(target=install_thread)
   t.start()
   return {}
+
+class PasswordInput(BaseModel):
+  password: str
+
+@router.post('/password')
+def set_admin_password(input: PasswordInput):
+  """ Sets the admin password and (re)sets its access key."""
+  # At present, we don't support multiple human users, just an "admin".
+  # This field is potentially still used with API keys though, so it's worthwhile to distinguish
+  # (and also permits us forward-looking flexibility.)
+  username = "admin"
+  if len(input.password) == 0:
+    unset_password_hash(username)
+  else:
+    set_password_hash(username, input.password)
+    create_access_key(username)
+
+  subprocess.Popen('systemctl --user restart amplipi'.split())
+  subprocess.Popen('systemctl --user restart amplipi-updater'.split())
+
+
+app.include_router(auth_router)
+app.include_router(router)
 
 if __name__ == '__main__':
   uvicorn.run(app, host="0.0.0.0", port=8000)

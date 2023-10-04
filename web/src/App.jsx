@@ -1,7 +1,6 @@
 import React from "react";
 import { create } from "zustand";
 import { init as initApm } from "@elastic/apm-rum";
-// import { useCookies } from "react-cookie";
 import "@/App.scss";
 import Home from "@/pages/Home/Home";
 import Player from "@/pages/Player/Player";
@@ -129,6 +128,8 @@ export const useStatusStore = create((set, get) => ({
                             set({ status: s, loaded: true, disconnected: false });
                         }
                     });
+                } else if (res.status == 401) {
+                    window.location.href = "/auth/login?next_url=/"
                 } else {
                     set({ disconnected: true });
                 }
