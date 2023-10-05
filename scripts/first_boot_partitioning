@@ -63,18 +63,12 @@ set -e
 # Leave p2 shrunk for now so as to reduce copy time.
 parted ${ROOT_DEV} --align optimal --script mkpart primary 34% 67% # Create system partition 2
 parted ${ROOT_DEV} --align optimal --script mkpart primary 67% 100% # Create /home
+parted ${ROOT_DEV} --align optimal --script resizepart 2 34% # system partition 1
 partprobe ${ROOT_DEV}
 
-# copy system partition 1 to system partition 2, and resize both filesystems to fill
-echo "${0}: creating recovery partition..."
-mount -o remount,ro /
-sleep 5
-dd if=${ROOT_DEV}p2 of=${ROOT_DEV}p3 bs=2M oflag=dsync status=progress
-mount -o remount,rw /
-parted ${ROOT_DEV} --align optimal --script resizepart 2 34% # system partition 1
-
 # then repair and expand our filesystems within these partitions
-for PART in ${ROOT_DEV}p2 ${ROOT_DEV}p3; do
+# This structure is left in place for future partitions... but it basically does nothing now.
+for PART in ${ROOT_DEV}p2; do
     # we don't run e2fsck on the mounted root partition, because it is mounted.
     if [ ${PART} != ${ROOT_DEV}p2 ]; then
         # e2fsck sometimes returns >0 when it's successful.
