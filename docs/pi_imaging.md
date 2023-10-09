@@ -207,6 +207,6 @@ To keep the clean state of the image, remove any SSH keys
 and command history.
 ```
 rm ~/.ssh/authorized_keys
-rm ~/amplipi-dev/house.json
+rm ~/amplipi-dev/house.json*
 cat /dev/null > ~/.bash_history && history -c && exit
 ```
