@@ -5,7 +5,7 @@
 from collections import namedtuple
 import sys
 from time import sleep
-from typing import List
+from typing import List, Union
 
 import socket
 import netifaces as ni
@@ -27,11 +27,11 @@ class EInkDisplay(Display):
 
   def __init__(self, iface: str = 'eth0', log_level: str = 'WARNING'):
     self.iface = iface
-    self.epd = None
-    self.font = None
-    self.pass_font = None
-    self.char_height = None
-    self.char_width = None
+    self.epd : Union[None, epd2in13_V3.EPD] = None
+    self.font : Union[None,ImageFont.FreeTypeFont] = None
+    self.pass_font : Union [None,ImageFont.FreeTypeFont] = None
+    self.char_height : int = 0
+    self.char_width : int = 0
     self.width = 0
     self.height = 0
     self.pass_fontsize = 15
@@ -138,7 +138,7 @@ class EInkDisplay(Display):
     except IOError as e:
       log.error(e)
 
-  def pick_pass_font(self, password, max_length) -> ImageFont:
+  def pick_pass_font(self, password, max_length) -> ImageFont.FreeTypeFont:
     """Pick the password font so it fits in the display"""
     try:
       for i in range(20, 10, -1):
