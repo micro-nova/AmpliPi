@@ -43,6 +43,15 @@ sudo dd if=/dev/sdaX bs=4MiB | gzip > amplipi.img.gz
 To save time copying, shrink the root partition so that unused space isn't copied.
 While the Pi is mounted with `rpiboot`, use the partition manager of your choice to shrink the root partition as far as possible.
 GParted is a good graphical partitioning tool.
+
+This can also be accomplished through CLI tools:
+```sh
+sudo e2fsck -f /dev/sdaX
+sudo resize2fs -Mp /dev/sdaX # this command will tell you how many blocks it has been shrunk into
+sudo fdisk  /dev/sdaX
+```
+Follow [this guide](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/storage_administration_guide/s2-disk-storage-parted-resize-part), using sector sizes for the end of the partition. Some math is necessary to determine the correct end of the partition using this method. `resize2fs` will print 4k blocks, but `fdisk` provides 512byte sectors.
+
 Through testing it only seems possible to shrink the root partition to ~5 GB
 when about 4 GB are in use.
 
@@ -60,7 +69,7 @@ The following is an example where the End sector was 10158079.
 ```sh
 end=10158079
 bs=512
-sudo dd if=/dev/sdX of=amplipi.img bs=1MiB count=$[($end+1)*$bs/1024/1024] status=progress
+sudo dd if=/dev/sdX of=amplipi.img bs=1MiB count=$[($end*$bs/1024/1024)+1] status=progress
 ```
 
 # Accessing an Image File
@@ -198,5 +207,6 @@ To keep the clean state of the image, remove any SSH keys
 and command history.
 ```
 rm ~/.ssh/authorized_keys
+rm ~/amplipi-dev/house.json*
 cat /dev/null > ~/.bash_history && history -c && exit
 ```
