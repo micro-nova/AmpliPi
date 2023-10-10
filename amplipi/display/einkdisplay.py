@@ -5,7 +5,7 @@
 from collections import namedtuple
 import sys
 from time import sleep
-from typing import List, Union
+from typing import List, Optional
 
 import socket
 import netifaces as ni
@@ -27,9 +27,9 @@ class EInkDisplay(Display):
 
   def __init__(self, iface: str = 'eth0', log_level: str = 'WARNING'):
     self.iface = iface
-    self.epd : Union[None, epd2in13_V3.EPD] = None
-    self.font : Union[None,ImageFont.FreeTypeFont] = None
-    self.pass_font : Union [None,ImageFont.FreeTypeFont] = None
+    self.epd : Optional[epd2in13_V3.EPD] = None
+    self.font : Optional[ImageFont.FreeTypeFont] = None
+    self.pass_font : Optional[ImageFont.FreeTypeFont] = None
     self.char_height : int = 0
     self.char_width : int = 0
     self.width = 0
