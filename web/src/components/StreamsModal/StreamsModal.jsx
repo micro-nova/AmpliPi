@@ -106,12 +106,11 @@ const StreamsModal = ({
 StreamsModal.propTypes = {
     sourceId: PropTypes.number.isRequired,
     onApply: PropTypes.func,
-    onClose: PropTypes.func,
+    onClose: PropTypes.func.isRequired,
     applyImmediately: PropTypes.bool,
 };
 StreamsModal.defaultProps = {
     onApply: () => {},
-    onClose: () => {},
     applyImmediately: true,
 };
 
