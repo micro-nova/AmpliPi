@@ -65,10 +65,10 @@ import amplipi.models as models
 from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs, USER_CONFIG_DIR # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 
 # start in the web directory
-TEMPLATE_DIR = os.path.abspath('web/templates')
-STATIC_DIR = os.path.abspath('web/static')
-GENERATED_DIR = os.path.abspath('web/generated')
-WEB_DIR = os.path.abspath('web/dist')
+TEMPLATE_DIR = os.path.abspath(f'web/templates')
+STATIC_DIR = os.path.abspath(f'web/static')
+GENERATED_DIR = os.path.abspath(f'web/generated')
+WEB_DIR = os.path.abspath(f'web/dist')
 
 app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
 # templates = Jinja2Templates(TEMPLATE_DIR)

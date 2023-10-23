@@ -14,7 +14,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get install gcc-arm-none-eabi
+        sudo apt update
+        sudo apt-get -y install gcc-arm-none-eabi
+        sudo apt-get -y install cmake
 
     - name: Build Preamp
       run: |
