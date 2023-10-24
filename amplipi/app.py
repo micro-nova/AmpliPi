@@ -145,6 +145,7 @@ class params(SimpleNamespace):
 api = SimplifyingRouter()
 
 @api.get('/api', tags=['status'])
+@api.get('/api/', tags=['status'])
 def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Get the system status and configuration """
   return ctrl.get_state()
