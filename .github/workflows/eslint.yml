@@ -22,3 +22,5 @@ jobs:
         run: npm i
       - name: run eslint
         run: npx eslint src
+      - name: build
+        run: npm run build
