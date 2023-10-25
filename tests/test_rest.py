@@ -941,8 +941,6 @@ def test_api_doc_has_examples(client):
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   for path, p in jrv['paths'].items():
-    if(path == '/debug'): # TODO: add example to this endpoint and remove this
-       continue
     for method, m in p.items():
       path_desc = f'{path} - {method}'
       # check for examples of the request on
