@@ -477,16 +477,17 @@ def get_info(ctrl: Api = Depends(get_ctrl)) -> models.Info:
   return code_response(ctrl, ctrl.get_info())
 
 @app.get('/debug')
-def debug():
+def debug() -> models.DebugResponse:
   """ Returns debug status and configuration. """
   debug_file = pathlib.Path.home().joinpath(".config/amplipi/debug.json")
   if not debug_file.exists():
-    return {}
+    return models.DebugResponse()
   try:
     with open(debug_file) as f:
-        return json.load(f)
-  except:
-    return {}
+        return models.DebugResponse(**json.load(f))
+  except Exception as e:
+    print("couldn't load debug file: {e}")
+    return models.DebugResponse()
 
 # include all routes above
 

@@ -1180,3 +1180,28 @@ class AppSettings(BaseSettings):
   mock_streams: bool = True
   config_file: str = 'house.json'
   delay_saves: bool = True
+
+class DebugResponse(BaseModel):
+  """ Response from /debug, which directly reads a file from JSON or returns an empty response """
+  debug: Optional[bool]
+  apmHost: Optional[str]
+  version: Optional[str]
+  environment: Optional[str]
+
+  class Config:
+    schema_extra = {
+      'examples': [
+        {
+          "debug": "true",
+          "apmHost": "https://127.0.0.1:9345",
+          "version": "0.3.0",
+          "environment": "development"
+        },
+        {
+          "debug": None,
+          "apmHost": None,
+          "version": None,
+          "environment": None
+        }
+      ]
+    }
