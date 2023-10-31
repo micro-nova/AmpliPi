@@ -992,6 +992,6 @@ if __name__ == '__main__':
   result = install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
           display=flags.display, audiodetector=flags.audiodetector,
           firmware=flags.firmware, password=flags.password,
-          restart_updater=flags.restart_updater)
+          restart_updater=flags.restart_updater, development=flags.development)
   if not result:
     sys.exit(1)
