@@ -62,7 +62,9 @@ int main() {
     if (new_i2c_addr != i2c_addr) {
       i2c_addr = new_i2c_addr;
       ctrlI2CInit(i2c_addr);
-      sendAddressToSlave();
+
+      // Increment this unit's address by 0x10 to get the address for the next preamp.
+      sendAddressToSlave(i2c_addr + 0x10);
     }
 
     // Check for incoming control messages if a slave address has been set

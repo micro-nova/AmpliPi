@@ -57,11 +57,11 @@ bool getUartPassthrough() {
 }
 
 // Send an I2C address to the connected expansion unit, if one exists.
-void sendAddressToSlave() {
+void sendAddressToSlave(uint8_t i2c_addr) {
   while (!(USART2->ISR & USART_ISR_TXE)) {}
   USART2->TDR = 'A';
   while (!(USART2->ISR & USART_ISR_TXE)) {}
-  USART2->TDR = i2c_addr_ + 0x10;  // Add 0x10 to get next address
+  USART2->TDR = i2c_addr;
   while (!(USART2->ISR & USART_ISR_TXE)) {}
   USART2->TDR = '\n';
 }
