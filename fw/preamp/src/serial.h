@@ -36,7 +36,7 @@ void initUart2(uint16_t brr);
 
 // Returns new I2C address if one was received via USART1, otherwise 0
 void    sendAddressToSlave(uint8_t i2c_addr);
-uint8_t checkForNewAddress();
+uint8_t getI2C1Address();
 
 #ifdef DEBUG_PRINT
 void debug_putchar(char c);

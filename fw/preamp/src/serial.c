@@ -35,6 +35,10 @@
 // Timeout address reception, 40 ms should allow down to 1k buad
 #define SB_TIMEOUT 40
 
+// Slave I2C address to be used on I2C1 (controller board bus).
+// Address is stored in the top 7 bits of the byte, with the LSB 0.
+uint8_t i2c_addr_ = 0;
+
 // Passthrough messages between UART1<->UART2
 bool uart_passthrough_ = false;
 
@@ -51,6 +55,10 @@ void setUartPassthrough(bool passthrough) {
 
 bool getUartPassthrough() {
   return uart_passthrough_;
+}
+
+uint8_t getI2C1Address() {
+  return i2c_addr_;
 }
 
 // Send an I2C address to the connected expansion unit, if one exists.
@@ -95,6 +103,16 @@ void serialBufferAdd(volatile SerialBuffer* sb, uint8_t data_in) {
   // Check for completion (i.e. when last byte is \n)
   if (sb->ind >= 3 && sb->data[sb->ind - 1] == '\n') {
     sb->done = 1;
+
+    // "A" - address identifier. Defends against potential noise on the wire
+    if (uart1_rx_buf_.data[0] == 'A') {
+      uart_tx_buf_      = uart1_rx_buf_;
+      uart_tx_buf_.ind  = 0;
+      uart_tx_buf_.done = 0;
+      // initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
+      i2c_addr_ = uart1_rx_buf_.data[1];
+    }
+    serialBufferReset(sb);
   }
 
   // Check for overflow (i.e. when index exceeds buffer)
@@ -154,28 +172,6 @@ void initUart2(uint16_t brr) {
   (void)brr;
   USART_Cmd(USART2, ENABLE);
 #endif
-}
-
-/* Check for a new I2C address received via UART.
- * @returns new I2C address, or 0 if no new address.
- */
-uint8_t checkForNewAddress() {
-  static uint8_t i2c_addr = 0;
-
-  // TODO: Better state machine with timeout
-  if (uart1_rx_buf_.done) {
-    // "A" - address identifier. Defends against potential noise on the wire
-    if (uart1_rx_buf_.data[0] == 'A') {
-      uart_tx_buf_      = uart1_rx_buf_;
-      uart_tx_buf_.ind  = 0;
-      uart_tx_buf_.done = 0;
-      // initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
-      i2c_addr = uart1_rx_buf_.data[1];
-    }
-    serialBufferReset(&uart1_rx_buf_);
-  }
-
-  return i2c_addr;
 }
 
 /* Handles the interrupt on the upstream UART data reception.

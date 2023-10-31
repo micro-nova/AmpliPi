@@ -57,7 +57,7 @@ int main() {
     // writePin(exp_boot0_, true);
 
     // Check if a new I2C slave address has been received over UART from the controller board.
-    uint8_t new_i2c_addr = checkForNewAddress();
+    uint8_t new_i2c_addr = getI2C1Address();
     if (new_i2c_addr != i2c_addr) {
       i2c_addr = new_i2c_addr;
       ctrlI2CInit(i2c_addr);
