@@ -178,8 +178,10 @@ uint8_t checkForNewAddress() {
   return i2c_addr;
 }
 
-// Handles the interrupt on UART data reception
-void USART1_IRQHandler(void) {
+/* Handles the interrupt on the upstream UART data reception.
+ * Defined in startup_stm32.s.
+ */
+void usart1_irq_handler() {
   uint32_t isr = USART1->ISR;
   if (isr & USART_ISR_ABRE) {
     // Auto-baud failed, clear read data and reset auto-baud
@@ -195,7 +197,9 @@ void USART1_IRQHandler(void) {
   }
 }
 
-void USART2_IRQHandler(void) {
+// Handles the interrupt on the downstream UART data reception
+void usart2_irq_handler() {
+  // TODO: Add to transmit queue
   // Forward anything received on UART2 (expansion box)
   // to UART1 (back up the chain to the controller board)
   if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {

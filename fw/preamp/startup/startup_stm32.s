@@ -145,11 +145,11 @@ g_pfnVectors:
   .word  I2C2_IRQHandler                /* 0xA0 I2C2                         */
   .word  SPI1_IRQHandler                /* 0xA4 SPI1                         */
   .word  SPI2_IRQHandler                /* 0xA8 SPI2                         */
-  .word  USART1_IRQHandler              /* 0xAC USART1                       */
-  .word  USART2_IRQHandler              /* 0xB0 USART2                       */
-  .word  USART3_4_5_6_IRQHandler        /* 0xB4 USART 3, 4, 5, and 6         */
+  .word  usart1_irq_handler             /* 0xAC USART1                       */
+  .word  usart2_irq_handler             /* 0xB0 USART2                       */
+  .word  0                              /* 0xB4 USART 3, 4, 5, and 6         */
   .word  0                              /* 0xB8 Reserved                     */
-  .word  USB_IRQHandler                 /* 0xBC USB                          */
+  .word  0                              /* 0xBC USB                          */
 
 /*******************************************************************************
 *
@@ -243,16 +243,10 @@ g_pfnVectors:
   .weak       SPI2_IRQHandler
   .thumb_set  SPI2_IRQHandler, Default_Handler
 
-  .weak       USART1_IRQHandler
-  .thumb_set  USART1_IRQHandler, Default_Handler
+  .weak       usart1_irq_handler
+  .thumb_set  usart1_irq_handler, Default_Handler
 
-  .weak       USART2_IRQHandler
-  .thumb_set  USART2_IRQHandler, Default_Handler
-
-  .weak       USART3_4_5_6_IRQHandler
-  .thumb_set  USART3_4_5_6_IRQHandler, Default_Handler
-
-  .weak       USB_IRQHandler
-  .thumb_set  USB_IRQHandler, Default_Handler
+  .weak       usart2_irq_handler
+  .thumb_set  usart2_irq_handler, Default_Handler
 
   .weak       SystemInit
