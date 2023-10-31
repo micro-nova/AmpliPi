@@ -989,7 +989,9 @@ if __name__ == '__main__':
     print('  WARNING: expected some arguments, check --help for more information')
   if sys.version_info.major < 3 or sys.version_info.minor < 7:
     print('  WARNING: minimum python version is 3.7')
-  install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
+  result = install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
           display=flags.display, audiodetector=flags.audiodetector,
           firmware=flags.firmware, password=flags.password,
           restart_updater=flags.restart_updater)
+  if not result:
+    sys.exit(1)
