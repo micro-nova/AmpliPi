@@ -282,7 +282,7 @@ void updateInternalI2C(bool initialized) {
     writeRegI2C2(pwr_io_gpio_, gpio_request.data);
   }
 
-  updateAudio();
+  updateAudio();  // Worst-case 1.11 ms.
 
 #ifdef SCAN_I2C
   static bool i2c_scan_done = false;

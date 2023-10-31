@@ -23,18 +23,6 @@
 #include "audio.h"  // NUM_ZONES, NUM_SRCS
 #include "stm32f0xx.h"
 
-/*
-#define pTX1 GPIO_Pin_9   // PA9
-#define pRX1 GPIO_Pin_10  // PA10
-#define pTX2 GPIO_Pin_14  // PA14
-#define pRX2 GPIO_Pin_15  // PA15
-
-#define pSCL     GPIO_Pin_6   // PB6
-#define pSDA     GPIO_Pin_7   // PB7
-#define pSCL_VOL GPIO_Pin_10  // PB10
-#define pSDA_VOL GPIO_Pin_11  // PB11
-*/
-
 static GPIO_TypeDef* getPort(Pin pp) {
   switch (pp.port) {
     case 'A':

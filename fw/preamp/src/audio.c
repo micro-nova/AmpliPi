@@ -224,6 +224,16 @@ InputType getSourceAD(size_t src) {
 }
 
 void initAudio() {
+  // At boot SRCX_D_EN should be 1, SRCX_A_EN should be 0
+  // <=Rev3: Selects digital inputs as sources.
+  // >=Rev4: Selects analog inputs as sources.
+  //         This is still OK as long as zones/amps are muted.
+  //
+  // At boot CH1_SRC1_EN should be 1, CH2-4_SRC1_EN should be 0.
+  // <=Rev3: Selects CH0 as source for all zones.
+  // >=Rev4: Selects CH1, CH2, and CH3 as source for all zones.
+  //         This is still OK as long as zones/amps are muted.
+
   // Initialize each zone's audio state (does not write to volume control ICs)
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     enZoneAmp(zone, true);
