@@ -170,13 +170,13 @@ class _Preamps:
     GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
     GPIO.setup(5, GPIO.OUT)
     GPIO.output(5, boot0) # Ensure BOOT0 is set (GPIO5)
-    time.sleep(0.1)
+    time.sleep(0.001) # Hold reset low for >20 us, but <10 ms.
     GPIO.output(4, 1)
 
-    # Each box theoretically takes ~11ms to undergo a reset.
+    # Each box theoretically takes ~6 to undergo a reset.
     # Estimating for six boxes, including some padding,
-    # wait 100ms for the resets to propagate down the line
-    time.sleep(0.1)
+    # wait 50ms for the resets to propagate down the line
+    time.sleep(0.05)
 
     # Done with GPIO, they will default back to inputs with pullups
     GPIO.cleanup()
