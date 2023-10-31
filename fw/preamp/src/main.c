@@ -16,9 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "audio.h"
 #include "ctrl_i2c.h"
@@ -27,7 +25,7 @@
 #include "serial.h"
 #include "systick.h"
 
-int main(void) {
+int main() {
   // TODO: Setup watchdog
 
   // RESET AND PIN SETUP
@@ -51,19 +49,24 @@ int main(void) {
 
   // Main loop, awaiting I2C commands
   uint32_t next_loop_time = millis();
+  uint8_t  i2c_addr       = 0;
   while (1) {
     // TODO: Clear watchdog
 
     // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
     // writePin(exp_boot0_, true);
 
-    // Check for incoming UART messages (setting the slave address)
-    if (checkForNewAddress()) {
-      ctrlI2CInit();
+    // Check if a new I2C slave address has been received over UART from the controller board.
+    checkForNewAddress();
+    uint8_t new_i2c_addr = getI2C1Address();
+    if (new_i2c_addr != i2c_addr) {
+      i2c_addr = new_i2c_addr;
+      ctrlI2CInit(i2c_addr);
+      sendAddressToSlave();
     }
 
     // Check for incoming control messages if a slave address has been set
-    if (getI2C1Address() && ctrlI2CAddrMatch()) {
+    if (i2c_addr && ctrlI2CAddrMatch()) {
       ctrlI2CTransact();
     }
 

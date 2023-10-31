@@ -33,6 +33,7 @@
 #include "pwr_gpio.h"
 #include "serial.h"
 #include "stm32f0xx.h"
+#include "stm32f0xx_i2c.h"
 #include "version.h"
 
 typedef enum {
@@ -78,32 +79,36 @@ typedef enum {
   REG_GIT_HASH_0_D  = 0xFF,
 } CmdReg;
 
-/* Measured rise and fall times of the controller I2C bus.
- * Rise time is from 30% to 70%.
+/* Measured rise and fall times of the controller I2C bus. Rise time is from 30% to 70%.
+ * For standard (100 kHz) I2C the t_r limit is 1000 ns and the t_f limit is 300 ns.
  *
  * (ns)| Main | 1 Exp | 2 Exp | 3 Exp | 4 Exp | 5 Exp |
  * ----+------+-------+-------+-------+-------+-------+
  * t_r |  260 |   420 |   590 |   720 |   880 |  1000 |
  * t_f | 16.4 |  16.4 |  16.4 |  17.2 |  19.6 |  20.0 |
  */
-void ctrlI2CInit() {
-  // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
 
+/* Initialize the control (Pi) I2C bus as a slave.
+ * @param addr: Address to assign to this preamp board.
+ *              Must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
+ */
+void ctrlI2CInit(uint8_t addr) {
   // Enable peripheral clock for I2C1
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
 
-  // Setup I2C1
-  I2C_InitTypeDef i2cInit = {
-      .I2C_Mode                = I2C_Mode_I2C,
-      .I2C_AnalogFilter        = I2C_AnalogFilter_Enable,
-      .I2C_DigitalFilter       = 0x00,
-      .I2C_OwnAddress1         = getI2C1Address(),
-      .I2C_Ack                 = I2C_Ack_Enable,
-      .I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit,
-      .I2C_Timing              = 0,  // Clocks not generated in slave mode
-  };
-  I2C_Init(I2C1, &i2cInit);
-  I2C_Cmd(I2C1, ENABLE);
+  // TODO: Disable clock stretching by setting I2C_CR1_NOSTRETCH
+  I2C1->CR1      = 0;  // Disable I2C1 peripheral (set PE=0).
+  I2C1->CR2      = 0;  // Defaults OK. ACK bytes received.
+  I2C1->TIMINGR  = 0;  // Clocks not generated in slave mode.
+  I2C1->TIMEOUTR = 0;  // Timouts only used in SMBUS mode.
+  // I2C1->CR1     = 0;           // Reset to defaults (bits can't be modified while PE=1).
+
+  I2C1->OAR1 = 0;  // Clear OAR1 register (bits can't be modified while OA1EN=1).
+  I2C1->OAR2 = 0;  // Clear OAR2 register.
+  I2C1->OAR1 = I2C_OAR1_OA1EN | (addr & 0xFE);  // Set slave address to ACK.
+  // I2C1->OAR1 |= I2C_OAR1_OA1EN;  // ACK own address 1
+
+  I2C1->CR1 = I2C_CR1_PE;  // Enable the I2C1 Peripheral
 }
 
 bool ctrlI2CAddrMatch() {

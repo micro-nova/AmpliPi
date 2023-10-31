@@ -56,6 +56,16 @@ bool getUartPassthrough() {
   return uart_passthrough_;
 }
 
+// Send an I2C address to the connected expansion unit, if one exists.
+void sendAddressToSlave() {
+  while (!(USART2->ISR & USART_ISR_TXE)) {}
+  USART2->TDR = 'A';
+  while (!(USART2->ISR & USART_ISR_TXE)) {}
+  USART2->TDR = i2c_addr_ + 0x10;  // Add 0x10 to get next address
+  while (!(USART2->ISR & USART_ISR_TXE)) {}
+  USART2->TDR = '\n';
+}
+
 // Serial buffer for UART handling of I2C addresses
 typedef struct {
   uint8_t data[SB_MAX_SIZE];  // Byte buffer
@@ -105,13 +115,12 @@ void initUart1() {
   // Setup USART1
   USART_Cmd(USART1, ENABLE);
   USART_InitTypeDef USART_InitStructure;
-  USART_InitStructure.USART_BaudRate   = 9600;  // Auto-baud will override this
-  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-  USART_InitStructure.USART_StopBits   = USART_StopBits_1;
-  USART_InitStructure.USART_Parity     = USART_Parity_No;
-  USART_InitStructure.USART_HardwareFlowControl =
-      USART_HardwareFlowControl_None;
-  USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+  USART_InitStructure.USART_BaudRate            = 9600;  // Auto-baud will override this
+  USART_InitStructure.USART_WordLength          = USART_WordLength_8b;
+  USART_InitStructure.USART_StopBits            = USART_StopBits_1;
+  USART_InitStructure.USART_Parity              = USART_Parity_No;
+  USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+  USART_InitStructure.USART_Mode                = USART_Mode_Rx | USART_Mode_Tx;
   USART_Init(USART1, &USART_InitStructure);
 
   // Setup auto-baudrate detection
@@ -137,13 +146,12 @@ void initUart2(uint16_t brr) {
   // Setup USART2
   USART_Cmd(USART2, ENABLE);
   USART_InitTypeDef USART_InitStructure2;
-  USART_InitStructure2.USART_BaudRate   = 9600;
-  USART_InitStructure2.USART_WordLength = USART_WordLength_8b;
-  USART_InitStructure2.USART_StopBits   = USART_StopBits_1;
-  USART_InitStructure2.USART_Parity     = USART_Parity_No;
-  USART_InitStructure2.USART_HardwareFlowControl =
-      USART_HardwareFlowControl_None;
-  USART_InitStructure2.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+  USART_InitStructure2.USART_BaudRate            = 9600;
+  USART_InitStructure2.USART_WordLength          = USART_WordLength_8b;
+  USART_InitStructure2.USART_StopBits            = USART_StopBits_1;
+  USART_InitStructure2.USART_Parity              = USART_Parity_No;
+  USART_InitStructure2.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+  USART_InitStructure2.USART_Mode                = USART_Mode_Rx | USART_Mode_Tx;
   USART_Init(USART2, &USART_InitStructure2);
   // USART2->BRR = brr;
   (void)brr;
@@ -151,19 +159,15 @@ void initUart2(uint16_t brr) {
 #endif
 }
 
-bool checkForNewAddress() {
-  size_t tx_len = 0;
-
-  // TODO: Assume default slave address, wait a bit to see if new address is
-  //       received, then either accept new address or use default.
+/* Check for a new I2C address recieved via UART.
+ * @returns new I2C address, or 0 if no new address.
+ */
+uint8_t checkForNewAddress() {
   // TODO: Better state machine with timeout
   if (uart1_rx_buf_.done) {
     // "A" - address identifier. Defends against potential noise on the wire
     if (uart1_rx_buf_.data[0] == 'A') {
-      // Set expansion preamp's address, if it exists. Increment the address
-      // received by 0x10 to get the address for the next preamp.
       uart_tx_buf_      = uart1_rx_buf_;
-      tx_len            = uart_tx_buf_.ind;
       uart_tx_buf_.ind  = 0;
       uart_tx_buf_.done = 0;
       // initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
@@ -171,27 +175,8 @@ bool checkForNewAddress() {
     }
     serialBufferReset(&uart1_rx_buf_);
   }
-  // Forward address to next preamp
-  /*if (tx_len && USART1->ISR & USART_ISR_TXE && USART2->ISR & USART_ISR_TXE) {
-    uint16_t data = uart_tx_buf_.data[uart_tx_buf_.ind];
-    USART_SendData(USART1, data);
-    if (uart_tx_buf_.ind == 1) {
-      data += 0x10;  // New address for next preamp
-    }
-    USART_SendData(USART2, data);
-    uart_tx_buf_.ind++;
-    tx_len--;
-  }*/
-  if (tx_len) {
-    while (!(USART2->ISR & USART_ISR_TXE)) {}
-    USART2->TDR = 'A';
-    while (!(USART2->ISR & USART_ISR_TXE)) {}
-    USART2->TDR = i2c_addr_ + 0x10;  // Add 0x10 to get next address
-    while (!(USART2->ISR & USART_ISR_TXE)) {}
-    USART2->TDR = 0x0A;  // '\n'
-    return true;
-  }
-  return false;
+
+  return i2c_addr_;
 }
 
 uint8_t getI2C1Address() {
