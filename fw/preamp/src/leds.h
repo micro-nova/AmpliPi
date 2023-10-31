@@ -38,4 +38,4 @@ void setLeds(Leds leds);
 Leds getLeds();
 
 void initLeds();
-void updateLeds();
+void updateLeds(bool initialized);

@@ -35,9 +35,6 @@
 // Timeout address reception, 40 ms should allow down to 1k buad
 #define SB_TIMEOUT 40
 
-// Slave I2C address on I2C1 (controller bus)
-uint8_t i2c_addr_ = 0;
-
 // Passthrough messages between UART1<->UART2
 bool uart_passthrough_ = false;
 
@@ -159,10 +156,12 @@ void initUart2(uint16_t brr) {
 #endif
 }
 
-/* Check for a new I2C address recieved via UART.
+/* Check for a new I2C address received via UART.
  * @returns new I2C address, or 0 if no new address.
  */
 uint8_t checkForNewAddress() {
+  static uint8_t i2c_addr = 0;
+
   // TODO: Better state machine with timeout
   if (uart1_rx_buf_.done) {
     // "A" - address identifier. Defends against potential noise on the wire
@@ -171,16 +170,12 @@ uint8_t checkForNewAddress() {
       uart_tx_buf_.ind  = 0;
       uart_tx_buf_.done = 0;
       // initUart2(USART1->BRR);  // Use the same baud rate for both UARTs
-      i2c_addr_ = uart1_rx_buf_.data[1];
+      i2c_addr = uart1_rx_buf_.data[1];
     }
     serialBufferReset(&uart1_rx_buf_);
   }
 
-  return i2c_addr_;
-}
-
-uint8_t getI2C1Address() {
-  return i2c_addr_;
+  return i2c_addr;
 }
 
 // Handles the interrupt on UART data reception

@@ -57,8 +57,7 @@ int main() {
     // writePin(exp_boot0_, true);
 
     // Check if a new I2C slave address has been received over UART from the controller board.
-    checkForNewAddress();
-    uint8_t new_i2c_addr = getI2C1Address();
+    uint8_t new_i2c_addr = checkForNewAddress();
     if (new_i2c_addr != i2c_addr) {
       i2c_addr = new_i2c_addr;
       ctrlI2CInit(i2c_addr);
@@ -72,7 +71,7 @@ int main() {
       ctrlI2CTransact();
     }
 
-    updateInternalI2C();
+    updateInternalI2C(i2c_addr != 0);
 
     // writePin(exp_boot0_, false);
     next_loop_time += 1;  // Loop currently takes ~800 us

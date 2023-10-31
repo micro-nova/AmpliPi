@@ -22,7 +22,6 @@
 
 #include "audio.h"
 #include "i2c.h"
-#include "serial.h"
 #include "systick.h"
 
 // LED Board I2C registers
@@ -58,11 +57,14 @@ void initLeds() {
   leds_.data = 0;
 }
 
-void updateLeds() {
+/* Update the front-panel LEDs with the current AmpliPi status.
+ * @param initialized: true if I2C slave address has been received.
+ */
+void updateLeds(bool initialized) {
   // Determine the LEDs based on the system status, unless overriden.
   if (!led_override_) {
     leds_requested_.grn = inStandby() ? 0 : 1;
-    if (getI2C1Address()) {
+    if (initialized) {
       leds_requested_.red = !leds_requested_.grn;
     } else {
       // Blink red light at ~0.5 Hz

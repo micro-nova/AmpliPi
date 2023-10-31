@@ -27,7 +27,6 @@
 #include "leds.h"
 #include "pins.h"
 #include "pwr_gpio.h"
-#include "serial.h"
 #include "stm32f0xx.h"
 #include "systick.h"
 
@@ -134,8 +133,7 @@ static void updateDPot(uint8_t val) {
       dpot_check = DPOT_NONE;
       dpot_val   = val;
     }
-  } else if ((dpot_type_ == DPOT_MCP40D17 && update) ||
-             dpot_check == DPOT_MCP40D17) {
+  } else if ((dpot_type_ == DPOT_MCP40D17 && update) || dpot_check == DPOT_MCP40D17) {
     uint32_t err = writeRegI2C2(dpot_cmd_, val);
     if (err) {
       // Couldn't communicate to MCP40D17, assume it's not present
@@ -239,10 +237,13 @@ void initInternalI2C() {
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
   initLeds();
-  updateInternalI2C();
+  updateInternalI2C(false);
 }
 
-void updateInternalI2C() {
+/* Update the devices on the internal I2C bus.
+ * @param initialized: true if I2C slave address has been received.
+ */
+void updateInternalI2C(bool initialized) {
   /* I2C transaction times (us):
    *   writeRegI2C2() 92.5
    *   readRegI2C2()  132
@@ -268,7 +269,7 @@ void updateInternalI2C() {
     setPwrGpio(pwr_gpio);
 
     // Update the LED Board's LED state (possible I2C write)
-    updateLeds();
+    updateLeds(initialized);
   }
 
   // Update the Power Board's GPIO outputs, only writing when necessary

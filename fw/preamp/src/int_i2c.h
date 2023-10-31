@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 void initInternalI2C();
-void updateInternalI2C();
+void updateInternalI2C(bool initialized);
 
 bool    isDPotSMBus();
 uint8_t isInternalI2CDevPresent(uint8_t addr);
