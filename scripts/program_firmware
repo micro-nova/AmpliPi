@@ -15,6 +15,7 @@ then any expansion units that were detected will be programmed.
                     at HOST. AmpliPi should be installed in PATH.
                     For example use amplipi.local:amplipi-dev
   --num-units NUM   Force the number of units to be programmed.
+  --baud            Set baud rate for programming. Default 115200.
   -b, --build       Build from source then program built binary.
   -h, --help        Print this help text.
 "
@@ -28,6 +29,7 @@ remote_host=''      # Hostname/url to program remotely through ssh
 remote_path=''      # Location of the amplipi install directory on the remote
 nprog=''            # Number of units to program
 nprog_opt=''        # Actual string passed as a flag and number
+baud=115200
 build=false         #
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -38,6 +40,15 @@ while [[ "$#" -gt 0 ]]; do
           nprog=$2; nprog_opt="-n $2"; shift
         else
           printf "--num-units requires a second parameter\n\n"
+          printf "$helptext"
+          exit 1
+        fi
+      ;;
+    --baud)
+      if (($# > 1)); then
+          baud=$2; shift
+        else
+          printf "--baud requires a second parameter\n\n"
           printf "$helptext"
           exit 1
         fi
@@ -69,7 +80,6 @@ if $build; then
   cmake -S fw/preamp -B fw/preamp/build
   cmake --build fw/preamp/build -j $(nproc)
   status=$?
-  printf "Status=$status\n"
   if (( $status > 0 )); then
     printf "\n${RED}Failed to build firmware, exiting without programming anything.${NC}\n"
     exit 3
@@ -89,26 +99,28 @@ if [ ! -f "$local_file" ]; then
 fi
 
 # Print out info of what's to be done
-printf "Programming $local_file"
+prog_string="\nProgramming $local_file"
 prog_remote=true
 prog_file="$local_file"
 [ -z "$remote_host" ] || [ -z "$remote_path" ] && prog_remote=false
 if $prog_remote; then
-  printf " at $remote_host:$remote_path"
+  prog_string="$prog_string at $remote_host:$remote_path"
   prog_file=/tmp/preamp_bd.bin
 fi
 if [ ! -z "$nprog_opt" ]; then
-  printf " and forcing $nprog units"
+  prog_string="$prog_string and forcing $nprog units"
 fi
-printf ""
 
-prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --flash \"$prog_file\""
-printf " with \n/home/pi/$remote_path/$prog_cmd\n\n"
+prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --baud $baud --flash \"$prog_file\""
+prog_string="$prog_string with \n/home/pi/$remote_path/$prog_cmd\n\n"
 
 if $prog_remote; then
   printf "Copying $local_file to $remote_host:$prog_file\n"
   scp -q "$local_file" pi@$remote_host:$prog_file
+
+  printf "$prog_string"
   ssh pi@$remote_host -- "cd \"$remote_path\"; $prog_cmd"
 else # Program locally
+  printf $prog_string
   eval $prog_cmd
 fi

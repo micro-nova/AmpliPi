@@ -278,13 +278,12 @@ class Preamps:
     GPIO.output(self.Pin.BOOT0.value, bootloader)
 
     # Hold the reset line low >300 ns
-    time.sleep(0.01)
+    time.sleep(0.001)
     GPIO.output(self.Pin.NRST.value, 1)
 
-    # Each preamps' microcontroller takes ~3ms to startup after releasing
+    # Each preamps' microcontroller takes ~6ms to startup after releasing
     # NRST. Just to be sure wait 10 ms before sending an I2C address.
-    # Further testing shows 6ms minimum
-    time.sleep(0.1)
+    time.sleep(0.01)
     GPIO.cleanup()
 
   def set_i2c_address(self, baud: int = 9600) -> bool:
@@ -401,7 +400,7 @@ class Preamps:
     success = True
     while success and unit < program_count:
       print()
-      success = self.program(filepath, unit)
+      success = self.program(filepath, unit, baud)
       if success:
         unit += 1
 
