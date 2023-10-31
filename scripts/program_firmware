@@ -54,7 +54,7 @@ done
 
 # Get full filepath here before changing directory
 if $build; then
-  local_file=fw/preamp/build/preamp_bd.bin
+  local_file=fw/preamp/build/preamp_bd_v4.bin
 else
   local_file="$(realpath $file)"
 fi
@@ -103,10 +103,11 @@ fi
 printf ""
 
 prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --flash \"$prog_file\""
-printf " with \n$prog_cmd\n\n"
+printf " with \n/home/pi/$remote_path/$prog_cmd\n\n"
 
 if $prog_remote; then
-  scp "$local_file" pi@$remote_host:$prog_file
+  printf "Copying $local_file to $remote_host:$prog_file\n"
+  scp -q "$local_file" pi@$remote_host:$prog_file
   ssh pi@$remote_host -- "cd \"$remote_path\"; $prog_cmd"
 else # Program locally
   eval $prog_cmd
