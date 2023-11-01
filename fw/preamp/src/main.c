@@ -36,10 +36,9 @@ int main() {
                                 // board doesn't start in 'Boot Mode'
 
   // INIT
-  systickInit();  // Initialize the clock ticks for delay_ms and other timing
-                  // functionality
-  initAudio();    // Initialize audio mux, volumes, mute and standby
-  initUart1();    // The preamp will receive its I2C network address via UART
+  systick_init();  // Initialize the clock ticks for delay_ms and other timing functionality
+  initAudio();     // Initialize audio mux, volumes, mute and standby
+  initUart1();     // The preamp will receive its I2C network address via UART
   initUart2(9600);
   initInternalI2C();  // Setup the internal I2C bus - worst case ~2.4 ms
 

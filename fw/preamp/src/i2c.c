@@ -27,9 +27,6 @@ void initI2C1(uint8_t addr) {
   // Enable peripheral clock for I2C1
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
 
-  // Enable SDA1, SDA2, SCL1, SCL2 clocks
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-
   // Setup I2C1
   I2C_InitTypeDef I2C_InitStructure1;
   I2C_InitStructure1.I2C_Mode                = I2C_Mode_I2C;

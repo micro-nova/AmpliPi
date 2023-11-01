@@ -24,6 +24,7 @@
 
 #define SYSTICK_FREQ 1000  // 1000 Hz = 1 ms ticks
 
-void     systickInit();
-void     delayMs(uint32_t t);
-uint32_t millis(void);
+void     systick_init();
+uint32_t millis();
+void     delay_us(uint32_t t);
+void     delay_ms(uint32_t t);

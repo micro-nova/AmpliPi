@@ -41,15 +41,6 @@ const I2CDev dpot_dev_ = 0x5E;
 const I2CReg dpot_cmd_  = {0x5C, 0x00};
 DPotType     dpot_type_ = DPOT_NONE;
 
-static void delayUs(uint32_t us) {
-  for (uint32_t i = 0; i < us; i++) {
-    // Create a ~1 us delay based on the CPU clock
-    for (size_t n = 0; n < HSI_VALUE / 1000000; n++) {
-      __ASM volatile("nop");
-    }
-  }
-}
-
 /* This function resolves an I2C Arbitration Lost error by clearing any
  * in-progress transactions on the bus. Also run at startup since the bus is
  * in an unknown state.
@@ -82,24 +73,23 @@ void quiesceI2C() {
   while (tries < 10 && count < NUM_CONSECUTIVE_ONES) {
     tries++;
 
-    // Produce the SCL clocks. Read SDA while SCL is high since the slave
-    // will not change SDA while SCL is high.
-    // If the I2C SDA line is low, start over and try again.
+    // Produce the SCL clocks. Read SDA while SCL is high since the slave will not change SDA while
+    // SCL is high. If the I2C SDA line is low, start over and try again.
+    // Note: no delays necessary between pin writes since it takes >2us to write a pin.
     bool success = true;
     for (count = 0; count < NUM_CONSECUTIVE_ONES && success; count++) {
-      delayUs(HALF_PERIOD);          // Hold clock high
       success = readPin(i2c2_sda_);  // Start over if SDA low
       writePin(i2c2_scl_, false);    // Falling edge on the I2C clock line
-      delayUs(HALF_PERIOD);          // Hold clock low
       writePin(i2c2_scl_, true);     // Rising edge on the I2C clock line
     }
   }
 
-  delayUs(HALF_PERIOD);        // Hold time for clock and data high
+  // Note: writing pins takes >2us already, so that has been factored in here.
+  // delay_us(HALF_PERIOD);       // Hold time for clock and data high
   writePin(i2c2_sda_, false);  // Falling edge on SDA while SCL is high: START
-  delayUs(HALF_PERIOD * 2);    // Double hold time for clock high and data low
+  delay_us(HALF_PERIOD);       // Double hold time for clock high and data low
   writePin(i2c2_sda_, true);   // Rising edge on SDA while SCL is high: STOP
-  delayUs(HALF_PERIOD);        // Hold time for clock and data high.
+  delay_us(HALF_PERIOD);       // Hold time for clock and data high.
 
   // Initialize the STM32's I2C2 bus as a master and control pins by peripheral
   initI2C2();

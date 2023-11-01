@@ -116,7 +116,7 @@ g_pfnVectors:
   .word  0                              /* 0x30 Reserved                     */
   .word  0                              /* 0x34 Reserved                     */
   .word  PendSV_Handler                 /* 0x38 Pendable request for service */
-  .word  SysTick_Handler                /* 0x3C System tick timer            */
+  .word  systick_irq_handler            /* 0x3C System tick timer            */
 /* ^ Above are the 16 M0 exceptions ^...v Below are the 32 STM32 IRQ lines v */
   .word  WWDG_IRQHandler                /* 0x40 Window WatchDog              */
   .word  0                              /* 0x44 Reserved                     */
@@ -171,8 +171,8 @@ g_pfnVectors:
   .weak       PendSV_Handler
   .thumb_set  PendSV_Handler, Default_Handler
 
-  .weak       SysTick_Handler
-  .thumb_set  SysTick_Handler, Default_Handler
+  .weak       systick_irq_handler
+  .thumb_set  systick_irq_handler, Default_Handler
 
   .weak       WWDG_IRQHandler
   .thumb_set  WWDG_IRQHandler, Default_Handler
