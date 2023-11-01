@@ -3,11 +3,14 @@
 ## Upcoming release
 * Streams
   * Add Bluetooth stream
+  * Updates to spotifyd
 * API
   * Add support for units without zones
 * Hardware
   * Add support for EEPROMS on boards to identify board type and revision
   * Add support for E-Ink display
+* Web App
+  * Completely rewritten web app using React
 
 ## 0.2.1
 * System
