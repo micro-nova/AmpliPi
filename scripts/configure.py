@@ -909,7 +909,7 @@ def add_tests(env, progress) -> List[Task]:
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
             display=True, audiodetector=True, firmware=True, password=True,
-            progress=print_task_results) -> bool:
+            progress=print_task_results, development=False) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -920,7 +920,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     return False
 
   env = _check_and_setup_platform()
-  if not env['platform_supported']:
+  if not env['platform_supported'] and not development:
     tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
   else:
     tasks[0].output = str(env)
@@ -1007,6 +1007,8 @@ if __name__ == '__main__':
     help="Flash the latest firmware")
   parser.add_argument('--password', action='store_true', default=False,
     help="Generate and set a new default password for the pi user.")
+  parser.add_argument('--development', action='store_true', default=False,
+    help="Enable development mode.")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
   has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
@@ -1014,7 +1016,9 @@ if __name__ == '__main__':
     print('  WARNING: expected some arguments, check --help for more information')
   if sys.version_info.major < 3 or sys.version_info.minor < 7:
     print('  WARNING: minimum python version is 3.7')
-  install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
+  result = install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
           display=flags.display, audiodetector=flags.audiodetector,
           firmware=flags.firmware, password=flags.password,
-          restart_updater=flags.restart_updater)
+          restart_updater=flags.restart_updater, development=flags.development)
+  if not result:
+    sys.exit(1)
