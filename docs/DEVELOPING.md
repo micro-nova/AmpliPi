@@ -3,7 +3,7 @@ Thanks for considering developing for AmpliPi. We appreciate your support!
 
 ## Developing on a separate computer
 This allows remote development with the ability to test changes on your AmpliPi
-1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
+1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well as long as symlinks are enabled).
 1. Make changes with your favorite editor, we suggest vscode
 1. Use `scripts/deploy` to deploy the latest software.
    The pi must have access to the internet to successfully run this script.
