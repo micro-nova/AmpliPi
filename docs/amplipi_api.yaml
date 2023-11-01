@@ -75,11 +75,447 @@ info:
     url: http://micro-nova.com
   license:
     name: GPL
-    url: https://github.com/micro-nova/AmpliPi/blob/master/COPYING
+    url: https://github.com/micro-nova/AmpliPi/blob/main/COPYING
 servers:
 - url: ''
   description: AmpliPi Controller
 paths:
+  /debug:
+    get:
+      summary: Debug
+      description: Returns debug status and configuration.
+      operationId: debug_debug_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugResponse'
+              examples:
+              - debug: 'true'
+                apmHost: https://127.0.0.1:9345
+                version: 0.3.0
+                environment: development
+              - debug: null
+                apmHost: null
+                version: null
+                environment: null
+  /api/:
+    get:
+      tags:
+      - status
+      summary: Get Status
+      description: Get the system status and configuration
+      operationId: get_status_api__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+              examples:
+                Status of Jason's AmpliPi:
+                  value:
+                    groups:
+                    - id: 100
+                      mute: true
+                      name: Upstairs
+                      vol_delta: -39
+                      vol_f: 0.51
+                      zones:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                      - 4
+                      - 5
+                      - 6
+                      - 7
+                      - 11
+                      - 16
+                    - id: 102
+                      mute: true
+                      name: Outside
+                      source_id: 1
+                      vol_delta: -41
+                      vol_f: 0.4909090909090909
+                      zones:
+                      - 9
+                      - 10
+                    - id: 103
+                      mute: true
+                      name: Offices
+                      vol_delta: -54
+                      vol_f: 0.33
+                      zones:
+                      - 0
+                      - 7
+                    - id: 104
+                      mute: true
+                      name: Downstairs
+                      source_id: 1
+                      vol_delta: -57
+                      vol_f: 0.28500000000000003
+                      zones:
+                      - 12
+                      - 13
+                      - 14
+                      - 15
+                      - 17
+                    - id: 105
+                      mute: true
+                      name: Main Unit
+                      vol_delta: -39
+                      vol_f: 0.51
+                      zones:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                      - 4
+                      - 5
+                    - id: 106
+                      mute: true
+                      name: Expander 1 (HV)
+                      vol_delta: -39
+                      vol_f: 0.515
+                      zones:
+                      - 6
+                      - 7
+                      - 8
+                      - 9
+                      - 10
+                      - 11
+                    - id: 107
+                      mute: true
+                      name: Expander 2
+                      vol_delta: -58
+                      vol_f: 0.275
+                      zones:
+                      - 12
+                      - 13
+                      - 14
+                      - 15
+                      - 16
+                      - 17
+                    info:
+                      config_file: house.json
+                      fw:
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      - git_dirty: false
+                        git_hash: de0f8eb
+                        version: '1.6'
+                      latest_release: 0.1.9
+                      mock_ctrl: false
+                      mock_streams: false
+                      is_streamer: false
+                      online: true
+                      version: 0.1.9
+                    presets:
+                    - id: 10000
+                      last_used: 1658242203
+                      name: Mute All
+                      state:
+                        zones:
+                        - id: 0
+                          mute: true
+                        - id: 1
+                          mute: true
+                        - id: 2
+                          mute: true
+                        - id: 3
+                          mute: true
+                        - id: 4
+                          mute: true
+                        - id: 5
+                          mute: true
+                        - id: 6
+                          mute: true
+                        - id: 7
+                          mute: true
+                        - id: 8
+                          mute: true
+                        - id: 9
+                          mute: true
+                        - id: 10
+                          mute: true
+                        - id: 11
+                          mute: true
+                        - id: 12
+                          mute: true
+                        - id: 13
+                          mute: true
+                        - id: 14
+                          mute: true
+                        - id: 15
+                          mute: true
+                        - id: 16
+                          mute: true
+                        - id: 17
+                          mute: true
+                    sources:
+                    - id: 0
+                      info:
+                        img_url: static/imgs/disconnected.png
+                        name: None
+                        state: stopped
+                        supported_cmds: []
+                      input: ''
+                      name: TV
+                    - id: 1
+                      info:
+                        img_url: static/imgs/disconnected.png
+                        name: None
+                        state: stopped
+                        supported_cmds: []
+                      input: ''
+                      name: Record Player
+                    - id: 2
+                      info:
+                        album: Charleston Butterfly
+                        artist: Parov Stelar
+                        img_url: http://mediaserver-cont-sv5-2-v4v6.pandora.com/images/00/4c/b7/12/d64a4ffe82251fcc9c44555c/1080W_1080H.jpg
+                        name: Blackmill Radio - pandora
+                        state: playing
+                        station: Blackmill Radio
+                        supported_cmds:
+                        - play
+                        - pause
+                        - stop
+                        - next
+                        - love
+                        - ban
+                        - shelve
+                        track: Chambermaid Swing
+                      input: stream=1006
+                      name: Input 3
+                    - id: 3
+                      info:
+                        album: Joshua Bell, Romance of the Violin
+                        artist: Fryderyk Chopin
+                        img_url: http://cont.p-cdn.us/images/e9/cc/f2/8e/890e4e5e9940c98ba864aaee/1080W_1080H.jpg
+                        name: Classical - pandora
+                        state: playing
+                        station: Antonio Vivaldi Radio
+                        supported_cmds:
+                        - play
+                        - pause
+                        - stop
+                        - next
+                        - love
+                        - ban
+                        - shelve
+                        track: Nocturne For Piano In C Sharp Minor, Kk Anh.ia/6
+                      input: stream=1005
+                      name: Input 4
+                    streams:
+                    - id: 1000
+                      logo: https://somafm.com/img3/groovesalad-400.jpg
+                      name: Groove Salad
+                      type: internetradio
+                      url: http://ice6.somafm.com/groovesalad-32-aac
+                    - id: 1001
+                      name: Jason's House
+                      type: airplay
+                    - id: 1002
+                      name: Jasons House
+                      type: spotify
+                    - id: 1003
+                      name: Jason's House
+                      type: dlna
+                    - id: 1004
+                      name: Matt and Kim Radio
+                      password: ''
+                      station: '135242131387190035'
+                      type: pandora
+                      user: example@micro-nova.com
+                    - id: 1005
+                      name: Classical
+                      password: ''
+                      station: '134892486689565953'
+                      type: pandora
+                      user: example@micro-nova.com
+                    - id: 1006
+                      name: Blackmill Radio
+                      password: ''
+                      station: '91717963601693449'
+                      type: pandora
+                      user: example@micro-nova.com
+                    - id: 1007
+                      logo: http://www.beatlesradio.com/content/images/thumbs/0000587.gif
+                      name: Beatles Radio
+                      type: internetradio
+                      url: http://www.beatlesradio.com:8000/stream/1/
+                    zones:
+                    - disabled: false
+                      id: 0
+                      mute: true
+                      name: Software Office
+                      source_id: 2
+                      vol: -56
+                      vol_f: 0.28
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 1
+                      mute: true
+                      name: Upstairs Living Room
+                      source_id: 3
+                      vol: -49
+                      vol_f: 0.42
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 2
+                      mute: true
+                      name: Upstairs Dining
+                      source_id: 0
+                      vol: -66
+                      vol_f: 0.08
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 3
+                      mute: true
+                      name: Upstairs Laundry
+                      source_id: 0
+                      vol: -66
+                      vol_f: 0.08
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 4
+                      mute: true
+                      name: Upstairs Kitchen High
+                      source_id: 0
+                      vol: -45
+                      vol_f: 0.5
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 5
+                      mute: true
+                      name: Upstairs Master Bath
+                      source_id: 0
+                      vol: -23
+                      vol_f: 0.94
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 6
+                      mute: true
+                      name: Upstairs Kitchen Low HV
+                      source_id: 0
+                      vol: -66
+                      vol_f: 0.1
+                      vol_max: -30
+                      vol_min: -70
+                    - disabled: false
+                      id: 7
+                      mute: true
+                      name: Hardware Office HV
+                      source_id: 0
+                      vol: -51
+                      vol_f: 0.38
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 8
+                      mute: true
+                      name: Basement Workshop HV
+                      source_id: 0
+                      vol: -13
+                      vol_f: 0.95
+                      vol_max: -10
+                      vol_min: -70
+                    - disabled: false
+                      id: 9
+                      mute: true
+                      name: Screened Room HV
+                      source_id: 1
+                      vol: -43
+                      vol_f: 0.4909090909090909
+                      vol_max: -15
+                      vol_min: -70
+                    - disabled: false
+                      id: 10
+                      mute: true
+                      name: Upstairs Deck Living HV
+                      source_id: 1
+                      vol: -43
+                      vol_f: 0.4909090909090909
+                      vol_max: -15
+                      vol_min: -70
+                    - disabled: false
+                      id: 11
+                      mute: true
+                      name: Upstairs Main Bedroom HV
+                      source_id: 0
+                      vol: -66
+                      vol_f: 0.08
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 12
+                      mute: true
+                      name: Downstairs Living Room
+                      source_id: 1
+                      vol: -48
+                      vol_f: 0.44
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 13
+                      mute: true
+                      name: Downstairs Dining
+                      source_id: 1
+                      vol: -48
+                      vol_f: 0.44
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 14
+                      mute: true
+                      name: Downstairs Bath
+                      source_id: 1
+                      vol: -64
+                      vol_f: 0.12
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 15
+                      mute: true
+                      name: Downstairs Laundry
+                      source_id: 1
+                      vol: -48
+                      vol_f: 0.44
+                      vol_max: -20
+                      vol_min: -70
+                    - disabled: false
+                      id: 16
+                      mute: true
+                      name: Upstairs Main Bath
+                      source_id: 0
+                      vol: -66
+                      vol_f: 0.1
+                      vol_max: -30
+                      vol_min: -70
+                    - disabled: false
+                      id: 17
+                      mute: true
+                      name: Downstairs Bedroom
+                      source_id: 1
+                      vol: -52
+                      vol_f: 0.45
+                      vol_max: -30
+                      vol_min: -70
   /api:
     get:
       tags:
@@ -194,6 +630,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -608,6 +1045,7 @@ paths:
                     latest_release: 0.1.9
                     mock_ctrl: false
                     mock_streams: false
+                    is_streamer: false
                     online: true
                     version: 0.1.9
                   presets:
@@ -1016,6 +1454,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -1441,6 +1880,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -1856,6 +2296,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -2480,6 +2921,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -3169,6 +3611,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -3786,6 +4229,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -4483,6 +4927,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -4963,6 +5408,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -5350,6 +5796,11 @@ paths:
                 value:
                   name: Family
                   type: lms
+              Add LMS Client connected specifically to mylmsserver:
+                value:
+                  name: Family
+                  type: lms
+                  server: mylmsserver
         required: true
       responses:
         '200':
@@ -5723,6 +6174,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -6209,6 +6661,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -6687,6 +7140,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -7164,6 +7618,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -7781,6 +8236,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -8237,6 +8693,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -8674,6 +9131,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -9104,6 +9562,7 @@ paths:
                       latest_release: 0.1.9
                       mock_ctrl: false
                       mock_streams: false
+                      is_streamer: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -9431,6 +9890,7 @@ paths:
                     version: 0.1.8
                     mock_ctrl: false
                     mock_streams: false
+                    is_streamer: false
                     online: true
                     latest_release: 0.1.8
                     fw:
@@ -9504,6 +9964,30 @@ components:
           type: string
           description: Command to execute
       description: 'A command to execute on a stream '
+    DebugResponse:
+      title: DebugResponse
+      type: object
+      properties:
+        debug:
+          title: Debug
+          type: boolean
+        apmHost:
+          title: Apmhost
+          type: string
+        version:
+          title: Version
+          type: string
+        environment:
+          title: Environment
+          type: string
+      description: 'Response from /debug, which directly reads a file from JSON or
+        returns an empty response '
+      examples:
+      - debug: 'true'
+        apmHost: https://127.0.0.1:9345
+        version: 0.3.0
+        environment: development
+      - {}
     FirmwareInfo:
       title: FirmwareInfo
       type: object
@@ -9775,6 +10259,11 @@ components:
           type: boolean
           description: Are streams being faked? Used for testing.
           default: false
+        is_streamer:
+          title: Is Streamer
+          type: boolean
+          description: Are we a streamer unit?
+          default: false
         online:
           title: Online
           type: boolean
@@ -9801,6 +10290,7 @@ components:
             version: 0.1.8
             mock_ctrl: false
             mock_streams: false
+            is_streamer: false
             online: true
             latest_release: 0.1.8
             fw:
@@ -10345,6 +10835,7 @@ components:
               latest_release: 0.1.9
               mock_ctrl: false
               mock_streams: false
+              is_streamer: false
               online: true
               version: 0.1.9
             presets:
@@ -10664,7 +11155,8 @@ components:
           title: Type
           type: string
           description: "stream type\n\n  * pandora\n  * airplay\n  * dlna\n  * internetradio\n\
-            \  * spotify\n  * plexamp\n  * file\n  * fmradio\n  * lms\n  * rca\n  "
+            \  * spotify\n  * plexamp\n  * file\n  * fmradio\n  * lms\n  * bluetooth\n\
+            \  * rca\n  "
         user:
           title: User
           type: string
@@ -10780,6 +11272,11 @@ components:
           value:
             name: Family
             type: lms
+        Add LMS Client connected specifically to mylmsserver:
+          value:
+            name: Family
+            type: lms
+            server: mylmsserver
       examples:
         Regina Spektor Radio:
           value:
@@ -10828,6 +11325,8 @@ components:
       - love
       - ban
       - shelve
+      - activate
+      - deactivate
       type: string
       description: An enumeration.
     StreamUpdate:
@@ -10859,6 +11358,15 @@ components:
         server:
           title: Server
           type: string
+        ap2:
+          title: Ap2
+          type: boolean
+          description: Is Airplay stream AirPlay2?
+        disabled:
+          title: Disabled
+          type: boolean
+          description: Soft disable use of this stream. It won't be shown as a selectable
+            option
       description: 'Reconfiguration of a Stream '
       examples:
         Change account info:

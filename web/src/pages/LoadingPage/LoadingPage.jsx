@@ -1,7 +1,7 @@
 import React from "react";
 import { CircularProgress } from "@mui/material";
 import "./LoadingPage.scss";
-import AmplipiLogo from "@/assets/amplipi_logo.png";
+import AmplipiLogo from "@/../static/imgs/amplipi_logo.png";
 
 const LoadingPage = () => {
     return (

@@ -10,11 +10,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
-        sudo apt-get install gcc-arm-none-eabi
+        sudo apt-get update
+        sudo apt-get -y install gcc-arm-none-eabi
+        sudo apt-get -y install cmake
 
     - name: Build Preamp
       run: |
