@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * ADC related functions including reading the I2C ADC, voltage and temperature
  * conversions, and a thermistor temperature conversion look-up table.
