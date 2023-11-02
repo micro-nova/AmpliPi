@@ -29,11 +29,10 @@ int main() {
   // TODO: Setup watchdog
 
   // RESET AND PIN SETUP
-  initPins();                   // UART and I2C require GPIO pins
-  writePin(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are
-                                // reset by the controller board
-  writePin(exp_boot0_, false);  // Needs to be low so the subsequent preamp
-                                // board doesn't start in 'Boot Mode'
+  init_pins();                   // Setup pins to the correct GPIO, UART, and I2C functionality.
+  write_pin(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are reset.
+  write_pin(exp_boot0_, false);  // Don't start the subsequent preamp board in 'Boot Mode'.
+  write_pin(exp_nrst_, true);    // Release expansion reset, only needs to be low >300 ns.
 
   // INIT
   systick_init();  // Initialize the clock ticks for delay_ms and other timing functionality
@@ -42,10 +41,6 @@ int main() {
   initUart2(9600);
   initInternalI2C();  // Setup the internal I2C bus - worst case ~2.4 ms
 
-  // RELEASE EXPANSION RESET
-  // Needs to be high so the subsequent preamp board is not held in 'Reset Mode'
-  writePin(exp_nrst_, true);
-
   // Main loop, awaiting I2C commands
   uint32_t next_loop_time = millis();
   uint8_t  i2c_addr       = 0;
@@ -53,7 +48,7 @@ int main() {
     // TODO: Clear watchdog
 
     // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
-    // writePin(exp_boot0_, true);
+    // write_pin(exp_boot0_, true);
 
     // Check if a new I2C slave address has been received over UART from the controller board.
     uint8_t new_i2c_addr = getI2C1Address();
@@ -70,10 +65,16 @@ int main() {
       ctrlI2CTransact();
     }
 
-    updateInternalI2C(i2c_addr != 0);
+    // updateInternalI2C(i2c_addr != 0);
 
-    // writePin(exp_boot0_, false);
+    // write_pin(exp_boot0_, false);
     next_loop_time += 1;  // Loop currently takes ~800 us
     while (millis() < next_loop_time) {}
+    // write_pin(exp_nrst_, !read_pin(exp_nrst_));
+
+    // delay_us(200);
+    // write_pin(exp_nrst_, true);
+    // delay_us(10);
+    // write_pin(exp_nrst_, false);
   }
 }

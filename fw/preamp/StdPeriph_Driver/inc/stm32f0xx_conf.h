@@ -1,7 +1,7 @@
 // clang-format off
 /**
   ******************************************************************************
-  * @file    Project/STM32F0xx_StdPeriph_Templates/stm32f0xx_conf.h 
+  * @file    Project/STM32F0xx_StdPeriph_Templates/stm32f0xx_conf.h
   * @author  MCD Application Team
   * @version V1.5.0
   * @date    05-December-2014
@@ -17,8 +17,8 @@
   *
   *        http://www.st.com/software_license_agreement_liberty_v2
   *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   * See the License for the specific language governing permissions and
   * limitations under the License.
@@ -48,7 +48,7 @@
 #include "stm32f0xx_i2c.h"
 //#include "stm32f0xx_iwdg.h"
 //#include "stm32f0xx_pwr.h"
-#include "stm32f0xx_rcc.h"
+//#include "stm32f0xx_rcc.h"
 //#include "stm32f0xx_rtc.h"
 //#include "stm32f0xx_spi.h"
 //#include "stm32f0xx_tim.h"
@@ -58,7 +58,7 @@
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
-/* Uncomment the line below to expanse the "assert_param" macro in the 
+/* Uncomment the line below to expanse the "assert_param" macro in the
    Standard Peripheral Library drivers code */
 /* #define USE_FULL_ASSERT    1 */
 
@@ -67,8 +67,8 @@
 
 /**
   * @brief  The assert_param macro is used for function's parameters check.
-  * @param  expr: If expr is false, it calls assert_failed function which reports 
-  *         the name of the source file and the source line number of the call 
+  * @param  expr: If expr is false, it calls assert_failed function which reports
+  *         the name of the source file and the source line number of the call
   *         that failed. If expr is true, it returns no value.
   * @retval None
   */

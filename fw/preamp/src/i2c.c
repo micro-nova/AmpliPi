@@ -25,7 +25,7 @@
 // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
 void initI2C1(uint8_t addr) {
   // Enable peripheral clock for I2C1
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
 
   // Setup I2C1
   I2C_InitTypeDef I2C_InitStructure1;
@@ -35,7 +35,7 @@ void initI2C1(uint8_t addr) {
   I2C_InitStructure1.I2C_OwnAddress1         = addr;
   I2C_InitStructure1.I2C_Ack                 = I2C_Ack_Enable;
   I2C_InitStructure1.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-  I2C_InitStructure1.I2C_Timing = 0;  // Clocks not generated in slave mode
+  I2C_InitStructure1.I2C_Timing              = 0;  // Clocks not generated in slave mode
   I2C_Init(I2C1, &I2C_InitStructure1);
   I2C_Cmd(I2C1, ENABLE);
 }
@@ -46,10 +46,7 @@ void initI2C1(uint8_t addr) {
  */
 void initI2C2() {
   // Enable peripheral clock for I2C2
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
-
-  // Enable SDA1, SDA2, SCL1, SCL2 clocks
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+  RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
 
   // Setup I2C2
   I2C_InitTypeDef I2C_InitStructure2;
@@ -75,7 +72,7 @@ void initI2C2() {
 void deinitI2C2() {
   // Ensure I2C peripheral clock is enabled in case this function is called
   // before the I2C init function.
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+  RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
 
   // Disable I2C2 peripheral
   I2C_Cmd(I2C2, DISABLE);
@@ -88,8 +85,7 @@ uint32_t writeByteI2C2(I2CDev dev, uint8_t val) {
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 
   // Setup to send send start, addr, subaddr
-  I2C_TransferHandling(I2C2, dev, 1, I2C_AutoEnd_Mode,
-                       I2C_Generate_Start_Write);
+  I2C_TransferHandling(I2C2, dev, 1, I2C_AutoEnd_Mode, I2C_Generate_Start_Write);
 
   // Wait for transmit interrupted flag or an error
   uint32_t isr = I2C2->ISR;
@@ -125,8 +121,7 @@ uint8_t readRegI2C2(I2CReg r) {
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
 
   // Setup to write start, addr, subaddr
-  I2C_TransferHandling(I2C2, r.dev, 1, I2C_SoftEnd_Mode,
-                       I2C_Generate_Start_Write);
+  I2C_TransferHandling(I2C2, r.dev, 1, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
 
   // Wait for transmit flag
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET) {}
@@ -138,8 +133,7 @@ uint8_t readRegI2C2(I2CReg r) {
   while (I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET) {}
 
   // This is the actual read transfer setup
-  I2C_TransferHandling(I2C2, r.dev, 1, I2C_AutoEnd_Mode,
-                       I2C_Generate_Start_Read);
+  I2C_TransferHandling(I2C2, r.dev, 1, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
 
   // Wait until we get the rx data then read it out
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
@@ -160,8 +154,7 @@ uint32_t writeRegI2C2(I2CReg r, uint8_t data) {
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 
   // Setup to send start, addr, subaddr
-  I2C_TransferHandling(I2C2, r.dev, 2, I2C_AutoEnd_Mode,
-                       I2C_Generate_Start_Write);
+  I2C_TransferHandling(I2C2, r.dev, 2, I2C_AutoEnd_Mode, I2C_Generate_Start_Write);
 
   // Wait for transmit interrupted flag or an error
   uint32_t isr = I2C2->ISR;

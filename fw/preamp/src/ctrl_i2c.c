@@ -197,8 +197,8 @@ uint8_t readReg(uint8_t addr) {
 
     case REG_EXPANSION: {
       ExpansionReg reg = {
-          .nrst             = readPin(exp_nrst_),
-          .boot0            = readPin(exp_boot0_),
+          .nrst             = read_pin(exp_nrst_),
+          .boot0            = read_pin(exp_boot0_),
           .uart_passthrough = getUartPassthrough(),
       };
       out_msg = reg.data;
@@ -327,8 +327,8 @@ void writeReg(uint8_t addr, uint8_t data) {
 
     case REG_EXPANSION:
       // Control expansion port's NRST and BOOT0 pins
-      writePin(exp_nrst_, ((ExpansionReg)data).nrst);
-      writePin(exp_boot0_, ((ExpansionReg)data).boot0);
+      write_pin(exp_nrst_, ((ExpansionReg)data).nrst);
+      write_pin(exp_boot0_, ((ExpansionReg)data).boot0);
 
       // Allow UART messages to be forwarded to expansion units
       setUartPassthrough(((ExpansionReg)data).uart_passthrough);

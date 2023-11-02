@@ -36,13 +36,11 @@
 #define DEFAULT_SOURCE 0
 
 const I2CReg zone_left_[NUM_ZONES] = {
-    {0x88, 0x00}, {0x88, 0x02}, {0x88, 0x04},
-    {0x8A, 0x00}, {0x8A, 0x02}, {0x8A, 0x04},
+    {0x88, 0x00}, {0x88, 0x02}, {0x88, 0x04}, {0x8A, 0x00}, {0x8A, 0x02}, {0x8A, 0x04},
 };
 
 const I2CReg zone_right_[NUM_ZONES] = {
-    {0x88, 0x01}, {0x88, 0x03}, {0x88, 0x05},
-    {0x8A, 0x01}, {0x8A, 0x03}, {0x8A, 0x05},
+    {0x88, 0x01}, {0x88, 0x03}, {0x88, 0x05}, {0x8A, 0x01}, {0x8A, 0x03}, {0x8A, 0x05},
 };
 
 // -80 is a special value that means mute, and actually sets -90 dB.
@@ -100,8 +98,8 @@ static bool writeVolume(size_t zone, uint8_t vol) {
   // Convert dB to volume controller register value
   uint8_t vol_reg = dB2VolReg(vol);
 
-  bool success = writeRegI2C2(zone_left_[zone], vol_reg) == 0 &&
-                 writeRegI2C2(zone_right_[zone], vol_reg) == 0;
+  bool success =
+      writeRegI2C2(zone_left_[zone], vol_reg) == 0 && writeRegI2C2(zone_right_[zone], vol_reg) == 0;
   return success;
 }
 
@@ -125,7 +123,7 @@ uint8_t getZoneVolume(size_t zone) {
 static void standby(bool standby) {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Set pin low to standby
-    writePin(zone_standby_[zone], !standby);
+    write_pin(zone_standby_[zone], !standby);
   }
 }
 
@@ -133,7 +131,7 @@ static void standby(bool standby) {
 bool inStandby() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Standby pins are active-low
-    if (!readPin(zone_standby_[zone])) {
+    if (!read_pin(zone_standby_[zone])) {
       return true;
     }
   }
@@ -164,7 +162,7 @@ bool zoneAmpEnabled(size_t zone) {
 // Mute the specified zone
 void mute(size_t zone, bool mute) {
   // Set pin low to mute
-  writePin(zone_mute_[zone], !mute);
+  write_pin(zone_mute_[zone], !mute);
 
   // If no zones are on, standby
   standby(!anyZoneAmpOn());
@@ -172,7 +170,7 @@ void mute(size_t zone, bool mute) {
 
 bool muted(size_t zone) {
   // Mute pins are active-low
-  return !readPin(zone_mute_[zone]);
+  return !read_pin(zone_mute_[zone]);
 }
 
 // Connect a Zone to a Source
@@ -183,12 +181,12 @@ void setZoneSource(size_t zone, size_t src) {
 
   // Disconnect zone from all sources first
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    writePin(zone_src_[zone][src], true);
+    write_pin(zone_src_[zone][src], true);
   }
 
   // Connect a zone to a source
   if (src < NUM_SRCS) {
-    writePin(zone_src_[zone][src], false);
+    write_pin(zone_src_[zone][src], false);
   }
 
   // Restore mute status
@@ -198,7 +196,7 @@ void setZoneSource(size_t zone, size_t src) {
 size_t getZoneSource(size_t zone) {
   // Assume only one source is ever selected
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    if (!readPin(zone_src_[zone][src])) {
+    if (!read_pin(zone_src_[zone][src])) {
       return src;
     }
   }
@@ -208,16 +206,16 @@ size_t getZoneSource(size_t zone) {
 // Each source can select between a digital or analog input
 void setSourceAD(size_t src, InputType type) {
   // Disable both mux inputs first
-  writePin(src_ad_[src][IT_ANALOG], true);
-  writePin(src_ad_[src][IT_DIGITAL], true);
+  write_pin(src_ad_[src][IT_ANALOG], true);
+  write_pin(src_ad_[src][IT_DIGITAL], true);
 
   // Enable selected input
-  writePin(src_ad_[src][type], false);
+  write_pin(src_ad_[src][type], false);
 }
 
 InputType getSourceAD(size_t src) {
   // Assume only one input is ever selected
-  if (readPin(src_ad_[src][IT_DIGITAL])) {
+  if (read_pin(src_ad_[src][IT_DIGITAL])) {
     return IT_ANALOG;
   }
   return IT_DIGITAL;

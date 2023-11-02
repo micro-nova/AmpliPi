@@ -24,7 +24,6 @@
 
 #include "stm32f0xx.h"
 #include "stm32f0xx_gpio.h"
-#include "stm32f0xx_rcc.h"
 #include "stm32f0xx_usart.h"
 
 // Need at least 3 bytes for data: A + ADDR + \n.
@@ -124,8 +123,8 @@ void serialBufferAdd(volatile SerialBuffer* sb, uint8_t data_in) {
 void initUart1() {
   // UART1 allows the Pi to set preamp I2C addresses and flash preamp software
 
-  // Enable peripheral clocks for UART1
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+  // Enable peripheral clock for UART1
+  RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 
   // Setup USART1
   USART_Cmd(USART1, ENABLE);
@@ -155,8 +154,8 @@ void initUart2(uint16_t brr) {
   // UART2 is used for debugging with an external debugger
   // or for communicating with an expansion preamp.
 
-  // Enable peripheral clock
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+  // Enable peripheral clock for UART2
+  RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 
   // Setup USART2
   USART_Cmd(USART2, ENABLE);
