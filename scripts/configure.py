@@ -916,6 +916,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   def failed():
     for task in tasks:
       if not task.success:
+        progress(f"failed task: {task}")
         return True
     return False
 
