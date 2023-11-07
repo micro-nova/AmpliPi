@@ -51,7 +51,7 @@ class UserData(BaseModel):
   access_key_updated: Union[datetime, None]
   password_hash: Union[str, None]
 
-def get_users() -> dict:
+def _get_users() -> dict:
   """ Returns the users file contents """
   users : Dict[str, Dict] = {}
   # Load fields from users file (if it exists), falling back to no users.
@@ -76,14 +76,14 @@ def get_users() -> dict:
     raise e
   return users
 
-def set_users(users_update: Dict[str, UserData]) -> None:
-  users = get_users()
+def _set_users(users_update: Dict[str, UserData]) -> None:
+  users = _get_users()
   users.update(users_update)
   with open(USERS_FILE, encoding='utf-8', mode='w') as users_file:
     json.dump(users, users_file)
 
 def _get_password_hash(user) -> str:
-  users = get_users()
+  users = _get_users()
   return users[user]['password_hash']
 
 def _verify_password(plain_password, hashed_password) -> bool:
@@ -93,32 +93,32 @@ def _hash_password(password) -> str:
   return pwd_context.hash(password)
 
 def _get_access_key(user) -> str:
-  users = get_users()
+  users = _get_users()
   return users[user]["access_key"]
 
 def set_password_hash(user, password) -> None:
   """ Sets a password for a given user. """
-  users = get_users()
+  users = _get_users()
   if user not in users.keys():
     users[user] = {}
   users[user]["password_hash"] = _hash_password(password)
   users[user]["type"] = "user"
-  set_users(users)
+  _set_users(users)
 
 def unset_password_hash(user) -> None:
   """ Removes a password for a given user. """
-  users = get_users()
+  users = _get_users()
   del users[user]["password_hash"]
-  set_users(users)
+  _set_users(users)
 
 def user_exists(username: str) -> bool:
   """ Utility function for determining if a user exists """
-  users = get_users()
+  users = _get_users()
   return username in users.keys()
 
 def user_password_set(username: str) -> bool:
   """ Utility function for determining if a user has a password set. """
-  users = get_users()
+  users = _get_users()
 
   # No user exists
   if not user_exists(username):
@@ -146,7 +146,7 @@ def _authenticate_user_with_password(username: str, password: str) -> bool:
 
 def create_access_key(user: str) -> str:
   """ Creates an access key. Also creates the user if it does not already exist. """
-  users = get_users()
+  users = _get_users()
   access_key = secrets.token_hex()
   if user not in users.keys():
     users.update({user: {}})
@@ -154,11 +154,11 @@ def create_access_key(user: str) -> str:
     "access_key": access_key,
     "access_key_updated": datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
   })
-  set_users(users)
+  _set_users(users)
   return access_key
 
 def _check_access_key(key: APIKey) -> bool:
-  for username in get_users().keys():
+  for username in _get_users().keys():
     if compare_digest(_get_access_key(username), str(key)):
       return True
   return False
