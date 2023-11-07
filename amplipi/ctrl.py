@@ -37,6 +37,7 @@ from amplipi import rt
 from amplipi import utils
 import amplipi.streams
 from amplipi.eeprom import EEPROM, BoardType
+from amplipi import auth
 
 _DEBUG_API = False # print out a graphical state of the api after each call
 
@@ -521,6 +522,7 @@ class Api:
       raise Exception("No info generated, system in a bad state")
     self.status.info.online = self._online_cache.get(throttled)
     self.status.info.latest_release = self._latest_release_cache.get(throttled)
+    self.status.info.access_key = auth.get_access_key("admin") if auth.user_access_key_set("admin") else ""
 
   def _sync_stream_info(self) -> None:
     """Synchronize the stream list to the stream status"""

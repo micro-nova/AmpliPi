@@ -26,6 +26,10 @@ const About = ({ onClose }) => {
                 <br />
         Latest: {info.latest_release}
                 <br />
+        {info.access_key && ( <>
+        Access key: {info.access_key}
+                <br />
+        </> ) }
                 <div className="about-links">
           Links:
                     <a className="link" href="/doc">

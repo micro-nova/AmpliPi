@@ -134,6 +134,26 @@ def user_password_set(username: str) -> bool:
 
   return True
 
+def user_access_key_set(username: str) -> bool:
+  """ Utility function for determing if a user has a session key set """
+  users = _get_users()
+
+  # No user exists
+  if not user_exists(username):
+    return False
+
+  # Password is not set
+  if 'access_key' not in users[username].keys():
+    return False
+
+  return True
+
+def get_access_key(username: str) -> str:
+  """ Given a username, return its access key. """
+  assert user_access_key_set(username)
+  users = _get_users()
+  return users[username]["access_key"]
+
 
 def _authenticate_user_with_password(username: str, password: str) -> bool:
   if not user_password_set(username):
