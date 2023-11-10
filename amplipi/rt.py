@@ -550,6 +550,7 @@ class Mock:
       for zid in range(6):
         src = sources[preamp * 6 + zid]
         assert isinstance(src, int) or src is None
+        assert src >= 0 and src <= 3
     return True
 
   def update_zone_vol(self, zone, vol):
