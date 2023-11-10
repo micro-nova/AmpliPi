@@ -724,14 +724,17 @@ class Api:
           mute = True
           update_mutes = True
 
-        # update the zone's associated source (defaulting to source 0 if disconnected)
+        # update the zone's associated source
         zones = self.status.zones
         if update_source_id or force_update :
-          zone_sources = [zone.source_id for zone in zones]
-          zone_sources[idx] = max(sid, 0) # default disconnected zones to source 0
+          zone_sources = [utils.clamp(zone.source_id, 0, 3) for zone in zones]
+
           # this is setting the state for all zones
           # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
-          if self._rt.update_zone_sources(idx, zone_sources):
+          if sid == models.SOURCE_DISCONNECTED:
+            # don't send the source id to the firmware if we are disconnecting the source
+            zone.source_id = sid
+          elif self._rt.update_zone_sources(idx, zone_sources):
             zone.source_id = sid
           else:
             raise Exception('unable to update zone source')
