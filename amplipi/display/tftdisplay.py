@@ -256,9 +256,14 @@ class TFTDisplay(Display):
 
         # Get stats
         try:
-          ip_str = ni.ifaddresses(self.args.iface)[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
+          # Alternatively, check for Ethernet USB device: lsusb -s 1: -d 0424:ec00
+          if_addrs = ni.ifaddresses(self.args.iface)
+          try:
+            ip_str = if_addrs[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
+          except:
+            ip_str = 'Disconnected from network.'
         except:
-          ip_str = 'Disconnected'
+          ip_str = 'Error: no network interface.'
 
         cpu_pcnt = psutil.cpu_percent()
         cpu_temp = psutil.sensors_temperatures()['cpu_thermal'][0].current
