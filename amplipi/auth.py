@@ -53,8 +53,12 @@ class UserData(BaseModel):
 
 def _get_users() -> dict:
   """ Returns the users file contents """
-  users : Dict[str, Dict] = {}
+  users : Dict[str, UserData] = {}
   # Load fields from users file (if it exists), falling back to no users.
+  # TODO: We should guard around edge cases more. If a user is able to trick any
+  # component into messing with this file, authentication gets removed. however, we
+  # don't have the resources for being more sophisticated about this at the moment;
+  # this will have to do for now. It may also obviate itself should we move to a real DB.
   try:
     with open(USERS_FILE, encoding='utf-8') as users_file:
       potential_users = json.load(users_file)
@@ -96,14 +100,30 @@ def _get_access_key(user) -> str:
   users = _get_users()
   return users[user]["access_key"]
 
+def create_access_key(user: str) -> str:
+  """ Creates an access key. Also creates the user if it does not already exist. """
+  users = _get_users()
+  access_key = secrets.token_hex()
+  if user not in users.keys():
+    users.update({user: {}})
+  users[user].update({
+    "access_key": access_key,
+    "access_key_updated": datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+  })
+  _set_users(users)
+  return access_key
+
 def set_password_hash(user, password) -> None:
-  """ Sets a password for a given user. """
+  """ Sets a password for a given user. (Re/)sets the session/access key for a user.
+      If the user does not exist, it is created.
+  """
   users = _get_users()
   if user not in users.keys():
     users[user] = {}
   users[user]["password_hash"] = _hash_password(password)
   users[user]["type"] = "user"
   _set_users(users)
+  create_access_key(user)
 
 def unset_password_hash(user) -> None:
   """ Removes a password for a given user. """
@@ -116,7 +136,7 @@ def user_exists(username: str) -> bool:
   users = _get_users()
   return username in users.keys()
 
-def user_password_set(username: str) -> bool:
+def _user_password_set(username: str) -> bool:
   """ Utility function for determining if a user has a password set. """
   users = _get_users()
 
@@ -154,9 +174,8 @@ def get_access_key(username: str) -> str:
   users = _get_users()
   return users[username]["access_key"]
 
-
 def _authenticate_user_with_password(username: str, password: str) -> bool:
-  if not user_password_set(username):
+  if not _user_password_set(username):
     return False
   try:
     return _verify_password(password, _get_password_hash(username))
@@ -164,24 +183,18 @@ def _authenticate_user_with_password(username: str, password: str) -> bool:
     print(f"exception in _verify_password(): {e}")
     return False
 
-def create_access_key(user: str) -> str:
-  """ Creates an access key. Also creates the user if it does not already exist. """
-  users = _get_users()
-  access_key = secrets.token_hex()
-  if user not in users.keys():
-    users.update({user: {}})
-  users[user].update({
-    "access_key": access_key,
-    "access_key_updated": datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-  })
-  _set_users(users)
-  return access_key
-
-def _check_access_key(key: APIKey) -> bool:
+def _check_access_key(key: APIKey) -> Union[bool, str]:
   for username in _get_users().keys():
     if compare_digest(_get_access_key(username), str(key)):
-      return True
+      return username
   return False
+
+def no_user_passwords_set() -> bool:
+  """ Determines if there are no user passwords set. """
+  for user in _get_users():
+    if _user_password_set(user):
+      return False
+  return True
 
 def _next_url(request: Request) -> str:
   """ Gets the next URL after a login, given a Request. """
@@ -203,18 +216,18 @@ async def not_authenticated_exception_handler(request: Request, exc: NotAuthenti
   """
   return templates.TemplateResponse("login.html", {"request": request, "next_url": _next_url(request)}, status_code=401)
 
-def cookie_auth(session: APIKey = Depends(APIKeyCookie(name="amplipi-session", auto_error=False))) -> bool:
+def cookie_auth(session: APIKey = Depends(APIKeyCookie(name="amplipi-session", auto_error=False))) -> Union[bool, str]:
   if not session:
     return False
   return _check_access_key(session)
 
-def query_param_auth(api_key : APIKey = Depends(APIKeyQuery(name="api-key", auto_error=False))) -> bool:
+def query_param_auth(api_key : APIKey = Depends(APIKeyQuery(name="api-key", auto_error=False))) -> Union[bool, str]:
   if not api_key:
     return False
   return _check_access_key(api_key)
 
-async def CookieOrParamAPIKey(cookie_result = Depends(cookie_auth), query_param = Depends(query_param_auth)) -> bool:
-  if not (cookie_result or query_param):
+async def CookieOrParamAPIKey(cookie_result = Depends(cookie_auth), query_param = Depends(query_param_auth), no_passwords = Depends(no_user_passwords_set)) -> bool:
+  if not (no_passwords or cookie_result or query_param):
     raise NotAuthenticatedException
   return True
 

@@ -47,11 +47,10 @@ import uvicorn
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
 
-from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, user_password_set, NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
+from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
 
-deps = [Depends(CookieOrParamAPIKey)] if user_password_set("admin") else []
 app = FastAPI()
-router = APIRouter(dependencies=deps)
+router = APIRouter(dependencies=[Depends(CookieOrParamAPIKey)])
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
@@ -287,9 +286,6 @@ def set_admin_password(input: PasswordInput):
   else:
     set_password_hash(username, input.password)
     create_access_key(username)
-
-  subprocess.Popen('systemctl --user restart amplipi'.split())
-  subprocess.Popen('systemctl --user restart amplipi-updater'.split())
 
 
 app.include_router(auth_router)

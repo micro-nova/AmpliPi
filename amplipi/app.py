@@ -63,7 +63,7 @@ from multiprocessing import Queue
 import amplipi.utils as utils
 import amplipi.models as models
 from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs, USER_CONFIG_DIR # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
-from amplipi.auth import CookieOrParamAPIKey, router as auth_router, user_password_set, NotAuthenticatedException, not_authenticated_exception_handler
+from amplipi.auth import CookieOrParamAPIKey, router as auth_router, NotAuthenticatedException, not_authenticated_exception_handler
 
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
@@ -144,8 +144,7 @@ class params(SimpleNamespace):
   StationID = Path(..., ge=0, title="Pandora Station ID", description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
   ImageHeight = Path(..., ge=1, le=500, description="Image Height in pixels")
 
-deps = [Depends(CookieOrParamAPIKey)] if user_password_set("admin") else []
-api = SimplifyingRouter(dependencies=deps)
+api = SimplifyingRouter(dependencies=[Depends(CookieOrParamAPIKey)])
 
 @api.get('/api', tags=['status'])
 @api.get('/api/', tags=['status'])
