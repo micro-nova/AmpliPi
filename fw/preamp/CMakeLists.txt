@@ -39,7 +39,7 @@ macro(add_hardware_version HW_VERSION)
     src/serial.c
     src/systick.c
 
-    startup/startup_stm32.s
+    src/startup_stm32.s
 
     StdPeriph_Driver/src/stm32f0xx_gpio.c
     StdPeriph_Driver/src/stm32f0xx_i2c.c
