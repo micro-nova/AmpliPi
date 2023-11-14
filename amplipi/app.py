@@ -656,6 +656,8 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
     This web interface allows you to control and configure your AmpliPi device.
     At the moment the API is the only way to configure the AmpliPi.
 
+    If you set a password on the update page, you will need to provide a session token to any API requests. This token is available for viewing on the `Settings` -> `About` page. You can provide the token either as a query parameter called "?api-key=" or as a cookie named "amplipi-session". If there are no user passwords set, you can disregard this authentication scheme.
+
     ## Try it out!
 
     __Using this web interface to test API commands:__

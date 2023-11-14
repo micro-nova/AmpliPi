@@ -11,8 +11,6 @@ import tempfile
 import os
 from copy import deepcopy # copy test config
 
-from pathlib import Path
-
 import time
 
 import pytest
@@ -80,7 +78,6 @@ TEST_CONFIG['presets'] = [
     }
   }
 ]
-
 
 def base_config():
   """ Default Amplipi configuration """
