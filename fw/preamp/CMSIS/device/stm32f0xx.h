@@ -3,8 +3,8 @@
   ******************************************************************************
   * @file    stm32f0xx.h
   * @author  MCD Application Team
-  * @version V1.5.0
-  * @date    05-December-2014
+  * @version V1.5.2
+  * @date    13-October-2021
   * @brief   CMSIS Cortex-M0 Device Peripheral Access Layer Header File. 
   *          This file contains all the peripheral register's definitions, bits 
   *          definitions and memory mapping for STM32F0xx devices.  
@@ -26,19 +26,12 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2014 STMicroelectronics</center></h2>
+  * Copyright (c) 2016 STMicroelectronics.
+  * All rights reserved.
   *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -178,11 +171,11 @@
 #endif /* LSE_VALUE */
 
 /**
- * @brief STM32F0xx Standard Peripheral Library version number V1.4.0
+ * @brief STM32F0xx Standard Peripheral Library version number V1.5.2
    */
 #define __STM32F0XX_STDPERIPH_VERSION_MAIN   (0x01) /*!< [31:24] main version */
 #define __STM32F0XX_STDPERIPH_VERSION_SUB1   (0x05) /*!< [23:16] sub1 version */
-#define __STM32F0XX_STDPERIPH_VERSION_SUB2   (0x00) /*!< [15:8]  sub2 version */
+#define __STM32F0XX_STDPERIPH_VERSION_SUB2   (0x02) /*!< [15:8]  sub2 version */
 #define __STM32F0XX_STDPERIPH_VERSION_RC     (0x00) /*!< [7:0]  release candidate */ 
 #define __STM32F0XX_STDPERIPH_VERSION        ((__STM32F0XX_STDPERIPH_VERSION_MAIN << 24)\
                                              |(__STM32F0XX_STDPERIPH_VERSION_SUB1 << 16)\
@@ -480,6 +473,15 @@ typedef enum IRQn
 #include "core_cm0.h"
 //#include "system_stm32f0xx.h"
 #include <stdint.h>
+
+/** @addtogroup Exported_macros
+  * @{
+  */
+#define UNUSED(X) (void)X
+
+/**
+  * @}
+  */
 
 /** @addtogroup Exported_types
   * @{
@@ -5468,7 +5470,6 @@ typedef struct
 /*******************  Bit definition for WWDG_SR register  ********************/
 #define  WWDG_SR_EWIF                        ((uint8_t)0x01)               /*!< Early Wakeup Interrupt Flag */
 
-#if defined (STM32F091)
 /******************************************************************************/
 /*  For a painless codes migration between the STM32F0xx device product       */
 /*  lines, the aliases defined below are put in place to overcome the         */
@@ -5476,7 +5477,7 @@ typedef struct
 /*  No need to update developed interrupt code when moving across             */ 
 /*  product lines within the same STM32L0 Family                              */
 /******************************************************************************/
-
+#if defined (STM32F091)
 /* Aliases for __IRQn */
 #define PVD_IRQn                          PVD_VDDIO2_IRQn
 #define RCC_IRQn                          RCC_CRS_IRQn
@@ -5556,8 +5557,8 @@ typedef struct
 #define TS_IRQn                           TSC_IRQn
 #define DMA1_Ch1_IRQn                     DMA1_Channel1_IRQn
 #define DMA1_Ch2_3_DMA2_Ch1_2_IRQn        DMA1_Channel2_3_IRQn           
-#define DMA1_Channel4_5_IRQn              DMA1_Channel4_5_6_7_IRQn
-#define DMA1_Ch4_7_DMA2_Ch3_5_IRQn        DMA1_Channel4_5_6_7_IRQn          
+#define DMA1_Channel4_5_6_7_IRQn          DMA1_Channel4_5_IRQn 
+#define DMA1_Ch4_7_DMA2_Ch3_5_IRQn        DMA1_Channel4_5_IRQn
 #define ADC1_COMP_IRQn                    ADC1_IRQn                         
 #define CEC_IRQn                          CEC_CAN_IRQn
 
@@ -5567,8 +5568,8 @@ typedef struct
 #define TS_IRQHandler                     TSC_IRQHandler 
 #define DMA1_Ch1_IRQHandler               DMA1_Channel1_IRQHandler
 #define DMA1_Ch2_3_DMA2_Ch1_2_IRQHandler  DMA1_Channel2_3_IRQHandler      
-#define DMA1_Channel4_5_IRQHandler        DMA1_Channel4_5_6_7_IRQHandler
-#define DMA1_Ch4_7_DMA2_Ch3_5_IRQHandler  DMA1_Channel4_5_6_7_IRQHandler
+#define DMA1_Channel4_5_6_7_IRQHandler    DMA1_Channel4_5_IRQHandler 
+#define DMA1_Ch4_7_DMA2_Ch3_5_IRQHandler  DMA1_Channel4_5_IRQHandler
 #define ADC1_COMP_IRQHandler              ADC1_IRQHandler                   
 #define CEC_IRQHandler                    CEC_CAN_IRQHandler 
 
@@ -5705,5 +5706,4 @@ typedef struct
   * @}
   */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 // clang-format on
