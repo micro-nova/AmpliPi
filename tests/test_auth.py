@@ -70,6 +70,9 @@ def test_configured_user(tmp_path, monkeypatch):
   assert auth._authenticate_user_with_password("admin", "test")
   assert auth._authenticate_user_with_password("admin", "newpassword") == False
   assert client.get('/api/').status_code == HTTPStatus.UNAUTHORIZED
+  assert client.get(f"/api/?api-key=notarealkey").status_code == HTTPStatus.UNAUTHORIZED
+  cookie_header = {"Cookie": f"amplipi-session=notarealkey"}
+  assert client.get("/api", headers=cookie_header).status_code == HTTPStatus.UNAUTHORIZED
 
   # Test if setting a new password and access key work
   orig_key = auth.get_access_key("admin")
