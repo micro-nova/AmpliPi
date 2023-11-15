@@ -153,6 +153,15 @@ poetry version $old_version
 # exit virtual environment
 deactivate
 
+# build webapp
+echo "Building web app"
+pushd ../web                                                 # Change to web directory
+npm install                                                       # Install nodejs dependencies
+npm run build                                                     # Build the web app
+cp node_modules /tmp/amplipi_nm -r                                # Copy node_modules to /tmp so it can be saved
+rm node_modules -r                                                # Remove node_modules so we don't copy it over
+popd
+
 # setup ssh access if necessary
 if ! ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"'; then
   # By default ssh only searches the default keys, lets make sure one of them exist
@@ -181,6 +190,10 @@ opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
 ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display --audiodetector$opts" || echo ""
+
+# restore node_modules
+cp /tmp/amplipi_nm ../web/node_modules -r
+rm /tmp/amplipi_nm -r
 
 echo -e "Waiting for AmpliPi to restart\n"
 restart_finished=false
