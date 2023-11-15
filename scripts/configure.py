@@ -89,17 +89,6 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'libgirepository1.0-dev', 'libcairo2-dev',
             ],
   },
-  'web' : {
-    'script' : [
-      'curl -sL https://deb.nodesource.com/setup_19.x | sudo -E bash -', # Run script to add nodejs repo
-      'sudo apt-get install -y nodejs --allow-change-held-packages',     # Install nodejs
-      'export NODE_OPTIONS=--max_old_space_size=800',                    # Increase nodejs memory limit
-      'pushd web',                                                      # Change to web directory
-      'npm install',                                                     # Install nodejs dependencies
-      'npm run build',                                                   # Build the web app
-      'popd',                                                            # Change back to previous directory
-    ],
-  },
   'logging' : {
     'script' : [
       'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
