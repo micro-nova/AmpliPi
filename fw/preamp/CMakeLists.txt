@@ -36,8 +36,10 @@ macro(add_hardware_version HW_VERSION)
     src/main.c
     src/pins.c
     src/pwr_gpio.c
+    src/rcc.c
     src/serial.c
     src/systick.c
+    src/watchdog.c
 
     src/startup_stm32.s
 

@@ -24,20 +24,18 @@
 #include "pins.h"
 #include "serial.h"
 #include "systick.h"
+#include "watchdog.h"
 
 int main() {
-  // TODO: Setup watchdog
-
-  // RESET AND PIN SETUP
   init_pins();                   // Setup pins to the correct GPIO, UART, and I2C functionality.
   write_pin(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are reset.
   write_pin(exp_boot0_, false);  // Don't start the subsequent preamp board in 'Boot Mode'.
   write_pin(exp_nrst_, true);    // Release expansion reset, only needs to be low >300 ns.
 
-  // INIT
-  systick_init();  // Initialize the clock ticks for delay_ms and other timing functionality
-  initAudio();     // Initialize audio mux, volumes, mute and standby
-  initUart1();     // The preamp will receive its I2C network address via UART
+  watchdog_init(60);  // Initialize the watchdog counter with a 60 ms period.
+  systick_init();     // Initialize the clock ticks for delay_ms and other timing functionality
+  initAudio();        // Initialize audio mux, volumes, mute and standby
+  initUart1();        // The preamp will receive its I2C network address via UART
   initUart2(9600);
   initInternalI2C();  // Setup the internal I2C bus - worst case ~2.4 ms
 
@@ -45,7 +43,7 @@ int main() {
   uint32_t next_loop_time = millis();
   uint8_t  i2c_addr       = 0;
   while (1) {
-    // TODO: Clear watchdog
+    watchdog_reload();
 
     // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
     // write_pin(exp_boot0_, true);
@@ -68,7 +66,7 @@ int main() {
     // updateInternalI2C(i2c_addr != 0);
 
     // write_pin(exp_boot0_, false);
-    next_loop_time += 1;  // Loop currently takes ~800 us
+    next_loop_time++;  // Loop currently takes ~800 us
     while (millis() < next_loop_time) {}
     // write_pin(exp_nrst_, !read_pin(exp_nrst_));
 

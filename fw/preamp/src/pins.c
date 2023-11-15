@@ -145,10 +145,11 @@ void init_pins() {
   GPIOD->PUPDR   = 0;           // Set to no pull-up or pull-down.
 
   // Setup PORT F pins used as GPIO (only 6 port F pins exist)
+  // 0, 1: NRST_OUT, BOOT0_OUT
   GPIOF->OSPEEDR = 0;           // Set to low speed.
-  GPIOF->OTYPER  = 0;           // Set to push-pull.
+  GPIOF->OTYPER  = 0x0001;      // Set to push-pull, except open-drain for NRST_OUT.
   GPIOF->MODER   = 0x00005505;  // Set as general purpose output.
-  GPIOF->PUPDR   = 0;           // Set to no pull-up or pull-down.
+  GPIOF->PUPDR   = 0x00000001;  // Set to no pull-up or pull-down, except pullup for NRST_OUT.
 }
 
 void write_pin(Pin pp, bool set) {
