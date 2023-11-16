@@ -89,7 +89,7 @@ macro(add_hardware_version HW_VERSION)
 
   target_link_options(${TARGET_NAME}.elf PRIVATE
     ${ARM_FLAGS}
-    -T${CMAKE_CURRENT_LIST_DIR}/LinkerScript.ld
+    -T${CMAKE_CURRENT_LIST_DIR}/preamp.ld
     -Wl,--gc-sections           # Garbage-collect unused sections to remove dead code.
     -Wl,-Map,${TARGET_NAME}.map # Generate a map file along with the elf.
     -Wl,--print-memory-usage    # Print RAM/ROM memory usage.

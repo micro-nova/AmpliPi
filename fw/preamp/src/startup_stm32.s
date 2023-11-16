@@ -30,15 +30,15 @@
 .global  default_irq_handler
 
 // Start address for the initialization values of the .data section. Defined in linker script.
-.word  _sidata
+.word  __data_init_start__
 // Start address for the .data section. Defined in linker script.
-.word  _sdata
+.word  __data_start__
 // End address for the .data section. Defined in linker script.
-.word  _edata
+.word  __data_end__
 // Start address for the .bss section. Defined in linker script.
-.word  _sbss
+.word  __bss_start__
 // End address for the .bss section. Defined in linker script.
-.word  _ebss
+.word  __bss_end__
 
 
   .section  .text.reset_irq_handler
@@ -50,18 +50,18 @@ reset_irq_handler:
   b     LoopCopyDataInit  // Copy the data segment initializers from flash to SRAM.
 
 CopyDataInit:
-  ldr   r3, =_sidata
+  ldr   r3, =__data_init_start__
   ldr   r3, [r3, r1]
   str   r3, [r0, r1]
   adds  r1, r1, #4
 
 LoopCopyDataInit:
-  ldr   r0, =_sdata
-  ldr   r3, =_edata
+  ldr   r0, =__data_start__
+  ldr   r3, =__data_end__
   adds  r2, r0, r1
   cmp   r2, r3
   bcc   CopyDataInit
-  ldr   r2, =_sbss
+  ldr   r2, =__bss_start__
   b     LoopFillZerobss   // Zero fill the bss segment.
 
 
@@ -71,7 +71,7 @@ FillZerobss:
   adds  r2, r2, #4
 
 LoopFillZerobss:
-  ldr  r3, = _ebss
+  ldr  r3, = __bss_end__
   cmp  r2, r3
   bcc  FillZerobss
 
@@ -95,7 +95,7 @@ infinite_loop:
   .size     g_pfnVectors, . - g_pfnVectors
 
 g_pfnVectors:
-  .word  _estack                        // 0x00 Stack Pointer
+  .word  __stack_start__                // 0x00 Initial stack pointer
   .word  reset_irq_handler              // 0x04 Reset
   .word  default_irq_handler            // 0x08 Non maskable interrupt
   .word  default_irq_handler            // 0x0C All class of fault
