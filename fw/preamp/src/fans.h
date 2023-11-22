@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #define DEFAULT_DPOT_VAL 0x3F

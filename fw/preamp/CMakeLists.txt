@@ -71,7 +71,7 @@ macro(add_hardware_version HW_VERSION)
 
   target_compile_options(${TARGET_NAME}.elf PRIVATE
     ${ARM_FLAGS}
-    -std=c11
+    -std=c2x
     -ffunction-sections # Generate a section for each function so the linker can remove unused functions.
     -Wall
     -Wextra
@@ -90,14 +90,15 @@ macro(add_hardware_version HW_VERSION)
   target_link_options(${TARGET_NAME}.elf PRIVATE
     ${ARM_FLAGS}
     -T${CMAKE_CURRENT_LIST_DIR}/LinkerScript.ld
-    -Wl,--gc-sections
-    -Wl,-Map,${TARGET_NAME}.map
-    -Wl,--print-memory-usage
+    -Wl,--gc-sections           # Garbage-collect unused sections to remove dead code.
+    -Wl,-Map,${TARGET_NAME}.map # Generate a map file along with the elf.
+    -Wl,--print-memory-usage    # Print RAM/ROM memory usage.
+    -Wl,--no-warn-rwx-segments  # Ignore warnings about RWX segments introduced in binutils 2.39.
 
     # nosys adds _sbrk() for sprintf(), nano reduces the code size
     # Needed if DEBUG_PRINT is defined
-    #-specs=nosys.specs
-    #-specs=nano.specs
+    -specs=nosys.specs
+    -specs=nano.specs # Reduces RAM ~1.7kB, ROM ~5.8kB, but restricts printf() to C89.
   )
 
   add_dependencies(${TARGET_NAME}.elf gitversion)

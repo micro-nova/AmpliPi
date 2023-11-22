@@ -18,6 +18,4 @@
 
 #pragma once
 
-#include <stdint.h>
-
 void clock_enable_wwdg();  // Enable WWDG peripheral clock (PCLK=HCLK=HSI=8MHz)

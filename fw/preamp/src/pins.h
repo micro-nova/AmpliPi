@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #include "audio.h"  // NUM_ZONES, NUM_SRCS

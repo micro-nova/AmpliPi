@@ -18,6 +18,8 @@
 
 #include "watchdog.h"
 
+#include <stdint.h>
+
 #include "rcc.h"
 
 // These registers are 16-bit or 32-bit accessible, but since we are typically writing the entire
@@ -29,7 +31,7 @@ typedef struct {
   uint32_t nrst    : 1;  // T[6]: If this bit goes low (from down-counting or otherwise), reset.
   uint32_t enable  : 1;  // When set the WWDG is enabled and can generate a reset.
 } WwdgRegCr;
-_Static_assert(sizeof(WwdgRegCr) == 4, "Error: WwdgRegCr wrong size.");
+static_assert(sizeof(WwdgRegCr) == 4, "Error: WwdgRegCr wrong size.");
 
 // Reset value = 0x0000_007F
 typedef struct {
@@ -38,7 +40,7 @@ typedef struct {
   uint32_t prescaler : 2;  // WDGTB: Timer base = PCLK/4096/2^prescaler
   uint32_t ewi       : 1;  // Early wakeup interrupt enable.
 } WwdgRegCfr;
-_Static_assert(sizeof(WwdgRegCfr) == 4, "Error: WwdgRegCfr wrong size.");
+static_assert(sizeof(WwdgRegCfr) == 4, "Error: WwdgRegCfr wrong size.");
 
 typedef struct {
   WwdgRegCr  control;  // Control register

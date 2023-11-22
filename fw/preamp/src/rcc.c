@@ -18,6 +18,8 @@
 
 #include "rcc.h"
 
+#include <stdint.h>
+
 // Reset value = 0x0000_XX83
 typedef union {
   uint32_t reg;
@@ -40,7 +42,7 @@ typedef union {
     uint8_t         : 6;
   };
 } RccRegCr;
-_Static_assert(sizeof(RccRegCr) == 4, "Error: RccRegCr wrong size.");
+static_assert(sizeof(RccRegCr) == 4, "Error: RccRegCr wrong size.");
 
 // Reset value = 0x0000_0000
 typedef union {
@@ -65,7 +67,7 @@ typedef union {
     uint8_t         : 1;
   };
 } RccRegCfgr;
-_Static_assert(sizeof(RccRegCfgr) == 4, "Error: RccRegCfgr wrong size.");
+static_assert(sizeof(RccRegCfgr) == 4, "Error: RccRegCfgr wrong size.");
 
 typedef union {
   uint32_t reg;
@@ -97,7 +99,7 @@ typedef union {
     uint8_t css_clear         : 1;  // Clock Security System interrupt clear.
   };
 } RccRegCir;
-_Static_assert(sizeof(RccRegCir) == 4, "Error: RccRegCir wrong size.");
+static_assert(sizeof(RccRegCir) == 4, "Error: RccRegCir wrong size.");
 
 // Reset value = 0x0000_0000
 typedef union {
@@ -123,7 +125,7 @@ typedef union {
     uint8_t           : 1;
   };
 } RccRegApb2;
-_Static_assert(sizeof(RccRegApb2) == 4, "Error: RccRegApb2 wrong size.");
+static_assert(sizeof(RccRegApb2) == 4, "Error: RccRegApb2 wrong size.");
 
 // Reset value = 0x0000_0000
 typedef union {
@@ -154,7 +156,7 @@ typedef union {
     uint8_t     : 3;
   };
 } RccRegApb1;
-_Static_assert(sizeof(RccRegApb1) == 4, "Error: RccRegApb1 wrong size.");
+static_assert(sizeof(RccRegApb1) == 4, "Error: RccRegApb1 wrong size.");
 
 // Reset value = 0x0000_0014
 typedef union {
@@ -181,7 +183,7 @@ typedef union {
     uint8_t      : 1;
   };
 } RccRegAhbEn;
-_Static_assert(sizeof(RccRegAhbEn) == 4, "Error: RccRegAhbEn wrong size.");
+static_assert(sizeof(RccRegAhbEn) == 4, "Error: RccRegAhbEn wrong size.");
 
 // Reset value = 0x0000_0018
 typedef union {
@@ -200,7 +202,7 @@ typedef union {
     uint8_t rtc_rst : 1;  // BDRSET: RTC domain software reset.
   };
 } RccRegBdcr;
-_Static_assert(sizeof(RccRegBdcr) == 4, "Error: RccRegBdcr wrong size.");
+static_assert(sizeof(RccRegBdcr) == 4, "Error: RccRegBdcr wrong size.");
 
 // Reset value = 0xXXX0_0000
 typedef union {
@@ -225,7 +227,7 @@ typedef union {
     uint8_t lpwr_rst_flag : 1;  // Low-power reset flag. Read-only.
   };
 } RccRegCsr;
-_Static_assert(sizeof(RccRegCsr) == 4, "Error: RccRegCsr wrong size.");
+static_assert(sizeof(RccRegCsr) == 4, "Error: RccRegCsr wrong size.");
 
 // Reset value = 0x0000_0000
 typedef union {
@@ -243,14 +245,14 @@ typedef union {
     uint8_t      : 1;
   };
 } RccRegAhbRst;
-_Static_assert(sizeof(RccRegAhbRst) == 4, "Error: RccRegAhbRst wrong size.");
+static_assert(sizeof(RccRegAhbRst) == 4, "Error: RccRegAhbRst wrong size.");
 
 // Reset value = 0x0000_0000
 typedef struct {
   uint32_t prediv : 4;  // PREDIV: divide input clock to PLL by prediv+1.
   uint32_t        : 28;
 } RccRegCfgr2;
-_Static_assert(sizeof(RccRegCfgr2) == 4, "Error: RccRegCfgr2 wrong size.");
+static_assert(sizeof(RccRegCfgr2) == 4, "Error: RccRegCfgr2 wrong size.");
 
 // Reset value = 0x0000_0000
 typedef union {
@@ -261,7 +263,7 @@ typedef union {
     uint8_t i2c1_sw   : 1;  // I2C1 clock source = [HSI, SYSCLK]
   };
 } RccRegCfgr3;
-_Static_assert(sizeof(RccRegCfgr3) == 4, "Error: RccRegCfgr3 wrong size.");
+static_assert(sizeof(RccRegCfgr3) == 4, "Error: RccRegCfgr3 wrong size.");
 
 // Reset value = 0xXX00_XX80
 typedef union {
@@ -275,7 +277,7 @@ typedef union {
     uint8_t hsi14_cal;  // HSI14 clock calibration. Read-only.
   };
 } RccRegCr2;
-_Static_assert(sizeof(RccRegCr2) == 4, "Error: RccRegCr2 wrong size.");
+static_assert(sizeof(RccRegCr2) == 4, "Error: RccRegCr2 wrong size.");
 
 typedef struct {
   RccRegCr     clock_control1;   // Clock control register 1.

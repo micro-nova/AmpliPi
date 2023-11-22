@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #define PWR_GPIO_OUT_MASK 0x83

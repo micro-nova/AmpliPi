@@ -22,6 +22,7 @@
     "editor.formatOnSave": true,
     "editor.rulers": [100]
   },
+  "C_Cpp.default.cStandard": "c23",
   "files.associations": {
     // The C/C++ extension treats *.h files as "non-standard" C files,
     // and updates this list every time a .h file is opened.

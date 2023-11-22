@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 // Uncomment the line below to use the debugger
