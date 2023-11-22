@@ -203,18 +203,53 @@ void usart2_irq_handler() {
   }
 }
 
-#ifdef DEBUG_PRINT
-void debug_print(char* str) {
-  size_t i = 0;
-  while (str[i] != 0) {
-    while (!(USART1->ISR & USART_ISR_TXE)) {}
-    USART1->TDR = str[i];
-    i++;
+// Write a character to UART
+int _write(int file __attribute__((__unused__)), char* ptr, int len) {
+  // Only stdout is actually supported, but accept any file writes as if they were to STDOUT_FILENO.
+  // EXCEPT in uart_passthrough_ mode, where printf() writes to USART1 are forbidden.
+  if (uart_passthrough_) {
+    return -1;
   }
+
+  uint32_t written = 0;
+  for (; len != 0; --len) {
+    // TODO: Add to transmit queue instead
+    while (!(USART1->ISR & USART_ISR_TXE)) {}
+    USART1->TDR = (uint16_t)*ptr++;
+    written++;
+  }
+  return written;
 }
 
-void debug_putchar(char c) {
-  while (!(USART1->ISR & USART_ISR_TXE)) {}
-  USART1->TDR = c;
+// Below are unused system calls, implemented as stubs.
+
+// Closing files not supported (no files can be opened).
+int _close(int fd __attribute__((__unused__))) {
+  return -1;
 }
-#endif
+
+// Identifies all files as character special devices, forcing one-byte-read at a time.
+#include <sys/stat.h>
+int _fstat(int file __attribute__((__unused__)), struct stat* st) {
+  st->st_mode = S_IFCHR;
+  return 0;
+}
+
+// Test whether file is associated with a terminal device.
+// The only 'file' implemented is stdout, so always return 1.
+int _isatty(int file __attribute__((__unused__))) {
+  return 1;
+}
+
+// Seeking is not supported.
+int _lseek(int file __attribute__((__unused__)), int offset __attribute__((__unused__)),
+           int whence __attribute__((__unused__))) {
+  // Return 0, implying the file is empty.
+  return 0;
+}
+
+// Read not yet implemented, will return -1.
+int _read(int file __attribute__((__unused__)), char* ptr __attribute__((__unused__)),
+          int len __attribute__((__unused__))) {
+  return -1;
+}

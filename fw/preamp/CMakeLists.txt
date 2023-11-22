@@ -95,10 +95,8 @@ macro(add_hardware_version HW_VERSION)
     -Wl,--print-memory-usage    # Print RAM/ROM memory usage.
     -Wl,--no-warn-rwx-segments  # Ignore warnings about RWX segments introduced in binutils 2.39.
 
-    # nosys adds _sbrk() for sprintf(), nano reduces the code size
-    # Needed if DEBUG_PRINT is defined
-    -specs=nosys.specs
-    -specs=nano.specs # Reduces RAM ~1.7kB, ROM ~5.8kB, but restricts printf() to C89.
+    -specs=nosys.specs # Running on bare metal, system calls will be implemented manually.
+    -specs=nano.specs  # Reduces RAM ~1.7kB, ROM ~5.8kB, but restricts printf() to C89.
   )
 
   add_dependencies(${TARGET_NAME}.elf gitversion)

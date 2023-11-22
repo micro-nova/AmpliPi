@@ -13,10 +13,11 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include "audio.h"
 #include "ctrl_i2c.h"
@@ -45,6 +46,10 @@ int main() {
   while (1) {
     watchdog_reload();
 
+    if ((next_loop_time & ((1 << 12) - 1)) == 0) {
+      printf("%lu\n", next_loop_time);
+    }
+
     // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
     // write_pin(exp_boot0_, true);
 
@@ -56,6 +61,8 @@ int main() {
 
       // Increment this unit's address by 0x10 to get the address for the next preamp.
       sendAddressToSlave(i2c_addr + 0x10);
+
+      printf("Got address\n");
     }
 
     // Check for incoming control messages if a slave address has been set
