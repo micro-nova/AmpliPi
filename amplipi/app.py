@@ -62,7 +62,8 @@ from multiprocessing import Queue
 # amplipi
 import amplipi.utils as utils
 import amplipi.models as models
-from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs, USER_CONFIG_DIR # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+import amplipi.defaults as defaults
+from amplipi.ctrl import Api, ApiResponse, ApiCode # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 from amplipi.auth import CookieOrParamAPIKey, router as auth_router, NotAuthenticatedException, not_authenticated_exception_handler
 
 # start in the web directory
@@ -164,9 +165,8 @@ def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   This will reset all zone names and streams back to their original configuration.
   We recommend downloading the current configuration beforehand.
   """
-  if ctrl.is_streamer:
-    return load_config(models.Status(**ctrl.STREAMER_CONFIG), ctrl)
-  return load_config(models.Status(**ctrl.DEFAULT_CONFIG), ctrl)
+  default_config = defaults.default_config(ctrl.is_streamer, ctrl.lms_mode)
+  return load_config(models.Status(**default_config), ctrl)
 
 @api.post('/api/reset', tags=['status'])
 def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
@@ -265,7 +265,7 @@ def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: 
   if update.input == 'local':
     # correct older api requests to use RCA inputs as a stream
     valid_update = update.copy()
-    valid_update.input = f'stream={RCAs[sid]}'
+    valid_update.input = f'stream={defaults.RCAs[sid]}'
     print(f'correcting deprecated use of RCA inputs from {update} to {valid_update}')
   return code_response(ctrl, ctrl.set_source(sid, update))
 

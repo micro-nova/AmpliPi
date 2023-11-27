@@ -484,6 +484,7 @@ class Stream(Base):
   index: Optional[int] = Field(description='RCA index')
   disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
+  deallocatable: Optional[bool] = Field(description='Can an LMS stream be reaped by the allocator?')
 
   # add examples for each type of stream
   class Config:

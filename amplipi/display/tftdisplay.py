@@ -34,8 +34,6 @@ except (NotImplementedError, RuntimeError) as err:
   sys.exit(1)
 
 
-USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
-
 class TFTDisplay(Display):
   # Number of screens to scroll through
   NUM_SCREENS = 1

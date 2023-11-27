@@ -38,13 +38,10 @@ from amplipi import utils
 import amplipi.streams
 from amplipi.eeprom import EEPROM, BoardType
 from amplipi import auth
+from amplipi import defaults
+
 
 _DEBUG_API = False # print out a graphical state of the api after each call
-
-USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
-MUTE_ALL_ID = 10000
-LAST_PRESET_ID = 9999
-RCAs = [996, 997, 998, 999]
 
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
@@ -103,68 +100,9 @@ class Api:
   is_streamer: bool
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
+  lms_mode: bool
 
-  DEFAULT_CONFIG = { # This is the system state response that will come back from the amplipi box
-    "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Input 1", "input": ""},
-      {"id": 1, "name": "Input 2", "input": ""},
-      {"id": 2, "name": "Input 3", "input": ""},
-      {"id": 3, "name": "Input 4", "input": ""},
-    ],
-    # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
-    #       this does not make sense because JSON only allows string based keys
-    "streams": [
-      {"id": RCAs[0], "name": "Input 1", "type": "rca", "index": 0, "disabled": False},
-      {"id": RCAs[1], "name": "Input 2", "type": "rca", "index": 1, "disabled": False},
-      {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2, "disabled": False},
-      {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3, "disabled": False},
-      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg", "disabled": False},
-    ],
-    "zones": [ # this is an array of zones, array length depends on # of boxes connected
-      {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 1, "name": "Zone 2", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 2, "name": "Zone 3", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 3, "name": "Zone 4", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 4, "name": "Zone 5", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-      {"id": 5, "name": "Zone 6", "source_id": 0, "mute": True, "disabled": False, "vol_f": models.MIN_VOL_F, "vol_min": models.MIN_VOL_DB, "vol_max": models.MAX_VOL_DB},
-    ],
-    "groups": [
-    ],
-    "presets" : [
-      {"id": MUTE_ALL_ID,
-        # NOTE: additional zones are added automatically to this preset
-        "name": "Mute All",
-        "state" : {
-          "zones" : [
-            {"id": 0, "mute": True},
-            {"id": 1, "mute": True},
-            {"id": 2, "mute": True},
-            {"id": 3, "mute": True},
-            {"id": 4, "mute": True},
-            {"id": 5, "mute": True},
-          ]
-        }
-      },
-    ]
-  }
 
-  STREAMER_CONFIG = { # This is the system state response that will come back from the amplipi box
-    "sources": [ # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-      {"id": 0, "name": "Output 1", "input": ""},
-      {"id": 1, "name": "Output 2", "input": ""},
-      {"id": 2, "name": "Output 3", "input": ""},
-      {"id": 3, "name": "Output 4", "input": ""},
-    ],
-    "streams": [
-      {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg", "disabled": False},
-    ],
-    "zones": [ # this is an array of zones, array length depends on # of boxes connected
-    ],
-    "groups": [
-    ],
-    "presets" : [
-    ]
-  }
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
   # with this reinit will be called connect and will attempt to load the configutation and connect to an AmpliPi (mocked or real)
   # returning a boolean on whether or not it was successful
@@ -240,7 +178,7 @@ class Api:
 
     # make a config flag to recognize this unit's subtype
     # this helps the updater make good decisions
-    is_streamer_path = Path(USER_CONFIG_DIR, 'is_streamer')
+    is_streamer_path = Path(defaults.USER_CONFIG_DIR, 'is_streamer')
     try:
       if self.is_streamer:
         is_streamer_path.touch()
@@ -249,16 +187,21 @@ class Api:
     except Exception as exc:
       print("Error setting is_streamer flag: {exc}")
 
+    # determine if we're in LMS mode, based on a file
+    lms_mode_path = Path(defaults.USER_CONFIG_DIR, 'lms_mode')
+    if lms_mode_path.exists():
+      print("lms mode")
+      self.lms_mode = True
+    else:
+      print("not lms mode")
+      self.lms_mode = False
+
     # load a good default config depending on the unit subtype
     if not loaded_config:
       if len(errors) > 0:
         print(errors[0])
-      if self.is_streamer:
-        print('using streamer config')
-        self.status = models.Status.parse_obj(self.STREAMER_CONFIG)
-      else:
-        print('using default config')
-        self.status = models.Status.parse_obj(self.DEFAULT_CONFIG)
+      default_config = defaults.default_config(self.is_streamer, self.lms_mode)
+      self.status = models.Status.parse_obj(default_config)
       self.save()
 
     # populate system info
@@ -298,7 +241,7 @@ class Api:
       self.save()
 
     # populate mute_all preset with all zones
-    _, mute_all_pst = utils.find(self.status.presets, MUTE_ALL_ID)
+    _, mute_all_pst = utils.find(self.status.presets, defaults.MUTE_ALL_ID)
     if mute_all_pst and mute_all_pst.name == 'Mute All':
       if mute_all_pst.state and mute_all_pst.state.zones:
         muted_zones = { z.id for z in mute_all_pst.state.zones }
@@ -311,10 +254,10 @@ class Api:
 
     if not self.is_streamer:
       # add any missing RCA stream, mostly used to migrate old configs where rca inputs were not streams
-      for rca_id in RCAs:
+      for rca_id in defaults.RCAs:
         sid, stream = utils.find(self.status.streams, rca_id)
         if sid is None:
-          idx = rca_id - RCAs[0]
+          idx = rca_id - defaults.RCAs[0]
           # try to use the old name in the source if it was renamed from the default name of 1-4
           input_name = f'Input {idx + 1}'
           try:
@@ -473,7 +416,7 @@ class Api:
     """
     try:
       sid = int(sinput.replace('stream=',''))
-      return sid not in RCAs
+      return sid not in defaults.RCAs
     except:
       return True
 
@@ -501,7 +444,7 @@ class Api:
   def _check_is_online(self) -> bool:
     online = False
     try:
-      with open(os.path.join(USER_CONFIG_DIR, 'online'), encoding='utf-8') as fonline:
+      with open(os.path.join(defaults.USER_CONFIG_DIR, 'online'), encoding='utf-8') as fonline:
         online = 'online' in fonline.readline()
     except Exception:
       pass
@@ -510,7 +453,7 @@ class Api:
   def _check_latest_release(self) -> str:
     release = 'unknown'
     try:
-      with open(os.path.join(USER_CONFIG_DIR, 'latest_release'), encoding='utf-8') as flatest:
+      with open(os.path.join(defaults.USER_CONFIG_DIR, 'latest_release'), encoding='utf-8') as flatest:
         release = flatest.readline().strip()
     except Exception:
       pass
@@ -945,7 +888,7 @@ class Api:
     """ Create a new stream """
     try:
       if not internal and data.type == 'rca':
-        raise Exception(f'Unable to create protected RCA stream, the RCA streams for each RCA input {RCAs} already exist')
+        raise Exception(f'Unable to create protected RCA stream, the RCA streams for each RCA input {defaults.RCAs} already exist')
       # Make a new stream and add it to streams
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
@@ -984,7 +927,7 @@ class Api:
     """Deletes an existing stream"""
     try:
       # RCA streams are intrinsic to the hardware and can't be removed
-      if sid in RCAs and isinstance(self.streams[sid], amplipi.streams.RCA):
+      if sid in defaults.RCAs and isinstance(self.streams[sid], amplipi.streams.RCA):
         msg = f'Protected stream {sid} cannot be removed, use disabled=True to hide it'
         raise Exception(msg)
       # if input is connected to a source change that input to nothing
@@ -1206,10 +1149,10 @@ class Api:
 
       # update last config preset for restore capabilities (creating if missing)
       # TODO: "last config" does not currently support restoring streaming state, how would that work? (maybe we could just support play/pause state?)
-      last_pid, _ = utils.find(self.status.presets, LAST_PRESET_ID)
+      last_pid, _ = utils.find(self.status.presets, defaults.LAST_PRESET_ID)
       status = self.status
       last_config = models.Preset(
-        id=LAST_PRESET_ID,
+        id=defaults.LAST_PRESET_ID,
         name='Restore last config',
         last_used=None, # this need to be in javascript time format
         state=models.PresetState(
@@ -1279,7 +1222,7 @@ class Api:
       time.sleep(0.1)
       if stream_inst.state in ['stopped', 'disconnected']:
         break
-    resp4 = self.load_preset(LAST_PRESET_ID, internal=True)
+    resp4 = self.load_preset(defaults.LAST_PRESET_ID, internal=True)
     resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
     if resp5.code != ApiCode.OK:
       return resp5

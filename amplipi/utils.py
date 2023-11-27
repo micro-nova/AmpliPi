@@ -34,10 +34,10 @@ from fastapi import HTTPException, status, Depends
 import pkg_resources # version
 
 from amplipi import models
+from amplipi.defaults import USER_CONFIG_DIR
 
 # pylint: disable=bare-except
 
-USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 IDENTITY_FILE = os.path.join(USER_CONFIG_DIR, "identity")
 
 # Helper functions
