@@ -17,11 +17,12 @@ const DownloadConfig = () => {
     fetch("/api").then((response) => {
         response.json().then((json) => {
             const element = document.createElement("a");
+            const d = new Date();
             const file = new Blob([JSON.stringify(json, undefined, 2)], {
                 type: "application/json",
             });
             element.href = URL.createObjectURL(file);
-            element.download = "config.json";
+            element.download = `amplipi-config-${d.toJSON()}.json`;
             document.body.appendChild(element);
             element.click();
         });
@@ -43,6 +44,11 @@ const HWReboot = () => {
 const HWShutdown = () => {
     fetch("/api/shutdown", { method: "POST" });
 };
+
+const LMSMode = () => {
+    DownloadConfig();
+    fetch("/api/lms_mode", {method: "POST"});
+}
 
 const Config = ({ onClose }) => {
     const [file, setFile] = React.useState([]);
@@ -88,6 +94,14 @@ const Config = ({ onClose }) => {
                         }
                     </div>
                     <Button onClick={FactoryReset}>Reset</Button>
+                </div>
+                <Divider />
+                <div>
+          Logitech Media Server (LMS) Mode
+                    <div className="config-desc">
+                        {"Toggles LMS Mode on or off. LMS is useful for piggy-backing off integrations AmpliPi does not have natively. This will wipe out the current config! As a result, it downloads the current config before proceeding with LMS mode."}
+                    </div>
+                    <Button onClick={LMSMode}>Toggle LMS Mode</Button>
                 </div>
                 <Divider />
                 <div>

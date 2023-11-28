@@ -153,6 +153,6 @@ def default_config(is_streamer: bool, lms_mode: bool) -> dict:
     return STREAMER_CONFIG
   elif lms_mode and is_streamer:
     return STREAMER_LMS_CONFIG
-  elif lms_mode and is_stramer:
+  elif lms_mode and not is_streamer:
     return DEFAULT_LMS_CONFIG
   return DEFAULT_CONFIG

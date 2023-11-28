@@ -165,7 +165,7 @@ def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   This will reset all zone names and streams back to their original configuration.
   We recommend downloading the current configuration beforehand.
   """
-  default_config = defaults.default_config(ctrl.is_streamer, ctrl.lms_mode)
+  default_config = defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=ctrl.lms_mode)
   return load_config(models.Status(**default_config), ctrl)
 
 @api.post('/api/reset', tags=['status'])
@@ -205,6 +205,26 @@ def shutdown():
   # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
   Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
+@api.post('/api/lms_mode')
+def lms_mode(ctrl: Api = Depends(get_ctrl)):
+  """ Toggles Logitech Media Server mode on or off. """
+  new_config : models.Status
+  if ctrl.lms_mode:
+    print("turning LMS mode off...")
+    try:
+      os.remove(pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode"))
+    except FileNotFoundError:
+      pass
+    Popen('systemctl stop logitechmediaserver', shell=True)
+    Popen('systemctl disable logitechmediaserver', shell=True)
+    new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=False))
+  else:
+    print("turning LMS mode on...")
+    pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode").touch()
+    Popen('systemctl start logitechmediaserver', shell=True)
+    Popen('systemctl enable logitechmediaserver', shell=True)
+    new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=True))
+  load_config(new_config, ctrl)
 
 subscribers: Dict[int, 'Queue[models.Status]'] = {}
 def notify_on_change(status: models.Status) -> None:

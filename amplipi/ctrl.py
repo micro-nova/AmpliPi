@@ -200,7 +200,7 @@ class Api:
     if not loaded_config:
       if len(errors) > 0:
         print(errors[0])
-      default_config = defaults.default_config(self.is_streamer, self.lms_mode)
+      default_config = defaults.default_config(is_streamer=self.is_streamer, lms_mode=self.lms_mode)
       self.status = models.Status.parse_obj(default_config)
       self.save()
 
