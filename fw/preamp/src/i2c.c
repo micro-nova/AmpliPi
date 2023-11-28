@@ -20,6 +20,8 @@
 
 #include "i2c.h"
 
+#include <stdio.h>
+
 #include "stm32f0xx.h"
 
 // addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
@@ -76,6 +78,45 @@ void deinitI2C2() {
 
   // Disable I2C2 peripheral
   I2C_Cmd(I2C2, DISABLE);
+}
+
+// Check for an ack from a slave device on the internal I2C bus, indicating its presence.
+// @param addr: The 7-bit I2C address, in the uppermost 7-bits (LSB is 0).
+bool i2c_detect(uint8_t addr) {
+  // Wait for bus free
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Send a start condition, the address (0 bytes of data), and a stop condition
+  I2C2->CR2 = I2C_CR2_AUTOEND | I2C_CR2_STOP | I2C_CR2_START | addr;
+
+  // Wait for stop condition
+  uint32_t isr;
+  bool     error = false;
+  do {
+    // TODO: Add timeout
+    isr = I2C2->ISR;
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      error     = true;
+      break;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      error     = true;
+      printf("BERR\n");
+      break;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      error     = true;
+      printf("ARLO\n");
+      break;
+    }
+  } while (!(isr & I2C_ISR_STOPF));
+
+  // Clear detected stop condition
+  I2C2->ICR = I2C_ICR_STOPCF;
+  return !error;
 }
 
 uint32_t writeByteI2C2(I2CDev dev, uint8_t val) {

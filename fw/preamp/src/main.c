@@ -33,12 +33,13 @@ int main() {
   write_pin(exp_boot0_, false);  // Don't start the subsequent preamp board in 'Boot Mode'.
   write_pin(exp_nrst_, true);    // Release expansion reset, only needs to be low >300 ns.
 
-  watchdog_init();  // Initialize the watchdog counter with a 60 ms period.
-  systick_init();   // Initialize the clock ticks for delay_ms and other timing functionality
-  initAudio();      // Initialize audio mux, volumes, mute and standby
-  initUart1();      // The preamp will receive its I2C network address via UART
+  watchdog_init();     // Initialize the watchdog counter with a 60 ms period.
+  systick_init();      // Initialize the clock ticks for delay_ms and other timing functionality
+  audio_zones_init();  // Initialize audio volumes, mute and standby
+  initUart1();         // The preamp will receive its I2C network address via UART
   initUart2(9600);
-  initInternalI2C();  // Setup the internal I2C bus - worst case ~2.4 ms
+  initInternalI2C();   // Setup the internal I2C bus - worst case ~2.4 ms
+  audio_muxes_init();  // Initialize the audio mux
 
   // Main loop, awaiting I2C commands
   uint32_t next_loop_time = millis();

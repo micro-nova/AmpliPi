@@ -39,8 +39,12 @@ typedef enum {
   IT_DIGITAL
 } InputType;
 
-void initAudio();
-void updateAudio();
+void audio_zones_init();
+void audio_muxes_init();
+void audio_update();
+
+void audio_set_mux_en_level(bool level);
+bool audio_get_mux_en_level();
 
 void mute(size_t zone, bool mute);
 bool muted(size_t zone);

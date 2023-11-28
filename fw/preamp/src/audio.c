@@ -63,6 +63,16 @@ uint8_t vol_[NUM_ZONES] = {};
 // If all amps are 'disabled', then the amps will always remain in standby.
 bool amp_en_[NUM_ZONES] = {};
 
+bool mux_en_level_ = true;
+// Preamp boards >=Rev4 use a low-level signal to enable a mux, while
+// <=Rev3 uses a high-level signal. Default to a high-level signal.
+void audio_set_mux_en_level(bool level) {
+  mux_en_level_ = level;
+}
+bool audio_get_mux_en_level() {
+  return mux_en_level_;
+}
+
 // Convert a requested dB to the corresponding volume IC register value.
 static inline uint8_t dB2VolReg(uint8_t db) {
   /* The volume IC has a discontinuity in its register value to attenuation
@@ -181,12 +191,12 @@ void setZoneSource(size_t zone, size_t src) {
 
   // Disconnect zone from all sources first
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    write_pin(zone_src_[zone][src], true);
+    write_pin(zone_src_[zone][src], !mux_en_level_);
   }
 
   // Connect a zone to a source
   if (src < NUM_SRCS) {
-    write_pin(zone_src_[zone][src], false);
+    write_pin(zone_src_[zone][src], mux_en_level_);
   }
 
   // Restore mute status
@@ -196,7 +206,7 @@ void setZoneSource(size_t zone, size_t src) {
 size_t getZoneSource(size_t zone) {
   // Assume only one source is ever selected
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    if (!read_pin(zone_src_[zone][src])) {
+    if (read_pin(zone_src_[zone][src]) == mux_en_level_) {
       return src;
     }
   }
@@ -206,53 +216,45 @@ size_t getZoneSource(size_t zone) {
 // Each source can select between a digital or analog input
 void setSourceAD(size_t src, InputType type) {
   // Disable both mux inputs first
-  write_pin(src_ad_[src][IT_ANALOG], true);
-  write_pin(src_ad_[src][IT_DIGITAL], true);
+  write_pin(src_ad_[src][IT_ANALOG], !mux_en_level_);
+  write_pin(src_ad_[src][IT_DIGITAL], !mux_en_level_);
 
   // Enable selected input
-  write_pin(src_ad_[src][type], false);
+  write_pin(src_ad_[src][type], mux_en_level_);
 }
 
 InputType getSourceAD(size_t src) {
   // Assume only one input is ever selected
-  if (read_pin(src_ad_[src][IT_DIGITAL])) {
-    return IT_ANALOG;
+  if (read_pin(src_ad_[src][IT_DIGITAL]) == mux_en_level_) {
+    return IT_DIGITAL;
   }
-  return IT_DIGITAL;
+  return IT_ANALOG;
 }
 
-void initAudio() {
-  // At boot SRCX_D_EN should be 1, SRCX_A_EN should be 0
-  // <=Rev3: Selects digital inputs as sources.
-  // >=Rev4: Selects analog inputs as sources.
-  //         This is still OK as long as zones/amps are muted.
-  //
-  // At boot CH1_SRC1_EN should be 1, CH2-4_SRC1_EN should be 0.
-  // <=Rev3: Selects CH0 as source for all zones.
-  // >=Rev4: Selects CH1, CH2, and CH3 as source for all zones.
-  //         This is still OK as long as zones/amps are muted.
-
-  // Initialize each zone's audio state (does not write to volume control ICs)
+// Initialize each zone's audio state (does not write to volume control ICs).
+// Mutes all zones.
+void audio_zones_init() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     enZoneAmp(zone, true);
     mute(zone, true);
-    setZoneSource(zone, DEFAULT_SOURCE);
     vol_req_[zone] = VOL_MUTE;
   }
+}
 
-  /* Initialize each source's analog/digital mux to select digital.
-   * Upon AmpliPi startup the digital input won't have any audio playing so
-   * selecting digital avoids unwanted playback.
-   * Also audio is input to expanders through the digital inputs,
-   * so analog inputs must never be selected.
-   * This firmware supports both main units and expanders.
-   */
+// Initialize audio mux. Must be done after determining the polarity of the mux enable signals.
+void audio_muxes_init() {
+  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
+    setZoneSource(zone, DEFAULT_SOURCE);
+  }
+
+  // Initialize each source's analog/digital mux to select digital to avoid unwanted audio.
+  // Also, expanders don't have analog inputs and so must never select analog.
   for (size_t src = 0; src < NUM_SRCS; src++) {
     setSourceAD(src, IT_DIGITAL);
   }
 }
 
-void updateAudio() {
+void audio_update() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Check if volume update required
     uint8_t new_vol = vol_[zone];
