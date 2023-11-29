@@ -1,6 +1,7 @@
 # I2C Calculations
 
 ## Bus Capacitance and Rise/Fall Times
+
 | Device           | Capacitance (pF) |
 | ---------------- | ---------------- |
 | STM32            | 5                |
@@ -11,38 +12,38 @@
 | TDA7448 (Vol1)   | ??               |
 | TDA7448 (Vol2)   | ??               |
 
-~70 pF for all devices, plus say ~20 pF for all traces and wires = ~90 pF
-Rise time t_r:
-```
-t_r = 0.8473*Rp*Cb ~= 0.8473 * 1 kOhm * 90 pF = 76 ns
-```
+~70 pF for all devices, plus say ~20 pF for all traces and wires. So ~90 pF total.
 
-Measured rise time: **t_r = 72 ns**.
-Measured fall time: **t_f = 4 ns**.
+Rise time $t_r = 0.8473 * R_p * C_b ~= 0.8473 * 1 k\Omega * 90 pF = 76 ns$
+
+| Measured | time (ns) |
+| -------- | --------- |
+| $t_r$    |        72 |
+| $t_f$    |         4 |
 
 ## Pullup Resistor Values
-Max output current for I2C Standard/Fast mode is 3 mA, so min pullup is:
-```
-Rp_min > [V_DD - V_OL(max)] / I_OL = (3.3 V - 0.4 V) / 3 mA = 967 Ohms
-```
 
-Max bus capacitance (with only resistor for pullup) is 200 pF.
-Standard mode rise-time t_r(max) = 1000 ns.
-```
-Rp_std < t_r(max) / (0.8473 * Cb) = 1000 / (0.8473 * 0.2) = 5901 Ohm
-```
+Max output current for I2C Standard/Fast mode is 3 mA, so $R_{p_{min}}$ is:
 
-Fast mode rise-time t_r(max) = 300 ns.
-```
-Rp_fast < t_r(max) / (0.8473 * Cb) = 1000 / (0.8473 * 0.2) = 1770 Ohm
-```
+$R_{p_{min}} > [V_{DD} - V_{OL_{max}}] / I_{OL} = \frac{(3.3 V - 0.4 V)}{3 mA} = 967 \Omega$
 
-For Standard mode: **1k <= Rp <= 5.6k**.
-For Fast mode: **1k <= Rp <= 1.6k**.
+Max bus capacitance $C_b$ (with only resistor for pullup) is 200 pF.
+Standard mode rise-time $t_{r_{max}} = 1000 ns$.
+
+$R_{p_{std}} < t_{r_{max}} / (0.8473 * C_b) = 1000 / (0.8473 * 0.2) = 5901 \Omega$
+
+Fast mode rise-time $t_{r_{max}}$ = 300 ns.
+
+$R_{p_{fast}} < t_{r_{max}} / (0.8473 * C_b) = 1000 / (0.8473 * 0.2) = 1770 \Omega$
+
+Choosing standard resistor values, for Standard mode $1k\Omega <= R_p <= 5.6k\Omega$.
+For Fast mode $1k\Omega <= R_p <= 1.6k\Omega$.
 
 ## I2C Timing
+
 ### Common parameters
-```
+
+```math
 t_I2CCLK = 1 / 8 MHz = 125 ns
 t_AF(min) = 50 ns   - Analog filter minimum input delay
 t_AF(max) = 260 ns  - Analog filter maximum input delay
@@ -53,13 +54,14 @@ t_r = 72 ns         - Rise time
 t_f = 4 ns          - Fall time (must be < 300 ns)
 
 t_SYNC1(min) = t_f + t_AF(min) + t_DNF + 2*t_I2CCLK
-             = 4 + 50 + 2*125 = 306 ns
+             = 4 + 50 + 2*125 = 304 ns
 t_SYNC2(min) = t_r + t_AF(min) + t_DNF + 2*t_I2CCLK
-             = 76 + 50 + 2*125 = 376 ns
+             = 72 + 50 + 2*125 = 372 ns
 ```
 
 ### Standard mode, max 100 kHz
-```
+
+```math
 t_LOW > 4.7 us,t_HIGH > 4 us
 t_I2CCLK < [t_LOW - t_AF(min) - t_DNF] / 4 = (4700 - 50) / 4 = 1162.5 ns
 t_I2CCLK < t_HIGH = 4000 ns
@@ -96,7 +98,8 @@ I2C_TIMINGR[31:0] = 0x00101D2C
 ```
 
 ## Fast mode, max 400 kHz
-```
+
+```math
 t_LOW > 1.3 us, t_HIGH > 0.6 us
 t_I2CCLK < [t_LOW - t_AF(min) - t_DNF] / 4 = (1300 - 50) / 4 = 312.5 ns
 t_I2CCLK < t_HIGH = 600 ns
