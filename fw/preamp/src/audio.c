@@ -133,7 +133,7 @@ uint8_t getZoneVolume(size_t zone) {
 static void standby(bool standby) {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Set pin low to standby
-    write_pin(zone_standby_[zone], !standby);
+    pin_write(zone_standby_[zone], !standby);
   }
 }
 
@@ -141,7 +141,7 @@ static void standby(bool standby) {
 bool inStandby() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Standby pins are active-low
-    if (!read_pin(zone_standby_[zone])) {
+    if (!pin_read(zone_standby_[zone])) {
       return true;
     }
   }
@@ -172,7 +172,7 @@ bool zoneAmpEnabled(size_t zone) {
 // Mute the specified zone
 void mute(size_t zone, bool mute) {
   // Set pin low to mute
-  write_pin(zone_mute_[zone], !mute);
+  pin_write(zone_mute_[zone], !mute);
 
   // If no zones are on, standby
   standby(!anyZoneAmpOn());
@@ -180,7 +180,7 @@ void mute(size_t zone, bool mute) {
 
 bool muted(size_t zone) {
   // Mute pins are active-low
-  return !read_pin(zone_mute_[zone]);
+  return !pin_read(zone_mute_[zone]);
 }
 
 // Connect a Zone to a Source
@@ -191,12 +191,12 @@ void setZoneSource(size_t zone, size_t src) {
 
   // Disconnect zone from all sources first
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    write_pin(zone_src_[zone][src], !mux_en_level_);
+    pin_write(zone_src_[zone][src], !mux_en_level_);
   }
 
   // Connect a zone to a source
   if (src < NUM_SRCS) {
-    write_pin(zone_src_[zone][src], mux_en_level_);
+    pin_write(zone_src_[zone][src], mux_en_level_);
   }
 
   // Restore mute status
@@ -206,7 +206,7 @@ void setZoneSource(size_t zone, size_t src) {
 size_t getZoneSource(size_t zone) {
   // Assume only one source is ever selected
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    if (read_pin(zone_src_[zone][src]) == mux_en_level_) {
+    if (pin_read(zone_src_[zone][src]) == mux_en_level_) {
       return src;
     }
   }
@@ -216,16 +216,16 @@ size_t getZoneSource(size_t zone) {
 // Each source can select between a digital or analog input
 void setSourceAD(size_t src, InputType type) {
   // Disable both mux inputs first
-  write_pin(src_ad_[src][IT_ANALOG], !mux_en_level_);
-  write_pin(src_ad_[src][IT_DIGITAL], !mux_en_level_);
+  pin_write(src_ad_[src][IT_ANALOG], !mux_en_level_);
+  pin_write(src_ad_[src][IT_DIGITAL], !mux_en_level_);
 
   // Enable selected input
-  write_pin(src_ad_[src][type], mux_en_level_);
+  pin_write(src_ad_[src][type], mux_en_level_);
 }
 
 InputType getSourceAD(size_t src) {
   // Assume only one input is ever selected
-  if (read_pin(src_ad_[src][IT_DIGITAL]) == mux_en_level_) {
+  if (pin_read(src_ad_[src][IT_DIGITAL]) == mux_en_level_) {
     return IT_DIGITAL;
   }
   return IT_ANALOG;

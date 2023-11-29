@@ -27,13 +27,13 @@
 #include "adc.h"
 #include "audio.h"
 #include "fans.h"
+#include "i2c.h"
 #include "int_i2c.h"
 #include "leds.h"
 #include "pins.h"
 #include "pwr_gpio.h"
 #include "serial.h"
 #include "stm32f0xx.h"
-#include "stm32f0xx_i2c.h"
 #include "version.h"
 
 typedef enum {
@@ -88,31 +88,11 @@ typedef enum {
  * t_f | 16.4 |  16.4 |  16.4 |  17.2 |  19.6 |  20.0 |
  */
 
-/* Initialize the control (Pi) I2C bus as a slave.
- * @param addr: Address to assign to this preamp board.
- *              Must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
- */
-void ctrlI2CInit(uint8_t addr) {
-  // Enable peripheral clock for I2C1
-  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
-
-  // TODO: Disable clock stretching by setting I2C_CR1_NOSTRETCH
-  I2C1->CR1      = 0;  // Disable I2C1 peripheral (set PE=0).
-  I2C1->CR2      = 0;  // Defaults OK. ACK bytes received.
-  I2C1->TIMINGR  = 0;  // Clocks not generated in slave mode.
-  I2C1->TIMEOUTR = 0;  // Timouts only used in SMBUS mode.
-  // I2C1->CR1     = 0;           // Reset to defaults (bits can't be modified while PE=1).
-
-  I2C1->OAR1 = 0;  // Clear OAR1 register (bits can't be modified while OA1EN=1).
-  I2C1->OAR2 = 0;  // Clear OAR2 register.
-  I2C1->OAR1 = I2C_OAR1_OA1EN | (addr & 0xFE);  // Set slave address to ACK.
-  // I2C1->OAR1 |= I2C_OAR1_OA1EN;  // ACK own address 1
-
-  I2C1->CR1 = I2C_CR1_PE;  // Enable the I2C1 Peripheral
-}
-
-bool ctrlI2CAddrMatch() {
-  return I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR);
+// Initialize the control (Pi) I2C bus as a slave.
+// @param addr: Address to assign to this preamp board.
+//              Must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
+void ctrl_i2c_init(uint8_t addr) {
+  i2c_init(i2c_ctrl, addr);
 }
 
 uint8_t readReg(uint8_t addr) {
@@ -197,8 +177,8 @@ uint8_t readReg(uint8_t addr) {
 
     case REG_EXPANSION: {
       ExpansionReg reg = {
-          .nrst             = read_pin(exp_nrst_),
-          .boot0            = read_pin(exp_boot0_),
+          .nrst             = pin_read(exp_nrst_),
+          .boot0            = pin_read(exp_boot0_),
           .uart_passthrough = getUartPassthrough(),
       };
       out_msg = reg.data;
@@ -327,8 +307,8 @@ void writeReg(uint8_t addr, uint8_t data) {
 
     case REG_EXPANSION:
       // Control expansion port's NRST and BOOT0 pins
-      write_pin(exp_nrst_, ((ExpansionReg)data).nrst);
-      write_pin(exp_boot0_, ((ExpansionReg)data).boot0);
+      pin_write(exp_nrst_, ((ExpansionReg)data).nrst);
+      pin_write(exp_boot0_, ((ExpansionReg)data).boot0);
 
       // Allow UART messages to be forwarded to expansion units
       setUartPassthrough(((ExpansionReg)data).uart_passthrough);
@@ -344,43 +324,44 @@ void writeReg(uint8_t addr, uint8_t data) {
   }
 }
 
-void ctrlI2CTransact() {
+bool ctrl_i2c_addr_match() {
+  return (I2C1->ISR & I2C_ISR_ADDR) != 0;
+}
+
+void ctrl_i2c_transact() {
   // Setting I2C_ICR.ADDRCF releases the clock stretch if any then acks
-  I2C_ClearFlag(I2C1, I2C_FLAG_ADDR);
-  // I2C_ISR.DIR is assumed to be 0 (write)
+  I2C1->ICR = I2C_ICR_ADDRCF;
 
   // Wait for register address to be written by master (Pi)
-  while (I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) == RESET) {}
+  while (!(I2C1->ISR & I2C_ISR_RXNE)) {}
 
   // Reading I2C_RXDR releases the clock stretch if any then acks
-  uint8_t reg_addr = I2C_ReceiveData(I2C1);
+  uint8_t reg_addr = (uint8_t)I2C1->RXDR;
 
   // Wait for either another slave address match (read),
   // or data in the RX register (write)
   uint32_t i2c_isr_val;
   do {
     i2c_isr_val = I2C1->ISR;
-  } while (!(i2c_isr_val & (I2C_FLAG_ADDR | I2C_FLAG_RXNE)));
+  } while (!(i2c_isr_val & (I2C_ISR_ADDR | I2C_ISR_RXNE)));
 
   if (i2c_isr_val & I2C_ISR_DIR) {  // Reading
-    // Just received a repeated start and slave address again,
-    // clear address flag to ACK
-    I2C_ClearFlag(I2C1, I2C_FLAG_ADDR);
+    // Just received a repeated start and slave address again, clear address flag to ACK
+    I2C1->ICR = I2C_ISR_ADDR;
 
     // Make sure the I2C_TXDR register is empty before filling it with new
     // data to write
-    while (I2C_GetFlagStatus(I2C1, I2C_FLAG_TXE) == RESET) {}
+    while (!(I2C1->ISR & I2C_ISR_TXE)) {}
 
     // Send a response based on the register address
-    uint8_t response = readReg(reg_addr);
-    I2C_SendData(I2C1, response);
+    uint8_t response = readReg(reg_addr);  // TODO: Prepare the response earlier.
+    I2C1->TXDR       = response;
 
     // We only allow reading 1 byte at a time for now, here we are assuming
     // a NACK was sent by the master to signal the end of the read request.
   } else {  // Writing
-    // Just received data from the master (Pi),
-    // get it from the I2C_RXDR register
-    uint8_t data = I2C_ReceiveData(I2C1);
+    // Just received data from the master (Pi), get it from the I2C_RXDR register
+    uint8_t data = (uint8_t)I2C1->RXDR;
     writeReg(reg_addr, data);
 
     // We only allow writing 1 byte at a time for now, here we assume the

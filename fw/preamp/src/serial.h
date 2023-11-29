@@ -25,7 +25,7 @@
 void setUartPassthrough(bool passthrough);
 bool getUartPassthrough();
 void initUart1();
-void initUart2(uint16_t brr);
+void initUart2(uint16_t baud);
 
 // Returns new I2C address if one was received via USART1, otherwise 0
 void    sendAddressToSlave(uint8_t i2c_addr);

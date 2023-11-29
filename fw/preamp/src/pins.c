@@ -77,18 +77,17 @@ const Pin i2c1_sda_ = {'B', 7};
 const Pin i2c2_scl_ = {'B', 10};
 const Pin i2c2_sda_ = {'B', 11};
 
-/* Configure the internal I2C pins (I2C2) as either I2C or GPIO.
- * @param gpio: Set to true to configure as I2C alternate function, false for GPIO.
- */
-void config_int_i2c_pins(bool i2c) {
+// Configure the internal I2C pins (I2C2) as either I2C or GPIO.
+// @param gpio: Set to true to configure as I2C alternate function, false for GPIO.
+void pins_config_int_i2c(bool i2c) {
   if (i2c) {
     // Config I2C pins as AF1
     GPIOB->MODER  = 0x55A5A555;  // Set Port B pins 11,10 as alternative function.
     GPIOB->AFR[1] = 0x00001100;  // Set Port B pins 11,10 as AF1, rest as AF0
   } else {
     // Default pins High-Z
-    write_pin(i2c2_scl_, true);
-    write_pin(i2c2_sda_, true);
+    pin_write(i2c2_scl_, true);
+    pin_write(i2c2_sda_, true);
 
     // Config I2C2 pins as GPIO
     GPIOB->MODER  = 0x5555A555;  // Set Port B pins 11,10 as general-purpose output.
@@ -97,7 +96,7 @@ void config_int_i2c_pins(bool i2c) {
 }
 
 // Initialize all pins to proper GPIO/Alternative Function state.
-void init_pins() {
+void pins_init() {
   // Enable peripheral clocks for GPIO ports
   RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN | RCC_AHBENR_GPIODEN |
                  RCC_AHBENR_GPIOFEN;
@@ -129,8 +128,8 @@ void init_pins() {
   GPIOB->AFR[1] = 0;           // Set Port B pins 15:8 as AF0
 
   // Default I2C2 pins High-Z
-  write_pin(i2c2_scl_, true);
-  write_pin(i2c2_sda_, true);
+  pin_write(i2c2_scl_, true);
+  pin_write(i2c2_sda_, true);
 
   // Setup PORT C pins used as GPIO
   GPIOC->OSPEEDR = 0;           // Set to low speed.
@@ -152,7 +151,7 @@ void init_pins() {
   GPIOF->PUPDR   = 0x00000001;  // Set to no pull-up or pull-down, except pullup for NRST_OUT.
 }
 
-void write_pin(Pin pp, bool set) {
+void pin_write(Pin pp, bool set) {
   GPIO_TypeDef* port = getPort(pp);
   if (set) {
     // Lower 16 bits of BSRR used for setting, upper for clearing
@@ -163,7 +162,7 @@ void write_pin(Pin pp, bool set) {
   }
 }
 
-bool read_pin(Pin pp) {
+bool pin_read(Pin pp) {
   GPIO_TypeDef* port = getPort(pp);
   if (port->IDR & (1 << pp.pin)) {
     return true;

@@ -28,18 +28,21 @@
 #include "watchdog.h"
 
 int main() {
-  init_pins();                   // Setup pins to the correct GPIO, UART, and I2C functionality.
-  write_pin(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are reset.
-  write_pin(exp_boot0_, false);  // Don't start the subsequent preamp board in 'Boot Mode'.
-  write_pin(exp_nrst_, true);    // Release expansion reset, only needs to be low >300 ns.
+  pins_init();                   // Setup pins to the correct GPIO, UART, and I2C functionality.
+  pin_write(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are reset.
+  pin_write(exp_boot0_, false);  // Don't start the subsequent preamp board in 'Boot Mode'.
+  pin_write(exp_nrst_, true);    // Release expansion reset, only needs to be low >300 ns.
 
-  watchdog_init();     // Initialize the watchdog counter with a 60 ms period.
-  systick_init();      // Initialize the clock ticks for delay_ms and other timing functionality
-  audio_zones_init();  // Initialize audio volumes, mute and standby
-  initUart1();         // The preamp will receive its I2C network address via UART
-  initUart2(9600);
+  watchdog_init();     // Setup the watchdog counter with a 60 ms period.
+  systick_init();      // Setup the 1-ms clock ticks.
+  audio_zones_init();  // Setup audio volumes, mute and standby.
+  initUart1();         // Setup the UART connection with the controller board.
+  initUart2(9600);     // Setup the UART connection with the expander, if any.
   initInternalI2C();   // Setup the internal I2C bus - worst case ~2.4 ms
-  audio_muxes_init();  // Initialize the audio mux
+  audio_muxes_init();  // Setup the audio mux
+
+  // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
+  // write_pin(exp_boot0_, true);
 
   // Main loop, awaiting I2C commands
   uint32_t next_loop_time = millis();
@@ -49,16 +52,17 @@ int main() {
 
     if ((next_loop_time & ((1 << 12) - 1)) == 0) {
       printf("%lu\n", next_loop_time);
-    }
 
-    // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
-    // write_pin(exp_boot0_, true);
+      // Wait ~50ms before printing for the message to be received reliably.
+      // bool v4 = !audio_get_mux_en_level();
+      // printf("%u\n", v4 ? 1 : 0);
+    }
 
     // Check if a new I2C slave address has been received over UART from the controller board.
     uint8_t new_i2c_addr = getI2C1Address();
     if (new_i2c_addr != i2c_addr) {
       i2c_addr = new_i2c_addr;
-      ctrlI2CInit(i2c_addr);
+      ctrl_i2c_init(i2c_addr);
 
       // Increment this unit's address by 0x10 to get the address for the next preamp.
       sendAddressToSlave(i2c_addr + 0x10);
@@ -67,20 +71,13 @@ int main() {
     }
 
     // Check for incoming control messages if a slave address has been set
-    if (i2c_addr && ctrlI2CAddrMatch()) {
-      ctrlI2CTransact();
+    if (i2c_addr && ctrl_i2c_addr_match()) {
+      ctrl_i2c_transact();
     }
 
     // updateInternalI2C(i2c_addr != 0);
 
-    // write_pin(exp_boot0_, false);
     next_loop_time++;  // Loop currently takes ~800 us
     while (millis() < next_loop_time) {}
-    // write_pin(exp_nrst_, !read_pin(exp_nrst_));
-
-    // delay_us(200);
-    // write_pin(exp_nrst_, true);
-    // delay_us(10);
-    // write_pin(exp_nrst_, false);
   }
 }

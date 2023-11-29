@@ -65,8 +65,8 @@ void quiesceI2C() {
   const uint32_t HALF_PERIOD = 2;  // 4 us period = 250 kHz I2C clock
   // Ensure the I2C peripheral is disabled and pins are set as GPIO
   // Pins will be configured to HI-Z (pulled up externally)
-  deinitI2C2();
-  config_int_i2c_pins(false);
+  i2c_deinit(i2c_int);
+  pins_config_int_i2c(false);
 
   const uint32_t NUM_CONSECUTIVE_ONES = 9;
   // Require NUM_CONSECUTIVE_ONES on I2C's SDA before proceeding.
@@ -82,22 +82,22 @@ void quiesceI2C() {
     // Note: no delays necessary between pin writes since it takes >2us to write a pin.
     bool success = true;
     for (count = 0; count < NUM_CONSECUTIVE_ONES && success; count++) {
-      success = read_pin(i2c2_sda_);  // Start over if SDA low
-      write_pin(i2c2_scl_, false);    // Falling edge on the I2C clock line
-      write_pin(i2c2_scl_, true);     // Rising edge on the I2C clock line
+      success = pin_read(i2c2_sda_);  // Start over if SDA low
+      pin_write(i2c2_scl_, false);    // Falling edge on the I2C clock line
+      pin_write(i2c2_scl_, true);     // Rising edge on the I2C clock line
     }
   }
 
   // Note: writing pins takes >2us already, so that has been factored in here.
   // delay_us(HALF_PERIOD);       // Hold time for clock and data high
-  write_pin(i2c2_sda_, false);  // Falling edge on SDA while SCL is high: START
+  pin_write(i2c2_sda_, false);  // Falling edge on SDA while SCL is high: START
   delay_us(HALF_PERIOD);        // Double hold time for clock high and data low
-  write_pin(i2c2_sda_, true);   // Rising edge on SDA while SCL is high: STOP
+  pin_write(i2c2_sda_, true);   // Rising edge on SDA while SCL is high: STOP
   delay_us(HALF_PERIOD);        // Hold time for clock and data high.
 
   // Initialize the STM32's I2C2 bus as a master and control pins by peripheral
-  initI2C2();
-  config_int_i2c_pins(true);
+  i2c_init(i2c_int, 0);
+  pins_config_int_i2c(true);
 }
 
 bool isDPotSMBus() {

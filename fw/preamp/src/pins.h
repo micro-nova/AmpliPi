@@ -39,8 +39,8 @@ extern const Pin i2c2_scl_;             // Internal I2C bus SCL
 extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 
 // Pin configuration
-void init_pins();
-void config_int_i2c_pins(bool i2c);
+void pins_init();
+void pins_config_int_i2c(bool i2c);
 
-void write_pin(Pin pp, bool set);
-bool read_pin(Pin pp);
+void pin_write(Pin pp, bool set);
+bool pin_read(Pin pp);

@@ -55,6 +55,6 @@ typedef union {
   uint8_t data;
 } ExpansionReg;
 
-void ctrlI2CInit(uint8_t addr);
-bool ctrlI2CAddrMatch();
-void ctrlI2CTransact();
+void ctrl_i2c_init(uint8_t addr);
+bool ctrl_i2c_addr_match();
+void ctrl_i2c_transact();

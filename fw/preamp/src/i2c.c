@@ -23,61 +23,48 @@
 #include <stdio.h>
 
 #include "stm32f0xx.h"
+#include "stm32f0xx_i2c.h"
 
-// addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
-void initI2C1(uint8_t addr) {
-  // Enable peripheral clock for I2C1
-  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
+// Initialize an I2C bus.
+// @param bus:  The I2C bus to initialize.
+// @param addr: A 7-bit slave I2C address in the 7 MSBs, ie: 0bXXXXXXX0.
+//              If 0, the I2C bus will be set as master instead of slave.
+void i2c_init(i2c_bus_t bus, uint8_t addr) {
+  // Peripheral clocks for both busses should always be enabled.
+  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN | RCC_APB1ENR_I2C2EN;
 
-  // Setup I2C1
-  I2C_InitTypeDef I2C_InitStructure1;
-  I2C_InitStructure1.I2C_Mode                = I2C_Mode_I2C;
-  I2C_InitStructure1.I2C_AnalogFilter        = I2C_AnalogFilter_Enable;
-  I2C_InitStructure1.I2C_DigitalFilter       = 0x00;
-  I2C_InitStructure1.I2C_OwnAddress1         = addr;
-  I2C_InitStructure1.I2C_Ack                 = I2C_Ack_Enable;
-  I2C_InitStructure1.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-  I2C_InitStructure1.I2C_Timing              = 0;  // Clocks not generated in slave mode
-  I2C_Init(I2C1, &I2C_InitStructure1);
-  I2C_Cmd(I2C1, ENABLE);
+  // TODO: Disable clock stretching by setting I2C_CR1_NOSTRETCH
+  I2C_TypeDef* i2c_regs = bus == i2c_ctrl ? I2C1 : I2C2;
+  i2c_regs->CR1         = 0;  // Disable I2C1 peripheral (set PE=0).
+  i2c_regs->CR2         = 0;  // Defaults OK. ACK bytes received.
+  i2c_regs->OAR1        = 0;  // Clear OAR1 register (bits can't be modified while OA1EN=1).
+  i2c_regs->OAR2        = 0;  // Clear OAR2 register, don't need a second slave address.
+  i2c_regs->TIMEOUTR    = 0;  // Timeouts only used in SMBUS mode.
+  if (addr) {
+    // Slave mode, set slave address.
+    i2c_regs->TIMINGR = 0;                               // Clocks not generated in slave mode.
+    i2c_regs->OAR1    = I2C_OAR1_OA1EN | (addr & 0xFE);  // Set slave address to ACK.
+  } else {
+    // Master mode, set timing. Both I2C controllers are effectively clocked by PCLK = 8 MHz.
+    // See the STM32F030 reference manual section 22.4.9 "I2C master mode" or AN4235 for I2C
+    // timing calculations. Full math done in i2c_calcs.md
+    // Excel tool, rise/fall 72/4 ns: 100 kHz: 0x00201D2C (0.5074% error)
+    //                                400 kHz: 0x0010020B (1.9992% error)
+    i2c_regs->TIMINGR = 0x0010020B;  // 400 kHz Fast Mode.
+  }
+
+  i2c_regs->CR1 = I2C_CR1_PE;  // Enable the I2C1 Peripheral
 }
 
-/* Init the second I2C bus. I2C2 is internal to a single AmpliPi unit.
- * The STM32 is the master and controls the volume chips, power, fans,
- * and front panel LEDs.
- */
-void initI2C2() {
-  // Enable peripheral clock for I2C2
-  RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
-
-  // Setup I2C2
-  I2C_InitTypeDef I2C_InitStructure2;
-  I2C_InitStructure2.I2C_Mode                = I2C_Mode_I2C;
-  I2C_InitStructure2.I2C_AnalogFilter        = I2C_AnalogFilter_Enable;
-  I2C_InitStructure2.I2C_DigitalFilter       = 0x00;
-  I2C_InitStructure2.I2C_OwnAddress1         = 0x00;
-  I2C_InitStructure2.I2C_Ack                 = I2C_Ack_Enable;
-  I2C_InitStructure2.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-
-  /* See the STM32F030 reference manual section 22.4.9 "I2C master mode" or
-   * AN4235 for I2C timing calculations.
-   * Excel tool, rise/fall 72/4 ns: 100 kHz: 0x00201D2C (0.5074% error)
-   *                                400 kHz: 0x0010020B (1.9992% error)
-   * Full math done in i2c_calcs.md
-   */
-  I2C_InitStructure2.I2C_Timing = 0x0010020B;
-  I2C_Init(I2C2, &I2C_InitStructure2);
-  I2C_Cmd(I2C2, ENABLE);
-}
-
-/* Disable the I2C2 peripheral */
-void deinitI2C2() {
-  // Ensure I2C peripheral clock is enabled in case this function is called
-  // before the I2C init function.
-  RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
+// Disable an I2C bus.
+// @param bus: The I2C bus to deinitialize.
+void i2c_deinit(i2c_bus_t bus) {
+  // Ensure I2C peripheral clocks are enabled in case this function is called before i2c_init().
+  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN | RCC_APB1ENR_I2C2EN;
 
   // Disable I2C2 peripheral
-  I2C_Cmd(I2C2, DISABLE);
+  I2C_TypeDef* i2c_regs = bus == i2c_ctrl ? I2C1 : I2C2;
+  i2c_regs->CR1 &= ~I2C_CR1_PE;
 }
 
 // Check for an ack from a slave device on the internal I2C bus, indicating its presence.

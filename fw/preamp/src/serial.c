@@ -26,6 +26,9 @@
 #include "stm32f0xx_gpio.h"
 #include "stm32f0xx_usart.h"
 
+// Peripheral clock frequency in Hz. This clock is divided by BRR to get the baud rate.
+#define PCLK_FREQ_HZ 8000000
+
 // Need at least 3 bytes for data: A + ADDR + \n.
 // Memory is 4-byte word aligned, so the following works well with the
 // 2 bytes for flags.
@@ -149,11 +152,9 @@ void initUart1() {
   NVIC_EnableIRQ(USART1_IRQn);
 }
 
-void initUart2(uint16_t brr) {
-#ifndef DEBUG_OVER_UART2
-  // UART2 is used for debugging with an external debugger
-  // or for communicating with an expansion preamp.
-
+// UART2 is used for communicating with an expansion preamp.
+// @param baud: Baud rate to set in Hz.
+void initUart2(uint16_t baud) {
   // Enable peripheral clock for UART2
   RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 
@@ -167,10 +168,9 @@ void initUart2(uint16_t brr) {
   USART_InitStructure2.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
   USART_InitStructure2.USART_Mode                = USART_Mode_Rx | USART_Mode_Tx;
   USART_Init(USART2, &USART_InitStructure2);
-  // USART2->BRR = brr;
-  (void)brr;
+  // USART2->BRR = PCLK_FREQ_HZ / baud_div;
+  (void)baud;  // TODO: Use auto-bauding.
   USART_Cmd(USART2, ENABLE);
-#endif
 }
 
 /* Handles the interrupt on the upstream UART data reception.
