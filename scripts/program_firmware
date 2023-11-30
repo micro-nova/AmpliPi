@@ -65,7 +65,7 @@ done
 
 # Get full filepath here before changing directory
 if $build; then
-  local_file=fw/preamp/build/preamp_bd_v4.bin
+  local_file=fw/preamp/build/preamp_bd.bin
 else
   local_file="$(realpath $file)"
 fi
