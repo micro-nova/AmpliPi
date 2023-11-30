@@ -598,12 +598,7 @@ class Spotify(PersistentStream):
 
   def _deactivate(self):
     if self.proc:
-      try:
-        self.proc.terminate()
-        self.proc.communicate(timeout=3)
-      except Exception as e:
-        logger.exception(f"failed to terminate spotify stream: {e}")
-        self.proc.kill()
+      utils.careful_proc_shutdown(self.proc, "spotify stream")
       self.proc = None
     if self.mpris:
       try:
@@ -833,16 +828,18 @@ class Pandora(PersistentStream):
     except Exception as exc:
       raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
-
-class DLNA(BaseStream):
+class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid issue, figure out next and prev
   """ A DLNA Stream """
 
   stream_type : ClassVar[str] = 'dlna'
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    self.proc2 = None
+    super().__init__('dlna', name, disabled=disabled, mock=mock)
+    self.metadata_proc = None
     self.uuid = 0
+    self.supported_cmds = ['play', 'pause']
+    self.src_config_folder = ''
+    self.src_web_folder = ''
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -874,52 +871,79 @@ class DLNA(BaseStream):
     self.uuid = uuid_gen()
     portnum = 49494 + int(src)
 
-    # Make the (per-source) config directory
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
-    os.system(f'mkdir -p {src_config_folder}')
+    # Make the (per-source) config and web directories
+    self.src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
+    os.system(f'rm -r {self.src_config_folder}')
+    os.system(f'mkdir -p {self.src_config_folder}')
 
-    meta_args = [f'{utils.get_folder("streams")}/dlna_metadata.bash', f'{src_config_folder}']
+    self.src_web_folder = f'{utils.get_folder("web")}/generated/{src}'
+    os.system(f'rm -r {self.src_web_folder}')
+    os.system(f'mkdir -p {self.src_web_folder}')
+
+    # Make the fifo to be used for commands
+    os.mkfifo(f'{self.src_config_folder}/cmd')
+
+    # startup the metadata process and the DLNA process
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
-                 '--gstout-audiodevice', utils.real_output_device(src), '--gstout-initial-volume-db',
-                 '0.0', '-p', f'{portnum}', '-u', f'{self.uuid}',
-                 '-f', f'{self.name}', '--logfile',
-                 f'{src_config_folder}/metafifo']
-    self.proc = subprocess.Popen(args=meta_args, preexec_fn=os.setpgrp, stdin=subprocess.PIPE,
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    self.proc2 = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                '--gstout-audiodevice', utils.real_output_device(src), '--gstout-initial-volume-db',
+                '0.0', '-p', f'{portnum}', '-u', f'{self.uuid}',
+                '-f', f'{self.name}']
+    meta_args = [ sys.executable,
+                 f'{utils.get_folder("streams")}/dlna_meta.py',
+                 f'{self.name}',
+                 f'{self.src_config_folder}/cmd',
+                 f'{self.src_config_folder}/meta.json',
+                 self.src_web_folder,
+                ]
+                # '-d']
+    self.proc = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.metadata_proc = subprocess.Popen(args=meta_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    self.fifo = os.open(f'{self.src_config_folder}/cmd', os.O_WRONLY, os.O_NONBLOCK) # open the fifo for writing but don't block in case something goes wrong
+
     self._connect(src)
 
   def disconnect(self):
     if self._is_running():
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
-      self.proc2.kill()
+      utils.careful_proc_shutdown(self.metadata_proc, "dlna metadata process")
+      utils.careful_proc_shutdown(self.proc, "dlna process")
+      os.close(self.fifo)
     self._disconnect()
-    self.proc = None
-    self.proc2 = None
+    self.metadata_proc = None
+    self.dlna_proc = None
 
   def info(self) -> models.SourceInfo:
-    src_config_folder = f'{utils.get_folder("config")}/srcs/{self.src}'
-    loc = f'{src_config_folder}/currentSong'
     source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/dlna.png')
     try:
-      with open(loc, 'r', encoding='utf-8') as file:
-        for line in file.readlines():
-          line = line.strip()
-          if line:
-            d = ast.literal_eval(line)
-        if 'state' in d:
-          source.state = d['state']
-        if 'album' in d:
-          source.album = d['album']
-        if 'artist' in d:
-          source.artist = d['artist']
-        if 'title' in d:
-          source.track = d['title']
-        return source
-    except Exception:
+      data = json.load(open(f'{self.src_config_folder}/meta.json'))
+      # print(data)
+      source.state = data.get('state', 'stopped') if data else 'stopped'
+      if source.state != 'stopped': # if the state is stopped, just use default values
+        source.artist = data.get('artist', '')
+        source.track = data.get('title', '')
+        source.album = data.get('album', '')
+        if data.get('album_art', '') != '':
+          source.img_url = f'generated/{self.src}/{data.get("album_art")}'
+
+      source.supported_cmds=self.supported_cmds # set supported commands only if we hear back from the DLNA server
+    except Exception as e:
+      print(f'Error getting DLNA info: {e}')
       pass
+
     return source
 
+  def send_cmd(self, cmd):
+    try:
+      # print("dlna got command: " + cmd)
+      if cmd in self.supported_cmds and self.src != None:
+        self.fifo.write(cmd+'\r\n') # must end line since metadata_reader uses readline()
+        self.fifo.flush()
+        # print("wrote command to fifo")
+      else:
+        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+    except Exception:
+      print(f'Error sending command to DLNA: {cmd}')
+      pass
 
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
