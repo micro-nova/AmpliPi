@@ -33,13 +33,13 @@ int main() {
   pin_write(exp_boot0_, false);  // Don't start the subsequent preamp board in 'Boot Mode'.
   pin_write(exp_nrst_, true);    // Release expansion reset, only needs to be low >300 ns.
 
-  watchdog_init();     // Setup the watchdog counter with a 60 ms period.
-  systick_init();      // Setup the 1-ms clock ticks.
-  audio_zones_init();  // Setup audio volumes, mute and standby.
-  initUart1();         // Setup the UART connection with the controller board.
-  initUart2(9600);     // Setup the UART connection with the expander, if any.
-  initInternalI2C();   // Setup the internal I2C bus - worst case ~2.4 ms
-  audio_muxes_init();  // Setup the audio mux
+  watchdog_init();           // Setup the watchdog counter with a 60 ms period.
+  systick_init();            // Setup the 1-ms clock ticks.
+  audio_zones_init();        // Setup audio volumes, mute and standby.
+  serial_init(serial_ctrl);  // Setup the UART connections with the controller board.
+  serial_init(serial_exp);   // Setup the UART connection with the expander, if any.
+  initInternalI2C();         // Setup the internal I2C bus - worst case ~2.4 ms
+  audio_muxes_init();        // Setup the audio mux
 
   // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
   // write_pin(exp_boot0_, true);

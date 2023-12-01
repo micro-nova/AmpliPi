@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 # Toolchain must be defined before project
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND NOT DEFINED CMAKE_CXX_COMPILER)
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND (NOT DEFINED CMAKE_C_COMPILER OR NOT DEFINED CMAKE_ASM_COMPILER))
   set(CMAKE_TOOLCHAIN_FILE arm-none-eabi-toolchain.cmake)
 else()
   set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
@@ -44,11 +44,10 @@ target_include_directories(${PROJECT_NAME}.elf PRIVATE
 )
 
 target_compile_definitions(${PROJECT_NAME}.elf PRIVATE
-  STM32F0
-  STM32F030R8Tx
   STM32
-  USE_STDPERIPH_DRIVER
+  STM32F0
   STM32F030
+  STM32F030R8Tx
 )
 
 # -fno-exceptions reduces C++ code size but exceptions must not be thrown

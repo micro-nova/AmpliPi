@@ -187,7 +187,7 @@ class _Preamps:
     """
     # Setup serial connection via UART pins
     with Serial('/dev/serial0', baudrate=9600) as ser:
-      ser.write((0x41, 0x10, 0x0D, 0x0A))
+      ser.write((0x41, 0x10, 0x0A))
 
     # Delay to account for addresses being set
     # Each box theoretically takes ~5ms to receive its address. Again, estimate for six boxes and include some padding
