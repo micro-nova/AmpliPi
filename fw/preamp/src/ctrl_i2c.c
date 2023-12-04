@@ -26,6 +26,7 @@
 
 #include "adc.h"
 #include "audio.h"
+#include "eeprom.h"
 #include "fans.h"
 #include "i2c.h"
 #include "int_i2c.h"
@@ -43,8 +44,8 @@ typedef enum {
   REG_ZONE654   = 0x02,
   REG_MUTE      = 0x03,
   REG_AMP_EN    = 0x04,
-  REG_VOL_ZONE1 = 0x05,
-  REG_VOL_ZONE2 = 0x06,
+  REG_VOL_ZONE1 = 0x05,  // TODO: Add mute status/control as top bit of zone volume registers:
+  REG_VOL_ZONE2 = 0x06,  // ZxM, ZxVol[6:0]
   REG_VOL_ZONE3 = 0x07,
   REG_VOL_ZONE4 = 0x08,
   REG_VOL_ZONE5 = 0x09,
@@ -66,9 +67,15 @@ typedef enum {
   REG_HV2_VOLTAGE = 0x17,  // Volts in UQ6.2 format (0.25 volt resolution)
   REG_HV2_TEMP    = 0x18,  // degC in UQ7.1 + 20 format (0.5 degC resolution)
 
+  // 0x19-0x1E unused.
+
+  REG_EEPROM_REQUEST    = 0x1F,  // [7:4]: 16-byte page#, [3:1]: I2C address [2:0], [0]: rd/wr_n.
+  REG_EEPROM_DATA_START = 0x20,  // EEPROM read/write data start address.
+  REG_EEPROM_DATA_END   = 0x20 + EEPROM_PAGE_SIZE - 1,  // EEPROM read/write data end address.
+
   // Internal I2C bus detected devices
-  REG_INT_I2C     = 0x20,  // Each bit flag represents one I2C address
-  REG_INT_I2C_MAX = 0x2F,  // Check I2C_ADDR/8 + REG_INT_I2C bit I2C_ADDR & 0x3
+  REG_INT_I2C     = 0xF0,  // Each bit flag represents one I2C address
+  REG_INT_I2C_MAX = 0xF9,  // Check I2C_ADDR/8 + REG_INT_I2C bit I2C_ADDR & 0x3
 
   // Version info
   REG_VERSION_MAJOR = 0xFA,
@@ -76,7 +83,7 @@ typedef enum {
   REG_GIT_HASH_6_5  = 0xFC,
   REG_GIT_HASH_4_3  = 0xFD,
   REG_GIT_HASH_2_1  = 0xFE,
-  REG_GIT_HASH_0_D  = 0xFF,
+  REG_GIT_HASH_0_D  = 0xFF,  // TODO: v4 EEPROM detection as bit 1 (bit 0=dirty, 3:2 still unused).
 } CmdReg;
 
 /* Measured rise and fall times of the controller I2C bus. Rise time is from 30% to 70%.
@@ -247,6 +254,8 @@ uint8_t readReg(uint8_t addr) {
 }
 
 void writeReg(uint8_t addr, uint8_t data) {
+  static Eeprom eeprom_write_data = {};
+
   switch (addr) {
     case REG_SRC_AD:
       for (size_t src = 0; src < NUM_SRCS; src++) {
@@ -282,12 +291,7 @@ void writeReg(uint8_t addr, uint8_t data) {
       }
       break;
 
-    case REG_VOL_ZONE1:
-    case REG_VOL_ZONE2:
-    case REG_VOL_ZONE3:
-    case REG_VOL_ZONE4:
-    case REG_VOL_ZONE5:
-    case REG_VOL_ZONE6: {
+    case REG_VOL_ZONE1 ... REG_VOL_ZONE6: {
       size_t zone = addr - REG_VOL_ZONE1;
       setZoneVolume(zone, data);
       break;
@@ -316,6 +320,20 @@ void writeReg(uint8_t addr, uint8_t data) {
 
     case REG_PI_TEMP:
       setPiTemp_f1(data);
+      break;
+
+    case REG_EEPROM_REQUEST: {
+      // Initiate a EEPROM read or write
+      EepromCtrl ctrl = (EepromCtrl)data;
+      if (ctrl.rd_wrn) {
+        eeprom_write(&eeprom_write_data);
+      } else {
+        eeprom_read(ctrl);
+      }
+      break;
+    }
+
+    case REG_EEPROM_DATA_START ... REG_EEPROM_DATA_END:
       break;
 
     default:

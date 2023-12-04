@@ -217,7 +217,7 @@ uint32_t writeRegI2C2(I2CReg r, uint8_t data) {
 // @param data: An array of bytes to write.
 // @param num:  The number of bytes to write.
 // @return      0 if no error, or the ISR flag of an error.
-uint32_t i2c_int_write_data(const uint8_t addr, const uint8_t* const data, const uint8_t num) {
+uint32_t i2c_int_write(const uint8_t addr, const uint8_t* const data, const uint8_t num) {
   // Wait if I2C2 is busy
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 
@@ -275,10 +275,12 @@ uint32_t i2c_int_write_data(const uint8_t addr, const uint8_t* const data, const
 
 // Read multiple bytes of data from an I2C device.
 // @param addr: A 7-bit slave I2C address in the 7 MSBs, ie: 0bXXXXXXX0.
-// @param data: The buffer to write the read bytes into. Must have space for at least `num` bytes.
+// @param subaddr: The address to send to the device before reading, e.g. read from register.
+// @param data: The buffer to put the read bytes into. Must have space for at least `num` bytes.
 // @param num:  The number of bytes to read.
 // @return      0 if no error, or the ISR flag of an error.
-uint32_t i2c_int_read_data(const uint8_t addr, uint8_t* const data, const uint8_t num) {
+uint32_t i2c_int_read(const uint8_t addr, const uint8_t subaddr, uint8_t* const data,
+                      const uint8_t num) {
   // Wait if I2C2 is busy
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 

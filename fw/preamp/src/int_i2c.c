@@ -25,6 +25,7 @@
 
 #include "adc.h"
 #include "audio.h"
+#include "eeprom.h"
 #include "fans.h"
 #include "i2c.h"
 #include "leds.h"
@@ -43,8 +44,6 @@ const I2CDev dpot_dev_ = 0x5E;
 // DPOT with a mandatory SMBUS command
 const I2CReg dpot_cmd_  = {0x5C, 0x00};
 DPotType     dpot_type_ = DPOT_NONE;
-
-const uint8_t eeprom_preamp_addr_ = 0xA0;  // TODO: constexpr
 
 /* This function resolves an I2C Arbitration Lost error by clearing any
  * in-progress transactions on the bus. Also run at startup since the bus is
@@ -145,59 +144,31 @@ static void updateDPot(uint8_t val) {
   }
 }
 
-typedef enum __attribute__((__packed__)) {
-  EEPROM_FORMAT_ORIGINAL,
-  EEPROM_FORMAT_COUNT,
-} EepromFormat;
+bool        eeprom_write_request_ = false;
+EepromPage  eeprom_write_;  // To write to EEPROM, only used as intermediate buffer.
+static bool eeprom_write() {
+  // [7:4]: M24C02 address, [3:1]: board address, set with 3 pins on M24C02, [0]: 0
+  uint8_t addr = EEPROM_I2C_ADDR_BASE + (eeprom_write_.ctrl.i2c_addr << 1);
 
-typedef enum __attribute__((__packed__)) {
-  UNIT_TYPE_PI       = 0,
-  UNIT_TYPE_PRO      = 1,
-  UNIT_TYPE_STREAMER = 2,
-  UNIT_TYPE_COUNT,
-} UnitType;
+  // Clear the address field, this byte will be just the page address.
+  eeprom_write_.ctrl.i2c_addr = 0;
 
-// Matches the I2C address. The address is stored in the lowest 7 bits of the byte.
-// For EEPROMs connected directly to the Pi's I2C bus, the MSB is 0.
-// For EEPROMs connected to the Preamp's I2C bus, the MSB is 1.
-// The MC24C02's base I2C address is 0x50, with the 3 LSBs controlled by pins E[2:0].
-typedef enum __attribute__((__packed__)) {
-  BOARD_TYPE_STREAMER_SUPPORT = 0x50,
-  BOARD_TYPE_PREAMP           = 0xD0,
-} BoardType;
+  // Writes 16 bytes + 1 for data address + 1 for I2C address, and ~30us per byte = ~540us.
+  uint32_t err = i2c_int_write_data(addr, (uint8_t*)&eeprom_write_, sizeof(EepromPage));
+  return !err;
+}
 
-typedef struct __attribute__((__packed__)) {
-  EepromFormat format;
-  uint32_t     serial;
-  UnitType     unit_type;
-  BoardType    board_type;
-  uint8_t      rev_number;
-  char         rev_letter;
-} Eeprom;
-static_assert(sizeof(Eeprom) == 9, "Error: Eeprom wrong size.");
+EepromPage  eeprom_read_ = {};  // Latest page of data read from a EEPROM
+static bool eeprom_read() {
+  uint8_t  addr = EEPROM_I2C_ADDR_BASE + (eeprom_read_.ctrl.i2c_addr << 1);
+  uint32_t err  = i2c_int_read_data(addr, (uint8_t*)&eeprom_read_, sizeof(EepromPage));
+  return !err;
+}
 
-bool   eeprom_write_request_ = false;
-Eeprom eeprom_write_data_;  // To write to EEPROM
-Eeprom eeprom_data_;        // Read from EEPROM
-
-// TODO: Plumb through to register interface in ctrl_i2c
-void eeprom_write_request(const Eeprom* const data) {
-  memcpy(&eeprom_write_data_, data, sizeof(Eeprom));
+// Request a page of data to be written to an attached I2C EEPROM.
+void eeprom_write_request(const EepromPage* const data) {
+  memcpy(&eeprom_write_, data, sizeof(EepromPage));
   eeprom_write_request_ = true;
-}
-
-static bool eeprom_write(const Eeprom* const data) {
-  uint8_t addr = (data->board_type & 0x7F) << 1;
-
-  // Writes 9 bytes + 1 for address, and ~30us per byte = ~300us.
-  uint32_t err = i2c_int_write_data(addr, (uint8_t*)data, sizeof(Eeprom));
-  return !err;
-}
-
-static bool eeprom_read(Eeprom* const data) {
-  uint8_t  addr = (data->board_type & 0x7F) << 1;
-  uint32_t err  = i2c_int_read_data(addr, (uint8_t*)data, sizeof(Eeprom));
-  return !err;
 }
 
 uint8_t i2c_dev_present_[10] = {};
@@ -232,7 +203,7 @@ void initInternalI2C() {
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
   // If the Preamp's EEPROM is present, then this is a Rev4+ board with inverted mux enable logic.
-  bool rev4 = i2c_detect(eeprom_preamp_addr_);
+  bool rev4 = i2c_detect(EEPROM_I2C_ADDR_BASE);  // The preamp's EEPROM has address 0.
   audio_set_mux_en_level(!rev4);
 
   initLeds();

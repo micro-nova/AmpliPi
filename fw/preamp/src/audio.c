@@ -73,7 +73,7 @@ bool audio_get_mux_en_level() {
   return mux_en_level_;
 }
 
-// Convert a requested dB to the corresponding volume IC register value.
+// Convert a dB attenuation level to the corresponding volume IC register value.
 static inline uint8_t dB2VolReg(uint8_t db) {
   /* The volume IC has a discontinuity in its register value to attenuation
    * conversion after -71dB. To set -72dB the value 128 must be written.
@@ -90,7 +90,7 @@ static inline uint8_t dB2VolReg(uint8_t db) {
   return vol_reg;
 }
 
-// Convert a requested dB to the corresponding volume IC register value.
+// Convert a volume IC register value to the corresponding dB attenuation level.
 static inline uint8_t volReg2dB(uint8_t vol) {
   uint8_t db;
   if (vol < 72) {

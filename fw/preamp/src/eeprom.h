@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2023 MicroNova LLC
  *
- * Uses generated version.c file with information pulled from the git repo.
+ * EEPROM definitions.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,24 @@
 
 #pragma once
 
-#include "stdint.h"
+#include <stdint.h>
 
-extern const uint8_t VERSION_MAJOR_;
-extern const uint8_t VERSION_MINOR_;
-extern const uint8_t GIT_HASH_[4];  // GIT_HASH[3] LSB is dirty bit
+// TODO: constexpr. Waiting on EDG parser to support C23 better, see
+// https://www.edg.com/c23_features.html
+#define EEPROM_PAGE_SIZE     16
+#define EEPROM_I2C_ADDR_BASE 0xA0
+
+typedef union {
+  uint8_t byte;
+  struct {
+    uint8_t rd_wrn   : 1;
+    uint8_t i2c_addr : 3;
+    uint8_t page_num : 4;
+  };
+} EepromCtrl;
+
+typedef struct {
+  EepromCtrl ctrl;
+  uint8_t    data[EEPROM_PAGE_SIZE];
+} EepromPage;
+static_assert(sizeof(EepromPage) == EEPROM_PAGE_SIZE + 1, "Error: Eeprom wrong size.");
