@@ -205,7 +205,11 @@ def shutdown():
   # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
   Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
-@api.post('/api/lms_mode')
+@api.post('/api/lms_mode', response_class=Response,
+  responses = {
+    200: {}
+  }
+)
 def lms_mode(ctrl: Api = Depends(get_ctrl)):
   """ Toggles Logitech Media Server mode on or off. """
   new_config : models.Status
