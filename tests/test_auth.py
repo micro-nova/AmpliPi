@@ -21,7 +21,7 @@ from fastapi.testclient import TestClient
 # testing context
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from amplipi import auth, ctrl
+from amplipi import auth, defaults
 
 import netifaces as ni
 
@@ -29,7 +29,7 @@ import netifaces as ni
 # pylint: disable=invalid-name
 # pylint: disable=too-many-locals
 
-TEST_CONFIG = ctrl.Api.DEFAULT_CONFIG
+TEST_CONFIG = defaults.DEFAULT_CONFIG
 
 NO_USERS_CONFIG = {}
 
