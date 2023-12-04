@@ -20,9 +20,9 @@
 
 #include "leds.h"
 
-#include "audio.h"
-#include "i2c.h"
-#include "systick.h"
+#include "audio.h"    // For zone status.
+#include "i2c.h"      // To write to GPIO expander.
+#include "systick.h"  // For blink timing.
 
 // LED Board I2C registers
 const I2CReg i2c_led_dir_reg_  = {0x40, 0x00};

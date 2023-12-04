@@ -75,7 +75,7 @@ int main() {
       ctrl_i2c_transact();
     }
 
-    // updateInternalI2C(i2c_addr != 0);
+    updateInternalI2C(i2c_addr != 0);
 
     next_loop_time++;  // Loop currently takes ~800 us
     while (millis() < next_loop_time) {}

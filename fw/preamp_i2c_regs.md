@@ -234,6 +234,12 @@
       <td align='center' colspan=8>Temperature of second power supply in degrees C, if present. Unsigned with 1 fractional bit</td>
       <td>N/A</td>
     </tr>
+    <tr><td align=center colspan=100%><b>Preamp Board Info (From EEPROM)</b></td></tr>
+    <tr>
+      <td>0xFA</td><td>VER_MAJOR</td>
+      <td align=center colspan=8>Major Version Number</td>
+      <td>N/A</td>
+    </tr>
     <tr><td align=center colspan=100%><b>Version Info</b></td></tr>
     <tr>
       <td>0xFA</td>
@@ -533,6 +539,19 @@ Reports the fan power supply voltage as unsigned Volts with 4 fractional bits.
 If linear voltage control is not in use, this register will read 0xC0 (12 V).
 Otherwise this register will read between 0x63 (6.1875 V) and
 0xBF (11.9375 V).
+
+## Board ID EEPROMs
+
+Boards each have a EEPROM holding factory-programmed information.
+
+| Address Offset | Datatype | Data                      |
+| -------------- | -------- | ------------------------- |
+| 0x00           | uint8    | EEPROM Data Format (0x00) |
+| 0x01           | uint32   | Serial Number             |
+| 0x05           | uint8    | Unit Type                 |
+| 0x06           | uint8    | Board Type                |
+| 0x07           | uint8    | Board Revision Number     |
+| 0x08           | char     | Board Revision Letter     |
 
 ## VERSION REGISTERS
 

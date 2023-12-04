@@ -211,3 +211,121 @@ uint32_t writeRegI2C2(I2CReg r, uint8_t data) {
   I2C2->ICR = I2C_ICR_STOPCF;
   return 0;
 }
+
+// Write multiple bytes of data to an I2C device.
+// @param addr: A 7-bit slave I2C address in the 7 MSBs, ie: 0bXXXXXXX0.
+// @param data: An array of bytes to write.
+// @param num:  The number of bytes to write.
+// @return      0 if no error, or the ISR flag of an error.
+uint32_t i2c_int_write_data(const uint8_t addr, const uint8_t* const data, const uint8_t num) {
+  // Wait if I2C2 is busy
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Setup to write slave address, write bit, then 'num' bytes.
+  // This assumes CR2 is normally left at the defaults of all 0's.
+  I2C2->CR2 = I2C_CR2_AUTOEND | I2C_CR2_START | ((uint32_t)num << 16) | addr;
+  // I2C_TransferHandling(I2C2, addr, num, I2C_AutoEnd_Mode, I2C_Generate_Start_Write);
+
+  for (size_t n = 0; n < num; n++) {
+    // Wait for the transmit interrupt flag to be set (meaning that the TXDR register is empty and
+    // awaiting more data), or an error.
+    uint32_t isr = I2C2->ISR;
+    do {
+      if (isr & I2C_ISR_NACKF) {
+        I2C2->ICR = I2C_ICR_NACKCF;
+        return I2C_ISR_NACKF;
+      }
+      if (isr & I2C_ISR_BERR) {
+        I2C2->ICR = I2C_ICR_BERRCF;
+        return I2C_ISR_BERR;
+      }
+      if (isr & I2C_ISR_ARLO) {
+        I2C2->ICR = I2C_ICR_ARLOCF;
+        return I2C_ISR_ARLO;
+      }
+      isr = I2C2->ISR;
+      // TODO: Timeout
+    } while (!(isr & I2C_ISR_TXIS));
+
+    // Write the next byte of data
+    I2C2->TXDR = data[n];
+  }
+
+  // Wait for stop condition to occur or an error
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+    // TODO: Timeout
+  } while (!(isr & I2C_ISR_STOPF));
+  I2C2->ICR = I2C_ICR_STOPCF;  // Clear stop flag
+  return 0;
+}
+
+// Read multiple bytes of data from an I2C device.
+// @param addr: A 7-bit slave I2C address in the 7 MSBs, ie: 0bXXXXXXX0.
+// @param data: The buffer to write the read bytes into. Must have space for at least `num` bytes.
+// @param num:  The number of bytes to read.
+// @return      0 if no error, or the ISR flag of an error.
+uint32_t i2c_int_read_data(const uint8_t addr, uint8_t* const data, const uint8_t num) {
+  // Wait if I2C2 is busy
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Setup to write slave address and write bit, then read 'num' bytes.
+  // This assumes CR2 is normally left at the defaults of all 0's.
+  I2C2->CR2 = I2C_CR2_AUTOEND | I2C_CR2_START | I2C_CR2_RD_WRN | ((uint32_t)num << 16) | addr;
+
+  for (size_t n = 0; n < num; n++) {
+    // Wait for a byte to be received, or an error.
+    uint32_t isr = I2C2->ISR;
+    do {
+      if (isr & I2C_ISR_NACKF) {
+        I2C2->ICR = I2C_ICR_NACKCF;
+        return I2C_ISR_NACKF;
+      }
+      if (isr & I2C_ISR_BERR) {
+        I2C2->ICR = I2C_ICR_BERRCF;
+        return I2C_ISR_BERR;
+      }
+      if (isr & I2C_ISR_ARLO) {
+        I2C2->ICR = I2C_ICR_ARLOCF;
+        return I2C_ISR_ARLO;
+      }
+      isr = I2C2->ISR;
+    } while (!(isr & I2C_ISR_RXNE));
+
+    // Read the next byte of data
+    data[n] = (uint8_t)I2C2->RXDR;
+  }
+
+  // Wait for stop condition to occur or an error
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+  } while (!(isr & I2C_ISR_STOPF));
+  I2C2->ICR = I2C_ICR_STOPCF;  // Clear stop flag
+  return 0;
+}

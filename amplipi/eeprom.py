@@ -229,7 +229,16 @@ class EEPROM:
                       self.get_board_rev())
 
   def write_board_info(self, board_info: BoardInfo) -> None:
-    """Write board info to EEPROM."""
+    """Write board info to EEPROM.
+    | Addr | Datatype | Data                      |
+    | ---- | -------- | :------------------------ |
+    | 0x00 | uint8    | EEPROM Data Format (0x00) |
+    | 0x01 | uint32   | Serial Number             |
+    | 0x05 | uint8    | Unit Type                 |
+    | 0x06 | uint8    | Board Type                |
+    | 0x07 | uint8    | Board Revision Number     |
+    | 0x08 | char     | Board Revision Letter     |
+    """
     self._write_format()
     self.write_serial(board_info.serial)
     self.write_unit_type(board_info.unit_type)

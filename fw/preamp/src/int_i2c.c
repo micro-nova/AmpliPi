@@ -21,6 +21,7 @@
 #include "int_i2c.h"
 
 #include <stdio.h>
+#include <string.h>  // Memcpy
 
 #include "adc.h"
 #include "audio.h"
@@ -43,7 +44,7 @@ const I2CDev dpot_dev_ = 0x5E;
 const I2CReg dpot_cmd_  = {0x5C, 0x00};
 DPotType     dpot_type_ = DPOT_NONE;
 
-const uint8_t eeprom_addr_ = 0xA0;  // TODO: constexpr
+const uint8_t eeprom_preamp_addr_ = 0xA0;  // TODO: constexpr
 
 /* This function resolves an I2C Arbitration Lost error by clearing any
  * in-progress transactions on the bus. Also run at startup since the bus is
@@ -144,6 +145,61 @@ static void updateDPot(uint8_t val) {
   }
 }
 
+typedef enum __attribute__((__packed__)) {
+  EEPROM_FORMAT_ORIGINAL,
+  EEPROM_FORMAT_COUNT,
+} EepromFormat;
+
+typedef enum __attribute__((__packed__)) {
+  UNIT_TYPE_PI       = 0,
+  UNIT_TYPE_PRO      = 1,
+  UNIT_TYPE_STREAMER = 2,
+  UNIT_TYPE_COUNT,
+} UnitType;
+
+// Matches the I2C address. The address is stored in the lowest 7 bits of the byte.
+// For EEPROMs connected directly to the Pi's I2C bus, the MSB is 0.
+// For EEPROMs connected to the Preamp's I2C bus, the MSB is 1.
+// The MC24C02's base I2C address is 0x50, with the 3 LSBs controlled by pins E[2:0].
+typedef enum __attribute__((__packed__)) {
+  BOARD_TYPE_STREAMER_SUPPORT = 0x50,
+  BOARD_TYPE_PREAMP           = 0xD0,
+} BoardType;
+
+typedef struct __attribute__((__packed__)) {
+  EepromFormat format;
+  uint32_t     serial;
+  UnitType     unit_type;
+  BoardType    board_type;
+  uint8_t      rev_number;
+  char         rev_letter;
+} Eeprom;
+static_assert(sizeof(Eeprom) == 9, "Error: Eeprom wrong size.");
+
+bool   eeprom_write_request_ = false;
+Eeprom eeprom_write_data_;  // To write to EEPROM
+Eeprom eeprom_data_;        // Read from EEPROM
+
+// TODO: Plumb through to register interface in ctrl_i2c
+void eeprom_write_request(const Eeprom* const data) {
+  memcpy(&eeprom_write_data_, data, sizeof(Eeprom));
+  eeprom_write_request_ = true;
+}
+
+static bool eeprom_write(const Eeprom* const data) {
+  uint8_t addr = (data->board_type & 0x7F) << 1;
+
+  // Writes 9 bytes + 1 for address, and ~30us per byte = ~300us.
+  uint32_t err = i2c_int_write_data(addr, (uint8_t*)data, sizeof(Eeprom));
+  return !err;
+}
+
+static bool eeprom_read(Eeprom* const data) {
+  uint8_t  addr = (data->board_type & 0x7F) << 1;
+  uint32_t err  = i2c_int_read_data(addr, (uint8_t*)data, sizeof(Eeprom));
+  return !err;
+}
+
 uint8_t i2c_dev_present_[10] = {};
 uint8_t isInternalI2CDevPresent(uint8_t addr) {
   return i2c_dev_present_[addr];
@@ -175,7 +231,8 @@ void initInternalI2C() {
   // Set the direction for the power board GPIO
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
-  bool rev4 = i2c_detect(eeprom_addr_);
+  // If the Preamp's EEPROM is present, then this is a Rev4+ board with inverted mux enable logic.
+  bool rev4 = i2c_detect(eeprom_preamp_addr_);
   audio_set_mux_en_level(!rev4);
 
   initLeds();
@@ -200,8 +257,19 @@ void updateInternalI2C(bool initialized) {
     // Update fans based on temps. Ideally use a DPot for linear control.
     uint8_t dpot_val = updateFans(dpot_type_ != DPOT_NONE);
     updateDPot(dpot_val);
+  } else if (mod8 == 4) {
+    // Read/write EEPROM
+    static bool eeprom_read_done = false;
+    if (eeprom_write_request_) {
+      eeprom_write(&eeprom_write_data_);
+      eeprom_write_request_ = false;
+      eeprom_read_done      = false;
+    } else if (!eeprom_read_done) {
+      eeprom_read(&eeprom_data_);
+      eeprom_read_done = true;
+    }
   } else {
-    // Read the power board's GPIO inputs
+    // Read the power board's GPIO inputs (~2 Hz rate is all that is required).
     GpioReg pwr_gpio = {.data = readRegI2C2(pwr_io_gpio_)};
     if (getFanCtrl() != FAN_CTRL_MAX6644) {
       // No fan control IC to determine this

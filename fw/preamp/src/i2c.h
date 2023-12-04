@@ -45,3 +45,6 @@ bool i2c_detect(uint8_t addr);
 uint32_t writeByteI2C2(I2CDev dev, uint8_t val);
 uint8_t  readRegI2C2(I2CReg r);
 uint32_t writeRegI2C2(I2CReg r, uint8_t data);
+
+uint32_t i2c_int_write_data(const uint8_t addr, const uint8_t* const data, const uint8_t num);
+uint32_t i2c_int_read_data(const uint8_t addr, uint8_t* const data, const uint8_t num);
