@@ -24,6 +24,8 @@ download the appropriate arm-none-eabi for your host machine.
 
 #### Linux Install
 
+libncursesw5 is only required for GDB.
+
 ```sh
 wget https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
 sudo tar -xf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz -C /usr/share
