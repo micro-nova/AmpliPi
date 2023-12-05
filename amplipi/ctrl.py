@@ -283,7 +283,7 @@ class Api:
           # particular source; the client+server connection bootstrapping takes a while, which is a less than ideal
           # user experience.
           if self.lms_mode and stream.type == 'lms':
-            self.streams[stream.id].activate()
+            self.streams[stream.id].activate() # type: ignore
         except Exception as exc:
           print(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
