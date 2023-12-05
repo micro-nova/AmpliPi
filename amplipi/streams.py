@@ -1199,9 +1199,6 @@ class LMS(PersistentStream):
     )
     return source
 
-  def disconnect(self):
-    super().disconnect()
-
 class Bluetooth(BaseStream):
   """ A source for Bluetooth streams, which requires an external Bluetooth USB dongle """
 
