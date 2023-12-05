@@ -44,6 +44,10 @@ const I2CDev dpot_dev_ = 0x5E;
 const I2CReg dpot_cmd_  = {0x5C, 0x00};
 DPotType     dpot_type_ = DPOT_NONE;
 
+// The Rev4 preamp adds a EEPROM, but also inverts the mux control line logic levels.
+// The board version is detected during the internal I2C bus initialization.
+static bool rev4_ = false;
+
 /* This function resolves an I2C Arbitration Lost error by clearing any
  * in-progress transactions on the bus. Also run at startup since the bus is
  * in an unknown state.
@@ -143,8 +147,10 @@ static void updateDPot(uint8_t val) {
   }
 }
 
-bool        eeprom_write_request_ = false;
-EepromPage  eeprom_write_;  // To write to EEPROM, only used as intermediate buffer.
+bool       eeprom_write_request_ = false;
+EepromPage eeprom_write_;  // To write to EEPROM, only used as intermediate buffer.
+
+// Perform a page write from an EEPROM
 static bool eeprom_write() {
   // [7:4]: M24C02 address, [3:1]: board address, set with 3 pins on M24C02, [0]: 0
   uint8_t addr = EEPROM_I2C_ADDR_BASE + (eeprom_write_.ctrl.i2c_addr << 1);
@@ -157,20 +163,14 @@ static bool eeprom_write() {
   return !err;
 }
 
-EepromPage  eeprom_read_ = {};  // Latest page of data read from a EEPROM
+// Latest page of data read from a EEPROM
+EepromPage eeprom_read_ = {.ctrl.rd_wrn = 1};  // Set rd_wrn=1 to avoid an initial read request.
+
+// Perform a page read from an EEPROM
 static bool eeprom_read() {
   uint8_t  addr    = EEPROM_I2C_ADDR_BASE + (eeprom_read_.ctrl.i2c_addr << 1);
   uint8_t  subaddr = eeprom_read_.ctrl.page_num << 4;
   uint32_t err     = i2c_int_read(addr, subaddr, eeprom_read_.data, sizeof(EepromPage));
-  // rd_wrn is already 0 to mark this as invalid data until the read is complete.
-  eeprom_read_.ctrl.i2c_addr = 0;
-
-  // TODO: Change all this to use subaddr...
-  uint32_t subaddr = 0;
-  uint32_t err     = i2c_int_read(addr, subaddr, (uint8_t*)&eeprom_read_, sizeof(EepromPage));
-
-  // Restore control fields and mark the read as completed if successful.
-  eeprom_read_.ctrl.i2c_addr = (addr >> 1) & 0x7;
   if (!err) {
     eeprom_read_.ctrl.rd_wrn = 1;
   }
@@ -236,8 +236,8 @@ void initInternalI2C() {
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
   // If the Preamp's EEPROM is present, then this is a Rev4+ board with inverted mux enable logic.
-  bool rev4 = i2c_detect(EEPROM_I2C_ADDR_BASE);  // The preamp's EEPROM has address 0.
-  audio_set_mux_en_level(!rev4);
+  rev4_ = i2c_detect(EEPROM_I2C_ADDR_BASE);  // The preamp's EEPROM has address 0.
+  audio_set_mux_en_level(!rev4_);
 
   initLeds();
 
@@ -264,7 +264,7 @@ void updateInternalI2C(bool initialized) {
     // Update fans based on temps. Ideally use a DPot for linear control.
     uint8_t dpot_val = updateFans(dpot_type_ != DPOT_NONE);
     updateDPot(dpot_val);
-  } else if (mod8 == 4) {
+  } else if (rev4_ && mod8 == 4) {
     // Read/write EEPROM
     if (eeprom_write_request_) {
       eeprom_write();
