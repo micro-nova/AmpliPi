@@ -219,14 +219,14 @@ def lms_mode(ctrl: Api = Depends(get_ctrl)):
       os.remove(pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode"))
     except FileNotFoundError:
       pass
-    Popen('systemctl stop logitechmediaserver', shell=True)
-    Popen('systemctl disable logitechmediaserver', shell=True)
+    Popen('sudo systemctl stop logitechmediaserver', shell=True)
+    Popen('sudo systemctl disable logitechmediaserver', shell=True)
     new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=False))
   else:
     print("turning LMS mode on...")
     pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode").touch()
-    Popen('systemctl start logitechmediaserver', shell=True)
-    Popen('systemctl enable logitechmediaserver', shell=True)
+    Popen('sudo systemctl start logitechmediaserver', shell=True)
+    Popen('sudo systemctl enable logitechmediaserver', shell=True)
     new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=True))
   load_config(new_config, ctrl)
 
