@@ -218,6 +218,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -636,6 +637,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -1054,6 +1056,7 @@ paths:
                     mock_ctrl: false
                     mock_streams: false
                     is_streamer: false
+                    lms_mode: false
                     online: true
                     version: 0.1.9
                   presets:
@@ -1463,6 +1466,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -1892,6 +1896,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -2311,6 +2316,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -2643,6 +2649,17 @@ paths:
       security:
       - APIKeyCookie: []
       - APIKeyQuery: []
+  /api/lms_mode:
+    post:
+      summary: Lms Mode
+      description: Toggles Logitech Media Server mode on or off.
+      operationId: lms_mode_api_lms_mode_post
+      responses:
+        '200':
+          description: Successful Response
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/sources:
     get:
       tags:
@@ -2951,6 +2968,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -3650,6 +3668,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -4274,6 +4293,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -4984,6 +5004,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -5468,6 +5489,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -6246,6 +6268,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -6736,6 +6759,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -7218,6 +7242,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -7699,6 +7724,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -8329,6 +8355,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -8789,6 +8816,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -9230,6 +9258,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -9664,6 +9693,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -9998,6 +10028,7 @@ paths:
                     online: true
                     latest_release: 0.1.8
                     access_key: ''
+                    lms_mode: false
                     fw:
                     - version: '1.6'
                       git_hash: de0f8eb
@@ -10227,24 +10258,6 @@ components:
 
 
         Volume, mute, and source_id fields are aggregates of the member zones.'
-      creation_examples:
-        Upstairs Group:
-          value:
-            name: Upstairs
-            zones:
-            - 1
-            - 2
-            - 3
-            - 4
-            - 5
-        Downstairs Group:
-          value:
-            name: Downstairs
-            zones:
-            - 6
-            - 7
-            - 8
-            - 9
       examples:
         Upstairs Group:
           value:
@@ -10269,6 +10282,24 @@ components:
             - 9
             vol_delta: -30
             vol_f: 0.63
+      creation_examples:
+        Upstairs Group:
+          value:
+            name: Upstairs
+            zones:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+        Downstairs Group:
+          value:
+            name: Downstairs
+            zones:
+            - 6
+            - 7
+            - 8
+            - 9
     GroupUpdate:
       title: GroupUpdate
       type: object
@@ -10449,6 +10480,11 @@ components:
           type: string
           description: session token/API key used for authentication
           default: ''
+        lms_mode:
+          title: Lms Mode
+          type: boolean
+          description: Are we running in LMS mode?
+          default: false
         fw:
           title: Fw
           type: array
@@ -10469,6 +10505,7 @@ components:
             online: true
             latest_release: 0.1.8
             access_key: ''
+            lms_mode: false
             fw:
             - version: '1.6'
               git_hash: de0f8eb
@@ -10546,9 +10583,10 @@ components:
 
         In addition to most of the configuration found in Status, this can contain
         commands as well that configure the state of different streaming services.'
-      creation_examples:
-        Add Mute All:
+      examples:
+        Mute All:
           value:
+            id: 10000
             name: Mute All
             state:
               zones:
@@ -10564,10 +10602,9 @@ components:
                 mute: true
               - id: 5
                 mute: true
-      examples:
-        Mute All:
+      creation_examples:
+        Add Mute All:
           value:
-            id: 10000
             name: Mute All
             state:
               zones:
@@ -11012,6 +11049,7 @@ components:
               mock_ctrl: false
               mock_streams: false
               is_streamer: false
+              lms_mode: false
               online: true
               version: 0.1.9
             presets:
@@ -11383,6 +11421,43 @@ components:
           type: boolean
           description: Is Airplay stream AirPlay2?
       description: 'Digital stream such as Pandora, AirPlay or Spotify '
+      examples:
+        Regina Spektor Radio:
+          value:
+            id: 90890
+            name: Regina Spektor Radio
+            password: ''
+            station: '4473713754798410236'
+            status: connected
+            type: pandora
+            user: example1@micro-nova.com
+        Matt and Kim Radio (disconnected):
+          value:
+            id: 90891
+            info:
+              details: No info available
+            name: Matt and Kim Radio
+            password: ''
+            station: '4610303469018478727'
+            status: disconnected
+            type: pandora
+            user: example2@micro-nova.com
+        AirPlay (connected):
+          value:
+            id: 44590
+            info:
+              details: No info available
+            name: Jason's iPhone
+            status: connected
+            type: airplay
+        AirPlay (disconnected):
+          value:
+            id: 4894
+            info:
+              details: No info available
+            name: Rnay
+            status: disconnected
+            type: airplay
       creation_examples:
         Add Beatles Internet Radio Station:
           value:
@@ -11453,43 +11528,6 @@ components:
             name: Family
             type: lms
             server: mylmsserver
-      examples:
-        Regina Spektor Radio:
-          value:
-            id: 90890
-            name: Regina Spektor Radio
-            password: ''
-            station: '4473713754798410236'
-            status: connected
-            type: pandora
-            user: example1@micro-nova.com
-        Matt and Kim Radio (disconnected):
-          value:
-            id: 90891
-            info:
-              details: No info available
-            name: Matt and Kim Radio
-            password: ''
-            station: '4610303469018478727'
-            status: disconnected
-            type: pandora
-            user: example2@micro-nova.com
-        AirPlay (connected):
-          value:
-            id: 44590
-            info:
-              details: No info available
-            name: Jason's iPhone
-            status: connected
-            type: airplay
-        AirPlay (disconnected):
-          value:
-            id: 4894
-            info:
-              details: No info available
-            name: Rnay
-            status: disconnected
-            type: airplay
     StreamCommand:
       title: StreamCommand
       enum:

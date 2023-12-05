@@ -212,6 +212,7 @@ class Api:
       mock_streams=self._mock_streams,
       config_file=self.config_file,
       is_streamer=self.is_streamer,
+      lms_mode=self.lms_mode,
       version=utils.detect_version(),
     )
     for major, minor, ghash, dirty in self._rt.read_versions():
@@ -278,6 +279,11 @@ class Api:
       if stream.id:
         try:
           self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams)
+          # If we're in LMS mode, we need to start these clients on each boot, not when they get assigned to a
+          # particular source; the client+server connection bootstrapping takes a while, which is a less than ideal
+          # user experience.
+          if self.lms_mode and stream.type == 'lms':
+            self.streams[stream.id].activate()
         except Exception as exc:
           print(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
