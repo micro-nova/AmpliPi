@@ -193,8 +193,8 @@ class PersistentStream(BaseStream):
     self._cproc: Optional[subprocess.Popen] = None
 
   def __del__(self):
-    self.deactivate()
     self.disconnect()
+    self.deactivate()
 
   def is_persistent(self):
     """ Does this stream run in the background? """
@@ -1124,10 +1124,9 @@ class FMRadio(BaseStream):
 
 class LMS(PersistentStream):
   """ An LMS Stream using squeezelite"""
-  def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False, deallocatable: bool = True):
+  def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
     super().__init__('lms', name, disabled=disabled, mock=mock)
     self.server : Optional[str] = server
-    self.deallocatable : bool = deallocatable
 
   def is_persistent(self):
     return True
@@ -1187,10 +1186,9 @@ class LMS(PersistentStream):
       print(f'error starting lms: {exc}')
 
   def _deactivate(self):
-    if self.deallocatable:
-      if self._is_running():
-        self.proc.kill()
-      self.proc = None
+    if self._is_running():
+      self.proc.kill()
+    self.proc = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(
@@ -1202,8 +1200,7 @@ class LMS(PersistentStream):
     return source
 
   def disconnect(self):
-    if self.deallocatable:
-      super().disconnect()
+    super().disconnect()
 
 class Bluetooth(BaseStream):
   """ A source for Bluetooth streams, which requires an external Bluetooth USB dongle """
@@ -1340,7 +1337,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   if stream.type == 'fmradio':
     return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
   if stream.type == 'lms':
-    return LMS(name, args.get('server'), deallocatable=args.get('deallocatable', True), disabled=disabled, mock=mock)
+    return LMS(name, args.get('server'), disabled=disabled, mock=mock)
   elif stream.type == 'bluetooth':
     return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
