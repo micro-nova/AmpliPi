@@ -24,6 +24,8 @@
 
 #include "eeprom.h"
 
+bool get_rev4();
+
 void    eeprom_write_request(const EepromPage* const data);
 void    eeprom_read_request(const EepromCtrl ctrl);
 uint8_t eeprom_get_ctrl();

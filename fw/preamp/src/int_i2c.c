@@ -48,6 +48,11 @@ DPotType     dpot_type_ = DPOT_NONE;
 // The board version is detected during the internal I2C bus initialization.
 static bool rev4_ = false;
 
+// @returns true if a EEPROM was detected, indicating Rev4+ hardware, false otherwise.
+bool get_rev4() {
+  return rev4_;
+}
+
 /* This function resolves an I2C Arbitration Lost error by clearing any
  * in-progress transactions on the bus. Also run at startup since the bus is
  * in an unknown state.

@@ -275,7 +275,7 @@
       <td align=center colspan=4>GIT_HASH[3:0]</td>
       <td align=center>-</td>
       <td align=center>-</td>
-      <td align=center>-</td>
+      <td align=center>Rev4+</td>
       <td align=center>DIRTY</td>
       <td>N/A</td>
     </tr>
@@ -567,3 +567,5 @@ Use `git rev-parse --short HEAD` to get the short Git hash for the current commi
 
 If the DIRTY bit is set, the firmware is not aligned to any particular Git commit
 and the hash should be ignored.
+
+The Rev4+ bit indicates that the Preamp Board is Rev4 or newer with a EEPROM.

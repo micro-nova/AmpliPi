@@ -249,6 +249,9 @@ uint8_t readReg(uint8_t addr) {
     case REG_GIT_HASH_2_1:
     case REG_GIT_HASH_0_D:
       out_msg = GIT_HASH_[addr - REG_GIT_HASH_6_5];
+      if (addr == REG_GIT_HASH_0_D && get_rev4()) {
+        out_msg |= 2;
+      }
       break;
 
     default:
