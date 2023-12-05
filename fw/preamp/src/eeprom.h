@@ -30,7 +30,7 @@
 typedef union {
   uint8_t byte;
   struct {
-    uint8_t rd_wrn   : 1;
+    uint8_t rd_wrn   : 1;  // Read = 1, write = 0.
     uint8_t i2c_addr : 3;
     uint8_t page_num : 4;
   };

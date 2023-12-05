@@ -22,8 +22,14 @@
 
 #include <stdint.h>
 
-void initInternalI2C();
-void updateInternalI2C(bool initialized);
+#include "eeprom.h"
 
+void    eeprom_write_request(const EepromPage* const data);
+void    eeprom_read_request(const EepromCtrl ctrl);
+uint8_t eeprom_get_ctrl();
+uint8_t eeprom_get_data(uint8_t addr);
+
+void    initInternalI2C();
+void    updateInternalI2C(bool initialized);
 bool    isDPotSMBus();
 uint8_t isInternalI2CDevPresent(uint8_t addr);

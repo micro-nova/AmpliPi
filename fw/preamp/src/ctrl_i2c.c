@@ -228,6 +228,14 @@ uint8_t readReg(uint8_t addr) {
       out_msg = getTemps()->hv2_f1;
       break;
 
+    case REG_EEPROM_REQUEST:
+      out_msg = eeprom_get_ctrl();
+      break;
+
+    case REG_EEPROM_DATA_START ... REG_EEPROM_DATA_END:
+      out_msg = eeprom_get_data(addr - REG_EEPROM_DATA_START);
+      break;
+
     case REG_VERSION_MAJOR:
       out_msg = VERSION_MAJOR_;
       break;
@@ -254,7 +262,7 @@ uint8_t readReg(uint8_t addr) {
 }
 
 void writeReg(uint8_t addr, uint8_t data) {
-  static Eeprom eeprom_write_data = {};
+  static EepromPage eeprom_write_page = {};
 
   switch (addr) {
     case REG_SRC_AD:
@@ -326,14 +334,15 @@ void writeReg(uint8_t addr, uint8_t data) {
       // Initiate a EEPROM read or write
       EepromCtrl ctrl = (EepromCtrl)data;
       if (ctrl.rd_wrn) {
-        eeprom_write(&eeprom_write_data);
+        eeprom_write_request(&eeprom_write_page);
       } else {
-        eeprom_read(ctrl);
+        eeprom_read_request(ctrl);
       }
       break;
     }
 
     case REG_EEPROM_DATA_START ... REG_EEPROM_DATA_END:
+      eeprom_write_page.data[addr - REG_EEPROM_DATA_START] = data;
       break;
 
     default:

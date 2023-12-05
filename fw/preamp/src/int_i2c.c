@@ -25,7 +25,6 @@
 
 #include "adc.h"
 #include "audio.h"
-#include "eeprom.h"
 #include "fans.h"
 #include "i2c.h"
 #include "leds.h"
@@ -154,14 +153,27 @@ static bool eeprom_write() {
   eeprom_write_.ctrl.i2c_addr = 0;
 
   // Writes 16 bytes + 1 for data address + 1 for I2C address, and ~30us per byte = ~540us.
-  uint32_t err = i2c_int_write_data(addr, (uint8_t*)&eeprom_write_, sizeof(EepromPage));
+  uint32_t err = i2c_int_write(addr, (uint8_t*)&eeprom_write_, sizeof(EepromPage));
   return !err;
 }
 
 EepromPage  eeprom_read_ = {};  // Latest page of data read from a EEPROM
 static bool eeprom_read() {
-  uint8_t  addr = EEPROM_I2C_ADDR_BASE + (eeprom_read_.ctrl.i2c_addr << 1);
-  uint32_t err  = i2c_int_read_data(addr, (uint8_t*)&eeprom_read_, sizeof(EepromPage));
+  uint8_t addr = EEPROM_I2C_ADDR_BASE + (eeprom_read_.ctrl.i2c_addr << 1);
+
+  // Clear the address field, this byte will be just the page address.
+  // rd_wrn is already 0 to mark this as invalid data until the read is complete.
+  eeprom_read_.ctrl.i2c_addr = 0;
+
+  // TODO: Change all this to use subaddr...
+  uint32_t subaddr = 0;
+  uint32_t err     = i2c_int_read(addr, subaddr, (uint8_t*)&eeprom_read_, sizeof(EepromPage));
+
+  // Restore control fields and mark the read as completed if successful.
+  eeprom_read_.ctrl.i2c_addr = (addr >> 1) & 0x7;
+  if (!err) {
+    eeprom_read_.ctrl.rd_wrn = 1;
+  }
   return !err;
 }
 
@@ -169,6 +181,27 @@ static bool eeprom_read() {
 void eeprom_write_request(const EepromPage* const data) {
   memcpy(&eeprom_write_, data, sizeof(EepromPage));
   eeprom_write_request_ = true;
+}
+
+void eeprom_read_request(const EepromCtrl ctrl) {
+  eeprom_read_.ctrl.byte = ctrl.byte;
+
+  // This is a read, so `rd_wrn` is only valid if 1.
+  // Set to 0 to mark as invalid and flag a read request.
+  eeprom_read_.ctrl.rd_wrn = 0;
+}
+
+// @returns The EEPROM control structure from a previously-read EEPROM page.
+//          `rd_rwn`=0 indicates a read in progress.
+uint8_t eeprom_get_ctrl() {
+  return eeprom_read_.ctrl.byte;
+}
+
+// Get a byte from a previously-read EEPROM page
+// @param addr: page address from 0-15
+// @returns Data at the given `addr`.
+uint8_t eeprom_get_data(uint8_t addr) {
+  return eeprom_read_.data[addr];
 }
 
 uint8_t i2c_dev_present_[10] = {};
@@ -207,12 +240,15 @@ void initInternalI2C() {
   audio_set_mux_en_level(!rev4);
 
   initLeds();
+
+  // Always read the Preamp's EEPROM at startup.
+  eeprom_read_request((EepromCtrl){.i2c_addr = 0, .page_num = 0});
+
   updateInternalI2C(false);
 }
 
-/* Update the devices on the internal I2C bus.
- * @param initialized: true if I2C slave address has been received.
- */
+// Update the devices on the internal I2C bus.
+// @param initialized: true if I2C slave address has been received.
 void updateInternalI2C(bool initialized) {
   /* I2C transaction times (us):
    *   writeRegI2C2() 92.5
@@ -230,14 +266,12 @@ void updateInternalI2C(bool initialized) {
     updateDPot(dpot_val);
   } else if (mod8 == 4) {
     // Read/write EEPROM
-    static bool eeprom_read_done = false;
     if (eeprom_write_request_) {
-      eeprom_write(&eeprom_write_data_);
+      eeprom_write();
       eeprom_write_request_ = false;
-      eeprom_read_done      = false;
-    } else if (!eeprom_read_done) {
-      eeprom_read(&eeprom_data_);
-      eeprom_read_done = true;
+    } else if (eeprom_read_.ctrl.rd_wrn == 0) {
+      // rd_wrn = 0 marks a read request.
+      eeprom_read();
     }
   } else {
     // Read the power board's GPIO inputs (~2 Hz rate is all that is required).
