@@ -159,9 +159,9 @@ static bool eeprom_write() {
 
 EepromPage  eeprom_read_ = {};  // Latest page of data read from a EEPROM
 static bool eeprom_read() {
-  uint8_t addr = EEPROM_I2C_ADDR_BASE + (eeprom_read_.ctrl.i2c_addr << 1);
-
-  // Clear the address field, this byte will be just the page address.
+  uint8_t  addr    = EEPROM_I2C_ADDR_BASE + (eeprom_read_.ctrl.i2c_addr << 1);
+  uint8_t  subaddr = eeprom_read_.ctrl.page_num << 4;
+  uint32_t err     = i2c_int_read(addr, subaddr, eeprom_read_.data, sizeof(EepromPage));
   // rd_wrn is already 0 to mark this as invalid data until the read is complete.
   eeprom_read_.ctrl.i2c_addr = 0;
 

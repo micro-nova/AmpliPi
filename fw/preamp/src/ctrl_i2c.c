@@ -334,9 +334,9 @@ void writeReg(uint8_t addr, uint8_t data) {
       // Initiate a EEPROM read or write
       EepromCtrl ctrl = (EepromCtrl)data;
       if (ctrl.rd_wrn) {
-        eeprom_write_request(&eeprom_write_page);
-      } else {
         eeprom_read_request(ctrl);
+      } else {
+        eeprom_write_request(&eeprom_write_page);
       }
       break;
     }
