@@ -24,6 +24,8 @@
 
 #include "ctrl_i2c.h"
 
+#include <stdio.h>
+
 #include "adc.h"
 #include "audio.h"
 #include "eeprom.h"
@@ -362,14 +364,15 @@ void ctrl_i2c_transact() {
   // Setting I2C_ICR.ADDRCF releases the clock stretch if any then acks
   I2C1->ICR = I2C_ICR_ADDRCF;
 
+  // We assume a write (I2C_ISR_DIR = 0)
   // Wait for register address to be written by master (Pi)
+  // TODO: Timeout
   while (!(I2C1->ISR & I2C_ISR_RXNE)) {}
 
   // Reading I2C_RXDR releases the clock stretch if any then acks
   uint8_t reg_addr = (uint8_t)I2C1->RXDR;
 
-  // Wait for either another slave address match (read),
-  // or data in the RX register (write)
+  // Wait for either another slave address match (read), or data in the RX register (write)
   uint32_t i2c_isr_val;
   do {
     i2c_isr_val = I2C1->ISR;
@@ -379,16 +382,28 @@ void ctrl_i2c_transact() {
     // Just received a repeated start and slave address again, clear address flag to ACK
     I2C1->ICR = I2C_ISR_ADDR;
 
-    // Make sure the I2C_TXDR register is empty before filling it with new
-    // data to write
-    while (!(I2C1->ISR & I2C_ISR_TXE)) {}
-
-    // Send a response based on the register address
-    uint8_t response = readReg(reg_addr);  // TODO: Prepare the response earlier.
-    I2C1->TXDR       = response;
-
-    // We only allow reading 1 byte at a time for now, here we are assuming
-    // a NACK was sent by the master to signal the end of the read request.
+    uint8_t addr      = reg_addr;
+    bool    more_data = true;
+    while (more_data) {
+      uint8_t response = readReg(addr);  // Get the response for the current register address.
+      do {  // Wait for a TXIS flag (more data requested) or a STOPF flag (done).
+        i2c_isr_val = I2C1->ISR;
+      } while (!(i2c_isr_val & (I2C_ISR_TXIS | I2C_ISR_STOPF | I2C_ISR_NACKF)));
+      //} else {
+      I2C1->TXDR = response;  // Transmit requested, write data.
+      more_data  = false;     // Stop received, done sending data.
+      if (i2c_isr_val & I2C_ISR_TXIS) {
+        printf("T");
+      }
+      if (i2c_isr_val & I2C_ISR_STOPF) {
+        printf("S");
+      }
+      if (i2c_isr_val & I2C_ISR_NACKF) {
+        printf("N");
+      }
+      printf("\n");
+      // addr++;
+    }
   } else {  // Writing
     // Just received data from the master (Pi), get it from the I2C_RXDR register
     uint8_t data = (uint8_t)I2C1->RXDR;
