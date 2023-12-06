@@ -158,7 +158,6 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'lms' : {
     'apt': ['libcrypt-openssl-rsa-perl'], # needed for ShairTunes2W support
-    'copy' : [{'from': 'bin/ARCH/squeezelite', 'to': 'streams/squeezelite'}],
     'script' : [
       'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
       '  wget https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.4.0~1700477852_all.deb -O /tmp/logitechmediaserver_8.4.0.deb',
@@ -166,6 +165,10 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       '  sudo systemctl disable logitechmediaserver',
       '  sudo systemctl stop logitechmediaserver',
       'fi',
+      'wget https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_1.9.9-1449_armhf.deb -O /tmp/squeezelite_1.9.9-1449_armhf.deb',
+      'sudo dpkg -i /tmp/squeezelite_1.9.9-1449_armhf.deb',
+      'sudo systemctl disable squeezelite',
+      'sudo systemctl stop squeezelite',
     ]
   },
   'dlna' : {
