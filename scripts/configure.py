@@ -162,13 +162,13 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
       '  wget https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.4.0~1700477852_all.deb -O /tmp/logitechmediaserver_8.4.0.deb',
       '  sudo dpkg -i /tmp/logitechmediaserver_8.4.0.deb',
-      '  sudo systemctl disable logitechmediaserver',
-      '  sudo systemctl stop logitechmediaserver',
+      '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
+      '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
       'fi',
       'wget https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_1.9.9-1449_armhf.deb -O /tmp/squeezelite_1.9.9-1449_armhf.deb',
       'sudo dpkg -i /tmp/squeezelite_1.9.9-1449_armhf.deb',
-      'sudo systemctl disable squeezelite',
       'sudo systemctl stop squeezelite',
+      'sudo systemctl disable squeezelite',
     ]
   },
   'dlna' : {
