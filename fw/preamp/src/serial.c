@@ -195,9 +195,11 @@ void usart2_irq_handler() {
 }
 
 // Write a character to UART
+#define DEBUG_PRINTS
 int _write(int file __attribute__((__unused__)), char* ptr, int len) {
-  // Only stdout is actually supported, but accept any file writes as if they were to STDOUT_FILENO.
-  // EXCEPT in uart_passthrough_ mode, where printf() writes to USART1 are forbidden.
+// Only stdout is actually supported, but accept any file writes as if they were to STDOUT_FILENO.
+// EXCEPT in uart_passthrough_ mode, where printf() writes to USART1 are forbidden.
+#ifdef DEBUG_PRINTS
   if (uart_passthrough_) {
     return -1;
   }
@@ -210,6 +212,11 @@ int _write(int file __attribute__((__unused__)), char* ptr, int len) {
     written++;
   }
   return written;
+#else
+  (void)ptr;
+  (void)len;
+  return -1;
+#endif
 }
 
 // Below are unused system calls, implemented as stubs.
