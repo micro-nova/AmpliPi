@@ -7,6 +7,7 @@ So you think you are ready to make a release, eh? Follow the steps below :)
 - [ ] Make a branch off develop called VERSION-prelease
 - [ ] Update the changelog with notes and the latest version (and commit it!)
 - [ ] Update the API by running the `scripts/create_spec` script and commit the resulting changes to `docs/amplipi_api.yaml` with `git commit --patch -m "Update API specification used by GitHub Pages"`
+- [ ] Build the webapp with `npm run build` and force add the changes with `git add -f web/dist`
 - [ ] Use poetry to bump the version with `poetry version ${VERSION}-alpha.0 && git add pyproject.toml && git commit -m "Bump pre-release version"`
 - [ ] Tag the changes so we can make a pre-release on GitHub `git tag -as ${VERSION}-alpha.0 -m '' && git push origin ${VERSION}-alpha.0`
 - [ ] Make a pre-release using the GitHub interface
