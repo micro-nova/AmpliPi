@@ -279,9 +279,11 @@ void updateInternalI2C(bool initialized) {
   } else if (rev4_ && mod8 == 4) {
     // Read/write EEPROM
     if (eeprom_write_request_) {
+      printf("W\n");
       eeprom_write();
       eeprom_write_request_ = false;
     } else if (eeprom_read_.ctrl.rd_wrn == 0) {
+      printf("R\n");
       // rd_wrn = 0 marks a read request.
       eeprom_read();
     }
