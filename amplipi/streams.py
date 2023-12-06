@@ -1199,7 +1199,6 @@ class LMS(PersistentStream):
       # TODO: allow port to be specified with server (embedding it in the server URL does not work)
 
       self.proc = subprocess.Popen(args=lms_args)
-      self._activate(vsrc)
 
 
     except Exception as exc:
