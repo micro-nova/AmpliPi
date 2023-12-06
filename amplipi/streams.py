@@ -1208,7 +1208,6 @@ class LMS(PersistentStream):
   def _deactivate(self):
     if self._is_running():
       self.proc.kill()
-    self._deactivate()
     if self.meta_proc is not None:
       self.meta_proc.terminate()
       self.meta_proc = None
