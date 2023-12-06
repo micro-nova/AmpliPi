@@ -48,7 +48,7 @@ const I2CReg zone_right_[NUM_ZONES] = {
 
 // Zone volumes, range is [-80, 0] dB with 0 as the max (no attenuation).
 // Requested volume for each zone, default to  mute (-90 dB)
-uint8_t vol_req_[NUM_ZONES];
+uint8_t vol_req_[NUM_ZONES] = {VOL_MUTE, VOL_MUTE, VOL_MUTE, VOL_MUTE, VOL_MUTE, VOL_MUTE};
 
 // Actual volume (last written via I2C)
 // The TDA7448 volume controller always reports 0x00 on read
@@ -61,7 +61,7 @@ uint8_t vol_[NUM_ZONES] = {};
 // The amps will exit standby if any other zone becomes unmuted.
 // A second example:
 // If all amps are 'disabled', then the amps will always remain in standby.
-bool amp_en_[NUM_ZONES] = {};
+bool amp_en_[NUM_ZONES] = {true, true, true, true, true, true};
 
 bool mux_en_level_ = true;
 // Preamp boards >=Rev4 use a low-level signal to enable a mux, while
@@ -229,16 +229,6 @@ InputType getSourceAD(size_t src) {
     return IT_DIGITAL;
   }
   return IT_ANALOG;
-}
-
-// Initialize each zone's audio state (does not write to volume control ICs).
-// Mutes all zones.
-void audio_zones_init() {
-  for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    enZoneAmp(zone, true);
-    mute(zone, true);
-    vol_req_[zone] = VOL_MUTE;
-  }
 }
 
 // Initialize audio mux. Must be done after determining the polarity of the mux enable signals.

@@ -39,7 +39,6 @@ typedef enum {
   IT_DIGITAL
 } InputType;
 
-void audio_zones_init();
 void audio_muxes_init();
 void audio_update();
 

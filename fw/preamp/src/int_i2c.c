@@ -237,6 +237,13 @@ void initInternalI2C() {
   // Make sure any interrupted transactions are cleared out
   quiesceI2C();
 
+  // Release expansion reset, only needs to be low >300 ns on the receiving end,
+  // but needs to be driven low >50 us on this end to guarantee voltage reaches low level.
+  // This is placed here to avoid adding a delay to the startup process, while also
+  // ensuring enough time has elapsed while holding reset low.
+  // Placing after this I2C init function returns would delay startup of the expander.
+  pin_write(exp_nrst_, true);
+
   // Set the direction for the power board GPIO
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 

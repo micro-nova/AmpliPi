@@ -44,3 +44,5 @@ void pins_config_int_i2c(bool i2c);
 
 void pin_write(Pin pp, bool set);
 bool pin_read(Pin pp);
+
+void exp_nrst_release();

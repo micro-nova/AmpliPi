@@ -101,6 +101,15 @@ void pins_init() {
   RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN | RCC_AHBENR_GPIODEN |
                  RCC_AHBENR_GPIOFEN;
 
+  // Setup PORT F pins used as GPIO (only 6 port F pins exist)
+  // PORT F is setup first to pull NRST_OUT low as soon as possible.
+  // 0, 1: NRST_OUT, BOOT0_OUT
+  // TODO: Keep BOOT0 as HIGH-Z until needed, and set pull-down.
+  GPIOF->OSPEEDR = 0;           // Set to low speed.
+  GPIOF->OTYPER  = 0;           // Set to push-pull.
+  GPIOF->MODER   = 0x00005505;  // Set as general purpose output.
+  GPIOF->PUPDR   = 0;           // Set to no pull-up or pull-down.
+
   // Setup PORT A pins used as GPIO
   //  9: UART1 TX - AF1
   // 10: UART1 RX - AF1, pullup
@@ -142,13 +151,6 @@ void pins_init() {
   GPIOD->OTYPER  = 0;           // Set to push-pull.
   GPIOD->MODER   = 0x00000010;  // Set as general purpose output.
   GPIOD->PUPDR   = 0;           // Set to no pull-up or pull-down.
-
-  // Setup PORT F pins used as GPIO (only 6 port F pins exist)
-  // 0, 1: NRST_OUT, BOOT0_OUT
-  GPIOF->OSPEEDR = 0;           // Set to low speed.
-  GPIOF->OTYPER  = 0x0001;      // Set to push-pull, except open-drain for NRST_OUT.
-  GPIOF->MODER   = 0x00005505;  // Set as general purpose output.
-  GPIOF->PUPDR   = 0x00000001;  // Set to no pull-up or pull-down, except pullup for NRST_OUT.
 }
 
 void pin_write(Pin pp, bool set) {
@@ -169,4 +171,10 @@ bool pin_read(Pin pp) {
   } else {
     return false;
   }
+}
+
+void exp_nrst_release() {
+  GPIOF->PUPDR = 0x00000001;  // Pullup on NRST_OUT (rest of port F has no pull-up or pull-down).
+  // GPIOF->MODER &= 0xFFFFFFFC;  // Set NRST_OUT as HIGH-Z input.
+  GPIOF->MODER = 0x00000001;  // Set NRST_OUT as an open-drain output.
 }

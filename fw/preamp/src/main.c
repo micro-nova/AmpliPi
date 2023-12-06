@@ -28,21 +28,18 @@
 #include "watchdog.h"
 
 int main() {
-  pins_init();                   // Setup pins to the correct GPIO, UART, and I2C functionality.
-  pin_write(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are reset.
-  pin_write(exp_boot0_, false);  // Don't start the subsequent preamp board in 'Boot Mode'.
-  pin_write(exp_nrst_, true);    // Release expansion reset, only needs to be low >300 ns.
-
+  pins_init();               // Setup pins to the correct GPIO, UART, and I2C functionality.
   watchdog_init();           // Setup the watchdog counter with a 60 ms period.
   systick_init();            // Setup the 1-ms clock ticks.
-  audio_zones_init();        // Setup audio volumes, mute and standby.
   serial_init(serial_ctrl);  // Setup the UART connections with the controller board.
   serial_init(serial_exp);   // Setup the UART connection with the expander, if any.
-  initInternalI2C();         // Setup the internal I2C bus - worst case ~2.4 ms
-  audio_muxes_init();        // Setup the audio mux
+  initInternalI2C();         // Setup the internal I2C bus (~1.75 ms). Also drives NRST_OUT high.
 
-  // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
-  // write_pin(exp_boot0_, true);
+  // TODO: Set NRST_OUT as an input or open-drain so that the expander can reset itself on failure.
+  // Currently doing so breaks expansion resets for programming, so that has to be re-thought first.
+  // exp_nrst_release();  // Set NRST_OUT as open-drain so that the expander can reset itself.
+
+  audio_muxes_init();  // Setup the audio mux
 
   // Main loop, awaiting I2C commands
   uint32_t next_loop_time = millis();
@@ -52,10 +49,6 @@ int main() {
 
     if ((next_loop_time & ((1 << 12) - 1)) == 0) {
       printf("%lu\n", next_loop_time);
-
-      // Wait ~50ms before printing for the message to be received reliably.
-      // bool v4 = !audio_get_mux_en_level();
-      // printf("%u\n", v4 ? 1 : 0);
     }
 
     // Check if a new I2C slave address has been received over UART from the controller board.
