@@ -727,7 +727,10 @@ class Api:
         # update the zone's associated source
         zones = self.status.zones
         if update_source_id or force_update :
+          # the preamp fw needs nearby zones source-ids since each source id register contains the source ids of 3 zones
           zone_sources = [utils.clamp(zone.source_id, 0, 3) for zone in zones]
+          # update with the pending change
+          zone_sources[zid] = utils.clamp(source_id, 0, 3)
 
           # this is setting the state for all zones
           # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
