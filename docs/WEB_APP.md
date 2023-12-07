@@ -13,7 +13,7 @@ You can do this by tapping the name of the source on either the home view or the
 </p>
 
 ## Changing Group and Zone volumes
-There are volume controls at the bottom of every card on the home screen that will effect all groups and zones that source is playing to. To change the volume of groups or zones individually, select the player by tapping the center of the card on the home screen and then enter the player view tab at the bottom of the screen, then open the dropdowns to find the volume slider you want.
+There are volume controls at the bottom of every mini-player on the home screen that will effect all groups and zones that source is playing to. To change the volume of groups or zones individually, select the player by tapping the center of the mini-player on the home screen and then enter the player view tab at the bottom of the screen, then open the dropdowns to find the volume slider you want.
 The number of zones present is determined by the number of zone expander units discovered during system startup. Zone volume controls only control themselves, whereas group volume controls adjust the volume for all of the zones in the group. The user can create an unlimited number of groups. Zones can also belong to multiple groups.
 <p align="center">
   <img alt="Changing group and zone volumes"
