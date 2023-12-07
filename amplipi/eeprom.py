@@ -3,10 +3,10 @@
 These are used to identify features and device types among other things."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import IntEnum
 from time import sleep
-from typing import List, Tuple
-import smbus2 as smbus
+from typing import List, Optional, Tuple
+from smbus2 import SMBus
 try:
   from RPi import GPIO
 except Exception:
@@ -14,25 +14,17 @@ except Exception:
 
 WP_PIN = 34
 WRITE_CHECK_ADDRESS = (int)((2048/8)-1) #last byte of 2kbit EEPROM, 8bit per address
-FORMAT_ADDR = 0x00
-SERIAL_ADDR = 0x01
-UNIT_TYPE_ADDR = 0x05
-BOARD_TYPE_ADDR = 0x06
-BOARD_REV_ADDR = 0x07
 
-SUPPORTED_FORMATS = [0x00]
-FORMAT = 0x00
-
-class UnitType(Enum):
+class UnitType(IntEnum):
   """Unit type"""
-  PI = 0
-  PRO = 1
-  STREAMER = 2
+  NONE     = 0 # No branding, currently only used in AP1-Z6
+  AP1_S4Z6 = 1 # AmpliPro main unit branding/functionality
+  AP1_S4   = 2 # Streamer branding/functionality
 
-class BoardType(Enum):
+class BoardType(IntEnum):
   """Matches the I2C address. The address is stored in the lowest 7 bits of the byte.
-  * For EEPROMs connected directly to the Pi's I2C bus, the MSB is 0.
-  * For EEPROMs connected to the Preamp's I2C bus, the MSB is 1.
+  * For EEPROMs connected directly to the Pi's I2C bus, the MSB is 0 (uses I2C bus 0).
+  * For EEPROMs connected to the Preamp's I2C bus, the MSB is 1 (uses I2C bus 1).
 
   The MC24C02's base I2C address is 0x50, with the 3 LSBs controlled by pins E[2:0].
   """
@@ -40,18 +32,60 @@ class BoardType(Enum):
   PREAMP           = 0xD0
 
 @dataclass
-class BoardInfo:
-  """Board info"""
-  serial: int
-  unit_type: UnitType
-  board_type: BoardType
-  board_rev: Tuple[int, str]
+class EepromField:
+  size    : int    # Size in bytes
+  datatype: type   # Type of the field
+  value   : object # Actual value of the field
 
-  def __str__(self):
-    board_type = f"{str(self.board_type).replace('BoardType.','').lower()}"
-    unit = f"{str(self.unit_type).replace('UnitType.','').lower()}"
-    rev = f"{self.board_rev[0]}{self.board_rev[1]}"
-    return f'{board_type}: unit={unit} rev={rev} serial={self.serial}'
+class BoardInfo:
+  """Board info, to be read/written to EEPROM"""
+
+  EEPROM_PAGE_SIZE: int  = 16 # Number of bytes per EEPROM page.
+
+  fields = {
+    'format'       : EepromField(size = 1, datatype = int,       value =    0),
+    'serial'       : EepromField(size = 4, datatype = int,       value = None),
+    'unit_type'    : EepromField(size = 1, datatype = UnitType,  value = None),
+    'board_type'   : EepromField(size = 1, datatype = BoardType, value = None),
+    'board_rev_num': EepromField(size = 1, datatype = int,       value = None),
+    'board_rev_let': EepromField(size = 1, datatype = str,       value = None),
+  }
+
+  def __init__(self, serial: Optional[int] = None, unit_type: Optional[UnitType] = None,
+               board_type: Optional[BoardType] = None, board_rev: Optional[Tuple[int, str]] = None) -> None:
+    self.fields['serial'].value = serial
+    self.fields['unit_type'].value = unit_type
+    self.fields['board_type'].value = board_type
+    if board_rev:
+      self.fields['board_rev_num'].value = board_rev[0]
+      self.fields['board_rev_let'].value = board_rev[1]
+
+  def _get_size(self) -> int:
+    return sum([f.size for f in self.fields.values()])
+
+  def from_bytes(self, data: bytes) -> None:
+    if len(data) < self._get_size():
+      raise ValueError("Not enough data to create BoardInfo")
+    address = 0
+    for f in self.fields.values():
+      # val = 0
+      # for i in range(f.size):
+      #   # Unfortunately big-endian, go backwards here.
+      #   val += data[address + i] << (8*(f.size - 1 - i))
+      val = sum([data[address + i] << (8*(f.size - 1 - i)) for i in range(f.size)])
+      f.value = f.datatype(val)
+      address += f.size
+
+  def to_bytes(self) -> bytes:
+    page_buf = [0] * self.EEPROM_PAGE_SIZE
+    address = 0
+    for f in self.fields.values():
+      for i in range(f.size):
+        # Unfortunately big-endian, go backwards here.
+        #page_buf[field.address + i] = (int(f.value) & (0xFF << (8*(f.size - 1 - i)))) >> (8*(f.size - 1 - i))
+        page_buf[address + f.size - 1 - i] = (int(f.value) & (0xFF << (8*i))) >> (8*i)
+      address += f.size
+    return page_buf
 
 
 class EEPROMWriteError(Exception):
@@ -68,34 +102,29 @@ class UnsupportedFormatError(Exception):
 
 class EEPROM:
   """Class for reading from and writing to EEPROM."""
-  def __init__(self, bus: int, board: BoardType) -> None:
-    self._i2c = smbus.SMBus(bus)
-    self._address = board.value
+  def __init__(self, board: BoardType) -> None:
+    self.board = board.value
+
+  @staticmethod
+  def get_available_devices() -> List[BoardType]:
+    """Get list of available devices."""
+    return [bt for bt in BoardType if EEPROM(bt).get_board_type() is not None]
+
+  def _bus(self) -> int:
+    """Returns the I2C bus to communicate on, based on the BoardType"""
+    # TODO: make board a full class to abstract this away.
+    return (int(self._board) & 0x80) >> 7 # Bit 7 is bus, either 0 (Pi bus) or 1 (Preamp bus).
+
+  def _address(self) -> int:
+    """Returns the I2C address of the EEPROM, based on the BoardType"""
+    # TODO: make board a full class to abstract this away.
+    return int(self._board) & 0x7F # Lowest 7 bits are the I2C address
+
+  def _enable_write(self) -> None:
+    """Enable write to EEPROM. Only required for streamers."""
     try:
       GPIO.setmode(GPIO.BCM)
       GPIO.setup(WP_PIN, GPIO.OUT)
-    except NameError:
-      pass
-
-  @staticmethod
-  def get_available_devices(bus: int) -> List[BoardType]:
-    """Get list of available devices."""
-    i2c = smbus.SMBus(bus)
-
-    devices = []
-
-    for i in BoardType:
-      try:
-        i2c.read_byte(i.value)
-        devices.append(i)
-      except OSError:
-        pass
-
-    return devices
-
-  def _enable_write(self) -> None:
-    """Enable write to EEPROM."""
-    try:
       GPIO.output(WP_PIN, GPIO.LOW)
     except NameError:
       pass
@@ -114,9 +143,29 @@ class EEPROM:
       raise EEPROMWriteProtectError("Write enable failed") from exception
 
   def _write(self, address: int, data: List[int]) -> None:
-    """Write data to address in EEPROM."""
+    """Write data to the EEPROM, starting at address `address`."""
     try:
-      self._i2c.write_i2c_block_data(self._address, address, data)
+      if self._bus() == 1:
+        # Preamp bus, have to write to the micro which will forward the page of data to the EEPROM.
+        if len(data) > 16:
+          raise NotImplementedError("Writing more than 1 page at a time through the "
+                                    "Preamp's microcontroller is not yet supported.")
+        if address != 0:
+          raise NotImplementedError("Writing to an address other than the start of a page "
+                                    "is not yet supported for the Preamp.")
+        with SMBus(self._bus()) as bus:
+          # For now only single-byte writes are supported to the Preamp's micro.
+          for i, d in enumerate(data):
+            bus.write_byte_data(self._address(), 0x20 + i, d)
+          page = address // 16
+          eeprom_address = self._address() & 0x7
+          ctrl_byte = (page << 4) + (eeprom_address << 1)       # LSB = 0 for write
+          bus.write_byte_data(self._address(), 0x1F, ctrl_byte) # Initiate write
+      else:
+        # Direct Pi I2C bus, open and write as normal.
+        with SMBus(self._bus()) as bus:
+          self._i2c.write_i2c_block_data(self._address, address, data)
+
     except OSError as exception:
       raise EEPROMWriteError("Write failed") from exception
     sleep(0.1)
@@ -206,7 +255,7 @@ class EEPROM:
 
     return UnitType(self._read(UNIT_TYPE_ADDR, 1)[0])
 
-  def get_board_type(self) -> BoardType:
+  def get_board_type(self) -> Optional[BoardType]:
     """Get board type from EEPROM."""
     if self.get_format() not in SUPPORTED_FORMATS:
       raise UnsupportedFormatError("Unsupported format")
@@ -221,8 +270,13 @@ class EEPROM:
     return (self._read_number(1, BOARD_REV_ADDR),
             self._read_letter(BOARD_REV_ADDR+1))
 
-  def get_board_info(self) -> BoardInfo:
+  def read_board_info(self) -> BoardInfo:
     """Get board info from EEPROM."""
+    if self.get_format() not in SUPPORTED_FORMATS:
+      raise UnsupportedFormatError("Unsupported format")
+
+    return self._read_number(4, SERIAL_ADDR)
+
     return BoardInfo(self.get_serial(),
                       self.get_unit_type(),
                       self.get_board_type(),
@@ -239,7 +293,17 @@ class EEPROM:
     | 0x07 | uint8    | Board Revision Number     |
     | 0x08 | char     | Board Revision Letter     |
     """
-    self._write_format()
+
+    self._write_number(4, SERIAL_ADDR, serial)
+    """Write number to EEPROM, big-endian."""
+    write_out = [0]*bytes_len
+    for i in range(0, bytes_len):
+      write_out[i] = value & 0xFF
+      value >>= 8
+    write_out.reverse()
+    self._write(addr, write_out)
+
+
     self.write_serial(board_info.serial)
     self.write_unit_type(board_info.unit_type)
     self.write_board_type(board_info.board_type)
