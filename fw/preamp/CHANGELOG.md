@@ -1,7 +1,16 @@
 # Preamp Board Firmware Changelog
 
-## 1.7-XXXXXXX
+## 1.7-4E24746
 
+- Added support for Preamp Board Rev4.A
+  - On startup, the firmware checks for the presence of the EEPROM. If present the board rev
+    is assumed to be >=Rev4. If absent the board rev is assumed to be <=Rev3.
+  - Added an I2C register to read if the board is Rev4+.
+  - Mux control pin logic is inverted in Rev4 boards.
+  - Added I2C registers to allow the Pi to read/write the Preamp's EEPROM.
+- Added a watchdog timer to reset the STM32 if it locks up for any reason.
+  - Need to update hardware for this to fully work, right now the
+- Added capability to print messages to the Pi via UART and added some status messages.
 - Reduced initialization time from 5.7 ms to 3.33 ms.
   - By releasing expander reset sooner, reduced total 6-unit init time to ~4.7 ms.
 
