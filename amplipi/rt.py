@@ -170,13 +170,13 @@ class _Preamps:
     GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
     GPIO.setup(5, GPIO.OUT)
     GPIO.output(5, boot0) # Ensure BOOT0 is set (GPIO5)
-    time.sleep(0.1)
+    time.sleep(0.001) # Hold reset low for >20 us, but <10 ms.
     GPIO.output(4, 1)
 
-    # Each box theoretically takes ~11ms to undergo a reset.
+    # Each box theoretically takes ~6 to undergo a reset.
     # Estimating for six boxes, including some padding,
-    # wait 100ms for the resets to propagate down the line
-    time.sleep(0.1)
+    # wait 50ms for the resets to propagate down the line
+    time.sleep(0.05)
 
     # Done with GPIO, they will default back to inputs with pullups
     GPIO.cleanup()
@@ -187,7 +187,7 @@ class _Preamps:
     """
     # Setup serial connection via UART pins
     with Serial('/dev/serial0', baudrate=9600) as ser:
-      ser.write((0x41, 0x10, 0x0D, 0x0A))
+      ser.write((0x41, 0x10, 0x0A))
 
     # Delay to account for addresses being set
     # Each box theoretically takes ~5ms to receive its address. Again, estimate for six boxes and include some padding
@@ -550,6 +550,7 @@ class Mock:
       for zid in range(6):
         src = sources[preamp * 6 + zid]
         assert isinstance(src, int) or src is None
+        assert src >= 0 and src <= 3
     return True
 
   def update_zone_vol(self, zone, vol):

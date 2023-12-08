@@ -3,7 +3,8 @@ import PropTypes from "prop-types";
 import "../PageBody.scss";
 import "./Config.scss";
 import PageHeader from "@/components/PageHeader/PageHeader";
-import { Button, Divider } from "@mui/material";
+import { Button, Divider, Switch } from "@mui/material";
+import { useStatusStore } from "@/App.jsx";
 
 const UploadConfig = (file) => {
     fetch("/api/load", {
@@ -17,11 +18,12 @@ const DownloadConfig = () => {
     fetch("/api").then((response) => {
         response.json().then((json) => {
             const element = document.createElement("a");
+            const d = new Date();
             const file = new Blob([JSON.stringify(json, undefined, 2)], {
                 type: "application/json",
             });
             element.href = URL.createObjectURL(file);
-            element.download = "config.json";
+            element.download = `amplipi-config-${d.toJSON()}.json`;
             document.body.appendChild(element);
             element.click();
         });
@@ -44,6 +46,11 @@ const HWShutdown = () => {
     fetch("/api/shutdown", { method: "POST" });
 };
 
+const LMSModeHandler = () => {
+    DownloadConfig();
+    fetch("/api/lms_mode", {method: "POST"});
+}
+
 const Config = ({ onClose }) => {
     const [file, setFile] = React.useState([]);
 
@@ -52,6 +59,8 @@ const Config = ({ onClose }) => {
             setFile(JSON.parse(text));
         });
     };
+
+    const lmsMode = useStatusStore((s) => s.status.info.lms_mode);
 
     return (
         <div className="page-container">
@@ -88,6 +97,14 @@ const Config = ({ onClose }) => {
                         }
                     </div>
                     <Button onClick={FactoryReset}>Reset</Button>
+                </div>
+                <Divider />
+                <div>
+          Logitech Media Server (LMS) Mode
+                    <div className="config-desc">
+                        {"Toggles LMS Mode on or off. LMS is useful for piggy-backing off integrations AmpliPi does not have natively. This will wipe out the current config! As a result, it downloads the current config before proceeding with LMS mode."}
+                    </div>
+                    <Switch checked={lmsMode} onChange={LMSModeHandler} inputProps={{ 'aria-label': 'controlled'}} />
                 </div>
                 <Divider />
                 <div>

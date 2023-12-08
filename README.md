@@ -72,7 +72,7 @@ AmpliPi hosts a mobile-friendly web app that can control the system from any PC 
 Here's an example of changing group and zone volumes:
 <p align="center">
   <img alt="Changing group and zone volumes"
-      src="docs/imgs/app_demos/expand_group_and_change_vols_small.gif" width="250">
+      src="docs/imgs/app_demos/change_vols.gif" width="250">
   </img>
 </p>
 

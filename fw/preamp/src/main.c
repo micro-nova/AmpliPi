@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,12 +13,11 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
+#include <stdio.h>
 
 #include "audio.h"
 #include "ctrl_i2c.h"
@@ -26,51 +25,52 @@
 #include "pins.h"
 #include "serial.h"
 #include "systick.h"
+#include "watchdog.h"
 
-int main(void) {
-  // TODO: Setup watchdog
+int main() {
+  pins_init();               // Setup pins to the correct GPIO, UART, and I2C functionality.
+  watchdog_init();           // Setup the watchdog counter with a 60 ms period.
+  systick_init();            // Setup the 1-ms clock ticks.
+  serial_init(serial_ctrl);  // Setup the UART connections with the controller board.
+  serial_init(serial_exp);   // Setup the UART connection with the expander, if any.
+  initInternalI2C();         // Setup the internal I2C bus (~1.75 ms). Also drives NRST_OUT high.
 
-  // RESET AND PIN SETUP
-  initPins();                   // UART and I2C require GPIO pins
-  writePin(exp_nrst_, false);   // Low-pulse on NRST_OUT so expansion boards are
-                                // reset by the controller board
-  writePin(exp_boot0_, false);  // Needs to be low so the subsequent preamp
-                                // board doesn't start in 'Boot Mode'
+  // TODO: Set NRST_OUT as an input or open-drain so that the expander can reset itself on failure.
+  // Currently doing so breaks expansion resets for programming, so that has to be re-thought first.
+  // exp_nrst_release();  // Set NRST_OUT as open-drain so that the expander can reset itself.
 
-  // INIT
-  systickInit();  // Initialize the clock ticks for delay_ms and other timing
-                  // functionality
-  initAudio();    // Initialize audio mux, volumes, mute and standby
-  initUart1();    // The preamp will receive its I2C network address via UART
-  initUart2(9600);
-  initInternalI2C();  // Setup the internal I2C bus - worst case ~2.4 ms
-
-  // RELEASE EXPANSION RESET
-  // Needs to be high so the subsequent preamp board is not held in 'Reset Mode'
-  writePin(exp_nrst_, true);
+  audio_muxes_init();  // Setup the audio mux
 
   // Main loop, awaiting I2C commands
   uint32_t next_loop_time = millis();
+  uint8_t  i2c_addr       = 0;
   while (1) {
-    // TODO: Clear watchdog
+    watchdog_reload();
 
-    // Use EXP_BOOT0 as a timer - 4.25 us just for pin set/reset
-    // writePin(exp_boot0_, true);
+    if ((next_loop_time & ((1 << 12) - 1)) == 0) {
+      printf("%lu\n", next_loop_time);
+    }
 
-    // Check for incoming UART messages (setting the slave address)
-    if (checkForNewAddress()) {
-      ctrlI2CInit();
+    // Check if a new I2C slave address has been received over UART from the controller board.
+    uint8_t new_i2c_addr = getI2C1Address();
+    if (new_i2c_addr != i2c_addr) {
+      i2c_addr = new_i2c_addr;
+      ctrl_i2c_init(i2c_addr);
+
+      // Increment this unit's address by 0x10 to get the address for the next preamp.
+      sendAddressToSlave(i2c_addr + 0x10);
+
+      printf("Got address\n");
     }
 
     // Check for incoming control messages if a slave address has been set
-    if (getI2C1Address() && ctrlI2CAddrMatch()) {
-      ctrlI2CTransact();
+    if (i2c_addr && ctrl_i2c_addr_match()) {
+      ctrl_i2c_transact();
     }
 
-    updateInternalI2C();
+    updateInternalI2C(i2c_addr != 0);
 
-    // writePin(exp_boot0_, false);
-    next_loop_time += 1;  // Loop currently takes ~800 us
+    next_loop_time++;  // Loop currently takes ~800 us
     while (millis() < next_loop_time) {}
   }
 }

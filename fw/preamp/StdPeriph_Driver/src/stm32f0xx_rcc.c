@@ -394,6 +394,8 @@ void RCC_HSI14ADCRequestCmd(FunctionalState NewState)
   * @note   After enabling the LSE (RCC_LSE_ON or RCC_LSE_Bypass), the application
   *         software should wait on LSERDY flag to be set indicating that LSE clock
   *         is stable and can be used to clock the RTC.
+  * @note   Care must be taken when using this function to configure LSE mode 
+  *         as it clears systematically the LSEON bit before any new configuration.
   * @param  RCC_LSE: specifies the new state of the LSE.
   *          This parameter can be one of the following values:
   *            @arg RCC_LSE_OFF: turn OFF the LSE oscillator, LSERDY flag goes low after

@@ -30,8 +30,14 @@ class UnitType(Enum):
   STREAMER = 2
 
 class BoardType(Enum):
-  """Board type"""
+  """Matches the I2C address. The address is stored in the lowest 7 bits of the byte.
+  * For EEPROMs connected directly to the Pi's I2C bus, the MSB is 0.
+  * For EEPROMs connected to the Preamp's I2C bus, the MSB is 1.
+
+  The MC24C02's base I2C address is 0x50, with the 3 LSBs controlled by pins E[2:0].
+  """
   STREAMER_SUPPORT = 0x50
+  PREAMP           = 0xD0
 
 @dataclass
 class BoardInfo:
@@ -123,7 +129,7 @@ class EEPROM:
       raise EEPROMReadError("Read failed") from exception
 
   def _write_number(self, bytes_len: int, addr: int, value: int) -> None:
-    """Write number to EEPROM."""
+    """Write number to EEPROM, big-endian."""
     write_out = [0]*bytes_len
     for i in range(0, bytes_len):
       write_out[i] = value & 0xFF
@@ -223,7 +229,16 @@ class EEPROM:
                       self.get_board_rev())
 
   def write_board_info(self, board_info: BoardInfo) -> None:
-    """Write board info to EEPROM."""
+    """Write board info to EEPROM.
+    | Addr | Datatype | Data                      |
+    | ---- | -------- | :------------------------ |
+    | 0x00 | uint8    | EEPROM Data Format (0x00) |
+    | 0x01 | uint32   | Serial Number             |
+    | 0x05 | uint8    | Unit Type                 |
+    | 0x06 | uint8    | Board Type                |
+    | 0x07 | uint8    | Board Revision Number     |
+    | 0x08 | char     | Board Revision Letter     |
+    """
     self._write_format()
     self.write_serial(board_info.serial)
     self.write_unit_type(board_info.unit_type)

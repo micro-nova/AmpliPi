@@ -89,17 +89,6 @@ _os_deps: Dict[str, Dict[str, Any]] = {
              'libgirepository1.0-dev', 'libcairo2-dev',
             ],
   },
-  'web' : {
-    'script' : [
-      'curl -sL https://deb.nodesource.com/setup_19.x | sudo -E bash -', # Run script to add nodejs repo
-      'sudo apt-get install -y nodejs --allow-change-held-packages',     # Install nodejs
-      'export NODE_OPTIONS=--max_old_space_size=800',                    # Increase nodejs memory limit
-      'pushd web',                                                      # Change to web directory
-      'npm install',                                                     # Install nodejs dependencies
-      'npm run build',                                                   # Build the web app
-      'popd',                                                            # Change back to previous directory
-    ],
-  },
   'logging' : {
     'script' : [
       'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
@@ -168,8 +157,19 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     ]
   },
   'lms' : {
-    'apt': ['libcrypt-openssl-rsa-perl'], # needed for ShairTunes2W support
-    'copy' : [{'from': 'bin/ARCH/squeezelite', 'to': 'streams/squeezelite'}],
+    'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl'], # needed for ShairTunes2W support
+    'script' : [
+      'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
+      '  wget https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.4.0~1700477852_all.deb -O /tmp/logitechmediaserver_8.4.0.deb',
+      '  sudo dpkg -i /tmp/logitechmediaserver_8.4.0.deb',
+      '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
+      '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
+      'fi',
+      'wget https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_1.9.9-1449_armhf.deb -O /tmp/squeezelite_1.9.9-1449_armhf.deb',
+      'sudo dpkg -i /tmp/squeezelite_1.9.9-1449_armhf.deb',
+      'sudo systemctl stop squeezelite',
+      'sudo systemctl disable squeezelite',
+    ]
   },
   'dlna' : {
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',

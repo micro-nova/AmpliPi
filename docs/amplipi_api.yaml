@@ -9,6 +9,8 @@ info:
     This web interface allows you to control and configure your AmpliPi device.
     At the moment the API is the only way to configure the AmpliPi.
 
+    If you set a password on the update page, you will need to provide a session token to any API requests. This token is available for viewing on the `Settings` -> `About` page. You can provide the token either as a query parameter called "?api-key=" or as a cookie named "amplipi-session". If there are no user passwords set, you can disregard this authentication scheme.
+
     ## Try it out!
 
     __Using this web interface to test API commands:__
@@ -216,6 +218,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -516,6 +519,9 @@ paths:
                       vol_f: 0.45
                       vol_max: -30
                       vol_min: -70
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api:
     get:
       tags:
@@ -631,6 +637,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -931,6 +938,9 @@ paths:
                       vol_f: 0.45
                       vol_max: -30
                       vol_min: -70
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/load:
     post:
       tags:
@@ -1046,6 +1056,7 @@ paths:
                     mock_ctrl: false
                     mock_streams: false
                     is_streamer: false
+                    lms_mode: false
                     online: true
                     version: 0.1.9
                   presets:
@@ -1455,6 +1466,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -1761,6 +1773,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/factory_reset:
     post:
       tags:
@@ -1881,6 +1896,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -2181,6 +2197,9 @@ paths:
                       vol_f: 0.45
                       vol_max: -30
                       vol_min: -70
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/reset:
     post:
       tags:
@@ -2297,6 +2316,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -2597,6 +2617,9 @@ paths:
                       vol_f: 0.45
                       vol_max: -30
                       vol_min: -70
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/reboot:
     post:
       tags:
@@ -2607,6 +2630,9 @@ paths:
       responses:
         '200':
           description: Successful Response
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/shutdown:
     post:
       tags:
@@ -2620,6 +2646,20 @@ paths:
       responses:
         '200':
           description: Successful Response
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
+  /api/lms_mode:
+    post:
+      summary: Lms Mode
+      description: Toggles Logitech Media Server mode on or off.
+      operationId: lms_mode_api_lms_mode_post
+      responses:
+        '200':
+          description: Successful Response
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/sources:
     get:
       tags:
@@ -2695,6 +2735,9 @@ paths:
                     track: Nocturne For Piano In C Sharp Minor, Kk Anh.ia/6
                   input: stream=1005
                   name: Input 4
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/sources/{sid}:
     get:
       tags:
@@ -2768,6 +2811,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     patch:
       tags:
       - source
@@ -2922,6 +2968,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -3228,6 +3275,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/sources/{sid}/image/{height}:
     get:
       tags:
@@ -3284,6 +3334,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/zones:
     get:
       tags:
@@ -3467,6 +3520,9 @@ paths:
                   vol_f: 0.45
                   vol_max: -30
                   vol_min: -70
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     patch:
       tags:
       - zone
@@ -3612,6 +3668,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -3918,6 +3975,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/zones/{zid}:
     get:
       tags:
@@ -4025,6 +4085,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     patch:
       tags:
       - zone
@@ -4230,6 +4293,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -4536,6 +4600,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/group:
     post:
       tags:
@@ -4604,6 +4671,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/groups:
     get:
       tags:
@@ -4706,6 +4776,9 @@ paths:
                   - 15
                   - 16
                   - 17
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/groups/{gid}:
     get:
       tags:
@@ -4782,6 +4855,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     delete:
       tags:
       - group
@@ -4928,6 +5004,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -5234,6 +5311,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     patch:
       tags:
       - group
@@ -5409,6 +5489,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -5715,6 +5796,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/stream:
     post:
       tags:
@@ -5852,6 +5936,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/streams:
     get:
       tags:
@@ -5910,6 +5997,9 @@ paths:
                   name: Beatles Radio
                   type: internetradio
                   url: http://www.beatlesradio.com:8000/stream/1/
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/streams/{sid}:
     get:
       tags:
@@ -6014,6 +6104,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     delete:
       tags:
       - stream
@@ -6175,6 +6268,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -6481,6 +6575,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     patch:
       tags:
       - stream
@@ -6662,6 +6759,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -6968,6 +7066,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/streams/{sid}/station={station}:
     post:
       tags:
@@ -7141,6 +7242,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -7447,6 +7549,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/streams/{sid}/{cmd}:
     post:
       tags:
@@ -7619,6 +7724,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -7925,6 +8031,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/preset:
     post:
       tags:
@@ -7988,6 +8097,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/presets:
     get:
       tags:
@@ -8050,6 +8162,9 @@ paths:
                       mute: true
                     - id: 17
                       mute: true
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/presets/{pid}:
     get:
       tags:
@@ -8106,6 +8221,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     delete:
       tags:
       - preset
@@ -8237,6 +8355,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -8543,6 +8662,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
     patch:
       tags:
       - preset
@@ -8694,6 +8816,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -9000,6 +9123,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/presets/{pid}/load:
     post:
       tags:
@@ -9132,6 +9258,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -9438,6 +9565,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/announce:
     post:
       tags:
@@ -9563,6 +9693,7 @@ paths:
                       mock_ctrl: false
                       mock_streams: false
                       is_streamer: false
+                      lms_mode: false
                       online: true
                       version: 0.1.9
                     presets:
@@ -9869,6 +10000,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/info:
     get:
       tags:
@@ -9893,10 +10027,50 @@ paths:
                     is_streamer: false
                     online: true
                     latest_release: 0.1.8
+                    access_key: ''
+                    lms_mode: false
                     fw:
                     - version: '1.6'
                       git_hash: de0f8eb
                       git_dirty: false
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
+  /auth/login:
+    get:
+      summary: Login Page
+      description: Render the login page.
+      operationId: login_page_auth_login_get
+      responses:
+        '200':
+          description: Successful Response
+    post:
+      summary: Login
+      description: Handle a POST to the login page.
+      operationId: login_auth_login_post
+      parameters:
+      - required: false
+        schema:
+          title: Next Url
+          type: string
+          default: /
+        name: next_url
+        in: query
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_login_auth_login_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     Announcement:
@@ -9948,6 +10122,33 @@ components:
         Make NASA Announcement:
           value:
             media: https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3
+    Body_login_auth_login_post:
+      title: Body_login_auth_login_post
+      required:
+      - username
+      - password
+      type: object
+      properties:
+        grant_type:
+          title: Grant Type
+          pattern: password
+          type: string
+        username:
+          title: Username
+          type: string
+        password:
+          title: Password
+          type: string
+        scope:
+          title: Scope
+          type: string
+          default: ''
+        client_id:
+          title: Client Id
+          type: string
+        client_secret:
+          title: Client Secret
+          type: string
     Command:
       title: Command
       required:
@@ -10274,6 +10475,16 @@ components:
           type: string
           description: Latest software release available from GitHub
           default: unknown
+        access_key:
+          title: Access Key
+          type: string
+          description: session token/API key used for authentication
+          default: ''
+        lms_mode:
+          title: Lms Mode
+          type: boolean
+          description: Are we running in LMS mode?
+          default: false
         fw:
           title: Fw
           type: array
@@ -10293,6 +10504,8 @@ components:
             is_streamer: false
             online: true
             latest_release: 0.1.8
+            access_key: ''
+            lms_mode: false
             fw:
             - version: '1.6'
               git_hash: de0f8eb
@@ -10836,6 +11049,7 @@ components:
               mock_ctrl: false
               mock_streams: false
               is_streamer: false
+              lms_mode: false
               online: true
               version: 0.1.9
             presets:
@@ -11627,6 +11841,15 @@ components:
         Change max volume:
           value:
             vol_max: 0
+  securitySchemes:
+    APIKeyCookie:
+      type: apiKey
+      in: cookie
+      name: amplipi-session
+    APIKeyQuery:
+      type: apiKey
+      in: query
+      name: api-key
 tags:
 - name: status
   description: The status and configuration of the entire system, including sources,

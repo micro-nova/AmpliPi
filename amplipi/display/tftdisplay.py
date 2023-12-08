@@ -19,6 +19,7 @@ from adafruit_rgb_display import ili9341
 from loguru import logger as log
 
 from amplipi import models
+from amplipi.utils import get_identity
 from amplipi.display.common import Color, Display, DefaultPass
 
 # If this is run on anything other than a Raspberry Pi,
@@ -32,8 +33,6 @@ except (NotImplementedError, RuntimeError) as err:
   log.critical('Only Raspberry Pi is currently supported')
   sys.exit(1)
 
-
-USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 
 class TFTDisplay(Display):
   # Number of screens to scroll through
@@ -143,21 +142,7 @@ class TFTDisplay(Display):
     GPIO.setup(board.D38.id, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(board.D38.id, GPIO.FALLING, callback=self.touch_callback)
 
-    # Identity - allows display customization
-    identity : Dict[str, str] = {
-      'name': 'AmpliPi',
-      'touch_logo': 'amplipi/display/imgs/amplipi_320x126.png'
-    }
-    # Load fields from special identity file (if it exists), falling back to default values above
-    try:
-      with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8') as identity_file:
-        potential_identity = json.load(identity_file)
-        for key, val in identity.items():
-          identity[key] = potential_identity.get(key, val)
-    except FileNotFoundError:
-      pass
-    except Exception as e:
-      print(f'Error loading identity file: {e}')
+    identity = get_identity()
 
     try:
       self.ap_logo = Image.open(identity['touch_logo']).convert('RGB')
@@ -256,9 +241,14 @@ class TFTDisplay(Display):
 
         # Get stats
         try:
-          ip_str = ni.ifaddresses(self.args.iface)[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
+          # Alternatively, check for Ethernet USB device: lsusb -s 1: -d 0424:ec00
+          if_addrs = ni.ifaddresses(self.args.iface)
+          try:
+            ip_str = if_addrs[ni.AF_INET][0]['addr'] + ', ' + socket.gethostname() + '.local'
+          except:
+            ip_str = 'Disconnected from network.'
         except:
-          ip_str = 'Disconnected'
+          ip_str = 'Error: no network interface.'
 
         cpu_pcnt = psutil.cpu_percent()
         cpu_temp = psutil.sensors_temperatures()['cpu_thermal'][0].current

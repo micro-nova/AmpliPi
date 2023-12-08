@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Fan control based on temperatures
  *
@@ -18,10 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FANS_H_
-#define FANS_H_
+#pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #define DEFAULT_DPOT_VAL 0x3F
@@ -31,16 +29,14 @@
 // - Thermistors with FAN_ON PWM control (Power Board 3.A)
 // - Thermistors with DPOT linear voltage control (Power Board 4.A)
 // - Overridden (forced on) by the Pi
-typedef enum
-{
+typedef enum {
   FAN_CTRL_MAX6644,
   FAN_CTRL_PWM,
   FAN_CTRL_LINEAR,
   FAN_CTRL_FORCED,
 } FanCtrl;
 
-typedef enum
-{
+typedef enum {
   DPOT_NONE,
   DPOT_MCP4017,
   DPOT_MCP40D17,
@@ -56,5 +52,3 @@ bool    fansOn();
 
 uint8_t updateFans(bool linear);
 bool    getFanOnFromDuty();
-
-#endif /* FANS_H_ */

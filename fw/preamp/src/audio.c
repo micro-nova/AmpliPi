@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Configure each of the preamp controller's six zones.
  * Each zone has four configurable properties:
@@ -36,13 +36,11 @@
 #define DEFAULT_SOURCE 0
 
 const I2CReg zone_left_[NUM_ZONES] = {
-    {0x88, 0x00}, {0x88, 0x02}, {0x88, 0x04},
-    {0x8A, 0x00}, {0x8A, 0x02}, {0x8A, 0x04},
+    {0x88, 0x00}, {0x88, 0x02}, {0x88, 0x04}, {0x8A, 0x00}, {0x8A, 0x02}, {0x8A, 0x04},
 };
 
 const I2CReg zone_right_[NUM_ZONES] = {
-    {0x88, 0x01}, {0x88, 0x03}, {0x88, 0x05},
-    {0x8A, 0x01}, {0x8A, 0x03}, {0x8A, 0x05},
+    {0x88, 0x01}, {0x88, 0x03}, {0x88, 0x05}, {0x8A, 0x01}, {0x8A, 0x03}, {0x8A, 0x05},
 };
 
 // -80 is a special value that means mute, and actually sets -90 dB.
@@ -50,7 +48,7 @@ const I2CReg zone_right_[NUM_ZONES] = {
 
 // Zone volumes, range is [-80, 0] dB with 0 as the max (no attenuation).
 // Requested volume for each zone, default to  mute (-90 dB)
-uint8_t vol_req_[NUM_ZONES];
+uint8_t vol_req_[NUM_ZONES] = {VOL_MUTE, VOL_MUTE, VOL_MUTE, VOL_MUTE, VOL_MUTE, VOL_MUTE};
 
 // Actual volume (last written via I2C)
 // The TDA7448 volume controller always reports 0x00 on read
@@ -63,9 +61,19 @@ uint8_t vol_[NUM_ZONES] = {};
 // The amps will exit standby if any other zone becomes unmuted.
 // A second example:
 // If all amps are 'disabled', then the amps will always remain in standby.
-bool amp_en_[NUM_ZONES] = {};
+bool amp_en_[NUM_ZONES] = {true, true, true, true, true, true};
 
-// Convert a requested dB to the corresponding volume IC register value.
+bool mux_en_level_ = true;
+// Preamp boards >=Rev4 use a low-level signal to enable a mux, while
+// <=Rev3 uses a high-level signal. Default to a high-level signal.
+void audio_set_mux_en_level(bool level) {
+  mux_en_level_ = level;
+}
+bool audio_get_mux_en_level() {
+  return mux_en_level_;
+}
+
+// Convert a dB attenuation level to the corresponding volume IC register value.
 static inline uint8_t dB2VolReg(uint8_t db) {
   /* The volume IC has a discontinuity in its register value to attenuation
    * conversion after -71dB. To set -72dB the value 128 must be written.
@@ -82,7 +90,7 @@ static inline uint8_t dB2VolReg(uint8_t db) {
   return vol_reg;
 }
 
-// Convert a requested dB to the corresponding volume IC register value.
+// Convert a volume IC register value to the corresponding dB attenuation level.
 static inline uint8_t volReg2dB(uint8_t vol) {
   uint8_t db;
   if (vol < 72) {
@@ -100,8 +108,8 @@ static bool writeVolume(size_t zone, uint8_t vol) {
   // Convert dB to volume controller register value
   uint8_t vol_reg = dB2VolReg(vol);
 
-  bool success = writeRegI2C2(zone_left_[zone], vol_reg) == 0 &&
-                 writeRegI2C2(zone_right_[zone], vol_reg) == 0;
+  bool success =
+      writeRegI2C2(zone_left_[zone], vol_reg) == 0 && writeRegI2C2(zone_right_[zone], vol_reg) == 0;
   return success;
 }
 
@@ -125,7 +133,7 @@ uint8_t getZoneVolume(size_t zone) {
 static void standby(bool standby) {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Set pin low to standby
-    writePin(zone_standby_[zone], !standby);
+    pin_write(zone_standby_[zone], !standby);
   }
 }
 
@@ -133,7 +141,7 @@ static void standby(bool standby) {
 bool inStandby() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Standby pins are active-low
-    if (!readPin(zone_standby_[zone])) {
+    if (!pin_read(zone_standby_[zone])) {
       return true;
     }
   }
@@ -164,7 +172,7 @@ bool zoneAmpEnabled(size_t zone) {
 // Mute the specified zone
 void mute(size_t zone, bool mute) {
   // Set pin low to mute
-  writePin(zone_mute_[zone], !mute);
+  pin_write(zone_mute_[zone], !mute);
 
   // If no zones are on, standby
   standby(!anyZoneAmpOn());
@@ -172,7 +180,7 @@ void mute(size_t zone, bool mute) {
 
 bool muted(size_t zone) {
   // Mute pins are active-low
-  return !readPin(zone_mute_[zone]);
+  return !pin_read(zone_mute_[zone]);
 }
 
 // Connect a Zone to a Source
@@ -183,12 +191,12 @@ void setZoneSource(size_t zone, size_t src) {
 
   // Disconnect zone from all sources first
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    writePin(zone_src_[zone][src], false);
+    pin_write(zone_src_[zone][src], !mux_en_level_);
   }
 
   // Connect a zone to a source
   if (src < NUM_SRCS) {
-    writePin(zone_src_[zone][src], true);
+    pin_write(zone_src_[zone][src], mux_en_level_);
   }
 
   // Restore mute status
@@ -198,7 +206,7 @@ void setZoneSource(size_t zone, size_t src) {
 size_t getZoneSource(size_t zone) {
   // Assume only one source is ever selected
   for (size_t src = 0; src < NUM_SRCS; src++) {
-    if (readPin(zone_src_[zone][src])) {
+    if (pin_read(zone_src_[zone][src]) == mux_en_level_) {
       return src;
     }
   }
@@ -208,43 +216,35 @@ size_t getZoneSource(size_t zone) {
 // Each source can select between a digital or analog input
 void setSourceAD(size_t src, InputType type) {
   // Disable both mux inputs first
-  writePin(src_ad_[src][IT_ANALOG], false);
-  writePin(src_ad_[src][IT_DIGITAL], false);
+  pin_write(src_ad_[src][IT_ANALOG], !mux_en_level_);
+  pin_write(src_ad_[src][IT_DIGITAL], !mux_en_level_);
 
   // Enable selected input
-  writePin(src_ad_[src][type], true);
+  pin_write(src_ad_[src][type], mux_en_level_);
 }
 
 InputType getSourceAD(size_t src) {
   // Assume only one input is ever selected
-  if (readPin(src_ad_[src][IT_DIGITAL])) {
+  if (pin_read(src_ad_[src][IT_DIGITAL]) == mux_en_level_) {
     return IT_DIGITAL;
   }
   return IT_ANALOG;
 }
 
-void initAudio() {
-  // Initialize each zone's audio state (does not write to volume control ICs)
+// Initialize audio mux. Must be done after determining the polarity of the mux enable signals.
+void audio_muxes_init() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
-    enZoneAmp(zone, true);
-    mute(zone, true);
     setZoneSource(zone, DEFAULT_SOURCE);
-    vol_req_[zone] = VOL_MUTE;
   }
 
-  /* Initialize each source's analog/digital mux to select digital.
-   * Upon AmpliPi startup the digital input won't have any audio playing so
-   * selecting digital avoids unwanted playback.
-   * Also audio is input to expanders through the digital inputs,
-   * so analog inputs must never be selected.
-   * This firmware supports both main units and expanders.
-   */
+  // Initialize each source's analog/digital mux to select digital to avoid unwanted audio.
+  // Also, expanders don't have analog inputs and so must never select analog.
   for (size_t src = 0; src < NUM_SRCS; src++) {
     setSourceAD(src, IT_DIGITAL);
   }
 }
 
-void updateAudio() {
+void audio_update() {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Check if volume update required
     uint8_t new_vol = vol_[zone];

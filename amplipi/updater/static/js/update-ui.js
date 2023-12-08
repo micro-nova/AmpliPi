@@ -125,6 +125,7 @@ function ui_show_update_progress(status) {
 
 function ui_upload_software_update() {
   ui_disable_buttons();
+  $('#update-log').show();
   let data = new FormData();
   let file = $('#update-file-selector')[0].files[0];
   data.append('file', file);
@@ -177,6 +178,7 @@ function ui_select_release(sel) {
 
 function ui_start_software_update(url, version) {
   ui_disable_buttons();
+  $('#update-log').show();
   req = {"url" : url, "version" : version};
   try {
     fetch('/update/download', {
@@ -239,6 +241,33 @@ function populate_available_releases(releases) {
                                            ${release.name}
                                    </option>`);
   }
+}
+
+async function set_password() {
+  password = $('#password').val()
+  confirm_password = $('#confirm-password').val()
+
+  if(password != confirm_password) {
+    alert("Passwords do not match.");
+    return;
+  }
+
+  body = JSON.stringify({'password':password})
+
+  res = await fetch('/password', {
+    method: 'POST',
+    body: body,
+    headers: {
+      "Content-Type": "application/json",
+    }
+  });
+
+  if(!res.ok) {
+    alert(`Error: ${res.statusText}`);
+    return;
+  }
+
+  alert('Password set.');
 }
 
 // Fetch the GitHub Releases and populate the release selector and latest release

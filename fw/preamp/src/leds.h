@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Front-panel LED status and control
  *
@@ -18,10 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LEDS_H_
-#define LEDS_H_
+#pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 typedef union {
@@ -39,6 +37,4 @@ void setLeds(Leds leds);
 Leds getLeds();
 
 void initLeds();
-void updateLeds();
-
-#endif /* LEDS_H_ */
+void updateLeds(bool initialized);

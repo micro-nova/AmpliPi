@@ -14,7 +14,7 @@ from copy import deepcopy
 from context import amplipi
 
 # several starting configurations to load for testing including a corrupted configuration
-DEFAULT_STATUS = deepcopy(amplipi.ctrl.Api.DEFAULT_CONFIG) # pylint: disable=no-member
+DEFAULT_STATUS = deepcopy(amplipi.defaults.DEFAULT_CONFIG) # pylint: disable=no-member
 # make a good config string, that has more groups than the default (so we can tell the difference)
 GOOD_STATUS = deepcopy(DEFAULT_STATUS)
 # vol_delta need to be equal to the average volume of zones 0-5, here it is hardcoded

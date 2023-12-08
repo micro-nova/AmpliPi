@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,10 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef CTRL_I2C_H_
-#define CTRL_I2C_H_
+#pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 typedef union {
@@ -57,8 +55,6 @@ typedef union {
   uint8_t data;
 } ExpansionReg;
 
-void ctrlI2CInit();
-bool ctrlI2CAddrMatch();
-void ctrlI2CTransact();
-
-#endif /* CTRL_I2C_H_ */
+void ctrl_i2c_init(uint8_t addr);
+bool ctrl_i2c_addr_match();
+void ctrl_i2c_transact();

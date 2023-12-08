@@ -42,6 +42,9 @@
             <li class="nav-item">
               <a class="nav-link" id="manual-update-tab" data-toggle="tab" href="#manual-update" role="tab" aria-controls="manual-update" aria-selected="false">Custom</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" id="set-password-tab" data-toggle="tab" href="#set-password" role="tab" aria-controls="set-password" aria-selected="false">Set Password</a>
+            </li>
           </ul>
         </div>
         <div class="card-body text-center">
@@ -68,6 +71,18 @@
                 <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-custom-update').removeClass('disabled');">
               </div>
               <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="ui_upload_software_update();">Start Update</a>
+            </div>
+            <div class="tab-pane fade text-left" id="set-password" role="tabpanel" aria-labelledby="set-password-tab">
+              <div class="set-password-dialog">
+                This form allows you to set a password for the web interface. If the password fields are empty, it will unset the password protection. This will only set a password for the web interface, not the system password. This action will also log out any existing sessions.
+              </div>
+              <div class="set-password form-group">
+                <label for="password" class="form-label">Password:</label>
+                <input id="password" class="form-control" type="password">
+                <label for="confirm-password" class="form-label">Confirm Password:</label>
+                <input id="confirm-password" class="form-control" type="password">
+              </div>
+              <a id="password" role="button" class="btn btn-lg btn-primary text-center mt-3" onClick="set_password();">Update Password</a>
             </div>
           </div>
         </div>

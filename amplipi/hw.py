@@ -49,9 +49,9 @@ class FwVersion:
   dirty: bool
 
   def __init__(self, major: int = 0, minor: int = 0, git_hash: int = 0, dirty: bool = False):
-    if not 0 < major < 255 or not 0 < minor < 255:
-      raise ValueError('Major and minor version must be in the range [0,255]')
-    if not 0 < git_hash < 0xFFFFFFF:
+    if not 0 <= major <= 255 or not 0 <= minor <= 255:
+      raise ValueError(f'Major and minor version must be in the range [0,255]. Found: {major}.{minor}')
+    if not 0 <= git_hash <= 0xFFFFFFF:
       raise ValueError('Hash must be an unsigned 28-bit value')
     self.major = major
     self.minor = minor
@@ -278,13 +278,12 @@ class Preamps:
     GPIO.output(self.Pin.BOOT0.value, bootloader)
 
     # Hold the reset line low >300 ns
-    time.sleep(0.01)
+    time.sleep(0.001)
     GPIO.output(self.Pin.NRST.value, 1)
 
-    # Each preamps' microcontroller takes ~3ms to startup after releasing
+    # Each preamps' microcontroller takes ~6ms to startup after releasing
     # NRST. Just to be sure wait 10 ms before sending an I2C address.
-    # Further testing shows 6ms minimum
-    time.sleep(0.1)
+    time.sleep(0.01)
     GPIO.cleanup()
 
   def set_i2c_address(self, baud: int = 9600) -> bool:
@@ -334,20 +333,21 @@ class Preamps:
       print(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
       self.preamps[p].uart_passthrough(True)
 
-    # Before attempting programming, verify the unit even exists.
-    try:
-      subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'], shell=True,
-                      check=True, stdout=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
-      # Failed to handshake with the bootloader. Assume unit not present.
-      print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
-      plural = 's are' if unit != 1 else ' is'
-      print(f'Assuming only {unit} unit{plural} present and stopping programming')
+    if unit > 1:
+      # Before attempting programming, verify the unit even exists.
+      try:
+        subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'], shell=True,
+                        check=True, stdout=subprocess.DEVNULL)
+      except subprocess.CalledProcessError:
+        # Failed to handshake with the bootloader. Assume unit not present.
+        print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
+        plural = 's are' if unit != 1 else ' is'
+        print(f'Assuming only {unit} unit{plural} present and stopping programming')
 
-      # Reset all units to make sure the UART passthrough and
-      # bootloader modes are cleared.
-      self.reset()
-      return False
+        # Reset all units to make sure the UART passthrough and
+        # bootloader modes are cleared.
+        self.reset()
+        return False
 
     prog_success = False
     try:
@@ -401,7 +401,7 @@ class Preamps:
     success = True
     while success and unit < program_count:
       print()
-      success = self.program(filepath, unit)
+      success = self.program(filepath, unit, baud)
       if success:
         unit += 1
 

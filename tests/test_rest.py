@@ -25,7 +25,7 @@ import netifaces as ni
 # pylint: disable=invalid-name
 # pylint: disable=too-many-locals
 
-TEST_CONFIG = amplipi.ctrl.Api.DEFAULT_CONFIG
+TEST_CONFIG = amplipi.defaults.DEFAULT_CONFIG
 
 NO_SOURCE = -1 # Allows a zone to be disconnected from any source
 
@@ -36,7 +36,7 @@ TEST_CONFIG['groups'] = [
   {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
   {"id": 103, "name": "Empty",   "zones": [],     "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
 ]
-RCAs =  amplipi.ctrl.RCAs
+RCAs =  amplipi.defaults.RCAs
 AP_STREAM_ID = 1000
 P_STREAM_ID = 1001
 TEST_CONFIG['streams'] = [
@@ -138,7 +138,7 @@ def client(request):
   cfg = request.param
   config_dir = tempfile.mkdtemp()
   # write a valid version to the cache directory, needed by test_get_info
-  status_dir = amplipi.ctrl.USER_CONFIG_DIR
+  status_dir = amplipi.defaults.USER_CONFIG_DIR
   os.makedirs(status_dir, exist_ok=True)
   with open(os.path.join(status_dir, 'latest_release'), 'w', encoding='utf-8') as version_file:
     version_file.write('0.1.8\n')
@@ -157,7 +157,7 @@ def clientnm(request):# Non-mock systems should use this client - mock_ctrl and 
   config_dir = tempfile.mkdtemp()
   config_file = os.path.join(config_dir, 'house.json')
   # write a valid version to the cache directory, needed by test_get_info
-  status_dir = amplipi.ctrl.USER_CONFIG_DIR
+  status_dir = amplipi.defaults.USER_CONFIG_DIR
   os.makedirs(status_dir, exist_ok=True)
   with open(os.path.join(status_dir, 'latest_release'), 'w', encoding='utf-8') as version_file:
     version_file.write('0.1.8\n')

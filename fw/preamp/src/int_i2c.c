@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Internal I2C bus control/status
  *
@@ -20,6 +20,9 @@
 
 #include "int_i2c.h"
 
+#include <stdio.h>
+#include <string.h>  // Memcpy
+
 #include "adc.h"
 #include "audio.h"
 #include "fans.h"
@@ -27,7 +30,6 @@
 #include "leds.h"
 #include "pins.h"
 #include "pwr_gpio.h"
-#include "serial.h"
 #include "stm32f0xx.h"
 #include "systick.h"
 
@@ -42,13 +44,13 @@ const I2CDev dpot_dev_ = 0x5E;
 const I2CReg dpot_cmd_  = {0x5C, 0x00};
 DPotType     dpot_type_ = DPOT_NONE;
 
-static void delayUs(uint32_t us) {
-  for (uint32_t i = 0; i < us; i++) {
-    // Create a ~1 us delay based on the CPU clock
-    for (size_t n = 0; n < HSI_VALUE / 1000000; n++) {
-      __ASM volatile("nop");
-    }
-  }
+// The Rev4 preamp adds a EEPROM, but also inverts the mux control line logic levels.
+// The board version is detected during the internal I2C bus initialization.
+static bool rev4_ = false;
+
+// @returns true if a EEPROM was detected, indicating Rev4+ hardware, false otherwise.
+bool get_rev4() {
+  return rev4_;
 }
 
 /* This function resolves an I2C Arbitration Lost error by clearing any
@@ -71,8 +73,8 @@ void quiesceI2C() {
   const uint32_t HALF_PERIOD = 2;  // 4 us period = 250 kHz I2C clock
   // Ensure the I2C peripheral is disabled and pins are set as GPIO
   // Pins will be configured to HI-Z (pulled up externally)
-  deinitI2C2();
-  configI2C2PinsAsGPIO();
+  i2c_deinit(i2c_int);
+  pins_config_int_i2c(false);
 
   const uint32_t NUM_CONSECUTIVE_ONES = 9;
   // Require NUM_CONSECUTIVE_ONES on I2C's SDA before proceeding.
@@ -83,28 +85,27 @@ void quiesceI2C() {
   while (tries < 10 && count < NUM_CONSECUTIVE_ONES) {
     tries++;
 
-    // Produce the SCL clocks. Read SDA while SCL is high since the slave
-    // will not change SDA while SCL is high.
-    // If the I2C SDA line is low, start over and try again.
+    // Produce the SCL clocks. Read SDA while SCL is high since the slave will not change SDA while
+    // SCL is high. If the I2C SDA line is low, start over and try again.
+    // Note: no delays necessary between pin writes since it takes >2us to write a pin.
     bool success = true;
     for (count = 0; count < NUM_CONSECUTIVE_ONES && success; count++) {
-      delayUs(HALF_PERIOD);          // Hold clock high
-      success = readPin(i2c2_sda_);  // Start over if SDA low
-      writePin(i2c2_scl_, false);    // Falling edge on the I2C clock line
-      delayUs(HALF_PERIOD);          // Hold clock low
-      writePin(i2c2_scl_, true);     // Rising edge on the I2C clock line
+      success = pin_read(i2c2_sda_);  // Start over if SDA low
+      pin_write(i2c2_scl_, false);    // Falling edge on the I2C clock line
+      pin_write(i2c2_scl_, true);     // Rising edge on the I2C clock line
     }
   }
 
-  delayUs(HALF_PERIOD);        // Hold time for clock and data high
-  writePin(i2c2_sda_, false);  // Falling edge on SDA while SCL is high: START
-  delayUs(HALF_PERIOD * 2);    // Double hold time for clock high and data low
-  writePin(i2c2_sda_, true);   // Rising edge on SDA while SCL is high: STOP
-  delayUs(HALF_PERIOD);        // Hold time for clock and data high.
+  // Note: writing pins takes >2us already, so that has been factored in here.
+  // delay_us(HALF_PERIOD);       // Hold time for clock and data high
+  pin_write(i2c2_sda_, false);  // Falling edge on SDA while SCL is high: START
+  delay_us(HALF_PERIOD);        // Double hold time for clock high and data low
+  pin_write(i2c2_sda_, true);   // Rising edge on SDA while SCL is high: STOP
+  delay_us(HALF_PERIOD);        // Hold time for clock and data high.
 
   // Initialize the STM32's I2C2 bus as a master and control pins by peripheral
-  initI2C2();
-  configI2C2Pins();
+  i2c_init(i2c_int, 0);
+  pins_config_int_i2c(true);
 }
 
 bool isDPotSMBus() {
@@ -134,8 +135,7 @@ static void updateDPot(uint8_t val) {
       dpot_check = DPOT_NONE;
       dpot_val   = val;
     }
-  } else if ((dpot_type_ == DPOT_MCP40D17 && update) ||
-             dpot_check == DPOT_MCP40D17) {
+  } else if ((dpot_type_ == DPOT_MCP40D17 && update) || dpot_check == DPOT_MCP40D17) {
     uint32_t err = writeRegI2C2(dpot_cmd_, val);
     if (err) {
       // Couldn't communicate to MCP40D17, assume it's not present
@@ -152,97 +152,116 @@ static void updateDPot(uint8_t val) {
   }
 }
 
-uint8_t i2c_dev_present_[16] = {};
+bool       eeprom_write_request_ = false;
+EepromPage eeprom_write_;  // To write to EEPROM, only used as intermediate buffer.
 
+// Perform a page write from an EEPROM
+static bool eeprom_write() {
+  // [7:4]: M24C02 address, [3:1]: board address, set with 3 pins on M24C02, [0]: 0
+  uint8_t addr = EEPROM_I2C_ADDR_BASE + (eeprom_write_.ctrl.i2c_addr << 1);
+
+  // Clear the address field, this byte will be just the page address.
+  eeprom_write_.ctrl.i2c_addr = 0;
+
+  // Writes 16 bytes + 1 for data address + 1 for I2C address, and ~30us per byte = ~540us.
+  uint32_t err = i2c_int_write(addr, (uint8_t*)&eeprom_write_, sizeof(EepromPage));
+  return !err;
+}
+
+// Latest page of data read from a EEPROM
+EepromPage eeprom_read_ = {.ctrl.rd_wrn = 1};  // Set rd_wrn=1 to avoid an initial read request.
+
+// Perform a page read from an EEPROM
+static bool eeprom_read() {
+  uint8_t  addr    = EEPROM_I2C_ADDR_BASE + (eeprom_read_.ctrl.i2c_addr << 1);
+  uint8_t  subaddr = eeprom_read_.ctrl.page_num << 4;
+  uint32_t err     = i2c_int_read(addr, subaddr, eeprom_read_.data, sizeof(EepromPage));
+  if (!err) {
+    eeprom_read_.ctrl.rd_wrn = 1;
+  }
+  return !err;
+}
+
+// Request a page of data to be written to an attached I2C EEPROM.
+void eeprom_write_request(const EepromPage* const data) {
+  memcpy(&eeprom_write_, data, sizeof(EepromPage));
+  eeprom_write_request_ = true;
+}
+
+void eeprom_read_request(const EepromCtrl ctrl) {
+  eeprom_read_.ctrl.byte = ctrl.byte;
+
+  // This is a read, so `rd_wrn` is only valid if 1.
+  // Set to 0 to mark as invalid and flag a read request.
+  eeprom_read_.ctrl.rd_wrn = 0;
+}
+
+// @returns The EEPROM control structure from a previously-read EEPROM page.
+//          `rd_rwn`=0 indicates a read in progress.
+uint8_t eeprom_get_ctrl() {
+  return eeprom_read_.ctrl.byte;
+}
+
+// Get a byte from a previously-read EEPROM page
+// @param addr: page address from 0-15
+// @returns Data at the given `addr`.
+uint8_t eeprom_get_data(uint8_t addr) {
+  return eeprom_read_.data[addr];
+}
+
+uint8_t i2c_dev_present_[10] = {};
 uint8_t isInternalI2CDevPresent(uint8_t addr) {
   return i2c_dev_present_[addr];
 }
 
-//#define SCAN_I2C
-#ifdef SCAN_I2C
-
-#ifdef DEBUG_PRINT
-#include <stdio.h>
-#else
-// TODO: The I2C scanning only works if DEBUG_PRINT is enabled. Timing issue?
-#error "SCAN_I2C enabled but DEBUG_PRINT not enabled"
-#endif
-
 // Devices used in AmpliPi so far: (address are in LSB position)
-// MCP23008 GPIO: 0x20-0x27
-// MCP4017  DPOT: 0x2E-0x2F
-// TDA7448   VOL: 0x44-0x45
-// MAX1160X ADC : 0x64-0x65, 0x6D
-bool scan_i2c() {
-  // Scan I2C1 for valid device addresses 0x08-0x77
-  // (0x00-0x07 and 0x78-0x7F are reserved)
-  // TODO: When set to 0x08 something is found at 0x0D and then this crashes...
-  static uint8_t a = 0x20;
-
-  // Wait for bus free
-  while (I2C2->ISR & I2C_ISR_BUSY) {}
-
-  // Send a start condition, the address (0 bytes of data), and a stop condition
-  I2C2->CR2 = I2C_CR2_AUTOEND | I2C_CR2_STOP | I2C_CR2_START | (a << 1);
-
-  // Wait for stop condition
-  uint32_t isr   = I2C2->ISR;
-  bool     error = false;
-  do {
-    isr = I2C2->ISR;
-    if (isr & I2C_ISR_NACKF) {
-      I2C2->ICR = I2C_ICR_NACKCF;
-      error     = true;
-      break;
+// MCP23008 GPIO: 0x20,0x21 (LEDs, Power GPIO)
+// MCP4017  DPOT: 0x2E,0x2F (SMBUS, Standard)
+// TDA7448   VOL: 0x44,0x45 (CH1-3, CH4-6)
+// M24C02 EEPROM: 0x50-0x57 (Only 1 now, could be more in the future)
+// MAX1160X ADC : 0x64,0x65,0x6D (4-,8-, or 12-channels)
+// TODO: Takes ~3ms?
+void scan_i2c() {
+  // Scan I2C1 for all potentially present I2C devices.
+  // 0x00-0x07 and 0x78-0x7F are reserved in I2C, and <0x20 are not found in AmpliPi.
+  for (uint32_t a = 0x20; a < 0x70; a++) {
+    bool present = i2c_detect(a << 1);
+    if (present) {
+      i2c_dev_present_[(a >> 3) - 4] |= (1 << (a & 0x7));
+      printf("Found I2C dev @0x%02lX\r\n", a << 1);
     }
-    if (isr & I2C_ISR_BERR) {
-      I2C2->ICR = I2C_ICR_BERRCF;
-      error     = true;
-      debug_print("BERR\r\n");
-      break;
-    }
-    if (isr & I2C_ISR_ARLO) {
-      I2C2->ICR = I2C_ICR_ARLOCF;
-      error     = true;
-      debug_print("ARLO\r\n");
-      break;
-    }
-  } while (!(isr & I2C_ISR_STOPF));
-
-  // Clear detected stop condition
-  I2C2->ICR = I2C_ICR_STOPCF;
-
-  if (!error) {
-    // ACK was received, a device must be present
-    i2c_dev_present_[a >> 3] |= (1 << (a & 0x7));
-#ifdef DEBUG_PRINT
-    static char str[32] = {};
-    snprintf(str, sizeof(str), "Found I2C dev @0x%02X\r\n", a << 1);
-    debug_print(str);
-#endif
   }
-
-  a++;
-  if (a < 0x78) {
-    return false;
-  }
-  debug_print("Finished I2C scan\r\n");
-  return true;
 }
-#endif  // SCAN_I2C
 
 void initInternalI2C() {
   // Make sure any interrupted transactions are cleared out
   quiesceI2C();
 
+  // Release expansion reset, only needs to be low >300 ns on the receiving end,
+  // but needs to be driven low >50 us on this end to guarantee voltage reaches low level.
+  // This is placed here to avoid adding a delay to the startup process, while also
+  // ensuring enough time has elapsed while holding reset low.
+  // Placing after this I2C init function returns would delay startup of the expander.
+  pin_write(exp_nrst_, true);
+
   // Set the direction for the power board GPIO
   writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
 
+  // If the Preamp's EEPROM is present, then this is a Rev4+ board with inverted mux enable logic.
+  rev4_ = i2c_detect(EEPROM_I2C_ADDR_BASE);  // The preamp's EEPROM has address 0.
+  audio_set_mux_en_level(!rev4_);
+
   initLeds();
-  updateInternalI2C();
+
+  // Always read the Preamp's EEPROM at startup.
+  eeprom_read_request((EepromCtrl){.i2c_addr = 0, .page_num = 0});
+
+  updateInternalI2C(false);
 }
 
-void updateInternalI2C() {
+// Update the devices on the internal I2C bus.
+// @param initialized: true if I2C slave address has been received.
+void updateInternalI2C(bool initialized) {
   /* I2C transaction times (us):
    *   writeRegI2C2() 92.5
    *   readRegI2C2()  132
@@ -257,8 +276,19 @@ void updateInternalI2C() {
     // Update fans based on temps. Ideally use a DPot for linear control.
     uint8_t dpot_val = updateFans(dpot_type_ != DPOT_NONE);
     updateDPot(dpot_val);
+  } else if (rev4_ && mod8 == 4) {
+    // Read/write EEPROM
+    if (eeprom_write_request_) {
+      printf("W\n");
+      eeprom_write();
+      eeprom_write_request_ = false;
+    } else if (eeprom_read_.ctrl.rd_wrn == 0) {
+      printf("R\n");
+      // rd_wrn = 0 marks a read request.
+      eeprom_read();
+    }
   } else {
-    // Read the power board's GPIO inputs
+    // Read the power board's GPIO inputs (~2 Hz rate is all that is required).
     GpioReg pwr_gpio = {.data = readRegI2C2(pwr_io_gpio_)};
     if (getFanCtrl() != FAN_CTRL_MAX6644) {
       // No fan control IC to determine this
@@ -268,7 +298,7 @@ void updateInternalI2C() {
     setPwrGpio(pwr_gpio);
 
     // Update the LED Board's LED state (possible I2C write)
-    updateLeds();
+    updateLeds(initialized);
   }
 
   // Update the Power Board's GPIO outputs, only writing when necessary
@@ -281,12 +311,5 @@ void updateInternalI2C() {
     writeRegI2C2(pwr_io_gpio_, gpio_request.data);
   }
 
-  updateAudio();
-
-#ifdef SCAN_I2C
-  static bool i2c_scan_done = false;
-  if (!i2c_scan_done) {
-    i2c_scan_done = scan_i2c();
-  }
-#endif  // SCAN_I2C
+  audio_update();  // Worst-case 1.11 ms.
 }

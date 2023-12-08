@@ -62,7 +62,9 @@ from multiprocessing import Queue
 # amplipi
 import amplipi.utils as utils
 import amplipi.models as models
-from amplipi.ctrl import Api, ApiResponse, ApiCode, RCAs, USER_CONFIG_DIR # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+import amplipi.defaults as defaults
+from amplipi.ctrl import Api, ApiResponse, ApiCode # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+from amplipi.auth import CookieOrParamAPIKey, router as auth_router, NotAuthenticatedException, not_authenticated_exception_handler
 
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
@@ -71,7 +73,6 @@ GENERATED_DIR = os.path.abspath('web/generated')
 WEB_DIR = os.path.abspath('web/dist')
 
 app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
-# templates = Jinja2Templates(TEMPLATE_DIR)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -79,6 +80,8 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # but won't exist if testing on another machine.
 os.makedirs(GENERATED_DIR, exist_ok=True)
 app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated") # TODO: make this register as a dynamic folder???
+
+app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
 
 class SimplifyingRouter(APIRouter):
@@ -142,7 +145,7 @@ class params(SimpleNamespace):
   StationID = Path(..., ge=0, title="Pandora Station ID", description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
   ImageHeight = Path(..., ge=1, le=500, description="Image Height in pixels")
 
-api = SimplifyingRouter()
+api = SimplifyingRouter(dependencies=[Depends(CookieOrParamAPIKey)])
 
 @api.get('/api', tags=['status'])
 @api.get('/api/', tags=['status'])
@@ -162,9 +165,8 @@ def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   This will reset all zone names and streams back to their original configuration.
   We recommend downloading the current configuration beforehand.
   """
-  if ctrl.is_streamer:
-    return load_config(models.Status(**ctrl.STREAMER_CONFIG), ctrl)
-  return load_config(models.Status(**ctrl.DEFAULT_CONFIG), ctrl)
+  default_config = defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=ctrl.lms_mode)
+  return load_config(models.Status(**default_config), ctrl)
 
 @api.post('/api/reset', tags=['status'])
 def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
@@ -203,6 +205,30 @@ def shutdown():
   # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
   Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
+@api.post('/api/lms_mode', response_class=Response,
+  responses = {
+    200: {}
+  }
+)
+def lms_mode(ctrl: Api = Depends(get_ctrl)):
+  """ Toggles Logitech Media Server mode on or off. """
+  new_config : models.Status
+  if ctrl.lms_mode:
+    print("turning LMS mode off...")
+    try:
+      os.remove(pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode"))
+    except FileNotFoundError:
+      pass
+    Popen('sudo systemctl stop logitechmediaserver', shell=True)
+    Popen('sudo systemctl disable logitechmediaserver', shell=True)
+    new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=False))
+  else:
+    print("turning LMS mode on...")
+    pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode").touch()
+    Popen('sudo systemctl start logitechmediaserver', shell=True)
+    Popen('sudo systemctl enable logitechmediaserver', shell=True)
+    new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=True))
+  load_config(new_config, ctrl)
 
 subscribers: Dict[int, 'Queue[models.Status]'] = {}
 def notify_on_change(status: models.Status) -> None:
@@ -263,7 +289,7 @@ def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: 
   if update.input == 'local':
     # correct older api requests to use RCA inputs as a stream
     valid_update = update.copy()
-    valid_update.input = f'stream={RCAs[sid]}'
+    valid_update.input = f'stream={defaults.RCAs[sid]}'
     print(f'correcting deprecated use of RCA inputs from {update} to {valid_update}')
   return code_response(ctrl, ctrl.set_source(sid, update))
 
@@ -492,6 +518,7 @@ def debug() -> models.DebugResponse:
 # include all routes above
 
 app.include_router(api)
+app.include_router(auth_router)
 
 # API Documentation
 
@@ -653,6 +680,8 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
     This web interface allows you to control and configure your AmpliPi device.
     At the moment the API is the only way to configure the AmpliPi.
 
+    If you set a password on the update page, you will need to provide a session token to any API requests. This token is available for viewing on the `Settings` -> `About` page. You can provide the token either as a query parameter called "?api-key=" or as a cookie named "amplipi-session". If there are no user passwords set, you can disregard this authentication scheme.
+
     ## Try it out!
 
     __Using this web interface to test API commands:__
@@ -752,62 +781,8 @@ def doc():
   # TODO: add hosted python docs as well
   return FileResponse(f'{TEMPLATE_DIR}/rest-api-doc.html')
 
-class RawHTML:
-  """ Workaround for an HTML string, Jinja will escape normal strings """
-  def __init__(self, html):
-    self.html = html
-  def __html__(self):
-    return self.html
-
-# Identity - allows ui customization
-identity : Dict[str, Union[str, RawHTML]] = {
-  'name': 'AmpliPi',
-  'website': 'http://www.amplipi.com',
-  'html_logo': '<span class="text-white">Ampli</span><span class="text-danger">Pi</span>'
-}
-# Load fields from special identity file (if it exists), falling back to default values above
-try:
-  with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8') as identity_file:
-    potential_identity = json.load(identity_file)
-    for key, val in identity.items():
-      identity[key] = potential_identity.get(key, val)
-except FileNotFoundError:
-  pass
-except Exception as e:
-  print(f'Error loading identity file: {e}')
-# escape html fields
-for key in identity:
-  if 'html' in key:
-    identity[key] = RawHTML(identity[key])
-
 # Website
 app.mount('/', StaticFiles(directory=WEB_DIR, html=True), name='web')
-
-# @app.get('/', include_in_schema=False)
-# @app.get('/{src}', include_in_schema=False)
-# def view(request: Request, ctrl: Api = Depends(get_ctrl), src: int = 0):
-#   """ Webapp main view """
-#   state = ctrl.get_state()
-#   context = {
-#     # needed for template to make response
-#     'request': request,
-#     'identity': identity,
-#     # simplified amplipi state
-#     'cur_src': src,
-#     'sources': state.sources,
-#     'zones': state.zones,
-#     'groups': state.groups,
-#     'presets': state.presets,
-#     'inputs': [ctrl.get_inputs(src) for src in state.sources],
-#     'unused_groups': [unused_groups(ctrl, src.id) for src in state.sources if src.id is not None],
-#     'unused_zones': [unused_zones(ctrl, src.id) for src in state.sources if src.id is not None],
-#     'ungrouped_zones': [ungrouped_zones(ctrl, src.id) for src in state.sources if src.id is not None],
-#     'song_info': [src.info for src in state.sources if src.info is not None], # src.info should never be None
-#     'version': state.info.version if state.info else 'unknown',
-#     'min_vol': models.MIN_VOL_F,
-#     'max_vol': models.MAX_VOL_F,
-#   }
-#   return templates.TemplateResponse('index.html.j2', context, media_type='text/html')
 
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings: models.AppSettings = models.AppSettings()) -> FastAPI:
   """ Create the AmpliPi web app with a specific configuration """

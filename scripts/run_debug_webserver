@@ -8,12 +8,14 @@ HELP="Run AmpliPi's webserver\n
 \n
   --mock-ctrl: Don't use actual amplipi controller, useful for testing web interface without full system\n
   --mock-streams: Don't use actual audio streams, useful for testing web interface without full system\n
+  --compile-js: re-compile the javascript frontend app\n
 "
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --mock-ctrl) mock_ctrl="True" ;;
         --mock-streams) mock_streams="True" ;;
+        --compile-js) compile_js="True" ;;
         -h|--help) echo -e $HELP; exit 0 ;;
         *) echo "Unknown parameter passed: $1"; echo -e $HELP; exit 1 ;;
     esac
@@ -25,6 +27,12 @@ test 'active' = $(systemctl --user is-active amplipi.service) && systemctl --use
 
 # kill debug webserver
 kill -KILL $(ps ax | grep 'python' | grep 'uvicorn' | awk '{print $1}') > /dev/null
+
+if [[ "$compile_js" = "True" ]] ; then
+  pushd web
+  npm run build
+  popd
+fi
 
 if [[ "$mock_streams" != "True" ]] ; then
   # kill streaming services TODO: uvicorn should close the amplipi app cleaner, why doesnt it? wsgi?

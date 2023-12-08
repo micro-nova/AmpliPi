@@ -1163,7 +1163,8 @@ class LMS(PersistentStream):
       fake_mac = ':'.join([md5_hex[i:i+2] for i in range(0, 12, 2)])
 
       # Process
-      lms_args = [f'{utils.get_folder("streams")}/squeezelite',
+      lms_args = [f'{utils.get_folder("streams")}/process_monitor.py',
+                  '/usr/bin/squeezelite',
                   '-n', self.name,
                   '-m', fake_mac,
                   '-o', utils.virtual_output_device(vsrc),
@@ -1187,7 +1188,14 @@ class LMS(PersistentStream):
 
   def _deactivate(self):
     if self._is_running():
-      self.proc.kill()
+      try:
+        self.proc.terminate()
+        self.proc.communicate()
+      except Exception as e:
+        print(f"failed to terminate LMS stream {self.name}: {e}")
+        print("forcefully killing.")
+        self.proc.kill()
+        self.proc.communicate()
     self.proc = None
 
   def info(self) -> models.SourceInfo:

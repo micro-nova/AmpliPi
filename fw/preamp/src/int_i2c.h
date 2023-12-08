@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Internal I2C bus control/status
  *
@@ -18,16 +18,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef INT_I2C_H_
-#define INT_I2C_H_
+#pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
-void initInternalI2C();
-void updateInternalI2C();
+#include "eeprom.h"
 
+bool get_rev4();
+
+void    eeprom_write_request(const EepromPage* const data);
+void    eeprom_read_request(const EepromCtrl ctrl);
+uint8_t eeprom_get_ctrl();
+uint8_t eeprom_get_data(uint8_t addr);
+
+void    initInternalI2C();
+void    updateInternalI2C(bool initialized);
 bool    isDPotSMBus();
 uint8_t isInternalI2CDevPresent(uint8_t addr);
-
-#endif /* INT_I2C_H_ */

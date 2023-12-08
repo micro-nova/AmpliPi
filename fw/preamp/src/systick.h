@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Control for front panel LEDs
  *
@@ -18,15 +18,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SYSTICK_H_
-#define SYSTICK_H_
+#pragma once
 
 #include <stdint.h>
 
 #define SYSTICK_FREQ 1000  // 1000 Hz = 1 ms ticks
 
-void     systickInit();
-void     delayMs(uint32_t t);
-uint32_t millis(void);
-
-#endif /* SYSTICK_H_ */
+void     systick_init();
+uint32_t millis();
+void     delay_us(uint32_t t);
+void     delay_ms(uint32_t t);

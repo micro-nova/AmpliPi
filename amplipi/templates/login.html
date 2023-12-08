@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>AmpliPi login</title>
+
+    <!-- Font Awesome CSS --> 
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'
+      onerror="this.onerror=null;this.href='static/css/libs/font-awesome/5.15.1/all.min.css';">
+    <!-- Bootstrap core CSS --> 
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'
+      onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
+
+    <!-- Custom styles --> 
+    <style>
+      .card {
+        text-align: center;
+        background-color: #4a4a4a;
+      }
+      body {
+        color: white;
+        background-color: #2a2a2a;
+      }
+      
+    </style>
+  </head>
+
+  <body>
+
+    <main role="main" class="container">
+      <h1><span class="text-white">Ampli</span><span class="text-danger">Pi</span></h1>
+      <p class="lead mb-4">
+        Log in to AmpliPi
+      </p>
+      <div class="card">
+        <div class="card-body">
+          <form method="POST" action="/auth/login?next_url={{ next_url }}">
+            <input name="username" id="username" type="hidden" value="admin" />
+            <label for="password">Password:</label>
+            <input name="password" type="password" id="password" />
+            <input type="submit" value="Login">
+          </form>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

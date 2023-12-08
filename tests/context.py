@@ -10,3 +10,5 @@ import amplipi.models
 import amplipi.rt # TODO: remove
 import amplipi.streams
 import amplipi.utils
+import amplipi.auth
+import amplipi.defaults
