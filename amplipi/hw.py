@@ -333,20 +333,21 @@ class Preamps:
       print(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
       self.preamps[p].uart_passthrough(True)
 
-    # Before attempting programming, verify the unit even exists.
-    try:
-      subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'], shell=True,
-                      check=True, stdout=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
-      # Failed to handshake with the bootloader. Assume unit not present.
-      print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
-      plural = 's are' if unit != 1 else ' is'
-      print(f'Assuming only {unit} unit{plural} present and stopping programming')
+    if unit > 1:
+      # Before attempting programming, verify the unit even exists.
+      try:
+        subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'], shell=True,
+                        check=True, stdout=subprocess.DEVNULL)
+      except subprocess.CalledProcessError:
+        # Failed to handshake with the bootloader. Assume unit not present.
+        print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
+        plural = 's are' if unit != 1 else ' is'
+        print(f'Assuming only {unit} unit{plural} present and stopping programming')
 
-      # Reset all units to make sure the UART passthrough and
-      # bootloader modes are cleared.
-      self.reset()
-      return False
+        # Reset all units to make sure the UART passthrough and
+        # bootloader modes are cleared.
+        self.reset()
+        return False
 
     prog_success = False
     try:
