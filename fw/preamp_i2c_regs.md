@@ -15,7 +15,7 @@
       <th>bit 2</th>
       <th>bit 1</th>
       <th>bit 0</th>
-      <th>Default value</th>
+      <th>Reset Value</th>
     </tr>
   </thead>
   <tbody>
@@ -234,6 +234,29 @@
       <td align='center' colspan=8>Temperature of second power supply in degrees C, if present. Unsigned with 1 fractional bit</td>
       <td>N/A</td>
     </tr>
+    <tr><td align=center colspan=100%><b>EEPROM Interface</b></td></tr>
+    <tr>
+      <td>0x1F</td><td>EEPROM_CTRL</td>
+      <td align=center colspan=4>Page address</td>
+      <td align=center colspan=3>EEPROM I2C address, 3 LSBs</td>
+      <td>RD_WRN</td>
+      <td>0x01</td>
+    </tr>
+    <tr>
+      <td>0x20</td><td>EEPROM_D[0]</td>
+      <td align=center colspan=8>First byte of the read/write EEPROM data</td>
+      <td>0x00</td>
+    </tr>
+    <tr>
+      <td>...</td><td>...</td>
+      <td align=center colspan=8>...</td>
+      <td>0x00</td>
+    </tr>
+    <tr>
+      <td>0x20</td><td>EEPROM_D[15]</td>
+      <td align=center colspan=8>Last byte of the read/write EEPROM data</td>
+      <td>0x00</td>
+    </tr>
     <tr><td align=center colspan=100%><b>Version Info</b></td></tr>
     <tr>
       <td>0xFA</td>
@@ -269,7 +292,7 @@
       <td align=center colspan=4>GIT_HASH[3:0]</td>
       <td align=center>-</td>
       <td align=center>-</td>
-      <td align=center>-</td>
+      <td align=center>Rev4+</td>
       <td align=center>DIRTY</td>
       <td>N/A</td>
     </tr>
@@ -534,6 +557,37 @@ If linear voltage control is not in use, this register will read 0xC0 (12 V).
 Otherwise this register will read between 0x63 (6.1875 V) and
 0xBF (11.9375 V).
 
+## EEPROM Interface
+
+These registers implement an interface to read or write a page of data from
+an EEPROM attached to the STM32's internal I2C bus.
+The EEPROMs used are M24C02, each with 256-bytes of storage.
+The 256-bytes are split into 16 pages of 16 bytes each.
+Each EEPROM has 3 pins to set its I2C address, so up to 8 EEPROMs can be attached to the bus.
+For now only the Preamp board has a EEPROM, and the data format looks like:
+
+| Address Offset | Datatype | Data                      |
+| -------------- | -------- | ------------------------- |
+| 0x00           | uint8    | EEPROM Data Format (0x00) |
+| 0x01           | uint32   | Serial Number             |
+| 0x05           | uint8    | Unit Type                 |
+| 0x06           | uint8    | Board Type                |
+| 0x07           | uint8    | Board Revision Number     |
+| 0x08           | char     | Board Revision Letter     |
+
+At startup the STM32 checks for a EEPROM, and if present reads it.
+
+To read to a EEPROM, send a read request to the EEPROM_CTRL register.
+For example, to request a read of page 3 of the EEPROM with address 0x56, send 0x3D.
+While the read is ongoing the LSB of EEPROM_CTRL.RD_WRN will read as 0.
+Once the read is complete (worst-case 10 ms) EEPROM_CTRL.RD_WRN will read as 1,
+and the data will be accessible in the EEPROM_D[0:15] registers.
+
+To write to a EEPROM, first write data to the EEPROM_D[0:15] registers.
+Then send the write request by setting EEPROM_CTRL with a byte containing the page,
+the 3 I2C address LSBs, and a '0' for RD_WRN.
+The data in EEPROM_D[0:15] will be written to the EEPROM within 10 ms.
+
 ## VERSION REGISTERS
 
 ### VER_MAJOR / VER_MINOR
@@ -548,3 +602,5 @@ Use `git rev-parse --short HEAD` to get the short Git hash for the current commi
 
 If the DIRTY bit is set, the firmware is not aligned to any particular Git commit
 and the hash should be ignored.
+
+The Rev4+ bit indicates that the Preamp Board is Rev4 or newer with a EEPROM.

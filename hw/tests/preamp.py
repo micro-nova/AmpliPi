@@ -151,7 +151,7 @@ parser.add_argument('-w', '--wait', action='store_true', default=False,
 parser.add_argument('--temps', action='store_true', default=False,
                     help='print temps and exit')
 parser.add_argument('--heat', type=int, metavar='TIMEOUT',
-                    help='perform a mannually-heated temp rise test')
+                    help='perform a manually-heated temp rise test')
 args = parser.parse_args()
 
 # Force a reset if bootloader is requested
@@ -185,7 +185,7 @@ if args.temps:
   sys.exit(0)
 
 if args.unit > 1 and args.reset:
-  print("Reseting expansion units is a work in progress...")
+  print("Resetting expansion units is a work in progress...")
 if args.unit > 1 and args.bootload:
   print("Bootloading expansion units is a work in progress...")
 

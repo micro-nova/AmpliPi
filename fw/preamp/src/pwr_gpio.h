@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Power Board GPIO status and control
  *
@@ -18,10 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PWR_GPIO_H_
-#define PWR_GPIO_H_
+#pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #define PWR_GPIO_OUT_MASK 0x83
@@ -55,5 +53,3 @@ bool get9vEn();
 bool get12vEn();
 void setFanOn(bool on);
 bool getFanOn();
-
-#endif /* PWR_GPIO_H_ */

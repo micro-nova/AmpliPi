@@ -1,26 +1,45 @@
-This directory contains the firmware for AmpliPi's preamp board.
-Either System Workbench for STM32 or a CMake-based build can be used
-to compile the firmware.
-The System Workbench for STM32 setup instructions can be found at
-[docs/preamp_dev.md](../../docs/preamp_dev.md).
-The CMake build process is documented here.
+# Preamp Board Firmware
 
-# CMake Build
+This directory contains the firmware for AmpliPi's preamp board.
+CMake and gcc-arm-none-eabi are used to build the firmware.
+
+## Dependency Setup
+
 The gcc-arm-none-eabi compiler is used along with a CMake build system
 to compile the Preamp Board's firmware directly on the Raspberry Pi.
 
-## Install dependencies
+### Install CMake
+
 On Raspbian Buster or Ubuntu 20.04:
+
 ```sh
-sudo apt install cmake gcc-arm-none-eabi
+sudo apt update
+sudo apt install cmake
 ```
-Note: if installing on the AmpliPi's Raspberry Pi, DO NOT run an
-`apt upgrade` at any point.
+
+### Install gcc-arm-none-eabi
+
+From <https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads>
+download the appropriate arm-none-eabi for your host machine.
+
+#### Linux Install
+
+libncursesw5 is only required for GDB.
+
+```sh
+wget https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
+sudo tar -xf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz -C /usr/share
+sudo ln -s /usr/share/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-* /usr/bin
+sudo apt install libncursesw5
+```
+
+### Install stm32flash
 
 To program from AmpliPi's Raspberry Pi
 [stm32flash](https://sourceforge.net/p/stm32flash) is used.
-It is pre-installed on recent AmpliPis but if not it can be installed with:
-```
+It should be pre-installed on AmpliPi but if not it can be installed with:
+
+```sh
 sudo apt install stm32flash
 ```
 

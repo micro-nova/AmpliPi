@@ -1,5 +1,7 @@
 BasedOnStyle: Google
 
+ColumnLimit: 100
+
 AlignConsecutiveAssignments: Consecutive
 AlignConsecutiveBitFields: true
 AlignConsecutiveDeclarations: Consecutive

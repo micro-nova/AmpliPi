@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Base I2C functionality
  *
@@ -20,68 +20,90 @@
 
 #include "i2c.h"
 
+#include <stdio.h>
+
 #include "stm32f0xx.h"
+#include "stm32f0xx_i2c.h"
 
-// addr must be a 7-bit I2C address shifted left by one, ie: 0bXXXXXXX0
-void initI2C1(uint8_t addr) {
-  // Enable peripheral clock for I2C1
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+// Initialize an I2C bus.
+// @param bus:  The I2C bus to initialize.
+// @param addr: A 7-bit slave I2C address in the 7 MSBs, ie: 0bXXXXXXX0.
+//              If 0, the I2C bus will be set as master instead of slave.
+void i2c_init(i2c_bus_t bus, uint8_t addr) {
+  // Peripheral clocks for both busses should always be enabled.
+  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN | RCC_APB1ENR_I2C2EN;
 
-  // Enable SDA1, SDA2, SCL1, SCL2 clocks
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+  // TODO: Disable clock stretching by setting I2C_CR1_NOSTRETCH
+  I2C_TypeDef* i2c_regs = bus == i2c_ctrl ? I2C1 : I2C2;
+  i2c_regs->CR1         = 0;  // Disable I2C1 peripheral (set PE=0).
+  i2c_regs->CR2         = 0;  // Defaults OK. ACK bytes received.
+  i2c_regs->OAR1        = 0;  // Clear OAR1 register (bits can't be modified while OA1EN=1).
+  i2c_regs->OAR2        = 0;  // Clear OAR2 register, don't need a second slave address.
+  i2c_regs->TIMEOUTR    = 0;  // Timeouts only used in SMBUS mode.
+  if (addr) {
+    // Slave mode, set slave address.
+    i2c_regs->TIMINGR = 0;                               // Clocks not generated in slave mode.
+    i2c_regs->OAR1    = I2C_OAR1_OA1EN | (addr & 0xFE);  // Set slave address to ACK.
+  } else {
+    // Master mode, set timing. Both I2C controllers are effectively clocked by PCLK = 8 MHz.
+    // See the STM32F030 reference manual section 22.4.9 "I2C master mode" or AN4235 for I2C
+    // timing calculations. Full math done in i2c_calcs.md
+    // Excel tool, rise/fall 72/4 ns: 100 kHz: 0x00201D2C (0.5074% error)
+    //                                400 kHz: 0x0010020B (1.9992% error)
+    i2c_regs->TIMINGR = 0x0010020B;  // 400 kHz Fast Mode.
+  }
 
-  // Setup I2C1
-  I2C_InitTypeDef I2C_InitStructure1;
-  I2C_InitStructure1.I2C_Mode                = I2C_Mode_I2C;
-  I2C_InitStructure1.I2C_AnalogFilter        = I2C_AnalogFilter_Enable;
-  I2C_InitStructure1.I2C_DigitalFilter       = 0x00;
-  I2C_InitStructure1.I2C_OwnAddress1         = addr;
-  I2C_InitStructure1.I2C_Ack                 = I2C_Ack_Enable;
-  I2C_InitStructure1.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-  I2C_InitStructure1.I2C_Timing = 0;  // Clocks not generated in slave mode
-  I2C_Init(I2C1, &I2C_InitStructure1);
-  I2C_Cmd(I2C1, ENABLE);
+  i2c_regs->CR1 = I2C_CR1_PE;  // Enable the I2C1 Peripheral
 }
 
-/* Init the second I2C bus. I2C2 is internal to a single AmpliPi unit.
- * The STM32 is the master and controls the volume chips, power, fans,
- * and front panel LEDs.
- */
-void initI2C2() {
-  // Enable peripheral clock for I2C2
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
-
-  // Enable SDA1, SDA2, SCL1, SCL2 clocks
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-
-  // Setup I2C2
-  I2C_InitTypeDef I2C_InitStructure2;
-  I2C_InitStructure2.I2C_Mode                = I2C_Mode_I2C;
-  I2C_InitStructure2.I2C_AnalogFilter        = I2C_AnalogFilter_Enable;
-  I2C_InitStructure2.I2C_DigitalFilter       = 0x00;
-  I2C_InitStructure2.I2C_OwnAddress1         = 0x00;
-  I2C_InitStructure2.I2C_Ack                 = I2C_Ack_Enable;
-  I2C_InitStructure2.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-
-  /* See the STM32F030 reference manual section 22.4.9 "I2C master mode" or
-   * AN4235 for I2C timing calculations.
-   * Excel tool, rise/fall 72/4 ns: 100 kHz: 0x00201D2C (0.5074% error)
-   *                                400 kHz: 0x0010020B (1.9992% error)
-   * Full math done in i2c_calcs.md
-   */
-  I2C_InitStructure2.I2C_Timing = 0x0010020B;
-  I2C_Init(I2C2, &I2C_InitStructure2);
-  I2C_Cmd(I2C2, ENABLE);
-}
-
-/* Disable the I2C2 peripheral */
-void deinitI2C2() {
-  // Ensure I2C peripheral clock is enabled in case this function is called
-  // before the I2C init function.
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+// Disable an I2C bus.
+// @param bus: The I2C bus to deinitialize.
+void i2c_deinit(i2c_bus_t bus) {
+  // Ensure I2C peripheral clocks are enabled in case this function is called before i2c_init().
+  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN | RCC_APB1ENR_I2C2EN;
 
   // Disable I2C2 peripheral
-  I2C_Cmd(I2C2, DISABLE);
+  I2C_TypeDef* i2c_regs = bus == i2c_ctrl ? I2C1 : I2C2;
+  i2c_regs->CR1 &= ~I2C_CR1_PE;
+}
+
+// Check for an ack from a slave device on the internal I2C bus, indicating its presence.
+// @param addr: The 7-bit I2C address, in the uppermost 7-bits (LSB is 0).
+bool i2c_detect(uint8_t addr) {
+  // Wait for bus free
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Send a start condition, the address (0 bytes of data), and a stop condition
+  I2C2->CR2 = I2C_CR2_AUTOEND | I2C_CR2_STOP | I2C_CR2_START | addr;
+
+  // Wait for stop condition
+  uint32_t isr;
+  bool     error = false;
+  do {
+    // TODO: Add timeout
+    isr = I2C2->ISR;
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      error     = true;
+      break;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      error     = true;
+      printf("BERR\n");
+      break;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      error     = true;
+      printf("ARLO\n");
+      break;
+    }
+  } while (!(isr & I2C_ISR_STOPF));
+
+  // Clear detected stop condition
+  I2C2->ICR = I2C_ICR_STOPCF;
+  return !error;
 }
 
 uint32_t writeByteI2C2(I2CDev dev, uint8_t val) {
@@ -91,8 +113,7 @@ uint32_t writeByteI2C2(I2CDev dev, uint8_t val) {
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 
   // Setup to send send start, addr, subaddr
-  I2C_TransferHandling(I2C2, dev, 1, I2C_AutoEnd_Mode,
-                       I2C_Generate_Start_Write);
+  I2C_TransferHandling(I2C2, dev, 1, I2C_AutoEnd_Mode, I2C_Generate_Start_Write);
 
   // Wait for transmit interrupted flag or an error
   uint32_t isr = I2C2->ISR;
@@ -128,8 +149,7 @@ uint8_t readRegI2C2(I2CReg r) {
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY)) {}
 
   // Setup to write start, addr, subaddr
-  I2C_TransferHandling(I2C2, r.dev, 1, I2C_SoftEnd_Mode,
-                       I2C_Generate_Start_Write);
+  I2C_TransferHandling(I2C2, r.dev, 1, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
 
   // Wait for transmit flag
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_TXIS) == RESET) {}
@@ -141,8 +161,7 @@ uint8_t readRegI2C2(I2CReg r) {
   while (I2C_GetFlagStatus(I2C2, I2C_ISR_TC) == RESET) {}
 
   // This is the actual read transfer setup
-  I2C_TransferHandling(I2C2, r.dev, 1, I2C_AutoEnd_Mode,
-                       I2C_Generate_Start_Read);
+  I2C_TransferHandling(I2C2, r.dev, 1, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
 
   // Wait until we get the rx data then read it out
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_RXNE) == RESET) {}
@@ -163,8 +182,7 @@ uint32_t writeRegI2C2(I2CReg r, uint8_t data) {
   while (I2C2->ISR & I2C_ISR_BUSY) {}
 
   // Setup to send start, addr, subaddr
-  I2C_TransferHandling(I2C2, r.dev, 2, I2C_AutoEnd_Mode,
-                       I2C_Generate_Start_Write);
+  I2C_TransferHandling(I2C2, r.dev, 2, I2C_AutoEnd_Mode, I2C_Generate_Start_Write);
 
   // Wait for transmit interrupted flag or an error
   uint32_t isr = I2C2->ISR;
@@ -192,4 +210,95 @@ uint32_t writeRegI2C2(I2CReg r, uint8_t data) {
   while (I2C_GetFlagStatus(I2C2, I2C_FLAG_STOPF) == RESET) {}
   I2C2->ICR = I2C_ICR_STOPCF;
   return 0;
+}
+
+static inline uint32_t wait_for_flag(uint32_t flag) {
+  uint32_t isr = I2C2->ISR;
+  do {
+    if (isr & I2C_ISR_NACKF) {
+      I2C2->ICR = I2C_ICR_NACKCF;
+      return I2C_ISR_NACKF;
+    }
+    if (isr & I2C_ISR_BERR) {
+      I2C2->ICR = I2C_ICR_BERRCF;
+      return I2C_ISR_BERR;
+    }
+    if (isr & I2C_ISR_ARLO) {
+      I2C2->ICR = I2C_ICR_ARLOCF;
+      return I2C_ISR_ARLO;
+    }
+    isr = I2C2->ISR;
+    // TODO: Timeout
+  } while (!(isr & flag));
+  return 0;
+}
+
+// Write multiple bytes of data to an I2C device.
+// @param addr: A 7-bit slave I2C address in the 7 MSBs, ie: 0bXXXXXXX0.
+// @param data: An array of bytes to write.
+// @param num:  The number of bytes to write.
+// @return      0 if no error, or the ISR flag of an error.
+uint32_t i2c_int_write(const uint8_t addr, const uint8_t* const data, const uint8_t num) {
+  // Wait if I2C2 is busy
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Setup to write slave address, write bit, then 'num' bytes.
+  // This assumes CR2 is normally left at the defaults of all 0's.
+  I2C2->CR2 = I2C_CR2_AUTOEND | I2C_CR2_START | ((uint32_t)num << 16) | addr;
+
+  uint32_t err = 0;
+  for (size_t n = 0; n < num; n++) {
+    // Wait for the tx interrupt flag to be set (the TXDR register is empty and awaiting more data).
+    err = wait_for_flag(I2C_ISR_TXIS);  // TODO: handle/report errors.
+
+    // Write the next byte of data
+    I2C2->TXDR = data[n];
+  }
+
+  // Wait for stop condition to occur or an error.
+  err |= wait_for_flag(I2C_ISR_STOPF);  // TODO: handle/report errors.
+  I2C2->ICR = I2C_ICR_STOPCF;           // Clear stop flag
+  return err;
+}
+
+// Read multiple bytes of data from an I2C device.
+// @param addr: A 7-bit slave I2C address in the 7 MSBs, ie: 0bXXXXXXX0.
+// @param subaddr: The address to send to the device before reading, e.g. read from register.
+// @param data: The buffer to put the read bytes into. Must have space for at least `num` bytes.
+// @param num:  The number of bytes to read.
+// @return      0 if no error, or the ISR flag of an error.
+uint32_t i2c_int_read(const uint8_t addr, const uint8_t subaddr, uint8_t* const data,
+                      const uint8_t num) {
+  // Wait if I2C2 is busy
+  while (I2C2->ISR & I2C_ISR_BUSY) {}
+
+  // Setup to write slave address and write bit, then subaddr.
+  // This assumes CR2 is normally left at the defaults of all 0's.
+  I2C2->CR2 = I2C_CR2_START | (1 << 16) | addr;
+
+  // Wait for the tx interrupt flag to be set (the TXDR register is empty and awaiting more data).
+  uint32_t err = wait_for_flag(I2C_ISR_TXIS);  // TODO: handle/report errors.
+
+  // Send the data read address AKA subaddress to the device.
+  I2C2->TXDR = subaddr;
+
+  // Wait for transmit complete flag or an error
+  err |= wait_for_flag(I2C_ISR_TC);  // TODO: handle/report errors.
+
+  // Send a repeated start, then the slave address with read set.
+  uint32_t ndata = num - 1;
+  I2C2->CR2      = I2C_CR2_AUTOEND | I2C_CR2_START | I2C_CR2_RD_WRN | (ndata << 16) | addr;
+
+  for (size_t n = 0; n < ndata; n++) {
+    // Wait for a byte to be received, or an error.
+    err |= wait_for_flag(I2C_ISR_RXNE);  // TODO: handle/report errors.
+
+    // Read the next byte of data
+    data[n] = (uint8_t)I2C2->RXDR;
+  }
+
+  // Wait for stop condition to occur or an error.
+  err |= wait_for_flag(I2C_ISR_STOPF);  // TODO: handle/report errors.
+  I2C2->ICR = I2C_ICR_STOPCF;           // Clear stop flag
+  return err;
 }

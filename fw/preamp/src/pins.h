@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Pin definitions and functions
  *
@@ -18,10 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PINS_H_
-#define PINS_H_
+#pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #include "audio.h"  // NUM_ZONES, NUM_SRCS
@@ -41,13 +39,10 @@ extern const Pin i2c2_scl_;             // Internal I2C bus SCL
 extern const Pin i2c2_sda_;             // Internal I2C bus SDA
 
 // Pin configuration
-void initPins();
-void configUARTPins();
-void configI2C1Pins();
-void configI2C2Pins();
-void configI2C2PinsAsGPIO();
+void pins_init();
+void pins_config_int_i2c(bool i2c);
 
-void writePin(Pin pp, bool set);
-bool readPin(Pin pp);
+void pin_write(Pin pp, bool set);
+bool pin_read(Pin pp);
 
-#endif /* PINS_H_ */
+void exp_nrst_release();

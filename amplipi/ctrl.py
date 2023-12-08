@@ -104,7 +104,7 @@ class Api:
 
 
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
-  # with this reinit will be called connect and will attempt to load the configutation and connect to an AmpliPi (mocked or real)
+  # with this reinit will be called connect and will attempt to load the configuration and connect to an AmpliPi (mocked or real)
   # returning a boolean on whether or not it was successful
   def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     self.reinit(settings, change_notifier)
@@ -113,7 +113,7 @@ class Api:
   def reinit(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None, config: Optional[models.Status] = None):
     """ Initialize or Reinitialize the controller
 
-    Intitializes the system to to base configuration """
+    Initializes the system to to base configuration """
     self._change_notifier = change_notifier
     self._mock_hw = settings.mock_ctrl
     self._mock_streams = settings.mock_streams
@@ -123,7 +123,7 @@ class Api:
 
     # try to get a list of available boards to determine if we are a streamer
     # the preamp hardware is not available on a streamer
-    # we need to know this before trying to intiialize the firmware
+    # we need to know this before trying to initialize the firmware
     found_boards = []
     try:
       found_boards = EEPROM.get_available_devices(0)

@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Front-panel LED status and control
  *
@@ -20,10 +20,9 @@
 
 #include "leds.h"
 
-#include "audio.h"
-#include "i2c.h"
-#include "serial.h"
-#include "systick.h"
+#include "audio.h"    // For zone status.
+#include "i2c.h"      // To write to GPIO expander.
+#include "systick.h"  // For blink timing.
 
 // LED Board I2C registers
 const I2CReg i2c_led_dir_reg_  = {0x40, 0x00};
@@ -58,11 +57,14 @@ void initLeds() {
   leds_.data = 0;
 }
 
-void updateLeds() {
+/* Update the front-panel LEDs with the current AmpliPi status.
+ * @param initialized: true if I2C slave address has been received.
+ */
+void updateLeds(bool initialized) {
   // Determine the LEDs based on the system status, unless overriden.
   if (!led_override_) {
     leds_requested_.grn = inStandby() ? 0 : 1;
-    if (getI2C1Address()) {
+    if (initialized) {
       leds_requested_.red = !leds_requested_.grn;
     } else {
       // Blink red light at ~0.5 Hz

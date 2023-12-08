@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * ADC related functions including reading the I2C ADC, voltage and temperature
  * conversions, and a thermistor temperature conversion look-up table.
@@ -19,10 +19,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ADC_H_
-#define ADC_H_
+#pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 typedef union {
@@ -71,5 +69,3 @@ int16_t getHV2Temp_f8();
 int16_t getAmp1Temp_f8();
 int16_t getAmp2Temp_f8();
 int16_t getPiTemp_f8();
-
-#endif /* ADC_H_ */

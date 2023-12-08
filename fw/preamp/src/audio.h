@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2022 MicroNova LLC
+ * Copyright (C) 2023 MicroNova LLC
  *
  * Configure each of the preamp controller's six zones.
  * Each zone has four configurable properties:
@@ -26,24 +26,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef AUDIO_MUX_H_
-#define AUDIO_MUX_H_
+#pragma once
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #define NUM_SRCS  4
 #define NUM_ZONES 6
 
-typedef enum
-{
+typedef enum {
   IT_ANALOG,
   IT_DIGITAL
 } InputType;
 
-void initAudio();
-void updateAudio();
+void audio_muxes_init();
+void audio_update();
+
+void audio_set_mux_en_level(bool level);
+bool audio_get_mux_en_level();
 
 void mute(size_t zone, bool mute);
 bool muted(size_t zone);
@@ -58,5 +58,3 @@ size_t  getZoneSource(size_t zone);
 
 void      setSourceAD(size_t src, InputType type);
 InputType getSourceAD(size_t src);
-
-#endif /* AUDIO_MUX_H_ */

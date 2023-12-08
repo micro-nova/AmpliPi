@@ -2,7 +2,7 @@
  * AmpliPi Home Audio
  * Copyright (C) 2023 MicroNova LLC
  *
- * Fan control based on temperatures
+ * EEPROM definitions.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,33 +22,22 @@
 
 #include <stdint.h>
 
-#define DEFAULT_DPOT_VAL 0x3F
+// TODO: constexpr. Waiting on EDG parser to support C23 better, see
+// https://www.edg.com/c23_features.html
+#define EEPROM_PAGE_SIZE     16
+#define EEPROM_I2C_ADDR_BASE 0xA0
 
-// Possible fan control methods:
-// - MAX6644 (5 developer units with Power Board 2.A)
-// - Thermistors with FAN_ON PWM control (Power Board 3.A)
-// - Thermistors with DPOT linear voltage control (Power Board 4.A)
-// - Overridden (forced on) by the Pi
-typedef enum {
-  FAN_CTRL_MAX6644,
-  FAN_CTRL_PWM,
-  FAN_CTRL_LINEAR,
-  FAN_CTRL_FORCED,
-} FanCtrl;
+typedef union {
+  uint8_t byte;
+  struct {
+    uint8_t rd_wrn   : 1;  // Read = 1, write = 0.
+    uint8_t i2c_addr : 3;
+    uint8_t page_num : 4;
+  };
+} EepromCtrl;
 
-typedef enum {
-  DPOT_NONE,
-  DPOT_MCP4017,
-  DPOT_MCP40D17,
-} DPotType;
-
-void    setFanCtrl(FanCtrl ctrl);
-FanCtrl getFanCtrl();
-uint8_t getFanDuty();
-uint8_t getFanDPot();
-uint8_t getFanVolts();
-bool    overTemp();
-bool    fansOn();
-
-uint8_t updateFans(bool linear);
-bool    getFanOnFromDuty();
+typedef struct {
+  EepromCtrl ctrl;
+  uint8_t    data[EEPROM_PAGE_SIZE];
+} EepromPage;
+static_assert(sizeof(EepromPage) == EEPROM_PAGE_SIZE + 1, "Error: Eeprom wrong size.");
