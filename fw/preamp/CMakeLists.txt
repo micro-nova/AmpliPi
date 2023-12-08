@@ -122,7 +122,7 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
 
 add_custom_target(program
   COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}../../.. &&
-          venv/bin/python -m amplipi.hw --flash ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.bin
+          python3 -m amplipi.hw --flash ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.bin
   COMMENT "Programming preamp"
   DEPENDS ${PROJECT_NAME}.elf
 )
