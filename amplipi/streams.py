@@ -284,6 +284,7 @@ class PersistentStream(BaseStream):
       try:
         # must use terminate as kill() cannot be intercepted
         self._cproc.terminate()
+        self._cproc.communicate(timeout=5)
 
       except Exception as e:
         print(f'PersistentStream disconnect error: {e}')
@@ -511,7 +512,6 @@ class Spotify(PersistentStream):
 
     self.connect_port: Optional[int] = None
     self.mpris: Optional[MPRIS] = None
-    self.proc_pid: Optional[int] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
 
   def reconfig(self, **kwargs):
@@ -523,9 +523,6 @@ class Spotify(PersistentStream):
       reconnect_needed = True
     if reconnect_needed and self.is_activated():
       self.reactivate()
-
-  def __del__(self):
-    self.disconnect()
 
   def is_persistent(self):
     return True
@@ -572,9 +569,11 @@ class Spotify(PersistentStream):
 
   def _deactivate(self):
     try:
-      self.proc.kill()
-    except Exception:
-      pass
+      self.proc.terminate()
+      outs, errs = self.proc.communicate(timeout=3)
+    except Exception as e:
+      print(f"failed to terminate spotify stream: {e}")
+      kouts, kerrs = self.proc.kill()
     try:
       del self.mpris
     except Exception:
