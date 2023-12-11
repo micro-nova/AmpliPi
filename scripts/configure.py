@@ -502,7 +502,6 @@ def _display_service(directory: str):
   return f"""\
 [Unit]
 Description=Amplipi Front Panel Display
-After=network.target
 
 [Service]
 Type=simple
@@ -518,7 +517,6 @@ def _audiodetector_service(directory: str):
   return f"""\
 [Unit]
 Description=Amplipi RCA Input Audio Detector
-After=network.target
 
 [Service]
 Type=simple
