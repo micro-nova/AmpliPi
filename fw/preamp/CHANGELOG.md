@@ -1,6 +1,6 @@
 # Preamp Board Firmware Changelog
 
-## 1.7-4E24746
+## 1.7-4F618C6
 
 - Added support for Preamp Board Rev4.A
   - On startup, the firmware checks for the presence of the EEPROM. If present the board rev

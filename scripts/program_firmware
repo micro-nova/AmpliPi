@@ -121,6 +121,6 @@ if $prog_remote; then
   printf "$prog_string"
   ssh pi@$remote_host -- "cd \"$remote_path\"; $prog_cmd"
 else # Program locally
-  printf $prog_string
-  eval $prog_cmd
+  printf "$prog_string"
+  eval "$prog_cmd"
 fi
