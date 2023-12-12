@@ -570,10 +570,10 @@ class Spotify(PersistentStream):
   def _deactivate(self):
     try:
       self.proc.terminate()
-      outs, errs = self.proc.communicate(timeout=3)
+      self.proc.communicate(timeout=3)
     except Exception as e:
       print(f"failed to terminate spotify stream: {e}")
-      kouts, kerrs = self.proc.kill()
+      self.proc.kill()
     try:
       del self.mpris
     except Exception:
