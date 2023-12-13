@@ -1,23 +1,22 @@
-# Built-in Tests
+# AP1-S4Z6 (AmpliPro) Main Unit Tests
+
 - Serial Number ____________
-- Date _____ / _____ / _____  Time  _____ : _____ AM / PM
-- [ ] Boards Tested (Manual) Verify QC Passed Sticker
+- Date ________ / ________ / ________  Time  ________ : ________ AM / PM
+- [ ] Boards Tested (Manual - verify QC Passed sticker on each board.)
 
 |     | Amp Board | Power Board | Preamp Board | Preout Board | LED Board | Controller Board |
 |-----|-----------|-------------|--------------|--------------|-----------|------------------|
 | rev |           |             |              |              |           |                  |
 |  QC |           |             |              |              |           |                  |
 
-- [ ] Desktop: (Manual) Plug in mouse, keyboard, and monitor (1080p@60hz). Verify they all work.
+Plug in Ethernet, Aux, Expander, RCA Inputs, Service USB, and finally Power.
 
-    ____Monitor  ____Keyboard  ____Mouse
+- [ ] Service USB
+- [ ] Config AmpliPro
 
-- [ ] USB Ports
+**Remote Desktop Tests - Click "Test Main Unit" on Desktop - the tests found below should now be available.**
 
-|   | TOP | BOTTOM | INT |
-|---|-----|--------|-----|
-| ✓ |     |        |     |
-
+- [ ] USB Ports: ____TOP ____BOTTOM ____INT
 - [ ] Ethernet
 - [ ] Program Main + Exp Preamp
 - [ ] LEDs:
@@ -26,11 +25,7 @@
 |---|-------------|-----------------|--------|--------|--------|--------|--------|--------|
 | ✓ |             |                 |        |        |        |        |        |        |
 
-- [ ] Inputs
-
-| Optical In | Aux In   |
-|------------|----------|
-| ____L____R |____L____R|
+- [ ] Aux Input: ____L ____R
 
 - [ ] Preamp:
 
@@ -63,14 +58,12 @@
 |----------|----------|----------|----------|----------|----------|
 |____L____R|____L____R|____L____R|____L____R|____L____R|____L____R|
 
-- [ ] Display (manual)
-    - [ ] Wakes when touched
-    - [ ] Shows image properly
+- [ ] Display (Manual)
+  - [ ] Shows an IP address (when Ethernet connected)
+  - [ ] Show Disconnected (when Ethernet disconnected)
 
 - [ ] Fans and Power:
 
 |   | Fans Off | Fans On | PG_12V | 12V Supply | HV1 Temp | AMP1 Temp | AMP2 Temp | Temp Rise |
 |---|----------|---------|--------|------------|----------|-----------|-----------|-----------|
 | ✓ |          |         |        |            |          |           |           |           |
-
-- [ ] Service USB
