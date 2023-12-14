@@ -4,11 +4,12 @@
 
 from time import sleep
 from typing import Optional, Sequence
-import sys
-import subprocess
-import signal
 import argparse
 import requests
+import shlex
+import signal
+import subprocess
+import sys
 
 from amplipi import models
 
@@ -72,9 +73,9 @@ BEATLES_RADIO = {
   "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"
 }
 
-EXTRA_INPUTS_PLAYBACK = {
+AUX_PLAYBACK = {
   'id': 1002,
-  'name': 'Input Playback',
+  'name': 'Aux Playback',
   'type': "fileplayer",
   'url': "alsa://plughw:cmedia8chint,0",
 }
@@ -104,9 +105,9 @@ def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
   if is_streamer:
     presets = [
       {
-        'name': 'inputs-in',
+        'name': 'aux-in',
         'state': {
-          'sources': [{'id': 0, 'input': f'stream={EXTRA_INPUTS_PLAYBACK["id"]}'}],
+          'sources': [{'id': 0, 'input': f'stream={AUX_PLAYBACK["id"]}'}],
         }
       }
     ]
@@ -148,13 +149,13 @@ def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
         }
       ]
     presets += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, f'stream={RCA_INPUTS[src]}', -40) for src in range(4)]
-    presets += [pst_all_zones_to_src('inputs-in', 0, f'stream={EXTRA_INPUTS_PLAYBACK["id"]}', -40)]
+    presets += [pst_all_zones_to_src('aux-in', 0, f'stream={AUX_PLAYBACK["id"]}', -40)]
 
   prev_cfg = client.get_status()
   if is_streamer:
-    client.load_config(models.Status(zones=[], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
+    client.load_config(models.Status(zones=[], streams=[BEATLES_RADIO, AUX_PLAYBACK]))
   else:
-    client.load_config(models.Status(zones=[models.Zone(id=z, name=f'Zone {z + 1}') for z in all_zones(exp_unit)], streams=[BEATLES_RADIO, EXTRA_INPUTS_PLAYBACK]))
+    client.load_config(models.Status(zones=[models.Zone(id=z, name=f'Zone {z + 1}') for z in all_zones(exp_unit)], streams=[BEATLES_RADIO, AUX_PLAYBACK]))
   for pst in presets:
     client.create_preset(models.Preset(**pst))
   print('waiting for config file to be written')
@@ -200,7 +201,7 @@ def loop_test(client: Client, test_name: str):
 
 def get_analog_tester_client():
   """ Get the second **special** amplipi instance available on MicroNova's network
-     We use this to drive an AmpliPi under test's audio inputs (analog1-4, aux, optical) """
+     We use this to drive an AmpliPi under test's audio inputs (analog1-4, aux) """
   primary = Client('http://aptestanalog.local/api')
   if not primary.available():
     fallback = Client('http://aptestanalog.local:5000/api')
@@ -208,60 +209,40 @@ def get_analog_tester_client():
       return fallback
   return primary # when both are not available we return the primary so primary.available() can be checked
 
-def inputs_test(ap1: Client):
-  """ Test the controller boards Aux and Optical inputs """
+def aux_test(ap1: Client):
+  """ Test the controller board's Aux input """
   ap2 = get_analog_tester_client()
   analog_tester_avail = ap2.available()
   if not analog_tester_avail:
-    print('No analog tester available, please manually connect audio to the aux and optical inputs')
+    print('No analog tester available, please manually connect audio to the aux input.')
   status = ap1.get_status()
   if status is None:
     return None
 
-  preset = [pst for pst in status.presets if pst.name == 'inputs-in'][0]
-
+  preset = [pst for pst in status.presets if pst.name == 'aux-in'][0]
   if not preset.id:
-    print('Preset id not available')
+    print('Preset aux-in not available')
     sys.exit(1)
 
   if len(status.zones) > 0:
-    print("""Connect speakers to any zone""")
+    print('Connect speakers to any zone.')
   else:
-    print("""Connect powered speakers with RCA inputs to source 1""")
+    print('Connect powered speakers with RCA inputs to source 1.')
+  print('Verify that both left and right channels are announced.')
 
-  print("""
-  Alternating between outputting Optical and Aux left and right audio
+  # Connect all zones to ch3, which is duplicated for RCA input 4 and Aux input.
+  ap1.load_preset(preset.id)
 
-  - Verify that both Auxillary and Optical In left and right channels are announced
-  """)
+  # Ensure the Aux Input (Line on the CMedia chip) is selected for capture.
+  subprocess.run(shlex.split('amixer -D hw:cmedia8chint set "PCM Capture Source",0 Line'),
+                 check=True, stdout=subprocess.DEVNULL)
 
-  def set_pcm(src):
-    for card in range(4):
-      try:
-        subprocess.check_call(['amixer', '-c', str(card), 'set', "'PCM Capture Source',0", src],
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        break
-      except:
-        pass
-
+  # Loop forever, waiting on the user to kill the test.
   while True:
-    # select the Aux input on this device and play audio through it to all zones
-    set_pcm("Line")
-    # connect all zones to ch3
-    ap1.load_preset(preset.id)
-    if not analog_tester_avail:
-      sleep(5)
-    else:
+    if analog_tester_avail:
       ap2.announce(models.Announcement(source_id=3, media='web/static/audio/aux_in.mp3'))
-
-    # select the Optical input on this device and play audio through it to all zones
-    set_pcm("IEC958 In")
-    # connect all zones to ch0
-    ap1.load_preset(preset.id)
-    if not analog_tester_avail:
-      sleep(5)
     else:
-      ap2.announce(models.Announcement(source_id=0, media='web/static/audio/optical_in.mp3'))
+      sleep(5)
 
 def preamp_test(ap1: Client, exp_unit: bool = False):
   """ Test the preamp board's audio, playing 8 different audio sources then looping """
@@ -315,20 +296,20 @@ def streamer_test(ap1: Client):
 
 def exit_handler(_, _1):
   """ Attempt to gracefully shutdown """
-  print('Closing (attempting to restore config)')
+  print('\nClosing (attempting to restore config)')
   try:
     subprocess.run(['killall', 'vlc'], check=False) # HACK: kill weird lingering vlc process
     if ap.available() and ap.load_config(old_config):
-      print('\nRestored previous configuration.')
+      print('Restored previous configuration.')
     else:
-      print('\nFailed to restore configuration. Left in testing state.')
+      print('Failed to restore configuration. Left in testing state.')
   except:
-    print('\nError restoring configuration. Left in testing state.')
+    print('Error restoring configuration. Left in testing state.')
   sys.exit(0)
 
 if __name__ == '__main__':
 
-  tests = ['led', 'amp', 'preout', 'preamp', 'inputs', 'streamer']
+  tests = ['led', 'amp', 'preout', 'preamp', 'aux', 'streamer']
 
   parser = argparse.ArgumentParser('Test audio functionality')
   parser.add_argument('test', help=f'Test to run ({tests})')
@@ -359,8 +340,8 @@ if __name__ == '__main__':
     print(f"Running test '{args.test}'. Press Ctrl-C to stop.")
     if args.test == 'preamp':
       preamp_test(ap, exp_unit=args.expansion)
-    elif args.test == 'inputs':
-      inputs_test(ap)
+    elif args.test == 'aux':
+      aux_test(ap)
     elif args.test == 'streamer':
       streamer_test(ap)
     else:
