@@ -1,16 +1,4 @@
 {
-  "python.linting.enabled": true,
-  "python.linting.pylintEnabled": true,
-  "python.testing.pytestArgs": [
-    "tests"
-  ],
-  "python.testing.unittestEnabled": false,
-  "python.testing.nosetestsEnabled": false,
-  "python.testing.pytestEnabled": true,
-  "python.pythonPath": "venv/bin/python",
-  "python.linting.pylintArgs": [
-    "--generated-members", "signal.Signals,GPIO.*"
-  ],
   "cmake.sourceDirectory": "${workspaceFolder}/fw/preamp",
   "cmake.buildDirectory": "${workspaceFolder}/fw/preamp/build",
   "files.watcherExclude": {
@@ -30,11 +18,20 @@
     "*.h": "c"
   },
   "[python]": {
+    "editor.formatOnSave": true,
     "editor.defaultFormatter": "ms-python.autopep8"
   },
+  "autopep8.args": [
+    "--indent-size=2",
+    "--max-line-length=120"
+  ],
+  "pylint.args": ["--generated-members", "signal.Signals,GPIO.*"],
+  "python.defaultInterpreterPath": "venv/bin/python",
+  "python.testing.pytestArgs": ["tests"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
   "markdownlint.config": {
     "default": true,
     "MD033": { "allowed_elements": ["table", "thead", "tbody", "th", "tr", "td", "b"] },
   },
-  "python.formatting.provider": "none"
 }

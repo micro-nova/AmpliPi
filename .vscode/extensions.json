@@ -1,5 +1,7 @@
 {
   "recommendations": [
+    "ms-python.autopep8",
+    "ms-python.pylint",
     "ms-python.python",
     "editorconfig.editorconfig",
     "42crunch.vscode-openapi",
