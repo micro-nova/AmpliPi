@@ -24,7 +24,7 @@ pytest-dependency==0.5.1
 python-multipart==0.0.5
 python-vlc==3.0.18121
 PyYAML==6.0
-requests==2.28.2
+requests==2.31.0
 RPi.GPIO==0.7.1
 smbus2==0.4.2
 spidev
