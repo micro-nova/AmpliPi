@@ -310,16 +310,23 @@ def streamer_test(ap1: Client):
 
 def exit_handler(_, _1):
   """ Attempt to gracefully shutdown """
-  print('\nClosing (attempting to restore config)')
-  try:
-    subprocess.run(['killall', 'vlc'], check=False)  # HACK: kill weird lingering vlc process
-    if ap.available() and ap.load_config(old_config):
-      print('Restored previous configuration.')
-    else:
-      print('Failed to restore configuration. Left in testing state.')
-  except:
-    print('Error restoring configuration. Left in testing state.')
-  sys.exit(0)
+  if not exit_handler.handled:
+    exit_handler.handled = True  # Prevent multiple SIGINTs from calling this.
+    print('\nClosing (attempting to restore config)')
+    try:
+      # HACK: kill weird lingering vlc process
+      subprocess.run(['killall', 'vlc'], check=True, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+      pass
+
+    try:
+      if ap.available() and ap.load_config(old_config):
+        print('Restored previous configuration.')
+      else:
+        print('Failed to restore configuration. Left in testing state.')
+    except:
+      print('Error restoring configuration. Left in testing state.')
+    sys.exit(0)
 
 
 if __name__ == '__main__':
@@ -344,6 +351,7 @@ if __name__ == '__main__':
     print(f'Test "{args.test}" is not available. Please pick one of {tests}')
     sys.exit(1)
 
+  exit_handler.handled = False
   signal.signal(signal.SIGINT, exit_handler)
   signal.signal(signal.SIGTERM, exit_handler)
   signal.signal(signal.SIGHUP, exit_handler)
