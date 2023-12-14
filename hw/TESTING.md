@@ -52,7 +52,7 @@ Plug in Ethernet, Aux, Expander, RCA Inputs, Service USB, and finally Power.
 |-----------|-----------|-----------|-----------|
 |____L____R |____L____R |____L____R |____L____R |
 
-- [ ] Preout:
+- [ ] Preouts:
 
 | Preout 1 | Preout 2 | Preout 3 | Preout 4 | Preout 5 | Preout 6 |
 |----------|----------|----------|----------|----------|----------|
