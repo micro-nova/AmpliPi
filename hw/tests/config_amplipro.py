@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" Interactively configure an AmpliPi/Pro's EEPROM(s)"""
+"""Interactively configure an AmpliPro's EEPROM(s)"""
 import os
 import re
 import requests
@@ -14,18 +14,16 @@ from amplipi.eeprom import BoardInfo, BoardType, EEPROM, UnitType
 BOARD_REV_RE = re.compile(r"(\d+)([A-z])")
 
 def main() -> None:
-  """Write board info to eeprom, using user input for serial number, board revision, and product type"""
+  """Write board info to eeprom, using user input for serial number and board revision"""
   serial: Optional[int] = None
   board_rev : Union[Tuple[int, str], Tuple[None, None]] = (None, None)
-  type : Optional[int] = None
 
   # Try to read existing info from preamp
-  try:
-    eeprom = EEPROM(BoardType.PREAMP)
-    BoardInfo info = eeprom.read_board_info()
-  except Exception as e:
-    print(f"Failed to write board info to eeprom: {e}")
-    sys.exit(1)
+  eeprom = EEPROM(BoardType.PREAMP)
+  info = eeprom.read_board_info()
+  if not info:
+    info = BoardInfo(serial = 0, unit_type = eeprom.UnitType.NONE,
+                     board_type = eeprom.BoardType.NONE, board_rev = eeprom.BoardRev())
 
   try:
     serial_input = input("Enter streamer serial number (ie: 1234):")
@@ -44,8 +42,8 @@ def main() -> None:
   if serial is None or board_rev[0] is None:
     sys.exit(1)
 
+  print(f"Writing preamp config to eeprom: serial={serial}, board_rev={board_rev[0]}{board_rev[1]}")
   try:
-    print(f"Writing preamp config to eeprom: serial={serial}, board_rev={board_rev[0]}{board_rev[1]}, type={type_str}")
     eeprom = EEPROM(1, BoardType.PREAMP)
     eeprom.write_board_info(BoardInfo(serial=serial, unit_type=UnitType.STREAMER, board_type=BoardType.STREAMER_SUPPORT, board_rev=board_rev))
   except Exception as e:
