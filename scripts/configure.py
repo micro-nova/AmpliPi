@@ -517,6 +517,7 @@ def _audiodetector_service(directory: str):
   return f"""\
 [Unit]
 Description=Amplipi RCA Input Audio Detector
+ConditionPathExists=!/home/pi/.config/amplipi/is_streamer
 
 [Service]
 Type=simple
@@ -874,25 +875,21 @@ def add_tests(env, progress) -> List[Task]:
     ('Ethernet', './hw/tests/ethernet.bash --wait'),
     ('USB Ports', './hw/tests/usb.py'),
     ('Inputs', './hw/tests/built_in.bash inputs'),
+    ('Program Main', './hw/tests/program_preamps.bash'),
+    ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
+    ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
+    ('Amplifier', './hw/tests/built_in.bash amp'),
+    ('LEDs', './hw/tests/built_in.bash led'),
+    ('Preamp', './hw/tests/built_in.bash preamp'),
+    ('Expander Preamp', './hw/tests/built_in.bash preamp --expansion'),
+    ('Preouts', './hw/tests/built_in.bash preout'),
+    ('Display', './hw/tests/display.bash --wait'),
+    ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
+    ('Fans and Power', './hw/tests/fans.bash'),
+    ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'), # just for info, not a specific test
+    ('Streamer', './hw/tests/built_in.bash streamer'),
+    ('Config Streamer', './hw/tests/config_streamer.bash'),
   ]
-  if env['is_streamer']:
-    tests += [('Streamer', './hw/tests/built_in.bash streamer')]
-    tests += [('Config Streamer', './hw/tests/config_streamer.bash')]
-  else:
-    tests += [
-      ('Program Main', './hw/tests/program_preamps.bash'),
-      ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
-      ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
-      ('Amplifier', './hw/tests/built_in.bash amp'),
-      ('LEDs', './hw/tests/built_in.bash led'),
-      ('Preamp', './hw/tests/built_in.bash preamp'),
-      ('Expander Preamp', './hw/tests/built_in.bash preamp --expansion'),
-      ('Preouts', './hw/tests/built_in.bash preout'),
-      ('Display', './hw/tests/display.bash --wait'),
-      ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
-      ('Fans and Power', './hw/tests/fans.bash'),
-      ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'), # just for info, not a specific test
-    ]
   tasks = []
 
   # create the ~/tests directory if it doesn't already exist
@@ -956,7 +953,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _update_display(env, progress)
     if failed():
       return False
-  if audiodetector and not env['is_streamer']:
+  if audiodetector:
     tasks += _update_audiodetector(env, progress)
     if failed():
       return False
