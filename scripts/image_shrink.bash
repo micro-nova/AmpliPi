@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
+# This script scrapes, cleans up, and prepares an AmpliPi image off an existing appliance.
 
-img_file=$HOME/mn/images/amplipi_0.2.1.img
+function help() {
+  echo "Usage: ${0} IMAGE_FILE"
+}
+
+if [ -z ${1} ] ; then
+  help
+  exit 1
+fi
+
+RED='\033[0;31m'
+GRN='\033[0;32m'
+NC='\033[0m'
+
+set -u # bails if there are any unset variables
+
+img_file="${1}"
 disk_base_path=/dev/disk/by-id/usb-RPi-MSD
 
 function check_for_pi() {
@@ -32,7 +48,7 @@ if ! pi_path=$(check_for_pi); then
 fi
 
 # Error out if no Pi found
-if [ -z $pi_path ]; then
+if [ -z ${pi_path} ]; then
   echo -e "\n${RED}ERROR:${NC} No Raspberry Pi device found at $disk_base_path*"
   read -p "Press any key to continue..." -sn 1
   echo "" # newline
@@ -41,40 +57,51 @@ else
   echo -e "Raspberry Pi device found at $pi_path"
 fi
 
+
+## PRE-SCRAPE
+
 # Pi found! Mount root directory.
 root_dir=$(mktemp -d)
-sudo mount $pi_path-part2 $root_dir
-
-echo -e "\nSetting up resize2fs_once"
-sudo wget -qO $root_dir/etc/init.d/resize2fs_once https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage2/01-sys-tweaks/files/resize2fs_once
-sudo chmod +x $root_dir/etc/init.d/resize2fs_once
-sudo ln -s ../init.d/resize2fs_once $root_dir/etc/rc3.d/S01resize2fs_once
+sudo mount ${pi_path}-part2 $root_dir
 
 echo -e "\nRemoving all log files"
-sudo find $root_dir/var/log -type f -delete
+sudo find ${root_dir}/var/log -type f -delete
+
+echo -e "\nRemoving apt cache files"
+sudo find ${root_dir}/var/cache/apt/archives -type f -delete
+
+echo -e "\nRemoving various old detritus."
+sudo rm -vr ${root_dir}/var/swap ${root_dir}/home/pi/amplipi-dev/web/node_modules ${root_dir}/home/pi/amplipi-*.tar.gz
 
 echo "Resetting password to default"
-# TODO set password to 'raspberry'
+set -e # bail if chpasswd isn't happy, for any number of reasons
+echo "pi:raspberry" | sudo chpasswd --crypt-method SHA512 -R ${root_dir}
+set +e
 
 echo "Setting a unique /etc/machine-id"
-old_id=$(cat $root_dir/etc/machine-id)
+# TODO: do this on first boot, not during image creation
+old_id=$(cat ${root_dir}/etc/machine-id)
 echo "Old id=$old_id"
-sudo rm $root_dir/etc/machine-id
+sudo rm ${root_dir}/etc/machine-id
 sudo dbus-uuidgen --ensure=$root_dir/etc/machine-id
 
 echo "Cleaning up /home/pi"
-rm -f $root_dir/home/pi/.config/amplipi/default_password.txt
-cat /dev/null > ~/.bash_history
-sudo umount $root_dir
+rm -vf ${root_dir}/home/pi/.config/amplipi/*
+rm -vf ${root_dir}/home/pi/amplipi-dev/house.json ${root_dir}/home/pi/amplipi-dev/house.json.bak
+cat /dev/null > ${root_dir}/home/pi/.bash_history
+sudo umount ${root_dir}
+sudo umount ${pi_path}-part2 # in case udev wants to play
 
-# Mount boot partition and ensure init_resize.sh is configured to run at boot
+
+# Mount boot partition and ensure first_boot_partitioning is configured to run at boot
 boot_dir=$(mktemp -d)
 sudo mount $pi_path-part1 $boot_dir
 # Remove any existing init= args, and add init_resize.sh as the init binary
 echo "Configuring resize2fs to run at boot."
 sudo sed -i 's/init=.* //;s/ init=.*$//' $boot_dir/cmdline.txt
-sudo sed -i 's@$@ init=/usr/lib/raspi-config/init_resize.sh@' $boot_dir/cmdline.txt
+sudo sed -i 's@$@ init=/home/pi/amplipi-dev/scripts/first_boot_partitioning@' $boot_dir/cmdline.txt
 sudo umount $boot_dir
+sudo umount ${pi_path}-part1 # in case udev wants to play too
 
 echo -e "\nRunning fsck on boot filesystem just in case."
 sudo fsck -f $pi_path-part1
