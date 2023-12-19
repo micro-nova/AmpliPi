@@ -11,7 +11,7 @@
 
 Plug in Ethernet, Aux, Expander, RCA Inputs, Service USB, and finally Power.
 
-- [ ] Service USB
+- [ ] Service Port
 - [ ] Config AmpliPro
 
 **Remote Desktop Tests - Click "Test Main Unit" on Desktop - the tests found below should now be available.**
