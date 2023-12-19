@@ -49,14 +49,14 @@ class BoardRev:
   def __int__(self) -> int:
     return (self.number << 8) + ord(self.letter)
 
-
-@dataclass
-class EepromField:
-  format  : str    # Format char, see https://docs.python.org/3/library/struct.html
-  value   : object # Actual value of the field
-
 class BoardInfo:
   """Board info, to be read/written to EEPROM"""
+
+  @dataclass
+  class EepromField:
+    """Helper struct for the BoardInfo class"""
+    format  : str    # Format char, see https://docs.python.org/3/library/struct.html
+    value   : object # Actual value of the field
 
   _fields = {
     'format'    : EepromField(format = 'B', value = 0),
@@ -111,7 +111,7 @@ class EEPROM:
   EEPROM_PAGE_SIZE: int  = 16 # Number of bytes per EEPROM page.
 
   def __init__(self, board: BoardType) -> None:
-    self.board = board.value
+    self._board = board.value
 
   def _bus(self) -> int:
     """Returns the I2C bus to communicate on, based on the BoardType"""
