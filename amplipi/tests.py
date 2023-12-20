@@ -65,6 +65,7 @@ class Client:
       return False
 
 
+# TODO: Use amplipi.defaults.RCAs
 RCA_INPUTS = {sid: 996 + sid for sid in range(models.MAX_SOURCES)}
 
 BEATLES_RADIO = {
@@ -308,25 +309,33 @@ def streamer_test(ap1: Client):
       ap1.announce(msg)
 
 
-def exit_handler(_, _1):
-  """ Attempt to gracefully shutdown """
-  if not exit_handler.handled:
-    exit_handler.handled = True  # Prevent multiple SIGINTs from calling this.
-    print('\nClosing (attempting to restore config)')
-    try:
-      # HACK: kill weird lingering vlc process
-      subprocess.run(['killall', 'vlc'], check=True, stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
-      pass
+class ExitHandler:
+  """Handle program exit from a signal."""
+  _handled: bool = False
+  _ap: Client
 
-    try:
-      if ap.available() and ap.load_config(old_config):
-        print('Restored previous configuration.')
-      else:
-        print('Failed to restore configuration. Left in testing state.')
-    except:
-      print('Error restoring configuration. Left in testing state.')
-    sys.exit(0)
+  def __init__(self, amplipi_client: Client):
+    self._ap = amplipi_client
+
+  def exit_handler(self, _, _1):
+    """ Attempt to gracefully shutdown """
+    if not self._handled:
+      self._handled = True  # Prevent multiple signals from calling this repeatedly.
+      print('\nClosing (attempting to restore config)')
+      try:
+        # HACK: kill weird lingering vlc process
+        subprocess.run(['killall', 'vlc'], check=True, stderr=subprocess.DEVNULL)
+      except subprocess.CalledProcessError:
+        pass
+
+      try:
+        if self._ap.available() and self._ap.load_config(old_config):
+          print('Restored previous configuration.')
+        else:
+          print('Failed to restore configuration. Left in testing state.')
+      except:
+        print('Error restoring configuration. Left in testing state.')
+      sys.exit(0)
 
 
 if __name__ == '__main__':
@@ -351,10 +360,10 @@ if __name__ == '__main__':
     print(f'Test "{args.test}" is not available. Please pick one of {tests}')
     sys.exit(1)
 
-  exit_handler.handled = False
-  signal.signal(signal.SIGINT, exit_handler)
-  signal.signal(signal.SIGTERM, exit_handler)
-  signal.signal(signal.SIGHUP, exit_handler)
+  eh = ExitHandler(ap)
+  signal.signal(signal.SIGINT, eh.exit_handler)
+  signal.signal(signal.SIGTERM, eh.exit_handler)
+  signal.signal(signal.SIGHUP, eh.exit_handler)
 
   old_config = setup(ap, exp_unit=args.expansion)
   if not old_config:
