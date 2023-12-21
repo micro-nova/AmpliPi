@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Future release
+* System
+  * Introduce script to scrape new home-brewed images off an existing AmpliPi, `./scripts/image_shrink.bash`.
+
 ## 0.3.1
 * System
   * Fix bug between various hardware versions

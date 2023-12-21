@@ -90,3 +90,14 @@ It could potentially cause package conflicts on your system.
    Running the script without any arguments will print the instructions.
    After this step is done SSH is enabled from a fresh Raspberry Pi OS at [amplipi.local].
 1. [amplipi.local] should now be hosted on your network.
+
+## Scraping a new homebrew image off an existing AmpliPi
+1. Install [`rpiboot`](https://github.com/raspberrypi/usbboot), if you do not have it already.
+1. Shutdown your AmpliPi via the Web UI (Settings -> Config -> HW Shutdown)
+1. Unplug the power cable from your AmpliPi
+1. Plug a data-capable MicroUSB cable in to the Service Port on your Amplipi, and connect it to a Linux-esque (Debian or WSL) computer
+1. Run `sudo rpiboot`. It will wait; this is normal. This will allow you to connect to the AmpliPi as if it were a USB Mass Storage Device.
+1. Plug the power cable back in to your AmpliPi. You should see your console producing logs shortly and `rpiboot` finish successfully.
+1. Check your AmpliPi with your favorite partitioning tool (we like `parted`). If your AmpliPi has 4 partitions, remove the last two. These are held for future use as recovery partitions but aren't used right now.
+1. Run `./scripts/image_shrink.bash YOUR_IMAGE_NAME.img`.
+1. If everything goes well, you now have an image at `YOUR_IMAGE_NAME.img`!
