@@ -889,6 +889,7 @@ def add_tests(env, progress) -> List[Task]:
     ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'), # just for info, not a specific test
     ('Streamer', './hw/tests/built_in.bash streamer'),
     ('Config Streamer', './hw/tests/config_streamer.bash'),
+    ('Aux Input', './hw/tests/built_in.bash aux'),
   ]
   tasks = []
 

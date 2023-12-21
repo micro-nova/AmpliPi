@@ -15,8 +15,7 @@ bin_file="$(find fw/bin -type f | sort | tail -1)"
 
 # Program the latest released firmware
 passed=false
-prog_args="$nprog $bin_file"
-if ./scripts/program_firmware "$prog_args"; then
+if ./scripts/program_firmware $nprog "$bin_file"; then
   passed=true
 fi
 

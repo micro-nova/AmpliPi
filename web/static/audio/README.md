@@ -8,7 +8,7 @@ using the ideas from: https://trac.ffmpeg.org/wiki/AudioChannelManipulation
 ```bash
 digitals='digital1 digital2 digital3 digital4'
 analogs='analog1 analog2 analog3 analog4'
-for type in optical_in aux_in $digitals $analogs; do
+for type in aux_in $digitals $analogs; do
   echo $type
   left_audio="${type}_left.wav"
   right_audio="${type}_right.wav"
@@ -24,11 +24,9 @@ done
 ```
 concat the left and right audio files and trim silence in audio to speed up playback
 ```bash
-for s in optical_in aux_in; do
-  if [[ -e $s.left.wav ]] && [[ -e $s.right.wav ]]; then
-	  ffmpeg -i $s.left.wav -i $s.right.wav -filter_complex "[0:a][1:a]concat=v=0:a=1,silenceremove=stop_periods=-1" $s.mp3
-  fi
-done
+if [[ -e aux_in.left.wav ]] && [[ -e aux_in.right.wav ]]; then
+  ffmpeg -i aux_in.left.wav -i aux_in.right.wav -filter_complex "[0:a][1:a]concat=v=0:a=1,silenceremove=stop_periods=-1" aux_in.mp3
+fi
 for s in analog digital; do
   for i in {1..4}; do
     ffmpeg -i $s$i.left.wav -i $s$i.right.wav -filter_complex "[0:a][1:a]concat=v=0:a=1,silenceremove=stop_periods=-1" $s$i.mp3
