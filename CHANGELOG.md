@@ -1,13 +1,24 @@
 # AmpliPi Software Releases
 
-## Upcoming release
+## 0.3.1
+* System
+  * Fix bug between various hardware versions
+* Developing
+  * Fix software and hardware tests
+
+## 0.3.0
 * Streams
   * Add Bluetooth stream
+  * Updates to spotifyd
 * API
   * Add support for units without zones
 * Hardware
   * Add support for EEPROMS on boards to identify board type and revision
   * Add support for E-Ink display
+* Web App
+  * Completely rewritten web app using React
+* System
+  * Add Logitech Media Server as an optional backend
 
 ## 0.2.1
 * System
