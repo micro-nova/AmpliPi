@@ -1,7 +1,8 @@
 # Built-in Tests (Streamer)
+
 - Serial Number ____________
-- Date _____ / _____ / _____  Time  _____ : _____ AM / PM
-- [ ] Boards Tested (Manual) Verify QC Passed Sticker
+- Date ________ / ________ / ________  Time  ________ : ________ AM / PM
+- [ ] Boards Tested (Manual - verify QC Passed sticker on each board.)
 
 |     | Streamer Board | Controller Board |
 |-----|----------------|------------------|
@@ -9,24 +10,15 @@
 |  QC |                |                  |
 
 - Test Setup:
-    - Plug in Ethernet, Aux, Optical, and Power
-    - Click "Test Streamer" on Destktop
-    - The tests found below should now be available
+  - Plug in Ethernet, Aux, and Power
+  - Click "Test Streamer" on Desktop
+  - The tests found below should now be available
 
 - [ ] Config Streamer
 
-- [ ] USB Ports
-
-|   | TOP | BOTTOM |
-|---|-----|--------|
-| ✓ |     |        |
-
+- [ ] USB Ports: ____TOP ____BOTTOM ____INT
 - [ ] Ethernet
-- [ ] Inputs
-
-| Optical In | Aux In   |
-|------------|----------|
-| ____L____R |____L____R|
+- [ ] Aux Input: ____L ____R
 
 - [ ] Streamer:
 
@@ -35,14 +27,14 @@
 |____L____R |____L____R |____L____R |____L____R |
 
 - [ ] Display (manual)
-    - [ ] Shows correct IP (when ethernet connected)
-    - [ ] Show Disconnected (when ethernet disconnected)
+  - [ ] Shows correct IP (when ethernet connected)
+  - [ ] Show Disconnected (when ethernet disconnected)
 
 - Test Setup:
-    - Navigate back to the tester pi
-    - The tests below should now be available
+  - Navigate back to the tester pi
+  - The tests below should now be available
 
 - [ ] Amplipi - Under Test
-    - Verify unit branding matches web interface
+  - Verify unit branding matches web interface
 
 - [ ] Service USB

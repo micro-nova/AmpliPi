@@ -873,7 +873,7 @@ def add_tests(env, progress) -> List[Task]:
   tests = [
     ('Ethernet', './hw/tests/ethernet.bash --wait'),
     ('USB Ports', './hw/tests/usb.py'),
-    ('Inputs', './hw/tests/built_in.bash inputs'),
+    ('Aux Input', './hw/tests/built_in.bash aux'),
   ]
   if env['is_streamer']:
     tests += [('Streamer', './hw/tests/built_in.bash streamer')]
