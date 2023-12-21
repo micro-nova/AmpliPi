@@ -28,12 +28,12 @@ This project follows [Semantic Versioning](https://semver.org/). Here are some e
 
 ## Making a release
 - [ ] Ensure the PR(s) with your features & fixes are merged into `main`.
-- [ ] Check out and pull `main`
-- [ ] Update the changelog with notes and the latest version (and commit it!)
+- [ ] Create & merge a branch/PR off `main` to bump the version in the CHANGELOG and also using `poetry version ${VERSION}`
+- [ ] Create another branch off `main` named the version number (ie, `0.3.0`.)
 - [ ] Build the webapp in `web` with `npm run build` and force add the changes with `git add -f web/dist; git commit -m "Build web app for release"`
 - [ ] Update the API by running the `scripts/create_spec` script and commit the resulting changes to `docs/amplipi_api.yaml` with `git commit --patch -m "Update API specification used by GitHub Pages"`
-- [ ] Use poetry to bump the version with `poetry version ${VERSION} && git add pyproject.toml && git commit -m "Bump version"`
 - [ ] Tag the changes so we can make a release on GitHub: `git tag -as ${VERSION} -m '' && git push origin ${VERSION}`
 - [ ] Make a release using the GitHub interface
+- [ ] Remove the branch (but not the tag) from Github, or else the ref is ambiguous to Github and the updater fails to download the right tarball.
 - [ ] Use the AmpliPi updater to update to the release
 - [ ] Test it again! If it needs changes, pull request your bugfixes against `main` and stamp a new release 😎
