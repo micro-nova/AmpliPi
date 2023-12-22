@@ -89,6 +89,7 @@ echo "Cleaning up /home/pi"
 rm -vf ${root_dir}/home/pi/.config/amplipi/*
 rm -vf ${root_dir}/home/pi/amplipi-dev/house.json ${root_dir}/home/pi/amplipi-dev/house.json.bak
 cat /dev/null > ${root_dir}/home/pi/.bash_history
+rm -vf ${root_dir}/home/pi/.ssh/*
 sudo umount ${root_dir}
 sudo umount ${pi_path}-part2 # in case udev wants to play
 
@@ -136,7 +137,7 @@ sector_size=512
 new_sectors=$(($fs_blk_cnt*$fs_blk_size/$sector_size))
 
 # Wait for filesystem changes to be complete (timeout after 10s)
-reread=false
+reread=true
 for i in {1..100}; do
   sleep 0.1
   if sudo blockdev --rereadpt $pi_path 2>/dev/null; then
