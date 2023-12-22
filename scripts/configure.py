@@ -90,6 +90,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             ],
   },
   'logging' : {
+    'amplipi_only' : True,
     'script' : [
       'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
       f"echo '{RSYSLOG_CFG}' | sudo tee /etc/rsyslog.conf",
@@ -141,6 +142,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt' : [ 'vlc' ]
   },
   'fmradio' : {
+    'amplipi_only' : True,
     'apt' : [ 'rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev' ],
     'script' : [
       'if ! which redsea  > /dev/null; then', # TODO: check version
@@ -157,6 +159,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     ]
   },
   'lms' : {
+    'amplipi_only' : True,
     'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl'], # needed for ShairTunes2W support
     'script' : [
       'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
@@ -172,6 +175,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     ]
   },
   'dlna' : {
+    'amplipi_only' : True,
     'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
               'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
               'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
