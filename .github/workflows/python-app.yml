@@ -2,13 +2,7 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
 name: Python application
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main, develop ]
-
+on: pull_request
 jobs:
   python-tests:
     name: Run python linting and tests

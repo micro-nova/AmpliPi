@@ -1,11 +1,9 @@
+# Ensure the preamp firmware at least builds.
+# It would be nice to eventually add dedicated test AmpliPi hardware
+# that Github can target and run real tests on.
+
 name: CMake
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main, develop ]
-
+on: pull_request
 jobs:
   preamp-build:
     name: Build Preamp firmware
