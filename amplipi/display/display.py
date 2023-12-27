@@ -9,6 +9,7 @@ from amplipi import formatter
 from amplipi.display.einkdisplay import EInkDisplay
 from amplipi.display.tftdisplay import TFTDisplay
 
+
 def main():
   """Run the available external display"""
   if 'venv' not in sys.prefix:
@@ -57,7 +58,8 @@ def main():
 
   if not initialized:
     log.error("Display failed to initialize. Exiting.")
-    sys.exit(-1) # expose failure to make the service restart
+    sys.exit(-1)  # expose failure to make the service restart
+
 
 if __name__ == '__main__':
   main()

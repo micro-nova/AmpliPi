@@ -115,7 +115,8 @@ class TFTDisplay(Display):
     self.spi = busio.SPI(clock=self.clk_pin, MOSI=self.mosi_pin, MISO=self.miso_pin)
 
     # Create the ILI9341 display:
-    self.display = ili9341.ILI9341(self.spi, cs=self.disp_cs, dc=self.disp_dc, rst=self.rst_pin, baudrate=self.spi_baud, rotation=270)
+    self.display = ili9341.ILI9341(self.spi, cs=self.disp_cs, dc=self.disp_dc,
+                                   rst=self.rst_pin, baudrate=self.spi_baud, rotation=270)
 
     # Set backlight brightness out of 65535
     # Turn off until first image is written to work around not having RST
@@ -148,7 +149,7 @@ class TFTDisplay(Display):
       self.ap_logo = Image.open(identity['touch_logo']).convert('RGB')
     except Exception:
       # default to a black image
-      self.ap_logo = Image.new('RGB', (320 , 126))
+      self.ap_logo = Image.new('RGB', (320, 126))
 
     # Turn on display backlight now that an image is loaded
     # Anything duty cycle less than 100% causes flickering
@@ -485,6 +486,7 @@ class TFTDisplay(Display):
     else:
       self.led.duty_cycle = 0
 
+
 def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0, width=320, height=240):
   n = len(zones)
   if n == 0:  # No zone info from AmpliPi server
@@ -532,6 +534,7 @@ def draw_volume_bars(draw, font, small_font, zones: List[models.Zone], x=0, y=0,
         draw.rectangle((xb, yb, xb + wb, yv), fill=color)
   # TODO: For more than 18 zones, show on multiple screens.
 
+
 def gradient(num, min_val=0, max_val=100):
   # red = round(255*(val - min_val) / (max_val - min_val))
   # grn = round(255-red)#255*(max_val - val) / (max_val - min_val)
@@ -550,6 +553,7 @@ def gradient(num, min_val=0, max_val=100):
     red = 255
     grn = 255 - round(scale * (num - mid))
   return f'#{red:02X}{grn:02X}00'
+
 
 def get_amplipi_data(base_url: Optional[str]) -> Tuple[bool, List[models.Source], List[models.Zone]]:
   """ Get the AmpliPi's status via the REST API

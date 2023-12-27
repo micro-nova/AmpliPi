@@ -17,6 +17,7 @@ from amplipi.display.common import DefaultPass, Display
 
 SysInfo = namedtuple('SysInfo', ['hostname', 'password', 'ip'])
 
+
 class EInkDisplay(Display):
   """ Display system infomation on EInk Panel"""
 
@@ -27,11 +28,11 @@ class EInkDisplay(Display):
 
   def __init__(self, iface: str = 'eth0', log_level: str = 'WARNING'):
     self.iface = iface
-    self.epd : Optional[epd2in13_V3.EPD] = None
-    self.font : Optional[ImageFont.FreeTypeFont] = None
-    self.pass_font : Optional[ImageFont.FreeTypeFont] = None
-    self.char_height : int = 0
-    self.char_width : int = 0
+    self.epd: Optional[epd2in13_V3.EPD] = None
+    self.font: Optional[ImageFont.FreeTypeFont] = None
+    self.pass_font: Optional[ImageFont.FreeTypeFont] = None
+    self.char_height: int = 0
+    self.char_width: int = 0
     self.width = 0
     self.height = 0
     self.pass_fontsize = 15
@@ -111,7 +112,7 @@ class EInkDisplay(Display):
     """Draw the base image used for partial refresh"""
     self.update_display(draw_base=True)
 
-  def update_display(self, info: SysInfo=SysInfo(None, None, None), draw_base=False):
+  def update_display(self, info: SysInfo = SysInfo(None, None, None), draw_base=False):
     """Update display with new info using partial refresh"""
     if not self.epd:
       log.error('Failed to update display, display driver not initialized')
