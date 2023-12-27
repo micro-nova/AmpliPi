@@ -24,8 +24,6 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 
 import argparse
 
-DEBUG_API = False
-
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
@@ -33,7 +31,7 @@ from typing import List, Dict, Tuple, Set, Any, Optional, Callable, Union, TYPE_
 from enum import Enum
 from types import SimpleNamespace
 
-import urllib.request # For custom album art size
+import urllib.request  # For custom album art size
 from functools import lru_cache
 import asyncio
 import json
@@ -42,11 +40,11 @@ import pathlib
 from subprocess import Popen
 from time import sleep
 
-from PIL import Image # For custom album art size
+from PIL import Image  # For custom album art size
 
 # web framework
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Path
-from fastapi.openapi.utils import get_openapi # docs
+from fastapi.openapi.utils import get_openapi  # docs
 from fastapi.staticfiles import StaticFiles
 from fastapi.routing import APIRoute, APIRouter
 from fastapi.templating import Jinja2Templates
@@ -63,7 +61,7 @@ from multiprocessing import Queue
 import amplipi.utils as utils
 import amplipi.models as models
 import amplipi.defaults as defaults
-from amplipi.ctrl import Api, ApiResponse, ApiCode # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
+from amplipi.ctrl import Api, ApiResponse, ApiCode  # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 from amplipi.auth import CookieOrParamAPIKey, router as auth_router, NotAuthenticatedException, not_authenticated_exception_handler
 
 # start in the web directory
@@ -72,14 +70,16 @@ STATIC_DIR = os.path.abspath('web/static')
 GENERATED_DIR = os.path.abspath('web/generated')
 WEB_DIR = os.path.abspath('web/dist')
 
-app = FastAPI(openapi_url=None, redoc_url=None,) # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
+# we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
+app = FastAPI(openapi_url=None, redoc_url=None,)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # This will get generated as a tmpfs on AmpliPi,
 # but won't exist if testing on another machine.
 os.makedirs(GENERATED_DIR, exist_ok=True)
-app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated") # TODO: make this register as a dynamic folder???
+# TODO: make this register as a dynamic folder???
+app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated")
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
@@ -98,15 +98,19 @@ class SimplifyingRouter(APIRouter):
       return super().add_api_route(path, endpoint, **kwargs)
 
 # Helper functions
+
+
 def unused_groups(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get groups that are not connected to src """
   groups = ctrl.status.groups
-  return {g.id : g.name for g in groups if g.source_id != src and g.id  is not None}
+  return {g.id: g.name for g in groups if g.source_id != src and g.id is not None}
+
 
 def unused_zones(ctrl: Api, src: int) -> Dict[int, str]:
   """ Get zones that are not conencted to src """
   zones = ctrl.status.zones
-  return {z.id : z.name for z in zones if z.source_id != src and z.id is not None and not z.disabled}
+  return {z.id: z.name for z in zones if z.source_id != src and z.id is not None and not z.disabled}
+
 
 def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   """ Get zones that are connected to src, but don't belong to a full group """
@@ -123,29 +127,35 @@ def ungrouped_zones(ctrl: Api, src: int) -> List[models.Zone]:
   ungrouped_zones_ = source_zones.difference(grouped_zones)
   return [zones[z] for z in ungrouped_zones_ if z is not None and not zones[z].disabled]
 
-# add a default controller (this is overriden below in create_app)
+# add a default controller (this is overridden below in create_app)
 # TODO: this get_ctrl Singleton needs to be removed and the API converted to be instantiated by a class with ctrl state
-@lru_cache(1) # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
+
+
+@lru_cache(1)  # Api controller should only be instantiated once (we clear the cache with get_ctr.cache_clear() after settings object is configured)
 def get_ctrl() -> Api:
   """ Get the controller
   Makes a single instance of the controller to avoid duplicates (Singleton pattern)
   """
   return Api(models.AppSettings())
 
+
 class params(SimpleNamespace):
   """ Describe standard path ID's for each api type """
   # pylint: disable=too-few-public-methods
   # pylint: disable=invalid-name
-  SourceID = Path(..., ge=0, le=models.MAX_SOURCES-1, description="Source ID")
+  SourceID = Path(..., ge=0, le=models.MAX_SOURCES - 1, description="Source ID")
   ZoneID = Path(..., ge=0, le=35, description="Zone ID")
   GroupID = Path(..., ge=0, description="Stream ID")
   StreamID = Path(..., ge=0, description="Stream ID")
   StreamCommand = Path(..., description="Stream Command")
   PresetID = Path(..., ge=0, description="Preset ID")
-  StationID = Path(..., ge=0, title="Pandora Station ID", description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
+  StationID = Path(..., ge=0, title="Pandora Station ID",
+                   description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
   ImageHeight = Path(..., ge=1, le=500, description="Image Height in pixels")
 
+
 api = SimplifyingRouter(dependencies=[Depends(CookieOrParamAPIKey)])
+
 
 @api.get('/api', tags=['status'])
 @api.get('/api/', tags=['status'])
@@ -153,11 +163,13 @@ def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Get the system status and configuration """
   return ctrl.get_state()
 
+
 @api.post('/api/load', tags=['status'])
 def load_config(config: models.Status, ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Load a new configuration (and return the configuration loaded). This will overwrite the current configuration so it is advised to save the previous config from. """
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change, config=config)
   return ctrl.get_state()
+
 
 @api.post('/api/factory_reset', tags=['status'])
 def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
@@ -168,16 +180,19 @@ def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   default_config = defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=ctrl.lms_mode)
   return load_config(models.Status(**default_config), ctrl)
 
+
 @api.post('/api/reset', tags=['status'])
 def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Reload the current configuration, resetting the firmware in the process. """
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change)
   return ctrl.get_state()
 
-@api.post('/api/reboot', tags=['status'],
+
+@api.post(
+  '/api/reboot', tags=['status'],
   response_class=Response,
-  responses = {
-      200: {}
+  responses={
+    200: {}
   }
 )
 def reboot():
@@ -189,10 +204,12 @@ def reboot():
   # start the restart, and return immediately (hopefully before the restart process begins)
   Popen('sleep 1 && sudo systemctl reboot', shell=True)
 
-@api.post('/api/shutdown', tags=['status'],
+
+@api.post(
+  '/api/shutdown', tags=['status'],
   response_class=Response,
-  responses = {
-      200: {}
+  responses={
+    200: {}
   }
 )
 def shutdown():
@@ -205,14 +222,16 @@ def shutdown():
   # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
   Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
-@api.post('/api/lms_mode', response_class=Response,
-  responses = {
+
+@api.post(
+  '/api/lms_mode', response_class=Response,
+  responses={
     200: {}
   }
 )
 def lms_mode(ctrl: Api = Depends(get_ctrl)):
   """ Toggles Logitech Media Server mode on or off. """
-  new_config : models.Status
+  new_config: models.Status
   if ctrl.lms_mode:
     print("turning LMS mode off...")
     try:
@@ -230,18 +249,24 @@ def lms_mode(ctrl: Api = Depends(get_ctrl)):
     new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=True))
   load_config(new_config, ctrl)
 
+
 subscribers: Dict[int, 'Queue[models.Status]'] = {}
+
+
 def notify_on_change(status: models.Status) -> None:
   """ Notify subscribers that something has changed """
   for msg_que in subscribers.values():
     msg_que.put(status)
 
 # @api.get('/api/subscribe') # TODO: uncomment this to add SSE Support and properly document it
+
+
 async def subscribe(req: Request):
   """ Subscribe to SSE events """
   msg_que: Queue = Queue(3)
   next_sub = max(subscribers.keys(), default=0) + 1
   subscribers[next_sub] = msg_que
+
   async def stream():
     try:
       while True:
@@ -259,6 +284,7 @@ async def subscribe(req: Request):
       raise exc
   return EventSourceResponse(stream())
 
+
 def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
   """ Convert amplipi.ctrl.Api responses to json/http responses """
   if isinstance(resp, ApiResponse):
@@ -271,10 +297,13 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
   return resp
 
 # sources
+
+
 @api.get('/api/sources', tags=['source'])
 def get_sources(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Source]]:
   """ Get all sources """
-  return {'sources' : ctrl.get_state().sources}
+  return {'sources': ctrl.get_state().sources}
+
 
 @api.get('/api/sources/{sid}', tags=['source'])
 def get_source(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Source:
@@ -282,6 +311,7 @@ def get_source(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> mod
   # TODO: add get_X capabilities to underlying API?
   sources = ctrl.get_state().sources
   return sources[sid]
+
 
 @api.patch('/api/sources/{sid}', tags=['source'])
 def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID) -> models.Status:
@@ -293,21 +323,23 @@ def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: 
     print(f'correcting deprecated use of RCA inputs from {update} to {valid_update}')
   return code_response(ctrl, ctrl.set_source(sid, update))
 
-@api.get('/api/sources/{sid}/image/{height}', tags=['source'],
+
+@api.get(
+  '/api/sources/{sid}/image/{height}', tags=['source'],
   # Manually specify a possible response
   # see https://github.com/tiangolo/fastapi/issues/3258
   response_class=Response,
-  responses = {
-      200: {
-          "content": {"image/jpg": {}}
-      }
+  responses={
+    200: {
+      "content": {"image/jpg": {}}
+    }
   },
 )
 async def get_image(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, height: int = params.ImageHeight):
   """ Get a square jpeg image representing the current media playing on source @sid
 
   This was added to support low power touch panels """
-  width = height # square image
+  width = height  # square image
   source_info = ctrl.status.sources[sid].info
   if source_info is None or source_info.img_url is None:
     uri = 'static/imgs/disconnected.png'
@@ -344,10 +376,12 @@ async def get_image(ctrl: Api = Depends(get_ctrl), sid: int = params.SourceID, h
 
 # zones
 
+
 @api.get('/api/zones', tags=['zone'])
 def get_zones(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Zone]]:
   """ Get all zones """
   return {'zones': ctrl.get_state().zones}
+
 
 @api.get('/api/zones/{zid}', tags=['zone'])
 def get_zone(ctrl: Api = Depends(get_ctrl), zid: int = params.ZoneID) -> models.Zone:
@@ -357,10 +391,12 @@ def get_zone(ctrl: Api = Depends(get_ctrl), zid: int = params.ZoneID) -> models.
     return zones[zid]
   raise HTTPException(404, f'zone {zid} not found')
 
+
 @api.patch('/api/zones/{zid}', tags=['zone'])
 def set_zone(zone: models.ZoneUpdate, ctrl: Api = Depends(get_ctrl), zid: int = params.ZoneID) -> models.Status:
   """ Update a zone's configuration (zone=**zid**) """
   return code_response(ctrl, ctrl.set_zone(zid, zone))
+
 
 @api.patch('/api/zones', tags=['zone'])
 def set_zones(multi_update: models.MultiZoneUpdate, ctrl: Api = Depends(get_ctrl)) -> models.Status:
@@ -369,16 +405,19 @@ def set_zones(multi_update: models.MultiZoneUpdate, ctrl: Api = Depends(get_ctrl
 
 # groups
 
+
 @api.post('/api/group', tags=['group'])
 def create_group(group: models.Group, ctrl: Api = Depends(get_ctrl)) -> models.Group:
   """ Create a new grouping of zones """
   # TODO: add named example group
   return code_response(ctrl, ctrl.create_group(group))
 
+
 @api.get('/api/groups', tags=['group'])
 def get_groups(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Group]]:
   """ Get all groups """
-  return {'groups' : ctrl.get_state().groups}
+  return {'groups': ctrl.get_state().groups}
+
 
 @api.get('/api/groups/{gid}', tags=['group'])
 def get_group(ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> models.Group:
@@ -388,10 +427,12 @@ def get_group(ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> model
     return grp
   raise HTTPException(404, f'group {gid} not found')
 
+
 @api.patch('/api/groups/{gid}', tags=['group'])
 def set_group(group: models.GroupUpdate, ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> models.Status:
   """ Update a groups's configuration (group=**gid**) """
   return code_response(ctrl, ctrl.set_group(gid, group))
+
 
 @api.delete('/api/groups/{gid}', tags=['group'])
 def delete_group(ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> models.Status:
@@ -400,6 +441,7 @@ def delete_group(ctrl: Api = Depends(get_ctrl), gid: int = params.GroupID) -> mo
 
 # streams
 
+
 @api.post('/api/stream', tags=['stream'])
 def create_stream(stream: models.Stream, ctrl: Api = Depends(get_ctrl)) -> models.Stream:
   """ Create a new audio stream
@@ -407,10 +449,12 @@ def create_stream(stream: models.Stream, ctrl: Api = Depends(get_ctrl)) -> model
   """
   return code_response(ctrl, ctrl.create_stream(stream))
 
+
 @api.get('/api/streams', tags=['stream'])
 def get_streams(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Stream]]:
   """ Get all streams """
-  return {'streams' : ctrl.get_state().streams}
+  return {'streams': ctrl.get_state().streams}
+
 
 @api.get('/api/streams/{sid}', tags=['stream'])
 def get_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Stream:
@@ -420,10 +464,12 @@ def get_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> mod
     return stream
   raise HTTPException(404, f'stream {sid} not found')
 
+
 @api.patch('/api/streams/{sid}', tags=['stream'])
 def set_stream(update: models.StreamUpdate, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Status:
   """ Update a stream's configuration (stream=**sid**) """
   return code_response(ctrl, ctrl.set_stream(sid, update))
+
 
 @api.delete('/api/streams/{sid}', tags=['stream'])
 def delete_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Status:
@@ -432,10 +478,12 @@ def delete_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> 
 
 # The following is a specific endpoint to api/stream/{} and needs to be placed before the catch all exec_command
 
+
 @api.post('/api/streams/{sid}/station={station}', tags=['stream'])
 def change_station(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, station: int = params.StationID) -> models.Status:
   """ Change station on a pandora stream (stream=**sid**) """
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=f'station={station}'))
+
 
 @api.post('/api/streams/{sid}/{cmd}', tags=['stream'])
 def exec_command(cmd: models.StreamCommand, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Status:
@@ -455,15 +503,18 @@ def exec_command(cmd: models.StreamCommand, ctrl: Api = Depends(get_ctrl), sid: 
 
 # presets
 
+
 @api.post('/api/preset', tags=['preset'])
 def create_preset(preset: models.Preset, ctrl: Api = Depends(get_ctrl)) -> models.Preset:
   """ Create a new preset configuration """
   return code_response(ctrl, ctrl.create_preset(preset))
 
+
 @api.get('/api/presets', tags=['preset'])
 def get_presets(ctrl: Api = Depends(get_ctrl)) -> Dict[str, List[models.Preset]]:
   """ Get all presets """
-  return {'presets' : ctrl.get_state().presets}
+  return {'presets': ctrl.get_state().presets}
+
 
 @api.get('/api/presets/{pid}', tags=['preset'])
 def get_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> models.Preset:
@@ -473,15 +524,18 @@ def get_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mod
     return preset
   raise HTTPException(404, f'preset {pid} not found')
 
+
 @api.patch('/api/presets/{pid}', tags=['preset'])
 def set_preset(update: models.PresetUpdate, ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> models.Status:
   """ Update a preset's configuration (preset=**pid**) """
   return code_response(ctrl, ctrl.set_preset(pid, update))
 
+
 @api.delete('/api/presets/{pid}', tags=['preset'])
 def delete_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> models.Status:
   """ Delete a preset """
   return code_response(ctrl, ctrl.delete_preset(pid))
+
 
 @api.post('/api/presets/{pid}/load', tags=['preset'])
 def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> models.Status:
@@ -490,6 +544,7 @@ def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mo
 
 # PA
 
+
 @api.post('/api/announce', tags=['announce'])
 def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Make an announcement """
@@ -497,10 +552,12 @@ def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -
 
 # Info
 
+
 @api.get('/api/info', tags=['status'])
 def get_info(ctrl: Api = Depends(get_ctrl)) -> models.Info:
   """ Get additional information """
   return code_response(ctrl, ctrl.get_info())
+
 
 @app.get('/debug')
 def debug() -> models.DebugResponse:
@@ -510,17 +567,19 @@ def debug() -> models.DebugResponse:
     return models.DebugResponse()
   try:
     with open(debug_file) as f:
-        return models.DebugResponse(**json.load(f))
+      return models.DebugResponse(**json.load(f))
   except Exception as e:
     print("couldn't load debug file: {e}")
     return models.DebugResponse()
 
 # include all routes above
 
+
 app.include_router(api)
 app.include_router(auth_router)
 
 # API Documentation
+
 
 def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   """ Get json model for the body of an api request """
@@ -532,6 +591,7 @@ def get_body_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   except:
     return None
 
+
 def get_response_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   """ Get json model for the response of an api request """
   try:
@@ -542,11 +602,12 @@ def get_response_model(route: APIRoute) -> Optional[Dict[str, Any]]:
   except:
     return None
 
+
 def add_creation_examples(openapi_schema, route: APIRoute) -> None:
   """ Add creation examples for a given route (for modifying request types) """
   req_model = get_body_model(route)
   if req_model and ('examples' in req_model or 'creation_examples' in req_model):
-    if 'creation_examples' in req_model: # prefer creation examples for POST request, this allows us to have different examples for get response and creation requests
+    if 'creation_examples' in req_model:  # prefer creation examples for POST request, this allows us to have different examples for get response and creation requests
       examples = req_model['creation_examples']
     else:
       examples = req_model['examples']
@@ -554,7 +615,8 @@ def add_creation_examples(openapi_schema, route: APIRoute) -> None:
       # Only POST, PATCH, and PUT methods have a request body
       if method in {"POST", "PATCH", "PUT"}:
         openapi_schema['paths'][route.path][method.lower()]['requestBody'][
-        'content']['application/json']['examples'] = examples
+          'content']['application/json']['examples'] = examples
+
 
 def add_response_examples(openapi_schema, route: APIRoute) -> None:
   """ Add response examples for a given route """
@@ -565,11 +627,12 @@ def add_response_examples(openapi_schema, route: APIRoute) -> None:
       openapi_schema['paths'][route.path][method.lower()]['responses']['200'][
         'content']['application/json']['examples'] = examples
   if route.path in ['/api/zones', '/api/groups', '/api/sources', '/api/streams', '/api/presets']:
-    if 'get' in  openapi_schema['paths'][route.path]:
+    if 'get' in openapi_schema['paths'][route.path]:
       piece = route.path.replace('/api/', '')
       example_status = list(models.Status.Config.schema_extra['examples'].values())[0]['value']
       openapi_schema['paths'][route.path]['get']['responses']['200'][
           'content']['application/json']['example'] = {piece: example_status[piece]}
+
 
 def get_live_examples(tags: List[Union[str, Enum]]) -> Dict[str, Dict[str, Any]]:
   """ Create a list of examples using the live configuration """
@@ -583,6 +646,7 @@ def get_live_examples(tags: List[Union[str, Enum]]) -> Dict[str, Dict[str, Any]]
           live_examples[i.name] = {'value': i.id, 'summary': i.name}
   return live_examples
 
+
 def get_xid_param(route):
   """ Check if path has an Xid parameter """
   id_param = None
@@ -591,6 +655,7 @@ def get_xid_param(route):
       id_param = param_name
       break
   return id_param
+
 
 def add_example_params(openapi_schema, route: APIRoute) -> None:
   """ Manually add relevant example parameters based on the current configuration (for paths that require parameters) """
@@ -605,6 +670,7 @@ def add_example_params(openapi_schema, route: APIRoute) -> None:
         for param in path_method['parameters']:
           if param['name'] == xid_param:
             param['examples'] = live_examples
+
 
 def generate_openapi_spec(add_test_docs=True):
   """ Generate the openapi spec using documentation embedded in the models and routes """
@@ -649,12 +715,12 @@ def generate_openapi_spec(add_test_docs=True):
 
   openapi_schema['info']['contact'] = {
     'email': 'info@micro-nova.com',
-    'name':  'Micronova',
-    'url':   'http://micro-nova.com',
+    'name': 'Micronova',
+    'url': 'http://micro-nova.com',
   }
   openapi_schema['info']['license'] = {
     'name': 'GPL',
-    'url':  'https://github.com/micro-nova/AmpliPi/blob/main/COPYING',
+    'url': 'https://github.com/micro-nova/AmpliPi/blob/main/COPYING',
   }
 
   # Manually add examples present in pydancticModel.schema_extra into openAPI schema
@@ -671,6 +737,7 @@ def generate_openapi_spec(add_test_docs=True):
       add_example_params(openapi_schema, route)
 
   return openapi_schema
+
 
 YAML_DESCRIPTION = """| # The links in the description below are tested to work with redoc and may not be portable
     This is the AmpliPi home audio system's control server.
@@ -742,6 +809,7 @@ YAML_DESCRIPTION = """| # The links in the description below are tested to work 
     This API is documented using the OpenAPI specification
 """
 
+
 @lru_cache(2)
 def create_yaml_doc(add_test_docs=True) -> str:
   """ Create the openapi yaml schema intended for display by rapidaoc
@@ -757,12 +825,15 @@ def create_yaml_doc(add_test_docs=True) -> str:
 
 # additional yaml version of openapi.json
 # this is much more human readable
+
+
 @app.get('/openapi.yaml', include_in_schema=False)
 def read_openapi_yaml() -> Response:
   """ Read the openapi yaml file
 
   This much more human readable than the json version """
   return Response(create_yaml_doc(), media_type='text/yaml')
+
 
 @app.get('/openapi.json', include_in_schema=False)
 def read_openapi_json():
@@ -771,9 +842,11 @@ def read_openapi_json():
   This is slightly easier to process by our test framework """
   return app.openapi()
 
-app.openapi = generate_openapi_spec # type: ignore
+
+app.openapi = generate_openapi_spec  # type: ignore
 
 # Documentation
+
 
 @app.get('/doc', include_in_schema=False)
 def doc():
@@ -781,8 +854,10 @@ def doc():
   # TODO: add hosted python docs as well
   return FileResponse(f'{TEMPLATE_DIR}/rest-api-doc.html')
 
+
 # Website
 app.mount('/', StaticFiles(directory=WEB_DIR, html=True), name='web')
+
 
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings: models.AppSettings = models.AppSettings()) -> FastAPI:
   """ Create the AmpliPi web app with a specific configuration """
@@ -800,6 +875,7 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
 
 # Shutdown
 
+
 @app.on_event('shutdown')
 def on_shutdown():
   print('Shutting down AmpliPi')
@@ -811,6 +887,7 @@ def on_shutdown():
 
 # MDNS
 
+
 def get_ip_info(iface: str = 'eth0') -> Tuple[Optional[str], Optional[str]]:
   """ Get the IP address of interface @iface """
   try:
@@ -818,6 +895,7 @@ def get_ip_info(iface: str = 'eth0') -> Tuple[Optional[str], Optional[str]]:
     return info[ni.AF_INET][0].get('addr'), info[ni.AF_LINK][0].get('addr')
   except:
     return None, None
+
 
 def advertise_service(port, que: Queue):
   """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar'
@@ -834,7 +912,7 @@ def advertise_service(port, que: Queue):
   url = f'http://{hostname}'
 
   # search for the best interface to advertise on
-  ifaces = ['eth0', 'wlan0'] # default pi interfaces
+  ifaces = ['eth0', 'wlan0']  # default pi interfaces
   try:
     for iface in ni.interfaces():
       if iface.startswith('w') or iface.startswith('e'):
@@ -845,13 +923,13 @@ def advertise_service(port, que: Queue):
   for iface in ifaces:
     ip_addr, mac_addr = get_ip_info(iface)
     if ip_addr and mac_addr:
-      break # take the first good interface found
+      break  # take the first good interface found
 
   if not ip_addr:
     print(f'AmpliPi zeroconf - unable to register service on one of {ifaces}, \
             they all are either not available or have no IP address.')
     print(f'AmpliPi zeroconf - is this running on AmpliPi?')
-    ip_addr = '0.0.0.0' # Any hosted ip on this device
+    ip_addr = '0.0.0.0'  # Any hosted ip on this device
   if port != 80:
     url += f':{port}'
   info_deprecated = ServiceInfo(
@@ -871,7 +949,7 @@ def advertise_service(port, que: Queue):
       'web_app': url,
       'documentation': f'{url}/doc'
     },
-    server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
+    server=f'{hostname}.',  # Trailing '.' is required by the SRV_record specification
   )
 
   info = ServiceInfo(
@@ -892,7 +970,7 @@ def advertise_service(port, que: Queue):
       'web_app': url,
       'documentation': f'{url}/doc'
     },
-    server=f'{hostname}.', # Trailing '.' is required by the SRV_record specification
+    server=f'{hostname}.',  # Trailing '.' is required by the SRV_record specification
   )
 
   print(f'AmpliPi zeroconf - registering service: {info}')
@@ -910,6 +988,7 @@ def advertise_service(port, que: Queue):
     print('AmpliPi zeroconf - unregistering service')
     zeroconf.unregister_service(info)
     zeroconf.close()
+
 
 if __name__ == '__main__':
   """ Create the openapi yaml file describing the AmpliPi API """

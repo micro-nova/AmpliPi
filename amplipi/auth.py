@@ -48,15 +48,17 @@ USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 
 USERS_FILE = os.path.join(USER_CONFIG_DIR, 'users.json')
 
+
 class UserData(BaseModel):
   type: Literal["user", "api"]
   access_key: Union[str, None]
   access_key_updated: Union[datetime, None]
   password_hash: Union[str, None]
 
+
 def _get_users() -> dict:
   """ Returns the users file contents """
-  users : Dict[str, UserData] = {}
+  users: Dict[str, UserData] = {}
   # Load fields from users file (if it exists), falling back to no users.
   # TODO: We should guard around edge cases more. If a user is able to trick any
   # component into messing with this file, authentication gets removed. however, we
@@ -83,6 +85,7 @@ def _get_users() -> dict:
     raise e
   return users
 
+
 def _set_users(users_update: Dict[str, UserData]) -> None:
   """ Sets the user file. This takes a partial or full representation of the
       user data and .update()'s it; to note, this means it will not delete
@@ -93,6 +96,7 @@ def _set_users(users_update: Dict[str, UserData]) -> None:
   with open(USERS_FILE, encoding='utf-8', mode='w') as users_file:
     json.dump(users, users_file)
 
+
 def _get_password_hash(user: str) -> str:
   """ Get a user password hash. This does not handle KeyError exceptions;
       this should explicitly be handled by the caller.
@@ -100,13 +104,16 @@ def _get_password_hash(user: str) -> str:
   users = _get_users()
   return users[user]['password_hash']
 
+
 def _verify_password(plain_password: str, hashed_password: str) -> bool:
   """ Verify a plaintext password using constant-time hashing. """
   return pwd_context.verify(hashed_password, plain_password)
 
+
 def _hash_password(password: str) -> str:
   """ Given a plaintext password, return a hashed password. """
   return pwd_context.hash(password)
+
 
 def _get_access_key(user: str) -> str:
   """ Get a username's access key. This does not handle KeyError exceptions;
@@ -114,6 +121,7 @@ def _get_access_key(user: str) -> str:
   """
   users = _get_users()
   return users[user]["access_key"]
+
 
 def create_access_key(user: str) -> str:
   """ Creates an access key. Also creates the user if it does not already exist. """
@@ -128,6 +136,7 @@ def create_access_key(user: str) -> str:
   _set_users(users)
   return access_key
 
+
 def set_password_hash(user: str, password: str) -> None:
   """ Sets a password for a given user. (Re/)sets the session/access key for a user.
       If the user does not exist, it is created.
@@ -140,19 +149,22 @@ def set_password_hash(user: str, password: str) -> None:
   _set_users(users)
   create_access_key(user)
 
+
 def unset_password_hash(user) -> None:
   """ Removes a password for a given user. """
   users = _get_users()
   try:
     del users[user]["password_hash"]
-  except KeyError: # user doesn't exist, or has no "password_hash"
+  except KeyError:  # user doesn't exist, or has no "password_hash"
     pass
   _set_users(users)
+
 
 def user_exists(username: str) -> bool:
   """ Utility function for determining if a user exists """
   users = _get_users()
   return username in users.keys()
+
 
 def _user_password_set(username: str) -> bool:
   """ Utility function for determining if a user has a password set. """
@@ -172,6 +184,7 @@ def _user_password_set(username: str) -> bool:
 
   return True
 
+
 def user_access_key_set(username: str) -> bool:
   """ Utility function for determing if a user has a session key set """
   users = _get_users()
@@ -186,11 +199,13 @@ def user_access_key_set(username: str) -> bool:
 
   return True
 
+
 def get_access_key(username: str) -> str:
   """ Given a username, return its access key. """
   assert user_access_key_set(username)
   users = _get_users()
   return users[username]["access_key"]
+
 
 def _authenticate_user_with_password(username: str, password: str) -> bool:
   """ Given a username and a plaintext password, authenticate the user. """
@@ -202,6 +217,7 @@ def _authenticate_user_with_password(username: str, password: str) -> bool:
     print(f"exception in _verify_password(): {e}")
     return False
 
+
 def _check_access_key(key: APIKey) -> Union[bool, str]:
   """ Check a user's access key using constant-time comparison. """
   for username in _get_users().keys():
@@ -210,12 +226,14 @@ def _check_access_key(key: APIKey) -> Union[bool, str]:
         return username
   return False
 
+
 def no_user_passwords_set() -> bool:
   """ Determines if there are no user passwords set. """
   for user in _get_users():
     if _user_password_set(user):
       return False
   return True
+
 
 def _next_url(request: Request) -> str:
   """ Gets the next URL after a login, given a Request. """
@@ -227,9 +245,12 @@ def _next_url(request: Request) -> str:
 
 # The following class & function need to be added to the `app` using `.add_exception_handler`.
 # See: https://github.com/tiangolo/fastapi/issues/1667
+
+
 class NotAuthenticatedException(Exception):
   """ An exception used for handling unauthenticated requests """
   pass
+
 
 async def not_authenticated_exception_handler(request: Request, exc: NotAuthenticatedException) -> TemplateResponse:
   """ Render the login page; used as an exception handler. Code that lands here will
@@ -238,19 +259,22 @@ async def not_authenticated_exception_handler(request: Request, exc: NotAuthenti
   """
   return templates.TemplateResponse("login.html", {"request": request, "next_url": _next_url(request)}, status_code=401)
 
+
 def cookie_auth(session: APIKey = Depends(APIKeyCookie(name="amplipi-session", auto_error=False))) -> Union[bool, str]:
   """ Attempt cookie authentication, using the key stored in `amplipi-session`. """
   if not session:
     return False
   return _check_access_key(session)
 
-def query_param_auth(api_key : APIKey = Depends(APIKeyQuery(name="api-key", auto_error=False))) -> Union[bool, str]:
+
+def query_param_auth(api_key: APIKey = Depends(APIKeyQuery(name="api-key", auto_error=False))) -> Union[bool, str]:
   """ Attempt query parameter authentication, using the key provided with the parameter `api-key` """
   if not api_key:
     return False
   return _check_access_key(api_key)
 
-async def CookieOrParamAPIKey(cookie_result = Depends(cookie_auth), query_param = Depends(query_param_auth), no_passwords = Depends(no_user_passwords_set)) -> bool:
+
+async def CookieOrParamAPIKey(cookie_result=Depends(cookie_auth), query_param=Depends(query_param_auth), no_passwords=Depends(no_user_passwords_set)) -> bool:
   """ Authentication scheme. Any one of cookie auth, query param auth, or having no user passwords
       set will pass this authentication.
   """
@@ -258,10 +282,12 @@ async def CookieOrParamAPIKey(cookie_result = Depends(cookie_auth), query_param 
     raise NotAuthenticatedException
   return True
 
+
 @router.get("/login", response_class=Response)
 def login_page(request: Request) -> TemplateResponse:
   """ Render the login page. """
   return templates.TemplateResponse("login.html", {"request": request, "next_url": _next_url(request)})
+
 
 @router.post("/login", response_class=Response)
 def login(request: Request, next_url: str = "/", form_data: OAuth2PasswordRequestForm = Depends()):
