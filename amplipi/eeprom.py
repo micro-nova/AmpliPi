@@ -18,9 +18,10 @@ WRITE_CHECK_ADDRESS = (int)((2048/8)-1) #last byte of 2kbit EEPROM, 8bit per add
 
 class UnitType(IntEnum):
   """Unit type"""
-  NONE     = 0 # No branding, currently only used in AP1-Z6
-  AP1_S4Z6 = 1 # AmpliPro main unit branding/functionality
-  AP1_S4   = 2 # Streamer branding/functionality
+  AP1_Z6   = 0    # AmpliPro expansion unit
+  AP1_S4Z6 = 1    # AmpliPro main unit
+  AP1_S4   = 2    # Streamer
+  NONE     = 0xFF # Unprogrammed EEPROM
 
 class BoardType(IntEnum):
   """Matches the I2C address. The address is stored in the lowest 7 bits of the byte.
