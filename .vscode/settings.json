@@ -23,6 +23,7 @@
   },
   "autopep8.args": [
     "--indent-size=2",
+    "--ignore=E121", // E121=hanging indent, no way to set to 2.
     "--max-line-length=120"
   ],
   "pylint.args": ["--generated-members", "signal.Signals,GPIO.*"],
