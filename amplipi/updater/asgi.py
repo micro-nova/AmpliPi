@@ -56,10 +56,12 @@ app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception
 
 sse_messages: queue.Queue = queue.Queue()
 
+
 class ReleaseInfo(BaseModel):
   """ Software Release Information """
   url: str
   version: str
+
 
 # host all of the static files the client will look for
 real_path = os.path.realpath(__file__)
@@ -87,11 +89,13 @@ except FileNotFoundError:
 except Exception as e:
   print(f'Error loading identity file: {e}')
 
+
 @router.get('/update')
 def get_index():
   """ Get the update website """
   # FileResponse knows nothing about the static mount
   return FileResponse(f'{dir_path}/static/index.html')
+
 
 def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None:
   """ Save the update file """
@@ -100,6 +104,7 @@ def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None
       shutil.copyfileobj(upload_file.file, buffer)
   finally:
     upload_file.file.close()
+
 
 @router.post("/update/upload")
 async def start_upload(file: UploadFile = File(...)):
@@ -115,6 +120,7 @@ async def start_upload(file: UploadFile = File(...)):
     print(e)
     return 500
 
+
 def download(url, file_name):
   """ Download a binary file from @url to @file_name """
   with open(file_name, "wb") as file:
@@ -123,6 +129,7 @@ def download(url, file_name):
     # write to file
     file.write(response.content)
     # TODO: verify file has amplipi version
+
 
 @router.post("/update/download")
 async def download_update(info: ReleaseInfo):
@@ -136,7 +143,8 @@ async def download_update(info: ReleaseInfo):
     print(e)
     return 500
 
-@router.get('/update/restart') # an old version accidentally used get instead of post
+
+@router.get('/update/restart')  # an old version accidentally used get instead of post
 @router.post('/update/restart')
 def restart():
   """ Restart the OS and all of the AmpliPi services including the updater.
@@ -147,7 +155,9 @@ def restart():
   subprocess.Popen(f'python3 {INSTALL_DIR}/scripts/configure.py --restart-updater'.split())
   return 200
 
+
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
+
 
 @router.get('/update/version')
 def get_version():
@@ -168,24 +178,35 @@ def get_version():
     pass
   return {'version': version}
 
+
 def _sse_message(t, msg):
   """ Report an SSE message """
   msg = msg.replace('\n', '<br>')
-  sse_msg = {'data' : json.dumps({'message': msg, 'type' : t})}
+  sse_msg = {'data': json.dumps({'message': msg, 'type': t})}
   sse_messages.put(sse_msg)
   # Give the SSE publisher time to handle the messages, is there a way to just yield?
   time.sleep(0.1)
 
+
 def _sse_info(msg):
   _sse_message('info', msg)
+
+
 def _sse_warning(msg):
   _sse_message('warning', msg)
+
+
 def _sse_error(msg):
   _sse_message('error', msg)
+
+
 def _sse_done(msg):
   _sse_message('success', msg)
+
+
 def _sse_failed(msg):
   _sse_message('failed', msg)
+
 
 @router.route('/update/install/progress')
 async def progress(req: Request):
@@ -207,6 +228,7 @@ async def progress(req: Request):
       raise e
   return EventSourceResponse(stream())
 
+
 def extract_to_home(home):
   """ The simple, pip-less install. Extract tarball and copy into users home directory """
   temp_dir = mkdtemp()
@@ -222,9 +244,11 @@ def extract_to_home(home):
   subprocess.check_call(f'mkdir -p {home}'.split())
   subprocess.check_call(f'cp -a {files_to_copy}  {home}/'.split())
 
+
 def indent(p: str):
   """ indent paragraph p """
   return '  ' + '  '.join(p.splitlines(keepends=True))
+
 
 def install_thread():
   """ Basic tar.gz based installation """
@@ -240,9 +264,10 @@ def install_thread():
 
   try:
     # use the configure script provided by the new install to configure the installation
-    time.sleep(1) # update was just copied in, add a small delay to make sure we are accessing the new files
+    time.sleep(1)  # update was just copied in, add a small delay to make sure we are accessing the new files
     sys.path.insert(0, f'{INSTALL_DIR}/scripts')
-    import configure # we want the new configure! # pylint: disable=import-error,import-outside-toplevel
+    import configure  # we want the new configure! # pylint: disable=import-error,import-outside-toplevel
+
     def progress_sse(tasks):
       for task in tasks:
         _sse_info(task.name)
@@ -264,6 +289,7 @@ def install_thread():
     _sse_failed(f'installation failed, error configuring update: {e}')
     return
 
+
 @router.get('/update/install')
 def install():
   """ Start the install after update is downloaded """
@@ -271,8 +297,10 @@ def install():
   t.start()
   return {}
 
+
 class PasswordInput(BaseModel):
   password: str
+
 
 @router.post('/password')
 def set_admin_password(input: PasswordInput):
@@ -294,4 +322,4 @@ app.include_router(router)
 if __name__ == '__main__':
   uvicorn.run(app, host="0.0.0.0", port=8000)
 
-application = app # asgi assumes application var for app
+application = app  # asgi assumes application var for app
