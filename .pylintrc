@@ -41,9 +41,10 @@ good-names=i,
 # Number of spaces of indent required inside a hanging or continued line.
 indent-after-paren=2
 
-# String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1
-# tab).
+# String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1 tab).
 indent-string='  '
+
+max-line-length=120
 
 [EXCEPTIONS]
 
