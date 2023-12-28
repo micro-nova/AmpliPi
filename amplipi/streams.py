@@ -568,19 +568,21 @@ class Spotify(PersistentStream):
       print(f'error starting spotify: {exc}')
 
   def _deactivate(self):
-    try:
-      self.proc.terminate()
-      self.proc.communicate(timeout=3)
-    except Exception as e:
-      print(f"failed to terminate spotify stream: {e}")
-      self.proc.kill()
-    try:
-      del self.mpris
-    except Exception:
-      pass
+    if self.proc:
+      try:
+        self.proc.terminate()
+        self.proc.communicate(timeout=3)
+      except Exception as e:
+        print(f"failed to terminate spotify stream: {e}")
+        self.proc.kill()
+      self.proc = None
+    if self.mpris:
+      try:
+        del self.mpris
+      except Exception:
+        pass
+      self.mpris = None
     self.connect_port = None
-    self.mpris = None
-    self.proc = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(
