@@ -1,17 +1,33 @@
 #!/bin/bash
 
-# get directory that the script exists in
+# cd to the repo root
 cd "$( dirname "$0" )/.."
 source venv/bin/activate
 
-# Run pylint to check for code issues
-pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*,RPi.GPIO.*"
-pylint -E amplipi --generated-members "signal.Signals,GPIO.*,RPi.GPIO.*"
+# Run pylint twice here to identify any code issues:
+# - First to see all of the messages without failing before we get through all of them.
+# - Second to show first failure if any.
+pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
+pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
 
 # Lint with mypy, static type checker
 mypy amplipi --ignore-missing-imports
 
-# Live tests require some amplipi streams to be setup
-pytest -vvv tests/test_ctrl.py # test control separately to avoid weird shared state issues
-pytest -vvv -k 'not _live' --ignore 'tests/test_ctrl.py'
+mkdir -p web/dist
+touch web/dist/index.html
+
+# Controller tests don't work well in parallel due to shared state.
+# Run all the tests here individually to serialize them.
+pytest tests/test_ctrl.py -vvv -k no_config
+pytest tests/test_ctrl.py -vvv -k good_config
+pytest tests/test_ctrl.py -vvv -k corrupted_config
+pytest tests/test_ctrl.py -vvv -k doubly_corrupted_config
+pytest tests/test_ctrl.py -vvv -k missing_config
+pytest tests/test_ctrl.py -vvv -k doubly_missing_config
+
+pytest tests/test_rest.py -vvv -k 'not _live'
+pytest tests/test_auth.py -vvv
+
+# Live tests require some amplipi streams to be setup, which means real audio
+# sinks are required. These tests will not run in Github Actions.
 pytest -vvv -k '_live'
