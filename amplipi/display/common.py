@@ -5,6 +5,7 @@ import subprocess
 from enum import Enum
 from typing import Tuple
 
+
 class Display:
   """Abstract External Display
   Used to display system information like password and IP address"""
@@ -23,6 +24,7 @@ class Display:
     """Called by exit handler. Stops the run method."""
     raise NotImplementedError('Display.stop')
 
+
 class Color(Enum):
   """ Colors used in the AmpliPi front-panel display """
   GREEN = '#28a745'
@@ -33,6 +35,7 @@ class Color(Enum):
   DARKGRAY = '#666666'
   LIGHTGRAY = '#999999'
   WHITE = '#FFFFFF'
+
 
 class DefaultPass:
   """Helper class to read and verify the current pi user's password against

@@ -52,20 +52,24 @@ MAX_SOURCES = 4
 SOURCE_DISCONNECTED = -1
 """ Indicate no source connection, simulated in SW by muting zone for now """
 
+
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """
   assert MIN_VOL_F <= pcnt <= MAX_VOL_F
   return round(pcnt * (MAX_VOL_DB - MIN_VOL_DB) + MIN_VOL_DB)
 
+
 class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
   Name = Field(description='Friendly name')
-  SourceId = Field(ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
+  SourceId = Field(ge=SOURCE_DISCONNECTED, le=MAX_SOURCES - 1,
+                   description='id of the connected source, or -1 for no connection')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
-  VolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
+  VolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F,
+                  description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
   VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
   VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
@@ -80,24 +84,29 @@ class fields(SimpleNamespace):
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
 
+
 class fields_w_default(SimpleNamespace):
   """ AmpliPi's field types that need a default value
 
   These are needed because there is ambiguity where an optional field has a default value
   """
   # TODO: less duplication
-  SourceId = Field(default=0, ge=SOURCE_DISCONNECTED, le=MAX_SOURCES-1, description='id of the connected source, or -1 for no connection')
+  SourceId = Field(default=0, ge=SOURCE_DISCONNECTED, le=MAX_SOURCES - 1,
+                   description='id of the connected source, or -1 for no connection')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
-  VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
+  VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F,
+                  description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
   VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Min output volume in dB')
   VolumeMax = Field(default=MAX_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Max output volume in dB')
   GroupMute = Field(default=True, description='Set to true if output is all zones muted')
   GroupVolume = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume')
-  GroupVolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number')
+  GroupVolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F,
+                       description='Average output volume as a floating-point number')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
+
 
 class Base(BaseModel):
   """ Base class for AmpliPi Models
@@ -109,26 +118,30 @@ class Base(BaseModel):
   id: Optional[int] = fields.ID
   name: str = fields.Name
 
+
 class BaseUpdate(BaseModel):
   """ Base class for updates to AmpliPi models
   name: Associated name, updated if necessary
   """
   name: Optional[str] = fields.Name
 
+
 class SourceInfo(BaseModel):
   name: str
-  state: str # paused, playing, stopped, unknown, loading ???
+  state: str  # paused, playing, stopped, unknown, loading ???
   artist: Optional[str]
   track: Optional[str]
   album: Optional[str]
-  station: Optional[str] # name of radio station
+  station: Optional[str]  # name of radio station
   img_url: Optional[str]
   supported_cmds: List[str] = []
+
 
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
-  info: Optional[SourceInfo] = Field(description='Additional info about the current audio playing from the stream (generated during playback)')
+  info: Optional[SourceInfo] = Field(
+    description='Additional info about the current audio playing from the stream (generated during playback)')
 
   def get_stream(self) -> Optional[int]:
     """ Get a source's connected stream if any """
@@ -151,7 +164,7 @@ class Source(Base):
       'examples': {
         'stream connected': {
           'value': {
-            'id' : 1,
+            'id': 1,
             'name': '1',
             'input': 'stream=1004',
             'info': {
@@ -166,7 +179,7 @@ class Source(Base):
         },
         'nothing connected': {
           'value': {
-            'id' : 2,
+            'id': 2,
             'name': '2',
             'input': '',
             'info': {
@@ -177,7 +190,7 @@ class Source(Base):
         },
         'rca connected': {
           'value': {
-            'id' : 3,
+            'id': 3,
             'name': '3',
             'input': 'stream=999',
             'info': {
@@ -188,6 +201,7 @@ class Source(Base):
         },
       }
     }
+
 
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
@@ -208,15 +222,17 @@ class SourceUpdate(BaseUpdate):
       }
     }
 
+
 class SourceUpdateWithId(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
-  id : int = Field(ge=0,le=MAX_SOURCES-1)
+  id: int = Field(ge=0, le=MAX_SOURCES - 1)
 
   def as_update(self) -> SourceUpdate:
     """ Convert to SourceUpdate """
     update = self.dict()
     update.pop('id')
     return SourceUpdate.parse_obj(update)
+
 
 class Zone(Base):
   """ Audio output to a stereo pair of speakers, typically belonging to a room """
@@ -237,11 +253,11 @@ class Zone(Base):
   class Config:
     schema_extra = {
       'examples': {
-        'Living Room' : {
+        'Living Room': {
           'value': {
             'name': 'Living Room',
             'source_id': 1,
-            'mute' : False,
+            'mute': False,
             'vol': pcnt2Vol(0.69),
             'vol_f': 0.69,
             'vol_min': MIN_VOL_DB,
@@ -249,11 +265,11 @@ class Zone(Base):
             'disabled': False,
           }
         },
-        'Dining Room' : {
+        'Dining Room': {
           'value': {
             'name': 'Dining Room',
             'source_id': 2,
-            'mute' : True,
+            'mute': True,
             'vol': pcnt2Vol(0.19),
             'vol_f': 0.19,
             'vol_min': int(0.1 * (MAX_VOL_DB + MIN_VOL_DB)),
@@ -263,6 +279,7 @@ class Zone(Base):
         },
       }
     }
+
 
 class ZoneUpdate(BaseUpdate):
   """ Reconfiguration of a Zone """
@@ -311,6 +328,7 @@ class ZoneUpdate(BaseUpdate):
       },
     }
 
+
 class ZoneUpdateWithId(ZoneUpdate):
   """ Reconfiguration of a specific Zone """
   id: int = fields.ZoneId
@@ -320,6 +338,7 @@ class ZoneUpdateWithId(ZoneUpdate):
     update = self.dict()
     update.pop('id')
     return ZoneUpdate.parse_obj(update)
+
 
 class MultiZoneUpdate(BaseModel):
   """ Reconfiguration of multiple zones specified by zone_ids and group_ids """
@@ -333,25 +352,26 @@ class MultiZoneUpdate(BaseModel):
       'examples': {
         'Connect all zones to source 1': {
           'value': {
-            'zones': [0,1,2,3,4,5],
-            'update': { 'source_id': 0 }
+            'zones': [0, 1, 2, 3, 4, 5],
+            'update': {'source_id': 0}
           }
         },
         'Change the relative volume on all zones': {
           'value': {
-            'zones': [0,1,2,3,4,5],
-            'update': { 'vol_f': 0.5, "mute": False }
+            'zones': [0, 1, 2, 3, 4, 5],
+            'update': {'vol_f': 0.5, "mute": False}
           }
         },
       },
     }
+
 
 class Group(Base):
   """ A group of zones that can share the same audio input and be controlled as a group ie. Upstairs.
 
   Volume, mute, and source_id fields are aggregates of the member zones."""
   source_id: Optional[int] = fields.SourceId
-  zones: List[int] = fields.Zones # should be a set, but JSON doesn't have native sets
+  zones: List[int] = fields.Zones  # should be a set, but JSON doesn't have native sets
   mute: Optional[bool] = fields.GroupMute
   vol_delta: Optional[int] = fields.GroupVolume
   vol_f: Optional[float] = fields.GroupVolumeF
@@ -374,7 +394,7 @@ class Group(Base):
         'Downstairs Group': {
           'value': {
             'name': 'Downstairs',
-            'zones': [6,7,8,9]
+            'zones': [6, 7, 8, 9]
           }
         }
       },
@@ -392,13 +412,14 @@ class Group(Base):
           'value': {
             'id': 102,
             'name': 'Downstairs',
-            'zones': [6,7,8,9],
+            'zones': [6, 7, 8, 9],
             'vol_delta': pcnt2Vol(0.63),
             'vol_f': 0.63,
           }
         }
       },
     }
+
 
 class GroupUpdate(BaseUpdate):
   """ Reconfiguration of a Group """
@@ -414,7 +435,7 @@ class GroupUpdate(BaseUpdate):
         'Rezone group': {
           'value': {
             'name': 'Upstairs',
-            'zones': [3,4,5]
+            'zones': [3, 4, 5]
           }
         },
         'Change name': {
@@ -445,6 +466,7 @@ class GroupUpdate(BaseUpdate):
       },
     }
 
+
 class GroupUpdateWithId(GroupUpdate):
   """ Reconfiguration of a specific Group """
   id: int
@@ -454,6 +476,7 @@ class GroupUpdateWithId(GroupUpdate):
     update = self.dict()
     update.pop('id')
     return GroupUpdate.parse_obj(update)
+
 
 class Stream(Base):
   """ Digital stream such as Pandora, AirPlay or Spotify """
@@ -482,7 +505,8 @@ class Stream(Base):
   token: Optional[str] = Field(description='Plexamp token for server.json')
   server: Optional[str] = Field(description='Server url')
   index: Optional[int] = Field(description='RCA index')
-  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
+  disabled: Optional[bool] = Field(
+    description="Soft disable use of this stream. It won't be shown as a selectable option")
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
 
   # add examples for each type of stream
@@ -509,7 +533,7 @@ class Stream(Base):
           'value': {
             'name': 'Replace this text with a name you like!',
             'type': 'dlna'
-            }
+          }
         },
         'Add Groove Salad Internet Radio Station': {
           'value': {
@@ -550,7 +574,7 @@ class Stream(Base):
             'ap2': True
           }
         },
-        "Play single file or announcement" : {
+        "Play single file or announcement": {
           'value': {
             'name': 'Play NASA Announcement',
             'type': 'fileplayer',
@@ -631,11 +655,13 @@ class Stream(Base):
       }
     }
 
+
 @lru_cache(1)
 def optional_stream_fields() -> Set:
   """ Extra fields that can be preset in a stream """
   model = Stream(id=0, name='', type='fake').dict()
-  return { k for k, v in model.items() if v is None }
+  return {k for k, v in model.items() if v is None}
+
 
 class StreamUpdate(BaseUpdate):
   """ Reconfiguration of a Stream """
@@ -648,7 +674,8 @@ class StreamUpdate(BaseUpdate):
   freq: Optional[str]
   server: Optional[str]
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
-  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
+  disabled: Optional[bool] = Field(
+    description="Soft disable use of this stream. It won't be shown as a selectable option")
 
   class Config:
     schema_extra = {
@@ -662,8 +689,8 @@ class StreamUpdate(BaseUpdate):
         'Change name': {
           'value': {
             'name': 'Matt and Kim Radio'
-            }
-          },
+          }
+        },
         'Change pandora radio station': {
           'value': {
             'station': '0982034049300'
@@ -690,16 +717,19 @@ class StreamCommand(str, Enum):
   ACTIVATE = 'activate'
   DEACTIVATE = 'deactivate'
 
+
 class PresetState(BaseModel):
   """ A set of partial configuration changes to make to sources, zones, and groups """
   sources: Optional[List[SourceUpdateWithId]]
   zones: Optional[List[ZoneUpdateWithId]]
   groups: Optional[List[GroupUpdateWithId]]
 
+
 class Command(BaseModel):
   """ A command to execute on a stream """
   stream_id: int = Field(description="Stream to execute the command on")
   cmd: str = Field(description="Command to execute")
+
 
 class Preset(Base):
   """ A partial controller configuration the can be loaded on demand.
@@ -708,7 +738,6 @@ class Preset(Base):
   state: Optional[PresetState]
   commands: Optional[List[Command]]
   last_used: Union[int, None] = None
-
 
   class Config:
     schema_extra = {
@@ -749,6 +778,7 @@ class Preset(Base):
       }
     }
 
+
 class PresetUpdate(BaseUpdate):
   """ Changes to a current preset
 
@@ -777,14 +807,16 @@ class PresetUpdate(BaseUpdate):
       }
     }
 
+
 class Announcement(BaseModel):
   """ A PA-like Announcement
   IF no zones or groups are specified, all available zones are used
   """
-  media : str = Field(description="URL to media to play as the announcement")
-  vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB, overrides vol_f')
+  media: str = Field(description="URL to media to play as the announcement")
+  vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB,
+                             description='Output volume in dB, overrides vol_f')
   vol_f: float = Field(default=0.5, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
-  source_id: int = Field(default=3, ge=0, le=MAX_SOURCES-1, description='Source to announce with')
+  source_id: int = Field(default=3, ge=0, le=MAX_SOURCES - 1, description='Source to announce with')
   zones: Optional[List[int]] = fields.Zones
   groups: Optional[List[int]] = fields.Groups
 
@@ -799,24 +831,28 @@ class Announcement(BaseModel):
       }
     }
 
+
 class FirmwareInfo(BaseModel):
   """ Firmware Info for an AmpliPi controller or expansion unit's preamp board """
   version: str = Field(default='unknown', description="preamp firmware version")
   git_hash: str = Field(default='unknown', description="short git hash of firmware")
   git_dirty: bool = Field(default=False, description="True if local changes were made. Used for development.")
 
+
 class Info(BaseModel):
   """ AmpliPi System information """
   version: str = Field(description="software version")
   config_file: str = Field(default='unknown', description='config file location')
-  mock_ctrl: bool = Field(default=False, description='Is the controller being mocked? Indicates AmpliPi hardware is not connected')
+  mock_ctrl: bool = Field(
+    default=False, description='Is the controller being mocked? Indicates AmpliPi hardware is not connected')
   mock_streams: bool = Field(default=False, description='Are streams being faked? Used for testing.')
   is_streamer: bool = Field(default=False, description='Are we a streamer unit?')
   online: bool = Field(default=False, description='can the system connect to the internet?')
   latest_release: str = Field(default='unknown', description='Latest software release available from GitHub')
   access_key: str = Field(default='', description='session token/API key used for authentication')
   lms_mode: bool = Field(default=False, description='Are we running in LMS mode?')
-  fw: List[FirmwareInfo] = Field(default=[], description='firmware information for each connected controller or expansion unit')
+  fw: List[FirmwareInfo] = Field(
+    default=[], description='firmware information for each connected controller or expansion unit')
 
   class Config:
     schema_extra = {
@@ -844,12 +880,13 @@ class Info(BaseModel):
       }
     }
 
+
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
-  streams: List[Stream] = [Stream(id=996+i, name=f'Input {i + 1}', type='rca', index=i) for i in range(MAX_SOURCES)]
+  streams: List[Stream] = [Stream(id=996 + i, name=f'Input {i + 1}', type='rca', index=i) for i in range(MAX_SOURCES)]
   presets: List[Preset] = []
   info: Optional[Info]
 
@@ -858,326 +895,327 @@ class Status(BaseModel):
       'examples': {
         "Status of Jason's AmpliPi": {
           'value': {
-            'groups': [ { 'id': 100,
-                          'mute': True,
-                          'name': 'Upstairs',
-                          'vol_delta': -39,
-                          'vol_f': 0.51,
-                          'zones': [0, 1, 2, 3, 4, 5, 6, 7, 11, 16]},
-                        { 'id': 102,
-                          'mute': True,
-                          'name': 'Outside',
-                          'source_id': 1,
-                          'vol_delta': -41,
-                          'vol_f': 0.4909090909090909,
-                          'zones': [9, 10]},
-                        { 'id': 103,
-                          'mute': True,
-                          'name': 'Offices',
-                          'vol_delta': -54,
-                          'vol_f': 0.33,
-                          'zones': [0, 7]},
-                        { 'id': 104,
-                          'mute': True,
-                          'name': 'Downstairs',
-                          'source_id': 1,
-                          'vol_delta': -57,
-                          'vol_f': 0.28500000000000003,
-                          'zones': [12, 13, 14, 15, 17]},
-                        { 'id': 105,
-                          'mute': True,
-                          'name': 'Main Unit',
-                          'vol_delta': -39,
-                          'vol_f': 0.51,
-                          'zones': [0, 1, 2, 3, 4, 5]},
-                        { 'id': 106,
-                          'mute': True,
-                          'name': 'Expander 1 (HV)',
-                          'vol_delta': -39,
-                          'vol_f': 0.515,
-                          'zones': [6, 7, 8, 9, 10, 11]},
-                        { 'id': 107,
-                          'mute': True,
-                          'name': 'Expander 2',
-                          'vol_delta': -58,
-                          'vol_f': 0.275,
-                          'zones': [12, 13, 14, 15, 16, 17]}
-                      ],
-            'info': { 'config_file': 'house.json',
-                      'fw': [ { 'git_dirty': False,
-                                'git_hash': 'de0f8eb',
-                                'version': '1.6'},
-                              { 'git_dirty': False,
-                                'git_hash': 'de0f8eb',
-                                'version': '1.6'},
-                              { 'git_dirty': False,
-                                'git_hash': 'de0f8eb',
-                                'version': '1.6'}],
-                      'latest_release': '0.1.9',
-                      'mock_ctrl': False,
-                      'mock_streams': False,
-                      'is_streamer': False,
-                      'lms_mode': False,
-                      'online': True,
-                      'version': '0.1.9'},
-            'presets': [ { 'id': 10000,
-                          'last_used': 1658242203,
-                          'name': 'Mute All',
-                          'state': { 'zones': [ {'id': 0, 'mute': True},
-                                                {'id': 1, 'mute': True},
-                                                {'id': 2, 'mute': True},
-                                                {'id': 3, 'mute': True},
-                                                {'id': 4, 'mute': True},
-                                                {'id': 5, 'mute': True},
-                                                {'id': 6, 'mute': True},
-                                                {'id': 7, 'mute': True},
-                                                {'id': 8, 'mute': True},
-                                                {'id': 9, 'mute': True},
-                                                {'id': 10, 'mute': True},
-                                                {'id': 11, 'mute': True},
-                                                {'id': 12, 'mute': True},
-                                                {'id': 13, 'mute': True},
-                                                {'id': 14, 'mute': True},
-                                                {'id': 15, 'mute': True},
-                                                {'id': 16, 'mute': True},
-                                                {'id': 17, 'mute': True}]}}
+            'groups': [{'id': 100,
+                        'mute': True,
+                        'name': 'Upstairs',
+                        'vol_delta': -39,
+                        'vol_f': 0.51,
+                        'zones': [0, 1, 2, 3, 4, 5, 6, 7, 11, 16]},
+                       {'id': 102,
+                        'mute': True,
+                        'name': 'Outside',
+                        'source_id': 1,
+                        'vol_delta': -41,
+                        'vol_f': 0.4909090909090909,
+                        'zones': [9, 10]},
+                       {'id': 103,
+                        'mute': True,
+                        'name': 'Offices',
+                        'vol_delta': -54,
+                        'vol_f': 0.33,
+                        'zones': [0, 7]},
+                       {'id': 104,
+                        'mute': True,
+                        'name': 'Downstairs',
+                        'source_id': 1,
+                        'vol_delta': -57,
+                        'vol_f': 0.28500000000000003,
+                        'zones': [12, 13, 14, 15, 17]},
+                       {'id': 105,
+                        'mute': True,
+                        'name': 'Main Unit',
+                        'vol_delta': -39,
+                        'vol_f': 0.51,
+                        'zones': [0, 1, 2, 3, 4, 5]},
+                       {'id': 106,
+                        'mute': True,
+                        'name': 'Expander 1 (HV)',
+                        'vol_delta': -39,
+                        'vol_f': 0.515,
+                        'zones': [6, 7, 8, 9, 10, 11]},
+                       {'id': 107,
+                        'mute': True,
+                        'name': 'Expander 2',
+                        'vol_delta': -58,
+                        'vol_f': 0.275,
+                        'zones': [12, 13, 14, 15, 16, 17]}
+                       ],
+            'info': {'config_file': 'house.json',
+                     'fw': [{'git_dirty': False,
+                             'git_hash': 'de0f8eb',
+                             'version': '1.6'},
+                            {'git_dirty': False,
+                             'git_hash': 'de0f8eb',
+                             'version': '1.6'},
+                            {'git_dirty': False,
+                             'git_hash': 'de0f8eb',
+                             'version': '1.6'}],
+                     'latest_release': '0.1.9',
+                     'mock_ctrl': False,
+                     'mock_streams': False,
+                     'is_streamer': False,
+                     'lms_mode': False,
+                     'online': True,
+                     'version': '0.1.9'},
+            'presets': [{'id': 10000,
+                         'last_used': 1658242203,
+                         'name': 'Mute All',
+                         'state': {'zones': [{'id': 0, 'mute': True},
+                                             {'id': 1, 'mute': True},
+                                             {'id': 2, 'mute': True},
+                                             {'id': 3, 'mute': True},
+                                             {'id': 4, 'mute': True},
+                                             {'id': 5, 'mute': True},
+                                             {'id': 6, 'mute': True},
+                                             {'id': 7, 'mute': True},
+                                             {'id': 8, 'mute': True},
+                                             {'id': 9, 'mute': True},
+                                             {'id': 10, 'mute': True},
+                                             {'id': 11, 'mute': True},
+                                             {'id': 12, 'mute': True},
+                                             {'id': 13, 'mute': True},
+                                             {'id': 14, 'mute': True},
+                                             {'id': 15, 'mute': True},
+                                             {'id': 16, 'mute': True},
+                                             {'id': 17, 'mute': True}]}}
                         ],
-            'sources': [ { 'id': 0,
-                          'info': { 'img_url': 'static/imgs/disconnected.png',
-                                    'name': 'None',
-                                    'state': 'stopped',
-                                    'supported_cmds': []},
-                          'input': '',
-                          'name': 'TV'},
-                        { 'id': 1,
-                          'info': { 'img_url': 'static/imgs/disconnected.png',
-                                    'name': 'None',
-                                    'state': 'stopped',
-                                    'supported_cmds': []},
-                          'input': '',
-                          'name': 'Record Player'},
-                        { 'id': 2,
-                          'info': { 'album': 'Charleston Butterfly',
-                                    'artist': 'Parov Stelar',
-                                    'img_url': 'http://mediaserver-cont-sv5-2-v4v6.pandora.com/images/00/4c/b7/12/d64a4ffe82251fcc9c44555c/1080W_1080H.jpg',
-                                    'name': 'Blackmill Radio - pandora',
-                                    'state': 'playing',
-                                    'station': 'Blackmill Radio',
-                                    'supported_cmds': [ 'play', 'pause', 'stop', 'next',
-                                                        'love', 'ban', 'shelve'],
-                                    'track': 'Chambermaid Swing'},
-                          'input': 'stream=1006',
-                          'name': 'Input 3'},
-                        { 'id': 3,
-                          'info': { 'album': 'Joshua Bell, Romance of the Violin',
-                                    'artist': 'Fryderyk Chopin',
-                                    'img_url': 'http://cont.p-cdn.us/images/e9/cc/f2/8e/890e4e5e9940c98ba864aaee/1080W_1080H.jpg',
-                                    'name': 'Classical - pandora',
-                                    'state': 'playing',
-                                    'station': 'Antonio Vivaldi Radio',
-                                    'supported_cmds': [ 'play', 'pause', 'stop', 'next',
-                                                        'love', 'ban', 'shelve'],
-                                    'track': 'Nocturne For Piano In C Sharp Minor, Kk '
-                                              'Anh.ia/6'},
-                          'input': 'stream=1005',
-                          'name': 'Input 4'}],
-            'streams': [ { 'id': 1000,
-                          'logo': 'https://somafm.com/img3/groovesalad-400.jpg',
-                          'name': 'Groove Salad',
-                          'type': 'internetradio',
-                          'url': 'http://ice6.somafm.com/groovesalad-32-aac'},
+            'sources': [{'id': 0,
+                         'info': {'img_url': 'static/imgs/disconnected.png',
+                                  'name': 'None',
+                                  'state': 'stopped',
+                                  'supported_cmds': []},
+                         'input': '',
+                         'name': 'TV'},
+                        {'id': 1,
+                         'info': {'img_url': 'static/imgs/disconnected.png',
+                                  'name': 'None',
+                                  'state': 'stopped',
+                                  'supported_cmds': []},
+                         'input': '',
+                         'name': 'Record Player'},
+                        {'id': 2,
+                         'info': {'album': 'Charleston Butterfly',
+                                  'artist': 'Parov Stelar',
+                                  'img_url': 'http://mediaserver-cont-sv5-2-v4v6.pandora.com/images/00/4c/b7/12/d64a4ffe82251fcc9c44555c/1080W_1080H.jpg',
+                                  'name': 'Blackmill Radio - pandora',
+                                  'state': 'playing',
+                                  'station': 'Blackmill Radio',
+                                  'supported_cmds': ['play', 'pause', 'stop', 'next',
+                                                     'love', 'ban', 'shelve'],
+                                  'track': 'Chambermaid Swing'},
+                         'input': 'stream=1006',
+                         'name': 'Input 3'},
+                        {'id': 3,
+                         'info': {'album': 'Joshua Bell, Romance of the Violin',
+                                  'artist': 'Fryderyk Chopin',
+                                  'img_url': 'http://cont.p-cdn.us/images/e9/cc/f2/8e/890e4e5e9940c98ba864aaee/1080W_1080H.jpg',
+                                  'name': 'Classical - pandora',
+                                  'state': 'playing',
+                                  'station': 'Antonio Vivaldi Radio',
+                                  'supported_cmds': ['play', 'pause', 'stop', 'next',
+                                                     'love', 'ban', 'shelve'],
+                                  'track': 'Nocturne For Piano In C Sharp Minor, Kk '
+                                  'Anh.ia/6'},
+                         'input': 'stream=1005',
+                         'name': 'Input 4'}],
+            'streams': [{'id': 1000,
+                         'logo': 'https://somafm.com/img3/groovesalad-400.jpg',
+                         'name': 'Groove Salad',
+                         'type': 'internetradio',
+                         'url': 'http://ice6.somafm.com/groovesalad-32-aac'},
                         {'id': 1001, 'name': "Jason's House", 'type': 'airplay'},
                         {'id': 1002, 'name': 'Jasons House', 'type': 'spotify'},
                         {'id': 1003, 'name': "Jason's House", 'type': 'dlna'},
-                        { 'id': 1004,
-                          'name': 'Matt and Kim Radio',
-                          'password': '',
-                          'station': '135242131387190035',
-                          'type': 'pandora',
-                          'user': 'example@micro-nova.com'},
-                        { 'id': 1005,
-                          'name': 'Classical',
-                          'password': '',
-                          'station': '134892486689565953',
-                          'type': 'pandora',
-                          'user': 'example@micro-nova.com'},
-                        { 'id': 1006,
-                          'name': 'Blackmill Radio',
-                          'password': '',
-                          'station': '91717963601693449',
-                          'type': 'pandora',
-                          'user': 'example@micro-nova.com'},
-                        { 'id': 1007,
-                          'logo': 'http://www.beatlesradio.com/content/images/thumbs/0000587.gif',
-                          'name': 'Beatles Radio',
-                          'type': 'internetradio',
-                          'url': 'http://www.beatlesradio.com:8000/stream/1/'}],
-            'zones': [ { 'disabled': False,
-                        'id': 0,
-                        'mute': True,
-                        'name': 'Software Office',
-                        'source_id': 2,
-                        'vol': -56,
-                        'vol_f': 0.28,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 1,
-                        'mute': True,
-                        'name': 'Upstairs Living Room',
-                        'source_id': 3,
-                        'vol': -49,
-                        'vol_f': 0.42,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 2,
-                        'mute': True,
-                        'name': 'Upstairs Dining',
-                        'source_id': 0,
-                        'vol': -66,
-                        'vol_f': 0.08,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 3,
-                        'mute': True,
-                        'name': 'Upstairs Laundry',
-                        'source_id': 0,
-                        'vol': -66,
-                        'vol_f': 0.08,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 4,
-                        'mute': True,
-                        'name': 'Upstairs Kitchen High',
-                        'source_id': 0,
-                        'vol': -45,
-                        'vol_f': 0.5,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 5,
-                        'mute': True,
-                        'name': 'Upstairs Master Bath',
-                        'source_id': 0,
-                        'vol': -23,
-                        'vol_f': 0.94,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 6,
-                        'mute': True,
-                        'name': 'Upstairs Kitchen Low HV',
-                        'source_id': 0,
-                        'vol': -66,
-                        'vol_f': 0.1,
-                        'vol_max': -30,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 7,
-                        'mute': True,
-                        'name': 'Hardware Office HV',
-                        'source_id': 0,
-                        'vol': -51,
-                        'vol_f': 0.38,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 8,
-                        'mute': True,
-                        'name': 'Basement Workshop HV',
-                        'source_id': 0,
-                        'vol': -13,
-                        'vol_f': 0.95,
-                        'vol_max': -10,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 9,
-                        'mute': True,
-                        'name': 'Screened Room HV',
-                        'source_id': 1,
-                        'vol': -43,
-                        'vol_f': 0.4909090909090909,
-                        'vol_max': -15,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 10,
-                        'mute': True,
-                        'name': 'Upstairs Deck Living HV',
-                        'source_id': 1,
-                        'vol': -43,
-                        'vol_f': 0.4909090909090909,
-                        'vol_max': -15,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 11,
-                        'mute': True,
-                        'name': 'Upstairs Main Bedroom HV',
-                        'source_id': 0,
-                        'vol': -66,
-                        'vol_f': 0.08,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 12,
-                        'mute': True,
-                        'name': 'Downstairs Living Room',
-                        'source_id': 1,
-                        'vol': -48,
-                        'vol_f': 0.44,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 13,
-                        'mute': True,
-                        'name': 'Downstairs Dining',
-                        'source_id': 1,
-                        'vol': -48,
-                        'vol_f': 0.44,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 14,
-                        'mute': True,
-                        'name': 'Downstairs Bath',
-                        'source_id': 1,
-                        'vol': -64,
-                        'vol_f': 0.12,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 15,
-                        'mute': True,
-                        'name': 'Downstairs Laundry',
-                        'source_id': 1,
-                        'vol': -48,
-                        'vol_f': 0.44,
-                        'vol_max': -20,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 16,
-                        'mute': True,
-                        'name': 'Upstairs Main Bath',
-                        'source_id': 0,
-                        'vol': -66,
-                        'vol_f': 0.1,
-                        'vol_max': -30,
-                        'vol_min': -70},
-                      { 'disabled': False,
-                        'id': 17,
-                        'mute': True,
-                        'name': 'Downstairs Bedroom',
-                        'source_id': 1,
-                        'vol': -52,
-                        'vol_f': 0.45,
-                        'vol_max': -30,
-                        'vol_min': -70}]}
+                        {'id': 1004,
+                         'name': 'Matt and Kim Radio',
+                         'password': '',
+                         'station': '135242131387190035',
+                         'type': 'pandora',
+                         'user': 'example@micro-nova.com'},
+                        {'id': 1005,
+                         'name': 'Classical',
+                         'password': '',
+                         'station': '134892486689565953',
+                         'type': 'pandora',
+                         'user': 'example@micro-nova.com'},
+                        {'id': 1006,
+                         'name': 'Blackmill Radio',
+                         'password': '',
+                         'station': '91717963601693449',
+                         'type': 'pandora',
+                         'user': 'example@micro-nova.com'},
+                        {'id': 1007,
+                         'logo': 'http://www.beatlesradio.com/content/images/thumbs/0000587.gif',
+                         'name': 'Beatles Radio',
+                         'type': 'internetradio',
+                         'url': 'http://www.beatlesradio.com:8000/stream/1/'}],
+            'zones': [{'disabled': False,
+                       'id': 0,
+                       'mute': True,
+                       'name': 'Software Office',
+                       'source_id': 2,
+                       'vol': -56,
+                       'vol_f': 0.28,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 1,
+                       'mute': True,
+                       'name': 'Upstairs Living Room',
+                       'source_id': 3,
+                       'vol': -49,
+                       'vol_f': 0.42,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 2,
+                       'mute': True,
+                       'name': 'Upstairs Dining',
+                       'source_id': 0,
+                       'vol': -66,
+                       'vol_f': 0.08,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 3,
+                       'mute': True,
+                       'name': 'Upstairs Laundry',
+                       'source_id': 0,
+                       'vol': -66,
+                       'vol_f': 0.08,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 4,
+                       'mute': True,
+                       'name': 'Upstairs Kitchen High',
+                       'source_id': 0,
+                       'vol': -45,
+                       'vol_f': 0.5,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 5,
+                       'mute': True,
+                       'name': 'Upstairs Master Bath',
+                       'source_id': 0,
+                       'vol': -23,
+                       'vol_f': 0.94,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 6,
+                       'mute': True,
+                       'name': 'Upstairs Kitchen Low HV',
+                       'source_id': 0,
+                       'vol': -66,
+                       'vol_f': 0.1,
+                       'vol_max': -30,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 7,
+                       'mute': True,
+                       'name': 'Hardware Office HV',
+                       'source_id': 0,
+                       'vol': -51,
+                       'vol_f': 0.38,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 8,
+                       'mute': True,
+                       'name': 'Basement Workshop HV',
+                       'source_id': 0,
+                       'vol': -13,
+                       'vol_f': 0.95,
+                       'vol_max': -10,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 9,
+                       'mute': True,
+                       'name': 'Screened Room HV',
+                       'source_id': 1,
+                       'vol': -43,
+                       'vol_f': 0.4909090909090909,
+                       'vol_max': -15,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 10,
+                       'mute': True,
+                       'name': 'Upstairs Deck Living HV',
+                       'source_id': 1,
+                       'vol': -43,
+                       'vol_f': 0.4909090909090909,
+                       'vol_max': -15,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 11,
+                       'mute': True,
+                       'name': 'Upstairs Main Bedroom HV',
+                       'source_id': 0,
+                       'vol': -66,
+                       'vol_f': 0.08,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 12,
+                       'mute': True,
+                       'name': 'Downstairs Living Room',
+                       'source_id': 1,
+                       'vol': -48,
+                       'vol_f': 0.44,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 13,
+                       'mute': True,
+                       'name': 'Downstairs Dining',
+                       'source_id': 1,
+                       'vol': -48,
+                       'vol_f': 0.44,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 14,
+                       'mute': True,
+                       'name': 'Downstairs Bath',
+                       'source_id': 1,
+                       'vol': -64,
+                       'vol_f': 0.12,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 15,
+                       'mute': True,
+                       'name': 'Downstairs Laundry',
+                       'source_id': 1,
+                       'vol': -48,
+                       'vol_f': 0.44,
+                       'vol_max': -20,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 16,
+                       'mute': True,
+                       'name': 'Upstairs Main Bath',
+                       'source_id': 0,
+                       'vol': -66,
+                       'vol_f': 0.1,
+                       'vol_max': -30,
+                       'vol_min': -70},
+                      {'disabled': False,
+                       'id': 17,
+                       'mute': True,
+                       'name': 'Downstairs Bedroom',
+                       'source_id': 1,
+                       'vol': -52,
+                       'vol_f': 0.45,
+                       'vol_max': -30,
+                       'vol_min': -70}]}
 
-          }
         }
       }
+    }
+
 
 class AppSettings(BaseSettings):
   """ Controller settings """
@@ -1185,6 +1223,7 @@ class AppSettings(BaseSettings):
   mock_streams: bool = True
   config_file: str = 'house.json'
   delay_saves: bool = True
+
 
 class DebugResponse(BaseModel):
   """ Response from /debug, which directly reads a file from JSON or returns an empty response """

@@ -11,11 +11,13 @@ from dasbus.connection import SessionMessageBus
 from dasbus.client.proxy import disconnect_proxy
 from amplipi import utils
 
+
 class CommandTypes(Enum):
   PLAY = auto()
   PAUSE = auto()
   NEXT = auto()
   PREVIOUS = auto()
+
 
 @dataclass
 class Metadata:
@@ -34,9 +36,9 @@ class MPRIS:
 
   def __init__(self, service_suffix, metadata_path, debug=False) -> None:
     self.mpris = SessionMessageBus().get_proxy(
-        service_name = f"org.mpris.MediaPlayer2.{service_suffix}",
-        object_path = "/org/mpris/MediaPlayer2",
-        interface_name = "org.mpris.MediaPlayer2.Player"
+        service_name=f"org.mpris.MediaPlayer2.{service_suffix}",
+        object_path="/org/mpris/MediaPlayer2",
+        interface_name="org.mpris.MediaPlayer2.Player"
     )
 
     self.debug = debug
@@ -53,7 +55,7 @@ class MPRIS:
         m.state = "Stopped"
         json.dump(m.__dict__, f)
     except Exception as e:
-      print (f'Exception clearing metadata file: {e}')
+      print(f'Exception clearing metadata file: {e}')
 
     try:
       child_args = [sys.executable,

@@ -13,7 +13,7 @@ except Exception:
   pass
 
 WP_PIN = 34
-WRITE_CHECK_ADDRESS = (int)((2048/8)-1) #last byte of 2kbit EEPROM, 8bit per address
+WRITE_CHECK_ADDRESS = (int)((2048 / 8) - 1)  # last byte of 2kbit EEPROM, 8bit per address
 FORMAT_ADDR = 0x00
 SERIAL_ADDR = 0x01
 UNIT_TYPE_ADDR = 0x05
@@ -23,11 +23,13 @@ BOARD_REV_ADDR = 0x07
 SUPPORTED_FORMATS = [0x00]
 FORMAT = 0x00
 
+
 class UnitType(Enum):
   """Unit type"""
   PI = 0
   PRO = 1
   STREAMER = 2
+
 
 class BoardType(Enum):
   """Matches the I2C address. The address is stored in the lowest 7 bits of the byte.
@@ -37,7 +39,8 @@ class BoardType(Enum):
   The MC24C02's base I2C address is 0x50, with the 3 LSBs controlled by pins E[2:0].
   """
   STREAMER_SUPPORT = 0x50
-  PREAMP           = 0xD0
+  PREAMP = 0xD0
+
 
 @dataclass
 class BoardInfo:
@@ -57,17 +60,22 @@ class BoardInfo:
 class EEPROMWriteError(Exception):
   """Error writing to EEPROM."""
 
+
 class EEPROMReadError(Exception):
   """Error reading from EEPROM."""
+
 
 class EEPROMWriteProtectError(Exception):
   """Error setting EEPROM to write mode."""
 
+
 class UnsupportedFormatError(Exception):
   """Unknown EEPROM format."""
 
+
 class EEPROM:
   """Class for reading from and writing to EEPROM."""
+
   def __init__(self, bus: int, board: BoardType) -> None:
     self._i2c = smbus.SMBus(bus)
     self._address = board.value
@@ -102,12 +110,12 @@ class EEPROM:
 
     try:
       val = self._i2c.read_i2c_block_data(self._address, WRITE_CHECK_ADDRESS, 1)[0]
-      self._i2c.write_i2c_block_data(self._address, WRITE_CHECK_ADDRESS, [val+1])
+      self._i2c.write_i2c_block_data(self._address, WRITE_CHECK_ADDRESS, [val + 1])
       sleep(0.1)
       check = self._i2c.read_i2c_block_data(self._address, WRITE_CHECK_ADDRESS, 1)[0]
       self._i2c.write_i2c_block_data(self._address, WRITE_CHECK_ADDRESS, [val])
       sleep(0.1)
-      if check != val+1:
+      if check != val + 1:
         raise EEPROMWriteProtectError("Write enable failed")
 
     except OSError as exception:
@@ -130,7 +138,7 @@ class EEPROM:
 
   def _write_number(self, bytes_len: int, addr: int, value: int) -> None:
     """Write number to EEPROM, big-endian."""
-    write_out = [0]*bytes_len
+    write_out = [0] * bytes_len
     for i in range(0, bytes_len):
       write_out[i] = value & 0xFF
       value >>= 8
@@ -184,7 +192,7 @@ class EEPROM:
     if self.get_format() not in SUPPORTED_FORMATS:
       raise UnsupportedFormatError("Unsupported format")
     self._write_number(1, BOARD_REV_ADDR, rev[0])
-    self._write_letter(BOARD_REV_ADDR+1, rev[1].upper())
+    self._write_letter(BOARD_REV_ADDR + 1, rev[1].upper())
 
   def get_format(self) -> int:
     """Check EEPROM format."""
@@ -219,14 +227,14 @@ class EEPROM:
       raise UnsupportedFormatError("Unsupported format")
 
     return (self._read_number(1, BOARD_REV_ADDR),
-            self._read_letter(BOARD_REV_ADDR+1))
+            self._read_letter(BOARD_REV_ADDR + 1))
 
   def get_board_info(self) -> BoardInfo:
     """Get board info from EEPROM."""
     return BoardInfo(self.get_serial(),
-                      self.get_unit_type(),
-                      self.get_board_type(),
-                      self.get_board_rev())
+                     self.get_unit_type(),
+                     self.get_board_type(),
+                     self.get_board_rev())
 
   def write_board_info(self, board_info: BoardInfo) -> None:
     """Write board info to EEPROM.

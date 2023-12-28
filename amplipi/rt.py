@@ -18,67 +18,70 @@
 """Runtimes to communicate with the AmpliPi hardware
 """
 
-import math
 import io
+import math
 import os
 import time
-from amplipi import models # TODO: importing this takes ~0.5s, reduce
 from enum import Enum
 from typing import Dict, List, Tuple, Union, Optional
 
-# TODO: move constants like this to their own file
-DEBUG_PREAMPS = False # print out preamp state after register write
-
-from serial import Serial
 from smbus2 import SMBus
+from serial import Serial
+from amplipi import models  # TODO: importing this takes ~0.5s, reduce
+
+# TODO: move constants like this to their own file
+DEBUG_PREAMPS = False  # print out preamp state after register write
+
 
 # Preamp register addresses
 _REG_ADDRS = {
-  'SRC_AD'          : 0x00,
-  'ZONE123_SRC'     : 0x01,
-  'ZONE456_SRC'     : 0x02,
-  'MUTE'            : 0x03,
-  'STANDBY'         : 0x04,
-  'VOL_ZONE1'       : 0x05,
-  'VOL_ZONE2'       : 0x06,
-  'VOL_ZONE3'       : 0x07,
-  'VOL_ZONE4'       : 0x08,
-  'VOL_ZONE5'       : 0x09,
-  'VOL_ZONE6'       : 0x0A,
-  'POWER'           : 0x0B,
-  'FANS'            : 0x0C,
-  'LED_CTRL'        : 0x0D,
-  'LED_VAL'         : 0x0E,
-  'EXPANSION'       : 0x0F,
-  'HV1_VOLTAGE'     : 0x10,
-  'AMP_TEMP1'       : 0x11,
-  'HV1_TEMP'        : 0x12,
-  'AMP_TEMP2'       : 0x13,
-  'PI_TEMP'         : 0x14,
-  'FAN_DUTY'        : 0x15,
-  'FAN_VOLTS'       : 0x16,
-  'HV2_VOLTAGE'     : 0x17,
-  'HV2_TEMP'        : 0x18,
-  'VERSION_MAJOR'   : 0xFA,
-  'VERSION_MINOR'   : 0xFB,
-  'GIT_HASH_27_20'  : 0xFC,
-  'GIT_HASH_19_12'  : 0xFD,
-  'GIT_HASH_11_04'  : 0xFE,
-  'GIT_HASH_STATUS' : 0xFF,
+  'SRC_AD': 0x00,
+  'ZONE123_SRC': 0x01,
+  'ZONE456_SRC': 0x02,
+  'MUTE': 0x03,
+  'STANDBY': 0x04,
+  'VOL_ZONE1': 0x05,
+  'VOL_ZONE2': 0x06,
+  'VOL_ZONE3': 0x07,
+  'VOL_ZONE4': 0x08,
+  'VOL_ZONE5': 0x09,
+  'VOL_ZONE6': 0x0A,
+  'POWER': 0x0B,
+  'FANS': 0x0C,
+  'LED_CTRL': 0x0D,
+  'LED_VAL': 0x0E,
+  'EXPANSION': 0x0F,
+  'HV1_VOLTAGE': 0x10,
+  'AMP_TEMP1': 0x11,
+  'HV1_TEMP': 0x12,
+  'AMP_TEMP2': 0x13,
+  'PI_TEMP': 0x14,
+  'FAN_DUTY': 0x15,
+  'FAN_VOLTS': 0x16,
+  'HV2_VOLTAGE': 0x17,
+  'HV2_TEMP': 0x18,
+  'VERSION_MAJOR': 0xFA,
+  'VERSION_MINOR': 0xFB,
+  'GIT_HASH_27_20': 0xFC,
+  'GIT_HASH_19_12': 0xFD,
+  'GIT_HASH_11_04': 0xFE,
+  'GIT_HASH_STATUS': 0xFF,
 }
 _SRC_TYPES = {
-  1 : 'Digital',
-  0 : 'Analog',
+  1: 'Digital',
+  0: 'Analog',
 }
 _DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30]
 
 MAX_ZONES = 6 * len(_DEV_ADDRS)
 
+
 class FanCtrl(Enum):
   MAX6644 = 0
-  PWM     = 1
-  LINEAR  = 2
-  FORCED  = 3
+  PWM = 1
+  LINEAR = 2
+  FORCED = 3
+
 
 def is_amplipi():
   """ Check if the current hardware is an AmpliPi
@@ -121,12 +124,12 @@ class _Preamps:
   """ Low level discovery and communication for the AmpliPi firmware
   """
 
-  preamps: Dict[int, List[int]] # Key: i2c address, Val: register values
+  preamps: Dict[int, List[int]]  # Key: i2c address, Val: register values
 
-  def __init__(self, reset: bool = True, set_addr: bool = True, bootloader: bool = False, debug = True):
+  def __init__(self, reset: bool = True, set_addr: bool = True, bootloader: bool = False, debug=True):
     self.preamps = dict()
     if not is_amplipi():
-      self.bus = None # TODO: Use i2c-stub
+      self.bus = None  # TODO: Use i2c-stub
       print('Not running on AmpliPi hardware, mocking preamp connection')
     else:
       if reset:
@@ -152,7 +155,6 @@ class _Preamps:
     if self.bus:
       self.bus.close()
 
-
   def reset_preamps(self, bootloader: bool = False):
     """ Resets the preamp board.
         Any slave preamps will be reset one-by-one by the previous preamp.
@@ -167,10 +169,10 @@ class _Preamps:
     # Reset preamp board before establishing a communication channel
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(4, GPIO.OUT)
-    GPIO.output(4, 0) # Low pulse on the reset line (GPIO4)
+    GPIO.output(4, 0)  # Low pulse on the reset line (GPIO4)
     GPIO.setup(5, GPIO.OUT)
-    GPIO.output(5, boot0) # Ensure BOOT0 is set (GPIO5)
-    time.sleep(0.001) # Hold reset low for >20 us, but <10 ms.
+    GPIO.output(5, boot0)  # Ensure BOOT0 is set (GPIO5)
+    time.sleep(0.001)  # Hold reset low for >20 us, but <10 ms.
     GPIO.output(4, 1)
 
     # Each box theoretically takes ~6 to undergo a reset.
@@ -208,18 +210,18 @@ class _Preamps:
   def new_preamp(self, addr: int):
     """ Populate initial register values """
     self.preamps[addr] = [
-                            0x0F,
-                            0x00,
-                            0x00,
-                            0x3F,
-                            0x00,
-                            0x4F,
-                            0x4F,
-                            0x4F,
-                            0x4F,
-                            0x4F,
-                            0x4F,
-                          ]
+        0x0F,
+        0x00,
+        0x00,
+        0x3F,
+        0x00,
+        0x4F,
+        0x4F,
+        0x4F,
+        0x4F,
+        0x4F,
+        0x4F,
+    ]
 
   def write_byte_data(self, preamp_addr, reg, data):
     assert preamp_addr in _DEV_ADDRS
@@ -231,7 +233,7 @@ class _Preamps:
       if self.bus is None:
         self.new_preamp(preamp_addr)
       else:
-        return None # Preamp is not connected, do nothing
+        return None  # Preamp is not connected, do nothing
 
     if DEBUG_PREAMPS:
       print("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
@@ -239,7 +241,7 @@ class _Preamps:
     # TODO: need to handle volume modifying mute state in mock
     if self.bus is not None:
       try:
-        time.sleep(0.001) # space out sequential calls to avoid bus errors
+        time.sleep(0.001)  # space out sequential calls to avoid bus errors
         self.bus.write_byte_data(preamp_addr, reg, data)
       except Exception:
         time.sleep(0.001)
@@ -278,19 +280,20 @@ class _Preamps:
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      major = self.bus.read_byte_data(preamp*8, _REG_ADDRS['VERSION_MAJOR'])
-      minor = self.bus.read_byte_data(preamp*8, _REG_ADDRS['VERSION_MINOR'])
-      git_hash = self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_27_20']) << 20
-      git_hash |= (self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_19_12']) << 12)
-      git_hash |= (self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_11_04']) << 4)
-      git_hash4_stat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['GIT_HASH_STATUS'])
+      major = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['VERSION_MAJOR'])
+      minor = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['VERSION_MINOR'])
+      git_hash = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['GIT_HASH_27_20']) << 20
+      git_hash |= (self.bus.read_byte_data(preamp * 8, _REG_ADDRS['GIT_HASH_19_12']) << 12)
+      git_hash |= (self.bus.read_byte_data(preamp * 8, _REG_ADDRS['GIT_HASH_11_04']) << 4)
+      git_hash4_stat = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['GIT_HASH_STATUS'])
       git_hash |= (git_hash4_stat >> 4)
       dirty = (git_hash4_stat & 0x01) != 0
       return major, minor, git_hash, dirty
     return None, None, None, None
 
-  def read_power_status(self, preamp: int = 1) -> Tuple[Optional[bool],
-    Optional[bool], Optional[bool], Optional[bool], Optional[float]]:
+  def read_power_status(self, preamp: int = 1) -> Tuple[
+    Optional[bool], Optional[bool], Optional[bool], Optional[bool], Optional[float]
+  ]:
     """ Read the status of the power supplies
 
       Returns:
@@ -302,18 +305,19 @@ class _Preamps:
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      pstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['POWER'])
+      pstat = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['POWER'])
       en_12v = (pstat & 0x08) != 0
       pg_12v = (pstat & 0x04) != 0
       en_9v = (pstat & 0x02) != 0
       pg_9v = (pstat & 0x01) != 0
-      fvstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FAN_VOLTS'])
+      fvstat = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['FAN_VOLTS'])
       v12 = fvstat / 2**4
       return pg_9v, en_9v, pg_12v, en_12v, v12
     return None, None, None, None, None
 
-  def read_fan_status(self, preamp: int = 1) -> Union[Tuple[FanCtrl,
-    bool, bool, bool, bool], Tuple[None, None, None, None, None]]:
+  def read_fan_status(self, preamp: int = 1) -> Union[
+    Tuple[FanCtrl, bool, bool, bool, bool], Tuple[None, None, None, None, None]
+  ]:
     """ Read the status of the fans
 
       Returns:
@@ -325,7 +329,7 @@ class _Preamps:
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      fstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FANS'])
+      fstat = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['FANS'])
       ctrl = FanCtrl(fstat & 0x03)
       fans_on = (fstat & 0x04) != 0
       ovr_tmp = (fstat & 0x08) != 0
@@ -342,26 +346,26 @@ class _Preamps:
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      duty = self.bus.read_byte_data(preamp*8, _REG_ADDRS['FAN_DUTY'])
+      duty = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['FAN_DUTY'])
       return duty / (1 << 7)
     return None
 
   @staticmethod
   def _fix2temp(fval: int) -> float:
     """ Convert UQ7.1 + 20 degC format to degC """
-    if fval == 0: # Disconnected
+    if fval == 0:  # Disconnected
       temp = -math.inf
-    elif fval == 255: # Shorted
+    elif fval == 255:  # Shorted
       temp = math.inf
     else:
-      temp = fval/2 - 20
+      temp = fval / 2 - 20
     return temp
 
   def hv2_present(self, preamp: int = 1) -> Optional[bool]:
     """ Check if a second high voltage power supply is present """
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      pstat = self.bus.read_byte_data(preamp*8, _REG_ADDRS['POWER'])
+      pstat = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['POWER'])
       hv2_present = (pstat & 0x80) != 0
       return hv2_present
     return None
@@ -381,14 +385,14 @@ class _Preamps:
         amp2: Temperature of the heatsink over zones 4-6 in degrees C
     """
     if self.bus is not None:
-      temp_hv1_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV1_TEMP'])
-      temp_amp1_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['AMP_TEMP1'])
-      temp_amp2_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['AMP_TEMP2'])
+      temp_hv1_f = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['HV1_TEMP'])
+      temp_amp1_f = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['AMP_TEMP1'])
+      temp_amp2_f = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['AMP_TEMP2'])
       temp_hv1 = self._fix2temp(temp_hv1_f)
       temp_amp1 = self._fix2temp(temp_amp1_f)
       temp_amp2 = self._fix2temp(temp_amp2_f)
       if self.hv2_present(preamp):
-        temp_hv2_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV2_TEMP'])
+        temp_hv2_f = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['HV2_TEMP'])
         temp_hv2 = self._fix2temp(temp_hv2_f)
         return temp_hv1, temp_hv2, temp_amp1, temp_amp2
       else:
@@ -407,11 +411,11 @@ class _Preamps:
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      hv1_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV1_VOLTAGE'])
-      hv1 = hv1_f / 4 # Convert from UQ6.2 format
+      hv1_f = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['HV1_VOLTAGE'])
+      hv1 = hv1_f / 4  # Convert from UQ6.2 format
       if self.hv2_present(preamp):
-        hv2_f = self.bus.read_byte_data(preamp*8, _REG_ADDRS['HV2_VOLTAGE'])
-        hv2 = hv2_f / 4 # Convert from UQ6.2 format
+        hv2_f = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['HV2_VOLTAGE'])
+        hv2 = hv2_f / 4  # Convert from UQ6.2 format
         return hv1, hv2
       else:
         return hv1, None
@@ -420,7 +424,7 @@ class _Preamps:
   def force_fans(self, preamp: int = 1, force: bool = True):
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      self.bus.write_byte_data(preamp*8, _REG_ADDRS['FANS'],
+      self.bus.write_byte_data(preamp * 8, _REG_ADDRS['FANS'],
                                3 if force is True else 0)
 
   def read_leds(self, preamp: int = 1):
@@ -437,7 +441,7 @@ class _Preamps:
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
-      leds = self.bus.read_byte_data(preamp*8, _REG_ADDRS['LED_VAL'])
+      leds = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['LED_VAL'])
       return leds
     return None
 
@@ -456,10 +460,10 @@ class _Preamps:
     assert leds is None or 0 <= leds <= 255
     if self.bus is not None:
       if leds is None:
-        self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_CTRL'], 0)
+        self.bus.write_byte_data(preamp * 8, _REG_ADDRS['LED_CTRL'], 0)
       else:
-        self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_CTRL'], 1)
-        self.bus.write_byte_data(preamp*8, _REG_ADDRS['LED_VAL'], leds)
+        self.bus.write_byte_data(preamp * 8, _REG_ADDRS['LED_CTRL'], 1)
+        self.bus.write_byte_data(preamp * 8, _REG_ADDRS['LED_VAL'], leds)
 
   def __str__(self):
     preamp_str = ''
@@ -483,6 +487,7 @@ class _Preamps:
     vol = -regs[_REG_ADDRS['VOL_ZONE1'] + zone]
     muted = (regs[_REG_ADDRS['MUTE']] & (1 << zone)) > 0
     return f'  {src}({src_type[0]}) --> zone {zone} vol {vol}{" (muted)" if muted else ""}'
+
 
 class Mock:
   """ Mock of an Amplipi Runtime
@@ -570,7 +575,8 @@ class Mock:
     return True
 
   def exists(self, zone):
-      return True
+    return True
+
 
 class Rpi:
   """ Actual Amplipi Runtime
@@ -580,7 +586,6 @@ class Rpi:
 
   def __init__(self):
     self._bus = _Preamps()
-
 
   def __del__(self):
     del self._bus
@@ -592,7 +597,7 @@ class Rpi:
   def read_versions(self) -> List[Tuple[int, int, int, bool]]:
     """ Read the firmware information for all preamps (major, minor, hash, dirty?)"""
     fw_versions: List[Tuple[int, int, int, bool]] = []
-    for i in range(1,6):
+    for i in range(1, 6):
       try:
         infos = self._bus.read_version(i)
         if infos[0] is None:
@@ -645,9 +650,9 @@ class Rpi:
       src = sources[preamp * 6 + z]
       assert type(src) == int or src == None
       if z < 3:
-        source_cfg123 = source_cfg123 | (src << (z*2))
+        source_cfg123 = source_cfg123 | (src << (z * 2))
       else:
-        source_cfg456 = source_cfg456 | (src << ((z-3)*2))
+        source_cfg456 = source_cfg456 | (src << ((z - 3) * 2))
     self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['ZONE123_SRC'], source_cfg123)
     self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['ZONE456_SRC'], source_cfg456)
 
@@ -664,7 +669,7 @@ class Rpi:
       Returns:
         True on success, False on hw failure
     """
-    preamp = int(zone / 6) # int(x/y) does the same thing as (x // y)
+    preamp = int(zone / 6)  # int(x/y) does the same thing as (x // y)
     assert zone >= 0
     assert preamp < 15
     assert models.MIN_VOL_DB <= vol <= models.MAX_VOL_DB

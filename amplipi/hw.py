@@ -70,31 +70,31 @@ class Preamp:
 
   class Reg(Enum):
     """ Preamp register addresses """
-    SRC_AD          = 0x00
-    ZONE123_SRC     = 0x01
-    ZONE456_SRC     = 0x02
-    MUTE            = 0x03
-    STANDBY         = 0x04
-    VOL_ZONE1       = 0x05
-    VOL_ZONE2       = 0x06
-    VOL_ZONE3       = 0x07
-    VOL_ZONE4       = 0x08
-    VOL_ZONE5       = 0x09
-    VOL_ZONE6       = 0x0A
-    POWER_STATUS    = 0x0B
-    FAN_CTRL        = 0x0C
-    LED_CTRL        = 0x0D
-    LED_VAL         = 0x0E
-    EXPANSION       = 0x0F
-    HV1_VOLTAGE     = 0x10
-    AMP_TEMP1       = 0x11
-    HV1_TEMP        = 0x12
-    AMP_TEMP2       = 0x13
-    VERSION_MAJOR   = 0xFA
-    VERSION_MINOR   = 0xFB
-    GIT_HASH_27_20  = 0xFC
-    GIT_HASH_19_12  = 0xFD
-    GIT_HASH_11_04  = 0xFE
+    SRC_AD = 0x00
+    ZONE123_SRC = 0x01
+    ZONE456_SRC = 0x02
+    MUTE = 0x03
+    STANDBY = 0x04
+    VOL_ZONE1 = 0x05
+    VOL_ZONE2 = 0x06
+    VOL_ZONE3 = 0x07
+    VOL_ZONE4 = 0x08
+    VOL_ZONE5 = 0x09
+    VOL_ZONE6 = 0x0A
+    POWER_STATUS = 0x0B
+    FAN_CTRL = 0x0C
+    LED_CTRL = 0x0D
+    LED_VAL = 0x0E
+    EXPANSION = 0x0F
+    HV1_VOLTAGE = 0x10
+    AMP_TEMP1 = 0x11
+    HV1_TEMP = 0x12
+    AMP_TEMP2 = 0x13
+    VERSION_MAJOR = 0xFA
+    VERSION_MINOR = 0xFB
+    GIT_HASH_27_20 = 0xFC
+    GIT_HASH_19_12 = 0xFD
+    GIT_HASH_11_04 = 0xFE
     GIT_HASH_STATUS = 0xFF
 
   def __init__(self, unit: int, bus: SMBus):
@@ -114,8 +114,8 @@ class Preamp:
     """
     try:
       self.bus.write_byte_data(self.addr, self.Reg.VERSION_MAJOR.value, 0)
-    except: #OSError as err:
-      #print(err)
+    except:  # OSError as err:
+      # print(err)
       return False
     return True
 
@@ -192,14 +192,14 @@ class Preamps:
   MAX_UNITS = 6
   """ The maximum number of AmpliPi units, including the master """
 
-  BAUD_RATES = (  1200,   1800,   2400,   4800,    9600,  19200,
-                 38400,  57600, 115200, 128000,  230400, 256000,
+  BAUD_RATES = (1200, 1800, 2400, 4800, 9600, 19200,
+                38400, 57600, 115200, 128000, 230400, 256000,
                 460800, 500000, 576000, 921600, 1000000)
   """ Valid UART baud rates """
 
   class Pin(Enum):
     """ Pi GPIO pins to control the master unit's preamp """
-    NRST  = 4
+    NRST = 4
     BOOT0 = 5
 
   preamps: List[Preamp]
@@ -209,7 +209,7 @@ class Preamps:
     self.preamps = []
     if reset:
       print('Resetting all preamps...')
-      self.reset(unit = 0, bootloader = False)
+      self.reset(unit=0, bootloader=False)
     else:
       self.enumerate()
 
@@ -326,7 +326,7 @@ class Preamps:
     baud = 9600 if unit > 0 else baud
 
     # Reset the unit to be programmed into bootloader mode
-    self.reset(unit = unit, bootloader = True)
+    self.reset(unit=unit, bootloader=True)
 
     # Set UART passthrough on any previous units
     for p in range(unit):
@@ -337,7 +337,7 @@ class Preamps:
       # Before attempting programming, verify the unit even exists.
       try:
         subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'], shell=True,
-                        check=True, stdout=subprocess.DEVNULL)
+                       check=True, stdout=subprocess.DEVNULL)
       except subprocess.CalledProcessError:
         # Failed to handshake with the bootloader. Assume unit not present.
         print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
@@ -352,7 +352,7 @@ class Preamps:
     prog_success = False
     try:
       subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'],
-                              shell=True, check=True)
+                     shell=True, check=True)
       prog_success = True
     except subprocess.CalledProcessError:
       # TODO: Error handling
@@ -431,13 +431,9 @@ class Preamps:
     return False
 
 
-#class PeakDetect:
-  #""" """
-
-
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Interface to AmpliPi's Preamp Board firmware",
-                                 formatter_class=formatter.AmpliPiHelpFormatter)
+                                   formatter_class=formatter.AmpliPiHelpFormatter)
   parser.add_argument('-r', '--reset', action='store_true', default=False,
                       help='reset the preamp(s) before communicating over I2C')
   parser.add_argument('--flash', metavar='FW.bin',
@@ -448,14 +444,14 @@ if __name__ == '__main__':
                       help='print preamp firmware version(s)')
   parser.add_argument('-l', '--log', metavar='LEVEL', default='WARNING',
                       help='set logging level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
-  parser.add_argument('-n', '--num-units', metavar='N', type=int, choices=range(1,7),
+  parser.add_argument('-n', '--num-units', metavar='N', type=int, choices=range(1, 7),
                       help='set the number of preamps instead of auto-detecting')
   args = parser.parse_args()
 
   preamps = Preamps(args.reset)
 
   if args.flash is not None:
-    if not preamps.program_all(filepath = args.flash, num_units = args.num_units, baud = args.baud):
+    if not preamps.program_all(filepath=args.flash, num_units=args.num_units, baud=args.baud):
       sys.exit(2)
 
   if len(preamps) == 0:

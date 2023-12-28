@@ -25,7 +25,7 @@ from typing import List, Dict, Set, Union, Optional, Callable
 from enum import Enum
 
 from copy import deepcopy
-import os # files
+import os  # files
 from pathlib import Path
 import time
 
@@ -41,7 +41,8 @@ from amplipi import auth
 from amplipi import defaults
 
 
-_DEBUG_API = False # print out a graphical state of the api after each call
+_DEBUG_API = False  # print out a graphical state of the api after each call
+
 
 @wrapt.decorator
 def save_on_success(wrapped, instance: 'Api', args, kwargs):
@@ -52,13 +53,16 @@ def save_on_success(wrapped, instance: 'Api', args, kwargs):
     instance.mark_changes()
   return result
 
+
 class ApiCode(Enum):
   """ Ctrl Api Response code """
   OK = 1
   ERROR = 2
 
+
 class ApiResponse:
   """ Ctrl Api Response object """
+
   def __init__(self, code: ApiCode, msg: str = ''):
     self.code = code
     self.msg = msg
@@ -81,13 +85,14 @@ class ApiResponse:
   OK = ApiCode.OK
   ERROR = ApiCode.ERROR
 
+
 class Api:
   """ Amplipi Controller API"""
   # pylint: disable=too-many-instance-attributes
   # pylint: disable=too-many-public-methods
 
   # TODO: move these variables to the init, they should not be class variables.
-  _initialized = False # we need to know when we initialized first
+  _initialized = False  # we need to know when we initialized first
   _mock_hw: bool
   _mock_streams: bool
   _save_timer: Optional[threading.Timer] = None
@@ -102,10 +107,10 @@ class Api:
   streams: Dict[int, amplipi.streams.AnyStream]
   lms_mode: bool
 
-
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
   # with this reinit will be called connect and will attempt to load the configuration and connect to an AmpliPi (mocked or real)
   # returning a boolean on whether or not it was successful
+
   def __init__(self, settings: models.AppSettings = models.AppSettings(), change_notifier: Optional[Callable[[models.Status], None]] = None):
     self.reinit(settings, change_notifier)
     self._initialized = True
@@ -143,20 +148,22 @@ class Api:
     # Create firmware interface if needed. If one already exists delete then re-init.
     if self._initialized:
       # we need to make sure to mute every zone before resetting the fw
-      zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones], update=models.ZoneUpdate(mute=True))
+      zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones],
+                                            update=models.ZoneUpdate(mute=True))
       self.set_zones(zones_update, force_update=True, internal=True)
       try:
-        del self._rt # remove the low level hardware connection
+        del self._rt  # remove the low level hardware connection
       except AttributeError:
         pass
-    self._rt = rt.Mock() if settings.mock_ctrl or self.is_streamer else rt.Rpi() # reset the fw
+    self._rt = rt.Mock() if settings.mock_ctrl or self.is_streamer else rt.Rpi()  # reset the fw
 
     # test open the config file, this will throw an exception if there are issues writing to the file
-    with open(settings.config_file, 'a', encoding='utf-8'): # use append more to make sure we have read and write permissions, but won't overrite the file
+    # use append more to make sure we have read and write permissions, but won't overwrite the file
+    with open(settings.config_file, 'a', encoding='utf-8'):
       pass
     self.config_file = settings.config_file
     self.backup_config_file = settings.config_file + '.bak'
-    self.config_file_valid = True # initially we assume the config file is valid
+    self.config_file_valid = True  # initially we assume the config file is valid
     errors = []
     if config:
       self.status = config
@@ -173,7 +180,7 @@ class Api:
             break
           errors.append(f'config file "{cfg_path}" does not exist')
         except Exception as exc:
-          self.config_file_valid = False # mark the config file as invalid so we don't try to back it up
+          self.config_file_valid = False  # mark the config file as invalid so we don't try to back it up
           errors.append(f'error loading config file: {exc}')
 
     # make a config flag to recognize this unit's subtype
@@ -218,7 +225,7 @@ class Api:
     for major, minor, ghash, dirty in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}', git_hash=f'{ghash:x}', git_dirty=dirty)
       self.status.info.fw.append(fw_info)
-    self._update_sys_info() # TODO: does sys info need to be updated at init time?
+    self._update_sys_info()  # TODO: does sys info need to be updated at init time?
 
     # detect missing zones
     if self._mock_hw and not self.is_streamer:
@@ -245,7 +252,7 @@ class Api:
     _, mute_all_pst = utils.find(self.status.presets, defaults.MUTE_ALL_ID)
     if mute_all_pst and mute_all_pst.name == 'Mute All':
       if mute_all_pst.state and mute_all_pst.state.zones:
-        muted_zones = { z.id for z in mute_all_pst.state.zones }
+        muted_zones = {z.id for z in mute_all_pst.state.zones}
         for z in self.status.zones:
           if z.id not in muted_zones:
             mute_all_pst.state.zones.append(models.ZoneUpdateWithId(id=z.id, mute=True))
@@ -283,11 +290,11 @@ class Api:
           # particular source; the client+server connection bootstrapping takes a while, which is a less than ideal
           # user experience.
           if self.lms_mode and stream.type == 'lms':
-            self.streams[stream.id].activate() # type: ignore
+            self.streams[stream.id].activate()  # type: ignore
         except Exception as exc:
           print(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
-    self._sync_stream_info() # need to update the status with the new streams
+    self._sync_stream_info()  # need to update the status with the new streams
 
     # add/remove dynamic bluetooth stream
     bt_streams = [sid for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.Bluetooth)]
@@ -421,7 +428,7 @@ class Api:
      producing a small amount of white noise.
     """
     try:
-      sid = int(sinput.replace('stream=',''))
+      sid = int(sinput.replace('stream=', ''))
       return sid not in defaults.RCAs
     except:
       return True
@@ -439,7 +446,8 @@ class Api:
     """
     inputs: Dict[Optional[str], str] = {'': ''}
     for sid, stream in self.streams.items():
-      connectable = stream.requires_src() in [None, src.id] # TODO: remove this filter when sources can dynamically change output
+      # TODO: remove this filter when sources can dynamically change output
+      connectable = stream.requires_src() in [None, src.id]
       connected = src.get_stream()
       if sid == connected:
         assert connectable, print(f'Source {src} has invalid input: stream={connected}')
@@ -465,7 +473,7 @@ class Api:
       pass
     return release
 
-  def _update_sys_info(self, throttled = True) -> None:
+  def _update_sys_info(self, throttled=True) -> None:
     """Update current system information"""
     if self.status.info is None:
       raise Exception("No info generated, system in a bad state")
@@ -580,7 +588,7 @@ class Api:
             old_stream.disconnect()
           # start new stream
           last_input = src.input
-          src.input = input_ # reconfigure the input so get_stream knows which stream to get
+          src.input = input_  # reconfigure the input so get_stream knows which stream to get
           stream = self.get_stream(src)
           if stream:
             stolen_from: Optional[models.Source] = None
@@ -596,8 +604,8 @@ class Api:
               # potentially deactivate the old stream to save resources
               # NOTE: old_stream and new stream could be the same if force_update is True
               if old_stream and old_stream != stream and old_stream.is_activated():
-                if not old_stream.is_persistent(): # type: ignore
-                  old_stream.deactivate() # type: ignore
+                if not old_stream.is_persistent():  # type: ignore
+                  old_stream.deactivate()  # type: ignore
             except Exception as iexc:
               print(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
               stream.disconnect()
@@ -614,20 +622,20 @@ class Api:
                 stolen_from.input = input_
               # now that we recovered, show that this failed
               raise iexc
-          elif src.input and 'stream=' in src.input: # invalid stream id?
+          elif src.input and 'stream=' in src.input:  # invalid stream id?
             # TODO: should this stream id validation happen in the Source model?
             src.input = last_input
             raise Exception(f'StreamID specified by "{src.input}" not found')
           elif old_stream and old_stream.is_activated():
-            if not old_stream.is_persistent(): # type: ignore
-              old_stream.deactivate() # type: ignore
+            if not old_stream.is_persistent():  # type: ignore
+              old_stream.deactivate()  # type: ignore
           if not self.is_streamer:
             rt_needs_update = self._is_digital(input_) != self._is_digital(last_input)
             if rt_needs_update or force_update:
               src_cfg = self._get_source_config()
               if not self._rt.update_sources(src_cfg):
                 raise Exception('failed to set source')
-          self._update_src_info(src) # synchronize the source's info
+          self._update_src_info(src)  # synchronize the source's info
         if not internal:
           self.mark_changes()
       else:
@@ -675,7 +683,7 @@ class Api:
 
         # update the zone's associated source
         zones = self.status.zones
-        if update_source_id or force_update :
+        if update_source_id or force_update:
           # the preamp fw needs nearby zones source-ids since each source id register contains the source ids of 3 zones
           zone_sources = [utils.clamp(zone.source_id, 0, 3) for zone in zones]
           # update with the pending change
@@ -762,7 +770,7 @@ class Api:
       all_zids = utils.zones_from_all(self.status, multi_update.zones, multi_update.groups)
       # update each of the zones
       for zid in all_zids:
-        zupdate = multi_update.update.copy() # we potentially need to make changes to the underlying update
+        zupdate = multi_update.update.copy()  # we potentially need to make changes to the underlying update
         if zupdate.name:
           # ensure all zones don't get named the same
           zupdate.name = f'{zupdate.name} {zid+1}'
@@ -785,13 +793,13 @@ class Api:
       sources = {z.source_id for z in zones}
       vols = [z.vol_f for z in zones]
       vols.sort()
-      group.mute = False not in mutes # group is only considered muted if all zones are muted
+      group.mute = False not in mutes  # group is only considered muted if all zones are muted
       if len(sources) == 1:
-        group.source_id = sources.pop() # TODO: how should we handle different sources in the group?
-      else: # multiple sources
+        group.source_id = sources.pop()  # TODO: how should we handle different sources in the group?
+      else:  # multiple sources
         group.source_id = None
       if vols:
-        group.vol_f = (vols[0] + vols[-1]) / 2 # group volume is the midpoint between the highest and lowest source
+        group.vol_f = (vols[0] + vols[-1]) / 2  # group volume is the midpoint between the highest and lowest source
       else:
         group.vol_f = models.MIN_VOL_F
       group.vol_delta = utils.vol_float_to_db(group.vol_f)
@@ -861,7 +869,6 @@ class Api:
     # get the new groug's id
     group.id = self._new_group_id()
 
-
     # add the new group
     self.status.groups.append(group)
 
@@ -897,7 +904,8 @@ class Api:
     """ Create a new stream """
     try:
       if not internal and data.type == 'rca':
-        raise Exception(f'Unable to create protected RCA stream, the RCA streams for each RCA input {defaults.RCAs} already exist')
+        raise Exception(
+          f'Unable to create protected RCA stream, the RCA streams for each RCA input {defaults.RCAs} already exist')
       # Make a new stream and add it to streams
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
@@ -947,15 +955,15 @@ class Api:
       del self.streams[sid]
       i, _ = utils.find(self.status.streams, sid)
       if i is not None:
-        del self.status.streams[i] # delete the cached stream state just in case
+        del self.status.streams[i]  # delete the cached stream state just in case
       self._sync_stream_info()
       if not internal:
         self.mark_changes()
       return ApiResponse.ok()
-    except KeyError :
+    except KeyError:
       msg = f'delete stream failed: {sid} does not exist'
     except Exception as exc:
-      msg =  f'delete stream failed: {exc}'
+      msg = f'delete stream failed: {exc}'
     if internal:
       raise Exception(msg)
     return ApiResponse.error(msg)
@@ -1007,7 +1015,7 @@ class Api:
     except Exception:
       # TODO: throw useful exceptions to next level
       pass
-      #print(utils.error('Failed to get station list - it may not exist: {}'.format(e)))
+      # print(utils.error('Failed to get station list - it may not exist: {}'.format(e)))
     # TODO: Change these prints to returns in final state
     return {}
 
@@ -1022,7 +1030,7 @@ class Api:
       # TODO: validate preset
       pid = self._new_preset_id()
       preset.id = pid
-      preset.last_used = None # indicates this preset has never been used
+      preset.last_used = None  # indicates this preset has never been used
       self.status.presets.append(preset)
       if not internal:
         self.mark_changes()
@@ -1054,7 +1062,7 @@ class Api:
     try:
       idx, _ = utils.find(self.status.presets, pid)
       if idx is not None:
-        del self.status.presets[idx] # delete the cached preset state just in case
+        del self.status.presets[idx]  # delete the cached preset state just in case
         return ApiResponse.ok()
       return ApiResponse.error('delete preset failed: {} does not exist'.format(pid))
     except KeyError:
@@ -1097,7 +1105,7 @@ class Api:
       if src.id is not None:
         self.set_source(src.id, src.as_update(), internal=True)
       else:
-        pass # TODO: support some id-less source concept that allows dynamic source allocation
+        pass  # TODO: support some id-less source concept that allows dynamic source allocation
 
     # execute changes group by group in increasing order
     for group in preset_state.groups or []:
@@ -1163,7 +1171,7 @@ class Api:
       last_config = models.Preset(
         id=defaults.LAST_PRESET_ID,
         name='Restore last config',
-        last_used=None, # this need to be in javascript time format
+        last_used=None,  # this need to be in javascript time format
         state=models.PresetState(
           sources=deepcopy(status.sources),
           zones=deepcopy(status.zones),
@@ -1196,12 +1204,14 @@ class Api:
   def announce(self, announcement: models.Announcement) -> ApiResponse:
     """ Create and play an announcement """
     # create a temporary announcement stream using fileplayer
-    resp0 = self.create_stream(models.Stream(type='fileplayer', name='Announcement', url=announcement.media), internal=True)
+    resp0 = self.create_stream(models.Stream(type='fileplayer', name='Announcement',
+                               url=announcement.media), internal=True)
     if isinstance(resp0, ApiResponse):
       return resp0
     stream = resp0
     # create a temporary preset with all zones connected to the announcement stream and load it
-    pa_src = models.SourceUpdateWithId(id=announcement.source_id, input=f'stream={stream.id}') # for now we just use the last source
+    # for now we just use the last source
+    pa_src = models.SourceUpdateWithId(id=announcement.source_id, input=f'stream={stream.id}')
     if announcement.zones is None and announcement.groups is None:
       zones_to_use = {z.id for z in self.status.zones if z.id is not None and not z.disabled}
     else:
@@ -1209,10 +1219,13 @@ class Api:
       zones_to_use = utils.enabled_zones(self.status, unique_zones)
     # Set the volume of the announcement, forcing db only if it is specified
     if announcement.vol is not None:
-      pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False, vol=announcement.vol) for zid in zones_to_use]
+      pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False,
+                                          vol=announcement.vol) for zid in zones_to_use]
     else:
-      pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False, vol_f=announcement.vol_f) for zid in zones_to_use]
-    resp1 = self.create_preset(models.Preset(name='PA - announcement', state=models.PresetState(sources=[pa_src], zones=pa_zones)))
+      pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False,
+                                          vol_f=announcement.vol_f) for zid in zones_to_use]
+    resp1 = self.create_preset(models.Preset(name='PA - announcement',
+                               state=models.PresetState(sources=[pa_src], zones=pa_zones)))
     if isinstance(resp1, ApiResponse):
       return resp1
     pa_preset = resp1
@@ -1232,7 +1245,7 @@ class Api:
       if stream_inst.state in ['stopped', 'disconnected']:
         break
     resp4 = self.load_preset(defaults.LAST_PRESET_ID, internal=True)
-    resp5 = self.delete_stream(stream.id, internal=True) # remember to delete the temporary stream
+    resp5 = self.delete_stream(stream.id, internal=True)  # remember to delete the temporary stream
     if resp5.code != ApiCode.OK:
       return resp5
     self.mark_changes()

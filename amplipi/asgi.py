@@ -40,10 +40,12 @@ zc_que: "Queue[str]" = Queue()
 zc_reg = Process(target=amplipi.app.advertise_service, args=(PORT, zc_que))
 zc_reg.start()
 
+
 @application.on_event('shutdown')
 def on_shutdown():
   zc_que.put('done')
   zc_reg.join()
+
 
 if __name__ == '__main__':
   """ Debug the webserver """

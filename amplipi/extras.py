@@ -22,18 +22,20 @@ Additional AmpliPi methods
 from amplipi import models
 from amplipi import utils
 
+
 def vol_string(vol, min_vol=models.MIN_VOL_F, max_vol=models.MAX_VOL_F):
   """ Make a visual representation of a volume """
   vol_range = max_vol - min_vol + 1
   vol_str_len = 20
   vol_scale = vol_range / vol_str_len
-  vol_level = int((vol - min_vol)  / vol_scale)
+  vol_level = int((vol - min_vol) / vol_scale)
   assert 0 <= vol_level < vol_str_len
   vol_str = ['-'] * vol_str_len
-  vol_str[vol_level] = '|' # place the volume slider bar at its current spot
-  return ''.join(vol_str) # turn that char array into a string
+  vol_str[vol_level] = '|'  # place the volume slider bar at its current spot
+  return ''.join(vol_str)  # turn that char array into a string
 
-def visualize_api(status : models.Status):
+
+def visualize_api(status: models.Status):
   """Creates a command line visualization of the system state, mostly the volume levels of each zone and group
 
   Returns:

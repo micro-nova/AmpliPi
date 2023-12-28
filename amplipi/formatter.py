@@ -21,11 +21,13 @@ Common argparse help formatter
 
 import argparse
 
+
 class AmpliPiHelpFormatter(argparse.HelpFormatter):
   """ Custom help formatter that shows default values
       and doesn't show duplicate metavars.
   """
   # https://stackoverflow.com/a/23941599/8055271
+
   def _format_action_invocation(self, action):
     if not action.option_strings:
       metavar, = self._metavar_formatter(action, action.dest)(1)
