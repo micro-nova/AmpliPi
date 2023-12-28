@@ -45,12 +45,10 @@ jobs:
         pytest tests/test_rest.py -vvv -k 'not _live' --cov=./ --cov-report=xml
         pytest tests/test_auth.py -vvv
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         files: ./coverage.xml
-        directory: ./coverage/reports/
         flags: unittests
         env_vars: OS,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
-        path_to_write_report: ./coverage/codecov_report.txt
