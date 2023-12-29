@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # AmpliPi Home Audio
-# Copyright (C) 2022 MicroNova LLC
+# Copyright (C) 2021-2024 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import os
 from multiprocessing import Process, Event
 import uvicorn
 import amplipi.app
+from amplipi import zeroconf
 
 MOCK_CTRL = os.environ.get('MOCK_CTRL', 'False').lower() == 'true'
 MOCK_STREAMS = os.environ.get('MOCK_STREAMS', 'False').lower() == 'true'
@@ -38,13 +39,13 @@ application = amplipi.app.create_app(delay_saves=True, mock_ctrl=MOCK_CTRL, mock
 # NOTE: Zeroconf advertisements need to be done as a separate process to avoid blocking the
 #   webserver startup since behind the scenes zeroconf makes its own event loop.
 zc_event = Event()
-zc_reg = Process(target=amplipi.app.advertise_service, args=(PORT, zc_event))
+zc_reg = Process(target=zeroconf.advertise_service, args=(PORT, zc_event))
 zc_reg.start()
 
 
 @application.on_event('shutdown')
 def on_shutdown():
-  """ Notify the mdns advertisement to shutdown"""
+  """ Notify the zeroconf advertisement to shutdown"""
   zc_event.set()
   zc_reg.join()
 

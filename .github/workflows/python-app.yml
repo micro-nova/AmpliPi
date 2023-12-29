@@ -44,6 +44,7 @@ jobs:
         pytest tests/test_ctrl.py -vvv -k doubly_missing_config
         pytest tests/test_rest.py -vvv -k 'not _live' --cov=./ --cov-report=xml
         pytest tests/test_auth.py -vvv
+        pytest tests/test_zeroconf.py -vvv
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

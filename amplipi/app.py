@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # AmpliPi Home Audio
-# Copyright (C) 2022 MicroNova LLC
+# Copyright (C) 2021-2024 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@ This serves the amplipi webpp and underlying rest api, that it uses.
 The FastAPI/Starlette web framework is used to simplify the web plumbing.
 """
 
-import logging
-import sys
 import argparse
 
 import os
@@ -32,6 +30,8 @@ import os
 from typing import List, Dict, Tuple, Set, Any, Optional, Callable, Union, TYPE_CHECKING, get_type_hints
 from enum import Enum
 from types import SimpleNamespace
+
+from multiprocessing import Queue
 
 import urllib.request  # For custom album art size
 from functools import lru_cache
@@ -52,13 +52,6 @@ from fastapi.routing import APIRoute, APIRouter
 from fastapi.templating import Jinja2Templates
 from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
-
-# mdns service advertisement
-import netifaces as ni
-from socket import gethostname, inet_aton
-from zeroconf import IPVersion, ServiceInfo, Zeroconf
-from multiprocessing import Event, Queue
-from multiprocessing.synchronize import Event as SyncEvent
 
 # amplipi
 import amplipi.utils as utils
@@ -110,7 +103,7 @@ def unused_groups(ctrl: Api, src: int) -> Dict[int, str]:
 
 
 def unused_zones(ctrl: Api, src: int) -> Dict[int, str]:
-  """ Get zones that are not conencted to src """
+  """ Get zones that are not connected to src """
   zones = ctrl.status.zones
   return {z.id: z.name for z in zones if z.source_id != src and z.id is not None and not z.disabled}
 
@@ -887,157 +880,6 @@ def on_shutdown():
   get_ctrl.cache_clear()
   del _ctrl
   print('webserver shutdown complete')
-
-# MDNS
-
-
-# TEST: use logging in this module
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
-sh = logging.StreamHandler(sys.stderr)
-sh.setFormatter(logging.Formatter('%(name)s: %(levelname)s - %(message)s'))
-log.addHandler(sh)
-
-
-def get_ip_info(iface: str = 'eth0') -> Tuple[Optional[str], Optional[str]]:
-  """ Get the IP address of interface @iface """
-  try:
-    info = ni.ifaddresses(iface)
-    return info[ni.AF_INET][0].get('addr'), info[ni.AF_LINK][0].get('addr')
-  except:
-    return None, None
-
-
-def advertise_service(port, event: SyncEvent):
-  """ Advertise the AmpliPi api via zeroconf, can be verified with 'avahi-browse -ar'
-      Expected to be run as a separate process, eg:
-
-          event = multiprocessing.Event()
-          ad = Process(target=amplipi.app.advertise_service, args=(5000, event))
-          ad.start()
-          ...
-          event.set()
-          ad.join()
-      NOTE: multiprocessing.Event() is a function that returns a multiprocessing.synchronize.Event type
-      Here the type is aliased to SyncEvent
-  """
-  def ok():
-    """ Was a stop requested by the parent process? """
-    return not event.is_set()
-
-  while ok():
-    try:
-      _advertise_service(port, ok)
-    except Exception as exc:
-      if 'change registration' not in str(exc):
-        log.error(f'Failed to advertise AmpliPi service, retrying in 30s: {exc}')
-        # delay for a bit after a failure
-        delay_ct = 300
-        while ok() and delay_ct > 0:
-          sleep(0.1)
-          delay_ct -= 1
-
-
-def _find_best_iface(ok: Callable) -> Union[Tuple[str, str, str], Tuple[None, None, None]]:
-  """ Try to find the best interface to advertise on
-      Retries several times in case DHCP resolution is delayed
-  """
-  ip_addr, mac_addr = None, None
-
-  # attempt to find the interface used as the default gateway
-  retry_count = 5
-  while ok() and retry_count > 0:
-    try:
-      iface = ni.gateways()['default'][ni.AF_INET][1]
-      ip_addr, mac_addr = get_ip_info(iface)
-      if ip_addr and mac_addr:
-        return ip_addr, mac_addr, iface
-    except:
-      pass
-    sleep(2)  # wait a bit in case this was started before DHCP was started
-    retry_count -= 1
-
-  # fallback to any normal interface that is available
-  # this also covers the case where a link-local connection is established
-  def is_normal(iface: str):
-    """ Check if an interface is wireless or wired, excluding virtual and local interfaces"""
-    return iface.startswith('w') or iface.startswith('e')
-  ifaces = filter(is_normal, ni.interfaces())
-  for iface in ifaces:
-    ip_addr, mac_addr = get_ip_info(iface)
-    if ip_addr and mac_addr:
-      return ip_addr, mac_addr, iface
-  log.warning(f'Unable to register service on one of {ifaces}, \
-          they all are either not available or have no IP address.')
-  return None, None, None
-
-
-def _advertise_service(port: int, ok: Callable) -> None:
-  """ Underlying advertisement, can throw Exceptions when network is not connected """
-
-  hostname = f'{gethostname()}.local'
-  url = f'http://{hostname}'
-  log.debug("AmpliPi zeroconf - attempting to find best interface")
-  ip_addr, mac_addr, good_iface = _find_best_iface(ok)
-
-  if not ip_addr:
-    log.warning('is this running on AmpliPi?')
-    # Fallback to any hosted ip on this device.
-    # This will be resolved to an ip address by the advertisement
-    ip_addr = '0.0.0.0'
-  else:
-    log.debug('Found IP address %s on interface %s', ip_addr, good_iface)
-  if port != 80:
-    url += f':{port}'
-
-  info = ServiceInfo(
-    # use a custom type to easily support multiple amplipi device enumeration
-    '_amplipi._tcp.local.',
-    # the MAC Address is appended to distinguish multiple AmpliPi units
-    f'amplipi-{str(mac_addr).lower()}._amplipi._tcp.local.',
-    addresses=[inet_aton(ip_addr)],
-    port=port,
-    properties={
-      # standard info
-      'path': '/api/',
-      # extra info - for interfacing
-      'name': 'AmpliPi',
-      'vendor': 'MicroNova',
-      'version': utils.detect_version(),
-      # extra info - for user
-      'web_app': url,
-      'documentation': f'{url}/doc'
-    },
-    server=f'{hostname}.',  # Trailing '.' is required by the SRV_record specification
-  )
-
-  if not ok():
-    log.info("Advertisement cancelled")
-    return
-
-  log.info(f'Registering service: {info}')
-  # right now the AmpliPi webserver is ipv4 only
-  zeroconf = Zeroconf(ip_version=IPVersion.V4Only, interfaces=[ip_addr])
-  zeroconf.register_service(info)
-  log.info('Finished registering service')
-  try:
-    # poll for changes to the IP address
-    # this attempts to handle events like router/switch resets
-    while ok():
-      delay_ct = 100
-      while ok() and delay_ct > 0:
-        sleep(0.1)
-        delay_ct -= 1
-      if ok():
-        new_ip_addr, _, new_iface = _find_best_iface(ok)
-        if new_ip_addr != ip_addr:
-          log.info(f'IP address changed from {ip_addr} ({good_iface}) to {new_ip_addr} ({new_iface})')
-          log.info('Registration change needed')
-          raise Exception("change registration")
-  finally:
-    log.info('Unregistering service')
-    zeroconf.unregister_service(info)
-    zeroconf.close()
 
 
 if __name__ == '__main__':

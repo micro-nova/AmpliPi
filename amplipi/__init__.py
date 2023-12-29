@@ -1,3 +1,4 @@
 """ AmpliPi """
 # TODO: remove "rt"
-__all__ = ["app", "asgi", "ctrl", "display", "eeprom", "extras", "hw", "models", "rt", "streams", "utils"]
+__all__ = ["app", "asgi", "auth", "ctrl", "defaults", "display", "eeprom",
+           "extras", "hw", "models", "mpris", "rt", "streams", "utils", "zeroconf"]
