@@ -71,7 +71,10 @@ echo -e "\nChecking dependencies"
 inst=false
 python='python'
 if which dpkg; then
-  # since dpkg exists lets use it to install python dependencies as system dependencies
+  # since dpkg exists lets use it to install deps as system packages
+  # to note: should any of these be installed and then removed again, dpkg-query will
+  # still exit with a 0 status due to the package being in the "residual-config" state.
+  # regardless, this ought to cover >90% of cases.
   for dep in python3-venv python3-pip; do
     dpkg-query -s $dep 1>/dev/null 2>/dev/null || inst=true
   done
@@ -94,6 +97,16 @@ else
     echo "Failed to install python virtual environments, you may need to install this manually"
     exit 1;
   fi
+fi
+
+# check for `npm`
+if ! which npm; then
+  echo "npm needs to be installed to use this script"
+  exit 1;
+fi
+if [ $(npm --version | cut -f1 -d.) -lt 9 ]; then
+  echo "npm needs to be version 9 or above to use this script"
+  exit 1;
 fi
 
 # create a virtual environment and install pip dependencies
