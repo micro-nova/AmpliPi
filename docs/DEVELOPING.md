@@ -1,13 +1,44 @@
 # Developing for the AmpliPi Project
+
 Thanks for considering developing for AmpliPi. We appreciate your support!
 
 ## Developing on a separate computer
+
 This allows remote development with the ability to test changes on your AmpliPi
+
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well).
 1. Make changes with your favorite editor, we suggest vscode
 1. Use `scripts/deploy` to deploy the latest software.
    The pi must have access to the internet to successfully run this script.
-   #### Congratulations! The Amplipi is now running the software you deployed! You can stop now or continue in order to debug over SSH!
+
+### Installing Node.js
+
+`scripts/deploy` attempts to install any dependencies automatically, except for Node.js.
+AmpliPi is currently built with Node.js version 18.
+
+TODO: Can Ubuntu 22.04 or Debian Bookworm use what's in their default apt repos?
+
+For Ubuntu <=20.04, the version of Node.js from apt is outdated.
+We use [Node Version Manager](https://github.com/nvm-sh/nvm) to install a newer version.
+A simple install that has been tested on Ubuntu 20.04 is below,
+if you run into issues see NVM's readme for more info.
+Before proceeding, verify no node/npm is already installed.
+
+```sh
+NVM_DIR="${HOME}/.nvm"
+
+git clone --branch v0.39.7 https://github.com/nvm-sh/nvm.git "$NVM_DIR"
+cat >> "${HOME}/.bashrc" << EOF
+
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+EOF
+source "$NVM_DIR/nvm.sh"
+nvm install 18
+```
+
+### Congratulations! The Amplipi is now running the software you deployed! You can stop now or continue in order to debug over SSH!
+
 1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
 1. Change directory to the development root `~/amplipi-dev` (this is where `deploy` put the software)
 1. To run the amplipi server in debug mode over an ssh connection, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
