@@ -370,6 +370,10 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     _from = f"{env['base_dir']}/config/asound.conf"
     _to = "/etc/asound.conf"
     tasks += print_progress([Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
+    # copy boot_config.txt RPi firmware configuration file
+    _boot_config_from = f"{env['base_dir']}/config/boot_config.txt"
+    _boot_config_to = "/boot/config.txt"
+    tasks += print_progress([Task(f"copy {_boot_config_from} to {_boot_config_to}", f"sudo cp {_boot_config_from} {_boot_config_to}".split()).run()])
     # fix usb soundcard name
     usb_audio_rule_path = '/etc/udev/rules.d/85-amplipi-usb-audio.rules'
     if not os.path.exists(usb_audio_rule_path):

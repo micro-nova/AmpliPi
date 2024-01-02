@@ -6,6 +6,8 @@
   * Close the preset modal when the preset has been executed
 * Make zeroconf advertisement more robust to ip address changes
 * Remove deprecated old zeroconf advertisement
+* System
+  * Manage the /boot/config.txt Raspberry Pi firmware configuration file for bugfixes
 
 ## 0.3.1
 * System
