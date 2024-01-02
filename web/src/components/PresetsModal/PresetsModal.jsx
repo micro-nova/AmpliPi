@@ -89,17 +89,16 @@ const PresetsModal = ({ onClose }) => {
         fetch(`/api/presets/${id}/load`, {
             method: "POST",
             accept: "application/json",
-        })
-            .then(() =>
-                setPresetStates(
-                    presetStates.map((state, i) => (i === index ? "done" : state))
-                )
+        }).then(() =>
+            setPresetStates(
+                presetStates.map((state, i) => (i === index ? "done" : state))
             )
-            .catch(() =>
-                setPresetStates(
-                    presetStates.map((state, i) => (i === index ? false : state))
-                )
-            );
+        ).catch(() =>
+            setPresetStates(
+                presetStates.map((state, i) => (i === index ? false : state))
+            )
+        );
+        onClose();
     };
 
     const presetItems = presets.map((preset, index) => (
