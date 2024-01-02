@@ -108,6 +108,10 @@ if [ $(npm --version | cut -f1 -d.) -lt 9 ]; then
   echo "npm needs to be version 9 or above to use this script"
   exit 1;
 fi
+if [ $(nodejs --version | tr -d v | cut -f1 -d.) -lt 18 ]; then
+  echo "nodejs needs to be version 18 or above to use this script"
+  exit 1;
+fi
 
 # create a virtual environment and install pip dependencies
 if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate ]]; then
