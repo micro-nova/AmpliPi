@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Upcoming release
+* Web App
+  * Fixed bug that allows disabled streams to be shown & selected
+
 ## 0.3.1
 * System
   * Fix bug between various hardware versions

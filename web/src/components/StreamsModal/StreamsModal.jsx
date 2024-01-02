@@ -80,21 +80,23 @@ const StreamsModal = ({
     let streamsList = [];
 
     for (const stream of streams) {
-        const icon = getIcon(stream.type);
-        streamsList.push(
-            <ListItem
-                name={stream.name}
-                key={stream.id}
-                onClick={() => {
-                    setStream(stream);
-                    onApply();
-                    onClose();
-                }}
-                nameFontSize={LIST_ITEM_FONT_SIZE}
-            >
-                <img src={icon} className="streams-modal-icon" alt="stream icon" />
-            </ListItem>
-        );
+        if (!stream.disabled) {
+            const icon = getIcon(stream.type);
+            streamsList.push(
+                <ListItem
+                    name={stream.name}
+                    key={stream.id}
+                    onClick={() => {
+                        setStream(stream);
+                        onApply();
+                        onClose();
+                    }}
+                    nameFontSize={LIST_ITEM_FONT_SIZE}
+                >
+                    <img src={icon} className="streams-modal-icon" alt="stream icon" />
+                </ListItem>
+            );
+        }
     }
 
     return (
