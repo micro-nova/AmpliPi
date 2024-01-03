@@ -7,7 +7,7 @@ set -e
 cd "$( dirname "$0" )"
 
 HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
-  usage: deploy [USER@HOST] [--mock-ctrl]\n
+  usage: deploy [USER@HOST]\n
 \n
   --fw:  program the latest preamp firmware\n
   --pw:  generate and set a new random password\n
@@ -128,11 +128,6 @@ fi
 $python -m pip install --upgrade pip
 $python -m pip install poetry
 echo -e "Finished checking dependencies\n"
-
-if ! $mock_ctrl; then
-  # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
-  sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
-fi
 
 # use a new version for the build but hide it from git since it isn't a real release
 old_version=$(poetry version -s)
