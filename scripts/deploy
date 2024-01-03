@@ -9,17 +9,20 @@ cd "$( dirname "$0" )"
 HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)
   usage: deploy [USER@HOST]
 
-  --fw: program the latest preamp firmware
-  --pw: generate and set a new random password"
+  --fw:      program the latest preamp firmware
+  --pw:      generate and set a new random password
+  --no-deps: skip installing os-deps and python-deps on AmpliPi"
 
 user_host='pi@amplipi.local'
 user_host_set=false
 fw=false
 pw=false
+deps=true
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --fw) fw=true ;;
     --pw) pw=true ;;
+    --no-deps) deps=false ;;
     -h|--help) echo -e "$HELP"; exit 0 ;;
     *) if ! $user_host_set; then
           user_host=$1
@@ -37,6 +40,7 @@ done
 printf "Deploying amplipi project to $user_host.\n"
 printf "Preamp firmware will %sbe programmed.\n" "$($fw || printf "NOT ")"
 printf "A new password will %sbe generated.\n" "$($pw || printf "NOT ")"
+printf "os-deps and python-deps will %sbe installed on $user_host.\n" "$($deps || printf "NOT ")"
 read -p "Press any key to continue (Ctrl-C to quit)" -n 1
 printf "\n"
 # TODO: deploy amplipi as a python installed package with pip or something similar
@@ -189,7 +193,8 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
-ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display --audiodetector$opts" || echo ""
+$deps && opts="$opts --os-deps --python-deps"
+ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" || echo ""
 
 printf "Waiting for AmpliPi to restart"
 restart_finished=false
