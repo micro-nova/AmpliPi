@@ -104,7 +104,7 @@ if ! which npm; then
   echo "npm & nodejs needs to be installed to use this script"
   exit 1;
 fi
-if [ $(nodejs --version | tr -d v | cut -f1 -d.) -lt 18 ]; then
+if [ $(node --version | tr -d v | cut -f1 -d.) -lt 18 ]; then
   echo "nodejs needs to be version 18 or above to use this script"
   exit 1;
 fi
