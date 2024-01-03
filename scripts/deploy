@@ -202,22 +202,29 @@ for i in {1..30}; do
   sleep 2
   printf "."
   if [[ "$ping_loc" == /c/Windows/system32/ping ]] && ping -n 2 $host; then
-    restart_finished=true;
-    break;
+    restart_finished=true
+    break
   elif ping -c 2 $host 1>/dev/null 2>/dev/null; then
-    restart_finished=true;
-    break;
+    restart_finished=true
+    break
   fi
 done
 echo
 if $restart_finished; then
-  printf "Restart successful, waiting for amplipi service";
-  for i in {1..20}; do
+  printf "Restart successful, waiting for amplipi service."
+  amplipi_found=false
+  for i in {1..30}; do
+    sleep 2
     printf "."
-    sleep 1
+    if curl -sX GET "${host}/api" -H "Accept: application/json" >/dev/null; then
+      amplipi_found=true
+      printf "\nUpdate finished.\n"
+      break
+    fi
   done
-  echo
-  curl -X GET "${host}/api"  -H "Accept: application/json"  1>/dev/null 2>/dev/null  && echo "Update finished" || echo "Failed to detect ${host}/api"
+  if ! $amplipi_found; then
+    printf "\nFailed to detect ${host}/api.\n"
+  fi
 else
-  echo "Restart failed";
+  echo "Restart failed."
 fi
