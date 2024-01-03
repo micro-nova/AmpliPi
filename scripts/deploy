@@ -101,15 +101,15 @@ fi
 
 # check for `npm`
 if ! which npm; then
-  echo "npm needs to be installed to use this script"
-  exit 1;
-fi
-if [ $(npm --version | cut -f1 -d.) -lt 9 ]; then
-  echo "npm needs to be version 9 or above to use this script"
+  echo "npm & nodejs needs to be installed to use this script"
   exit 1;
 fi
 if [ $(nodejs --version | tr -d v | cut -f1 -d.) -lt 18 ]; then
   echo "nodejs needs to be version 18 or above to use this script"
+  exit 1;
+fi
+if [ $(npm --version | cut -f1 -d.) -lt 9 ]; then
+  echo "npm needs to be version 9 or above to use this script"
   exit 1;
 fi
 
