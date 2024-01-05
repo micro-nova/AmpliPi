@@ -283,13 +283,13 @@ async def CookieOrParamAPIKey(cookie_result=Depends(cookie_auth), query_param=De
   return True
 
 
-@router.get("/login", response_class=Response)
+@router.get("/login", response_class=Response, tags=["auth"])
 def login_page(request: Request) -> TemplateResponse:
   """ Render the login page. """
   return templates.TemplateResponse("login.html", {"request": request, "next_url": _next_url(request)})
 
 
-@router.post("/login", response_class=Response)
+@router.post("/login", response_class=Response, tags=["auth"])
 def login(request: Request, next_url: str = "/", form_data: OAuth2PasswordRequestForm = Depends()):
   """ Handle a POST to the login page. """
   if not form_data:
