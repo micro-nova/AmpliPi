@@ -818,7 +818,7 @@ def create_yaml_doc(add_test_docs=True) -> str:
   openapi['info']['description'] = '$REPLACE_ME$'
   yaml_s = yaml.safe_dump(openapi, sort_keys=False, allow_unicode=True)
   # fix the long description
-  return yaml_s.replace('$REPLACE_ME$', YAML_DESCRIPTION)
+  return str(yaml_s).replace('$REPLACE_ME$', YAML_DESCRIPTION)
 
 # additional yaml version of openapi.json
 # this is much more human readable

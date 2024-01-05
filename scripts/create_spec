@@ -9,8 +9,8 @@ rm docs/amplipi_api.yaml
 
 # stop amplipi so we can overwite its config
 was_on=false
-if systemctl --user is-active amplipi; then
-  systemctl stop --user amplipi  && echo "Stopped AmpliPi service"
+if systemctl --user is-active amplipi > /dev/null; then
+  systemctl stop --user amplipi  && echo "Stopped AmpliPi service" || echo "Failed to stop AmpliPi service"
   was_on=true
 fi
 
