@@ -1,5 +1,5 @@
 ## Zone Expander
-Adds 6 output zones to an AmpliPi Controller and can be daisy chained to create a massive whole house audio system with up to 36 stereo zone outputs!
+Adds 6 output zones to an AmpliPro Controller (often referred to as "AmpliPro Main Unit") and can be daisy chained to create a massive whole house audio system with up to 36 stereo zone outputs!
 
 ### Front Panel
 

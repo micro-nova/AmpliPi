@@ -9,7 +9,7 @@ Your AmpliPi controller includes the following components:
 
 The following optional accessories are available and can be purchased separately:
 
-- **AmpliPi Wall Panel**: Wall mountable touch panel that can control volume and playback for a zone or group of zones. Also includes two physical switches for light control.
+- **AmpliPi Wall Panel**: Wall mountable touch panel that can control volume and playback for a zone or group of zones. Also includes two physical switches for light control, intended to replace the light switch in the room it's installed in.
 - **AmpliPi Zone Expander**: Expansion unit to add more controllable zones. Up to 5 can be added to an AmpliPi controller for a total of 36 zones.
 
 ## App

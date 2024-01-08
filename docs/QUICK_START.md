@@ -14,14 +14,12 @@ All of the connections will be made to the back panel. Here's a quick reference 
 - **POWER**: 115V, or optionally 230V connection, 115/230 switch is set on internal power supply and marked on rear of unit, see [Power](#power)
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller
   - **SERVICE**: USB mini connection for re-imaging the Pi's EMMC
-  - **USB**:  USB A ports for connecting peripherals such as additional storage devices
-  - **OPTICAL IN**: SPDIF audio input, planned to be used for extra inputs
-  - **AUX IN**: Additional stereo input, planned to be used for announcements
-  - **HDMI OUT**: The Pi's HMDI output, can be used for visualizations or development
+  - **USB**:  USB A ports for connecting peripherals such as additional storage devices. **DO NOT USE AS A USB POWER SOURCE TO AN INPUT**
+  - **AUX IN**: Additional stereo input, intended for PA announcements
   - **ETHERNET**: Network connection, see [Networking](#networking)
 - **INPUTS**: 4 Stereo RCA inputs, see [RCA Inputs](#rca-inputs)
 - **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers
-- **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors see [Speakers](#speakers)
+- **ZONES**: Amplified stereo outputs for the given Zone, using 4-pin Phoenix connectors see [Speakers](#speakers)
 - **EXPANSION**: Connection to additional expansion unit (multiple units can be daisy-chained), see [Expansion Units](#expansion)
 
 ![Backpanel](imgs/backpanel.jpg)
@@ -102,6 +100,6 @@ The API is also available via the API link at the bottom of the [main page](http
 
 - The AmpliPi [user community](https://amplipi.discourse.group/) is a great place to learn more about AmpliPi, post questions, and interact with other AmpliPi users!
 - Feature requests and bug reports please [Create an issue](https://github.com/micro-nova/AmpliPi/issues/new).
-- Feedback on webapp: [Add comments to Webapp Feedback](https://github.com/micro-nova/AmpliPi/issues/34)
+- Feedback on webapp: [Add comments to Webapp Feedback](https://github.com/micro-nova/AmpliPi/issues/495)
 - Other feedback: [Add or Comment on a discussion](https://github.com/micro-nova/AmpliPi/discussions)
 

@@ -3,7 +3,7 @@
 
 ![Controller - Front Panel](imgs/manual/front_main_panel.jpg)
 
-- **DISPLAY**: Show IP Address, Hostname, Password, audio info and zone volumes.
+- **DISPLAY**: Show IP Address, Hostname, and SSH Password.
 - **ON/STANDBY**: Show state of the audio controller:
     - Green: Unit is on
     - Red: Unit is in Standby
@@ -16,10 +16,10 @@
 
 ![Controller - Rear Panel](imgs/manual/rear_main_panel.jpg)
 
-- **POWER**: 115V, or optionally 230V connection. An internal 115/230 switch is set internally on the power supply and marked on the rear of the unit.
+- **POWER**: 115V, or optionally 230V connection. See installation page for more detail.
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller.
 - **SERVICE**: USB mini connection for re-imaging the Pi's EMMC.
-- **USB**: USB A ports for connecting peripherals such as additional storage devices.
+- **USB**: USB A ports for connecting peripherals such as additional storage devices. Do not power an input using the USBs, see installation page for more info.
 - **OPTICAL IN**: SPDIF audio input, planned to be used for extra inputs.
 - **AUX IN**: Additional stereo input, planned to be used for announcements.
 - **HDMI OUT**: The Pi's HDMI output, can be used for visualizations or development.
