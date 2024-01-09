@@ -84,6 +84,6 @@ Now that the AmpliPro unit is powered on, it is time to play with it. Let's see 
 5. Change the volume on the zone you would like to output music on. Many of the zones will be hidden inside a group. Click on the different groups to see which zones belong to them.
 6. You will probably want to change the default group and zone names and add different streaming sources. The gear icon (⚙) on the bottom right leads to the settings page where you can configure inputs, zones, and groups.
 
-Since this was printed we may have added more features and made the AmpliPro better; this guide is continued at amplipi.com/getting-started. Use the QR code below to jump there now.
+Since AmpliPro is constantly improving, our manual may have been updated. Go to amplipi.com/getting-started or scan the QR code below to view the latest version of our manual.
 
 ![Next steps](imgs/manual/amplipro-guide.png)
