@@ -160,14 +160,14 @@ def get_status(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   return ctrl.get_state()
 
 
-@api.post('/api/load', tags=['status'])
+@api.post('/api/load', tags=['config'])
 def load_config(config: models.Status, ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Load a new configuration (and return the configuration loaded). This will overwrite the current configuration so it is advised to save the previous config from. """
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change, config=config)
   return ctrl.get_state()
 
 
-@api.post('/api/factory_reset', tags=['status'])
+@api.post('/api/factory_reset', tags=['config'])
 def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Load the "factory" configuration (and return the configuration loaded).
   This will reset all zone names and streams back to their original configuration.
@@ -177,7 +177,7 @@ def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   return load_config(models.Status(**default_config), ctrl)
 
 
-@api.post('/api/reset', tags=['status'])
+@api.post('/api/reset', tags=['config'])
 def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Reload the current configuration, resetting the firmware in the process. """
   ctrl.reinit(settings=ctrl._settings, change_notifier=notify_on_change)
@@ -185,7 +185,7 @@ def reset(ctrl: Api = Depends(get_ctrl)) -> models.Status:
 
 
 @api.post(
-  '/api/reboot', tags=['status'],
+  '/api/reboot', tags=['config'],
   response_class=Response,
   responses={
     200: {}
@@ -202,7 +202,7 @@ def reboot():
 
 
 @api.post(
-  '/api/shutdown', tags=['status'],
+  '/api/shutdown', tags=['config'],
   response_class=Response,
   responses={
     200: {}
@@ -220,7 +220,8 @@ def shutdown():
 
 
 @api.post(
-  '/api/lms_mode', response_class=Response,
+  '/api/lms_mode', tags=['config'],
+  response_class=Response,
   responses={
     200: {}
   }
@@ -555,7 +556,7 @@ def get_info(ctrl: Api = Depends(get_ctrl)) -> models.Info:
   return code_response(ctrl, ctrl.get_info())
 
 
-@app.get('/debug')
+@app.get('/debug', tags=['status'])
 def debug() -> models.DebugResponse:
   """ Returns debug status and configuration. """
   debug_file = pathlib.Path.home().joinpath(".config/amplipi/debug.json")
@@ -817,7 +818,7 @@ def create_yaml_doc(add_test_docs=True) -> str:
   openapi['info']['description'] = '$REPLACE_ME$'
   yaml_s = yaml.safe_dump(openapi, sort_keys=False, allow_unicode=True)
   # fix the long description
-  return yaml_s.replace('$REPLACE_ME$', YAML_DESCRIPTION)
+  return str(yaml_s).replace('$REPLACE_ME$', YAML_DESCRIPTION)
 
 # additional yaml version of openapi.json
 # this is much more human readable

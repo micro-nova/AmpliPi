@@ -15,6 +15,16 @@
           "justMyCode": false
       },
       {
+        "name": "Create API spec",
+        "type": "python",
+        "request": "launch",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}",
+        "module": "amplipi.app",
+        "args": ["docs/amplipi_api.yaml"],
+        "justMyCode": false
+      },
+      {
         "name": "Web App",
         "type": "python",
         "request": "launch",

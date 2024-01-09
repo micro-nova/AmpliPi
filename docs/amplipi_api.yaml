@@ -84,6 +84,8 @@ servers:
 paths:
   /debug:
     get:
+      tags:
+      - status
       summary: Debug
       description: Returns debug status and configuration.
       operationId: debug_debug_get
@@ -944,7 +946,7 @@ paths:
   /api/load:
     post:
       tags:
-      - status
+      - config
       summary: Load Config
       description: Load a new configuration (and return the configuration loaded).
         This will overwrite the current configuration so it is advised to save the
@@ -1779,7 +1781,7 @@ paths:
   /api/factory_reset:
     post:
       tags:
-      - status
+      - config
       summary: Load Factory Config
       description: 'Load the "factory" configuration (and return the configuration
         loaded).
@@ -2203,7 +2205,7 @@ paths:
   /api/reset:
     post:
       tags:
-      - status
+      - config
       summary: Reset
       description: Reload the current configuration, resetting the firmware in the
         process.
@@ -2623,7 +2625,7 @@ paths:
   /api/reboot:
     post:
       tags:
-      - status
+      - config
       summary: Reboot
       description: Restart the OS and all of the AmpliPi services.
       operationId: reboot_api_reboot_post
@@ -2636,7 +2638,7 @@ paths:
   /api/shutdown:
     post:
       tags:
-      - status
+      - config
       summary: Shutdown
       description: 'Shutdown AmpliPi and its OS.
 
@@ -2651,6 +2653,8 @@ paths:
       - APIKeyQuery: []
   /api/lms_mode:
     post:
+      tags:
+      - config
       summary: Lms Mode
       description: Toggles Logitech Media Server mode on or off.
       operationId: lms_mode_api_lms_mode_post
@@ -10038,6 +10042,8 @@ paths:
       - APIKeyQuery: []
   /auth/login:
     get:
+      tags:
+      - auth
       summary: Login Page
       description: Render the login page.
       operationId: login_page_auth_login_get
@@ -10045,6 +10051,8 @@ paths:
         '200':
           description: Successful Response
     post:
+      tags:
+      - auth
       summary: Login
       description: Handle a POST to the login page.
       operationId: login_auth_login_post
@@ -10258,6 +10266,24 @@ components:
 
 
         Volume, mute, and source_id fields are aggregates of the member zones.'
+      creation_examples:
+        Upstairs Group:
+          value:
+            name: Upstairs
+            zones:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+        Downstairs Group:
+          value:
+            name: Downstairs
+            zones:
+            - 6
+            - 7
+            - 8
+            - 9
       examples:
         Upstairs Group:
           value:
@@ -10282,24 +10308,6 @@ components:
             - 9
             vol_delta: -30
             vol_f: 0.63
-      creation_examples:
-        Upstairs Group:
-          value:
-            name: Upstairs
-            zones:
-            - 1
-            - 2
-            - 3
-            - 4
-            - 5
-        Downstairs Group:
-          value:
-            name: Downstairs
-            zones:
-            - 6
-            - 7
-            - 8
-            - 9
     GroupUpdate:
       title: GroupUpdate
       type: object
@@ -10583,10 +10591,9 @@ components:
 
         In addition to most of the configuration found in Status, this can contain
         commands as well that configure the state of different streaming services.'
-      examples:
-        Mute All:
+      creation_examples:
+        Add Mute All:
           value:
-            id: 10000
             name: Mute All
             state:
               zones:
@@ -10602,9 +10609,10 @@ components:
                 mute: true
               - id: 5
                 mute: true
-      creation_examples:
-        Add Mute All:
+      examples:
+        Mute All:
           value:
+            id: 10000
             name: Mute All
             state:
               zones:
@@ -11421,43 +11429,6 @@ components:
           type: boolean
           description: Is Airplay stream AirPlay2?
       description: 'Digital stream such as Pandora, AirPlay or Spotify '
-      examples:
-        Regina Spektor Radio:
-          value:
-            id: 90890
-            name: Regina Spektor Radio
-            password: ''
-            station: '4473713754798410236'
-            status: connected
-            type: pandora
-            user: example1@micro-nova.com
-        Matt and Kim Radio (disconnected):
-          value:
-            id: 90891
-            info:
-              details: No info available
-            name: Matt and Kim Radio
-            password: ''
-            station: '4610303469018478727'
-            status: disconnected
-            type: pandora
-            user: example2@micro-nova.com
-        AirPlay (connected):
-          value:
-            id: 44590
-            info:
-              details: No info available
-            name: Jason's iPhone
-            status: connected
-            type: airplay
-        AirPlay (disconnected):
-          value:
-            id: 4894
-            info:
-              details: No info available
-            name: Rnay
-            status: disconnected
-            type: airplay
       creation_examples:
         Add Beatles Internet Radio Station:
           value:
@@ -11528,6 +11499,43 @@ components:
             name: Family
             type: lms
             server: mylmsserver
+      examples:
+        Regina Spektor Radio:
+          value:
+            id: 90890
+            name: Regina Spektor Radio
+            password: ''
+            station: '4473713754798410236'
+            status: connected
+            type: pandora
+            user: example1@micro-nova.com
+        Matt and Kim Radio (disconnected):
+          value:
+            id: 90891
+            info:
+              details: No info available
+            name: Matt and Kim Radio
+            password: ''
+            station: '4610303469018478727'
+            status: disconnected
+            type: pandora
+            user: example2@micro-nova.com
+        AirPlay (connected):
+          value:
+            id: 44590
+            info:
+              details: No info available
+            name: Jason's iPhone
+            status: connected
+            type: airplay
+        AirPlay (disconnected):
+          value:
+            id: 4894
+            info:
+              details: No info available
+            name: Rnay
+            status: disconnected
+            type: airplay
     StreamCommand:
       title: StreamCommand
       enum:

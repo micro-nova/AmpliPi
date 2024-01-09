@@ -29,11 +29,11 @@
       "info": {
         "name": "Blackmill Radio - pandora",
         "state": "playing",
-        "artist": "The Glitch Mob",
-        "track": "Fortune Days X We Can Make the World Stop (revision)",
-        "album": "Revisions",
-        "station": "Blackmill Radio",
-        "img_url": "http://cont-2.p-cdn.us/images/9e/f4/2f/71/1af94446bb248907ef8ff7aa/1080W_1080H.jpg",
+        "artist": "Jimmy Eat World",
+        "track": "The Middle",
+        "album": "Bleed American (Deluxe Edition)",
+        "station": "Matt and Kim Radio",
+        "img_url": "http://mediaserver-cont-sv5-2-v4v6.pandora.com/images/bc/67/44/32/01204ba99c6ac8cd32324a59/1080W_1080H.jpg",
         "supported_cmds": [
           "play",
           "pause",
@@ -52,11 +52,7 @@
       "info": {
         "name": "Classical - pandora",
         "state": "playing",
-        "artist": "Camerata Romana & Antonio Lucio",
-        "track": "Violin Concerto No. 2 in E Major, BWV 1042: II. Adagio",
-        "album": "Bach: Concerto for 2 Violins & Violin Concertos Nos. 1, 2",
-        "station": "Antonio Vivaldi Radio",
-        "img_url": "http://cont.p-cdn.us/images/6e/22/4f/26/958244ae94802788ac2c54c3/1080W_1080H.jpg",
+        "img_url": "static/imgs/pandora.png",
         "supported_cmds": [
           "play",
           "pause",
@@ -74,9 +70,9 @@
       "id": 0,
       "name": "Software Office",
       "source_id": 2,
-      "mute": false,
+      "mute": true,
       "vol": -56,
-      "vol_f": 0.2825278810408922,
+      "vol_f": 0.28,
       "vol_min": -70,
       "vol_max": -20,
       "disabled": false
@@ -120,7 +116,7 @@
       "source_id": 0,
       "mute": true,
       "vol": -45,
-      "vol_f": 0.5073529411764706,
+      "vol_f": 0.5,
       "vol_min": -70,
       "vol_max": -20,
       "disabled": false
@@ -131,7 +127,7 @@
       "source_id": 0,
       "mute": true,
       "vol": -23,
-      "vol_f": 0.9368029739776952,
+      "vol_f": 0.94,
       "vol_min": -70,
       "vol_max": -20,
       "disabled": false
@@ -153,7 +149,7 @@
       "source_id": 0,
       "mute": true,
       "vol": -51,
-      "vol_f": 0.38602941176470584,
+      "vol_f": 0.38,
       "vol_min": -70,
       "vol_max": -20,
       "disabled": false
@@ -164,7 +160,7 @@
       "source_id": 0,
       "mute": true,
       "vol": -13,
-      "vol_f": 0.9446494464944649,
+      "vol_f": 0.95,
       "vol_min": -70,
       "vol_max": -10,
       "disabled": false
@@ -285,9 +281,9 @@
         11,
         16
       ],
-      "mute": false,
+      "mute": true,
       "vol_delta": -39,
-      "vol_f": 0.5084014869888476
+      "vol_f": 0.51
     },
     {
       "id": 102,
@@ -308,9 +304,9 @@
         0,
         7
       ],
-      "mute": false,
-      "vol_delta": -53,
-      "vol_f": 0.33427864640279903
+      "mute": true,
+      "vol_delta": -54,
+      "vol_f": 0.33
     },
     {
       "id": 104,
@@ -338,9 +334,9 @@
         4,
         5
       ],
-      "mute": false,
+      "mute": true,
       "vol_delta": -39,
-      "vol_f": 0.5084014869888476
+      "vol_f": 0.51
     },
     {
       "id": 106,
@@ -355,7 +351,7 @@
       ],
       "mute": true,
       "vol_delta": -39,
-      "vol_f": 0.5123247232472324
+      "vol_f": 0.515
     },
     {
       "id": 107,
@@ -375,26 +371,59 @@
   ],
   "streams": [
     {
+      "id": 996,
+      "name": "TV",
+      "type": "rca",
+      "index": 0,
+      "disabled": false
+    },
+    {
+      "id": 997,
+      "name": "Record Player",
+      "type": "rca",
+      "index": 1,
+      "disabled": false
+    },
+    {
+      "id": 998,
+      "name": "Input 3",
+      "type": "rca",
+      "index": 2,
+      "disabled": false
+    },
+    {
+      "id": 999,
+      "name": "Input 4",
+      "type": "rca",
+      "index": 3,
+      "disabled": false
+    },
+    {
       "id": 1000,
       "name": "Groove Salad",
       "type": "internetradio",
       "url": "http://ice6.somafm.com/groovesalad-32-aac",
-      "logo": "https://somafm.com/img3/groovesalad-400.jpg"
+      "logo": "https://somafm.com/img3/groovesalad-400.jpg",
+      "disabled": false
     },
     {
       "id": 1001,
       "name": "Jason's House",
-      "type": "airplay"
+      "type": "airplay",
+      "disabled": false,
+      "ap2": false
     },
     {
       "id": 1002,
       "name": "Jasons House",
-      "type": "spotify"
+      "type": "spotify",
+      "disabled": false
     },
     {
       "id": 1003,
       "name": "Jason's House",
-      "type": "dlna"
+      "type": "dlna",
+      "disabled": false
     },
     {
       "id": 1004,
@@ -402,7 +431,8 @@
       "type": "pandora",
       "user": "example@micro-nova.com",
       "password": "",
-      "station": "135242131387190035"
+      "station": "135242131387190035",
+      "disabled": false
     },
     {
       "id": 1005,
@@ -410,7 +440,8 @@
       "type": "pandora",
       "user": "example@micro-nova.com",
       "password": "",
-      "station": "134892486689565953"
+      "station": "134892486689565953",
+      "disabled": false
     },
     {
       "id": 1006,
@@ -418,19 +449,29 @@
       "type": "pandora",
       "user": "example@micro-nova.com",
       "password": "",
-      "station": "91717963601693449"
+      "station": "91717963601693449",
+      "disabled": false
     },
     {
       "id": 1007,
       "name": "Beatles Radio",
       "type": "internetradio",
       "url": "http://www.beatlesradio.com:8000/stream/1/",
-      "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"
+      "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif",
+      "disabled": false
     },
     {
       "id": 1008,
       "name": "Downstairs",
-      "type": "spotify"
+      "type": "spotify",
+      "disabled": false
+    },
+    {
+      "id": 1009,
+      "name": "Bluetooth",
+      "type": "bluetooth",
+      "logo": "static/imgs/bluetooth.png",
+      "disabled": false
     }
   ],
   "presets": [
@@ -462,6 +503,54 @@
           {
             "mute": true,
             "id": 5
+          },
+          {
+            "mute": true,
+            "id": 6
+          },
+          {
+            "mute": true,
+            "id": 7
+          },
+          {
+            "mute": true,
+            "id": 8
+          },
+          {
+            "mute": true,
+            "id": 9
+          },
+          {
+            "mute": true,
+            "id": 10
+          },
+          {
+            "mute": true,
+            "id": 11
+          },
+          {
+            "mute": true,
+            "id": 12
+          },
+          {
+            "mute": true,
+            "id": 13
+          },
+          {
+            "mute": true,
+            "id": 14
+          },
+          {
+            "mute": true,
+            "id": 15
+          },
+          {
+            "mute": true,
+            "id": 16
+          },
+          {
+            "mute": true,
+            "id": 17
           }
         ]
       },
@@ -631,7 +720,7 @@
             "source_id": 1,
             "mute": true,
             "vol": -70,
-            "vol_f": 0,
+            "vol_f": 0.0,
             "vol_min": -70,
             "vol_max": -30,
             "disabled": false,
@@ -642,7 +731,7 @@
             "source_id": 1,
             "mute": true,
             "vol": -70,
-            "vol_f": 0,
+            "vol_f": 0.0,
             "vol_min": -70,
             "vol_max": -30,
             "disabled": false,
@@ -653,7 +742,7 @@
             "source_id": 1,
             "mute": true,
             "vol": -70,
-            "vol_f": 0,
+            "vol_f": 0.0,
             "vol_min": -70,
             "vol_max": -30,
             "disabled": false,
@@ -664,7 +753,7 @@
             "source_id": 1,
             "mute": true,
             "vol": -70,
-            "vol_f": 0,
+            "vol_f": 0.0,
             "vol_min": -70,
             "vol_max": -30,
             "disabled": false,
@@ -686,7 +775,7 @@
             "source_id": 1,
             "mute": true,
             "vol": -70,
-            "vol_f": 0,
+            "vol_f": 0.0,
             "vol_min": -70,
             "vol_max": -30,
             "disabled": false,
@@ -726,7 +815,7 @@
             ],
             "mute": true,
             "vol_delta": -80,
-            "vol_f": 0,
+            "vol_f": 0.0,
             "id": 101
           },
           {
@@ -758,28 +847,15 @@
     }
   ],
   "info": {
-    "version": "0.1.9+e65e368-0.1.9-prerelease-dirty",
+    "version": "0.3.1",
     "config_file": "house.json",
     "mock_ctrl": false,
     "mock_streams": false,
-    "online": true,
+    "is_streamer": false,
+    "online": false,
     "latest_release": "0.1.8",
-    "fw": [
-      {
-        "version": "1.6",
-        "git_hash": "de0f8eb",
-        "git_dirty": false
-      },
-      {
-        "version": "1.6",
-        "git_hash": "de0f8eb",
-        "git_dirty": false
-      },
-      {
-        "version": "1.6",
-        "git_hash": "de0f8eb",
-        "git_dirty": false
-      }
-    ]
+    "access_key": "",
+    "lms_mode": false,
+    "fw": []
   }
 }
