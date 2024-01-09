@@ -9,7 +9,7 @@ AmpliPi currently supports at most one Bluetooth stream at a time. If a Bluetoot
 -  [ZEXMTE Long Range USB Bluetooth Adapter](https://www.amazon.com/gp/product/B08LVH5BCP/).
 
 ### Other USB Bluetooth dongles
-Other Bluetooth dongles may need drivers to be installed. We suggest ensuring the maximum range of the adapter encompasses your whole home.
+Other Bluetooth dongles may need drivers to be installed. We suggest ensuring the maximum range of the adapter encompasses your whole home so that the music isn't spotty.
 
 ## How to play audio
 1. Set one of the sources to the Bluetooth stream input

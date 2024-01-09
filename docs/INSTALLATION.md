@@ -12,7 +12,7 @@ Main Controllers and Zone Expanders both ship with built in 19" rackmount ears, 
 
 Some things to keep in mind avoid overheating the unit:
 - Don't block the vent holes on the side
-- Don't allow dust to build up inside the unit to avoid overheading the unit. See cleaning instructions page for more detail.
+- Don't allow dust to build up inside the unit to avoid overheating the unit. See cleaning instructions page for more detail.
 
 
 ## Speakers

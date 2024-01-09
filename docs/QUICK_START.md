@@ -79,7 +79,7 @@ Zones attach to main units using the CHAIN IN/OUT connectors on the rear panel.
 
 Now that the AmpliPi unit is powered on, it is time to play with it. Let's see what it can do:
 
-1. Go to [amplipi.local](http://amplipi.local/0) (Android and Windows 7 users will need to type the ip address found on the unit's display into their web browser to find the page).
+1. Go to [amplipi.local](http://amplipi.local). If you've changed your hostname, you can also check the units front display for the url.
    You should now be connected to AmpliPi's mobile-friendly website.
    Please note that an https connection to the AmpliPi is not currently available since certificates have to be managed on a per-unit basis.
    Android users can download the [AmpliPi app](https://play.google.com/store/apps/details?id=com.amplipishellapp) in the Google Play Store.
