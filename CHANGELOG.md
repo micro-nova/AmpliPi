@@ -10,6 +10,8 @@
 * System
   * Manage the /boot/config.txt Raspberry Pi firmware configuration file for bugfixes
 * Added aux input stream, a special stream that is always available and is used to select the 3.5mm input.
+* Developing
+  * Make `image_pi` script bail when the imaging is unsuccessful
 
 ## 0.3.1
 * System
