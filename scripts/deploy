@@ -6,28 +6,30 @@ set -e
 # get directory that the script exists in
 cd "$( dirname "$0" )"
 
-HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)\n
-  usage: deploy [USER@HOST] [--mock-ctrl]\n
-\n
-  --fw:  program the latest preamp firmware\n
-  --pw:  generate and set a new random password\n
-"
+HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (default: pi@amplipi.local)
+  usage: deploy [USER@HOST]
+
+  --fw:      program the latest preamp firmware
+  --pw:      generate and set a new random password
+  --no-deps: skip installing os-deps and python-deps on AmpliPi"
 
 user_host='pi@amplipi.local'
 user_host_set=false
 fw=false
 pw=false
+deps=true
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --fw) fw=true ;;
     --pw) pw=true ;;
-    -h|--help) echo -e $HELP; exit 0 ;;
+    --no-deps) deps=false ;;
+    -h|--help) echo -e "$HELP"; exit 0 ;;
     *) if ! $user_host_set; then
           user_host=$1
           user_host_set=true
       else
           echo "Unknown parameter passed: $1";
-          echo -e $HELP;
+          echo -e "$HELP";
           exit 1
       fi
       ;;
@@ -35,15 +37,10 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-printf "Deploying amplipi project "
-printf "to $user_host.\n"
-printf "Preamp firmware will "
-$fw || printf "NOT "
-printf "be programmed.\n"
-printf "A new password will "
-$pw || printf "NOT "
-printf "be generated.\n"
-#to $user_host
+printf "Deploying amplipi project to $user_host.\n"
+printf "Preamp firmware will %sbe programmed.\n" "$($fw || printf "NOT ")"
+printf "A new password will %sbe generated.\n" "$($pw || printf "NOT ")"
+printf "os-deps and python-deps will %sbe installed on $user_host.\n" "$($deps || printf "NOT ")"
 read -p "Press any key to continue (Ctrl-C to quit)" -n 1
 printf "\n"
 # TODO: deploy amplipi as a python installed package with pip or something similar
@@ -129,13 +126,9 @@ $python -m pip install --upgrade pip
 $python -m pip install poetry
 echo -e "Finished checking dependencies\n"
 
-if ! $mock_ctrl; then
-  # set ENABLE_HW flag since this is being deployed to a machine with the actual hardware setup
-  sed -i 's/DISABLE_HW = True/DISABLE_HW = False/' ../amplipi/rt.py
-fi
-
 # use a new version for the build but hide it from git since it isn't a real release
 old_version=$(poetry version -s)
+base_version=${old_version%+*} # trim +XXXXX to avoid generating a bad version below
 # parse the git info into: VERSION+GIT_HASH-BRANCH_NAME[-dirty]
 # 'git describe' searches the git commit tree for the latest version tag.
 # The only guaranteed output is the 7-character short commit hash of the current commit,
@@ -148,24 +141,20 @@ old_version=$(poetry version -s)
 git_description=$(git describe --always --dirty --long --match '*.*.*' 2>/dev/null) || true
 if [[ -z $git_description ]]; then
   # not a git repo, use poetry version and indicate unkown development state
-  git_info="$old_version+unknown"
+  git_info="$base_version+unknown"
 else
-  git_version=$(echo "$git_description" | sed -nE 's/([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')
-  # anything before the first tag will be an empty string, so define that as ver 0.0.0
-  [[ -z $git_version ]] && git_version=0.0.0
   # the hash is by default 7 hex chars, but could be more if required to avoid collisions
   git_hash=$(echo "$git_description" | sed -E 's/.*([0-9a-f]{7,}).*/\1/')
   git_branch=$(git symbolic-ref --short HEAD 2>/dev/null) && git_branch="-$git_branch"
   git_dirty=$(echo "$git_description" | sed -n 's/.*-dirty/-dirty/p')
-  git_info="$git_version+$git_hash$git_branch$git_dirty"
+  git_info="$base_version+$git_hash$git_branch$git_dirty"
 fi
 poetry version ${git_info}
 
-# build webapp
 echo "Building web app"
-pushd ../web                                                 # Change to web directory
-npm install                                                       # Install nodejs dependencies
-npm run build                                                     # Build the web app
+pushd ../web            # Change to web directory
+npm install             # Install nodejs dependencies
+npm run build           # Build the web app
 popd
 
 # build release file (put in dist/)
@@ -204,29 +193,38 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
-ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --os-deps --python-deps --web --restart-updater --display --audiodetector$opts" || echo ""
+$deps && opts="$opts --os-deps --python-deps"
+ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" || echo ""
 
-echo -e "Waiting for AmpliPi to restart\n"
+printf "Waiting for AmpliPi to restart"
 restart_finished=false
 for i in {1..30}; do
   sleep 2
   printf "."
   if [[ "$ping_loc" == /c/Windows/system32/ping ]] && ping -n 2 $host; then
-    restart_finished=true;
-    break;
+    restart_finished=true
+    break
   elif ping -c 2 $host 1>/dev/null 2>/dev/null; then
-    restart_finished=true;
-    break;
+    restart_finished=true
+    break
   fi
 done
+echo
 if $restart_finished; then
-  echo -e "\nRestart successful, waiting for amplipi service\n";
-  for i in {1..20}; do
+  printf "Restart successful, waiting for amplipi service."
+  amplipi_found=false
+  for i in {1..30}; do
+    sleep 2
     printf "."
-    sleep 1
+    if curl -sX GET "${host}/api" -H "Accept: application/json" >/dev/null; then
+      amplipi_found=true
+      printf "\nUpdate finished.\n"
+      break
+    fi
   done
-  echo ""
-  curl -X GET "${host}/api"  -H "Accept: application/json"  1>/dev/null 2>/dev/null  && echo "Update finished" || echo "Failed to detect ${host}/api"
+  if ! $amplipi_found; then
+    printf "\nFailed to detect ${host}/api.\n"
+  fi
 else
-  echo "Restart failed";
+  echo "Restart failed."
 fi
