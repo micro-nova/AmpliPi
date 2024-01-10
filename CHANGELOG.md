@@ -4,6 +4,7 @@
 * Web App
   * Fixed bug that allows disabled streams to be shown & selected
   * Close the preset modal when the preset has been executed
+  * Remove Elastic APM RUM client
 * Make zeroconf advertisement more robust to ip address changes
 * Remove deprecated old zeroconf advertisement
 * System
