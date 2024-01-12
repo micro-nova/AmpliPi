@@ -28,6 +28,17 @@ RED='\033[0;31m'
 GRN='\033[0;32m'
 NC='\033[0m'
 
+# Show user that an error occured before exiting
+handle_error () {
+  echo -e "\n${RED}An error occured! Imaging failed.${NC}\n"
+  read -p "Press any key to continue..." -rsn1
+  echo ""
+}
+
+# Bail if something goes wrong.
+trap handle_error ERR
+set -e
+
 img_file=''         # ...or use this image file explicitly
 instructions=true   # Skip manual instruction step
 while [[ "$#" -gt 0 ]]; do
@@ -86,8 +97,6 @@ est_time=$(echo "$img_size_mb/$write_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
 echo "Copying the image to the AmpliPi. This takes about $est_time minutes."
 echo "Go get a coffee or something :)"
 echo "Started at: $(date)"
-trap "read -p 'error! press any key to continue...'" ERR
-set -e # bail if something goes wrong.
 sudo dd if=$img_file of=$diskpath bs=4MiB status=progress
 echo "Finished at: $(date)"
 
