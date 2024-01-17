@@ -35,10 +35,6 @@ handle_error () {
   echo ""
 }
 
-# Bail if something goes wrong.
-trap handle_error ERR
-set -e
-
 img_file=''         # ...or use this image file explicitly
 instructions=true   # Skip manual instruction step
 while [[ "$#" -gt 0 ]]; do
@@ -97,7 +93,7 @@ est_time=$(echo "$img_size_mb/$write_speed_mb/60+0.5" | bc -l | cut -d'.' -f1)
 echo "Copying the image to the AmpliPi. This takes about $est_time minutes."
 echo "Go get a coffee or something :)"
 echo "Started at: $(date)"
-sudo dd if=$img_file of=$diskpath oflag=sync bs=1M status=progress
+sudo dd if=$img_file of=$diskpath oflag=sync bs=1M status=progress || handle_error
 echo "Finished at: $(date)"
 
 echo -e "
