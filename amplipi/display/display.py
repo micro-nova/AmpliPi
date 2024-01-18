@@ -32,6 +32,8 @@ def main():
                       help='set logging level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
   parser.add_argument('--test-timeout', metavar='SECS', type=float, default=0.0,
                       help='if >0, perform a hardware test and exit on success or timeout')
+  parser.add_argument('--delivery-message', action='store_true', default=False,
+                      help='if an eink screen display the delivery message and exit, otherwise do nothing')
   args = parser.parse_args()
 
   args.log = args.log.upper()
@@ -50,6 +52,11 @@ def main():
       if disp and disp.init():
         # successful init, run this display
         initialized = True
+
+        if (args.delivery_message):
+          disp.display_delivery_message()
+          sys.exit(0)
+
         disp.run()
       else:
         log.debug(f'Failed to initialize {type(disp)}')

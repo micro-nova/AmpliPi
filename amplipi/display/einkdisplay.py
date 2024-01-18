@@ -4,6 +4,7 @@
 
 from collections import namedtuple
 import sys
+import pathlib
 from time import sleep
 from typing import List, Optional
 
@@ -68,6 +69,12 @@ class EInkDisplay(Display):
       log.error(f'Failed to load driver: {e}')
       return False
     return True
+
+  def display_delivery_message(self):
+    """Display the delivery message and exit"""
+    image = Image.open(f'{pathlib.Path(__file__).parent.resolve()}/imgs/delivery_message.png').convert('1')
+
+    self.epd.display(self.epd.get_buffer(image))
 
   def run(self):
     self._ok = True
