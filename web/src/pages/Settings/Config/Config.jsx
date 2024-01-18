@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import "../PageBody.scss";
 import "./Config.scss";
+import { IsMobileApp } from "@/utils/MobileApp";
 import PageHeader from "@/components/PageHeader/PageHeader";
 import { Button, Divider, Switch } from "@mui/material";
 import { useStatusStore } from "@/App.jsx";
@@ -15,6 +16,10 @@ const UploadConfig = (file) => {
 };
 
 const DownloadConfig = () => {
+    if (IsMobileApp()) {
+        alert("This feature is not available in the mobile app.");
+        return;
+    }
     fetch("/api").then((response) => {
         response.json().then((json) => {
             const element = document.createElement("a");
@@ -48,17 +53,17 @@ const HWShutdown = () => {
 
 const LMSModeHandler = () => {
     DownloadConfig();
-    fetch("/api/lms_mode", {method: "POST"});
-}
+    fetch("/api/lms_mode", { method: "POST" });
+};
 
 const Config = ({ onClose }) => {
     const [file, setFile] = React.useState([]);
     const [filePicked, setFilePicked] = React.useState(false);
 
     const onChange = (event) => {
-        if (!event.target.files[0]){
-          setFilePicked(false);
-          return;
+        if (!event.target.files[0]) {
+            setFilePicked(false);
+            return;
         }
         event.target.files[0].text().then((text) => {
             setFile(JSON.parse(text));
@@ -73,7 +78,7 @@ const Config = ({ onClose }) => {
             <PageHeader title="Config" onClose={onClose} />
             <div className="page-body">
                 <div>
-          Upload Config
+                    Upload Config
                     <div className="config-desc">
                         {"Uploads the selected configuration file."}
                     </div>
@@ -83,12 +88,14 @@ const Config = ({ onClose }) => {
                             accept=".json,application/json"
                             onChange={onChange}
                         />
-                        <Button disabled={!filePicked} onClick={() => UploadConfig(file)}>Upload</Button>
+                        <Button disabled={!filePicked} onClick={() => UploadConfig(file)}>
+                            Upload
+                        </Button>
                     </div>
                 </div>
                 <Divider />
                 <div>
-          Download Config
+                    Download Config
                     <div className="config-desc">
                         {"Downloads the current configuration."}
                     </div>
@@ -96,7 +103,7 @@ const Config = ({ onClose }) => {
                 </div>
                 <Divider />
                 <div>
-          Factory Config
+                    Factory Config
                     <div className="config-desc">
                         {
                             "Resets Amplipi to the factory default configuration. We recommend downloading the current configuration beforehand."
@@ -106,15 +113,21 @@ const Config = ({ onClose }) => {
                 </div>
                 <Divider />
                 <div>
-          Logitech Media Server (LMS) Mode
+                    Logitech Media Server (LMS) Mode
                     <div className="config-desc">
-                        {"Toggles LMS Mode on or off. LMS is useful for piggy-backing off integrations AmpliPi does not have natively. This will wipe out the current config! As a result, it downloads the current config before proceeding with LMS mode."}
+                        {
+                            "Toggles LMS Mode on or off. LMS is useful for piggy-backing off integrations AmpliPi does not have natively. This will wipe out the current config! As a result, it downloads the current config before proceeding with LMS mode."
+                        }
                     </div>
-                    <Switch checked={lmsMode} onChange={LMSModeHandler} inputProps={{ 'aria-label': 'controlled'}} />
+                    <Switch
+                        checked={lmsMode}
+                        onChange={LMSModeHandler}
+                        inputProps={{ "aria-label": "controlled" }}
+                    />
                 </div>
                 <Divider />
                 <div>
-          HW Reset
+                    HW Reset
                     <div className="config-desc">
                         {
                             "Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)"
@@ -124,7 +137,7 @@ const Config = ({ onClose }) => {
                 </div>
                 <Divider />
                 <div>
-          HW Reboot
+                    HW Reboot
                     <div className="config-desc">
                         {"Reboots the Raspberry Pi-based controller"}
                     </div>
@@ -132,7 +145,7 @@ const Config = ({ onClose }) => {
                 </div>
                 <Divider />
                 <div>
-          HW Shutdown
+                    HW Shutdown
                     <div className="config-desc">
                         {"Trigger a shutdown of the Raspberry Pi-based controller"}
                     </div>

@@ -20,8 +20,10 @@ import InfoIcon from "@mui/icons-material/Info";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import ListItem from "@/components/List/ListItem/ListItem";
 import List from "@/components/List/List";
+import { IsMobileApp, IsSaved, SaveURL, UnsaveURL } from "@/utils/MobileApp";
 
 import PropTypes from "prop-types";
+import Checkbox from "@mui/material/Checkbox";
 
 // TODO klayton: delete?
 // const PageListItem = ({ name, onClick, children }) => {
@@ -44,22 +46,22 @@ const close = () => router.navigate("/settings");
 
 const CorePage = ({ openPage }) => {
     switch (openPage) {
-    case "streams":
-        return <Streams onClose={close} />;
-    case "zones":
-        return <Zones onClose={close} />;
-    case "groups":
-        return <Groups onClose={close} />;
-    case "sessions":
-        return <Sessions onClose={close} />;
-    case "presets":
-        return <Presets onClose={close} />;
-    case "config":
-        return <Config onClose={close} />;
-    case "about":
-        return <About onClose={close} />;
-    default:
-        return <div></div>;
+        case "streams":
+            return <Streams onClose={close} />;
+        case "zones":
+            return <Zones onClose={close} />;
+        case "groups":
+            return <Groups onClose={close} />;
+        case "sessions":
+            return <Sessions onClose={close} />;
+        case "presets":
+            return <Presets onClose={close} />;
+        case "config":
+            return <Config onClose={close} />;
+        case "about":
+            return <About onClose={close} />;
+        default:
+            return <div></div>;
     }
 };
 CorePage.propTypes = {
@@ -83,6 +85,7 @@ Page.propTypes = {
 
 const Settings = ({ openPage }) => {
     const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
+    const [isSavedUrl, setIsSavedUrl] = React.useState(IsSaved());
 
     if (openPage != "") {
         return <Page openPage={openPage} />;
@@ -102,25 +105,27 @@ const Settings = ({ openPage }) => {
                         </div>
                     </ListItem>
 
-                    { !is_streamer && (<>
-                        <ListItem
-                            name="Zones"
-                            onClick={() => router.navigate("/settings/zones")}
-                        >
-                            <div className="zones-icon">
-                                <SpeakerIcon fontSize="inherit" />
-                            </div>
-                        </ListItem>
+                    {!is_streamer && (
+                        <>
+                            <ListItem
+                                name="Zones"
+                                onClick={() => router.navigate("/settings/zones")}
+                            >
+                                <div className="zones-icon">
+                                    <SpeakerIcon fontSize="inherit" />
+                                </div>
+                            </ListItem>
 
-                        <ListItem
-                            name="Groups"
-                            onClick={() => router.navigate("/settings/groups")}
-                        >
-                            <div className="groups-icon">
-                                <SpeakerGroupIcon fontSize="inherit" />
-                            </div>
-                        </ListItem>
-                    </>)}
+                            <ListItem
+                                name="Groups"
+                                onClick={() => router.navigate("/settings/groups")}
+                            >
+                                <div className="groups-icon">
+                                    <SpeakerGroupIcon fontSize="inherit" />
+                                </div>
+                            </ListItem>
+                        </>
+                    )}
 
                     {/* <ListItem
             name="Sessions"
@@ -151,7 +156,7 @@ const Settings = ({ openPage }) => {
                         name="Updates"
                         onClick={() => {
                             window.location.href =
-                "http://" + window.location.hostname + ":5001/update";
+                                "http://" + window.location.hostname + ":5001/update";
                         }}
                     >
                         <div className="update-icon">
@@ -167,6 +172,22 @@ const Settings = ({ openPage }) => {
                             <InfoIcon fontSize="inherit" />
                         </div>
                     </ListItem>
+                    {IsMobileApp() && (
+                        <div>
+                            <text>Always connect to this Amplipi</text>
+                            <Checkbox
+                                checked={isSavedUrl}
+                                onChange={(e) => {
+                                    if (e.target.checked) {
+                                        SaveURL();
+                                    } else {
+                                        UnsaveURL();
+                                    }
+                                    setIsSavedUrl(e.target.checked);
+                                }}
+                            />
+                        </div>
+                    )}
                 </List>
             </div>
         </div>

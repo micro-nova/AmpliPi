@@ -3,6 +3,7 @@
 ## Upcoming version
 * Web App
   * Improve static asset deployment
+  * Add support for mobile app only functionality.
 
 ## 0.3.3
 * Web App
