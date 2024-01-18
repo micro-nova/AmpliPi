@@ -15,6 +15,10 @@ class Display:
     Must also clean up gpio before returning false."""
     raise NotImplementedError('Display.init')
 
+  def display_delivery_message(self):
+    """Display the delivery message and exit"""
+    raise NotImplementedError('Display.display_delivery_message')
+
   def run(self):
     """Called after a successful init. Should handle the rendering
     of a new image, displaying that image, and looping."""

@@ -1,0 +1,8 @@
+#!/bin/bash
+# This script shows the delivery message on an eink display.
+# It should be run before the last shutdown of the device prior to shipping.
+
+systemctl --user stop amplipi-display
+pushd /home/pi/amplipi-dev
+/home/pi/amplipi-dev/venv/bin/python -m amplipi.display.display --delivery-message
+popd
