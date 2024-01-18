@@ -53,11 +53,17 @@ const LMSModeHandler = () => {
 
 const Config = ({ onClose }) => {
     const [file, setFile] = React.useState([]);
+    const [filePicked, setFilePicked] = React.useState(false);
 
     const onChange = (event) => {
+        if (!event.target.files[0]){
+          setFilePicked(false);
+          return;
+        }
         event.target.files[0].text().then((text) => {
             setFile(JSON.parse(text));
         });
+        setFilePicked(true);
     };
 
     const lmsMode = useStatusStore((s) => s.status.info.lms_mode);
@@ -77,7 +83,7 @@ const Config = ({ onClose }) => {
                             accept=".json,application/json"
                             onChange={onChange}
                         />
-                        <Button onClick={() => UploadConfig(file)}>Upload</Button>
+                        <Button disabled={!filePicked} onClick={() => UploadConfig(file)}>Upload</Button>
                     </div>
                 </div>
                 <Divider />
