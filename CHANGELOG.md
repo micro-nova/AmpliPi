@@ -1,15 +1,16 @@
 # AmpliPi Software Releases
 
-## Upcoming release
+## 0.3.2
 * Web App
   * Fixed bug that allows disabled streams to be shown & selected
   * Close the preset modal when the preset has been executed
   * Remove Elastic APM RUM client
-* Make zeroconf advertisement more robust to ip address changes
-* Remove deprecated old zeroconf advertisement
+  * Make zeroconf advertisement more robust to ip address changes
+  * Remove deprecated old zeroconf advertisement
 * System
   * Manage the /boot/config.txt Raspberry Pi firmware configuration file for bugfixes
-* Added aux input stream, a special stream that is always available and is used to select the 3.5mm input.
+* Streams
+  * Added aux input stream, a special stream that is always available and is used to select the 3.5mm input.
 * Developing
   * Make `image_pi` script bail when the imaging is unsuccessful
 
