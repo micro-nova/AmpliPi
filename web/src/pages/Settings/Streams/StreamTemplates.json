@@ -111,12 +111,12 @@
   {
     "name": "Spotify Device",
     "type": "spotify",
-    "noCreate": true,
     "fields": []
   },
   {
     "name": "Aux Port",
     "type": "aux",
+    "noCreate": true,
     "fields": []
   },
   {
