@@ -1,8 +1,10 @@
 # AmpliPi Software Releases
 
-## Upcoming Release
+## 0.3.3
 * Web App
   * Improve functionality of configuration page
+* Streams
+  * Fix Spotify stream creation
 
 ## 0.3.2
 * Web App
