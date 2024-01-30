@@ -25,10 +25,6 @@ export default defineConfig({
         target: amplipiurl,
         changeOrigin: true,
       },
-      "/static": {
-        target: amplipiurl,
-        changeOrigin: true,
-      },
       "/update": {
         target: amplipiurl + ":5001",
         changeOrigin: true,

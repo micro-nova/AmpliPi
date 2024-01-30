@@ -26,14 +26,14 @@ $page-header-height: 3rem;
   font-weight: 400;
   font-stretch: normal;
   font-display: swap;
-  src: url(/static/fonts/opensans/opensans_v35.ttf) format('truetype');
+  src: url(@/../static/fonts/opensans/opensans_v35.ttf) format('truetype');
 }
 @font-face {
   font-family: 'Raleway';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url(/static/fonts/raleway/raleway_v28.ttf) format('truetype');
+  src: url(@/../static/fonts/raleway/raleway_v28.ttf) format('truetype');
 }
 
 @mixin header-font {
