@@ -28,4 +28,4 @@ To update your AmpliPi to the latest version:
 ## Reimaging AmpliPi
 To bring AmpliPi's OS and install back to its original state see: https://amplipi.discourse.group/t/re-imaging-the-raspberry-pi/46
 
-![https://amplipi.discourse.group/t/re-imaging-the-raspberry-pi/46](imgs/manual/reimaging-your-pi-qr.svg)
+<!-- ![https://amplipi.discourse.group/t/re-imaging-the-raspberry-pi/46](imgs/manual/reimaging-your-pi-qr.svg) -->

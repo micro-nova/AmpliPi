@@ -28,7 +28,7 @@ All of the connections will be made to the back panel. Here's a quick reference 
 
 Each of AmpliPi's 6 zones can drive a 4-8 Ohm speaker pair, using the provided Phoenix connectors. Here is what the basic wiring diagram for a zone looks like:
 
-![Speaker-Zone Diagram](imgs/zone_speaker_connection.svg)
+<!-- ![Speaker-Zone Diagram](imgs/zone_speaker_connection.svg) -->
 
 AmpliPi's amplifiers are capable of driving 4-8 Ohm speaker loads in a stereo configuration. Here is what a typical stereo speaker connection, using CL2 rated 14-AWG speaker wire and the Phoenix connectors, looks like:
 
