@@ -24,7 +24,7 @@ export const getIcon = (type) => {
     case "BLUETOOTH":
       return bluetooth;
 
-    case "FM RADIO":
+    case "FMRADIO":
       return fmradio;
 
     case "AIRPLAY":
@@ -42,7 +42,7 @@ export const getIcon = (type) => {
     case "RCA":
       return rca;
 
-    case "INTERNET RADIO":
+    case "INTERNETRADIO":
       return internetradio;
 
     case "AUX":

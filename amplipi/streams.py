@@ -27,8 +27,9 @@ from re import sub
 import sys
 import subprocess
 import time
-from typing import Union, Optional, List
+from typing import Union, Optional, List, ClassVar
 import threading
+import re
 
 import ast
 import json
@@ -252,7 +253,7 @@ class PersistentStream(BaseStream):
         vsources.free(vsrc)
 
   def _deactivate(self):
-    raise NotImplementedError(f'{self.stype} does not support deaactivation')
+    raise NotImplementedError(f'{self.stype} does not support deactivation')
 
   def reactivate(self):
     """ Stop and restart the stream behind the scenes.
@@ -305,8 +306,10 @@ class PersistentStream(BaseStream):
 class RCA(BaseStream):
   """ A built-in RCA input """
 
+  stream_type : ClassVar[str] = 'rca'
+
   def __init__(self, name: str, index: int, disabled: bool = False, mock: bool = False):
-    super().__init__('rca', name, only_src=index, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, only_src=index, disabled=disabled, mock=mock)
     # for serialiation the stream model's field needs to map to a stream's fields
     # index is needed for serialization
     self.index = index
@@ -345,8 +348,10 @@ class RCA(BaseStream):
 class AirPlay(PersistentStream):
   """ An AirPlay Stream """
 
+  stream_type : ClassVar[str] = 'airplay'
+
   def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
-    super().__init__('airplay', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.mpris: Optional[MPRIS] = None
     self.ap2 = ap2
     self.ap2_exists = False
@@ -524,8 +529,10 @@ class AirPlay(PersistentStream):
 class Spotify(PersistentStream):
   """ A Spotify Stream """
 
+  stream_type : ClassVar[str] = 'spotify'
+
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
-    super().__init__('spotify', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
 
     self.connect_port: Optional[int] = None
     self.mpris: Optional[MPRIS] = None
@@ -646,8 +653,10 @@ class Spotify(PersistentStream):
 class Pandora(PersistentStream):
   """ A Pandora Stream """
 
+  stream_type : ClassVar[str] = 'pandora'
+
   def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
-    super().__init__('pandora', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.user = user
     self.password = password
     self.station = station
@@ -791,8 +800,10 @@ class Pandora(PersistentStream):
 class DLNA(BaseStream):
   """ A DLNA Stream """
 
+  stream_type : ClassVar[str] = 'dlna'
+
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
-    super().__init__('dlna', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.proc2 = None
     self.uuid = 0
 
@@ -876,8 +887,10 @@ class DLNA(BaseStream):
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
 
+  stream_type : ClassVar[str] = 'internetradio'
+
   def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
-    super().__init__('internet radio', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.url = url
     self.logo = logo
     self.supported_cmds = ['play', 'stop']
@@ -981,8 +994,10 @@ class Plexamp(BaseStream):
   TODO: old plexamp interface was disabled, integrate support for new PlexAmp
   """
 
+  stream_type : ClassVar[str] = 'plexamp'
+
   def __init__(self, name: str, client_id, token, disabled: bool = False, mock: bool = False):
-    super().__init__('plexamp', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
 
   def reconfig(self, **kwargs):
     if 'disabled' in kwargs:
@@ -1006,10 +1021,14 @@ class Plexamp(BaseStream):
     source.track = "Not currently supported"
     return source
 
+
 class Aux(BaseStream):
   """ A stream to play from the aux input. """
+
+  stream_type : ClassVar[str] = 'aux'
+
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
-    super().__init__('aux', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
 
   def reconfig(self, **kwargs):
     if 'disabled' in kwargs:
@@ -1047,11 +1066,14 @@ class Aux(BaseStream):
                                state=self.state)
     return source
 
+
 class FilePlayer(BaseStream):
   """ An Single one shot file player - initially intended for use as a part of the PA Announcements """
 
+  stream_type : ClassVar[str] = 'fileplayer'
+
   def __init__(self, name: str, url: str, disabled: bool = False, mock: bool = False):
-    super().__init__('file player', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.url = url
     self.bkg_thread = None
 
@@ -1116,8 +1138,10 @@ class FilePlayer(BaseStream):
 class FMRadio(BaseStream):
   """ An FMRadio Stream using RTLSDR """
 
+  stream_type : ClassVar[str] = 'fmradio'
+
   def __init__(self, name: str, freq, logo: Optional[str] = None, disabled: bool = False, mock: bool = False):
-    super().__init__('fm radio', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.freq = freq
     self.logo = logo
 
@@ -1203,12 +1227,40 @@ class FMRadio(BaseStream):
       # print('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
 
+  @staticmethod
+  def is_hw_available():
+    """Determines if an FM Radio dongle is present"""
+    try:
+      if subprocess.run('which rtl_fm'.split(), check=False, stdout=subprocess.DEVNULL).returncode != 0:
+        return False
+      rtlcmd_proc = subprocess.run('rtl_fm -f 88.3 /dev/null'.split(), check=True, timeout=1, capture_output=True)
+      # If there is FM hardware, we should time out - we should not reach this point otherwise. We could check 
+      # for the output 'No supported devices found.', but that feels extra.
+      return False
+    except subprocess.TimeoutExpired as e:
+      # Timing out is a good sign, because we're fully tuning in to a channel and streaming it to /dev/null.
+      # Still need to check that we actually found adaptors...
+      r = re.compile(r'^Found \d+ device\(s\):$', re.MULTILINE)
+      return r.match(e.stderr.decode('utf-8')) is not None
+    except subprocess.CalledProcessError as e:
+      # rtl_fm returns a non-zero exit status when it cannot find a device. If it returned a non-zero
+      # exit, but for reasons other than not finding hardware, report it below.
+      r = re.compile(r'^No supported devices found.$', re.MULTILINE)
+      if not r.match(e.stderr.decode('utf-8')):
+        print(f'Error checking for FM hardware: {e}')
+      return False
+    except Exception as e:
+      print(f'Error checking for FM hardware: {e}')
+      return False
+
 
 class LMS(PersistentStream):
   """ An LMS Stream using squeezelite"""
 
+  stream_type : ClassVar[str] = 'lms'
+
   def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
-    super().__init__('lms', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.server: Optional[str] = server
 
   def is_persistent(self):
@@ -1295,8 +1347,10 @@ class LMS(PersistentStream):
 class Bluetooth(BaseStream):
   """ A source for Bluetooth streams, which requires an external Bluetooth USB dongle """
 
+  stream_type : ClassVar[str] = 'bluetooth'
+
   def __init__(self, name, disabled=False, mock=False):
-    super().__init__('bluetooth', name, disabled=disabled, mock=mock)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.logo = "static/imgs/bluetooth.png"
     self.bt_proc = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev', 'stop']
@@ -1308,7 +1362,7 @@ class Bluetooth(BaseStream):
   def is_hw_available():
     """Determines if a bluetooth dongle is present"""
     try:
-      if subprocess.run('which bluetoothctl'.split(), check=False).returncode != 0:
+      if subprocess.run('which bluetoothctl'.split(), check=False, stdout=subprocess.DEVNULL).returncode != 0:
         return False
       # bluetoothctl show seems to hang sometimes when hardware is not available
       # add a timeout so that we don't get stuck waiting
@@ -1435,3 +1489,16 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   elif stream.type == 'bluetooth':
     return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
+
+def stream_types_available() -> List[str]:
+  """ Returns a list of the available streams on this particular appliance.
+  """
+  stypes = [RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
+    Aux, FilePlayer, LMS]
+  if Bluetooth.is_hw_available():
+    stypes.append(Bluetooth)
+  if FMRadio.is_hw_available():
+    stypes.append(FMRadio)
+  # the below line is not type checked because mypy isn't smart enough to see this is a relatively
+  # constrained set of types, and instead evaluates this as a `list[type]`
+  return [s.stream_type for s in stypes] # type: ignore

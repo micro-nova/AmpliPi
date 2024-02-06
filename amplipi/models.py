@@ -852,6 +852,7 @@ class Info(BaseModel):
   lms_mode: bool = Field(default=False, description='Are we running in LMS mode?')
   fw: List[FirmwareInfo] = Field(
     default=[], description='firmware information for each connected controller or expansion unit')
+  stream_types_available: List[str] = Field(default=[], description='The stream types available on this particular appliance')
 
   class Config:
     schema_extra = {
@@ -859,12 +860,12 @@ class Info(BaseModel):
         "System info": {
           'value': {
             'config_file': 'house.json',
-            'version': '0.1.8',
+            'version': '0.3.4',
             'mock_ctrl': False,
             'mock_streams': False,
             'is_streamer': False,
             'online': True,
-            'latest_release': '0.1.8',
+            'latest_release': '0.3.4',
             'access_key': '',
             'lms_mode': False,
             'fw': [
@@ -873,7 +874,8 @@ class Info(BaseModel):
                 "git_hash": "de0f8eb",
                 "git_dirty": False,
               }
-            ]
+            ],
+            'stream_types_available': ['bluetooth', 'fmradio']
           }
         }
       }
@@ -955,6 +957,7 @@ class Status(BaseModel):
                      'is_streamer': False,
                      'lms_mode': False,
                      'online': True,
+                     'stream_types_available': ['fmradio', 'internetradio'],
                      'version': '0.1.9'},
             'presets': [{'id': 10000,
                          'last_used': 1658242203,

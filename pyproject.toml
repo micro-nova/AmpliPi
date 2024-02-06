@@ -43,7 +43,8 @@ include = [
   "bin/**",
   "docs/**",
   "web/dist",
-  "web/static"
+  "web/static",
+  "web/templates"
 ]
 exclude = [
   "scripts/deploy", "scripts/bootstrap_pi" # only support development

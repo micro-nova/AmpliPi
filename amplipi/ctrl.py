@@ -221,6 +221,7 @@ class Api:
       is_streamer=self.is_streamer,
       lms_mode=self.lms_mode,
       version=utils.detect_version(),
+      stream_types_available=amplipi.streams.stream_types_available()
     )
     for major, minor, ghash, dirty in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}', git_hash=f'{ghash:x}', git_dirty=dirty)
@@ -325,6 +326,16 @@ class Api:
         print('bt streams present. removing all')
         for s in bt_streams:
           self.delete_stream(s, internal=True)
+
+    # enable/disable any FMRadio streams, depending on hw availability
+    fm_streams = [stream for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.FMRadio)]
+    fm_disabled = not amplipi.streams.FMRadio.is_hw_available()
+    if fm_disabled:
+      print('fm radio dongle unavailable')
+    for fm_stream in fm_streams:
+      print(f"setting FM stream {fm_stream.name} to disabled={fm_disabled} based on hw availability")
+      fm_stream.disabled = fm_disabled
+    self._sync_stream_info() # update stream status with potentially updated streams
 
     # configure all sources so that they are in a known state
     # only models.MAX_SOURCES are supported, keep the config from adding extra
@@ -602,6 +613,8 @@ class Api:
           src.input = input_  # reconfigure the input so get_stream knows which stream to get
           stream = self.get_stream(src)
           if stream:
+            if stream.disabled:
+              raise Exception(f"Stream {stream.name} is disabled")
             stolen_from: Optional[models.Source] = None
             if stream.src is not None and stream.src != idx:
               # update the streams last connected source to have no input, since we have stolen its input

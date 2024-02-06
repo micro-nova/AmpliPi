@@ -7,6 +7,8 @@
 * System
   * Add ability to display a special message for shipping on the eink display
   * Make eink display clear when the display process is stopped
+* Streams
+  * Hide FM Radio if hardware is not available
 
 ## 0.3.3
 * Web App
