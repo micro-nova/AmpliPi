@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import signal
 
 from loguru import logger as log
 
@@ -57,6 +58,9 @@ def main():
           disp.display_delivery_message()
           sys.exit(0)
 
+        # register signal handlers to stop the display when the service is stopped
+        signal.signal(signal.SIGTERM, lambda signum, frame: disp.stop())
+        signal.signal(signal.SIGINT, lambda signum, frame: disp.stop())
         disp.run()
       else:
         log.debug(f'Failed to initialize {type(disp)}')
