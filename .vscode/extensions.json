@@ -8,5 +8,6 @@
     "ms-vscode-remote.remote-ssh",
     "ms-vscode.cmake-tools",
     "ms-vscode.cpptools",
+    "dbaeumer.vscode-eslint",
   ]
 }

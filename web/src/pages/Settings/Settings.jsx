@@ -46,22 +46,22 @@ const close = () => router.navigate("/settings");
 
 const CorePage = ({ openPage }) => {
     switch (openPage) {
-        case "streams":
-            return <Streams onClose={close} />;
-        case "zones":
-            return <Zones onClose={close} />;
-        case "groups":
-            return <Groups onClose={close} />;
-        case "sessions":
-            return <Sessions onClose={close} />;
-        case "presets":
-            return <Presets onClose={close} />;
-        case "config":
-            return <Config onClose={close} />;
-        case "about":
-            return <About onClose={close} />;
-        default:
-            return <div></div>;
+    case "streams":
+        return <Streams onClose={close} />;
+    case "zones":
+        return <Zones onClose={close} />;
+    case "groups":
+        return <Groups onClose={close} />;
+    case "sessions":
+        return <Sessions onClose={close} />;
+    case "presets":
+        return <Presets onClose={close} />;
+    case "config":
+        return <Config onClose={close} />;
+    case "about":
+        return <About onClose={close} />;
+    default:
+        return <div></div>;
     }
 };
 CorePage.propTypes = {

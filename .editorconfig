@@ -25,3 +25,5 @@ end_of_line = lf
 end_of_line = lf
 [fw/*.sh]
 end_of_line = lf
+[web/**.jsx]
+indent_size = 4
