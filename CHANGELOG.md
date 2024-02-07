@@ -32,6 +32,8 @@
   * Updates to spotifyd
 * API
   * Add support for units without zones
+* Testing
+  * Shorten audio clips used in preamp tests
 * Hardware
   * Add support for EEPROMS on boards to identify board type and revision
   * Add support for E-Ink display
