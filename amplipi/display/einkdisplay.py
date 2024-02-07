@@ -114,6 +114,8 @@ class EInkDisplay(Display):
 
   def stop(self):
     self._ok = False
+    self.epd.init()
+    self.epd.clear(0xFF)
 
   def display_refresh_base(self):
     """Draw the base image used for partial refresh"""
