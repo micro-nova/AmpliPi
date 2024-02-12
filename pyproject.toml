@@ -42,7 +42,8 @@ include = [
   "streams/**/*",
   "bin/**",
   "docs/**",
-  "web/dist"
+  "web/dist",
+  "web/static"
 ]
 exclude = [
   "scripts/deploy", "scripts/bootstrap_pi" # only support development
