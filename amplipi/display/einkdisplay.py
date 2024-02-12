@@ -169,7 +169,8 @@ def get_info(iface, default_pass) -> SysInfo:
     hostname = 'None'
   try:
     ip_str = ni.ifaddresses(iface)[ni.AF_INET][0]['addr']
-  except:
+  except Exception as e:
+    log.error(f'Failed to get IP address: {type(e).__name__}')
     ip_str = 'Disconnected'
 
   return SysInfo(hostname, password, ip_str)
