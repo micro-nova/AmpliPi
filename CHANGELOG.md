@@ -4,6 +4,9 @@
 * Web App
   * Improve static asset deployment
   * Add support for mobile app only functionality.
+* System
+  * Add ability to display a special message for shipping on the eink display
+  * Make eink display clear when the display process is stopped
 
 ## 0.3.3
 * Web App
