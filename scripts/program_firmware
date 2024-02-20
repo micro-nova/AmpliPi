@@ -104,6 +104,7 @@ prog_remote=true
 prog_file="$local_file"
 [ -z "$remote_host" ] || [ -z "$remote_path" ] && prog_remote=false
 if $prog_remote; then
+  remote_path="/home/pi/$remote_path/"
   prog_string="$prog_string at $remote_host:$remote_path"
   prog_file=/tmp/preamp_bd.bin
 fi
@@ -112,7 +113,7 @@ if [ ! -z "$nprog_opt" ]; then
 fi
 
 prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --baud $baud --flash \"$prog_file\""
-prog_string="$prog_string with \n/home/pi/$remote_path/$prog_cmd\n\n"
+prog_string="$prog_string with \n$remote_path$prog_cmd\n\n"
 
 if $prog_remote; then
   printf "Copying $local_file to $remote_host:$prog_file\n"
