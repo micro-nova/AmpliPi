@@ -16,7 +16,7 @@
 - Do not defeat the safety purpose of the polarized or grounding-type plug. A polarized plug has two blades with one wider than the other. A grounding type plug has two blades and a third grounding prong. The wide blade or the third prong are provided for your safety. If the provided plug does not fit into your outlet, consult an electrician for replacement of the obsolete outlet.
 - Protect the power cord from being walked on or pinched particularly at plugs, convenience receptacles, and the point where they exit from the unit.
 - Only use attachments/accessories specified by the manufacturer.
-- Unplug this unit during lightning storms or when unused for long periods of time. **EDIT EDIT EDIT**
+- Unplug this unit during lightning storms or when unused for long periods of time.
 - Refer all servicing to qualified service personnel. Servicing is required when the unit has been damaged in any way, such as when the power-supply cord or plug is damaged, liquid has been spilled, or objects have fallen into the unit, the unit has been exposed to rain or moisture, does not operate normally, or has been dropped.
 - Operate the unit only with the voltage specified on the rear. Fire and/or electric shock may result if a higher voltage is used.
 - Do not modify, kink, or cut the power cord. Do not place the power cord in close proximity to heaters and do not place heavy objects on the power cord and/or the unit itself, doing so may result in fire or electrical shock.

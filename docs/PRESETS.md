@@ -16,9 +16,3 @@ To avoid any issues with audio coming out of the wrong speakers, we will need to
 9. Force web client refresh to fixup website
 10. Release system mutex, future requests are successful after this
 
-## REST API additions
-**EDIT EDIT EDIT** (I think this belongs on its own page as an "API guide", or just to leave out of the manual entirely and have the API guide just be the browsable api internal to the unit)
-- POST load/# - Loads a preset, returns state after preset load completes
-- GET presets - Get the list of available presets
-- POST preset - Add a preset. Preset syntax is same as config file. To accomodate streams that can be connected to any available source, id-less sources are allowed. The rest of the configuration parts (zones, streams, groups) needs an associated id. Potential error state if all sources are in use (in use means that atleast one zone is unmuted and the source's input is not None). App should detect this condition and ask user which source to take over.
-- PATCH presets/# - Update a preset (likely changes whole contents of the preset since partial changes will be ambiguous)

@@ -62,7 +62,7 @@ Connect an RJ45 cable to the Ethernet port on the main unit. Connect the other e
 ## Power
 **WARNING!! VERIFY THAT THE VOLTAGE OF YOUR WALL OUTLET MATCHES THE VOLTAGE LISTED NEAR THE POWER INLET.**
 
-AmpliPro ships preconfigured for the typical mains voltage in your region, either 120V mains power or 230V mains; you can see what mode it was set to before shipment based on which box is checked near the power inlet on the unit EDIT EDIT EDIT. If your unit is preconfigured incorrectly for your region, several changes need to be made to the unit to connect to alternative mains:
+AmpliPro ships preconfigured for the typical mains voltage in your region, either 120V mains power or 230V mains; you can see what mode it was set to before shipment based on which box is checked near the power inlet on the unit. If your unit is preconfigured incorrectly for your region, several changes need to be made to the unit to connect to alternative mains:
 - Use an appropriate voltage power cable (AmpliPro only ships with the cable rated for the region)
 - Change the internal power supply fuse located in the IEC socket (located just above the power inlet on the exterior of the AmpliPro)
 - Switch the internal power supply as needed (See below)
