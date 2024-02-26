@@ -20,9 +20,7 @@
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller.
 - **SERVICE**: USB mini connection for re-imaging the Pi's EMMC.
 - **USB**: USB A ports for connecting peripherals such as additional storage devices. Do not power an input using the USBs, see installation page for more info.
-- **OPTICAL IN**: SPDIF audio input, planned to be used for extra inputs.
 - **AUX IN**: Additional stereo input, planned to be used for announcements.
-- **HDMI OUT**: The Pi's HDMI output, can be used for visualizations or development.
 - **ETHERNET**: Network connection.
 - **INPUTS**: 4 Stereo RCA inputs.
 - **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers.

@@ -27,7 +27,8 @@
 \contentsline {subsection}{\numberline {2.8}Startup and Configuration}{11}{}%
 \contentsline {section}{\numberline {3}Troubleshooting}{13}{}%
 \contentsline {subsection}{\numberline {3.1}Audio}{13}{}%
-\contentsline {paragraph}{Noise}{13}{}%
+\contentsline {subsubsection}{\numberline {3.1.1}Noise}{13}{}%
+\contentsline {subsubsection}{\numberline {3.1.2}No Audio}{13}{}%
 \contentsline {subsection}{\numberline {3.2}Updating}{13}{}%
 \contentsline {subsection}{\numberline {3.3}New Release}{13}{}%
 \contentsline {subsection}{\numberline {3.4}Prereleases and using previous versions}{13}{}%
