@@ -175,3 +175,10 @@ fw/preamp/Release
 
 # RCA input audio detector
 rca_status
+
+# User Manual compilation byproducts
+docs/manual.aux
+docs/manual.fdb_latexmk
+docs/manual.fls
+docs/manual.log
+docs/manual.toc

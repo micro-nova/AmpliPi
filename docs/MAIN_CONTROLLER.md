@@ -1,7 +1,7 @@
 ## Main Controller
 ### Front Panel
 
-![Controller - Front Panel](imgs/manual/front_main_panel.jpg)
+![Controller - Front Panel](imgs/manual/front_panel_main.png)
 
 - **DISPLAY**: Show IP Address, Hostname, and SSH Password.
 - **ON/STANDBY**: Show state of the audio controller:
@@ -14,7 +14,7 @@
 
 ### Rear Panel
 
-![Controller - Rear Panel](imgs/manual/rear_main_panel.jpg)
+![Controller - Rear Panel](imgs/manual/back_panel_main.png)
 
 - **POWER**: 115V, or optionally 230V connection. See installation page for more detail.
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller.
