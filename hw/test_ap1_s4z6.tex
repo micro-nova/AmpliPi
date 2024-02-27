@@ -1,0 +1,107 @@
+\documentclass[12pt]{article}
+\usepackage[showframe,noheadfoot,nomarginpar,margin=1in]{geometry}
+%\usepackage{setspace}\doublespacing
+\usepackage{parskip}
+
+\usepackage{tabularx,array}
+\usepackage{enumitem}
+
+\usepackage{titling}
+\pretitle{\begin{center}\fontsize{18bp}{18bp}\selectfont}
+\posttitle{\par\end{center}}\preauthor{}\postauthor{}\predate{}\date{}\postdate{}
+\setlength{\droptitle}{-8ex}
+
+\title{AP1-S4Z6 (AmpliPro) Main Unit Tests}
+\author{} % A warning is printed if \author isn't defined.
+
+\begin{document}
+\maketitle\thispagestyle{empty}
+
+\begin{tabularx}{\textwidth}{XX}
+  %\rule{4em}{0.4pt}
+  Serial Number \hrulefill & Tester Initials \hrulefill
+\end{tabularx}
+
+\subsection*{Initial Testing}
+
+\begin{tabularx}{\textwidth}{XX}
+  \\ % Extra line for spacing
+  Date \hrulefill\hspace{0.2em} / \hrulefill &
+    Time \hrulefill\hspace{0.2em} : \hrulefill AM / PM
+\end{tabularx}
+
+\rule{4em}{0.4pt} Boards Tested (Manual - verify QC Passed sticker on each board.)
+
+{\renewcommand{\arraystretch}{2}
+\begin{tabularx}{\textwidth}{lXXXXXX}
+  & \textbf{Amp Board} & \textbf{Power Board} & \textbf{Preamp Board} &
+    \textbf{Preout Board} & \textbf{LED Board} & \textbf{Controller Board} \\
+  \cline{2-7}
+  rev & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{}
+    & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} \\[1.5ex]
+  \cline{2-7}
+\end{tabularx}}
+
+Plug in Ethernet, Aux, Expander, RCA Inputs, and finally Power.
+
+\rule{4em}{0.4pt} Config AmpliPro
+
+% - [ ] Service Port
+
+% **Remote Desktop Tests - Click "Test Main Unit" on Desktop - the tests found below should now be available.**
+
+% - [ ] USB Ports: ____TOP ____BOTTOM ____INT
+% - [ ] Ethernet
+% - [ ] Program Main + Exp Preamp
+% - [ ] LEDs:
+
+% |   | Stdby (Red) | Enabled (Green) | Zone 1 | Zone 2 | Zone 3 | Zone 4 | Zone 5 | Zone 6 |
+% |---|-------------|-----------------|--------|--------|--------|--------|--------|--------|
+% | ✓ |             |                 |        |        |        |        |        |        |
+
+% - [ ] Aux Input: ____L ____R
+
+% - [ ] Preamp:
+
+% |  Analog 1 |  Analog 2 |  Analog 3 |  Analog 4 | Zone |
+% |-----------|-----------|-----------|-----------|-----:|
+% |____L____R |____L____R |____L____R |____L____R |    1 |
+
+% | Digital 1 | Digital 2 | Digital 3 | Digital 4 | Zone |
+% |-----------|-----------|-----------|-----------|-----:|
+% |____L____R |____L____R |____L____R |____L____R |    1 |
+
+% |  An/Dig 1 |  An/Dig 2 |  An/Dig 3 |  An/Dig 4 |  Zone |
+% |-----------|-----------|-----------|-----------|------:|
+% |____L____R |____L____R |____L____R |____L____R |     2 |
+% |____L____R |____L____R |____L____R |____L____R |     3 |
+% |____L____R |____L____R |____L____R |____L____R |     4 |
+% |____L____R |____L____R |____L____R |____L____R |     5 |
+% |____L____R |____L____R |____L____R |____L____R |     6 |
+% |____L____R |____L____R |____L____R |____L____R |(exp) 7|
+
+% - [ ] Peak Detect (run with Preamp):
+
+% |  Input 1  |  Input 2  |  Input 3  |  Input 4  |
+% |-----------|-----------|-----------|-----------|
+% |____L____R |____L____R |____L____R |____L____R |
+
+% - [ ] Preouts:
+
+% | Preout 1 | Preout 2 | Preout 3 | Preout 4 | Preout 5 | Preout 6 |
+% |----------|----------|----------|----------|----------|----------|
+% |____L____R|____L____R|____L____R|____L____R|____L____R|____L____R|
+
+% - [ ] Display (Manual)
+%   - [ ] Shows an IP address (when Ethernet connected)
+%   - [ ] Show Disconnected (when Ethernet disconnected)
+
+% - [ ] Fans and Power:
+
+% |   | Fans Off | Fans On | PG_12V | 12V Supply | HV1 Temp | AMP1 Temp | AMP2 Temp | Temp Rise |
+% |---|----------|---------|--------|------------|----------|-----------|-----------|-----------|
+% | ✓ |          |         |        |            |          |           |           |           |
+
+
+
+\end{document}
