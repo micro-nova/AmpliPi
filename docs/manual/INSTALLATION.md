@@ -70,7 +70,7 @@ Once you've ensured that the unit has the correct input voltage configured, plug
 ## Startup and Configuration
 Now that the AmpliPro unit is powered on, it is time to play with it. To access the UI, there are two options:
 
-###S Webapp
+### Webapp
 
 1. Go to amplipi.local (Android and Windows 7 users will need to type the ip address found on the unit's display into their web browser to find the page).
 2. You should now be connected to AmpliPro's mobile-friendly website. Please note that an https connection to the AmpliPro is not currently available since certificates have to be managed on a per-unit basis.
