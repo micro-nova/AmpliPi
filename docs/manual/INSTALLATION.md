@@ -19,9 +19,9 @@ Each of AmpliPro's zone has two speaker outputs that drive a 4-8 Ohm speaker, us
 
 ![Speaker wiring]( imgs/zone_speaker_wiring.png)
 
-AmpliPro's amplifiers are capable of driving 4-8 Ohm speaker loads and only support stereo configuration. Here is what a typical stereo speaker connection, using CL2 rated 14-AWG speaker wire and the Pheonix connectors, looks like:
+AmpliPro's amplifiers are capable of driving 4-8 Ohm speaker loads and only support stereo configuration. Here is what a typical stereo speaker connection, using CL2 rated 14-AWG speaker wire and the Euroblock connectors, looks like:
 
-![Pheonix connector connection]( imgs/speaker_wire_to_pheonix.png)
+![Euroblock connector connection]( imgs/speaker_wire_to_pheonix.png)
 
 To connect a stereo speaker pair, using speaker wire:
 
