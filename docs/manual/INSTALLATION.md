@@ -15,7 +15,7 @@ Some things to keep in mind avoid overheating the unit:
 
 
 ## Speakers
-Each of AmpliPro's zone has two speaker outputs that drive a 4-8 Ohm speaker, using the provided Phoenix connectors. Here is what the basic wiring diagram for a zone looks like:
+Each of AmpliPro's zones has two speaker outputs that drive a 4-8 Ohm speaker, using the provided Phoenix connectors. Here is what the basic wiring diagram for a zone looks like:
 
 ![Speaker wiring]( imgs/zone_speaker_wiring.png)
 
