@@ -19,28 +19,26 @@ Lack of audio typically has one of a few causes:
 
 There are two methods of updating:
 
-# Webapp
+### Webapp
 Go to the web app at http://amplipi.local/
 
-# Mobile App
+### Mobile App
 Download the "Amplipi" app from the Google Play Store or Apple App Store
 
 Once you've done either of those steps, the remaining steps are the same:
 1. Click the gear icon in the bottom right corner to go to the configuration page
 2. Select **Updates** and click the **Check for Updates** button
 
-## New Release
+### New Release
 To update your AmpliPi to the latest version:
 
 3. Click the **Update** button
 
-## Prereleases and using previous versions
+### Prereleases and using previous versions
 Had an issue with an update? Revert your unit to a previous state:
 3. Click the **Older Releases** tab and select the release you would like to use
 4. Click the **Start Update** button
 
 ## Reimaging AmpliPi
-To bring AmpliPi's OS and install back to its original state see: https://amplipi.discourse.group/t/re-imaging-the-raspberry-pi/46
-
-Or scan:
-![https://amplipi.discourse.group/t/re-imaging-the-raspberry-pi/46]( imgs/reimaging-your-pi-qr.jpeg)
+To bring AmpliPi's OS and install back to its original state, scan the QR code for directions:
+![https://github.com/micro-nova/AmpliPi/blob/1e18ac7852a3340caacbe0e4b938336e7ce4d6fc/docs/imaging_etcher.md](imgs/reimaging-your-pi-qr.jpeg)

@@ -13,7 +13,7 @@ Other Bluetooth dongles may need drivers to be installed. We suggest ensuring th
 
 ## How to play audio
 1. Set one of the sources to the Bluetooth stream input
-2. Pair and connect your device to **amplipi** (the hostname of your AmpliPi)
+2. Pair and connect your device to **amplipi** (the hostname of your AmpliPro)
 3. Play some audio out your device
 
 ## Multiple Bluetooth devices

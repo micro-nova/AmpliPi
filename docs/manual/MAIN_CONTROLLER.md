@@ -19,11 +19,11 @@
 - **POWER**: 115V, or optionally 230V connection. See installation page for more detail.
 - **CONTROLLER**: Connections to the embedded Raspberry Pi Controller.
 - **SERVICE**: USB mini connection for re-imaging the Pi's EMMC.
-- **USB**: USB A ports for connecting peripherals such as additional storage devices. Do not power an input using the USBs, see installation page for more info.
+- **USB**: USB A ports for connecting peripherals such as additional storage devices. Do not power a device plugged into the RCA inputs using the USBs, see installation page for more info.
 - **AUX IN**: Additional stereo input, planned to be used for announcements.
 - **ETHERNET**: Network connection.
 - **INPUTS**: 4 Stereo RCA inputs.
 - **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
-- **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors.
+- **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin euroblock connectors.
 - **EXPANSION**:
     - **CHAIN OUT**: Connection to the next expansion unit (if one or more expanders are needed).

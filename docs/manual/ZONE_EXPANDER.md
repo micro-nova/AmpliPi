@@ -4,7 +4,7 @@ Adds 6 output zones to an AmpliPro Controller (often referred to as "AmpliPro Ma
 ### Front Panel
 
 
-![Zone Expander - Front Panel]( imgs/front_panel_expansion.png)
+![Zone Expander - Front Panel]( imgs/expansion_front_panel.jpg)
 
 - **ON/STANDBY**: Show state of the audio controller:
     * Green: Unit is on
@@ -17,7 +17,7 @@ Adds 6 output zones to an AmpliPro Controller (often referred to as "AmpliPro Ma
 ### Rear Panel
 
 
-![Zone Expander - Rear Panel]( imgs/rear_expansion_panel.jpg)
+![Zone Expander - Rear Panel]( imgs/expansion_rear_panel.jpg)
 
 - **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
 - **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin Phoenix connectors.

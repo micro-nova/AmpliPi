@@ -4,12 +4,11 @@
 |:------|:-----|
 |Streaming Sources | Airplay, Pandora, Spotify Connect, DLNA  |
 |||
-|Control Interfaces| Web App, REST API|
+|Control Interfaces| Web App, Mobile App, REST API, Third-Party Software (LMS Mode only)|
 |||
 |Dimensions        | 2U 19" rackmount unit with 300mm depth|
 |||
 |Connectivity      | 100Mbps Ethernet|
-|                  | HDMI 1.4 output|
 |                  | 2x USB 2.0 External|
 |                  | 1x USB 2.0 Internal|
 |||
@@ -25,10 +24,10 @@
 |                  | 57 WPC @ 4 Ω |
 |                  | 44 WPC @ 4 Ω |
 |||
-|Speaker Impedance | 4 -8 Ω |
+|Speaker Impedance | 4 - 8 Ω |
 |||
 |Stereo Zones      | 6 |
 |||
-|Audio Input       | 4 RCA Line In|
+|Audio Input       | 4 RCA Line In |
 |||
 |Digital Audio Sources | 32-bit 384KHz (source 1), 16-bit 48KHz (sources 2-4)|

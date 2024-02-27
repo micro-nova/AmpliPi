@@ -17,11 +17,11 @@ Some things to keep in mind avoid overheating the unit:
 ## Speakers
 Each of AmpliPro's zones has two speaker outputs that drive a 4-8 Ohm speaker, using the provided Phoenix connectors. Here is what the basic wiring diagram for a zone looks like:
 
-![Speaker wiring]( imgs/zone_speaker_wiring.png)
+![Speaker wiring](imgs/zone_speaker_wiring.png)
 
 AmpliPro's amplifiers are capable of driving 4-8 Ohm speaker loads and only support stereo configuration. Here is what a typical stereo speaker connection, using CL2 rated 14-AWG speaker wire and the Euroblock connectors, looks like:
 
-![Euroblock connector connection]( imgs/speaker_wire_to_pheonix.png)
+![Euroblock connector connection](imgs/euroblock_example.jpg)
 
 To connect a stereo speaker pair, using speaker wire:
 
@@ -37,7 +37,7 @@ To connect a stereo speaker pair, using speaker wire:
 - Never connect mutiple speakers in parallel such that it brings the total impedance below 4 ohms (max 2x 8ohm speakers in parallel).
 - Amplified speaker ouputs **CAN NOT** be bridged, attempting to do so will damage the amplifier and void the warranty
 
-### Runnning wire in walls and ceilings
+### Running wire in walls and ceilings
 - Most electric codes require the use of CL2 rated speaker wire for in-wall installations. Please refer to local building codes for more details.
 - Avoid running speaker wire next to AC power wires as much as possble to reduce noise.
 - When necessary, cross AC wires at 90 degree angles to avoid introducing any noise into the speakers.
@@ -70,12 +70,12 @@ Once you've ensured that the unit has the correct input voltage configured, plug
 ## Startup and Configuration
 Now that the AmpliPro unit is powered on, it is time to play with it. To access the UI, there are two options:
 
-# Webapp
+###S Webapp
 
 1. Go to amplipi.local (Android and Windows 7 users will need to type the ip address found on the unit's display into their web browser to find the page).
 2. You should now be connected to AmpliPro's mobile-friendly website. Please note that an https connection to the AmpliPro is not currently available since certificates have to be managed on a per-unit basis.
 
-# Mobile App
+### Mobile App
 
 1. We have mobile apps for Android and iOS, simply search for "Amplipi" on the Google Play Store or Apple's App Store
 2. Once you have the app downloaded, give permission to access devices on your local network. The app will automatically search your network for active AmpliPro units, and on the off chance you have multiple controllers it will ask which unit you wish to connect to (we suggest giving them different hostnames if you intend to have this uncommon usecase)
@@ -89,4 +89,4 @@ After taking either the Webapp or Mobile app route, your next steps will be the 
 
 Since receiving your unit, this manual may have changed. Go to amplipi.com/getting-started or scan the QR code below to view the latest version of our manual.
 
-![Next steps]( imgs/amplipro-guide.png)
+![Next steps](imgs/amplipro-guide.png)
