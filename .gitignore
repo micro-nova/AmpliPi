@@ -177,8 +177,8 @@ fw/preamp/Release
 rca_status
 
 # User Manual compilation byproducts
-docs/manual.aux
-docs/manual.fdb_latexmk
-docs/manual.fls
-docs/manual.log
-docs/manual.toc
+docs/manual/manual.aux
+docs/manual/manual.fdb_latexmk
+docs/manual/manual.fls
+docs/manual/manual.log
+docs/manual/manual.toc
