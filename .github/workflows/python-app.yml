@@ -31,6 +31,7 @@ jobs:
       run: |
         pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
         pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
+        pylint -E streams
     - name: Lint with mypy, static type checker
       run: |
         mypy amplipi/ --ignore-missing-imports
