@@ -723,8 +723,12 @@ class Pandora(PersistentStream):
     # start pandora process in special home
     print(f'Pianobar config at {pb_config_folder}')
     try:
+      args = [
+        f'{utils.get_folder("streams")}/process_monitor.py',
+        'pianobar'
+      ]
       self.proc = subprocess.Popen(
-        args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w', encoding='utf-8'),
+        args=args, stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w', encoding='utf-8'),
         stderr=open(pb_error_file, 'w', encoding='utf-8'), env={'HOME': pb_home})
       time.sleep(0.1)  # Delay a bit before creating a control pipe to pianobar
       self.ctrl = pb_control_fifo
@@ -735,6 +739,7 @@ class Pandora(PersistentStream):
   def _deactivate(self):
     if self._is_running():
       self.proc.kill()
+      self.proc.wait()
     self.proc = None
     self.ctrl = ''
 
