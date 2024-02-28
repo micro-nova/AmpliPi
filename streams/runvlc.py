@@ -79,6 +79,7 @@ def update_info(info) -> bool:
     log('Error: %s' % sys.exc_info()[1])
     return False
 
+log("Starting VLC instance.")
 instance = vlc.Instance(config.split())
 try:
   media = instance.media_new(args.url)
@@ -137,13 +138,41 @@ def restart_vlc():
     raise Exception('Waited too long for VLC to start playing')
 
 # Wait for stream to start playing
-time.sleep(2)
+STREAM_OPENING_BACKOFF = 0.25 # 250ms
+MAX_STREAM_OPENING_TIME = 10 # seconds
+MAX_STREAM_OPENING_COUNTER = MAX_STREAM_OPENING_TIME / STREAM_OPENING_BACKOFF
+
+opening_counter = 0
+while opening_counter < MAX_STREAM_OPENING_COUNTER:
+  state = str(player.get_state())
+  if state == 'State.Playing':
+    break
+  elif state in ['State.Opening', 'State.Buffering'] and opening_counter <= MAX_STREAM_OPENING_COUNTER:
+    # give it some time. Some streams take a while.
+    time.sleep(0.25)
+    opening_counter += 1
+    log(f"Stream still opening; waiting {MAX_STREAM_OPENING_TIME - STREAM_OPENING_BACKOFF*opening_counter} more seconds...")
+  elif opening_counter > MAX_STREAM_OPENING_COUNTER:
+    log("Stream took too long to open.")
+    # This is a hail mary; either we restart_vlc & try again, or exit. If we lived under a real process monitor
+    # like systemd, I'd probably exit(1) and let it handle graceful backoffs and restarts... but since we
+    # don't have that at the time of writing, we simply restart vlc.
+    restart_vlc()
+    opening_counter = 0
+  else:
+    # State is something other than playing, buffering or opening, and it's been longer than 10s. We probably wanna bail.
+    # Other states: State.NothingSpecial, State.Paused, State.Stopped, State.Ended, State.Error
+    log(f"Stream in an unexpected state: {state}. Exiting.")
+    sys.exit(1)
+
+log("Stream has opened.")
 
 # Monitor track meta data and update currently_playing file if the track changed
 while True:
   try:
-    if str(player.get_state()) == 'State.Playing':
+    state = str(player.get_state())
 
+    if state == 'State.Playing':
       latest_info = {
         'track':'',
         'artist':'',
@@ -203,7 +232,7 @@ while True:
       }
       if args.song_info:
         update_info(cur_info)
-      log('State: %s' % player.get_state())
+      log('State: %s' % state)
       restart_vlc()
 
   except Exception:
