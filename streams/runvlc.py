@@ -195,16 +195,15 @@ while True:
       if args.test:
         log('fail')
         sys.exit(1)
-      if latest_info['state'] == "playing":
-        curr_info = {
-          'track':'',
-          'artist':'',
-          'station': '',
-          'state': 'stopped'
-        }
-        if args.song_info:
-          update_info(cur_info)
-        log('State: %s' % player.get_state())
+      curr_info = {
+        'track':'',
+        'artist':'',
+        'station': '',
+        'state': 'stopped'
+      }
+      if args.song_info:
+        update_info(cur_info)
+      log('State: %s' % player.get_state())
       restart_vlc()
 
   except Exception:
