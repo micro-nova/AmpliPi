@@ -5,6 +5,7 @@
   * Improve static asset deployment
   * Add support for mobile app only functionality
   * Fix bug where fields in stream configuration had empty descriptions
+  * Better form validation on the stream addition and editing modal
 * System
   * Add ability to display a special message for shipping on the eink display
   * Make eink display clear when the display process is stopped
