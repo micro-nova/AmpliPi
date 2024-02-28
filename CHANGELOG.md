@@ -3,12 +3,14 @@
 ## Upcoming version
 * Web App
   * Improve static asset deployment
-  * Add support for mobile app only functionality.
+  * Add support for mobile app only functionality
+  * Fix bug where fields in stream configuration had empty descriptions
 * System
   * Add ability to display a special message for shipping on the eink display
   * Make eink display clear when the display process is stopped
 * Streams
   * Hide FM Radio if hardware is not available
+  * Make pandora stream album art use HTTPS urls to make sure it is rendered in the ios app
 
 ## 0.3.3
 * Web App
