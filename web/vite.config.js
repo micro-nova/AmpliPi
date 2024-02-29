@@ -1,13 +1,16 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import path from "path"
-import process from 'node:process';
+import process from 'node:process'
 // set this to dev server url; this permits one to develop on localhost while
 // proxying API requests to an AmpliPi running elsewhere.
 const amplipiurl = process.env.AMPLIPI_URL || "http://127.0.0.1";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  build: {
+    target: "es6",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
