@@ -2,7 +2,9 @@
 
 |Feature||
 |:------|:-----|
-|Dimensions        | 2U 19" rackmount unit with 300mm depth|
+|Dimensions        | 2U 19" rackmount unit with 300mm depth, 12.5” L x 19” W x 3.5” H|
+|||
+|Weight            | 15 Pounds / 6.8 Kilograms |
 |||
 |Power Input       | 100-240VAC 50-60Hz max input 45W|
 |||
