@@ -8,6 +8,8 @@
 |||
 |Dimensions        | 2U 19" rackmount unit with 300mm depth|
 |||
+|Weight            | 15 Pounds / 6.8 Kilograms |
+|||
 |Connectivity      | 100Mbps Ethernet|
 |                  | 2x USB 2.0 External|
 |                  | 1x USB 2.0 Internal|
@@ -30,4 +32,4 @@
 |||
 |Audio Input       | 4 RCA Line In |
 |||
-|Digital Audio Sources | 32-bit 384KHz (source 1), 16-bit 48KHz (sources 2-4)|
+|Digital Audio Sources | 32-bit 384KHz (source 1), 16-bit 48KHz (sources 2, 3, 4)|

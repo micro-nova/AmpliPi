@@ -1,5 +1,5 @@
 # Overview
-AmpliPro™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio streams (Pandora, Spotify, AirPlay, etc) or sources (RCA inputs), each routed to one or many zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPro Expanders.
+AmpliPro™ is a multi-room/-zone home audio controller and amplifier made for whole-home audio systems with many zones. It can play up to 4 simultaneous audio streams (Pandora, Spotify, AirPlay, etc) or sources (RCA inputs), each routed to one or many zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPro Expanders.
 
 Your AmpliPro controller includes the following components:
 
@@ -18,4 +18,5 @@ The following optional accessories are available and can be purchased separately
 
 ![App PC/Android]( imgs/webapp_phone_and_pc.jpg)
 
-AmpliPro hosts a mobile-friendly web app (referred to as "AmpliPi") that can control the system from any PC or mobile phone on the local network. It is designed with the idea that each of the four audio sources could be controlled separately by different people in the house. Each audio source's controls are in their own tab at the top of the app.
+AmpliPro hosts a mobile-friendly web app (referred to as "AmpliPi") that can control the system from any PC or mobile phone on the local network. It is designed with the idea that each of the four audio sources could be controlled separately by different people in the house. Each audio source's controls are in its own tab at the top of the app.
+There is also a downloadable app for iOS and Android devices, simply look for "AmpliPi" on your respective app distributor.
