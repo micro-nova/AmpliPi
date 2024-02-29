@@ -19,7 +19,7 @@ Adds 6 output zones to an AmpliPro Controller (often referred to as "AmpliPro Ma
 
 ![Zone Expander - Rear Panel]( imgs/expansion_rear_panel.jpg)
 
-- **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
+- **PREOUT**: Unamplified zone audio outputs, intended for use with powered speakers/subwoofers.
 - **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin Euroblock connectors.
 - **EXPANSION**:
     * **CHAIN IN**: Connection from previous expansion or main unit.

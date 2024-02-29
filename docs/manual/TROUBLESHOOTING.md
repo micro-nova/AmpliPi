@@ -1,6 +1,6 @@
 # Troubleshooting
 
-If you are having problems with your AmpliPi device, start here.
+If you are having problems with your AmpliPro device, start here.
 
 ## Audio
 
@@ -31,7 +31,7 @@ Once you've done either of those steps, the remaining steps are the same:
 2. Select **Updates** and click the **Check for Updates** button
 
 ### New Release
-To update your AmpliPi to the latest version:
+To update your AmpliPi software to the latest version:
 
 3. Click the **Update** button
 

@@ -23,7 +23,7 @@
     - **AUX IN**: Additional stereo input, planned to be used for announcements.
     - **ETHERNET**: Network connection.
 - **INPUTS**: 4 Stereo RCA inputs.
-- **PREOUT**: Unamplified zone audio outputs, intended for powered speakers/subwoofers.
+- **PREOUT**: Unamplified zone audio outputs, intended for use with powered speakers/subwoofers.
 - **ZONE X**: Amplified stereo outputs for Zone X, using 4-pin euroblock connectors.
 - **EXPANSION**:
     - **CHAIN OUT**: Connection to the next expansion unit (if one or more expanders are needed).
