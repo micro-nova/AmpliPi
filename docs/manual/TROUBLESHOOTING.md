@@ -23,7 +23,7 @@ There are two methods of updating:
 Go to the web app at http://amplipi.local/ (if you've changed the hostname of your unit, replace "amplipi" with that hostname)
 
 ### Mobile App
-Download the "Amplipi" app from the Google Play Store or Apple App Store
+Download the "Amplipi" app from the Google Play Store or Apple App Store. Go to the overview page for QR codes for each version.
 
 ### After choosing your update method
 Once you've done either of those steps, the remaining steps are the same:

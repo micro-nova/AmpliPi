@@ -77,7 +77,7 @@ Now that the AmpliPro unit is powered on, it is time to play with it. To access 
 
 ### Mobile App
 
-1. We have mobile apps for Android and iOS, simply search for "Amplipi" on the Google Play Store or Apple's App Store
+1. We have mobile apps for Android and iOS, simply search for "Amplipi" on the Google Play Store or Apple's App Store or go to the overview page for QR codes for each version
 2. Once you have the app downloaded, permit the app to access devices on your local network. The app will automatically search your network for active AmpliPro units.
 3. On the off chance you have multiple controllers, it will ask which unit you wish to connect to. We suggest giving different hostnames to each unit if you have multiple controllers on the same network for this reason.
 
