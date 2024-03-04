@@ -544,7 +544,11 @@ def load_preset(ctrl: Api = Depends(get_ctrl), pid: int = params.PresetID) -> mo
 
 @api.post('/api/announce', tags=['announce'])
 def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -> models.Status:
-  """ Make an announcement """
+  """ Make an announcement.
+
+      Make a PA announcement on one or more zones (default All enabled Zones) with media pointing to local or remote audio. The request returns success when the audio is done playing. Each zone that is announced to has its current audio playback paused, the announcement audio plays at the volume specified, then when the announcement finishes the audio continues playing with a small delay. Thee volume of the announcement can be specified in relative (vol_f [0.0, 1.0])  which uses the min and max decibel range configured per zone or absolute decibels (vol); by default the volume is vol_f=0.5 specifying a 50% relative volume for each zone .  Behind the scenes this uses VLC and passes the url from 'media' verbatim. The zones to playback on can be specified through zones, groups, or a combination of the 2; if no zone  is specified the announcement is played to all zones.
+
+  """
   return code_response(ctrl, ctrl.announce(announcement))
 
 # Info
