@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { CircularProgress } from "@mui/material";
 import { Divider } from "@mui/material";
+import Alert from "@mui/material/Alert";
 import "./StreamModal.scss";
 import StreamTemplates from "../StreamTemplates.json";
 import ModalCard from "@/components/ModalCard/ModalCard";
@@ -176,7 +177,6 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
             }}
         >
             <div>
-                <span>{ errorMessage }</span>
                 <TextField
                     name="Name"
                     desc={NAME_DESC}
@@ -239,6 +239,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                         setStreamFields({ ...streamFields, disabled: v });
                     }}
                 />
+            { errorMessage && <Alert severity="error" variant="filled">{errorMessage}</Alert>}
             </div>
         </ModalCard>
     );
