@@ -44,8 +44,12 @@ from amplipi.mpris import MPRIS
 
 # We use Popen for long running process control this error is not useful:
 # pylint: disable=consider-using-with
-logger = logging.getLogger('ampli-logger')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler(sys.stderr)
+logger.addHandler(sh)
 
+DEBUG = os.environ.get('DEBUG', True)
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -1276,15 +1280,19 @@ class LMS(PersistentStream):
 
   stream_type : ClassVar[str] = 'lms'
 
-  def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
+  def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = 9000, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.server: Optional[str] = server
+    self.port: Optional[int] = port
+    self.meta_proc : Optional[subprocess.Popen] = None
+    self.meta = {'artist': 'Launching metadata reader', 'album': 'If this step takes a long time,', 'track': 'please restart the unit/stream, or contact support', 'image_url': 'static/imgs/lms.png'}
 
   def is_persistent(self):
     return True
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
@@ -1293,20 +1301,27 @@ class LMS(PersistentStream):
     if 'server' in kwargs and kwargs['server'] != self.server:
       self.server = kwargs['server']
       reconnect_needed = True
+    if 'port' in kwargs and kwargs['port'] != self.port:
+      self.port = kwargs['port']
+      reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
         self.reactivate()
 
   def _activate(self, vsrc: int):
-    """ Connect a sqeezelite output to a given audio source
+    """ Connect a squeezelite output to a given audio source
     This will create a LMS client based on the given name
     """
+    if self.mock:
+      self._connect(vsrc)
+      return
     try:
       # Make the (per-source) config directory
+      self.vsrc = vsrc
       src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
       os.system(f'mkdir -p {src_config_folder}')
-
-      # TODO: Add metadata support? This may have to watch the output log?
+      with open(f"{src_config_folder}/lms_metadata.json", "w", encoding="UTF-8") as f:
+        json.dump(self.meta, f, indent = 2)
 
       # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
       md5 = hashlib.md5()
@@ -1330,10 +1345,16 @@ class LMS(PersistentStream):
         # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
         if 'localhost' == server:
           # squeezelite does not support localhost and requires the actual hostname
-          # NOTE: port 9000 is assumed
           server.replace('localhost', socket.gethostname())
+
         lms_args += ['-s', server]
-      # TODO: allow port to be specified with server (embedding it in the server URL does not work)
+
+      meta_args = ['python3', 'streams/lms_metadata.py', "--name", f"{self.name}", "--vsrc", f"{self.vsrc}"]
+      if self.server is not None:
+        meta_args.extend(["--server", f"{self.server}"])
+      if self.port is not None:
+        meta_args.extend(["--port", f"{self.port}"])
+      self.meta_proc = subprocess.Popen(args=meta_args, stdout=sys.stderr, stderr=sys.stderr)
 
       self.proc = subprocess.Popen(args=lms_args)
     except Exception as exc:
@@ -1342,8 +1363,14 @@ class LMS(PersistentStream):
   def _deactivate(self):
     if self._is_running():
       try:
+        src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
+        os.system(f'rm -f {src_config_folder}')
         self.proc.terminate()
         self.proc.communicate()
+        if self.meta_proc is not None:
+          self.meta_proc.terminate()
+          self.meta_proc.communicate()
+          self.meta_proc = None
       except Exception as e:
         logger.exception(f"failed to terminate LMS stream {self.name}: {e} \nforcefully killing")
         self.proc.kill()
@@ -1351,11 +1378,25 @@ class LMS(PersistentStream):
     self.proc = None
 
   def info(self) -> models.SourceInfo:
+    # Opens and reads the metadata.json file every time the info def is called
+    try:
+      src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.vsrc}"
+      with open(f"{src_config_folder}/lms_metadata.json", "r", encoding="utf-8") as meta_read:
+        self.meta = json.loads(meta_read.read())
+    except:
+      self.meta = {
+        'track': 'Trying again shortly...',
+        'album': 'Make sure your lms player is connected to this source',
+        'artist': 'Error: Could Not Find LMS Server',
+        'image_url': 'static/imgs/lms.png'
+      }
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      img_url='static/imgs/lms.png',
-      track='check LMS for song info',
+      img_url= self.meta.get('image_url', ''),
+      track= self.meta.get('track', ''),
+      album= self.meta.get('album', ''),
+      artist= self.meta.get('artist', '')
     )
     return source
 
@@ -1463,7 +1504,6 @@ class Bluetooth(BaseStream):
     except Exception as e:
       print(f'bluetooth: exception {e}')
       raise RuntimeError(f'Command {cmd} failed to send: {e}') from e
-      traceback.print_exc()
 
 
 # Simple handling of stream types before we have a type heirarchy
@@ -1501,7 +1541,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   if stream.type == 'fmradio':
     return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
   if stream.type == 'lms':
-    return LMS(name, args.get('server'), disabled=disabled, mock=mock)
+    return LMS(name, args.get('server'), args.get("port"), disabled=disabled, mock=mock)
   elif stream.type == 'bluetooth':
     return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
