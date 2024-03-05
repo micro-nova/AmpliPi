@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2023 MicroNova LLC
+ * Copyright (C) 2021-2024 MicroNova LLC
  *
  * Serial USART interface
  *
@@ -51,15 +51,6 @@ void setUartPassthrough(bool passthrough) {
   // If switching to passthrough mode, clear any debug messages pending.
   // If switching from passthrough mode, clear any programming messages pending.
   USART2->RQR |= USART_RQR_RXFRQ;  // RX data flush request, ensure no data is pending.
-
-  // TODO: Verify these can be removed.
-  // if (passthrough) {
-  //    USART2->CR1 |= USART_CR1_RXNEIE;   // Enable RX interrupts for USART2.
-  //    NVIC->ISER[0] = 1 << USART2_IRQn;  // Enable USART2 peripheral interrupts
-  //} else {
-  //   USART2->CR1 &= ~USART_CR1_RXNEIE;  // Disable RX interrupts for USART2.
-  //   NVIC->ICER[0] = 1 << USART2_IRQn;  // Disable USART2 peripheral interrupts
-  //}
 }
 
 bool getUartPassthrough() {
@@ -100,8 +91,8 @@ void serial_init(serial_port_t port) {
   // Since UART sends LSB first, the first character must be 0bXXXXXX01
   // 'A' = 0b0100_0001 so works perfectly!
   // if (port == serial_ctrl) {
-  // usart_regs->CR2 = USART_CR2_ABRMODE_0 | USART_CR2_ABREN;
-  //}
+  //   usart_regs->CR2 = USART_CR2_ABRMODE_0 | USART_CR2_ABREN;
+  // }
 
   // Determine the value to divide the UART's input clock by to get the output baud desired.
   // Auto-baud will override this.
@@ -111,10 +102,10 @@ void serial_init(serial_port_t port) {
   usart_regs->BRR = PCLK_FREQ_HZ / UART_BAUD;
 #endif
 
-  // Enable receiver, transmitter, RX empty interrupt, and enable USART1.
+  // Enable receiver, transmitter, RX empty interrupt, and enable USART.
   usart_regs->CR1 = USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
 
-  // Enable USART1 peripheral's interrupts.
+  // Enable the USART peripheral's interrupts.
   NVIC->ISER[0] = port == serial_ctrl ? (1 << USART1_IRQn) : (1 << USART2_IRQn);
 }
 
@@ -195,7 +186,6 @@ void usart2_irq_handler() {
 }
 
 // Write a character to UART
-#define DEBUG_PRINTS
 int _write(int file __attribute__((__unused__)), char* ptr, int len) {
 // Only stdout is actually supported, but accept any file writes as if they were to STDOUT_FILENO.
 // EXCEPT in uart_passthrough_ mode, where printf() writes to USART1 are forbidden.

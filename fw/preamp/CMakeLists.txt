@@ -73,6 +73,10 @@ target_compile_options(${PROJECT_NAME}.elf PRIVATE "$<$<CONFIG:Release>:${RELEAS
 target_compile_options(${PROJECT_NAME}.elf PRIVATE "$<$<CONFIG:RelWithDebInfo>:${RELWITHDEBINFO_FLAGS}>")
 target_compile_options(${PROJECT_NAME}.elf PRIVATE "$<$<CONFIG:MinSizeRel>:${MINSIZEREL_FLAGS}>")
 
+# Allow printf via UART in debug mode.
+# Note: UART messages can mess with an up-chain preamp in bootloader mode.
+target_compile_definitions(${PROJECT_NAME}.elf PRIVATE "$<$<CONFIG:Debug>:DEBUG_PRINTS>")
+
 target_link_options(${PROJECT_NAME}.elf PRIVATE
   ${ARM_FLAGS}
   -T${CMAKE_CURRENT_LIST_DIR}/preamp.ld

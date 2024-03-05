@@ -27,9 +27,9 @@ download the appropriate arm-none-eabi for your host machine.
 libncursesw5 is only required for GDB.
 
 ```sh
-wget https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
-sudo tar -xf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz -C /usr/share
-sudo ln -s /usr/share/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-* /usr/bin
+wget https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-$(arch)-arm-none-eabi.tar.xz
+sudo tar -xf arm-gnu-toolchain-13.2.rel1-$(arch)-arm-none-eabi.tar.xz -C /usr/share
+sudo ln -s /usr/share/arm-gnu-toolchain-13.2.Rel1-$(arch)-arm-none-eabi/bin/arm-none-eabi-* /usr/bin
 sudo apt install libncursesw5
 ```
 
@@ -65,7 +65,7 @@ make
 This defaults to a Release build.
 
 ### Debug Build
-To set debug build:
+To set debug build (and enable printf):
 ```sh
 cmake -DCMAKE_BUILD_TYPE=Debug ..
 make
