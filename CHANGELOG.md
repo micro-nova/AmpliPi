@@ -15,6 +15,7 @@
   * Make Pandora streams a bit more robust against failure
   * Fix internet radio startup bug that caused echo
   * Fix AirPlay album art
+  * Ensure Pandora streams stop when deactivated
 
 ## 0.3.3
 * Web App

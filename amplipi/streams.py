@@ -738,8 +738,18 @@ class Pandora(PersistentStream):
 
   def _deactivate(self):
     if self._is_running():
-      self.proc.kill()
-      self.proc.wait()
+      try:
+        self.proc.terminate()
+        self.proc.wait(timeout=4)
+      except:
+        # Likely a subprocess.TimeoutException, but we will handle all exceptions the same.
+        # Because this runs within a process_monitor.py, we need to handle the entire
+        # process group.
+        os.killpg(self.proc.pid, signal.SIGKILL)
+        # does the child still leave a zombie if we wait() the parent? pid space is not at
+        # a premium, so I'll leave that question unanswered.
+        self.proc.wait()
+
     self.proc = None
     self.ctrl = ''
 
