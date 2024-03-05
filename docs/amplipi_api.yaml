@@ -222,6 +222,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -641,6 +644,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -1060,6 +1066,9 @@ paths:
                     is_streamer: false
                     lms_mode: false
                     online: true
+                    stream_types_available:
+                    - fmradio
+                    - internetradio
                     version: 0.1.9
                   presets:
                   - id: 10000
@@ -1470,6 +1479,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -1900,6 +1912,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -2320,6 +2335,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -2974,6 +2992,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -3674,6 +3695,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -4299,6 +4323,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -5010,6 +5037,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -5495,6 +5525,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -6022,6 +6055,9 @@ paths:
         name: sid
         in: path
         examples:
+          Aux:
+            value: 995
+            summary: Aux - aux
           TV:
             value: 996
             summary: TV - rca
@@ -6128,6 +6164,9 @@ paths:
         name: sid
         in: path
         examples:
+          Aux:
+            value: 995
+            summary: Aux - aux
           TV:
             value: 996
             summary: TV - rca
@@ -6274,6 +6313,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -6599,6 +6641,9 @@ paths:
         name: sid
         in: path
         examples:
+          Aux:
+            value: 995
+            summary: Aux - aux
           TV:
             value: 996
             summary: TV - rca
@@ -6765,6 +6810,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -7091,6 +7139,9 @@ paths:
         name: sid
         in: path
         examples:
+          Aux:
+            value: 995
+            summary: Aux - aux
           TV:
             value: 996
             summary: TV - rca
@@ -7248,6 +7299,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -7584,6 +7638,9 @@ paths:
         name: sid
         in: path
         examples:
+          Aux:
+            value: 995
+            summary: Aux - aux
           TV:
             value: 996
             summary: TV - rca
@@ -7730,6 +7787,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -8361,6 +8421,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -8822,6 +8885,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -9264,6 +9330,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -9577,7 +9646,21 @@ paths:
       tags:
       - announce
       summary: Announce
-      description: Make an announcement
+      description: "Make an announcement.\n\n    Make a PA announcement on one or\
+        \ more zones (default: all enabled Zones) with a `media` URL\npointing to\
+        \ local or remote audio. The request returns success when the audio is done\
+        \ playing.\n\n    Each zone that is announced to has its current audio playback\
+        \ paused, the announcement\naudio plays at the volume specified, then when\
+        \ the announcement finishes the audio continues\nplaying with a small delay.\n\
+        \n    The volume of the announcement can be specified in relatively with `vol_f`\
+        \ [0.0, 1.0]\nwhich uses the [zone.vol_min, zone.vol_min] decibel range configured\
+        \ per zone.\nThe volume can alternatively be controlled in absolute decibels\
+        \ with `vol`.\nBy default the volume is `vol_f=0.5` specifying a 50% relative\
+        \ volume for each zone.\n\n    The zones to playback on can be specified through\
+        \ `zones`, `groups`, or a combination of the 2.\nif no zone is specified the\
+        \ announcement is played to all zones.\n\n    Behind the scenes this uses\
+        \ VLC and passes the URL from 'media' verbatim and waits\nfor VLC to exit\
+        \ when it is done playing."
       operationId: announce_api_announce_post
       requestBody:
         content:
@@ -9699,6 +9782,9 @@ paths:
                       is_streamer: false
                       lms_mode: false
                       online: true
+                      stream_types_available:
+                      - fmradio
+                      - internetradio
                       version: 0.1.9
                     presets:
                     - id: 10000
@@ -10025,18 +10111,21 @@ paths:
                 System info:
                   value:
                     config_file: house.json
-                    version: 0.1.8
+                    version: 0.3.4
                     mock_ctrl: false
                     mock_streams: false
                     is_streamer: false
                     online: true
-                    latest_release: 0.1.8
+                    latest_release: 0.3.4
                     access_key: ''
                     lms_mode: false
                     fw:
                     - version: '1.6'
                       git_hash: de0f8eb
                       git_dirty: false
+                    stream_types_available:
+                    - bluetooth
+                    - fmradio
       security:
       - APIKeyCookie: []
       - APIKeyQuery: []
@@ -10266,24 +10355,6 @@ components:
 
 
         Volume, mute, and source_id fields are aggregates of the member zones.'
-      creation_examples:
-        Upstairs Group:
-          value:
-            name: Upstairs
-            zones:
-            - 1
-            - 2
-            - 3
-            - 4
-            - 5
-        Downstairs Group:
-          value:
-            name: Downstairs
-            zones:
-            - 6
-            - 7
-            - 8
-            - 9
       examples:
         Upstairs Group:
           value:
@@ -10308,6 +10379,24 @@ components:
             - 9
             vol_delta: -30
             vol_f: 0.63
+      creation_examples:
+        Upstairs Group:
+          value:
+            name: Upstairs
+            zones:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+        Downstairs Group:
+          value:
+            name: Downstairs
+            zones:
+            - 6
+            - 7
+            - 8
+            - 9
     GroupUpdate:
       title: GroupUpdate
       type: object
@@ -10501,23 +10590,33 @@ components:
           description: firmware information for each connected controller or expansion
             unit
           default: []
+        stream_types_available:
+          title: Stream Types Available
+          type: array
+          items:
+            type: string
+          description: The stream types available on this particular appliance
+          default: []
       description: 'AmpliPi System information '
       examples:
         System info:
           value:
             config_file: house.json
-            version: 0.1.8
+            version: 0.3.4
             mock_ctrl: false
             mock_streams: false
             is_streamer: false
             online: true
-            latest_release: 0.1.8
+            latest_release: 0.3.4
             access_key: ''
             lms_mode: false
             fw:
             - version: '1.6'
               git_hash: de0f8eb
               git_dirty: false
+            stream_types_available:
+            - bluetooth
+            - fmradio
     MultiZoneUpdate:
       title: MultiZoneUpdate
       required:
@@ -10591,9 +10690,10 @@ components:
 
         In addition to most of the configuration found in Status, this can contain
         commands as well that configure the state of different streaming services.'
-      creation_examples:
-        Add Mute All:
+      examples:
+        Mute All:
           value:
+            id: 10000
             name: Mute All
             state:
               zones:
@@ -10609,10 +10709,9 @@ components:
                 mute: true
               - id: 5
                 mute: true
-      examples:
-        Mute All:
+      creation_examples:
+        Add Mute All:
           value:
-            id: 10000
             name: Mute All
             state:
               zones:
@@ -10931,6 +11030,10 @@ components:
           items:
             $ref: '#/components/schemas/Stream'
           default:
+          - id: 995
+            name: Aux
+            type: aux
+            index: -1
           - id: 996
             name: Input 1
             type: rca
@@ -11059,6 +11162,9 @@ components:
               is_streamer: false
               lms_mode: false
               online: true
+              stream_types_available:
+              - fmradio
+              - internetradio
               version: 0.1.9
             presets:
             - id: 10000
@@ -11377,8 +11483,8 @@ components:
           title: Type
           type: string
           description: "stream type\n\n  * pandora\n  * airplay\n  * dlna\n  * internetradio\n\
-            \  * spotify\n  * plexamp\n  * file\n  * fmradio\n  * lms\n  * bluetooth\n\
-            \  * rca\n  "
+            \  * spotify\n  * plexamp\n  * aux\n  * file\n  * fmradio\n  * lms\n \
+            \ * bluetooth\n  * rca\n  "
         user:
           title: User
           type: string
@@ -11429,6 +11535,43 @@ components:
           type: boolean
           description: Is Airplay stream AirPlay2?
       description: 'Digital stream such as Pandora, AirPlay or Spotify '
+      examples:
+        Regina Spektor Radio:
+          value:
+            id: 90890
+            name: Regina Spektor Radio
+            password: ''
+            station: '4473713754798410236'
+            status: connected
+            type: pandora
+            user: example1@micro-nova.com
+        Matt and Kim Radio (disconnected):
+          value:
+            id: 90891
+            info:
+              details: No info available
+            name: Matt and Kim Radio
+            password: ''
+            station: '4610303469018478727'
+            status: disconnected
+            type: pandora
+            user: example2@micro-nova.com
+        AirPlay (connected):
+          value:
+            id: 44590
+            info:
+              details: No info available
+            name: Jason's iPhone
+            status: connected
+            type: airplay
+        AirPlay (disconnected):
+          value:
+            id: 4894
+            info:
+              details: No info available
+            name: Rnay
+            status: disconnected
+            type: airplay
       creation_examples:
         Add Beatles Internet Radio Station:
           value:
@@ -11499,43 +11642,6 @@ components:
             name: Family
             type: lms
             server: mylmsserver
-      examples:
-        Regina Spektor Radio:
-          value:
-            id: 90890
-            name: Regina Spektor Radio
-            password: ''
-            station: '4473713754798410236'
-            status: connected
-            type: pandora
-            user: example1@micro-nova.com
-        Matt and Kim Radio (disconnected):
-          value:
-            id: 90891
-            info:
-              details: No info available
-            name: Matt and Kim Radio
-            password: ''
-            station: '4610303469018478727'
-            status: disconnected
-            type: pandora
-            user: example2@micro-nova.com
-        AirPlay (connected):
-          value:
-            id: 44590
-            info:
-              details: No info available
-            name: Jason's iPhone
-            status: connected
-            type: airplay
-        AirPlay (disconnected):
-          value:
-            id: 4894
-            info:
-              details: No info available
-            name: Rnay
-            status: disconnected
-            type: airplay
     StreamCommand:
       title: StreamCommand
       enum:

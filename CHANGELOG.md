@@ -1,6 +1,6 @@
 # AmpliPi Software Releases
 
-## Upcoming version
+## 0.3.4
 * Web App
   * Improve static asset deployment
   * Add support for mobile app only functionality
