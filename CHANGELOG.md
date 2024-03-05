@@ -14,6 +14,7 @@
   * Make pandora stream album art use HTTPS urls to make sure it is rendered in the ios app
   * Make Pandora streams a bit more robust against failure
   * Fix internet radio startup bug that caused echo
+  * Fix AirPlay album art
 
 ## 0.3.3
 * Web App

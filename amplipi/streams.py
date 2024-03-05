@@ -500,7 +500,7 @@ class AirPlay(PersistentStream):
           # if there is a title, attempt to get coverart
           images = os.listdir(self._coverart_dir)
           if len(images) > 0:
-            source.img_url = f'generated/{self.src}/{images[0]}'
+            source.img_url = f'generated/v{self.vsrc}/{images[0]}'
         else:
           source.track = "No metadata available"
 
