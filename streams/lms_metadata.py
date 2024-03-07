@@ -156,7 +156,7 @@ class LMSMetadataReader:
           with open(f"{filename_prefix}_song_raw.json", "w", encoding="UTF-8") as f:
             json.dump(song_load, f, indent = 2)
       except Exception as e:
-        print(f"Error: {e}, trying again in {self.meta_ref_rate} seconds...")
+        print(f"Error: {e}, trying again in {self.meta_ref_rate} seconds...", flush=True)
 
       time.sleep(self.meta_ref_rate)
 
@@ -165,7 +165,7 @@ if __name__ == '__main__':
   parser.add_argument('--name', type=str, required=True, help='The name of the LMS Player')
   parser.add_argument('--server', type=str, help='The hostname of the server running the LMS server', metavar="HOSTNAME")
   parser.add_argument('--ref', type=int, default=2, help='The frequency of metadata refresh cycles')
-  parser.add_argument('--debug', action='store_true', help='''d''ebug mode, activates various console logs so that you can debug in the command line,
+  parser.add_argument('--debug', action='store_true', help='''debug mode, activates various console logs so that you can debug in the command line,
                       also creates json dumps in the main directory: {player name}_track_raw.json and {player name}_song_raw.json''')
   args = parser.parse_args()
 
