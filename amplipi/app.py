@@ -24,6 +24,8 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 
 import argparse
 
+import logging
+
 import os
 
 # type handling, fastapi leverages type checking for performance and easy docs
@@ -230,7 +232,7 @@ def lms_mode(ctrl: Api = Depends(get_ctrl)):
   """ Toggles Logitech Media Server mode on or off. """
   new_config: models.Status
   if ctrl.lms_mode:
-    print("turning LMS mode off...")
+    logging.info("turning LMS mode off...")
     try:
       os.remove(pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode"))
     except FileNotFoundError:
@@ -239,7 +241,7 @@ def lms_mode(ctrl: Api = Depends(get_ctrl)):
     Popen('sudo systemctl disable logitechmediaserver', shell=True)
     new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=False))
   else:
-    print("turning LMS mode on...")
+    logging.info("turning LMS mode on...")
     pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode").touch()
     Popen('sudo systemctl start logitechmediaserver', shell=True)
     Popen('sudo systemctl enable logitechmediaserver', shell=True)
@@ -268,15 +270,15 @@ async def subscribe(req: Request):
     try:
       while True:
         if await req.is_disconnected():
-          print('disconnected')
+          logging.info('disconnected')
           break
         if not msg_que.empty():
           msg = msg_que.get()
           yield msg
         await asyncio.sleep(0.2)
-      print(f"Disconnected from client {req.client}")
+      logging.info(f"Disconnected from client {req.client}")
     except asyncio.CancelledError as exc:
-      print(f"Disconnected from client (via refresh/close) {req.client}")
+      logging.info(f"Disconnected from client (via refresh/close) {req.client}")
       # Do any other cleanup, if any
       raise exc
   return EventSourceResponse(stream())
@@ -288,7 +290,7 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
     if resp.code == ApiCode.OK:
       # general commands return None to indicate success
       return ctrl.get_state()
-    print(f"Error: {resp.msg}")
+    logging.error(f"Error: {resp.msg}")
     # TODO: refine error codes based on error message
     raise HTTPException(404, resp.msg)
   return resp
@@ -317,7 +319,7 @@ def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: 
     # correct older api requests to use RCA inputs as a stream
     valid_update = update.copy()
     valid_update.input = f'stream={defaults.RCAs[sid]}'
-    print(f'correcting deprecated use of RCA inputs from {update} to {valid_update}')
+    logging.warning(f'correcting deprecated use of RCA inputs from {update} to {valid_update}')
   return code_response(ctrl, ctrl.set_source(sid, update))
 
 
@@ -586,7 +588,7 @@ def debug() -> models.DebugResponse:
     with open(debug_file) as f:
       return models.DebugResponse(**json.load(f))
   except Exception as e:
-    print("couldn't load debug file: {e}")
+    logging.exception("couldn't load debug file: {e}")
     return models.DebugResponse()
 
 # include all routes above
@@ -895,12 +897,12 @@ def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=
 
 @app.on_event('shutdown')
 def on_shutdown():
-  print('Shutting down AmpliPi')
+  logging.info('Shutting down AmpliPi')
   # gracefully shutdown the underlying controller
   _ctrl = get_ctrl()
   get_ctrl.cache_clear()
   del _ctrl
-  print('webserver shutdown complete')
+  logging.info('webserver shutdown complete')
 
 
 if __name__ == '__main__':

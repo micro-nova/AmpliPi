@@ -5,6 +5,7 @@ from enum import Enum, auto
 import json
 import os
 import sys
+import logging
 from typing import List
 import subprocess
 from dasbus.connection import SessionMessageBus
@@ -55,7 +56,7 @@ class MPRIS:
         m.state = "Stopped"
         json.dump(m.__dict__, f)
     except Exception as e:
-      print(f'Exception clearing metadata file: {e}')
+      logging.exception(f'Exception clearing metadata file: {e}')
 
     try:
       child_args = [sys.executable,
@@ -66,7 +67,7 @@ class MPRIS:
 
       self.metadata_process = subprocess.Popen(args=child_args)
     except Exception as e:
-      print(f'Exception starting MPRIS metadata process: {e}')
+      logging.exception(f'Exception starting MPRIS metadata process: {e}')
 
   def play(self) -> None:
     """Plays."""
@@ -99,7 +100,7 @@ class MPRIS:
 
         return metadata_obj
     except Exception as e:
-      print(f"MPRIS loading metadata at {self.metadata_path} failed: {e}")
+      logging.exception(f"MPRIS loading metadata at {self.metadata_path} failed: {e}")
 
     return Metadata()
 
@@ -143,22 +144,22 @@ class MPRIS:
 
     self.metadata_process.terminate()
     if self.metadata_process.wait(1) != 0:
-      print('Failed to stop MPRIS metadata process, killing', flush=True)
+      logging.info('Failed to stop MPRIS metadata process, killing', flush=True)
       self.metadata_process.kill()
 
     self.metadata_process = None
 
     if self.mpris:
-      print('disconnecting proxy', flush=True)
+      logging.info('disconnecting proxy', flush=True)
       disconnect_proxy(self.mpris)
     self.mpris = None
-    print("mpris closed", flush=True)
+    logging.info("mpris closed", flush=True)
 
     try:
       os.remove(self.metadata_path)
     except Exception as e:
-      print(f'Could not remove metadata file: {e}')
-    print(f'Closed MPRIS {self.service_suffix}')
+      logging.exception(f'Could not remove metadata file: {e}')
+    logging.info(f'Closed MPRIS {self.service_suffix}')
 
   def __del__(self):
     self.close()

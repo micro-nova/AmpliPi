@@ -22,6 +22,7 @@ This module contains helper functions are used across the amplipi python library
 import functools
 import io
 import json
+import logging
 import time
 import os
 import re
@@ -62,7 +63,7 @@ def parse_int(i, options):
 
 def error(msg):
   """ wrap the error message specified by msg into an error """
-  print(f'Error: {msg}')
+  logging.error(f'Error: {msg}')
   return {'error': msg}
 
 
@@ -154,7 +155,7 @@ def available_outputs():
   except:
     outputs = []
   if 'ch0' not in outputs:
-    print('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
+    logging.critical('WARNING: ch0, ch1, ch2, ch3 audio devices not found. Is this running on an AmpliPi?')
   return outputs
 
 
@@ -183,7 +184,7 @@ def configure_inputs():
       subprocess.run(shlex.split('amixer -D hw:cmedia8chint set Line capture cap 0dB playback mute 0%'), check=True)
       subprocess.run(shlex.split('amixer -D hw:cmedia8chint set "IEC958 In" cap'), check=True)
     except Exception as e:
-      print(f'Failed to configure inputs: {e}')
+      logging.exception(f'Failed to configure inputs: {e}')
 
 
 def virtual_connection_device(vsid: int) -> Optional[str]:
@@ -212,7 +213,7 @@ def enable_aux_input():
   try:
     subprocess.check_call('amixer -D hw:cmedia8chint set "PCM Capture Source",0 Line', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   except subprocess.CalledProcessError as e:
-    print(f'Failed to enable Aux input: {e}')
+    logging.exception(f'Failed to enable Aux input: {e}')
 
 def zones_from_groups(status: models.Status, groups: List[int]) -> Set[int]:
   """ Get the set of zones from some groups """
@@ -248,7 +249,7 @@ def get_folder(folder):
     try:
       os.mkdir(folder)
     except:
-      print(f'Error creating dir: {folder}')
+      logging.exception(f'Error creating dir: {folder}')
   return os.path.abspath(folder)
 
 
@@ -297,20 +298,20 @@ def is_amplipi():
       desired_model = 'Raspberry Pi Compute Module 3 Plus'
       current_model = model.read()
       if desired_model.lower() not in current_model.lower():
-        print(f"Device model '{current_model}'' doesn't match '{desired_model}*'")
+        logging.info(f"Device model '{current_model}'' doesn't match '{desired_model}*'")
         amplipi = False
   except Exception:
-    print('Not running on a Raspberry Pi')
+    logging.exception('Not running on a Raspberry Pi')
     amplipi = False
 
   # Check for the serial port
   if not os.path.exists('/dev/serial0'):
-    print('Serial port /dev/serial0 not found')
+    logging.critical('Serial port /dev/serial0 not found')
     amplipi = False
 
   # Check for the i2c bus
   if not os.path.exists('/dev/i2c-1'):
-    print('I2C bus /dev/i2c-1 not found')
+    logging.critical('I2C bus /dev/i2c-1 not found')
     amplipi = False
 
   return amplipi
@@ -377,19 +378,19 @@ def get_identity() -> dict:
       potential_identity = json.load(identity_file)
       identity.update(potential_identity)
   except FileNotFoundError as e:
-    print(f'Error loading identity file: {e}')
-    print('Creating an identity file from defaults.')
+    logging.exception(f'Error loading identity file: {e}')
+    logging.info('Creating an identity file from defaults.')
     os.makedirs(USER_CONFIG_DIR, mode=0o700, exist_ok=True)
     with open(IDENTITY_FILE, encoding='utf-8', mode='w') as repair_file:
       json.dump(identity, repair_file)
   except json.JSONDecodeError as e:
-    print(f'Error loading identity file as JSON: {e}')
-    print('Moving the old one to a backup and creating an identity file from defaults.')
+    logging.exception(f'Error loading identity file as JSON: {e}')
+    logging.info('Moving the old one to a backup and creating an identity file from defaults.')
     os.rename(IDENTITY_FILE, f"{IDENTITY_FILE}.{time.time()}")
     with open(IDENTITY_FILE, encoding='utf-8', mode='w') as repair_file:
       json.dump(identity, repair_file)
   except Exception as e:
-    print(f'Error loading identity file: {e}')
+    logging.exception(f'Error loading identity file: {e}')
     raise e
   return identity
 

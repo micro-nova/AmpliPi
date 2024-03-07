@@ -30,6 +30,7 @@ import time
 from typing import Union, Optional, List, ClassVar
 import threading
 import re
+import logging
 
 import ast
 import json
@@ -108,7 +109,7 @@ class BaseStream:
     return f'{self.name} - {self.stype}'
 
   def _disconnect(self):
-    print(f'{self.name} disconnected')
+    logging.info(f'{self.name} disconnected')
     self.state = 'disconnected'
     self.src = None
 
@@ -122,7 +123,7 @@ class BaseStream:
     self._disconnect()
 
   def _connect(self, src):
-    print(f'{self.name} connected to {src}')
+    logging.info(f'{self.name} connected to {src}')
     self.state = 'connected'
     self.src = src
 
@@ -222,9 +223,9 @@ class PersistentStream(BaseStream):
       self.state = "connected"  # optimistically make this look like a normal stream for now
       if not self.mock:
         self._activate(vsrc)  # might override self.state
-      print(f"Activating {self.name} ({'persistant' if self.is_persistent() else 'temporarily'})")
+      logging.info(f"Activating {self.name} ({'persistant' if self.is_persistent() else 'temporarily'})")
     except Exception as e:
-      print(f'Failed to activate {self.name}: {e}')
+      logging.exception(f'Failed to activate {self.name}: {e}')
       if vsrc is not None:
         vsources.free(vsrc)
       self.vsrc = None
@@ -241,7 +242,7 @@ class PersistentStream(BaseStream):
   def deactivate(self):
     """ Stop the stream behind the scenes """
     try:
-      print(f'deactivating {self.name}')
+      logging.info(f'deactivating {self.name}')
       self._deactivate()
     except Exception as e:
       raise Exception(f'Failed to deactivate {self.name}: {e}') from e
@@ -259,7 +260,7 @@ class PersistentStream(BaseStream):
     """ Stop and restart the stream behind the scenes.
     This should be called after significant paranmeter changes.
     """
-    print(f'reactivating {self.name}')
+    logging.info(f'reactivating {self.name}')
     if self.is_activated():
       self.deactivate()
       time.sleep(0.1)  # wait a bit just in case
@@ -276,29 +277,29 @@ class PersistentStream(BaseStream):
     virt_dev = utils.virtual_connection_device(self.vsrc)
     phy_dev = utils.real_output_device(src)
     if virt_dev is None or self.mock:
-      print('  pretending to connect to loopback (unavailable)')
+      logging.info('  pretending to connect to loopback (unavailable)')
     else:
       # args = f'alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split()
       args = f'{sys.executable} {utils.get_folder("streams")}/process_monitor.py alsaloop -C {virt_dev} -P {phy_dev} -t 100000'.split()
       try:
-        print(f'  starting connection via: {" ".join(args)}')
+        logging.info(f'  starting connection via: {" ".join(args)}')
         self._cproc = subprocess.Popen(args=args)
       except Exception as exc:
-        print(f'Failed to start alsaloop connection: {exc}')
+        logging.exception(f'Failed to start alsaloop connection: {exc}')
         time.sleep(0.1)  # Delay a bit
     self.src = src
 
   def disconnect(self):
     """ Disconnect from a DAC """
     if self._cproc:
-      print(f'  stopping connection {self.vsrc} -> {self.src}')
+      logging.info(f'  stopping connection {self.vsrc} -> {self.src}')
       try:
         # must use terminate as kill() cannot be intercepted
         self._cproc.terminate()
         self._cproc.communicate(timeout=5)
 
       except Exception as e:
-        print(f'PersistentStream disconnect error: {e}')
+        logging.exception(f'PersistentStream disconnect error: {e}')
         pass
     self.src = None
 
@@ -330,9 +331,9 @@ class RCA(BaseStream):
           status_all = file.read()[0]
           playing = (status_all & (0b11 << (self.src * 2))) != 0
     except FileNotFoundError as error:
-      print(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
+      logging.exception(f"Couldn't open RCA audio status file {status_file}:\n  {error}")
     except Exception as error:
-      print(f'Error getting RCA audio status:\n  {error}')
+      logging.exception(f'Error getting RCA audio status:\n  {error}')
     src_info.state = "playing" if playing else "stopped"
     return src_info
 
@@ -389,7 +390,7 @@ class AirPlay(PersistentStream):
       if len(os.popen("pgrep -f shairport-sync-ap2").read().strip().splitlines()) - 1 > 0:
         self.ap2_exists = True
         # TODO: we need a better way of showing errors to user
-        print(f'Another Airplay 2 stream is already in use, unable to start {self.name}, mocking connection')
+        logging.info(f'Another Airplay 2 stream is already in use, unable to start {self.name}, mocking connection')
         return
 
     src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
@@ -426,7 +427,7 @@ class AirPlay(PersistentStream):
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
     shairport_args = f"{utils.get_folder('streams')}/shairport-sync{'-ap2' if self.ap2 else ''} -c {config_file}".split(' ')
-    print(f'shairport_args: {shairport_args}')
+    logging.info(f'shairport_args: {shairport_args}')
 
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -439,7 +440,7 @@ class AirPlay(PersistentStream):
         mpris_name += f".i{self.proc.pid}"
       self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
     except Exception as exc:
-      print(f'Error starting airplay MPRIS reader: {exc}')
+      logging.exception(f'Error starting airplay MPRIS reader: {exc}')
 
   def _deactivate(self):
     if self.mpris:
@@ -447,16 +448,16 @@ class AirPlay(PersistentStream):
     self.mpris = None
     if self._is_running():
       self.proc.stdin.close()
-      print('stopping shairport-sync')
+      logging.info('stopping shairport-sync')
       self.proc.terminate()
       if self.proc.wait(1) != 0:
-        print('killing shairport-sync')
+        logging.info('killing shairport-sync')
         self.proc.kill()
     if self.src:
       try:
         subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
       except Exception as e:
-        print(f'Error removing airplay config files: {e}')
+        logging.exception(f'Error removing airplay config files: {e}')
     self._disconnect()
     self.proc = None
 
@@ -474,7 +475,7 @@ class AirPlay(PersistentStream):
         return source
 
     if not self.mpris:
-      print(f'Airplay: No MPRIS object for {self.name}!')
+      logging.info(f'Airplay: No MPRIS object for {self.name}!')
       return source
 
     try:
@@ -505,7 +506,7 @@ class AirPlay(PersistentStream):
           source.track = "No metadata available"
 
     except Exception as e:
-      print(f"error in airplay: {e}")
+      logging.exception(f"error in airplay: {e}")
 
     return source
 
@@ -523,7 +524,7 @@ class AirPlay(PersistentStream):
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as e:
-      print(f"error in shairport: {e}")
+      logging.exception(f"error in shairport: {e}")
 
 
 class Spotify(PersistentStream):
@@ -589,7 +590,7 @@ class Spotify(PersistentStream):
       self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'v{vsrc}')  # TODO: MPRIS should just need a path!
 
     except Exception as exc:
-      print(f'error starting spotify: {exc}')
+      logging.exception(f'error starting spotify: {exc}')
 
   def _deactivate(self):
     if self.proc:
@@ -597,7 +598,7 @@ class Spotify(PersistentStream):
         self.proc.terminate()
         self.proc.communicate(timeout=3)
       except Exception as e:
-        print(f"failed to terminate spotify stream: {e}")
+        logging.exception(f"failed to terminate spotify stream: {e}")
         self.proc.kill()
       self.proc = None
     if self.mpris:
@@ -629,7 +630,7 @@ class Spotify(PersistentStream):
           source.img_url = md.art_url
 
     except Exception as e:
-      print(f"error in spotify: {e}")
+      logging.exception(f"error in spotify: {e}")
 
     return source
 
@@ -721,7 +722,7 @@ class Pandora(PersistentStream):
     if not os.path.exists(pb_status_fifo):
       os.system(f'mkfifo {pb_status_fifo}')
     # start pandora process in special home
-    print(f'Pianobar config at {pb_config_folder}')
+    logging.info(f'Pianobar config at {pb_config_folder}')
     try:
       args = [
         f'{utils.get_folder("streams")}/process_monitor.py',
@@ -734,7 +735,7 @@ class Pandora(PersistentStream):
       self.ctrl = pb_control_fifo
       self.state = 'playing'  # TODO: we need to pause pandora if it isn't playing anywhere
     except Exception as exc:
-      print(f'error starting pianobar: {exc}')
+      logging.exception(f'error starting pianobar: {exc}')
 
   def _deactivate(self):
     if self._is_running():
@@ -777,7 +778,7 @@ class Pandora(PersistentStream):
         return source
     except Exception:
       pass
-      # print(error('Failed to get currentSong - it may not exist: {}'.format(e)))
+      # logging.error('Failed to get currentSong - it may not exist: {}'.format(e))
     # TODO: report the status of pianobar with station name, playing/paused, song info
     # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
     return source
@@ -929,10 +930,10 @@ class InternetRadio(BaseStream):
     """ Connect a VLC output to a given audio source
     This will create a VLC process based on the given name
     """
-    print(f'connecting {self.name} to {src}...')
+    logging.info(f'connecting {self.name} to {src}...')
 
     if self.mock:
-      print(f'{self.name} connected to {src}')
+      logging.info(f'{self.name} connected to {src}')
       self.state = 'playing'
       self.src = src
       return
@@ -948,10 +949,10 @@ class InternetRadio(BaseStream):
       sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.real_output_device(src),
       '--song-info', song_info_path, '--log', log_file_path
     ]
-    print(f'running: {inetradio_args}')
+    logging.info(f'running: {inetradio_args}')
     self.proc = subprocess.Popen(args=inetradio_args, preexec_fn=os.setpgrp)
 
-    print(f'{self.name} (stream: {self.url}) connected to {src} via {utils.real_output_device(src)}')
+    logging.info(f'{self.name} (stream: {self.url}) connected to {src} via {utils.real_output_device(src)}')
     self.state = 'playing'
     self.src = src
 
@@ -1053,7 +1054,7 @@ class Aux(BaseStream):
 
   def connect(self, src):
     """ Use VLC to connect audio output to audio source """
-    print(f'connecting {self.name} to {src}...')
+    logging.info(f'connecting {self.name} to {src}...')
 
     if self.mock:
       self._connect(src)
@@ -1064,7 +1065,7 @@ class Aux(BaseStream):
 
     # Start audio via runvlc.py
     vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.real_output_device(src)} alsa://plughw:cmedia8chint,0 vlc://quit'
-    print(f'running: {vlc_args}')
+    logging.info(f'running: {vlc_args}')
     self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
     return
@@ -1109,7 +1110,7 @@ class FilePlayer(BaseStream):
 
   def connect(self, src):
     """ Connect a short run VLC process with audio output to a given audio source """
-    print(f'connecting {self.name} to {src}...')
+    logging.info(f'connecting {self.name} to {src}...')
 
     if self.mock:
       self._connect(src)
@@ -1120,7 +1121,7 @@ class FilePlayer(BaseStream):
 
     # Start audio via runvlc.py
     vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.real_output_device(src)} {self.url} vlc://quit'
-    print(f'running: {vlc_args}')
+    logging.info(f'running: {vlc_args}')
     self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
@@ -1192,7 +1193,7 @@ class FMRadio(BaseStream):
       sys.executable, f"{utils.get_folder('streams')}/fmradio.py", self.freq, utils.real_output_device(src),
       '--song-info', song_info_path, '--log', log_file_path
     ]
-    print(f'running: {fmradio_args}')
+    logging.info(f'running: {fmradio_args}')
     self.proc = subprocess.Popen(args=fmradio_args, stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
     self._connect(src)
@@ -1218,7 +1219,7 @@ class FMRadio(BaseStream):
       with open(loc, 'r', encoding='utf-8') as file:
         data = json.loads(file.read())
         # Example JSON: "station": "Mixx96.1", "callsign": "KXXO", "prog_type": "Soft rock", "radiotext": "        x96.1"
-        # print(json.dumps(data))
+        # logging.debug(json.dumps(data))
         if data['prog_type']:
           source.artist = data['prog_type']
         else:
@@ -1239,7 +1240,7 @@ class FMRadio(BaseStream):
         return source
     except Exception:
       pass
-      # print('Failed to get currentSong - it may not exist: {}'.format(e))
+      # logging.exception('Failed to get currentSong - it may not exist: {}'.format(e))
     return source
 
   @staticmethod
@@ -1249,7 +1250,7 @@ class FMRadio(BaseStream):
       if subprocess.run('which rtl_fm'.split(), check=False, stdout=subprocess.DEVNULL).returncode != 0:
         return False
       rtlcmd_proc = subprocess.run('rtl_fm -f 88.3 /dev/null'.split(), check=True, timeout=1, capture_output=True)
-      # If there is FM hardware, we should time out - we should not reach this point otherwise. We could check 
+      # If there is FM hardware, we should time out - we should not reach this point otherwise. We could check
       # for the output 'No supported devices found.', but that feels extra.
       return False
     except subprocess.TimeoutExpired as e:
@@ -1262,10 +1263,10 @@ class FMRadio(BaseStream):
       # exit, but for reasons other than not finding hardware, report it below.
       r = re.compile(r'^No supported devices found.$', re.MULTILINE)
       if not r.match(e.stderr.decode('utf-8')):
-        print(f'Error checking for FM hardware: {e}')
+        logging.info(f'Error checking for FM hardware: {e}')
       return False
     except Exception as e:
-      print(f'Error checking for FM hardware: {e}')
+      logging.exception(f'Error checking for FM hardware: {e}')
       return False
 
 
@@ -1335,7 +1336,7 @@ class LMS(PersistentStream):
 
       self.proc = subprocess.Popen(args=lms_args)
     except Exception as exc:
-      print(f'error starting lms: {exc}')
+      logging.exception(f'error starting lms: {exc}')
 
   def _deactivate(self):
     if self._is_running():
@@ -1343,8 +1344,8 @@ class LMS(PersistentStream):
         self.proc.terminate()
         self.proc.communicate()
       except Exception as e:
-        print(f"failed to terminate LMS stream {self.name}: {e}")
-        print("forcefully killing.")
+        logging.exception(f"failed to terminate LMS stream {self.name}: {e}")
+        logging.info("forcefully killing.")
         self.proc.kill()
         self.proc.communicate()
     self.proc = None
@@ -1385,12 +1386,12 @@ class Bluetooth(BaseStream):
       return 'No default controller available' not in btcmd_proc.stdout.decode('utf-8')
     except Exception as e:
       if 'timed out' not in str(e):  # a timeout indicates bluetooth module is missing
-        print(f'Error checking for bluetooth hardware: {e}')
+        logging.exception(f'Error checking for bluetooth hardware: {e}')
       return False
 
   def connect(self, src):
     """ Connect a bluealsa-aplay process with audio output to a given audio source """
-    print(f'connecting {self.name} to {src}...')
+    logging.info(f'connecting {self.name} to {src}...')
 
     if self.mock:
       self._connect(src)
@@ -1445,12 +1446,12 @@ class Bluetooth(BaseStream):
         source.state = data['status']
         return source
     except Exception as e:
-      print(f'bluetooth: exception {e}')
+      logging.exception(f'bluetooth: exception {e}')
       traceback.print_exc()
     return source
 
   def send_cmd(self, cmd):
-    print(f'bluetooth: sending command {cmd}')
+    logging.info(f'bluetooth: sending command {cmd}')
     try:
       if cmd in self.supported_cmds and self.src is not None:
         src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
