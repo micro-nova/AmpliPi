@@ -70,13 +70,13 @@ def _get_users() -> dict:
       potential_users = json.load(users_file)
       users.update(potential_users)
   except FileNotFoundError as e:
-    logging.error(f'Error loading users file: {e}')
+    logging.exception(f'Error loading users file: {e}')
     logging.info('Creating a users file from defaults.')
     os.makedirs(USER_CONFIG_DIR, mode=0o700, exist_ok=True)
     with open(USERS_FILE, encoding='utf-8', mode='w') as repair_file:
       json.dump(users, repair_file)
   except json.JSONDecodeError as e:
-    logging.error(f'Error loading users file as JSON: {e}')
+    logging.exception(f'Error loading users file as JSON: {e}')
     logging.warning('Moving the old one to a backup and creating a users file from defaults.')
     os.rename(USERS_FILE, f"{USERS_FILE}.{time.time()}")
     with open(USERS_FILE, encoding='utf-8', mode='w') as repair_file:
