@@ -473,7 +473,7 @@ class Api:
       connectable = stream.requires_src() in [None, src.id]
       connected = src.get_stream()
       if sid == connected:
-        assert connectable, logging.info(f'Source {src} has invalid input: stream={connected}')
+        assert connectable, print(f'Source {src} has invalid input: stream={connected}')
       if (sid == connected or not stream.disabled) and connectable:
         inputs[f'stream={sid}'] = stream.full_name()
     return inputs
