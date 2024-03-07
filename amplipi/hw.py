@@ -24,6 +24,7 @@ from enum import Enum
 import subprocess
 import sys
 import time
+import logging
 from typing import List, Optional
 
 # Third-party imports
@@ -208,7 +209,7 @@ class Preamps:
     self._bus = SMBus(1)
     self.preamps = []
     if reset:
-      print('Resetting all preamps...')
+      logging.info('Resetting all preamps...')
       self.reset(unit=0, bootloader=False)
     else:
       self.enumerate()
@@ -295,7 +296,7 @@ class Preamps:
         ser.write(addr_arr)
         return True
     except SerialException as ser_err:
-      print(ser_err)
+      logging.exception(ser_err)
       return False
 
   def enumerate(self, debug: bool = False) -> None:
@@ -307,7 +308,7 @@ class Preamps:
         break
       self.preamps.append(p)
     if debug:
-      print(f'Found {len(self.preamps)} preamp(s)')
+      logging.debug(f'Found {len(self.preamps)} preamp(s)')
 
   def program(self, filepath: str, unit: int = 0, baud: int = 115200) -> bool:
     """ Attempt to program a single AmpliPi unit
@@ -320,7 +321,7 @@ class Preamps:
     # If the unit is running print its current version info
     preamp = Preamp(unit, self._bus)
     i2c_present = preamp.available()
-    print(f"{self.unit_num_to_name(unit)}'s old firmware version: {preamp.read_version() if i2c_present else 'unknown'}")
+    logging.info(f"{self.unit_num_to_name(unit)}'s old firmware version: {preamp.read_version() if i2c_present else 'unknown'}")
 
     # For now the firmware can only pass through 9600 baud to expanders
     baud = 9600 if unit > 0 else baud
@@ -330,7 +331,7 @@ class Preamps:
 
     # Set UART passthrough on any previous units
     for p in range(unit):
-      print(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
+      logging.info(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
       self.preamps[p].uart_passthrough(True)
 
     if unit > 1:
@@ -340,9 +341,9 @@ class Preamps:
                        check=True, stdout=subprocess.DEVNULL)
       except subprocess.CalledProcessError:
         # Failed to handshake with the bootloader. Assume unit not present.
-        print(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
+        logging.exception(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
         plural = 's are' if unit != 1 else ' is'
-        print(f'Assuming only {unit} unit{plural} present and stopping programming')
+        logging.info(f'Assuming only {unit} unit{plural} present and stopping programming')
 
         # Reset all units to make sure the UART passthrough and
         # bootloader modes are cleared.
@@ -356,18 +357,18 @@ class Preamps:
       prog_success = True
     except subprocess.CalledProcessError:
       # TODO: Error handling
-      print(f'Error programming {self.unit_num_to_name(unit)}, stopping programming')
+      logging.exception(f'Error programming {self.unit_num_to_name(unit)}, stopping programming')
 
     # Done programming unit, reset to exit bootloader
     self.reset()
 
     # Verify newly programmed unit communicates
     if preamp.available():
-      print(f"{self.unit_num_to_name(unit)}'s new firmware version: {preamp.read_version()}")
+      logging.info(f"{self.unit_num_to_name(unit)}'s new firmware version: {preamp.read_version()}")
     else:
       # Can't communicate to unit, give up
       # TODO: retry?
-      print(f"Couldn't communicate to {self.unit_num_to_name(unit)} after programming, stopping programming")
+      logging.critical(f"Couldn't communicate to {self.unit_num_to_name(unit)} after programming, stopping programming")
       return False
 
     if not prog_success:
@@ -393,14 +394,14 @@ class Preamps:
       # No units requested to be programmed, exit
       return False
     previous_unit_count = len(self)
-    print(f'Programming up to {program_count} AmpliPi Preamps '
+    logging.info(f'Programming up to {program_count} AmpliPi Preamps '
           f'({previous_unit_count} currently detected)')
 
     # Attempt programming until program_count, but stop if an error occurs
     unit = 0
     success = True
     while success and unit < program_count:
-      print()
+      print() # PR COMMENT: Why the empty print?
       success = self.program(filepath, unit, baud)
       if success:
         unit += 1
@@ -410,7 +411,7 @@ class Preamps:
     success = False
     if num_units is not None:
       # A specific number of units were requested to be programmed
-      print(f'\n{unit} of {num_units} AmpliPi preamps programmed.')
+      logging.info(f'\n{unit} of {num_units} AmpliPi preamps programmed.')
       if unit >= num_units:
         # At least as many units were programmed as requested, so success!
         success = True
@@ -418,16 +419,16 @@ class Preamps:
       # No specific number requested, so take the amount found before
       # programming as the correct amount.
       plural = 's' if unit != 1 else ''
-      print(f'\n{unit} AmpliPi preamp{plural} programmed.')
+      logging.info(f'\n{unit} AmpliPi preamp{plural} programmed.')
       if unit >= max(previous_unit_count, 1):
         # Sucessfully programmed at least as many units as were previously available
         # or at least 1 if no units were previously found, so success!
         success = True
 
     if success:
-      print('Programming succeeded.')
+      logging.info('Programming succeeded.')
       return True
-    print('Programming failed.')
+    logging.error('Programming failed.')
     return False
 
 
@@ -455,9 +456,9 @@ if __name__ == '__main__':
       sys.exit(2)
 
   if len(preamps) == 0:
-    print('No preamps found, exiting')
+    logging.warning('No preamps found, exiting')
     sys.exit(1)
 
   if args.version:
     main_version = preamps[0].read_version()
-    print(f"Main preamp's firmware version: {main_version}")
+    logging.info(f"Main preamp's firmware version: {main_version}")

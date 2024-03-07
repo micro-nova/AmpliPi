@@ -2,6 +2,7 @@ import os
 import json
 import time
 import secrets
+import logging
 
 from typing import Union, Dict
 from typing_extensions import Literal
@@ -69,19 +70,19 @@ def _get_users() -> dict:
       potential_users = json.load(users_file)
       users.update(potential_users)
   except FileNotFoundError as e:
-    print(f'Error loading users file: {e}')
-    print('Creating a users file from defaults.')
+    logging.error(f'Error loading users file: {e}')
+    logging.info('Creating a users file from defaults.')
     os.makedirs(USER_CONFIG_DIR, mode=0o700, exist_ok=True)
     with open(USERS_FILE, encoding='utf-8', mode='w') as repair_file:
       json.dump(users, repair_file)
   except json.JSONDecodeError as e:
-    print(f'Error loading users file as JSON: {e}')
-    print('Moving the old one to a backup and creating a users file from defaults.')
+    logging.error(f'Error loading users file as JSON: {e}')
+    logging.warning('Moving the old one to a backup and creating a users file from defaults.')
     os.rename(USERS_FILE, f"{USERS_FILE}.{time.time()}")
     with open(USERS_FILE, encoding='utf-8', mode='w') as repair_file:
       json.dump(users, repair_file)
   except Exception as e:
-    print(f'Error loading identity file: {e}')
+    logging.exception(f'Error loading identity file: {e}')
     raise e
   return users
 
@@ -214,7 +215,7 @@ def _authenticate_user_with_password(username: str, password: str) -> bool:
   try:
     return _verify_password(password, _get_password_hash(username))
   except Exception as e:
-    print(f"exception in _verify_password(): {e}")
+    logging.exception(f"exception in _verify_password(): {e}")
     return False
 
 
