@@ -1249,7 +1249,7 @@ class FMRadio(BaseStream):
       if subprocess.run('which rtl_fm'.split(), check=False, stdout=subprocess.DEVNULL).returncode != 0:
         return False
       rtlcmd_proc = subprocess.run('rtl_fm -f 88.3 /dev/null'.split(), check=True, timeout=1, capture_output=True)
-      # If there is FM hardware, we should time out - we should not reach this point otherwise. We could check 
+      # If there is FM hardware, we should time out - we should not reach this point otherwise. We could check
       # for the output 'No supported devices found.', but that feels extra.
       return False
     except subprocess.TimeoutExpired as e:
@@ -1315,8 +1315,6 @@ class LMS(PersistentStream):
       # Make the (per-source) config directory
       src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
       os.system(f'mkdir -p {src_config_folder}')
-
-      # TODO: Add metadata support? This may have to watch the output log?
 
       # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
       md5 = hashlib.md5()
