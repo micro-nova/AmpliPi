@@ -17,6 +17,7 @@
   * Fix internet radio startup bug that caused echo
   * Fix AirPlay album art
   * Ensure Pandora streams stop when deactivated
+  * Add LMS Metadata support
 
 ## 0.3.3
 * Web App
