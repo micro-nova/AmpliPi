@@ -45,7 +45,6 @@ const MenuBar = ({ pageNumber }) => {
     const selectedSourceId = usePersistentStore((s) => s.selectedSource);
     const selectedSource = useStatusStore(s => s.status.sources[selectedSourceId]);
     const sourceInputType = getSourceInputType(selectedSource);
-    console.log(`sourceInputType MenuBar: ${sourceInputType}`);
     const sourceIsInactive =
     sourceInputType === "none" || sourceInputType == "unknown";
   
