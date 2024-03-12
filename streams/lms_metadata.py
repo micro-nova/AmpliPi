@@ -135,6 +135,9 @@ class LMSMetadataReader:
       except requests.exceptions.ConnectionError:
         logging.exception("Connection refused by host")
         time.sleep(self.meta_ref_rate)
+      except subprocess.CalledProcessError as e:
+        logging.exception(f"Something went wrong while finding an LMS server: {e}")
+        time.sleep(self.meta_ref_rate)
       except Exception as e:
         # When first creating an LMS stream, there can be random errors that will close the while loop
         # typically when asking the player for info when there isn't a player linked to the stream yet
