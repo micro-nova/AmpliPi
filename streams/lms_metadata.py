@@ -45,11 +45,11 @@ class LMSMetadataReader:
   """A class for getting metadata from a Logitech Media Server."""
 
   # meta_ref is probably an unneccessary variable to pass as an arg since it's obscured from the user, but we can eventually make it an optional setting for the user
-  def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2, debug: Optional[bool] = False):
+  def __init__(self, name: str, server: Optional[str] = None, ip: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2, debug: Optional[bool] = False):
     self.player_name = name
     self.server = server
     self.port = port
-    self.ip = None # populated later
+    self.ip = ip # Generally populated later
     self.meta_ref_rate = meta_ref
     self.debug = debug
     self.meta = MetadataHolder(artist = 'Loading...',
@@ -78,14 +78,37 @@ class LMSMetadataReader:
     self.meta.save_file(self.player_name)
 
     # When not connected, search for player to connect to by the proper name
-    while not connected:
+    attempt_resolution = True # Attempt by name only once, as a common error is a nonresolvable DNS hostname
+    abort = False # Used to stop looping without initiating the secondary loop
+    while not connected and not abort:
       try:
-        if self.server is not None:
-          self.ip = socket.gethostbyname(self.server)
-        else:
-          find_lms_server = "bin/arm/find_lms_server"
-          if platform.machine() == "x86_64":
+        if self.server is not None and self.ip is None and attempt_resolution is True:
+          host = socket.gethostbyname(self.server)
+          logging.debug(f"hostname: {self.server}")
+          logging.debug(f"ip: {host}")
+          self.ip = host
+      except Exception:
+        logging.warning("Could not resolve hostname, trying to find LMS server manually")
+        logging.warning("Set local network DNS settings to avoid this issue in the future")
+        attempt_resolution = False
+
+      try:
+        if self.ip is None:
+          machine = platform.machine()
+          logging.debug(f"platform.machine() output: {machine}")
+
+          find_lms_server = None
+          if machine == "x86_64":
             find_lms_server = "bin/x64/find_lms_server"
+          elif machine == "armv7l":
+            find_lms_server = "bin/arm/find_lms_server"
+          else:
+            self.meta.artist = "Unsupported CPU architecture for LMS MetaData"
+            self.meta.album = "Please contact AmpliPi Support:"
+            self.meta.track = "support@micro-nova.com"
+            logging.error("LMS metadata reader has detected an unsupported chipset")
+            abort = True
+
           # Much faster method of connecting to the metadata server using code from: https://github.com/ralph-irving/squeezelite/blob/master/tools/find_server.c
           ip_find = subprocess.run([find_lms_server], check=True, capture_output=True, text=True)
           # Uses regex because ip_find spits out as '{Hostname}:{port} ({ip})'
@@ -168,13 +191,16 @@ class LMSMetadataReader:
       time.sleep(self.meta_ref_rate)
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description="LMS Metadata Reader - a script for finding an LMS player with a given name and extracting the name of the song, album, and artist as well as getting the album picture")
+  parser = argparse.ArgumentParser(description="LMS Metadata Reader - a script for finding an LMS server and extracting the name of the song, album, and artist as well as getting the album picture of the currently playing song")
   parser.add_argument('--name', type=str, required=True, help='The name of the LMS Player')
-  parser.add_argument('--server', type=str, help='The hostname of the server running the LMS server', metavar="HOSTNAME")
+  parser.add_argument('--server', type=str, default=None, help='The hostname of the computer running the LMS server', metavar="HOSTNAME")
+  parser.add_argument('--ip', type=str, default=None, help='The IPv4 address of the computer running the LMS server')
   parser.add_argument('--port', type=int, default=9000, help='The port the LMS server uses')
   parser.add_argument('--ref', type=int, default=2, help='The frequency of metadata refresh cycles')
-  parser.add_argument('--debug', action='store_true', help='''debug mode, activates various console logs so that you can debug in the command line,
+  parser.add_argument('--debug', action='store_true', default=False, help='''debug mode, activates various console logs so that you can debug in the command line,
                       also creates json dumps in the main directory: {player name}_track_raw.json and {player name}_song_raw.json''')
   args = parser.parse_args()
 
-  LMSMetadataReader(args.name, args.server, args.port, args.ref, args.debug).connect()
+  # There's a few args here that aren't currently used by the system, but can be helpful for debugging in the field
+  # some are also there so we can implement future features easier, or so the devs at home can do the same with a minimal lift
+  LMSMetadataReader(args.name, args.server, args.ip, args.port, args.ref, args.debug).connect()
