@@ -144,7 +144,7 @@ class MPRIS:
 
     self.metadata_process.terminate()
     if self.metadata_process.wait(1) != 0:
-      logging.info('Failed to stop MPRIS metadata process, killing', flush=True)
+      logging.info('Failed to stop MPRIS metadata process, killing')
       self.metadata_process.kill()
 
     self.metadata_process = None

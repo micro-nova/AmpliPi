@@ -401,7 +401,7 @@ class Preamps:
     unit = 0
     success = True
     while success and unit < program_count:
-      print() # PR COMMENT: Why the empty print?
+      print()
       success = self.program(filepath, unit, baud)
       if success:
         unit += 1

@@ -1344,8 +1344,7 @@ class LMS(PersistentStream):
         self.proc.terminate()
         self.proc.communicate()
       except Exception as e:
-        logging.exception(f"failed to terminate LMS stream {self.name}: {e}")
-        logging.info("forcefully killing.")
+        logging.exception(f"failed to terminate LMS stream {self.name}: {e} \nforcefully killing")
         self.proc.kill()
         self.proc.communicate()
     self.proc = None
