@@ -1,11 +1,15 @@
 
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStepBackward } from "@fortawesome/free-solid-svg-icons";
-import { faStepForward } from "@fortawesome/free-solid-svg-icons";
-import { faPause } from "@fortawesome/free-solid-svg-icons";
-import { faPlay } from "@fortawesome/free-solid-svg-icons";
-import { faStop } from "@fortawesome/free-solid-svg-icons";
+import {
+    faStepBackward,
+    faStepForward,
+    faPause,
+    faPlay,
+    faStop,
+    faThumbsDown,
+    faThumbsUp,
+} from "@fortawesome/free-solid-svg-icons";
 import { curry } from "ramda";
 
 import { useStatusStore } from "@/App.jsx";
@@ -19,6 +23,7 @@ import "./MediaControl.scss";
 const MediaControl = ({ selectedSource }) => {
     // const source = status.sources[selectedSource]
     const source = useStatusStore((s) => s.status.sources[selectedSource]);
+    const meta = useStatusStore((s) => s.status.sources[selectedSource].info);
 
     const enabled = "media-control media-control-enabled";
     const disabled = "media-control media-control-disabled";
@@ -103,12 +108,45 @@ const MediaControl = ({ selectedSource }) => {
         />
     );
 
+    function Ban() {
+        if(isSupported("ban")){
+            return(
+                <FontAwesomeIcon
+                    icon={faThumbsDown}
+                    className={cmdToClassName("ban")}
+                    onClick={() => {postCommand("ban");}}
+                />
+            )
+        }
+    }
+
+    function Love() {
+        if(isSupported("love")){
+            let thumbColor;
+            if(meta.rating != 1){
+                thumbColor = "#FFFFFF";
+            } else {
+                thumbColor = "#00FF00";
+            }
+            return(
+                <FontAwesomeIcon
+                    style={{ color: thumbColor, transition: 'color 5s' }}
+                    icon={faThumbsUp}
+                    className={cmdToClassName("love")}
+                    onClick={() => postCommand("love")}
+                />
+            )
+        }
+    }
+
     return (
         <div className="media-outer">
             <div className="media-inner">
+                <Ban />
                 {Backward}
                 {Center}
                 {Forward}
+                <Love />
             </div>
         </div>
     );

@@ -171,7 +171,6 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
-
 class VirtualSources:
   """ Virtual source allocator to mind ALSA limits"""
 
@@ -779,6 +778,7 @@ class Pandora(PersistentStream):
             source.track = data[1]
             source.album = data[2]
             source.img_url = data[3].replace('http:', 'https:') # HACK: kind of a hack to just replace with https
+            source.rating = models.Rating(int(data[4]))
             source.station = data[5]
         return source
     except Exception:
@@ -795,10 +795,28 @@ class Pandora(PersistentStream):
     """
     try:
       if cmd in self.supported_cmds:
+        if cmd == "love":
+          src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
+          with open(f'{src_config_folder}/.config/pianobar/currentSong', 'r+', encoding='utf-8') as file:
+            data = file.read()
+            chunks = data.split(",,,")
+            if len(chunks) >= 5:
+              liked_state = chunks[4].strip()
+              if liked_state == "0":
+                chunks[4] = "1"
+              elif liked_state == "1":
+                chunks[4] = "0"
+            modified_data = ",,,".join(chunks)
+            file.seek(0)
+            file.truncate()
+            file.write(modified_data)
+            file.flush()
+
         with open(self.ctrl, 'w', encoding='utf-8') as file:
           file.write(self.supported_cmds[cmd]['cmd'])
           file.flush()
         expected_state = self.supported_cmds[cmd]['state']
+
         if expected_state is not None:
           self.state = expected_state
       elif 'station' in cmd:

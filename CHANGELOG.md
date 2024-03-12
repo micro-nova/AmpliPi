@@ -19,6 +19,8 @@
   * Fix bug where fields in stream configuration had empty descriptions
   * Better form validation on the stream addition and editing modal
   * Generate sourcemaps with every deployment
+  * Replace Pandora controls (like, dislike songs)
+  * Add "liked state" metadata to Pandora controls
 * System
   * Add ability to display a special message for shipping on the eink display
   * Make eink display clear when the display process is stopped

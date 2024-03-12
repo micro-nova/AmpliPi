@@ -15,7 +15,7 @@ const SongInfo = ({
     artistClassName = "artist-name " + artistClassName;
     albumClassName = "album-name " + albumClassName;
     trackClassName = "track-name " + trackClassName;
-  
+
     return (
         <div className="song-info">
             <div className={artistClassName}>{info.artist}</div>

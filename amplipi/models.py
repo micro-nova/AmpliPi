@@ -127,6 +127,19 @@ class BaseUpdate(BaseModel):
   name: Optional[str] = fields.Name
 
 
+class Rating(Enum):
+  # "rating" is a pandora-specific enum
+  # decode where text is common wording and ("text") is the pandora/pianobar terminology
+  # 0 default
+  # 1 liked ("loved")
+  # 2 disliked ("banned")
+  # 3 shelved ("tired")
+  DEFAULT = 0
+  LIKED = 1
+  DISLIKED = 2
+  SHELVED = 3
+
+
 class SourceInfo(BaseModel):
   name: str
   state: str  # paused, playing, stopped, unknown, loading ???
@@ -136,6 +149,7 @@ class SourceInfo(BaseModel):
   station: Optional[str]  # name of radio station
   img_url: Optional[str]
   supported_cmds: List[str] = []
+  rating: Optional[Rating] #Only used for pandora
 
 
 class Source(Base):
