@@ -1,11 +1,15 @@
 
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStepBackward } from "@fortawesome/free-solid-svg-icons";
-import { faStepForward } from "@fortawesome/free-solid-svg-icons";
-import { faPause } from "@fortawesome/free-solid-svg-icons";
-import { faPlay } from "@fortawesome/free-solid-svg-icons";
-import { faStop } from "@fortawesome/free-solid-svg-icons";
+import {
+    faStepBackward,
+    faStepForward,
+    faPause,
+    faPlay,
+    faStop,
+    faThumbsDown,
+    faThumbsUp,
+} from "@fortawesome/free-solid-svg-icons";
 import { curry } from "ramda";
 
 import { useStatusStore } from "@/App.jsx";
@@ -103,12 +107,37 @@ const MediaControl = ({ selectedSource }) => {
         />
     );
 
+    function Ban() {
+        if(isSupported("ban")){
+            return(
+                <FontAwesomeIcon
+                    icon={faThumbsDown}
+                    className={cmdToClassName("ban")}
+                    onClick={() => postCommand("ban")}
+                />
+            )
+        }
+    }
+    function Love() {
+        if(isSupported("love")){
+            return(
+                <FontAwesomeIcon
+                    icon={faThumbsUp}
+                    className={cmdToClassName("love")}
+                    onClick={() => postCommand("love")}
+                />
+            )
+        }
+    }
+
     return (
         <div className="media-outer">
             <div className="media-inner">
+                <Ban />
                 {Backward}
                 {Center}
                 {Forward}
+                <Love />
             </div>
         </div>
     );
