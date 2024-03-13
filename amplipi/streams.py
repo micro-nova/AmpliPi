@@ -1302,7 +1302,7 @@ class LMS(PersistentStream):
         self.reactivate()
 
   def _activate(self, vsrc: int):
-    """ Connect a sqeezelite output to a given audio source
+    """ Connect a squeezelite output to a given audio source
     This will create a LMS client based on the given name
     """
     f = open(f"lms_{str(self.name).replace(' ', '_')}_metadata.json", "w", encoding="UTF-8")
@@ -1342,12 +1342,8 @@ class LMS(PersistentStream):
           server.replace('localhost', socket.gethostname())
         lms_args += ['-s', server]
 
-        meta_args = ['python3', 'streams/lms_metadata.py', '--name', self.name, "--server", self.server]
-        self.meta_proc = subprocess.Popen(args=meta_args)
-      else:
-        meta_args = ['python3', 'streams/lms_metadata.py', '--name', self.name]
-        self.meta_proc = subprocess.Popen(args=meta_args)
-      # TODO: allow port to be specified with server (embedding it in the server URL does not work)
+      meta_args = ['python3', 'streams/lms_metadata.py', '--name', self.name, "--server", self.server,"--port", 9000]
+      self.meta_proc = subprocess.Popen(args=meta_args)
 
       self.proc = subprocess.Popen(args=lms_args)
     except Exception as exc:
@@ -1374,7 +1370,6 @@ class LMS(PersistentStream):
 
   def info(self) -> models.SourceInfo:
     # Opens and reads the metadata.json file every time the info def is called
-    # uses a file lock so that the file cannot be read while writing and vice/versa. If you let those processes run into eachother, there are errors
     try:
       with open(f"lms_{str(self.name).replace(' ', '_')}_metadata.json", "r", encoding="utf-8") as meta_read:
         self.meta = json.loads(meta_read.read())
