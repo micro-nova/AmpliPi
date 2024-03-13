@@ -421,7 +421,8 @@ def careful_proc_shutdown(proc: subprocess.Popen, proc_name="process"):
   """ Shutdown a process, waiting for it to exit """
   try:
     proc.terminate()
-    proc.communicate(timeout=3)
+    proc.wait(timeout=3)
   except Exception as e:
     logger.exception(f"failed to terminate {proc_name}: {e}")
     proc.kill()
+    proc.wait(timeout=3)
