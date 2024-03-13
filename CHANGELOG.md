@@ -35,6 +35,7 @@
   * Fix internet radio startup bug that caused echo
   * Fix AirPlay album art
   * Ensure Pandora streams stop when deactivated
+  * Add DLNA metadata and control support
 
 ## 0.3.3
 * Web App
