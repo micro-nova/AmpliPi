@@ -1342,7 +1342,7 @@ class LMS(PersistentStream):
           server.replace('localhost', socket.gethostname())
         lms_args += ['-s', server]
 
-      meta_args = ['python3', 'streams/lms_metadata.py', '--name', self.name, "--server", self.server,"--port", 9000]
+      meta_args = ['python3', 'streams/lms_metadata.py', '--name', self.name, '--server', self.server, '--port', '9000']
       self.meta_proc = subprocess.Popen(args=meta_args)
 
       self.proc = subprocess.Popen(args=lms_args)
