@@ -21,7 +21,7 @@
 Simple web based software updates
 """
 # file and process handling
-import logging
+from app import logger
 import os
 import subprocess
 import glob
@@ -88,7 +88,7 @@ try:
 except FileNotFoundError:
   pass
 except Exception as e:
-  logging.exception(f'Error loading identity file: {e}')
+  logger.exception(f'Error loading identity file: {e}')
 
 
 @router.get('/update')
@@ -110,7 +110,7 @@ def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None
 @router.post("/update/upload")
 async def start_upload(file: UploadFile = File(...)):
   """ Start a upload based update """
-  logging.info(file.filename)
+  logger.info(file.filename)
   try:
     # TODO: use a temp directory and pass it the installation
     os.makedirs('web/uploads', exist_ok=True)
@@ -118,7 +118,7 @@ async def start_upload(file: UploadFile = File(...)):
     # TODO: verify file has amplipi version
     return 200
   except Exception as e:
-    logging.exception(e)
+    logger.exception(e)
     return 500
 
 
@@ -135,13 +135,13 @@ def download(url, file_name):
 @router.post("/update/download")
 async def download_update(info: ReleaseInfo):
   """ Download the update """
-  logging.info(f'downloading update from: {info.url}')
+  logger.info(f'downloading update from: {info.url}')
   try:
     os.makedirs('web/uploads', exist_ok=True)
     download(info.url, 'web/uploads/update.tar.gz')
     return 200
   except Exception as e:
-    logging.exception(e)
+    logger.exception(e)
     return 500
 
 
@@ -216,15 +216,15 @@ async def progress(req: Request):
     try:
       while True:
         if await req.is_disconnected():
-          logging.info('disconnected')
+          logger.info('disconnected')
           break
         if not sse_messages.empty():
           msg = sse_messages.get()
           yield msg
         await asyncio.sleep(0.2)
-      logging.info(f"Disconnected from client {req.client}")
+      logger.info(f"Disconnected from client {req.client}")
     except asyncio.CancelledError as e:
-      logging.exception(f"Disconnected from client (via refresh/close) {req.client}")
+      logger.exception(f"Disconnected from client (via refresh/close) {req.client}")
       # Do any other cleanup, if any
       raise e
   return EventSourceResponse(stream())
@@ -274,10 +274,10 @@ def install_thread():
         _sse_info(task.name)
         output = indent(task.output)
         if task.success:
-          logging.info(f'info: {output}')
+          logger.info(f'info: {output}')
           _sse_info(output)
         else:
-          logging.warning(f'error: {output}')
+          logger.warning(f'error: {output}')
           _sse_error(output)
     # reconfigure and restart everything but the updater
     # (which is restarted later by update/restart)
