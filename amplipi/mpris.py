@@ -5,13 +5,14 @@ from enum import Enum, auto
 import json
 import os
 import sys
-from app import logger
+import logging
 from typing import List
 import subprocess
 from dasbus.connection import SessionMessageBus
 from dasbus.client.proxy import disconnect_proxy
 from amplipi import utils
 
+logger = logging.getLogger('ampli-logger')
 
 class CommandTypes(Enum):
   PLAY = auto()

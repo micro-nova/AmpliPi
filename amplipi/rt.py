@@ -22,7 +22,7 @@ import io
 import math
 import os
 import time
-from app import logger
+import logging
 from enum import Enum
 from typing import Dict, List, Tuple, Union, Optional
 
@@ -32,6 +32,7 @@ from amplipi import models  # TODO: importing this takes ~0.5s, reduce
 
 # TODO: move constants like this to their own file
 DEBUG_PREAMPS = False  # print out preamp state after register write
+logger = logging.getLogger('ampli-logger')
 
 
 # Preamp register addresses

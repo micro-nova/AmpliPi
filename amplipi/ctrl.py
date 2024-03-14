@@ -28,7 +28,7 @@ from copy import deepcopy
 import os  # files
 from pathlib import Path
 import time
-from app import logger
+import logging
 
 import threading
 import wrapt
@@ -43,6 +43,7 @@ from amplipi import defaults
 
 
 _DEBUG_API = False  # print out a graphical state of the api after each call
+logger = logging.getLogger('ampli-logger')
 
 
 @wrapt.decorator

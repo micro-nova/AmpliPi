@@ -30,7 +30,7 @@ import time
 from typing import Union, Optional, List, ClassVar
 import threading
 import re
-from app import logger
+import logging
 
 import ast
 import json
@@ -44,6 +44,7 @@ from amplipi.mpris import MPRIS
 
 # We use Popen for long running process control this error is not useful:
 # pylint: disable=consider-using-with
+logger = logging.getLogger('ampli-logger')
 
 
 def write_config_file(filename, config):
