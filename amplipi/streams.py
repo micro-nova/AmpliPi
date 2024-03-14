@@ -1342,9 +1342,9 @@ class LMS(PersistentStream):
         # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
         if 'localhost' == server:
           # squeezelite does not support localhost and requires the actual hostname
-          # NOTE: port 9000 is assumed
           server.replace('localhost', socket.gethostname())
-        lms_args += ['-s', server]
+
+        lms_args += ['-s', f'{server}:{self.port}']
 
       meta_args = ""
       if self.name is not None:
