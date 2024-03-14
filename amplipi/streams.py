@@ -1341,9 +1341,12 @@ class LMS(PersistentStream):
           # NOTE: port 9000 is assumed
           server.replace('localhost', socket.gethostname())
         lms_args += ['-s', server]
-
-      meta_args = ['python3', 'streams/lms_metadata.py', '--name', self.name, '--server', self.server]
-      self.meta_proc = subprocess.Popen(args=meta_args)
+      meta_args = ""
+      if self.name is not None:
+        meta_args += f" --name {self.name}"
+      if self.server is not None:
+        meta_args += f" --server {self.server}"
+      self.meta_proc = subprocess.Popen(args=['python3', 'streams/lms_metadata.py', meta_args])
 
       self.proc = subprocess.Popen(args=lms_args)
     except Exception as exc:

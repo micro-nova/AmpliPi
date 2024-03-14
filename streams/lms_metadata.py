@@ -76,7 +76,7 @@ class LMSMetadataReader:
     try:
       ip_regex = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
 
-      if self.server is not None and re.match(ip_regex, self.server) is False:
+      if re.match(ip_regex, self.server) is False:
         host = socket.gethostbyname(self.server)
         logging.debug(f"hostname: {self.server}")
         logging.debug(f"ip: {host}")
@@ -94,7 +94,7 @@ class LMSMetadataReader:
     attempt_resolution = True
     abort = False # Used to stop looping without initiating the secondary loop
     while not connected and not abort:
-      if attempt_resolution: # Attempt by name only once, as a common error is a nonresolvable DNS hostname
+      if attempt_resolution and self.server is not None: # Attempt by name only once, as a common error is a nonresolvable DNS hostname
         self.resolve_host()
         attempt_resolution = False
 
@@ -202,15 +202,16 @@ class LMSMetadataReader:
       time.sleep(self.meta_ref_rate)
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description="LMS Metadata Reader - a script for finding an LMS server and extracting the name of the song, album, and artist as well as getting the album picture of the currently playing song")
-  parser.add_argument('--name', type=str, required=True, help='The name of the LMS Player')
-  parser.add_argument('--server', type=str, default=None, help='The hostname or IP of the computer running the LMS server', metavar="HOSTNAME")
-  parser.add_argument('--port', type=int, default=9000, help='The port the LMS server uses')
-  parser.add_argument('--ref', type=int, default=2, help='The frequency of metadata refresh cycles')
-  parser.add_argument('--debug', action='store_true', default=False, help='''debug mode, activates various console logs so that you can debug in the command line,
-                      also creates json dumps in the main directory: {player name}_track_raw.json and {player name}_song_raw.json''')
-  args = parser.parse_args()
+  # parser = argparse.ArgumentParser(description="LMS Metadata Reader - a script for finding an LMS server and extracting the name of the song, album, and artist as well as getting the album picture of the currently playing song")
+  # parser.add_argument('--name', type=str, required=True, help='The name of the LMS Player')
+  # parser.add_argument('--server', type=str, default=None, help='The hostname or IP of the computer running the LMS server', metavar="HOSTNAME")
+  # parser.add_argument('--port', type=int, default=9000, help='The port the LMS server uses')
+  # parser.add_argument('--ref', type=int, default=2, help='The frequency of metadata refresh cycles')
+  # parser.add_argument('--debug', action='store_true', default=False, help='''debug mode, activates various console logs so that you can debug in the command line,
+  #                     also creates json dumps in the main directory: {player name}_track_raw.json and {player name}_song_raw.json''')
+  # args = parser.parse_args()
 
   # There's a few args here that aren't currently used by the system, but can be helpful for debugging in the field
   # some are also there so we can implement future features easier, or so the devs at home can do the same with a minimal lift
-  LMSMetadataReader(args.name, args.server, args.port, args.ref, args.debug).connect()
+  # LMSMetadataReader(args.name, args.server, args.port, args.ref, args.debug).connect()
+  LMSMetadataReader("LinkData", None, 9000, 2, True).connect()
