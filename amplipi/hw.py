@@ -24,7 +24,7 @@ from enum import Enum
 import subprocess
 import sys
 import time
-from app import logger
+import logging
 from typing import List, Optional
 
 # Third-party imports
@@ -39,6 +39,8 @@ if utils.is_amplipi():
   from RPi import GPIO
 
 PI_SERIAL_PORT = '/dev/serial0'
+
+logger = logging.getLogger('ampli-logger')
 
 
 class FwVersion:

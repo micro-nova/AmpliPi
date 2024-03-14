@@ -2,7 +2,7 @@ import os
 import json
 import time
 import secrets
-from app import logger
+import logging
 
 from typing import Union, Dict
 from typing_extensions import Literal
@@ -37,6 +37,8 @@ pwd_context = PasswordHasher.from_parameters(argon2_params)
 prefix = '/auth'
 
 router = APIRouter(prefix=prefix)
+
+logger = logging.getLogger('ampli-logger')
 
 # the template dir ought to be alongside this file
 template_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "templates")

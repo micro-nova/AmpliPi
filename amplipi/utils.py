@@ -22,7 +22,7 @@ This module contains helper functions are used across the amplipi python library
 import functools
 import io
 import json
-from app import logger
+import logging
 import time
 import os
 import re
@@ -40,6 +40,7 @@ from amplipi.defaults import USER_CONFIG_DIR
 # pylint: disable=bare-except
 
 IDENTITY_FILE = os.path.join(USER_CONFIG_DIR, "identity")
+logger = logging.getLogger('ampli-logger')
 
 # Helper functions
 
