@@ -1274,9 +1274,13 @@ class LMS(PersistentStream):
 
   stream_type : ClassVar[str] = 'lms'
 
-  def __init__(self, name: str, server: Optional[str] = None, disabled: bool = False, mock: bool = False):
+  def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = None, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.server: Optional[str] = server
+    if port is None:
+      self.port: Optional[str] = 9000
+    else:
+      self.port: Optional[str] = port
     self.meta_proc : Optional[subprocess.Popen] = None
     self.meta = {'artist': 'Loading...', 'album': 'If loading takes a long time,', 'track': 'consider adding hostname to stream config', 'image_url': 'static/imgs/lms.png'}
 
@@ -1296,6 +1300,9 @@ class LMS(PersistentStream):
       reconnect_needed = True
     if 'server' in kwargs and kwargs['server'] != self.server:
       self.server = kwargs['server']
+      reconnect_needed = True
+    if 'port' in kwargs and kwargs['port'] != self.port:
+      self.port = kwargs['port']
       reconnect_needed = True
     if reconnect_needed:
       if self._is_running():
@@ -1341,11 +1348,14 @@ class LMS(PersistentStream):
           # NOTE: port 9000 is assumed
           server.replace('localhost', socket.gethostname())
         lms_args += ['-s', server]
+
       meta_args = ""
       if self.name is not None:
         meta_args += f" --name {self.name}"
       if self.server is not None:
         meta_args += f" --server {self.server}"
+      if self.port is not None:
+        meta_args += f" --port {self.port}"
       self.meta_proc = subprocess.Popen(args=['python3', 'streams/lms_metadata.py', meta_args])
 
       self.proc = subprocess.Popen(args=lms_args)
@@ -1535,7 +1545,7 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
   if stream.type == 'fmradio':
     return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
   if stream.type == 'lms':
-    return LMS(name, args.get('server'), disabled=disabled, mock=mock)
+    return LMS(name, args.get('server'), args.get("port"), disabled=disabled, mock=mock)
   elif stream.type == 'bluetooth':
     return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
