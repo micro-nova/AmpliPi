@@ -22,7 +22,7 @@ import io
 import math
 import os
 import time
-import logging
+from app import logger
 from enum import Enum
 from typing import Dict, List, Tuple, Union, Optional
 
@@ -102,20 +102,20 @@ def is_amplipi():
       desired_model = 'Raspberry Pi Compute Module 3 Plus'
       current_model = m.read()
       if desired_model.lower() not in current_model.lower():
-        logging.info(f"Device model '{current_model}'' doesn't match '{desired_model}*'")
+        logger.info(f"Device model '{current_model}'' doesn't match '{desired_model}*'")
         is_amplipi = False
   except Exception:
-    logging.exception('Not running on a Raspberry Pi')
+    logger.exception('Not running on a Raspberry Pi')
     is_amplipi = False
 
   # Check for the serial port
   if not os.path.exists('/dev/serial0'):
-    logging.info('Serial port /dev/serial0 not found')
+    logger.info('Serial port /dev/serial0 not found')
     is_amplipi = False
 
   # Check for the i2c bus
   if not os.path.exists('/dev/i2c-1'):
-    logging.info('I2C bus /dev/i2c-1 not found')
+    logger.info('I2C bus /dev/i2c-1 not found')
     is_amplipi = False
 
   return is_amplipi
@@ -131,7 +131,7 @@ class _Preamps:
     self.preamps = dict()
     if not is_amplipi():
       self.bus = None  # TODO: Use i2c-stub
-      logging.info('Not running on AmpliPi hardware, mocking preamp connection')
+      logger.info('Not running on AmpliPi hardware, mocking preamp connection')
     else:
       if reset:
         self.reset_preamps(bootloader)
@@ -145,11 +145,11 @@ class _Preamps:
       for p in _DEV_ADDRS:
         if self.probe_preamp(p):
           if debug:
-            logging.debug(f'Preamp found at address {p}')
+            logger.debug(f'Preamp found at address {p}')
           self.new_preamp(p)
         else:
           if p == _DEV_ADDRS[0] and debug:
-            logging.info('Error: no preamps found')
+            logger.info('Error: no preamps found')
           break
 
   def __del__(self):
@@ -237,7 +237,7 @@ class _Preamps:
         return None  # Preamp is not connected, do nothing
 
     if DEBUG_PREAMPS:
-      logging.info("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
+      logger.info("writing to 0x{:02x} @ 0x{:02x} with 0x{:02x}".format(preamp_addr, reg, data))
     self.preamps[preamp_addr][reg] = data
     # TODO: need to handle volume modifying mute state in mock
     if self.bus is not None:
@@ -265,10 +265,10 @@ class _Preamps:
     """ Read all registers of every preamp and print """
     if self.bus is not None:
       for preamp in self.preamps:
-        logging.info(f'Preamp {preamp // 8}:')
+        logger.info(f'Preamp {preamp // 8}:')
         for reg, addr in _REG_ADDRS.items():
           val = self.bus.read_byte_data(preamp, addr)
-          logging.info(f'  0x{addr:02X}:{reg:<15} = 0x{val:02X}')
+          logger.info(f'  0x{addr:02X}:{reg:<15} = 0x{val:02X}')
 
   def read_version(self, preamp: int = 1):
     """ Read the version of the first preamp if present

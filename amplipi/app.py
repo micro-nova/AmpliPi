@@ -81,7 +81,17 @@ app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated")
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+loghandler = logging.StreamHandler()
+loghandler.setLevel(logging.INFO)
+
+logformat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+loghandler.setFormatter(logformat)
+
+logger.addHandler(loghandler)
 
 class SimplifyingRouter(APIRouter):
   """

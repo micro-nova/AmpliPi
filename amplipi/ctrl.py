@@ -28,7 +28,7 @@ from copy import deepcopy
 import os  # files
 from pathlib import Path
 import time
-import logging
+from app import logger
 
 import threading
 import wrapt
@@ -134,14 +134,14 @@ class Api:
     try:
       found_boards = EEPROM.get_available_devices(0)
       if found_boards:
-        logging.info(f'Found boards:')
+        logger.info(f'Found boards:')
     except Exception as exc:
-      logging.exception(f'Error finding boards: {exc}')
+      logger.exception(f'Error finding boards: {exc}')
     try:
       for board in found_boards:
-        logging.info(f' - {EEPROM(0, board).get_board_info()}')
+        logger.info(f' - {EEPROM(0, board).get_board_info()}')
     except Exception as exc:
-      logging.exception(f'Error showing board info: {exc}')
+      logger.exception(f'Error showing board info: {exc}')
 
     # check if we are a streamer
     self.is_streamer = BoardType.STREAMER_SUPPORT in found_boards
@@ -193,21 +193,21 @@ class Api:
       elif is_streamer_path.exists():
         os.remove(is_streamer_path)
     except Exception as exc:
-      logging.exception("Error setting is_streamer flag: {exc}")
+      logger.exception("Error setting is_streamer flag: {exc}")
 
     # determine if we're in LMS mode, based on a file
     lms_mode_path = Path(defaults.USER_CONFIG_DIR, 'lms_mode')
     if lms_mode_path.exists():
-      logging.info("lms mode")
+      logger.info("lms mode")
       self.lms_mode = True
     else:
-      logging.info("not lms mode")
+      logger.info("not lms mode")
       self.lms_mode = False
 
     # load a good default config depending on the unit subtype
     if not loaded_config:
       if len(errors) > 0:
-        logging.error(errors[0])
+        logger.error(errors[0])
       default_config = defaults.default_config(is_streamer=self.is_streamer, lms_mode=self.lms_mode)
       self.status = models.Status.parse_obj(default_config)
       self.save()
@@ -275,8 +275,8 @@ class Api:
             if not src_name.isdigit():
               input_name = src_name
           except Exception as e:
-            logging.exception(f'Error discovering old source name for conversion to RCA stream: {e}')
-            logging.info(f'- Defaulting name to: {input_name}')
+            logger.exception(f'Error discovering old source name for conversion to RCA stream: {e}')
+            logger.info(f'- Defaulting name to: {input_name}')
           rca_stream = models.Stream(id=rca_id, name=input_name, type='rca', index=idx)
           self.status.streams.insert(idx, rca_stream)
 
@@ -305,26 +305,26 @@ class Api:
           if self.lms_mode and stream.type == 'lms':
             self.streams[stream.id].activate()  # type: ignore
         except Exception as exc:
-          logging.exception(f"Failed to create '{stream.name}' stream: {exc}")
+          logger.exception(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
     self._sync_stream_info()  # need to update the status with the new streams
 
     # add/remove dynamic bluetooth stream
     bt_streams = [sid for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.Bluetooth)]
     if amplipi.streams.Bluetooth.is_hw_available() and not self._mock_hw:
-      logging.info('bluetooth dongle available')
+      logger.info('bluetooth dongle available')
       # make sure one stream is available
       if len(bt_streams) == 0:
-        logging.info('no bt streams present. creating one')
+        logger.info('no bt streams present. creating one')
         self.create_stream(models.Stream(type='bluetooth', name='Bluetooth'), internal=True)
       elif len(bt_streams) > 1:
-        logging.info('bt streams present. removing all but one')
+        logger.info('bt streams present. removing all but one')
         for s in bt_streams[1:]:
           self.delete_stream(s, internal=True)
     else:
-      logging.info('bluetooth dongle unavailable')
+      logger.info('bluetooth dongle unavailable')
       if len(bt_streams) > 0:
-        logging.info('bt streams present. removing all')
+        logger.info('bt streams present. removing all')
         for s in bt_streams:
           self.delete_stream(s, internal=True)
 
@@ -332,9 +332,9 @@ class Api:
     fm_streams = [stream for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.FMRadio)]
     fm_disabled = not amplipi.streams.FMRadio.is_hw_available()
     if fm_disabled:
-      logging.warning('fm radio dongle unavailable')
+      logger.warning('fm radio dongle unavailable')
     for fm_stream in fm_streams:
-      logging.info(f"setting FM stream {fm_stream.name} to disabled={fm_disabled} based on hw availability")
+      logger.info(f"setting FM stream {fm_stream.name} to disabled={fm_disabled} based on hw availability")
       fm_stream.disabled = fm_disabled
     self._sync_stream_info() # update stream status with potentially updated streams
 
@@ -344,16 +344,16 @@ class Api:
     try:
       self.status.sources[:] = self.status.sources[0:models.MAX_SOURCES]
     except Exception as exc:
-      logging.exception('Error configuring sources: using all defaults')
+      logger.exception('Error configuring sources: using all defaults')
       self.status.sources[:] = [models.Source(id=i, name=f'Input {i+1}') for i in range(models.MAX_SOURCES)]
     # populate any missing sources, to match the underlying system's capabilities
     for sid in range(len(self.status.sources), models.MAX_SOURCES):
-      logging.warning(f'Error: missing source {sid}, inserting default source')
+      logger.warning(f'Error: missing source {sid}, inserting default source')
       self.status.sources.insert(sid, models.Source(id=sid, name=f'Input {sid+1}'))
     # sequentially number sources if necessary
     for sid, src in enumerate(self.status.sources):
       if src.id != sid:
-        logging.info(f'Error: source at index {sid} is not sequentially numbered, fixing')
+        logger.info(f'Error: source at index {sid} is not sequentially numbered, fixing')
         src.id = sid
     # configure all of the sources, now that they are layed out as expected
     for src in self.status.sources:
@@ -362,14 +362,14 @@ class Api:
           update = models.SourceUpdate(input=src.input)
           self.set_source(src.id, update, force_update=True, internal=True)
         except Exception as e:
-          logging.exception(f'Error configuring source {src.id}: {e}')
-          logging.info(f'defaulting source {src.id} to an empty input')
+          logger.exception(f'Error configuring source {src.id}: {e}')
+          logger.info(f'defaulting source {src.id} to an empty input')
           update = models.SourceUpdate(input='')
           try:
             self.set_source(src.id, update, force_update=True, internal=True)
           except Exception as e_empty:
-            logging.exception(f'Error configuring source {src.id}: {e_empty}')
-            logging.info(f'Source {src.id} left uninitialized')
+            logger.exception(f'Error configuring source {src.id}: {e_empty}')
+            logger.info(f'Source {src.id} left uninitialized')
 
     # configure all of the zones so that they are in a known state
     #   we mute all zones on startup to keep audio from playing immediately at startup
@@ -418,7 +418,7 @@ class Api:
         cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as exc:
-      logging.exception(f'Error saving config: {exc}')
+      logger.exception(f'Error saving config: {exc}')
 
   def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
@@ -620,7 +620,7 @@ class Api:
             if stream.src is not None and stream.src != idx:
               # update the streams last connected source to have no input, since we have stolen its input
               stolen_from = self.status.sources[stream.src]
-              logging.info(f'stealing {stream.name} from source {stolen_from.name}')
+              logger.info(f'stealing {stream.name} from source {stolen_from.name}')
               stolen_from.input = ''
             try:
               if stream.is_connected():
@@ -632,17 +632,17 @@ class Api:
                 if not old_stream.is_persistent():  # type: ignore
                   old_stream.deactivate()  # type: ignore
             except Exception as iexc:
-              logging.exception(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
+              logger.exception(f"Failed to update {sid}'s input to {stream.name}: {iexc}")
               stream.disconnect()
               if old_stream:
-                logging.info(f'Trying to get back to the previous input: {old_stream.name}')
+                logger.info(f'Trying to get back to the previous input: {old_stream.name}')
                 old_stream.connect(idx)
                 src.input = last_input
               else:
                 src.input = ''
               # connect the stream back to its old source
               if stolen_from and stolen_from.id is not None:
-                logging.info(f"Trying to revert src {stolen_from.id}'s input to {stream.name}")
+                logger.info(f"Trying to revert src {stolen_from.id}'s input to {stream.name}")
                 stream.connect(stolen_from.id)
                 stolen_from.input = input_
               # now that we recovered, show that this failed

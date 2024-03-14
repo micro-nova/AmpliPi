@@ -5,7 +5,7 @@ from enum import Enum, auto
 import json
 import os
 import sys
-import logging
+from app import logger
 from typing import List
 import subprocess
 from dasbus.connection import SessionMessageBus
@@ -56,7 +56,7 @@ class MPRIS:
         m.state = "Stopped"
         json.dump(m.__dict__, f)
     except Exception as e:
-      logging.exception(f'Exception clearing metadata file: {e}')
+      logger.exception(f'Exception clearing metadata file: {e}')
 
     try:
       child_args = [sys.executable,
@@ -67,7 +67,7 @@ class MPRIS:
 
       self.metadata_process = subprocess.Popen(args=child_args)
     except Exception as e:
-      logging.exception(f'Exception starting MPRIS metadata process: {e}')
+      logger.exception(f'Exception starting MPRIS metadata process: {e}')
 
   def play(self) -> None:
     """Plays."""
@@ -100,7 +100,7 @@ class MPRIS:
 
         return metadata_obj
     except Exception as e:
-      logging.exception(f"MPRIS loading metadata at {self.metadata_path} failed: {e}")
+      logger.exception(f"MPRIS loading metadata at {self.metadata_path} failed: {e}")
 
     return Metadata()
 
@@ -144,22 +144,22 @@ class MPRIS:
 
     self.metadata_process.terminate()
     if self.metadata_process.wait(1) != 0:
-      logging.info('Failed to stop MPRIS metadata process, killing')
+      logger.info('Failed to stop MPRIS metadata process, killing')
       self.metadata_process.kill()
 
     self.metadata_process = None
 
     if self.mpris:
-      logging.info('disconnecting proxy', flush=True)
+      logger.info('disconnecting proxy')
       disconnect_proxy(self.mpris)
     self.mpris = None
-    logging.info("mpris closed", flush=True)
+    logger.info("mpris closed")
 
     try:
       os.remove(self.metadata_path)
     except Exception as e:
-      logging.exception(f'Could not remove metadata file: {e}')
-    logging.info(f'Closed MPRIS {self.service_suffix}')
+      logger.exception(f'Could not remove metadata file: {e}')
+    logger.info(f'Closed MPRIS {self.service_suffix}')
 
   def __del__(self):
     self.close()
