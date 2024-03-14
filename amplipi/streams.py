@@ -1274,13 +1274,10 @@ class LMS(PersistentStream):
 
   stream_type : ClassVar[str] = 'lms'
 
-  def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = None, disabled: bool = False, mock: bool = False):
+  def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = 9000, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.server: Optional[str] = server
-    if port is None:
-      self.port: Optional[str] = 9000
-    else:
-      self.port: Optional[str] = port
+    self.port: Optional[int] = port
     self.meta_proc : Optional[subprocess.Popen] = None
     self.meta = {'artist': 'Loading...', 'album': 'If loading takes a long time,', 'track': 'consider adding hostname to stream config', 'image_url': 'static/imgs/lms.png'}
 
