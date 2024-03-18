@@ -71,19 +71,27 @@ class LMSMetadataReader:
       x += 1
     return flat_data
 
-  def resolve_host(self):
+  def resolve_host(self) -> bool:
     """Checks if self.server is a hostname or an IP; if hostname try to resolve to IP"""
     try:
       ip_regex = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
 
-      if re.match(ip_regex, self.server) is False:
+      if re.match(ip_regex, self.server): #Does the given string fit the format of an IP?
+        return True #If the hostname is already an IP, return True
+      else:
         host = socket.gethostbyname(self.server)
-        logging.debug(f"hostname: {self.server}")
-        logging.debug(f"ip: {host}")
-        self.server = host
+        if re.match(ip_regex, host):
+          logging.debug(f"hostname: {self.server}")
+          logging.debug(f"ip: {host}")
+          self.server = host
+          return True #If the resolved hostname is an IP, return True
+        else:
+          return False #If the hostname is resolvable but somehow still not an IP, return False
+
     except Exception:
       logging.warning("Could not resolve hostname, trying to find LMS server manually")
       logging.warning("Set local network DNS settings or set 'server' in config to be an IP to avoid this issue in the future")
+      return False #If there is an error, or the hostname is unresolvable, return false
 
   def connect(self):
     """Discovers LMS Player and then requests metadata repetitively"""
@@ -91,15 +99,10 @@ class LMSMetadataReader:
     self.meta.save_file(self.folder)
 
     # When not connected, search for player to connect to by the proper name
-    attempt_resolution = True
     abort = False # Used to stop looping without initiating the secondary loop
     while not connected and not abort:
-      if attempt_resolution and self.server is not None: # Attempt by name only once, as a common error is a nonresolvable DNS hostname
-        self.resolve_host()
-        attempt_resolution = False
-
       try:
-        if self.server is None:
+        if not self.resolve_host(): # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
           machine = platform.machine()
           logging.debug(f"platform.machine() output: {machine}")
 
@@ -166,7 +169,7 @@ class LMSMetadataReader:
         track_data = self.flatten(track_load['result']['playlist_loop'])
 
 
-        if song_data.get('artist'):
+        if song_data.get('artist'): # Some stream types (radio streams primarily) dont advertise the artist over LMS
           self.meta.artist = song_data.get('artist') or "Loading..."
           self.meta.album = song_data.get('album') or "Loading..."
           self.meta.track = song_data.get('title') or "Loading..."
