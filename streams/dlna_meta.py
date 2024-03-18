@@ -78,12 +78,14 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
             elif i.tag == "{urn:schemas-upnp-org:metadata-1-0/upnp/}album":
               metadata["album"] = i.text
             elif i.tag == "{urn:schemas-upnp-org:metadata-1-0/upnp/}albumArtURI":
-              fname = i.text.split('/')[-1]
+              # limit the file name to 200 characters to prevent going over the limit of 255 chars (yes this happened once)
+              # note: this does mean that if the art for two songs starts with the same 200 characters, the second one will not be downloaded, this is pretty unlikely
+              fname = (i.text.split('/')[-1])[0:200]
               if debug:
                 print(f"Downloading album art {i.text} to {album_art_dir}/{fname}")
 
               # move to the album art directory and download the file (if it changed), if it fails delete the file
-              os.system(f"cd {album_art_dir} && wget -q -N {i.text} || rm -f {album_art_dir}/{fname}")
+              os.system(f"cd {album_art_dir} && wget -q -N {i.text} -O {fname} || rm -f {album_art_dir}/{fname}")
 
               # if the file exists, set the metadata to the file name
               if os.path.exists(f"{album_art_dir}/{fname}"):
