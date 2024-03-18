@@ -6,11 +6,14 @@
 * System
   * Add version number to config
   * Load arbitrary extra fields into /info from file
+  * Fix a firmware programming bug for extenders
 * LMS
   * Add metadata support
   * Add support for non-9000 ports
   * Upgrade LMS to 8.5.1
   * Automatically mount usb storage devices as media drives in LMS
+* Streams
+  * Revert recent Pandora changes for stability reasons
 
 ## 0.3.4
 * Web App

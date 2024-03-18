@@ -728,12 +728,8 @@ class Pandora(PersistentStream):
     # start pandora process in special home
     logger.info(f'Pianobar config at {pb_config_folder}')
     try:
-      args = [
-        f'{utils.get_folder("streams")}/process_monitor.py',
-        'pianobar'
-      ]
       self.proc = subprocess.Popen(
-        args=args, stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w', encoding='utf-8'),
+        args='pianobar', stdin=subprocess.PIPE, stdout=open(pb_output_file, 'w', encoding='utf-8'),
         stderr=open(pb_error_file, 'w', encoding='utf-8'), env={'HOME': pb_home})
       time.sleep(0.1)  # Delay a bit before creating a control pipe to pianobar
       self.ctrl = pb_control_fifo
@@ -748,11 +744,7 @@ class Pandora(PersistentStream):
         self.proc.wait(timeout=4)
       except:
         # Likely a subprocess.TimeoutException, but we will handle all exceptions the same.
-        # Because this runs within a process_monitor.py, we need to handle the entire
-        # process group.
-        os.killpg(self.proc.pid, signal.SIGKILL)
-        # does the child still leave a zombie if we wait() the parent? pid space is not at
-        # a premium, so I'll leave that question unanswered.
+        self.proc.kill()
         self.proc.wait()
 
     self.proc = None
