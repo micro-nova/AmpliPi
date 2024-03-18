@@ -15,6 +15,7 @@ import os
 import sys
 import threading
 import time
+import logging
 import xml.etree.ElementTree as ET
 
 # the interval at which to update the metadata file
@@ -62,7 +63,7 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
             stop_counter = 0
 
         except Exception as e:
-          print(f"Error: could not get transport state: {e}")
+          logger.error(f"Error: could not get transport state: {e}")
 
         # try to get song-info from the service and parse it
         try:
@@ -78,12 +79,13 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
             elif i.tag == "{urn:schemas-upnp-org:metadata-1-0/upnp/}album":
               metadata["album"] = i.text
             elif i.tag == "{urn:schemas-upnp-org:metadata-1-0/upnp/}albumArtURI":
-              fname = i.text.split('/')[-1]
-              if debug:
-                print(f"Downloading album art {i.text} to {album_art_dir}/{fname}")
+              # limit the file name to 200 characters to prevent going over the limit of 255 chars (yes this happened once)
+              # note: this does mean that if the art for two songs starts with the same 200 characters, the second one will not be downloaded, this is pretty unlikely
+              fname = (i.text.split('/')[-1])[0:200]
+              logger.debug(f"Downloading album art {i.text} to {album_art_dir}/{fname}")
 
               # move to the album art directory and download the file (if it changed), if it fails delete the file
-              os.system(f"cd {album_art_dir} && wget -q -N {i.text} || rm -f {album_art_dir}/{fname}")
+              os.system(f"cd {album_art_dir} && wget -q -N {i.text} -O {fname} || rm -f {album_art_dir}/{fname}")
 
               # if the file exists, set the metadata to the file name
               if os.path.exists(f"{album_art_dir}/{fname}"):
@@ -96,10 +98,9 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
               else:
                 metadata["album_art"] = ""
         except Exception as e:
-          print(f"Error: could not get song-info: {e}")
+          logger.debug(f"Error: could not get song-info: {e}")
 
-        if debug:
-          print("writing metadata", metadata)
+        logger.debug(f"writing metadata {metadata}")
 
         # empty file and write metadata
         f.truncate(0)
@@ -107,7 +108,7 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
         json.dump(metadata, f)
         f.flush()
       except Exception as e:
-        print(f"Error: could not write metadata: {e}")
+        logger.error(f"Error: could not write metadata: {e}")
 
 
 # Blocks until a line is put in the fifo, then executes the command in that line.
@@ -116,13 +117,11 @@ def command_executor(fifo_path: str, service: SSDPDevice, debug: bool = False):
   # if fifo does not exist, create it
   if not os.path.exists(fifo_path):
     os.mkfifo(fifo_path)
-    if debug:
-      print(f"Created fifo file at {fifo_path}")
+    logger.debug(f"Created fifo file at {fifo_path}")
   else:
-    if debug:
-      print(f"Found file at {fifo_path}")
+    logger.debug(f"Found file at {fifo_path}")
     if os.path.isfile(fifo_path): # pipes return false for isfile
-      print(f"Error: file at {fifo_path} is not a fifo")
+      logger.error(f"Error: file at {fifo_path} is not a fifo")
       sys.exit(1)
 
   # open the fifo file and read commands
@@ -131,26 +130,25 @@ def command_executor(fifo_path: str, service: SSDPDevice, debug: bool = False):
       cmd = fifo.readline().strip()
 
       if not cmd:
-        print("Error: fifo closed, exiting")
+        logger.error("Error: fifo closed, exiting")
         break
 
-      if debug:
-        print(f"Received command {cmd}")
+      logger.debug(f"Received command {cmd}")
       if cmd=='play':
         try:
           service.Play(InstanceID=0, Speed=1)
         except Exception as e:
-          print(f"Error: could not play: {e}")
+          logger.error(f"Error: could not play: {e}")
       elif cmd=='pause':
         try:
           service.Pause(InstanceID=0)
         except Exception as e:
-          print(f"Error: could not pause: {e}")
+          logger.error(f"Error: could not pause: {e}")
       elif cmd=='stop':
         try:
           service.Stop(InstanceID=0)
         except Exception as e:
-          print(f"Error: could not stop: {e}")
+          logger.error(f"Error: could not stop: {e}")
       #TODO: implement next and prev, gmrender-resurrect does not support these commands directly
       # elif cmd=='next':
       #   try:
@@ -163,7 +161,7 @@ def command_executor(fifo_path: str, service: SSDPDevice, debug: bool = False):
       #   except Exception as e:
       #     print(f"Error: could not go to previous: {e}")
       else:
-        print(f"Error: invalid command {cmd}")
+        logger.error(f"Error: invalid command {cmd}")
 
   sys.exit(0)
 
@@ -177,22 +175,30 @@ parser.add_argument('albumart', metavar='albumart', type=str, help='path to the 
 parser.add_argument('-d', '--debug', action='store_true', help='print debug messages')
 args = parser.parse_args()
 
+# create logger
+logger = logging.getLogger(__name__)
+if args.debug:
+  logger.setLevel(logging.DEBUG)
+else:
+  logger.setLevel(logging.INFO)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
+
 # first, search for upnp devices and pick the one that matches the name
 device = None
 while True:
+  time.sleep(0.25) # wait a bit before checking
   devices = upnpy.UPnP().discover()
   for d in devices:
-    if args.debug:
-      print(f"Found upnp device with name {d.friendly_name}.")
+    logger.debug(f"Found upnp device with name {d.friendly_name}.")
     if d.friendly_name == args.name:
       device = d
-      if args.debug:
-        print(f"Using upnp device {d.friendly_name}.")
+      logger.debug(f"Using upnp device {d.friendly_name}.")
       break
 
   # if no device was found, exit
   if device is None:
-    print(f"Error: no upnp device found with name {args.name}, trying again...")
+    logger.error(f"Error: no upnp device found with name {args.name}, trying again...")
   else:
     break
 
@@ -201,11 +207,10 @@ service = None
 try:
   service = device.AVTransport
 except Exception as e:
-  print(f"Error: could not get AVTransport service from upnp device at {args.ip}: {e}")
+  logger.error(f"Error: could not get AVTransport service from upnp device at {args.ip}: {e}")
   sys.exit(1)
 
-if args.debug:
-  print(f"Using AVTransport service with actions {service.actions}.")
+logger.debug(f"Using AVTransport service with actions {service.actions}.")
 
 # create two threads, one to read metadata and one to execute commands
 threading.Thread(target=metadata_reader, args=(args.metadata, args.albumart, service, args.debug)).start()
