@@ -44,6 +44,7 @@ from amplipi.mpris import MPRIS
 # We use Popen for long running process control this error is not useful:
 # pylint: disable=consider-using-with
 
+DEBUG = os.environ.get('DEBUG', True)
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -1279,20 +1280,17 @@ class LMS(PersistentStream):
     self.server: Optional[str] = server
     self.port: Optional[int] = port
     self.meta_proc : Optional[subprocess.Popen] = None
-    self.meta = {'artist': 'Loading...', 'album': 'If loading takes a long time,', 'track': 'consider adding hostname to stream config', 'image_url': 'static/imgs/lms.png'}
+    self.meta = {'artist': 'Launching metadata reader', 'album': 'If this step takes a long time,', 'track': 'please restart the unit/stream, or contact support', 'image_url': 'static/imgs/lms.png'}
 
   def is_persistent(self):
     return True
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
+
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
-      if os.path.exists(f"lms_{str(self.name).replace(' ', '_')}_metadata.json"):
-        os.remove(f"lms_{str(self.name).replace(' ', '_')}_metadata.json")
-      if os.path.exists(f"lms_{str(self.name).replace(' ', '_')}_metadata_temp.json"):
-        os.remove(f"lms_{str(self.name).replace(' ', '_')}_metadata_temp.json")
       self.name = kwargs['name']
       reconnect_needed = True
     if 'server' in kwargs and kwargs['server'] != self.server:
@@ -1309,16 +1307,16 @@ class LMS(PersistentStream):
     """ Connect a squeezelite output to a given audio source
     This will create a LMS client based on the given name
     """
-    f = open(f"lms_{str(self.name).replace(' ', '_')}_metadata.json", "w", encoding="UTF-8")
-    json.dump(self.meta, f, indent = 2)
-    f.close()
     if self.mock:
       self._connect(vsrc)
       return
     try:
       # Make the (per-source) config directory
+      self.vsrc = vsrc
       src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
       os.system(f'mkdir -p {src_config_folder}')
+      with open(f"{src_config_folder}/lms_metadata.json", "w", encoding="UTF-8") as f:
+        json.dump(self.meta, f, indent = 2)
 
       # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
       md5 = hashlib.md5()
@@ -1346,14 +1344,14 @@ class LMS(PersistentStream):
 
         lms_args += ['-s', f'{server}:{self.port}']
 
-      meta_args = ""
-      if self.name is not None:
-        meta_args += f" --name {self.name}"
+      meta_args = ['python3', 'streams/lms_metadata.py', "--name", f"{self.name}", "--vsrc", f"{self.vsrc}"]
       if self.server is not None:
-        meta_args += f" --server {self.server}"
+        meta_args.extend(["--server", f"{self.server}"])
       if self.port is not None:
-        meta_args += f" --port {self.port}"
-      self.meta_proc = subprocess.Popen(args=['python3', 'streams/lms_metadata.py', meta_args])
+        meta_args.extend(["--port", f"{self.port}"])
+      if DEBUG:
+        meta_args.extend(["--debug"])
+      self.meta_proc = subprocess.Popen(args=meta_args)
 
       self.proc = subprocess.Popen(args=lms_args)
     except Exception as exc:
@@ -1362,6 +1360,8 @@ class LMS(PersistentStream):
   def _deactivate(self):
     if self._is_running():
       try:
+        src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
+        os.system(f'rm -f {src_config_folder}')
         self.proc.terminate()
         self.proc.communicate()
         if self.meta_proc is not None:
@@ -1373,15 +1373,12 @@ class LMS(PersistentStream):
         self.proc.kill()
         self.proc.communicate()
     self.proc = None
-    if os.path.exists(f"lms_{str(self.name).replace(' ', '_')}_metadata.json"):
-      os.remove(f"lms_{str(self.name).replace(' ', '_')}_metadata.json")
-    if os.path.exists(f"lms_{str(self.name).replace(' ', '_')}_metadata_temp.json"):
-      os.remove(f"lms_{str(self.name).replace(' ', '_')}_metadata_temp.json")
 
   def info(self) -> models.SourceInfo:
     # Opens and reads the metadata.json file every time the info def is called
     try:
-      with open(f"lms_{str(self.name).replace(' ', '_')}_metadata.json", "r", encoding="utf-8") as meta_read:
+      src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.vsrc}"
+      with open(f"{src_config_folder}/lms_metadata.json", "r", encoding="utf-8") as meta_read:
         self.meta = json.loads(meta_read.read())
     except:
       self.meta = {
@@ -1504,7 +1501,6 @@ class Bluetooth(BaseStream):
     except Exception as e:
       print(f'bluetooth: exception {e}')
       raise RuntimeError(f'Command {cmd} failed to send: {e}') from e
-      traceback.print_exc()
 
 
 # Simple handling of stream types before we have a type heirarchy

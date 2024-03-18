@@ -27,26 +27,26 @@ class MetadataHolder:
     # Encased in line breaks because when it is being constantly printed, it visually mucks up the console a lot
     logging.info(f"\nAlbum: {self.album}\nArtist: {self.artist}\nTrack: {self.track}\nImage: {self.image_url}\n")
 
-  def save_file(self, player):
+  def save_file(self, folder):
     data = {
       'album': self.album,
       'artist': self.artist,
       'track': self.track,
       'image_url': self.image_url
     }
-    player_name = str(player).replace(' ', '_')
 
-    with open(f"lms_{player_name}_metadata_temp.json", 'wt', encoding='utf-8') as f:
+    with open(f"{folder}/lms_metadata_temp.json", 'wt', encoding='utf-8') as f:
       json.dump(data, f, indent = 2)
-    os.replace(f"lms_{player_name}_metadata_temp.json", f"lms_{player_name}_metadata.json")
+    os.replace(f"{folder}/lms_metadata_temp.json", f"{folder}/lms_metadata.json")
 
 
 class LMSMetadataReader:
   """A class for getting metadata from a Logitech Media Server."""
 
   # meta_ref is probably an unneccessary variable to pass as an arg since it's obscured from the user, but we can eventually make it an optional setting for the user
-  def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2, debug: Optional[bool] = False):
+  def __init__(self, name: str, vsrc: int, server: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2, debug: Optional[bool] = False):
     self.player_name = name
+    self.folder = f'config/srcs/v{vsrc}'
     self.server = server
     self.port = port
     self.meta_ref_rate = meta_ref
@@ -88,7 +88,7 @@ class LMSMetadataReader:
   def connect(self):
     """Discovers LMS Player and then requests metadata repetitively"""
     connected = False
-    self.meta.save_file(self.player_name)
+    self.meta.save_file(self.folder)
 
     # When not connected, search for player to connect to by the proper name
     attempt_resolution = True
@@ -151,7 +151,6 @@ class LMSMetadataReader:
         # typically when asking the player for info when there isn't a player linked to the stream yet
         logging.exception(f"Could not find server: {e}")
         time.sleep(self.meta_ref_rate)
-
     while connected:
       try:
         track_json = {"id": 1, "method": "slim.request", "params": [ self.player_name, ["status", "-",100] ]}
@@ -185,16 +184,15 @@ class LMSMetadataReader:
           self.meta.image_url = 'static/imgs/lms.png'
 
         try:
-          self.meta.save_file(self.player_name)
+          self.meta.save_file(self.folder)
         except:
           pass
 
         if self.debug:
           self.meta.print_meta()
-          filename_prefix = str(self.player_name).replace(' ', '_')
-          with open(f"{filename_prefix}_track_raw.json", "w", encoding="UTF-8") as f:
+          with open(f"{self.folder}/track_raw.json", "w", encoding="UTF-8") as f:
             json.dump(track_load, f, indent = 2)
-          with open(f"{filename_prefix}_song_raw.json", "w", encoding="UTF-8") as f:
+          with open(f"{self.folder}/song_raw.json", "w", encoding="UTF-8") as f:
             json.dump(song_load, f, indent = 2)
       except Exception as e:
         logging.exception(f"Error: {e}, trying again in {self.meta_ref_rate} seconds...")
@@ -202,16 +200,16 @@ class LMSMetadataReader:
       time.sleep(self.meta_ref_rate)
 
 if __name__ == '__main__':
-  # parser = argparse.ArgumentParser(description="LMS Metadata Reader - a script for finding an LMS server and extracting the name of the song, album, and artist as well as getting the album picture of the currently playing song")
-  # parser.add_argument('--name', type=str, required=True, help='The name of the LMS Player')
-  # parser.add_argument('--server', type=str, default=None, help='The hostname or IP of the computer running the LMS server', metavar="HOSTNAME")
-  # parser.add_argument('--port', type=int, default=9000, help='The port the LMS server uses')
-  # parser.add_argument('--ref', type=int, default=2, help='The frequency of metadata refresh cycles')
-  # parser.add_argument('--debug', action='store_true', default=False, help='''debug mode, activates various console logs so that you can debug in the command line,
-  #                     also creates json dumps in the main directory: {player name}_track_raw.json and {player name}_song_raw.json''')
-  # args = parser.parse_args()
+  parser = argparse.ArgumentParser(description="LMS Metadata Reader - a script for finding an LMS server and extracting the name of the song, album, and artist as well as getting the album picture of the currently playing song")
+  parser.add_argument('--name', type=str, required=True, help='The name of the LMS Player')
+  parser.add_argument('--vsrc', type=str, required=True, help='The numbered source that the player is on')
+  parser.add_argument('--server', type=str, default=None, help='The hostname or IP of the computer running the LMS server', metavar="HOSTNAME")
+  parser.add_argument('--port', type=int, default=9000, help='The port the LMS server uses')
+  parser.add_argument('--ref', type=int, default=2, help='The frequency of metadata refresh cycles', metavar="REFRESH_RATE")
+  parser.add_argument('--debug', action='store_true', default=False, help='''debug mode, activates various console logs so that you can debug in the command line,
+                      also creates json dumps in the main directory: {player name}_track_raw.json and {player name}_song_raw.json''')
+  args = parser.parse_args()
 
   # There's a few args here that aren't currently used by the system, but can be helpful for debugging in the field
   # some are also there so we can implement future features easier, or so the devs at home can do the same with a minimal lift
-  # LMSMetadataReader(args.name, args.server, args.port, args.ref, args.debug).connect()
-  LMSMetadataReader("LinkData", None, 9000, 2, True).connect()
+  LMSMetadataReader(args.name, args.vsrc, args.server, args.port, args.ref, args.debug).connect()
