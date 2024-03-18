@@ -5,6 +5,8 @@
   * Reverse order available sources are used in
 * System
   * Add version number to config
+* Streams
+  * Revert recent Pandora changes for stability reasons
 
 ## 0.3.4
 * Web App
