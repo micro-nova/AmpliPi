@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Upcoming release
+* Streams
+  * Revert recent Pandora changes for stability reasons
+
 ## 0.3.4
 * Web App
   * Improve static asset deployment
