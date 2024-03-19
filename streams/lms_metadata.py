@@ -76,22 +76,29 @@ class LMSMetadataReader:
       x += 1
     return flat_data
 
-  def resolve_host(self) -> bool:
+  def resolve_host(self) -> tuple[bool, str]:
     """Checks if self.server is a hostname or an IP; if hostname try to resolve to IP"""
     try:
       ip_regex = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+      resolved_server: str = ""
+      ret: bool = False
 
       if re.match(ip_regex, self.server): #Does the given string fit the format of an IP?
-        return True #If the hostname is already an IP, return True
+        resolved_server = str(self.server)
+        ret = True #If the hostname is already an IP, return True
       else:
         host = socket.gethostbyname(self.server)
         if re.match(ip_regex, host):
           logging.debug(f"hostname: {self.server}")
           logging.debug(f"ip: {host}")
-          self.server = host
-          return True #If the resolved hostname is an IP, return True
+          resolved_server = host
+          ret = True #If the resolved hostname is an IP, return True
         else:
-          return False #If the hostname is resolvable but somehow still not an IP, return False
+          ret = False #If the hostname is resolvable but somehow still not an IP, return False
+
+      if ret:
+        self.server = resolved_server
+      return [ret, resolved_server]
 
     except Exception:
       logging.warning("Could not resolve hostname, trying to find LMS server manually")
@@ -107,7 +114,9 @@ class LMSMetadataReader:
     abort = False # Used to stop looping without initiating the secondary loop
     while not connected and not abort:
       try:
-        if not self.resolve_host(): # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
+        resolve_host_result = self.resolve_host() # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
+        resolved = resolve_host_result[0]
+        if not resolved:
           machine = platform.machine()
           logging.debug(f"platform.machine() output: {machine}")
 
@@ -173,7 +182,6 @@ class LMSMetadataReader:
         song_data = self.flatten(song_load['result']['songinfo_loop'])
         track_data = self.flatten(track_load['result']['playlist_loop'])
 
-
         if song_data.get('artist'): # Some stream types (radio streams primarily) dont advertise the artist over LMS
           self.meta.artist = song_data.get('artist') or "Loading..."
           self.meta.album = song_data.get('album') or "Loading..."
@@ -182,7 +190,6 @@ class LMSMetadataReader:
           self.meta.artist = song_data.get('title') or "Loading..."
           self.meta.album = song_data.get('remote_title') or "Loading..."
           self.meta.track = track_data.get('title') or "Loading..."
-
 
         if song_data.get('artwork_url'):
           self.meta.image_url = song_data.get('artwork_url')
