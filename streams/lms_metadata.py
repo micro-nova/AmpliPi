@@ -1,5 +1,9 @@
 #!/usr/bin/python3
-"""LMS Metadata Reader - a script for finding an LMS player with a given name and extracting the name of the song, album, and artist as well as getting the album picture"""
+"""
+LMS Metadata Reader - a script for finding an LMS player
+with a given name and extracting the name of the song, album,
+and artist as well as getting the album picture
+"""
 
 import logging
 import os
@@ -11,8 +15,8 @@ import time
 from typing import Optional
 import socket
 import subprocess
-import requests
 from dataclasses import dataclass
+import requests
 
 @dataclass
 class MetadataHolder:
@@ -28,6 +32,7 @@ class MetadataHolder:
     logging.info(f"\nAlbum: {self.album}\nArtist: {self.artist}\nTrack: {self.track}\nImage: {self.image_url}\n")
 
   def save_file(self, folder):
+    """Saves metadata to a file at the given folder"""
     data = {
       'album': self.album,
       'artist': self.artist,
