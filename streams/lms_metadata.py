@@ -79,12 +79,14 @@ class LMSMetadataReader:
   def resolve_host(self) -> tuple[bool, str]:
     """Checks if self.server is a hostname or an IP; if hostname try to resolve to IP"""
     try:
+      if self.server is None:
+        logging.warning("No hostname provided, bailing on hostname resolution")
+        raise Exception("No hostname provided, bailing on hostname resolution")
       ip_regex = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
-      resolved_server: str = ""
+      resolved_server: str = str(self.server)
       ret: bool = False
 
       if re.match(ip_regex, self.server): #Does the given string fit the format of an IP?
-        resolved_server = str(self.server)
         ret = True #If the hostname is already an IP, return True
       else:
         host = socket.gethostbyname(self.server)
@@ -96,8 +98,6 @@ class LMSMetadataReader:
         else:
           ret = False #If the hostname is resolvable but somehow still not an IP, return False
 
-      if ret:
-        self.server = resolved_server
       return (ret, resolved_server)
 
     except Exception:
@@ -114,8 +114,7 @@ class LMSMetadataReader:
     abort = False # Used to stop looping without initiating the secondary loop
     while not connected and not abort:
       try:
-        resolve_host_result = self.resolve_host() # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
-        resolved = resolve_host_result[0]
+        resolved, self.server = self.resolve_host() # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
         if not resolved:
           machine = platform.machine()
           logging.debug(f"platform.machine() output: {machine}")
