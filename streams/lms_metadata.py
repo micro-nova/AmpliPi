@@ -98,12 +98,12 @@ class LMSMetadataReader:
 
       if ret:
         self.server = resolved_server
-      return [ret, resolved_server]
+      return (ret, resolved_server)
 
     except Exception:
       logging.warning("Could not resolve hostname, trying to find LMS server manually")
       logging.warning("Set local network DNS settings or set 'server' in config to be an IP to avoid this issue in the future")
-      return False #If there is an error, or the hostname is unresolvable, return false
+      return (False, "") #If there is an error, or the hostname is unresolvable, return false
 
   def connect(self):
     """Discovers LMS Player and then requests metadata repetitively"""
