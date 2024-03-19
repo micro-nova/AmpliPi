@@ -26,10 +26,10 @@ class MetadataHolder:
   track: str
   image_url: str
 
-  def print_meta(self):
-    """Prints contents of metadata"""
+  def log_meta(self):
+    """logs contents of metadata to the console"""
     # Encased in line breaks because when it is being constantly printed, it visually mucks up the console a lot
-    logging.info(f"\nAlbum: {self.album}\nArtist: {self.artist}\nTrack: {self.track}\nImage: {self.image_url}\n")
+    logging.debug(f"\nAlbum: {self.album}\nArtist: {self.artist}\nTrack: {self.track}\nImage: {self.image_url}\n")
 
   def save_file(self, folder):
     """Saves metadata to a file at the given folder"""
@@ -197,7 +197,7 @@ class LMSMetadataReader:
           pass
 
         if self.debug:
-          self.meta.print_meta()
+          self.meta.log_meta()
           with open(f"{self.folder}/track_raw.json", "w", encoding="UTF-8") as f:
             json.dump(track_load, f, indent = 2)
           with open(f"{self.folder}/song_raw.json", "w", encoding="UTF-8") as f:
