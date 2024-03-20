@@ -399,3 +399,13 @@ def set_identity(settings: Dict):
   identity.update(settings)
   with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8', mode='w') as identity_file:
     json.dump(identity, identity_file)
+
+def careful_proc_shutdown(proc: subprocess.Popen, proc_name="process"):
+  """ Shutdown a process, waiting for it to exit """
+  try:
+    proc.terminate()
+    proc.wait(timeout=3)
+  except Exception as e:
+    print(f"failed to terminate {proc_name}: {e}")
+    proc.kill()
+    proc.wait(timeout=3)
