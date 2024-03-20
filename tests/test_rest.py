@@ -905,6 +905,8 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   ignore = ['last_used', 'info', 'status']
   for name, mod in jrv.items():
     prev_mod = last_state[name]
+    if name == 'version': # skip version as it is not iterable
+      continue
     for cfg in mod:
       if cfg['id'] != LAST_CONFIG_PRESET:
         prev_cfg = find(prev_mod, cfg['id'])
