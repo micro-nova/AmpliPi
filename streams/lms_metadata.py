@@ -5,7 +5,6 @@ with a given name and extracting the name of the song, album,
 and artist as well as getting the album picture
 """
 
-import logging
 import os
 import argparse
 import platform

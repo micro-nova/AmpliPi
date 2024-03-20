@@ -64,7 +64,7 @@
     "fields": [
       {
         "title": "Server",
-        "desc": "Optional LMS server hostname (without port). Examples: mylmsserver; 127.0.0.1",
+        "desc": "Optional LMS server host (without port). Examples: mylmsserver; 127.0.0.1",
         "name": "server",
         "type": "text"
       },
