@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Upcoming Release
+* Web App
+  * Reverse order available sources are used in
+
 ## 0.3.4
 * Web App
   * Improve static asset deployment
