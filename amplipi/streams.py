@@ -1342,15 +1342,13 @@ class LMS(PersistentStream):
           # squeezelite does not support localhost and requires the actual hostname
           server.replace('localhost', socket.gethostname())
 
-        lms_args += ['-s', f'{server}:{self.port}']
+        lms_args += ['-s', {server}]
 
       meta_args = ['python3', 'streams/lms_metadata.py', "--name", f"{self.name}", "--vsrc", f"{self.vsrc}"]
       if self.server is not None:
         meta_args.extend(["--server", f"{self.server}"])
       if self.port is not None:
         meta_args.extend(["--port", f"{self.port}"])
-      if DEBUG:
-        meta_args.extend(["--debug"])
       self.meta_proc = subprocess.Popen(args=meta_args)
 
       self.proc = subprocess.Popen(args=lms_args)

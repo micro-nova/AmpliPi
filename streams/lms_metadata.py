@@ -17,6 +17,7 @@ import socket
 import subprocess
 from dataclasses import dataclass
 import requests
+from typing import Tuple
 
 @dataclass
 class MetadataHolder:
@@ -29,7 +30,7 @@ class MetadataHolder:
   def log_meta(self):
     """logs contents of metadata to the console"""
     # Encased in line breaks because when it is being constantly printed, it visually mucks up the console a lot
-    logging.debug(f"\nAlbum: {self.album}\nArtist: {self.artist}\nTrack: {self.track}\nImage: {self.image_url}\n")
+    print(f"\nAlbum: {self.album}\nArtist: {self.artist}\nTrack: {self.track}\nImage: {self.image_url}\n")
 
   def save_file(self, folder):
     """Saves metadata to a file at the given folder"""
@@ -49,13 +50,13 @@ class LMSMetadataReader:
   """A class for getting metadata from a Logitech Media Server."""
 
   # meta_ref is probably an unneccessary variable to pass as an arg since it's obscured from the user, but we can eventually make it an optional setting for the user
-  def __init__(self, name: str, vsrc: int, server: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2, debug: Optional[bool] = False):
+  def __init__(self, name: str, vsrc: int, server: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2):
     self.player_name = name
     self.folder = f'config/srcs/v{vsrc}'
     self.server = server
     self.port = port
     self.meta_ref_rate = meta_ref
-    self.debug = debug
+    self.debug = os.environ.get('DEBUG', True)
     self.meta = MetadataHolder(artist = 'Loading...',
                           album = 'Loading...',
                           track = 'Loading...',
@@ -76,11 +77,36 @@ class LMSMetadataReader:
       x += 1
     return flat_data
 
-  def resolve_host(self) -> tuple[bool, str]:
+  def verify_server(self, ip):
+    """Verifies if a given IP has the player we're looking for"""
+    try:
+      player_json = {"id": 1,	"method": "slim.request",	"params": [self.player_name, ["players", "-", 100, "playerid"]]}
+      player_info = requests.get(f'http://{ip}:{self.port}/jsonrpc.js', json=player_json, timeout=5)
+      player_load = json.loads(player_info.text)
+
+      print(f"Loaded: {player_load}")
+
+      players = player_load['result']['players_loop']
+
+      for player in players:
+        connected = player['connected']
+        if connected and player['name'] == self.player_name:
+          print(f'\nLMS Metadata connected to player: {self.player_name} at {ip}:{self.port}\n')
+          self.server = ip
+          return True
+
+      time.sleep(0.1)
+      return False
+    except Exception:
+      time.sleep(0.1)
+      return False
+
+
+  def resolve_host(self) -> Tuple[bool, str]:
     """Checks if self.server is a hostname or an IP; if hostname try to resolve to IP"""
     try:
       if self.server is None:
-        logging.warning("No hostname provided, bailing on hostname resolution")
+        print("No hostname provided, bailing on hostname resolution")
         raise Exception("No hostname provided, bailing on hostname resolution")
       ip_regex = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
       resolved_server: str = str(self.server)
@@ -91,8 +117,8 @@ class LMSMetadataReader:
       else:
         host = socket.gethostbyname(self.server)
         if re.match(ip_regex, host):
-          logging.debug(f"hostname: {self.server}")
-          logging.debug(f"ip: {host}")
+          print(f"hostname: {self.server}")
+          print(f"ip: {host}")
           resolved_server = host
           ret = True #If the resolved hostname is an IP, return True
         else:
@@ -101,8 +127,8 @@ class LMSMetadataReader:
       return (ret, resolved_server)
 
     except Exception:
-      logging.warning("Could not resolve hostname, trying to find LMS server manually")
-      logging.warning("Set local network DNS settings or set 'server' in config to be an IP to avoid this issue in the future")
+      print("Could not resolve hostname, trying to find LMS server manually")
+      print("Set local network DNS settings or set 'server' in config to be an IP to avoid this issue in the future")
       return (False, "") #If there is an error, or the hostname is unresolvable, return false
 
   def connect(self):
@@ -111,13 +137,16 @@ class LMSMetadataReader:
     self.meta.save_file(self.folder)
 
     # When not connected, search for player to connect to by the proper name
-    abort = False # Used to stop looping without initiating the secondary loop
-    while not connected and not abort:
+    while not connected:
       try:
-        resolved, self.server = self.resolve_host() # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
-        if not resolved:
+        resolution_function_success, resolved_host = self.resolve_host() # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
+        if resolution_function_success:
+          connected = self.verify_server(resolved_host)
+
+        if not resolution_function_success or not connected:
+          # Checks for not connected as there is a chance that a provided hostname is resolvable but does not contain a server
           machine = platform.machine()
-          logging.debug(f"platform.machine() output: {machine}")
+          print(f"platform.machine() output: {machine}")
 
           find_lms_server = None
           if machine == "x86_64":
@@ -128,45 +157,37 @@ class LMSMetadataReader:
             self.meta.artist = "Unsupported CPU architecture for LMS MetaData"
             self.meta.album = "Please set 'server' in LMS config to an IP"
             self.meta.track = "or contact AmpliPi Support:support@micro-nova.com"
-            logging.error("LMS metadata reader has detected an unsupported chipset")
-            logging.warning("Aborting LMS metadata search")
-            abort = True
+            print("LMS metadata reader has detected an unsupported chipset")
+            print("Aborting LMS metadata search")
+            break
 
           # Much faster method of connecting to the metadata server using code from: https://github.com/ralph-irving/squeezelite/blob/master/tools/find_server.c
           # faster relative to the original method, using NMAP to go door to door (ip to ip) and ask if self.name is home
           ip_find = subprocess.run([find_lms_server], check=True, capture_output=True, text=True)
-          # Uses regex because ip_find spits out as '{Hostname}:{port} ({ip})'
-          self.server = re.search(r'\((.*?)\)', ip_find.stdout).group(1)
+          ip_output = ip_find.stdout.splitlines()
 
-        if self.debug:
-          logging.debug(f"Found LMS Server: {self.server}:{self.port}")
+          for count, line in enumerate(ip_output):
+            print(f"find_lms_server output number {count + 1}:")
+            print(line)
+            # Uses regex because ip_find spits out as '{Hostname}:{port} ({ip})'
+            ip = re.search(r'\((.*?)\)', line).group(1)
+            connected = self.verify_server(ip)
 
-        player_json = {"id": 1,	"method": "slim.request",	"params": [self.player_name, ["players", "-", 100, "playerid"]]}
-        player_info = requests.get(f'http://{self.server}:{self.port}/jsonrpc.js', json=player_json, timeout=5)
-        player_load = json.loads(player_info.text)
-        if self.debug:
-          logging.debug(f"Loaded: {player_load}")
-        players = player_load['result']['players_loop']
-
-        for player in players:
-          connected = player['connected']
-          if connected and player['name'] == self.player_name:
-            if self.debug:
-              logging.debug(f'LMS Metadata connected to player: {self.player_name}')
-            connected = True
-          else:
-            time.sleep(0.1)
+      except KeyError:
+        print("Awaiting Metadata...")
+        time.sleep(self.meta_ref_rate)
       except requests.exceptions.ConnectionError:
-        logging.exception("Connection refused by host")
+        print("Connection refused by host")
         time.sleep(self.meta_ref_rate)
       except subprocess.CalledProcessError as e:
-        logging.exception(f"Something went wrong while finding an LMS server: {e}")
+        print(f"Something went wrong while finding an LMS server: {e}")
         time.sleep(self.meta_ref_rate)
       except Exception as e:
         # When first creating an LMS stream, there can be random errors that will close the while loop
         # typically when asking the player for info when there isn't a player linked to the stream yet
-        logging.exception(f"Could not find server: {e}")
+        print(f"Could not find server: {e}")
         time.sleep(self.meta_ref_rate)
+
     while connected:
       try:
         track_json = {"id": 1, "method": "slim.request", "params": [ self.player_name, ["status", "-",100] ]}
@@ -209,7 +230,7 @@ class LMSMetadataReader:
           with open(f"{self.folder}/song_raw.json", "w", encoding="UTF-8") as f:
             json.dump(song_load, f, indent = 2)
       except Exception as e:
-        logging.exception(f"Error: {e}, trying again in {self.meta_ref_rate} seconds...")
+        print(f"Error: {e}, trying again in {self.meta_ref_rate} seconds...")
 
       time.sleep(self.meta_ref_rate)
 
@@ -220,10 +241,9 @@ if __name__ == '__main__':
   parser.add_argument('--server', type=str, default=None, help='The hostname or IP of the computer running the LMS server', metavar="HOSTNAME")
   parser.add_argument('--port', type=int, default=9000, help='The port the LMS server uses')
   parser.add_argument('--ref', type=int, default=2, help='The frequency of metadata refresh cycles', metavar="REFRESH_RATE")
-  parser.add_argument('--debug', action='store_true', default=False, help='''debug mode, activates various console logs so that you can debug in the command line,
-                      also creates json dumps in the main directory: {player name}_track_raw.json and {player name}_song_raw.json''')
   args = parser.parse_args()
 
   # There's a few args here that aren't currently used by the system, but can be helpful for debugging in the field
   # some are also there so we can implement future features easier, or so the devs at home can do the same with a minimal lift
-  LMSMetadataReader(args.name, args.vsrc, args.server, args.port, args.ref, args.debug).connect()
+  LMSMetadataReader(args.name, args.vsrc, args.server, args.port, args.ref).connect()
+
