@@ -1342,7 +1342,7 @@ class LMS(PersistentStream):
           # squeezelite does not support localhost and requires the actual hostname
           server.replace('localhost', socket.gethostname())
 
-        lms_args += ['-s', {server}]
+        lms_args += ['-s', server]
 
       meta_args = ['python3', 'streams/lms_metadata.py', "--name", f"{self.name}", "--vsrc", f"{self.vsrc}"]
       if self.server is not None:
