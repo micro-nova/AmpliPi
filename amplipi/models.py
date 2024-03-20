@@ -884,6 +884,7 @@ class Info(BaseModel):
 
 class Status(BaseModel):
   """ Full Controller Configuration and Status """
+  version: int = 1
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
@@ -896,6 +897,7 @@ class Status(BaseModel):
       'examples': {
         "Status of Jason's AmpliPi": {
           'value': {
+            'version': 1,
             'groups': [{'id': 100,
                         'mute': True,
                         'name': 'Upstairs',
