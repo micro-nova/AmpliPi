@@ -83,7 +83,9 @@ const Home = () => {
     let nextAvailableSource = null;
     let cards = [];
 
-    sources.forEach((source, i) => {
+    // create shallow copy and reverse before traversal so that the lowest
+    // numbered available source will be the next available source
+    sources.slice().reverse().forEach((source, i) => {
         if (
             source.input.toUpperCase() != "NONE" &&
             source.input != "" &&
