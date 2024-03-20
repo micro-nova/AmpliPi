@@ -10,6 +10,7 @@
 * System
   * Add ability to display a special message for shipping on the eink display
   * Make eink display clear when the display process is stopped
+  * Add support for python's logging module for better debugging
 * Streams
   * Hide FM Radio if hardware is not available
   * Make pandora stream album art use HTTPS urls to make sure it is rendered in the ios app
