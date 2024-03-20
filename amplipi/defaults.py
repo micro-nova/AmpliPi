@@ -17,6 +17,7 @@ LMS_DEFAULTS = [1000, 1001, 1002, 1003]
 USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 
 DEFAULT_CONFIG = {  # This is the system state response that will come back from the amplipi box
+  "version": 1,
   "sources": [  # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
     {"id": 0, "name": "Input 1", "input": ""},
     {"id": 1, "name": "Input 2", "input": ""},

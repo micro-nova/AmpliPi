@@ -3,6 +3,8 @@
 ## Upcoming Release
 * Web App
   * Reverse order available sources are used in
+* System
+  * Add version number to config
 
 ## 0.3.4
 * Web App

@@ -249,10 +249,11 @@ def test_load_stream_missing_config(client):
     assert status['sources'][0]['input'] == ''
 
 def test_load_old_config(client):
-  """ Test that an old config has its RCA input names updated and the aux stream is added"""
+  """ Test that an old config has its RCA input names updated and the aux stream and version number are added"""
   # convert the config into something that looks like an old config
   source_names = ['tv', 'record player', 'cd player', 'jukebox']
   old_config = base_config_copy()
+  old_config.pop('version')
   old_config['streams'].pop(0) # remove the aux stream
   for i in range(4):
     rca_stream = old_config['streams'].pop(0)
@@ -263,6 +264,7 @@ def test_load_old_config(client):
   rv = client.post('/api/load', json=old_config)
   assert rv.status_code == HTTPStatus.OK
   status = rv.json()
+  assert status['version'] == 1, 'version number was not added to old config'
   for s in status['streams']:
     if s['type'] == 'rca':
       assert s['name'] == source_names[s['index']], print('old source name was not converted to rca stream name')
