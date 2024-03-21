@@ -112,7 +112,7 @@ if [ ! -z "$nprog_opt" ]; then
   prog_string="$prog_string and forcing $nprog units"
 fi
 
-prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --baud $baud --flash \"$prog_file\""
+prog_cmd="venv/bin/python -m amplipi.hw $nprog_opt --baud $baud --flash \"$prog_file\" --retries 2"
 prog_string="$prog_string with \n$remote_path$prog_cmd\n\n"
 
 if $prog_remote; then
