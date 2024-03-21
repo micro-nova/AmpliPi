@@ -441,18 +441,29 @@ if __name__ == '__main__':
                       help='set logger level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
   parser.add_argument('-n', '--num-units', metavar='N', type=int, choices=range(1, 7),
                       help='set the number of preamps instead of auto-detecting')
+  parser.add_argument('-u', '--unit', metavar='N', type=int, choices=range(0, 6),
+                      help='perform the above action(s) on only the given unit')
   args = parser.parse_args()
 
-  preamps = Preamps(args.reset)
+  all_units = args.unit is None
+  preamps = Preamps(args.reset and all_units)
+  if not all_units:
+    preamps.reset(args.unit)
 
   if args.flash is not None:
-    if not preamps.program_all(filepath=args.flash, num_units=args.num_units, baud=args.baud):
-      sys.exit(2)
+    if all_units:
+      if not preamps.program_all(filepath=args.flash, num_units=args.num_units, baud=args.baud):
+        sys.exit(2)
+    else:
+      preamps.program(filepath=args.flash, unit=args.unit, baud=args.baud)
 
   if len(preamps) == 0:
     logger.warning('No preamps found, exiting')
     sys.exit(1)
 
   if args.version:
-    main_version = preamps[0].read_version()
-    logger.info(f"Main preamp's firmware version: {main_version}")
+    if all_units:
+      for u, p in enumerate(preamps):
+        logger.info(f"{preamps.unit_num_to_name(u)}'s new firmware version: {p.read_version()}")
+    else:
+      logger.info(f"{preamps.unit_num_to_name(args.unit)}'s new firmware version: {preamps[args.unit].read_version()}")
