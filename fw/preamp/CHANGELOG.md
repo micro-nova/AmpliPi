@@ -1,7 +1,8 @@
 # Preamp Board Firmware Changelog
 
-## 1.8-XXXXXXX
+## 1.8-1743BFB
 
+- Removed debug messages from release build and created separate debug build. Fixes #587.
 - Updated thermistor LUT to B=3950 to more accurately reflect all system thermistors.
 
 ## 1.7-4F618C6

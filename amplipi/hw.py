@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # AmpliPi Home Audio
-# Copyright (C) 2022 MicroNova LLC
+# Copyright (C) 2021-2024 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@
 # Standard imports
 import argparse
 from enum import Enum
+import logging
 import subprocess
 import sys
 import time
-import logging
 from typing import List, Optional
 
 # Third-party imports
@@ -233,8 +233,7 @@ class Preamps:
     assert 0 <= unit < self.MAX_UNITS
     if unit == 0:
       return 'Main Unit'
-    else:
-      return f'Expander {unit}'
+    return f'Expander {unit}'
 
   def reset(self, unit: int = 0, bootloader: bool = False) -> None:
     """ Resets the master unit's preamp board.
@@ -252,21 +251,17 @@ class Preamps:
       if bootloader:
         time.sleep(0.01)
         return
-
-      # Send I2C address over UART
-      self.set_i2c_address()
-
+      self.set_i2c_address()  # Send I2C address over UART
     else:
       self.preamps[unit - 1].reset_expander(bootloader)
       # TODO: If bootloader=False, set the address either here or in firmware
 
-    # Delay to account for address being set
-    # Each box theoretically takes ~5ms to receive its address.
-    # Again, estimate for max boxes and include some padding
+    # Delay to account for address being set. Each box theoretically takes ~5ms to receive its address.
+    # Again, estimate for max boxes and include some padding.
     time.sleep(0.01 * (self.MAX_UNITS - unit))
 
-    # If resetting the master and not entering bootloader mode, re-enumerate
-    if not bootloader and unit == 0:
+    # If resetting the master, re-enumerate which units are present.
+    if unit == 0:
       self.enumerate()
 
   def _reset_master(self, bootloader: bool) -> None:
@@ -275,8 +270,7 @@ class Preamps:
     GPIO.setup(self.Pin.NRST.value, GPIO.OUT)
     GPIO.output(self.Pin.NRST.value, 0)
 
-    # After reset the BOOT0 pin is sampled to determine whether to boot
-    # from the bootloader ROM or flash.
+    # After reset the BOOT0 pin is sampled to determine whether to boot from the bootloader ROM or flash.
     GPIO.setup(self.Pin.BOOT0.value, GPIO.OUT)
     GPIO.output(self.Pin.BOOT0.value, bootloader)
 
@@ -284,8 +278,8 @@ class Preamps:
     time.sleep(0.001)
     GPIO.output(self.Pin.NRST.value, 1)
 
-    # Each preamps' microcontroller takes ~6ms to startup after releasing
-    # NRST. Just to be sure wait 10 ms before sending an I2C address.
+    # Each preamps' microcontroller takes ~6ms to startup after releasing NRST.
+    # Just to be sure wait 10 ms before sending an I2C address.
     time.sleep(0.01)
     GPIO.cleanup()
 
@@ -297,69 +291,76 @@ class Preamps:
       with Serial(PI_SERIAL_PORT, baudrate=baud, timeout=1) as ser:
         ser.write(addr_arr)
         return True
-    except SerialException as ser_err:
-      logger.exception(ser_err)
+    except SerialException:
+      logger.exception("Error setting preamp's I2C Address via UART.")
       return False
 
-  def enumerate(self, debug: bool = False) -> None:
+  def enumerate(self) -> None:
     """ Re-enumerate preamp connections """
     self.preamps = []
     for i in range(self.MAX_UNITS):
-      p = Preamp(i, self._bus)
-      if not p.available():
+      preamp = Preamp(i, self._bus)
+      if not preamp.available():
         break
-      self.preamps.append(p)
-    if debug:
-      logger.debug(f'Found {len(self.preamps)} preamp(s)')
+      self.preamps.append(preamp)
+    logger.debug(f'Found {len(self.preamps)} preamp(s)')
 
-  def program(self, filepath: str, unit: int = 0, baud: int = 115200) -> bool:
+  def program(self, filepath: str, unit: int = 0, baud: int = 115200, retries: int = 0) -> bool:
     """ Attempt to program a single AmpliPi unit
 
         This function assumes any previous units exist,
-        but does not assume the requested unit exists.
+        but does not assume the requested unit exists unless it is the first.
         If it does not exist then this function will return False.
     """
 
     # If the unit is running print its current version info
     preamp = Preamp(unit, self._bus)
-    i2c_present = preamp.available()
-    logger.info(f"{self.unit_num_to_name(unit)}'s old firmware version: {preamp.read_version() if i2c_present else 'unknown'}")
+    ver_str = preamp.read_version() if preamp.available() else 'unknown'
+    logger.info(f"{self.unit_num_to_name(unit)}'s old firmware version: {ver_str}")
 
     # For now the firmware can only pass through 9600 baud to expanders
     baud = 9600 if unit > 0 else baud
 
-    # Reset the unit to be programmed into bootloader mode
-    self.reset(unit=unit, bootloader=True)
+    def setup():
+      """ Configure the chain of AmpliPis for programming the specific unit """
+      # Reset the unit to be programmed into bootloader mode
+      self.reset(unit=unit, bootloader=True)
 
-    # Set UART passthrough on any previous units
-    for p in range(unit):
-      logger.info(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
-      self.preamps[p].uart_passthrough(True)
+      # Set UART passthrough on any previous units
+      for unit_num in range(unit):
+        logger.debug(f"Setting {self.unit_num_to_name(unit_num)}'s UART as passthrough")
+        self.preamps[unit_num].uart_passthrough(True)
+    setup()
 
-    if unit > 1:
-      # Before attempting programming, verify the unit even exists.
+    # Before attempting programming, verify the unit even exists.
+    tries = 0
+    success = False
+    while not success and tries <= retries:
+      tries += 1
       try:
-        subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'], shell=True,
-                       check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(['stm32flash', '-b', f'{baud}', f'{PI_SERIAL_PORT}'], check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        success = True
       except subprocess.CalledProcessError:
-        # Failed to handshake with the bootloader. Assume unit not present.
-        logger.exception(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
-        plural = 's are' if unit != 1 else ' is'
-        logger.info(f'Assuming only {unit} unit{plural} present and stopping programming')
+        logger.debug(f'Failed attempt {tries} to communicate, resetting to try again.')
+        setup()
 
-        # Reset all units to make sure the UART passthrough and
-        # bootloader modes are cleared.
-        self.reset()
-        return False
+    if not success:
+      # Failed to handshake with the bootloader. Assume unit not present.
+      logger.debug(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
+      plural = 's are' if unit != 1 else ' is'
+      logger.debug(f'Assuming only {unit} unit{plural} present and stopping programming')
+      self.reset()  # Reset all units to make sure the UART passthrough and bootloader modes are cleared.
+      return False
 
+    logger.info(f'Programming {self.unit_num_to_name(unit)}')
     prog_success = False
     try:
-      subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'],
-                     shell=True, check=True)
+      subprocess.run(['stm32flash', '-v', '-w', f'{filepath}', '-b', f'{baud}', f'{PI_SERIAL_PORT}'],
+                     check=True, text=True)
       prog_success = True
     except subprocess.CalledProcessError:
-      # TODO: Error handling
-      logger.exception(f'Error programming {self.unit_num_to_name(unit)}, stopping programming')
+      logger.error(f'Error programming {self.unit_num_to_name(unit)}, stopping programming')
 
     # Done programming unit, reset to exit bootloader
     self.reset()
@@ -369,8 +370,7 @@ class Preamps:
       logger.info(f"{self.unit_num_to_name(unit)}'s new firmware version: {preamp.read_version()}")
     else:
       # Can't communicate to unit, give up
-      # TODO: retry?
-      logger.critical(f"Couldn't communicate to {self.unit_num_to_name(unit)} after programming, stopping programming")
+      logger.error(f"Couldn't communicate to {self.unit_num_to_name(unit)} after programming, stopping programming")
       return False
 
     if not prog_success:
@@ -378,7 +378,7 @@ class Preamps:
     # Programming succeeded!
     return True
 
-  def program_all(self, filepath: str, num_units: Optional[int] = None, baud: int = 115200) -> bool:
+  def program_all(self, filepath: str, num_units: Optional[int] = None, baud: int = 115200, retries: int = 0) -> bool:
     """ Program all available preamps with a given file
         If num_units is not None, programming will stop after num_units
     """
@@ -397,19 +397,17 @@ class Preamps:
       return False
     previous_unit_count = len(self)
     logger.info(f'Programming up to {program_count} AmpliPi Preamps '
-          f'({previous_unit_count} currently detected)')
+                f'({previous_unit_count} currently detected)')
 
     # Attempt programming until program_count, but stop if an error occurs
     unit = 0
     success = True
     while success and unit < program_count:
-      print()
-      success = self.program(filepath, unit, baud)
+      success = self.program(filepath, unit, baud, retries)
       if success:
         unit += 1
 
-    # By default assume programming failed, then check the multiple
-    # conditions that mean success.
+    # By default assume programming failed, then check the multiple conditions that mean success.
     success = False
     if num_units is not None:
       # A specific number of units were requested to be programmed
@@ -418,12 +416,11 @@ class Preamps:
         # At least as many units were programmed as requested, so success!
         success = True
     else:
-      # No specific number requested, so take the amount found before
-      # programming as the correct amount.
+      # No specific number requested, so take the amount found before programming as the correct amount.
       plural = 's' if unit != 1 else ''
       logger.info(f'\n{unit} AmpliPi preamp{plural} programmed.')
       if unit >= max(previous_unit_count, 1):
-        # Sucessfully programmed at least as many units as were previously available
+        # Successfully programmed at least as many units as were previously available
         # or at least 1 if no units were previously found, so success!
         success = True
 
@@ -434,6 +431,27 @@ class Preamps:
     return False
 
 
+def uint(num):
+  """Unsigned integer type for argparse."""
+  inum = int(num)
+  if inum < 0:
+    raise argparse.ArgumentTypeError(f'{num} is not a nonnegative integer')
+  return inum
+
+
+class ColoredFormatter(logging.Formatter):
+  """Colorizes log messages based on level."""
+
+  def format(self, record):
+    if record.levelno == logging.WARNING:
+      # Warnings will be yellow.
+      record.msg = f'\033[0;33m{record.msg}\033[0m'
+    elif record.levelno == logging.ERROR:
+      # Errors will be red.
+      record.msg = f'\033[0;31m{record.msg}\033[0m'
+    return logging.Formatter.format(self, record)
+
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Interface to AmpliPi's Preamp Board firmware",
                                    formatter_class=formatter.AmpliPiHelpFormatter)
@@ -441,26 +459,50 @@ if __name__ == '__main__':
                       help='reset the preamp(s) before communicating over I2C')
   parser.add_argument('--flash', metavar='FW.bin',
                       help='update the preamp(s) with the firmware in a .bin file')
+  parser.add_argument('--retries', metavar='N', type=uint, default=0,
+                      help='number of attempts to make when programming firmware')
   parser.add_argument('-b', '--baud', type=int, default=115200,
                       help='baud rate to use for UART communication')
   parser.add_argument('-v', '--version', action='store_true', default=False,
                       help='print preamp firmware version(s)')
-  parser.add_argument('-l', '--log', metavar='LEVEL', default='WARNING',
-                      help='set logger level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
   parser.add_argument('-n', '--num-units', metavar='N', type=int, choices=range(1, 7),
                       help='set the number of preamps instead of auto-detecting')
+  parser.add_argument('-u', '--unit', metavar='N', type=int, choices=range(0, 6),
+                      help='perform the above action(s) on only the given unit (0-5)')
+  parser.add_argument('--debug', action='store_true', default=False,
+                      help='set log level as DEBUG')
   args = parser.parse_args()
 
-  preamps = Preamps(args.reset)
+  # Setup logging to stdout
+  ch = logging.StreamHandler()
+  if args.debug:
+    logger.setLevel(logging.DEBUG)
+    ch.setLevel(logging.DEBUG)
+  else:
+    logger.setLevel(logging.INFO)
+    ch.setLevel(logging.INFO)
+  ch.setFormatter(ColoredFormatter())
+  logger.addHandler(ch)
+
+  all_units = args.unit is None
+  preamps = Preamps(args.reset and all_units)
+  if not all_units:
+    preamps.reset(args.unit)
 
   if args.flash is not None:
-    if not preamps.program_all(filepath=args.flash, num_units=args.num_units, baud=args.baud):
-      sys.exit(2)
+    if all_units:
+      if not preamps.program_all(filepath=args.flash, num_units=args.num_units, baud=args.baud, retries=args.retries):
+        sys.exit(2)
+    else:
+      preamps.program(filepath=args.flash, unit=args.unit, baud=args.baud, retries=args.retries)
 
   if len(preamps) == 0:
-    logger.warning('No preamps found, exiting')
+    logger.error('No preamps found, exiting')
     sys.exit(1)
 
   if args.version:
-    main_version = preamps[0].read_version()
-    logger.info(f"Main preamp's firmware version: {main_version}")
+    if all_units:
+      for u, p in enumerate(preamps.preamps):
+        logger.info(f"{preamps.unit_num_to_name(u)}'s new firmware version: {p.read_version()}")
+    else:
+      logger.info(f"{preamps.unit_num_to_name(args.unit)}'s new firmware version: {preamps[args.unit].read_version()}")
