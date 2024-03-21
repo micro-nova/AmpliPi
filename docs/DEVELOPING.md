@@ -37,6 +37,9 @@ source "$NVM_DIR/nvm.sh"
 nvm install 18
 ```
 
+If building directly on an AmpliPi, the `npm run build` step must be set to limit its memory usage with
+`NODE_OPTIONS=--max_old_space_size=768 npm run build`.
+
 ### Congratulations! The Amplipi is now running the software you deployed! You can stop now or continue in order to debug over SSH!
 
 1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
