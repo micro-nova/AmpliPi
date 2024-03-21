@@ -773,6 +773,7 @@ class Pandora(PersistentStream):
             source.track = data[1]
             source.album = data[2]
             source.img_url = data[3].replace('http:', 'https:') # HACK: kind of a hack to just replace with https
+            source.rating = data[4]
             source.station = data[5]
         return source
     except Exception:
@@ -1249,7 +1250,7 @@ class FMRadio(BaseStream):
       if subprocess.run('which rtl_fm'.split(), check=False, stdout=subprocess.DEVNULL).returncode != 0:
         return False
       rtlcmd_proc = subprocess.run('rtl_fm -f 88.3 /dev/null'.split(), check=True, timeout=1, capture_output=True)
-      # If there is FM hardware, we should time out - we should not reach this point otherwise. We could check 
+      # If there is FM hardware, we should time out - we should not reach this point otherwise. We could check
       # for the output 'No supported devices found.', but that feels extra.
       return False
     except subprocess.TimeoutExpired as e:

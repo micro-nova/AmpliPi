@@ -23,6 +23,17 @@ import "./MediaControl.scss";
 const MediaControl = ({ selectedSource }) => {
     // const source = status.sources[selectedSource]
     const source = useStatusStore((s) => s.status.sources[selectedSource]);
+    const meta = useStatusStore((s) => s.status.sources[selectedSource].info);
+
+    const [invertRating, setInverse] = React.useState(false); // Stores the clicked state of a song, that way it can be set to have a green thumb if the like is clicked as that metadata won't update in the backend until the song is played again
+    const [currentSong, setSong] = React.useState();
+
+    React.useEffect(() => {
+        if(currentSong != String(meta.track)){
+            setInverse(false);
+            setSong(String(meta.track));
+        }
+    }, [meta])
 
     const enabled = "media-control media-control-enabled";
     const disabled = "media-control media-control-disabled";
@@ -109,22 +120,45 @@ const MediaControl = ({ selectedSource }) => {
 
     function Ban() {
         if(isSupported("ban")){
+            let thumbColor;
+            if(meta.rating == 2){
+                thumbColor = "#FF0000";
+            } else {
+                thumbColor = "#FFFFFF";
+            }
             return(
                 <FontAwesomeIcon
+                    style={{ color: thumbColor, transition: 'color 5s' }}
                     icon={faThumbsDown}
                     className={cmdToClassName("ban")}
-                    onClick={() => postCommand("ban")}
+                    onClick={() => {postCommand("ban");}}
                 />
             )
         }
     }
+
     function Love() {
         if(isSupported("love")){
+            let thumbColor;
+            if(meta.rating != 1){
+                if(invertRating){
+                    thumbColor = "#00FF00";
+                } else {
+                    thumbColor = "#FFFFFF";
+                }
+            } else {
+                if(invertRating){
+                    thumbColor = "#FFFFFF";
+                } else {
+                    thumbColor = "#00FF00";
+                }
+            }
             return(
                 <FontAwesomeIcon
+                    style={{ color: thumbColor, transition: 'color 5s' }}
                     icon={faThumbsUp}
                     className={cmdToClassName("love")}
-                    onClick={() => postCommand("love")}
+                    onClick={() => {postCommand("love"); setInverse(!invertRating);}}
                 />
             )
         }
