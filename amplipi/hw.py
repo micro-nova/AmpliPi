@@ -21,10 +21,10 @@
 # Standard imports
 import argparse
 from enum import Enum
+import logging
 import subprocess
 import sys
 import time
-import logging
 from typing import List, Optional
 
 # Third-party imports
@@ -233,8 +233,7 @@ class Preamps:
     assert 0 <= unit < self.MAX_UNITS
     if unit == 0:
       return 'Main Unit'
-    else:
-      return f'Expander {unit}'
+    return f'Expander {unit}'
 
   def reset(self, unit: int = 0, bootloader: bool = False) -> None:
     """ Resets the master unit's preamp board.
@@ -292,20 +291,19 @@ class Preamps:
       with Serial(PI_SERIAL_PORT, baudrate=baud, timeout=1) as ser:
         ser.write(addr_arr)
         return True
-    except SerialException as ser_err:
-      logger.exception(ser_err)
+    except SerialException:
+      logger.exception("Error setting preamp's I2C Address via UART.")
       return False
 
-  def enumerate(self, debug: bool = False) -> None:
+  def enumerate(self) -> None:
     """ Re-enumerate preamp connections """
     self.preamps = []
     for i in range(self.MAX_UNITS):
-      p = Preamp(i, self._bus)
-      if not p.available():
+      preamp = Preamp(i, self._bus)
+      if not preamp.available():
         break
-      self.preamps.append(p)
-    if debug:
-      logger.debug(f'Found {len(self.preamps)} preamp(s)')
+      self.preamps.append(preamp)
+    logger.debug(f'Found {len(self.preamps)} preamp(s)')
 
   def program(self, filepath: str, unit: int = 0, baud: int = 115200, retries: int = 0) -> bool:
     """ Attempt to program a single AmpliPi unit
@@ -330,7 +328,7 @@ class Preamps:
 
       # Set UART passthrough on any previous units
       for unit_num in range(unit):
-        logger.info(f"Setting {self.unit_num_to_name(unit_num)}'s UART as passthrough")
+        logger.debug(f"Setting {self.unit_num_to_name(unit_num)}'s UART as passthrough")
         self.preamps[unit_num].uart_passthrough(True)
     setup()
 
@@ -344,7 +342,7 @@ class Preamps:
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         success = True
       except subprocess.CalledProcessError:
-        print(f'Failed attempt {tries} to communicate, resetting to try again.')
+        logger.debug(f'Failed attempt {tries} to communicate, resetting to try again.')
         setup()
 
     if not success:
@@ -355,6 +353,7 @@ class Preamps:
       self.reset()  # Reset all units to make sure the UART passthrough and bootloader modes are cleared.
       return False
 
+    logger.info(f'Programming {self.unit_num_to_name(unit)}')
     prog_success = False
     try:
       subprocess.run(['stm32flash', '-v', '-w', f'{filepath}', '-b', f'{baud}', f'{PI_SERIAL_PORT}'],
@@ -440,6 +439,19 @@ def uint(num):
   return inum
 
 
+class ColoredFormatter(logging.Formatter):
+  """Colorizes log messages based on level."""
+
+  def format(self, record):
+    if record.levelno == logging.WARNING:
+      # Warnings will be yellow.
+      record.msg = f'\033[0;33m{record.msg}\033[0m'
+    elif record.levelno == logging.ERROR:
+      # Errors will be red.
+      record.msg = f'\033[0;31m{record.msg}\033[0m'
+    return logging.Formatter.format(self, record)
+
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Interface to AmpliPi's Preamp Board firmware",
                                    formatter_class=formatter.AmpliPiHelpFormatter)
@@ -453,13 +465,24 @@ if __name__ == '__main__':
                       help='baud rate to use for UART communication')
   parser.add_argument('-v', '--version', action='store_true', default=False,
                       help='print preamp firmware version(s)')
-  parser.add_argument('-l', '--log', metavar='LEVEL', default='WARNING',
-                      help='set logger level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
   parser.add_argument('-n', '--num-units', metavar='N', type=int, choices=range(1, 7),
                       help='set the number of preamps instead of auto-detecting')
   parser.add_argument('-u', '--unit', metavar='N', type=int, choices=range(0, 6),
                       help='perform the above action(s) on only the given unit (0-5)')
+  parser.add_argument('--debug', action='store_true', default=False,
+                      help='set log level as DEBUG')
   args = parser.parse_args()
+
+  # Setup logging to stdout
+  ch = logging.StreamHandler()
+  if args.debug:
+    logger.setLevel(logging.DEBUG)
+    ch.setLevel(logging.DEBUG)
+  else:
+    logger.setLevel(logging.INFO)
+    ch.setLevel(logging.INFO)
+  ch.setFormatter(ColoredFormatter())
+  logger.addHandler(ch)
 
   all_units = args.unit is None
   preamps = Preamps(args.reset and all_units)
@@ -474,7 +497,7 @@ if __name__ == '__main__':
       preamps.program(filepath=args.flash, unit=args.unit, baud=args.baud, retries=args.retries)
 
   if len(preamps) == 0:
-    logger.warning('No preamps found, exiting')
+    logger.error('No preamps found, exiting')
     sys.exit(1)
 
   if args.version:
