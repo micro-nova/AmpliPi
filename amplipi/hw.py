@@ -252,21 +252,17 @@ class Preamps:
       if bootloader:
         time.sleep(0.01)
         return
-
-      # Send I2C address over UART
-      self.set_i2c_address()
-
+      self.set_i2c_address()  # Send I2C address over UART
     else:
       self.preamps[unit - 1].reset_expander(bootloader)
       # TODO: If bootloader=False, set the address either here or in firmware
 
-    # Delay to account for address being set
-    # Each box theoretically takes ~5ms to receive its address.
-    # Again, estimate for max boxes and include some padding
+    # Delay to account for address being set. Each box theoretically takes ~5ms to receive its address.
+    # Again, estimate for max boxes and include some padding.
     time.sleep(0.01 * (self.MAX_UNITS - unit))
 
-    # If resetting the master and not entering bootloader mode, re-enumerate
-    if not bootloader and unit == 0:
+    # If resetting the master, re-enumerate which units are present.
+    if unit == 0:
       self.enumerate()
 
   def _reset_master(self, bootloader: bool) -> None:
@@ -275,8 +271,7 @@ class Preamps:
     GPIO.setup(self.Pin.NRST.value, GPIO.OUT)
     GPIO.output(self.Pin.NRST.value, 0)
 
-    # After reset the BOOT0 pin is sampled to determine whether to boot
-    # from the bootloader ROM or flash.
+    # After reset the BOOT0 pin is sampled to determine whether to boot from the bootloader ROM or flash.
     GPIO.setup(self.Pin.BOOT0.value, GPIO.OUT)
     GPIO.output(self.Pin.BOOT0.value, bootloader)
 
@@ -284,8 +279,8 @@ class Preamps:
     time.sleep(0.001)
     GPIO.output(self.Pin.NRST.value, 1)
 
-    # Each preamps' microcontroller takes ~6ms to startup after releasing
-    # NRST. Just to be sure wait 10 ms before sending an I2C address.
+    # Each preamps' microcontroller takes ~6ms to startup after releasing NRST.
+    # Just to be sure wait 10 ms before sending an I2C address.
     time.sleep(0.01)
     GPIO.cleanup()
 
@@ -316,7 +311,7 @@ class Preamps:
     """ Attempt to program a single AmpliPi unit
 
         This function assumes any previous units exist,
-        but does not assume the requested unit exists.
+        but does not assume the requested unit exists unless it is the first.
         If it does not exist then this function will return False.
     """
 
@@ -336,26 +331,25 @@ class Preamps:
       logger.info(f"Setting {self.unit_num_to_name(p)}'s UART as passthrough")
       self.preamps[p].uart_passthrough(True)
 
-    if unit > 1:
-      # Before attempting programming, verify the unit even exists.
-      try:
-        subprocess.run([f'stm32flash -b {baud} {PI_SERIAL_PORT}'], shell=True,
-                       check=True, stdout=subprocess.DEVNULL)
-      except subprocess.CalledProcessError:
-        # Failed to handshake with the bootloader. Assume unit not present.
-        logger.exception(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
-        plural = 's are' if unit != 1 else ' is'
-        logger.info(f'Assuming only {unit} unit{plural} present and stopping programming')
+    # Before attempting programming, verify the unit even exists.
+    try:
+      subprocess.run(['stm32flash', '-b', f'{baud}', f'{PI_SERIAL_PORT}'], check=True,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+      # Failed to handshake with the bootloader. Assume unit not present.
+      logger.exception(f"Couldn't communicate with {self.unit_num_to_name(unit)}'s bootloader.")
+      plural = 's are' if unit != 1 else ' is'
+      logger.info(f'Assuming only {unit} unit{plural} present and stopping programming')
 
-        # Reset all units to make sure the UART passthrough and
-        # bootloader modes are cleared.
-        self.reset()
-        return False
+      # Reset all units to make sure the UART passthrough and
+      # bootloader modes are cleared.
+      self.reset()
+      return False
 
     prog_success = False
     try:
-      subprocess.run([f'stm32flash -vb {baud} -w {filepath} {PI_SERIAL_PORT}'],
-                     shell=True, check=True)
+      subprocess.run(['stm32flash', '-v', '-w', f'{filepath}', '-b', f'{baud}', f'{PI_SERIAL_PORT}'],
+                     check=True, text=True)
       prog_success = True
     except subprocess.CalledProcessError:
       # TODO: Error handling
@@ -397,7 +391,7 @@ class Preamps:
       return False
     previous_unit_count = len(self)
     logger.info(f'Programming up to {program_count} AmpliPi Preamps '
-          f'({previous_unit_count} currently detected)')
+                f'({previous_unit_count} currently detected)')
 
     # Attempt programming until program_count, but stop if an error occurs
     unit = 0
@@ -408,8 +402,7 @@ class Preamps:
       if success:
         unit += 1
 
-    # By default assume programming failed, then check the multiple
-    # conditions that mean success.
+    # By default assume programming failed, then check the multiple conditions that mean success.
     success = False
     if num_units is not None:
       # A specific number of units were requested to be programmed
@@ -418,12 +411,11 @@ class Preamps:
         # At least as many units were programmed as requested, so success!
         success = True
     else:
-      # No specific number requested, so take the amount found before
-      # programming as the correct amount.
+      # No specific number requested, so take the amount found before programming as the correct amount.
       plural = 's' if unit != 1 else ''
       logger.info(f'\n{unit} AmpliPi preamp{plural} programmed.')
       if unit >= max(previous_unit_count, 1):
-        # Sucessfully programmed at least as many units as were previously available
+        # Successfully programmed at least as many units as were previously available
         # or at least 1 if no units were previously found, so success!
         success = True
 
