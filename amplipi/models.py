@@ -83,6 +83,7 @@ class fields(SimpleNamespace):
   * Digital or Analog Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
+  Port = Field(description='Port used by LMS server for metadata collection')
 
 
 class fields_w_default(SimpleNamespace):
@@ -106,6 +107,7 @@ class fields_w_default(SimpleNamespace):
   GroupVolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F,
                        description='Average output volume as a floating-point number')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
+  # Port = Field(default=9000, description='Port used by LMS server for metadata collection')
 
 
 class Base(BaseModel):
@@ -509,6 +511,7 @@ class Stream(Base):
   disabled: Optional[bool] = Field(
     description="Soft disable use of this stream. It won't be shown as a selectable option")
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
+  port: Optional[int] = Field(description='Port used by LMS server for metadata listening')
 
   # add examples for each type of stream
   class Config:
@@ -608,7 +611,15 @@ class Stream(Base):
             'name': 'Family',
             'type': 'lms',
             'server': 'mylmsserver',
-          }
+          },
+        },
+        'Add LMS Client connected specifically to mylmsserver with port specified': {
+          'value': {
+            'name': 'Family',
+            'type': 'lms',
+            'server': 'mylmsserver',
+            'port': 9000
+          },
         }
       },
       'examples': {
@@ -676,6 +687,7 @@ class StreamUpdate(BaseUpdate):
   server: Optional[str]
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
   disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
+  port: Optional[int] = Field(description='Port used by LMS server for metadata listening')
   class Config:
     schema_extra = {
       'examples': {

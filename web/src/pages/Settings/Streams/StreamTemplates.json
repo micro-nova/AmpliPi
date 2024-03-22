@@ -64,8 +64,14 @@
     "fields": [
       {
         "title": "Server",
-        "desc": "Optional LMS server hostname (without port). Example: mylmsserver",
+        "desc": "Optional LMS server host (without port). Examples: mylmsserver; 127.0.0.1",
         "name": "server",
+        "type": "text"
+      },
+      {
+        "title": "Port",
+        "desc": "Optional LMS server port, defaults to 9000 if not input",
+        "name": "port",
         "type": "text"
       }
     ]
