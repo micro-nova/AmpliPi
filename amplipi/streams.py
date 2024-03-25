@@ -801,6 +801,7 @@ class Pandora(PersistentStream):
               elif liked_state == "1":
                 chunks[4] = "0"
             modified_data = ",,,".join(chunks)
+            file.seek(0)
             file.truncate()
             file.write(modified_data)
             file.flush()
