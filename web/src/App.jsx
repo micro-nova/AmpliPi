@@ -10,6 +10,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import Settings from "@/pages/Settings/Settings";
 import { getSourceZones } from "@/pages/Home/Home";
 import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon";
+import Browse from "@/pages/Browse/Browse";
 
 import PropTypes from "prop-types";
 
@@ -93,6 +94,16 @@ export const useStatusStore = create((set, get) => ({
             })
         );
     },
+    setBrowsableStreamSong: (streamId, itemId) => {
+        return fetch(`/api/streams/${streamId}/${itemId}/play`, { method: "get" }).then((res) => {
+            if (res.ok) {
+                res.json().then((s) => {
+                    set({ status: s});
+                });
+            }
+        });
+    },
+
     fetch: () => {
     // if (get().skipUpdate) {
     //   set({ skipUpdate: false })
@@ -109,7 +120,7 @@ export const useStatusStore = create((set, get) => ({
                         }
                     });
                 } else if (res.status == 401) {
-                    window.location.href = "/auth/login?next_url=/"
+                    window.location.href = "/auth/login?next_url=/";
                 } else {
                     set({ disconnected: true });
                 }
@@ -185,7 +196,7 @@ const Page = ({ selectedPage }) => {
     case 1:
         return <Player />;
     case 2:
-        return <div></div>;
+        return <Browse />;
     case 3:
         return <Settings />;
     }

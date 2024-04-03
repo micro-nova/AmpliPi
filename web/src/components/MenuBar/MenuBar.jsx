@@ -47,7 +47,8 @@ const MenuBar = ({ pageNumber }) => {
     const sourceInputType = getSourceInputType(selectedSource);
     const sourceIsInactive =
     sourceInputType === "none" || sourceInputType == "unknown";
-  
+    const isSourceBrowsable = useStatusStore((s) => sourceIsInactive?false:s.status.streams.filter(i=>i.id==selectedSource.input.split("=")[1])[0].browsable);
+
     return (
         <div className="bar">
             <BottomNavigation
@@ -60,7 +61,7 @@ const MenuBar = ({ pageNumber }) => {
                 {!sourceIsInactive && (
                     <BottomNavigationAction label="Player" icon={<AlbumIcon />} />
                 )}
-                {false && (
+                {isSourceBrowsable && (
                     <BottomNavigationAction label="Browser" icon={<QueueMusicIcon />} />
                 )}
                 <BottomNavigationAction

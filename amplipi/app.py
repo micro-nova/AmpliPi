@@ -154,6 +154,8 @@ class params(SimpleNamespace):
   PresetID = Path(..., ge=0, description="Preset ID")
   StationID = Path(..., ge=0, title="Pandora Station ID",
                    description="Number found on the end of a pandora url while playing the station, ie 4610303469018478727 in https://www.pandora.com/station/play/4610303469018478727")
+  ParentID = Path(..., ge=0, description="ID of the browsable item to browse")
+  ChildID = Path(..., ge=0, description="ID of the child item to play")
   ImageHeight = Path(..., ge=1, le=500, description="Image Height in pixels")
 
 
@@ -480,14 +482,6 @@ def delete_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> 
   """ Delete a stream """
   return code_response(ctrl, ctrl.delete_stream(sid))
 
-# The following is a specific endpoint to api/stream/{} and needs to be placed before the catch all exec_command
-
-
-@api.post('/api/streams/{sid}/station={station}', tags=['stream'])
-def change_station(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, station: int = params.StationID) -> models.Status:
-  """ Change station on a pandora stream (stream=**sid**) """
-  return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=f'station={station}'))
-
 
 @api.post('/api/streams/{sid}/{cmd}', tags=['stream'])
 def exec_command(cmd: models.StreamCommand, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.Status:
@@ -504,6 +498,43 @@ def exec_command(cmd: models.StreamCommand, ctrl: Api = Depends(get_ctrl), sid: 
 
   Supported commands are reported in an attached stream's info.stream_cmds"""
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=cmd))
+
+@api.get('/api/streams/{sid}/browse', tags=['stream'])
+def browse_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.BrowsableItemResponse:
+  """ Browse the top level children of the current stream's media """
+  stream = ctrl.streams[sid]
+  if stream is None:
+    raise HTTPException(404, f'source {sid} not found')
+  elif not stream.browsable:
+    raise HTTPException(404, f'source {sid} is not browsable')
+
+  return models.BrowsableItemResponse(items=stream.browse())
+
+
+@api.get('/api/streams/{sid}/{pid}/browse', tags=['stream'])
+def browse_stream_child(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, pid : int = params.ParentID) -> models.BrowsableItemResponse:
+  """ Browse the children of a media item in the current stream """
+  stream = ctrl.streams[sid]
+  if stream is None:
+    raise HTTPException(404, f'source {sid} not found')
+  elif not stream.browsable:
+    raise HTTPException(404, f'source {sid} is not browsable')
+
+  return models.BrowsableItemResponse(items=stream.browse(parent=pid))
+
+@api.get('/api/streams/{sid}/{cid}/play', tags=['stream'])
+def play_stream_child(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, cid : int = params.ChildID) -> models.Status:
+  """ Play a child item from the current stream """
+  stream = ctrl.streams[sid]
+  if stream is None:
+    raise HTTPException(404, f'source {sid} not found')
+  elif not stream.browsable:
+    raise HTTPException(404, f'source {sid} is not browsable')
+
+  stream.play(cid)
+
+  return code_response(ctrl, ctrl.get_state())
+
 
 # presets
 

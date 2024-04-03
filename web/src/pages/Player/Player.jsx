@@ -39,7 +39,7 @@ const Player = () => {
                 <div className="player-stopped-message">No Player Selected!</div>
             </div>
         );
-    };
+    }
 
     const zones = getSourceZones(
         selectedSourceId,
@@ -68,9 +68,9 @@ const Player = () => {
                 />
             )}
             <div className="stream-title" >
-              <Chip>
-                <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
-              </Chip>
+                <Chip>
+                    <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
+                </Chip>
             </div>
             <div className="player-inner">
                 <img src={img_url} className="player-album-art" />
@@ -85,20 +85,20 @@ const Player = () => {
 
             {!alone && !is_streamer && (
                 <Card className="player-volume-slider">
-                <CardVolumeSlider sourceId={selectedSourceId} />
-                <IconButton onClick={() => setExpanded(!expanded)}>
-                    {expanded ? (
-                        <KeyboardArrowUpIcon
-                            className="player-volume-expand-button"
-                            style={{ width: "3rem", height: "3rem" }}
-                        />
-                    ) : (
-                        <KeyboardArrowDownIcon
-                            className="player-volume-expand-button"
-                            style={{ width: "3rem", height: "3rem" }}
-                        />
-                    )}
-                </IconButton>
+                    <CardVolumeSlider sourceId={selectedSourceId} />
+                    <IconButton onClick={() => setExpanded(!expanded)}>
+                        {expanded ? (
+                            <KeyboardArrowUpIcon
+                                className="player-volume-expand-button"
+                                style={{ width: "3rem", height: "3rem" }}
+                            />
+                        ) : (
+                            <KeyboardArrowDownIcon
+                                className="player-volume-expand-button"
+                                style={{ width: "3rem", height: "3rem" }}
+                            />
+                        )}
+                    </IconButton>
                 </Card>
             )}
             <VolumeZones open={(expanded || alone)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />

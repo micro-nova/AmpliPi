@@ -1,10 +1,10 @@
 @use "src/general.scss";
 
 .list-item-container {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 0fr 2fr 1fr;
+  grid-template-rows: 1fr;
   align-items: center;
-  justify-content: flex-start;
   padding: 0.5rem;
   border-bottom: 1px solid general.$secondary;
   @include general.button-hover;
@@ -24,4 +24,12 @@
 
 .list-item-name {
   @include general.header-font;
+  align-items: left;
+}
+
+.list-item-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;;
+  justify-content: flex-end;
 }

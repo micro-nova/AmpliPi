@@ -1,8 +1,11 @@
 # AmpliPi Software Releases
 
 ## Upcoming Release
+* Web App
+  * Add initial support for song browser (only Pandora stations for now)
 * Streams
   * Add DLNA metadata and control support
+  * Add support for browsing Pandora stations
 
 ## 0.3.5
 * Web App

@@ -426,11 +426,14 @@ class Api:
     except Exception as exc:
       logger.exception(f'Error saving config: {exc}')
 
-  def mark_changes(self):
+  def mark_changes(self, sync_streams=False):
     """ Mark api changes to update listeners and save the system state in the future
 
     This attempts to avoid excessive saving and the resulting delays by only saving a small delay after the last change
     """
+    if sync_streams:
+      self._sync_stream_info()
+
     if self._change_notifier:
       self._change_notifier(self.get_state())
     if self._delay_saves:
