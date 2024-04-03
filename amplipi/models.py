@@ -238,6 +238,54 @@ class SourceUpdate(BaseUpdate):
     }
 
 
+class BrowsableItem(BaseModel):
+  """ An item that can be browsed """
+  id: int                         # id for this item that is unique within it's stream
+  name: str                       # name of the item
+  playable: bool                  # can this item be played
+  parent: bool                    # is this item a parent item, e.g. can it's children be browsed
+  img: Optional[str] = None   # url to an image for this item
+
+class BrowsableItemResponse(BaseModel):
+  items: List[BrowsableItem]
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Pandora stream': {
+          'value':{
+            'items': [
+              {
+                'id': 0,
+                'name': 'Blink-182 Radio',
+                'playable': True,
+                'parent': False
+              },
+              {
+                'id': 1,
+                'name': 'Cake Radio',
+                'playable': True,
+                'parent': False
+              },
+              {
+                'id': 2,
+                'name': 'Chiptune Radio',
+                'playable': True,
+                'parent': False
+              },
+              {
+                'id': 3,
+                'name': 'Glitch Hop Radio',
+                'playable': True,
+                'parent': False
+              }
+            ]
+          }
+        }
+      }
+    }
+
+
+
 class SourceUpdateWithId(SourceUpdate):
   """ Partial reconfiguration of a specific audio Source """
   id: int = Field(ge=0, le=MAX_SOURCES - 1)
@@ -525,6 +573,7 @@ class Stream(Base):
     description="Soft disable use of this stream. It won't be shown as a selectable option")
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
   port: Optional[int] = Field(description='Port used by LMS server for metadata listening')
+  browsable: Optional[bool] = Field(description='Can this stream be browsed?')
 
   # add examples for each type of stream
   class Config:
@@ -575,7 +624,8 @@ class Stream(Base):
             'password': 's79sDDkjf',
             'station': '4473713754798410236',
             'type': 'pandora',
-            'user': 'test@micro-nova.com'
+            'user': 'test@micro-nova.com',
+            'browsable': True
           }
         },
         'Add Spotify Connect': {
@@ -644,7 +694,8 @@ class Stream(Base):
             'station': '4473713754798410236',
             'status': 'connected',
             'type': 'pandora',
-            'user': 'example1@micro-nova.com'
+            'user': 'example1@micro-nova.com',
+            'browsable': True
           }
         },
         'Matt and Kim Radio (disconnected)': {
@@ -656,7 +707,8 @@ class Stream(Base):
             'station': '4610303469018478727',
             'status': 'disconnected',
             'type': 'pandora',
-            'user': 'example2@micro-nova.com'
+            'user': 'example2@micro-nova.com',
+            'browsable': True
           }
         },
         'AirPlay (connected)': {
@@ -665,7 +717,8 @@ class Stream(Base):
             'info': {'details': 'No info available'},
             'name': "Jason's iPhone",
             'status': 'connected',
-            'type': 'airplay'
+            'type': 'airplay',
+            'browsable': False
           }
         },
         'AirPlay (disconnected)': {
@@ -674,7 +727,8 @@ class Stream(Base):
             'info': {'details': 'No info available'},
             'name': 'Rnay',
             'status': 'disconnected',
-            'type': 'airplay'
+            'type': 'airplay',
+            'browsable': False
           }
         },
       }

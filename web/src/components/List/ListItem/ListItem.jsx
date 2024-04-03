@@ -9,6 +9,7 @@ const ListItem = ({
     children,
     onClick,
     nameFontSize,
+    footer
 }) => {
     return (
         <div
@@ -20,6 +21,9 @@ const ListItem = ({
             <div className="list-item-name" style={{ fontSize: nameFontSize }}>
                 {name}
             </div>
+            <div className="list-item-footer">
+                {footer}
+            </div>
         </div>
     );
 };
@@ -28,6 +32,7 @@ ListItem.propTypes = {
     children: PropTypes.any.isRequired,
     onClick: PropTypes.func.isRequired,
     nameFontSize: PropTypes.string.isRequired,
+    footer: PropTypes.any,
 };
 ListItem.defaultProps = {
     onClick: undefined,

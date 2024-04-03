@@ -82,10 +82,10 @@
     "fields": [
       {
         "title": "Station ID",
-        "desc": "Station ID is the numeric section of a Pandora station link. Example: ID = 4610303469018478727 from https://www.pandora.com/station/play/4610303469018478727",
+        "desc": "Station ID is the numeric section of a Pandora station link. Example: ID = 4610303469018478727 from https://www.pandora.com/station/play/4610303469018478727, this field is optional and if populated the stream will start playing this station on startup",
         "name": "station",
         "type": "text",
-        "required": true
+        "required": false
       },
       {
         "title": "Pandora Username",
