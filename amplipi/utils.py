@@ -401,3 +401,14 @@ def set_identity(settings: Dict):
   identity.update(settings)
   with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8', mode='w') as identity_file:
     json.dump(identity, identity_file)
+
+def load_extra_fields(filename: str = 'extra_fields.json') -> Optional[Dict]:
+  """ This function is used to scrape extra fields for 3rd party integrations from a 
+      local file on the filesystem. At present, these fields end up populating in the
+      `Info` model.
+  """
+  try:
+    with open(os.path.join(USER_CONFIG_DIR, filename), encoding='utf-8', mode='r') as extra_fields_file:
+      return json.load(extra_fields_file)
+  except Exception:
+    return None

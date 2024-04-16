@@ -5,6 +5,7 @@
   * Reverse order available sources are used in
 * System
   * Add version number to config
+  * Load arbitrary extra fields into /info from file
 
 ## 0.3.4
 * Web App

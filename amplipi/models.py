@@ -853,6 +853,7 @@ class Info(BaseModel):
   fw: List[FirmwareInfo] = Field(
     default=[], description='firmware information for each connected controller or expansion unit')
   stream_types_available: List[str] = Field(default=[], description='The stream types available on this particular appliance')
+  extra_fields: Optional[Dict] = Field(default=None, description='Optional fields for customization')
 
   class Config:
     schema_extra = {
