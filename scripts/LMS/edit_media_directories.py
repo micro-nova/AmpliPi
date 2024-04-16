@@ -18,7 +18,7 @@ def edit_directories():
   """Update LMS server with list of drives"""
   usb_drives = get_usb_drives() # Get list of available drives
   usb_drives.append("") # Add blank drive to reflect empty string that is always at the end of the mediadirs section of request body
-  url = 'http://172.18.0.182:9000/settings/server/basic.html'
+  url = 'http://localhost:9000/settings/server/basic.html'
   data={
     'saveSettings': '1',
     'useAJAX': '0',
