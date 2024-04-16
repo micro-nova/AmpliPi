@@ -160,8 +160,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl'], # needed for ShairTunes2W support
     'script' : [
       'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
-      '  wget https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.4.0~1700477852_all.deb -O /tmp/logitechmediaserver_8.4.0.deb',
-      '  sudo dpkg -i /tmp/logitechmediaserver_8.4.0.deb',
+      '  wget https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.1_all.deb -O /tmp/logitechmediaserver_8.5.1.deb',
+      '  sudo dpkg -i /tmp/logitechmediaserver_8.5.1.deb',
       '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
       '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
       'fi',

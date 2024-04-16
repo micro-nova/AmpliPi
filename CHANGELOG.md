@@ -7,6 +7,7 @@
   * Add version number to config
   * Load arbitrary extra fields into /info from file
   * Automatically mount usb storage devices as media drives in LMS
+  * Upgrade LMS to 8.5.1
 
 ## 0.3.4
 * Web App
