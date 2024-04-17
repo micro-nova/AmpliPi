@@ -3,6 +3,7 @@
  
 ### Checklist
 
+* [ ] Have you tested your changes and ensured they work?
 * [ ] Have you checked to ensure there aren't other open [Pull Requests](../../../pulls) for the same update/change?
 * [ ] If applicable, have you updated the documentation/manual?
 * [ ] If applicable, have you updated the CHANGELOG?
