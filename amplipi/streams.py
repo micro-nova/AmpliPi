@@ -795,17 +795,23 @@ class Pandora(PersistentStream):
     """
     try:
       if cmd in self.supported_cmds:
-        if cmd == "love":
+        if cmd == "love": # Pandora specific command
           src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
+          # Read the file that contains pandora metadata, flip an enum manually as it doesn't do so itself when sending this command
           with open(f'{src_config_folder}/.config/pianobar/currentSong', 'r+', encoding='utf-8') as file:
             data = file.read()
+            # This file contains information in a specific format, separated by 3 commas. Example below:
+            # Artist,,,Track,,,Album,,,Album_Art_URL,,,Liked_State,,,Station
             chunks = data.split(",,,")
-            if len(chunks) >= 5:
-              liked_state = chunks[4].strip()
-              if liked_state == "0":
-                chunks[4] = "1"
-              elif liked_state == "1":
-                chunks[4] = "0"
+            liked_state = chunks[4].strip()
+
+            # Chunk 5 (index 4) holds the liked state of a song for pandora
+            # Potential values are numbers 0-3, in order: Default, Liked, Disliked, Tired
+            # This code flips it from Default to Liked and vice-versa when you hit the like button, as pianobar only updates metadata when songs start
+            if liked_state == "0":
+              chunks[4] = models.PandoraRating(1)
+            elif liked_state == "1":
+              chunks[4] = models.PandoraRating(0)
             modified_data = ",,,".join(chunks)
             file.seek(0)
             file.truncate()
