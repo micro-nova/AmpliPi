@@ -40,8 +40,10 @@ if utils.is_amplipi():
 
 PI_SERIAL_PORT = '/dev/serial0'
 
-logger = logging.getLogger('ampli-logger')
-
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 class FwVersion:
   """ Represents the Preamp Board's firmware version """

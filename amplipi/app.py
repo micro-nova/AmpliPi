@@ -25,6 +25,7 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 import argparse
 
 import logging
+import sys
 
 import os
 
@@ -81,8 +82,10 @@ app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated")
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
-logger = logging.getLogger('ampli-logger')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 class SimplifyingRouter(APIRouter):
   """

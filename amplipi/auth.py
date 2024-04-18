@@ -3,6 +3,7 @@ import json
 import time
 import secrets
 import logging
+import sys
 
 from typing import Union, Dict
 from typing_extensions import Literal
@@ -38,7 +39,10 @@ prefix = '/auth'
 
 router = APIRouter(prefix=prefix)
 
-logger = logging.getLogger('ampli-logger')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 # the template dir ought to be alongside this file
 template_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "templates")

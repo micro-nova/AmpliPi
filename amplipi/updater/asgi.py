@@ -52,7 +52,10 @@ from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash
 
 app = FastAPI()
 router = APIRouter(dependencies=[Depends(CookieOrParamAPIKey)])
-logger = logging.getLogger('ampli-logger')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 

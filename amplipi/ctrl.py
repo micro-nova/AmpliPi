@@ -29,6 +29,7 @@ import os  # files
 from pathlib import Path
 import time
 import logging
+import sys
 
 import threading
 import wrapt
@@ -43,7 +44,10 @@ from amplipi import defaults
 
 
 _DEBUG_API = False  # print out a graphical state of the api after each call
-logger = logging.getLogger('ampli-logger')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 
 @wrapt.decorator
