@@ -778,7 +778,7 @@ class Pandora(PersistentStream):
             source.track = data[1]
             source.album = data[2]
             source.img_url = data[3].replace('http:', 'https:') # HACK: kind of a hack to just replace with https
-            source.rating = models.Rating(int(data[4]))
+            source.rating = models.PandoraRating(int(data[4]))
             source.station = data[5]
         return source
     except Exception:
