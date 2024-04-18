@@ -65,7 +65,7 @@ class LMSMetadataReader:
       self.logger.setLevel(logging.DEBUG)
     else:
       self.logger.setLevel(logging.INFO)
-    sh = logging.StreamHandler(sys.stderr)
+    sh = logging.StreamHandler(sys.stdout)
     self.logger.addHandler(sh)
 
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
