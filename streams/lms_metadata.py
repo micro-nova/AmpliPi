@@ -217,13 +217,13 @@ class LMSMetadataReader:
         track_data = self.flatten(track_load['result']['playlist_loop'])
 
         if song_data.get('artist'): # Some stream types (radio streams primarily) dont advertise the artist over LMS
-          self.meta.artist = song_data.get('artist') or "Loading..."
-          self.meta.album = song_data.get('album') or "Loading..."
-          self.meta.track = song_data.get('title') or "Loading..."
+          self.meta.artist = song_data.get('artist') or ""
+          self.meta.album = song_data.get('album') or ""
+          self.meta.track = song_data.get('title') or ""
         else:
-          self.meta.artist = song_data.get('title') or "Loading..."
-          self.meta.album = song_data.get('remote_title') or "Loading..."
-          self.meta.track = track_data.get('title') or "Loading..."
+          self.meta.artist = song_data.get('title') or ""
+          self.meta.album = song_data.get('remote_title') or ""
+          self.meta.track = track_data.get('title') or ""
 
         if song_data.get('artwork_url'):
           self.meta.image_url = song_data.get('artwork_url')
