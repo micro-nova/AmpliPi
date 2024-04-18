@@ -171,9 +171,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'sudo systemctl stop squeezelite',
       'sudo systemctl disable squeezelite',
 
+      'sudo chmod 755 /media/pi',
+      'sudo chmod 755 /media/pi/*',
       'sudo cp scripts/udisks2-listener.sh /usr/local/bin',
       'sudo cp scripts/edit_media_directories.py /usr/local/bin',
-      'sudo cp scripts/udisks2-listener.service /etc/systemd/system'
+      'sudo cp scripts/udisks2-listener.service /etc/systemd/system',
       'sudo systemctl enable udisks2-listener.service',
       'sudo systemctl start udisks2-listener.service',
     ]
