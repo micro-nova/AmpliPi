@@ -23,6 +23,7 @@ import functools
 import io
 import json
 import logging
+import sys
 import time
 import os
 import re
@@ -40,7 +41,10 @@ from amplipi.defaults import USER_CONFIG_DIR
 # pylint: disable=bare-except
 
 IDENTITY_FILE = os.path.join(USER_CONFIG_DIR, "identity")
-logger = logging.getLogger('ampli-logger')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 # Helper functions
 
@@ -403,7 +407,7 @@ def set_identity(settings: Dict):
     json.dump(identity, identity_file)
 
 def load_extra_fields(filename: str = 'extra_fields.json') -> Optional[Dict]:
-  """ This function is used to scrape extra fields for 3rd party integrations from a 
+  """ This function is used to scrape extra fields for 3rd party integrations from a
       local file on the filesystem. At present, these fields end up populating in the
       `Info` model.
   """
