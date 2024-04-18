@@ -46,7 +46,7 @@ from amplipi.mpris import MPRIS
 # pylint: disable=consider-using-with
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stderr)
+sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 
 DEBUG = os.environ.get('DEBUG', True)
@@ -1354,7 +1354,7 @@ class LMS(PersistentStream):
         meta_args.extend(["--server", f"{self.server}"])
       if self.port is not None:
         meta_args.extend(["--port", f"{self.port}"])
-      self.meta_proc = subprocess.Popen(args=meta_args, stdout=sys.stderr, stderr=sys.stderr)
+      self.meta_proc = subprocess.Popen(args=meta_args, stdout=sys.stdout, stderr=sys.stderr)
 
       self.proc = subprocess.Popen(args=lms_args)
     except Exception as exc:
