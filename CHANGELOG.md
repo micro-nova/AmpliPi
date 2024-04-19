@@ -1,6 +1,6 @@
 # AmpliPi Software Releases
 
-## Upcoming Release
+## 0.3.5
 * Web App
   * Reverse order available sources are used in
 * System

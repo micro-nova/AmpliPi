@@ -122,6 +122,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -544,6 +545,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -966,6 +968,7 @@ paths:
             examples:
               Status of Jason's AmpliPi:
                 value:
+                  version: 1
                   groups:
                   - id: 100
                     mute: true
@@ -1379,6 +1382,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -1812,6 +1816,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -2235,6 +2240,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -2892,6 +2898,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -3595,6 +3602,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -4223,6 +4231,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -4937,6 +4946,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -5425,6 +5435,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -5922,6 +5933,12 @@ paths:
                   name: Family
                   type: lms
                   server: mylmsserver
+              Add LMS Client connected specifically to mylmsserver with port specified:
+                value:
+                  name: Family
+                  type: lms
+                  server: mylmsserver
+                  port: 9000
         required: true
       responses:
         '200':
@@ -6213,6 +6230,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -6710,6 +6728,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -7199,6 +7218,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -7687,6 +7707,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -8321,6 +8342,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -8785,6 +8807,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -9230,6 +9253,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -9682,6 +9706,7 @@ paths:
               examples:
                 Status of Jason's AmpliPi:
                   value:
+                    version: 1
                     groups:
                     - id: 100
                       mute: true
@@ -10597,6 +10622,10 @@ components:
             type: string
           description: The stream types available on this particular appliance
           default: []
+        extra_fields:
+          title: Extra Fields
+          type: object
+          description: Optional fields for customization
       description: 'AmpliPi System information '
       examples:
         System info:
@@ -10662,6 +10691,14 @@ components:
             update:
               vol_f: 0.5
               mute: false
+    PandoraRating:
+      title: PandoraRating
+      enum:
+      - 0
+      - 1
+      - 2
+      - 3
+      description: An enumeration.
     Preset:
       title: Preset
       required:
@@ -10875,6 +10912,8 @@ components:
           items:
             type: string
           default: []
+        rating:
+          $ref: '#/components/schemas/PandoraRating'
     SourceUpdate:
       title: SourceUpdate
       type: object
@@ -10940,6 +10979,10 @@ components:
       title: Status
       type: object
       properties:
+        version:
+          title: Version
+          type: integer
+          default: 1
         sources:
           title: Sources
           type: array
@@ -11062,6 +11105,7 @@ components:
       examples:
         Status of Jason's AmpliPi:
           value:
+            version: 1
             groups:
             - id: 100
               mute: true
@@ -11534,6 +11578,10 @@ components:
           title: Ap2
           type: boolean
           description: Is Airplay stream AirPlay2?
+        port:
+          title: Port
+          type: integer
+          description: Port used by LMS server for metadata listening
       description: 'Digital stream such as Pandora, AirPlay or Spotify '
       examples:
         Regina Spektor Radio:
@@ -11642,6 +11690,12 @@ components:
             name: Family
             type: lms
             server: mylmsserver
+        Add LMS Client connected specifically to mylmsserver with port specified:
+          value:
+            name: Family
+            type: lms
+            server: mylmsserver
+            port: 9000
     StreamCommand:
       title: StreamCommand
       enum:
@@ -11695,6 +11749,10 @@ components:
           type: boolean
           description: Soft disable use of this stream. It won't be shown as a selectable
             option
+        port:
+          title: Port
+          type: integer
+          description: Port used by LMS server for metadata listening
       description: 'Reconfiguration of a Stream '
       examples:
         Change account info:
