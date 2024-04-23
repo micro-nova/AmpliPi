@@ -189,11 +189,11 @@ function ui_start_software_update(url, version) {
       body: JSON.stringify(req)
     }).then((response) => {
       ui_add_log('updates typically take 10-15 minutes, please be patient', 'info');
-      ui_add_log(`dowloaded "${version}" release`, 'info');
+      ui_add_log(`downloaded "${version}" release`, 'info');
       ui_begin_update();
     });
   } catch(e) {
-    ui_add_log('Failed to dowload release: '+ e, 'danger');
+    ui_add_log('Failed to download release: '+ e, 'danger');
     ui_show_failure();
   }
 }
