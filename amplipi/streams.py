@@ -830,6 +830,8 @@ class Pandora(PersistentStream):
           raise ValueError(f'station=<int> expected, ie. station=23432423; received "{cmd}"')
       else:
         raise NotImplementedError(f'Command not recognized: {cmd}')
+    except FileNotFoundError:
+      logger.warning("Pandora metadata file doesn't exist yet, trying again shortly")
     except Exception as exc:
       raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
