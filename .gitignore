@@ -175,3 +175,6 @@ fw/preamp/Release
 
 # RCA input audio detector
 rca_status
+
+# delete this if it makes it to main, used during tidal api testing
+file.json
