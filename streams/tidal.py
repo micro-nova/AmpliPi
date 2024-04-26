@@ -69,7 +69,7 @@ class Album(BaseModel):
 
 class HomeScreen(BaseModel):
   title: str
-  items: Dict[str, Page, Album, Track, Mix, Playlist]
+  items: dict[str, Page, Album, Track, Mix, Playlist]
 
 
 def save_session(): # TODO: Make file saving more secure, I don't want unencrypted tokens sitting around
@@ -98,7 +98,7 @@ def check_session() -> bool:
     return load_session()
   return True
 
-def trackify_album(album_id: str) -> Dict[Track]:
+def trackify_album(album_id: str) -> dict[Track]:
   album = tidal.album(album_id)
   tracks = {}
   for track in album.tracks():
