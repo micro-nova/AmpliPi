@@ -69,10 +69,11 @@ class Album(BaseModel):
 
 class HomeScreen(BaseModel):
   title: str
-  items: dict[str, Page, Album, Track, Mix, Playlist]
+  items: dict[str, Page, Album, Track, Mix, Playlist] #Oops, all Pages!
+#(everything is getting parsed into type Page so I need a TODO to fix that)
 
 
-def save_session(): # TODO: Make file saving more secure, I don't want unencrypted tokens sitting around
+def save_session(): #TODO: Make file saving more secure, I don't want unencrypted tokens sitting around
   """Save session data to a file"""
   with open("file.json", "w", encoding="utf-8") as f:
     json.dump({
@@ -85,7 +86,7 @@ def save_session(): # TODO: Make file saving more secure, I don't want unencrypt
 def load_session() -> bool:
   """Load session data from a file"""
   try:
-    with open("file.json", "r", encoding="utf-8") as f:
+    with open("file.json", "r", encoding="utf-8") as f: #TODO: Give session files actual names and locations
       data = json.load(f)
       tidal.load_oauth_session(data["token_type"], data["access_token"], data["refresh_token"])
     return True
