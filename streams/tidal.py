@@ -1,10 +1,12 @@
 import tidalapi # Note pydantic objects below before importing anything more specific from this package
 from tidalapi.page import PageItem, PageLink
 
+# pylint: disable=no-name-in-module
+from pydantic import BaseModel
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-from pydantic import BaseModel
 from typing import Optional, Union, Dict
 import uvicorn
 import json
@@ -62,12 +64,12 @@ class Album(BaseModel):
   id: str
   artists: Optional[Union[str, list]]
   art: Optional[str]
-  tracks: Optional[dict[str, Track]]
+  tracks: Optional[Dict[str, Track]]
 
 
 class HomeScreen(BaseModel):
   title: str
-  items: dict[str, Page, Album, Track, Mix, Playlist]
+  items: Dict[str, Page, Album, Track, Mix, Playlist]
 
 
 def save_session(): # TODO: Make file saving more secure, I don't want unencrypted tokens sitting around
@@ -96,7 +98,7 @@ def check_session() -> bool:
     return load_session()
   return True
 
-def trackify_album(album_id: str) -> dict[Track]:
+def trackify_album(album_id: str) -> Dict[Track]:
   album = tidal.album(album_id)
   tracks = {}
   for track in album.tracks():

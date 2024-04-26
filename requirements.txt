@@ -39,3 +39,4 @@ upnpy==1.1.8
 uvicorn==0.20.0
 wrapt==1.14.1
 zeroconf==0.47.1
+tidalapi==0.7.6
