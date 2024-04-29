@@ -2,6 +2,7 @@
 
 .player-outer {
   width: 100%;
+  max-width: 100vw;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -21,11 +22,13 @@
   flex-direction: column;
   align-items: start;
   justify-content: flex-start;
+  padding-left: 2.5vw;
+  padding-right: 2.5vw;
 }
 
 .player-album-art {
   align-self: center;
-  max-width: 22rem;
+  max-width: 95vw;
   max-height: 22rem;
   border-radius: 2.5%;
 }

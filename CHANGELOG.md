@@ -7,6 +7,7 @@
   * Add firmware version for main and expansion units on About page
   * Limit length of displayed stream names with ellipsis
   * Add restart stream button to stream player and stream modal
+  * Add dynamic scaling to controls on Player page
 * System
   * Add serial number to eink display
   * Add ability to display status on eink display
