@@ -6,6 +6,8 @@
 * Streams
   * Add DLNA metadata and control support
   * Add support for browsing Pandora stations
+* API
+  * Fix: Zones playing audio on source used for announcement are not muted while announcement is playing
 
 ## 0.3.5
 * Web App
