@@ -28,10 +28,19 @@ tidal = tidalapi.Session()
 
 class Filtration_Query(Enum):
   ALBUM = "album"
+  ALBUMS = "albums"
+
   MIX = "mix"
+  MIXES = "mixes"
+
   PLAYLIST = "playlist"
+  PLAYLISTS = "playlists"
+
   TRACK = "track"
+  TRACKS = "tracks"
+
   PAGE = "page"
+  PAGES = "pages"
 
 class Playlist(BaseModel):
   type = "Playlist"
@@ -168,19 +177,19 @@ def get_filtered_homepage(filter_query: Filtration_Query) -> Union[str, Dict[str
   for category in home.categories:
     items = {}
     for item in category.items:
-      if isinstance(item, tidalapi.Album) and filter_query == "album":
+      if isinstance(item, tidalapi.Album) and filter_query in ("album", "albums"):
         items[item.name] = Album(name=item.name, id=item.id, artists=item.artists, art=item.cover)
 
-      elif isinstance(item, tidalapi.Mix) and filter_query == "mix":
+      elif isinstance(item, tidalapi.Mix) and filter_query in ("mix", "mixes"):
         items[item.title] = Mix(name=item.title, id=item.id, art=item.images.medium)
 
-      elif isinstance(item, tidalapi.Playlist) and filter_query == "playlist":
+      elif isinstance(item, tidalapi.Playlist) and filter_query in ("playlist", "playlists"):
         items[item.name] = Playlist(name=item.name, id=item.id, art=item.square_picture)
 
-      elif isinstance(item, tidalapi.Track) and filter_query == "track":
+      elif isinstance(item, tidalapi.Track) and filter_query in ("track", "tracks"):
         items[item.name] = Track(name=item.name, id=item.id, artist=item.artist, art=item.album.cover, duration=item.duration)
 
-      elif isinstance(item, PageLink) and filter_query == "page":
+      elif isinstance(item, PageLink) and filter_query in ("page", "pages"):
         items[item.title] = Page(name=item.title, path=item.api_path, art=item.image_id)
 
     categories[category.title] = HomeScreen(title=category.title, items=items)
