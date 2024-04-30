@@ -6,6 +6,7 @@
 * Streams
   * Add DLNA metadata and control support
   * Add support for browsing Pandora stations
+  * Make Pandora like work and pass tests without metadata race condition
 * API
   * Fix: Zones playing audio on source used for announcement are not muted while announcement is playing
 

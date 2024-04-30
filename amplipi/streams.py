@@ -674,6 +674,8 @@ class Pandora(PersistentStream, Browsable):
     self.user = user
     self.password = password
     self.station = station
+    self.track = ""
+    self.invert_liked_state = False
 
     self.stations: List[models.BrowsableItem] = []
 
@@ -803,12 +805,24 @@ class Pandora(PersistentStream, Browsable):
           line = line.strip()
           if line:
             data = line.split(',,,')
+            if self.track != data[1]: # When song changes, stop inverting state
+              self.invert_liked_state = False
             source.state = self.state
             source.artist = data[0]
             source.track = data[1]
+            self.track = data[1]
             source.album = data[2]
             source.img_url = data[3].replace('http:', 'https:') # HACK: kind of a hack to just replace with https
-            source.rating = models.PandoraRating(int(data[4]))
+
+            # Pianobar doesn't update metadata after a song starts playing
+            # so when you like a song you have to change the state manually until next song
+            if self.invert_liked_state and int(data[4]) == 0:
+                source.rating = models.PandoraRating(1)
+            elif self.invert_liked_state and int(data[4]) == 1:
+              source.rating = models.PandoraRating(0)
+            else:
+              source.rating = models.PandoraRating(int(data[4]))
+
             source.station = data[5]
         return source
     except Exception:
@@ -825,28 +839,9 @@ class Pandora(PersistentStream, Browsable):
     """
     try:
       if cmd in self.supported_cmds:
-        if cmd == "love": # Pandora specific command
-          src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
-          # Read the file that contains pandora metadata, flip an enum manually as it doesn't do so itself when sending this command
-          with open(f'{src_config_folder}/.config/pianobar/currentSong', 'r+', encoding='utf-8') as file:
-            data = file.read()
-            # This file contains information in a specific format, separated by 3 commas. Example below:
-            # Artist,,,Track,,,Album,,,Album_Art_URL,,,Liked_State,,,Station
-            chunks = data.split(",,,")
-            liked_state = chunks[4].strip()
-
-            # Chunk 5 (index 4) holds the liked state of a song for pandora
-            # Potential values are numbers 0-3, in order: Default, Liked, Disliked, Tired
-            # This code flips it from Default to Liked and vice-versa when you hit the like button, as pianobar only updates metadata when songs start
-            if liked_state == "0":
-              chunks[4] = models.PandoraRating(1)
-            elif liked_state == "1":
-              chunks[4] = models.PandoraRating(0)
-            modified_data = ",,,".join(chunks)
-            file.seek(0)
-            file.truncate()
-            file.write(modified_data)
-            file.flush()
+        if cmd == "love":
+            self.info() # Ensure liked state is synced with current song
+            self.invert_liked_state = not self.invert_liked_state
 
         with open(self.ctrl, 'w', encoding='utf-8') as file:
           file.write(self.supported_cmds[cmd]['cmd'])
