@@ -1,10 +1,13 @@
 """ Test the amplipi rest API """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 # json utils
 import json
 from http import HTTPStatus
+
+# we need threads with return values for announcement tests
+from concurrent.futures import ThreadPoolExecutor
 
 # temporary directory for each test config
 import tempfile
@@ -917,9 +920,9 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
             cfg.pop(ignored_field)
         assert cfg == prev_cfg
 
-def test_pa(client):
+def test_announcement(client):
   """Check if a PA Announcement works """
-  nasa_audio = 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3'
+  nasa_audio = 'https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3'
   # error, needs media
   rv = client.post('/api/announce', json={})
   assert rv.status_code != HTTPStatus.OK, 'Should require media field'
@@ -939,6 +942,44 @@ def test_pa(client):
   assert rv.status_code == HTTPStatus.OK, print(rv.text)
   rv = client.post('/api/announce', json={'media': nasa_audio, 'vol_f': 0.5, 'src': 0})
   assert rv.status_code == HTTPStatus.OK, print(rv.text)
+
+  def check_zones(muted_zones: Set[int]) -> bool:
+    """Check if zones are muted"""
+    print(f'Checking zone mute status')
+    # wait for the announcement to start playing, then validate zone mute status
+
+    print(f'Waiting for announcement to start playing')
+    playing = False
+    retry_count = 0
+    while not playing and retry_count < 10:
+      rv = client.get('/api')
+      assert rv.status_code == HTTPStatus.OK, print(rv.text)
+      try:
+        state = rv.json()['sources'][0]['info']['state']
+        playing = state == 'playing'
+      except KeyError:
+        pass
+      retry_count += 1
+
+    assert retry_count < 10, 'Timed out waiting for announcement to start playing'
+
+    for z in rv.json()['zones']:
+      should_be_muted = z['id'] in muted_zones
+      assert z['mute'] == should_be_muted, f'Zone {z["id"]} should be {"muted" if should_be_muted else "unmuted"}'
+    return True
+
+  all_zones = list(range(6))
+  rv = client.patch('/api/zones', json={'zones' : all_zones, 'update': {'source_id': 0, 'mute': False}})
+  assert rv.status_code == HTTPStatus.OK, f'Failed to unmute zones: {rv.text}'
+
+  # request an announcement on the same source all zones are connected to,
+  # validate the zones that aren't announced on are muted, and the others are unmuted
+  pa_zones = [4]
+  with ThreadPoolExecutor(max_workers=1) as executor:
+    future = executor.submit(check_zones, set(all_zones) - set(pa_zones))
+    rv = client.post('/api/announce', json={'media': nasa_audio, 'source_id': 0, 'zones': pa_zones})
+    assert rv.status_code == HTTPStatus.OK, print(rv.text)
+    assert future.result(timeout=1.0) == True, "Zone check failed"
 
 def test_api_doc_has_examples(client):
   """Check if each api endpoint has example responses (and requests)"""

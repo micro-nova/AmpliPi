@@ -1257,22 +1257,17 @@ class FilePlayer(BaseStream):
     """ Connect a short run VLC process with audio output to a given audio source """
     logger.info(f'connecting {self.name} to {src}...')
 
-    if self.mock:
-      self._connect(src)
-      # make a thread that waits for a couple of secends and returns after setting info to stopped
-      self.bkg_thread = threading.Thread(target=self.wait_on_proc)
-      self.bkg_thread.start()
-      return
-
-    # Start audio via runvlc.py
-    vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.real_output_device(src)} {self.url} vlc://quit'
-    logger.info(f'running: {vlc_args}')
-    self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE,
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if not self.mock:
+      # Start audio via runvlc.py
+      vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.real_output_device(src)} {self.url} vlc://quit'
+      logger.info(f'running: {vlc_args}')
+      self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
     # make a thread that waits for a couple of secends and returns after setting info to stopped
     self.bkg_thread = threading.Thread(target=self.wait_on_proc)
     self.bkg_thread.start()
+    self.state = 'playing'
     return
 
   def wait_on_proc(self):

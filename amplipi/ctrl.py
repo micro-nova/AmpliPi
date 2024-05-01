@@ -1259,10 +1259,22 @@ class Api:
       pa_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=False,
                                           vol_f=announcement.vol_f) for zid in zones_to_use]
     resp1 = self.create_preset(models.Preset(name='PA - announcement',
-                               state=models.PresetState(sources=[pa_src], zones=pa_zones)))
+                               state=models.PresetState(sources=[pa_src], zones=pa_zones)), internal=True)
     if isinstance(resp1, ApiResponse):
       return resp1
-    pa_preset = resp1
+
+    # NOTE: pylint is very confused about the type of pa_preset, it thinks it is an ApiResponse, but it is not
+    pa_preset: models.Preset = resp1
+    pa_state: Optional[models.PresetState] = pa_preset.state #pylint: disable=no-member
+
+    # mute all zones that are effected by the announcement but not being announced to
+    # NOTE: these zones will be unmuted when the announcement is done using the state saved to LAST_PRESET_ID
+    if pa_state:
+      zones_to_mute = self._effected_zones(pa_state).difference(zones_to_use)
+      pa_muted_zones = [models.ZoneUpdateWithId(id=zid, source_id=pa_src.id, mute=True) for zid in zones_to_mute]
+      if pa_state.zones:
+        pa_state.zones += pa_muted_zones
+
     if pa_preset.id is None or stream.id is None:
       return ApiResponse.error('ID expected to be provided')
     resp2 = self.load_preset(pa_preset.id, internal=True)
