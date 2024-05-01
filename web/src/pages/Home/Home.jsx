@@ -7,6 +7,7 @@ import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import PresetsModal from "@/components/PresetsModal/PresetsModal";
 import StreamerOutputModal from "@/components/StreamerOutputModal/StreamerOutputModal";
 import { executeApplyAction } from "@/components/StreamsModal/StreamsModal";
+import Grid from "@mui/material/Grid/Grid";
 
 import PropTypes from "prop-types";
 
@@ -24,51 +25,49 @@ getSourceZones.propTypes = {
     zones: PropTypes.array.isRequired,
 };
 
-const PresetAndAdd = ({
+const Add = ({
     cards,
     nextAvailableSource,
-    setPresetsModalOpen,
     sources,
     initSource,
 }) => {
     if (cards.length < sources.length) {
-        return (
-            <div className="home-presets-container">
-                <div
-                    className="home-add-player-button"
-                    onClick={() => {
-                        initSource(nextAvailableSource);
-                    }}
-                >
-          +
-                </div>
-                <div style={{ width: "1.25rem" }} />
-                <div
-                    className="home-presets-button"
-                    onClick={() => setPresetsModalOpen(true)}
-                >
-          Presets
-                </div>
-                {/* <IconButton><Add/></IconButton> */}
-            </div>
-        );
-    } else {
-        return (
+        return(
+        <div className="content">
             <div
-                className="home-presets-button"
-                onClick={() => setPresetsModalOpen(true)}
+                className="home-add-player-button"
+                onClick={() => {
+                    initSource(nextAvailableSource);
+                }}
             >
-        Presets
+                +
             </div>
-        );
+        </div>
+        )
     }
-};
-PresetAndAdd.propTypes = {
+}
+Add.propTypes = {
     cards: PropTypes.any.isRequired,
     nextAvailableSource: PropTypes.any.isRequired,
-    setPresetsModalOpen: PropTypes.any.isRequired,
     sources: PropTypes.any.isRequired,
     initSource: PropTypes.any.isRequired,
+};
+
+
+const Preset = ({
+    setPresetsModalOpen,
+}) => {
+    return (
+        <div
+            className="home-presets-button"
+            onClick={() => setPresetsModalOpen(true)}
+        >
+    Presets
+        </div>
+    );
+};
+Preset.propTypes = {
+    setPresetsModalOpen: PropTypes.any.isRequired,
 };
 
 const Home = () => {
@@ -91,7 +90,11 @@ const Home = () => {
             source.input != "" &&
             source.input != "local"
         ) {
-            cards.push(<PlayerCardFb key={i} sourceId={source.id} />);
+            cards.unshift(
+                <Grid style={{height: "40vh"}} className="grid-content" item xs={12} sm={12} md={12} lg={6} xl={6}>
+                    <PlayerCardFb key={i} sourceId={source.id} />
+                </Grid>
+        );
         } else {
             nextAvailableSource = source.id;
         }
@@ -107,16 +110,20 @@ const Home = () => {
 
     return (
         <div className="home-outer">
-            <div className="home-view">
+            <Grid container spacing={2} justifyContent={"space-around"}>
                 {cards}
-                <PresetAndAdd
-                    cards={cards}
-                    nextAvailableSource={nextAvailableSource}
-                    setPresetsModalOpen={setPresetsModalOpen}
-                    sources={sources}
-                    initSource={initSource}
-                />
-            </div>
+                <Grid className="grid-content" item xs={12} sm={12} md={12} lg={6} xl={6}>
+                    <Add
+                        cards={cards}
+                        nextAvailableSource={nextAvailableSource}
+                        sources={sources}
+                        initSource={initSource}
+                    />
+                </Grid>
+            </Grid>
+            <Preset
+                setPresetsModalOpen={setPresetsModalOpen}
+            />
 
             {zonesModalOpen && (
                 <ZonesModal

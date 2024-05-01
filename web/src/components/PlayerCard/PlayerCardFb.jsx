@@ -48,6 +48,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                     <StreamBadge sourceId={sourceId} onClick={openStreams} />
                     <StopProp>
                         <IconButton
+                            style={{top: "0", right: "0"}}
                             onClick={() => {
                                 fetch(`/api/sources/${sourceId}`, {
                                     method: "PATCH",
@@ -66,12 +67,12 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                 </div>
                 <div className="content">
                     { !is_streamer && (
-                        <div className="zones">
+                        <div className="zones" >
                           <ZonesBadge sourceId={sourceId} onClick={openZones} />
                         </div>
                     )}
                     { is_streamer && (
-                        <div className="streamer-outputs">
+                        <div className="zones" >
                             <StreamerOutputBadge sourceId={sourceId} />
                         </div>
                     )}
