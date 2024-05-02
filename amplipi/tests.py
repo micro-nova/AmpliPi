@@ -384,7 +384,7 @@ if __name__ == '__main__':
   except KeyboardInterrupt:
     pass
   except Exception as e:
-    print('Failed to test {args.test}: {e}')
+    print(f'Failed to test {args.test}: {e}')
   try:
     if ap.available() and ap.load_config(old_config):
       print('\nRestored previous configuration.')

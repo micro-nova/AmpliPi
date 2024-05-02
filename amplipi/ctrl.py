@@ -156,7 +156,10 @@ class Api:
       # we need to make sure to mute every zone before resetting the fw
       zones_update = models.MultiZoneUpdate(zones=[z.id for z in self.status.zones],
                                             update=models.ZoneUpdate(mute=True))
-      self.set_zones(zones_update, force_update=True, internal=True)
+      try:
+        self.set_zones(zones_update, force_update=True, internal=True)
+      except OSError:
+        logger.info("Failed to mute some of the zones before resetting.")
       try:
         del self._rt  # remove the low level hardware connection
       except AttributeError:
@@ -342,7 +345,7 @@ class Api:
     for fm_stream in fm_streams:
       logger.info(f"setting FM stream {fm_stream.name} to disabled={fm_disabled} based on hw availability")
       fm_stream.disabled = fm_disabled
-    self._sync_stream_info() # update stream status with potentially updated streams
+    self._sync_stream_info()  # update stream status with potentially updated streams
 
     # configure all sources so that they are in a known state
     # only models.MAX_SOURCES are supported, keep the config from adding extra
@@ -1265,7 +1268,7 @@ class Api:
 
     # NOTE: pylint is very confused about the type of pa_preset, it thinks it is an ApiResponse, but it is not
     pa_preset: models.Preset = resp1
-    pa_state: Optional[models.PresetState] = pa_preset.state #pylint: disable=no-member
+    pa_state: Optional[models.PresetState] = pa_preset.state  # pylint: disable=no-member
 
     # mute all zones that are effected by the announcement but not being announced to
     # NOTE: these zones will be unmuted when the announcement is done using the state saved to LAST_PRESET_ID
