@@ -25,10 +25,11 @@
   width: 100%;
   flex-direction: column;
   padding: 1rem;
-  cursor: pointer;
 
-  height: 20vh;
-  @media (min-width: 1200px) { // 1200px is the breakpoint between the single and double column modes
+  @media only screen and (max-width: 1200px) { // 1200px is the breakpoint between the single and double column modes
+    height: 20vh;
+  }
+  @media only screen and (min-width: 1200px) { // 1200px is the breakpoint between the single and double column modes
     height: 40vh;
   }
 }

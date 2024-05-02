@@ -33,7 +33,7 @@ const Add = ({
 }) => {
     if (cards.length < sources.length) {
         return(
-        <div className="content">
+        <div className="container">
             <div
                 className="home-add-player-button"
                 onClick={() => {
@@ -91,7 +91,7 @@ const Home = () => {
             source.input != "local"
         ) {
             cards.unshift(
-                <Grid style={{height: "40vh"}} className="grid-content" item xs={12} sm={12} md={12} lg={6} xl={6}>
+                <Grid className="grid-content" item xs={12} sm={12} md={12} lg={6} xl={6}>
                     <PlayerCardFb key={i} sourceId={source.id} />
                 </Grid>
         );
@@ -112,13 +112,15 @@ const Home = () => {
         <div className="home-outer">
             <Grid container spacing={2} justifyContent={"space-around"}>
                 {cards}
-                <Grid className="grid-content" item xs={12} sm={12} md={12} lg={6} xl={6}>
-                    <Add
-                        cards={cards}
-                        nextAvailableSource={nextAvailableSource}
-                        sources={sources}
-                        initSource={initSource}
-                    />
+                <Grid className="container" item xs={12} sm={12} md={12} lg={6} xl={6}>
+                    <div className="container">
+                        <Add
+                            cards={cards}
+                            nextAvailableSource={nextAvailableSource}
+                            sources={sources}
+                            initSource={initSource}
+                        />
+                    </div>
                 </Grid>
             </Grid>
             <Preset
