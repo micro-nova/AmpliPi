@@ -26,11 +26,11 @@
   flex-direction: column;
   padding: 1rem;
 
-  @media only screen and (max-width: 1200px) { // 1200px is the breakpoint between the single and double column modes
-    height: 20vh;
+  @media only screen and (max-width: 900px) { // 900px is the breakpoint between the single and double column modes
+    height: 17.5vh;
   }
-  @media only screen and (min-width: 1200px) { // 1200px is the breakpoint between the single and double column modes
-    height: 40vh;
+  @media only screen and (min-width: 900px) { // 900px is the breakpoint between the single and double column modes
+    height: 35vh;
   }
 }
 
@@ -56,7 +56,7 @@
   @include general.regular-font;
   font-size: 2rem;
   width: 100%;
-  // height: 4rem;
+  height: 10vh;
   display: flex;
   flex-direction: column;
   justify-content: center;

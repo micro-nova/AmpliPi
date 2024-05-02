@@ -33,7 +33,7 @@ const AddSpacer = ({
 }) => {
     if (cards.length < sources.length) {
         const Add = () => {return(
-        <Grid className="container" item xs={12} sm={12} md={12} lg={6} xl={6}>
+        <Grid className="container" item xs={12} sm={12} md={6} lg={6} xl={6}>
             <div
                 className="home-add-player-button"
                 onClick={() => {
@@ -47,7 +47,7 @@ const AddSpacer = ({
 
         if (((cards.length % 2) == 0) && window.innerWidth >= 1200){ // The add component sometimes needs a spacer to ensure it doesn't go inbetween the two columns in the 2x2 grid mode
             const Spacer = () => {return(
-                <Grid className="container" item xs={12} sm={12} md={12} lg={6} xl={6}>
+                <Grid className="container" item xs={12} sm={12} md={6} lg={6} xl={6}>
                     <div className="container">
                     </div>
                 </Grid>
@@ -104,7 +104,7 @@ const Home = () => {
             source.input != "local"
         ) {
             cards.unshift(
-                <Grid className="grid-content" item xs={12} sm={12} md={12} lg={6} xl={6}>
+                <Grid className="grid-content" item xs={12} sm={12} md={6} lg={6} xl={6}>
                     <PlayerCardFb key={i} sourceId={source.id} />
                 </Grid>
         );
@@ -131,10 +131,12 @@ const Home = () => {
                     sources={sources}
                     initSource={initSource}
                 />
+                <Grid item xs={12} sm={12} md={12} lg={12} xl={12}>
+                    <Preset
+                        setPresetsModalOpen={setPresetsModalOpen}
+                    />
+                </Grid>
             </Grid>
-            <Preset
-                setPresetsModalOpen={setPresetsModalOpen}
-            />
 
             {zonesModalOpen && (
                 <ZonesModal

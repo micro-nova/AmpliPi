@@ -7,11 +7,11 @@
   padding: 1rem;
   cursor: pointer;
 
-  @media (max-width: 1200px) { // 1200px is the breakpoint between the single and double column modes
-    height: 20vh;
+  @media (max-width: 900px) { // 900px is the breakpoint between the single and double column modes
+    height: 17.5vh;
   }
-  @media (min-width: 1200px) { // 1200px is the breakpoint between the single and double column modes
-    height: 40vh;
+  @media (min-width: 900px) { // 900px is the breakpoint between the single and double column modes
+    height: 35vh;
   }
 }
 
