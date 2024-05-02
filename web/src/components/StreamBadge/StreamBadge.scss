@@ -2,6 +2,7 @@
 
 .stream-badge {
   width: fit-content;
+  overflow: wrap;
   height: fit-content;
   display: flex;
   flex-direction: row;
@@ -15,7 +16,6 @@
 
 .stream-badge-name {
   color: general.$text-color;
-  white-space: nowrap;
   font-size: 1rem;
   font-weight: medium;
   @include general.header-font;

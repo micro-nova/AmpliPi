@@ -45,11 +45,11 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
     return (
         <Card backgroundImage={img_url} selected={selected} onClick={select}>
             <div className="container">
-                <Grid container className="top" spacing={0}>
-                    <Grid className="content" item xs={11} sm={11} md={11} lg={11} xl={11}>
+                <div className="top">
+                    <div className="content" style={{ maxWidth: "75%" }}>
                         <StreamBadge sourceId={sourceId} onClick={openStreams} />
-                    </Grid>
-                    <Grid item xs={1} sm={1} md={1} lg={1} xl={1}>
+                    </div>
+                    <div>
                         <StopProp>
                             <IconButton
                                 onClick={() => {
@@ -67,8 +67,8 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                                 />
                             </IconButton>
                         </StopProp>
-                    </Grid>
-                </Grid>
+                    </div>
+                </div>
                 <div className="content">
                     { !is_streamer && (
                         <div className="zones" >
