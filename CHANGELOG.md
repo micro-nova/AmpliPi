@@ -3,6 +3,7 @@
 ## Upcoming Release
 * Web App
   * Add initial support for song browser (only Pandora stations for now)
+  * Made Home page more reactive to screensize
 * Streams
   * Add DLNA metadata and control support
   * Add support for browsing Pandora stations
