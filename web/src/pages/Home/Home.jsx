@@ -25,15 +25,15 @@ getSourceZones.propTypes = {
     zones: PropTypes.array.isRequired,
 };
 
-const Add = ({
+const AddSpacer = ({
     cards,
     nextAvailableSource,
     sources,
     initSource,
 }) => {
     if (cards.length < sources.length) {
-        return(
-        <div className="container">
+        const Add = () => {return(
+        <Grid className="container" item xs={12} sm={12} md={12} lg={6} xl={6}>
             <div
                 className="home-add-player-button"
                 onClick={() => {
@@ -42,11 +42,23 @@ const Add = ({
             >
                 +
             </div>
-        </div>
-        )
+        </Grid>
+        )}
+
+        if (((cards.length % 2) == 0) && window.innerWidth >= 1200){ // The add component sometimes needs a spacer to ensure it doesn't go inbetween the two columns in the 2x2 grid mode
+            const Spacer = () => {return(
+                <Grid className="container" item xs={12} sm={12} md={12} lg={6} xl={6}>
+                    <div className="container">
+                    </div>
+                </Grid>
+            )}
+            return ( <> <Add /> <Spacer /> </>)
+        }
+
+        return ( <Add /> )
     }
 }
-Add.propTypes = {
+AddSpacer.propTypes = {
     cards: PropTypes.any.isRequired,
     nextAvailableSource: PropTypes.any.isRequired,
     sources: PropTypes.any.isRequired,
@@ -69,6 +81,7 @@ const Preset = ({
 Preset.propTypes = {
     setPresetsModalOpen: PropTypes.any.isRequired,
 };
+
 
 const Home = () => {
     const sources = useStatusStore((s) => s.status.sources);
@@ -112,16 +125,12 @@ const Home = () => {
         <div className="home-outer">
             <Grid container spacing={2} justifyContent={"space-around"}>
                 {cards}
-                <Grid className="container" item xs={12} sm={12} md={12} lg={6} xl={6}>
-                    <div className="container">
-                        <Add
-                            cards={cards}
-                            nextAvailableSource={nextAvailableSource}
-                            sources={sources}
-                            initSource={initSource}
-                        />
-                    </div>
-                </Grid>
+                <AddSpacer
+                    cards={cards}
+                    nextAvailableSource={nextAvailableSource}
+                    sources={sources}
+                    initSource={initSource}
+                />
             </Grid>
             <Preset
                 setPresetsModalOpen={setPresetsModalOpen}
