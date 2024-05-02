@@ -14,6 +14,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { IconButton } from "@mui/material";
 import StopProp from "@/components/StopProp/StopProp";
 import StreamerOutputBadge from "../StreamerOutputBadge/StreamerOutputBadge";
+import Grid from "@mui/material/Grid/Grid";
 
 import PropTypes from "prop-types";
 
@@ -44,27 +45,30 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
     return (
         <Card backgroundImage={img_url} selected={selected} onClick={select}>
             <div className="container">
-                <div className="top">
-                    <StreamBadge sourceId={sourceId} onClick={openStreams} />
-                    <StopProp>
-                        <IconButton
-                            style={{top: "0", right: "0"}}
-                            onClick={() => {
-                                fetch(`/api/sources/${sourceId}`, {
-                                    method: "PATCH",
-                                    headers: {
-                                        "Content-type": "application/json",
-                                    },
-                                    body: JSON.stringify({ input: "None" }),
-                                });
-                            }}
-                        >
-                            <CloseIcon
-                                style={{ width: "2rem", height: "2rem" }}
-                            />
-                        </IconButton>
-                    </StopProp>
-                </div>
+                <Grid container className="top" spacing={0}>
+                    <Grid className="content" item xs={11} sm={11} md={11} lg={11} xl={11}>
+                        <StreamBadge sourceId={sourceId} onClick={openStreams} />
+                    </Grid>
+                    <Grid item xs={1} sm={1} md={1} lg={1} xl={1}>
+                        <StopProp>
+                            <IconButton
+                                onClick={() => {
+                                    fetch(`/api/sources/${sourceId}`, {
+                                        method: "PATCH",
+                                        headers: {
+                                            "Content-type": "application/json",
+                                        },
+                                        body: JSON.stringify({ input: "None" }),
+                                    });
+                                }}
+                            >
+                                <CloseIcon
+                                    style={{ width: "2rem", height: "2rem" }}
+                                />
+                            </IconButton>
+                        </StopProp>
+                    </Grid>
+                </Grid>
                 <div className="content">
                     { !is_streamer && (
                         <div className="zones" >
@@ -76,7 +80,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                             <StreamerOutputBadge sourceId={sourceId} />
                         </div>
                     )}
-                    <SongInfo sourceId={sourceId} />
+                    <SongInfo sourceId={sourceId} style={{maxWidth: "50%", textAlign: "right"}}/>
                 </div>
 
                 { !is_streamer && (

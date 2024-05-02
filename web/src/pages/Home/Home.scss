@@ -21,14 +21,22 @@
   // width: fit-content;
 }
 
+.grid-padding { // Split between breakpoints as 2vw is too large on large screens and 1vw is too small for small screens
+  @media only screen and (max-width: 900px) { // 900px is the breakpoint between the single and double column modes
+    padding-left: 2vw;
+    padding-right: 2vw;
+  }
+  @media only screen and (min-width: 900px) { // 900px is the breakpoint between the single and double column modes
+    padding-left: 1vw;
+    padding-right: 1vw;
+  }
+}
+
 .container {
   width: 100%;
   flex-direction: column;
   padding: 1rem;
 
-  @media only screen and (max-width: 900px) { // 900px is the breakpoint between the single and double column modes
-    height: 17.5vh;
-  }
   @media only screen and (min-width: 900px) { // 900px is the breakpoint between the single and double column modes
     height: 35vh;
   }

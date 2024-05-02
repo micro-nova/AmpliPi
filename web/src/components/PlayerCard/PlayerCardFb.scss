@@ -7,9 +7,6 @@
   padding: 1rem;
   cursor: pointer;
 
-  @media (max-width: 900px) { // 900px is the breakpoint between the single and double column modes
-    height: 17.5vh;
-  }
   @media (min-width: 900px) { // 900px is the breakpoint between the single and double column modes
     height: 35vh;
   }
@@ -20,10 +17,14 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  height: 45%;
+
+  @media (min-width: 900px) { // 900px is the breakpoint between the single and double column modes
+    height: 45%;
+  }
 }
 
 .top {
+  height: 10vh;
   display: flex;
   flex-direction: row;
   justify-content: space-between;

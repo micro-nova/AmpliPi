@@ -9,6 +9,7 @@ const SongInfo = ({
     artistClassName,
     albumClassName,
     trackClassName,
+    style,
 }) => {
     const info = useStatusStore((state) => state.status.sources[sourceId].info);
 
@@ -17,7 +18,7 @@ const SongInfo = ({
     trackClassName = "track-name " + trackClassName;
 
     return (
-        <div className="song-info">
+        <div className="song-info" style={style}>
             <div className={artistClassName}>{info.artist}</div>
             <div className={albumClassName}>{info.album}</div>
             <div className={trackClassName}>{info.track}</div>
@@ -28,7 +29,8 @@ SongInfo.propTypes = {
     sourceId: PropTypes.any.isRequired,
     artistClassName: PropTypes.string,
     albumClassName: PropTypes.string,
-    trackClassName : PropTypes.string
+    trackClassName : PropTypes.string,
+    style: PropTypes.object,
 };
 
 export default SongInfo;

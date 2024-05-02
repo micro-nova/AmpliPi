@@ -33,7 +33,7 @@ const AddSpacer = ({
 }) => {
     if (cards.length < sources.length) {
         const Add = () => {return(
-        <Grid className="container" item xs={12} sm={12} md={6} lg={6} xl={6}>
+        <Grid item xs={12} sm={12} md={6} lg={6} xl={6}>
             <div
                 className="home-add-player-button"
                 onClick={() => {
@@ -45,9 +45,9 @@ const AddSpacer = ({
         </Grid>
         )}
 
-        if (((cards.length % 2) == 0) && window.innerWidth >= 1200){ // The add component sometimes needs a spacer to ensure it doesn't go inbetween the two columns in the 2x2 grid mode
+        if (((cards.length % 2) == 0) && window.innerWidth >= 900){ // The add component sometimes needs a spacer to ensure it doesn't go inbetween the two columns in the 2x2 grid mode
             const Spacer = () => {return(
-                <Grid className="container" item xs={12} sm={12} md={6} lg={6} xl={6}>
+                <Grid item xs={12} sm={12} md={6} lg={6} xl={6}>
                     <div className="container">
                     </div>
                 </Grid>
@@ -83,6 +83,25 @@ Preset.propTypes = {
 };
 
 
+const DynaGrid = ({
+    children
+}) => {
+    if(window.innerWidth < 900){
+        return(
+            <Grid className="grid-padding" container spacing={2} justifyContent={"space-around"}>
+                {children}
+            </Grid>
+        )
+    } else if(window.innerWidth >= 900){
+        return(
+            <Grid className="grid-padding" container spacing={3} justifyContent={"space-around"}>
+                {children}
+            </Grid>
+        )
+    }
+}
+
+
 const Home = () => {
     const sources = useStatusStore((s) => s.status.sources);
     const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
@@ -104,7 +123,7 @@ const Home = () => {
             source.input != "local"
         ) {
             cards.unshift(
-                <Grid className="grid-content" item xs={12} sm={12} md={6} lg={6} xl={6}>
+                <Grid item xs={12} sm={12} md={6} lg={6} xl={6}>
                     <PlayerCardFb key={i} sourceId={source.id} />
                 </Grid>
         );
@@ -123,7 +142,7 @@ const Home = () => {
 
     return (
         <div className="home-outer">
-            <Grid container spacing={2} justifyContent={"space-around"}>
+            <DynaGrid className="grid-padding" container spacing={2} justifyContent={"space-around"}>
                 {cards}
                 <AddSpacer
                     cards={cards}
@@ -136,7 +155,7 @@ const Home = () => {
                         setPresetsModalOpen={setPresetsModalOpen}
                     />
                 </Grid>
-            </Grid>
+            </DynaGrid>
 
             {zonesModalOpen && (
                 <ZonesModal
