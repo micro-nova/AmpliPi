@@ -813,15 +813,17 @@ class Pandora(PersistentStream, Browsable):
             self.track = data[1]
             source.album = data[2]
             source.img_url = data[3].replace('http:', 'https:') # HACK: kind of a hack to just replace with https
+            initial_rating = models.PandoraRating(int(data[4]))
+
+            source.rating = initial_rating
 
             # Pianobar doesn't update metadata after a song starts playing
             # so when you like a song you have to change the state manually until next song
-            if self.invert_liked_state and int(data[4]) == 0:
-                source.rating = models.PandoraRating(1)
-            elif self.invert_liked_state and int(data[4]) == 1:
-              source.rating = models.PandoraRating(0)
-            else:
-              source.rating = models.PandoraRating(int(data[4]))
+            if self.invert_liked_state:
+              if int(data[4]) == models.PandoraRating.DEFAULT.value:
+                source.rating = models.PandoraRating.LIKED
+              elif int(data[4]) == models.PandoraRating.LIKED.value:
+                source.rating = models.PandoraRating.DEFAULT
 
             source.station = data[5]
         return source
