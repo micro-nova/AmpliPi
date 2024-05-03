@@ -99,7 +99,10 @@ const DynaGrid = ({
             </Grid>
         )
     }
-}
+};
+DynaGrid.propTypes = {
+    children: PropTypes.any.isRequired,
+};
 
 
 const Home = () => {

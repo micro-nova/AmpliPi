@@ -14,7 +14,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import { IconButton } from "@mui/material";
 import StopProp from "@/components/StopProp/StopProp";
 import StreamerOutputBadge from "../StreamerOutputBadge/StreamerOutputBadge";
-import Grid from "@mui/material/Grid/Grid";
 
 import PropTypes from "prop-types";
 
