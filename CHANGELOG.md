@@ -17,7 +17,10 @@
   * Disconnect zones from sources when they are disabled
   * Updated Pianobar to fork of 2022.04.01
   * Reset buggy LMS clients on a regular basis
-
+  * Improved Spotify metadata and status handling
+  * Updated Spotifyd to 357e1476fd4e987b82d00ac7b70891d1730509e8
+  * Rewrote MPRIS interface to no longer poll (used by spotify and airplay)
+  * Fixed bug in spotify with metadata file location
 ## 0.3.6
 * Web App
   * Add initial support for song browser (only Pandora stations for now)

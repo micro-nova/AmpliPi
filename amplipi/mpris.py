@@ -40,14 +40,12 @@ class Metadata:
 class MPRIS:
   """A class for interfacing with an MPRIS MediaPlayer2 over dbus."""
 
-  def __init__(self, service_suffix, metadata_path, debug=False) -> None:
+  def __init__(self, service_suffix, metadata_path) -> None:
     self.mpris = SessionMessageBus().get_proxy(
       service_name=f"org.mpris.MediaPlayer2.{service_suffix}",
       object_path="/org/mpris/MediaPlayer2",
       interface_name="org.mpris.MediaPlayer2.Player"
     )
-
-    self.debug = debug
 
     self.capabilities: List[CommandTypes] = []
 
@@ -67,10 +65,9 @@ class MPRIS:
       child_args = [sys.executable,
                     f"{utils.get_folder('streams')}/MPRIS_metadata_reader.py",
                     self.service_suffix,
-                    self.metadata_path,
-                    str(self.debug)]
+                    self.metadata_path]
 
-      self.metadata_process = subprocess.Popen(args=child_args)
+      self.metadata_process = subprocess.Popen(args=child_args, stdout=sys.stdout, stderr=sys.stderr)
     except Exception as e:
       logger.exception(f'Exception starting MPRIS metadata process: {e}')
 
