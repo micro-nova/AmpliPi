@@ -91,7 +91,7 @@ const Home = () => {
             source.input != "" &&
             source.input != "local"
         ) {
-            cards.push(<PlayerCardFb key={i} sourceId={source.id} />);
+            cards.unshift(<PlayerCardFb key={i} sourceId={source.id} />);
         } else {
             nextAvailableSource = source.id;
         }
