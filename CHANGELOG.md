@@ -5,6 +5,7 @@
   * Add initial support for song browser (only Pandora stations for now)
   * Add streams to the stream list on the homepage in the order they were added
   * Add firmware version for main and expansion units on About page
+  * Limit length of displayed stream names with ellipsis
 * Streams
   * Add DLNA metadata and control support
   * Add support for browsing Pandora stations

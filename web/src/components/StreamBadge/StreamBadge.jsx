@@ -14,7 +14,7 @@ const StreamBadge = ({ sourceId, onClick }) => {
     const icon = getIcon(type);
 
     return (
-        <Chip onClick={onClick}>
+        <Chip onClick={onClick} style={{ maxWidth: "60vw" }}>
             <img src={icon} className="stream-badge-icon" alt="stream icon" />
             <div className="stream-badge-name">{name}</div>
         </Chip>
