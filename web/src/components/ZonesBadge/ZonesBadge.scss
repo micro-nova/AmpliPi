@@ -4,8 +4,9 @@
   color: general.$text-color;
   font-size: 1rem;
   font-weight: medium;
-  white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
   @include general.header-font;
   cursor: pointer;
 }
