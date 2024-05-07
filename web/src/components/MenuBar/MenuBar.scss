@@ -2,6 +2,7 @@
 
 .bar {
   position: fixed;
+  z-index: 1; // The Marquees on player cards appeared above the MenuBar otherwise, the MenuBar needs to be on top of everything always
   bottom: 0;
   width: 100vw;
   @include general.low-shadow-up;

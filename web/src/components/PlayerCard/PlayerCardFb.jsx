@@ -1,7 +1,7 @@
 import React from "react";
 import Card from "@/components/Card/Card";
 import StreamBadge from "@/components/StreamBadge/StreamBadge";
-import SongInfo from "../SongInfo/SongInfo";
+import SongInfoMarquee from "../SongInfo/SongInfoMarquee";
 import CardVolumeSlider from "../CardVolumeSlider/CardVolumeSlider";
 import { useState } from "react";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
@@ -75,7 +75,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                             <StreamerOutputBadge sourceId={sourceId} />
                         </div>
                     )}
-                    <SongInfo sourceId={sourceId} />
+                    <SongInfoMarquee sourceId={sourceId} />
                 </div>
 
                 { !is_streamer && (

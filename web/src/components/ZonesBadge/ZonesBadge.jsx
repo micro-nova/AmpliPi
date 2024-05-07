@@ -4,14 +4,17 @@ import { getSourceZones } from "@/pages/Home/Home.jsx";
 import { useStatusStore } from "@/App.jsx";
 import Chip from "../Chip/Chip";
 import { getFittestRep } from "@/utils/GroupZoneFiltering";
+import Grid from "@mui/material/Grid/Grid";
 
 import PropTypes from "prop-types";
 
 const ZoneGroupChip = ({ zoneGroup, onClick }) => {
     return (
-        <Chip onClick={onClick}>
-            <div className="zone-text">{zoneGroup.name}</div>
-        </Chip>
+        <Grid item xs={"auto"} sm={"auto"} md={"auto"} lg={"auto"} xl={"auto"}>
+            <Chip onClick={onClick} style={{maxWidth: "35vw"}}>
+                <div className="zone-text">{zoneGroup.name}</div>
+            </Chip>
+        </Grid>
     );
 };
 ZoneGroupChip.propTypes = {
@@ -90,7 +93,13 @@ const ZonesBadge = ({ sourceId, onClick }) => {
         );
     }
 
-    return <div className="zones-container">{chips}</div>;
+    return (
+        <div className="zones-container">
+            <Grid container padding={2}>
+                {chips}
+            </Grid>
+        </div>
+    );
 };
 ZonesBadge.propTypes = {
     sourceId: PropTypes.any.isRequired,
