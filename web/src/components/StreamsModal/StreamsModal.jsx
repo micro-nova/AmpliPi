@@ -8,6 +8,7 @@ import { moveSourceContents, setSourceStream } from "@/utils/APIHelper";
 import { setRcaStatus } from "../ZonesModal/ZonesModal";
 import List from "@/components/List/List";
 import ListItem from "../List/ListItem/ListItem";
+import AddIcon from "@mui/icons-material/Add";
 
 import PropTypes from "prop-types";
 
@@ -98,6 +99,15 @@ const StreamsModal = ({
             );
         }
     }
+    streamsList.push(
+        <ListItem
+            name={"Create Stream"}
+            key={0}
+            onClick={() => {setCreateModalOpen(true);}}
+        >
+            <AddIcon />
+        </ListItem>
+    );
 
     return (
         <ModalCard header="Select Stream" onClose={onClose} onCancel={onClose}>
