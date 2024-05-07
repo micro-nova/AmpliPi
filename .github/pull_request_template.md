@@ -9,8 +9,7 @@
 * [ ] If applicable, have you updated the CHANGELOG?
 * [ ] Does your submission pass linting & tests? You can test on localhost using `./scripts/test`
 * [ ] Have you written new tests for your core features/changes, as applicable?
-* If this is a UI change:
-  - [ ] Have you tested it across multiple desktop and mobile platforms?
-  - [ ] Have you tested in multiple browser engines?
+* [ ] If this is a UI change, have you tested it across multiple browser platforms?
+* [ ] If this is a UI change, have you tested across multiple viewport sizes (ie. desktop versus mobile)?
 
 <!-- You can erase any parts of this template not applicable to your Pull Request. -->
