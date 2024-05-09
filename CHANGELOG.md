@@ -4,12 +4,14 @@
 * Web App
   * Add initial support for song browser (only Pandora stations for now)
   * Add streams to the stream list on the homepage in the order they were added
+  * Add firmware version for main and expansion units on About page
 * Streams
   * Add DLNA metadata and control support
   * Add support for browsing Pandora stations
   * Make Pandora like work and pass tests without metadata race condition
 * API
   * Fix: Zones playing audio on source used for announcement are not muted while announcement is playing
+  * Log firmware version for main and expansion units
 
 ## 0.3.5
 * Web App

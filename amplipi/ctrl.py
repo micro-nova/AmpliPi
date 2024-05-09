@@ -236,6 +236,16 @@ class Api:
     for major, minor, ghash, dirty in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}', git_hash=f'{ghash:x}', git_dirty=dirty)
       self.status.info.fw.append(fw_info)
+    if self.status.info.fw:
+      fw_info = self.status.info.fw[0]
+      logger.info(f"Main unit firmware version: {fw_info.version}")
+    else:
+      logger.info(f"No preamp")
+    if self.status.info.fw[1:]:
+      for i, fw_info in enumerate(self.status.info.fw[1:], start=1):
+          logger.info(f"Expansion unit {i} firmware version: {fw_info.version}")
+    else:
+      logger.info(f"No expansion units")
     self._update_sys_info()  # TODO: does sys info need to be updated at init time?
 
     # detect missing zones
