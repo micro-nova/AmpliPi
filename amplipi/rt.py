@@ -147,10 +147,10 @@ class _Preamps:
       self.bus = SMBus(1)
 
       # Discover connected preamp boards
-      for p in _DEV_ADDRS:
+      for i, p in enumerate(_DEV_ADDRS, start=1):
         if self.probe_preamp(p):
-          if debug:
-            logger.debug(f'Preamp found at address {p}')
+          preamp_fw = self.read_version(i)
+          logger.info(f'Preamp found at address {p} with firmware version {preamp_fw[0]}.{preamp_fw[1]}')
           self.new_preamp(p)
         else:
           if p == _DEV_ADDRS[0] and debug:

@@ -8,6 +8,15 @@ import PropTypes from "prop-types";
 const About = ({ onClose }) => {
     const info = useStatusStore.getState().status.info;
 
+    const generateBoardVersionsString = (fw) => {
+		let temp_string = fw[1].version;
+        for(let i = 2; i < fw.length; i++) {
+			temp_string += ", ";
+        	temp_string += fw[i].version;
+        }
+        return temp_string
+    }
+    
     return (
         <>
             <PageHeader title="About" onClose={onClose} />
@@ -24,6 +33,14 @@ const About = ({ onClose }) => {
                 <br />
         Version: {info.version}
                 <br />
+        {!info.is_streamer && ( <>
+        Main Unit Firmware Version: {info.fw.length ? info.fw[0].version: "No Preamp"} 
+                <br />
+        </> ) }
+        {info.fw.length > 1 && ( <>
+        Expansion Unit Firmware Version{info.fw.length > 2? "s": ""}: {generateBoardVersionsString(info.fw)}
+                <br />
+        </> ) }               
         Latest: {info.latest_release}
                 <br />
         {info.access_key && ( <>
