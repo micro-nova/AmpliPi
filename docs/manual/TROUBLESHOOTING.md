@@ -32,6 +32,3 @@ Had an issue with an update? Want to try a beta release? Follow these steps:
 3. Click the **Older Releases** tab
 4. Select the release you would like to use from the dropdown menu
 5. Click the **Start Update** button
-
-## Reimaging AmpliPro
-For directions on how to bring AmpliPro system back to a previous version, scan the QR labeled "Reimaging Instructions" on the links page at the start of this manual:
