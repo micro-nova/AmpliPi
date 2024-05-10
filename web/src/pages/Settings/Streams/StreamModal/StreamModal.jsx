@@ -14,13 +14,14 @@ const RESTART_DESC = "Sometimes the stream gets into a bad state and neds to be 
 
 // We're already using mui, why are we reinventing the wheel? https://mui.com/material-ui/react-text-field/
 // if it's a matter of className control on the underlying components, that still works with the mui textfield with the InputLabelProps prop and other componentProps
-const TextField = ({ name, desc, defaultValue, onChange }) => {
+const TextField = ({ name, desc, type="text", defaultValue, onChange }) => {
+
     return (
         <>
             <div className="stream-field">
                 <div className="stream-field-name">{name}</div>
                 <input
-                    type="text"
+                    type={type}
                     defaultValue={defaultValue}
                     onChange={(e) => {
                         onChange(e.target.value);
@@ -35,6 +36,7 @@ const TextField = ({ name, desc, defaultValue, onChange }) => {
 TextField.propTypes = {
     name: PropTypes.string.isRequired,
     desc: PropTypes.string.isRequired,
+    type: PropTypes.string,
     defaultValue: PropTypes.string,
     onChange: PropTypes.func.isRequired,
 };
@@ -209,19 +211,34 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                     // Render fields from StreamFields.json
                     streamTemplate.fields.map((field) => {
                         switch (field.type) {
-                        case "text":
-                            return (
-                                <TextField
-                                    key={field.name}
-                                    name={field.name}
-                                    desc={field.desc}
-                                    required={field.required}
-                                    defaultValue={streamFields[field.name]}
-                                    onChange={(v) => {
-                                        setStreamFields({ ...streamFields, [field.name]: v });
-                                    }}
-                                />
-                            );
+                            case "text":
+                                return (
+                                    <TextField
+                                        key={field.name}
+                                        name={field.name}
+                                        desc={field.desc}
+                                        type={"text"}
+                                        required={field.required}
+                                        defaultValue={streamFields[field.name]}
+                                        onChange={(v) => {
+                                            setStreamFields({ ...streamFields, [field.name]: v });
+                                        }}
+                                    />
+                                );
+                            case "password":
+                                return (
+                                    <TextField
+                                        key={field.name}
+                                        name={field.name}
+                                        desc={field.desc}
+                                        type={"password"}
+                                        required={field.required}
+                                        defaultValue={streamFields[field.name]}
+                                        onChange={(v) => {
+                                            setStreamFields({ ...streamFields, [field.name]: v });
+                                        }}
+                                    />
+                                );
                         case "bool":
                             return (
                                 <BoolField
