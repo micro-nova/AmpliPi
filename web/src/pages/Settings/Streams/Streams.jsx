@@ -23,7 +23,7 @@ const initEmptyStream = (type) => {
 };
 
 const applyStreamChanges = (stream) => {
-    fetch(`/api/streams/${stream.id}`, {
+    return fetch(`/api/streams/${stream.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stream),
@@ -31,7 +31,7 @@ const applyStreamChanges = (stream) => {
 };
 
 const makeNewStream = (stream) => {
-    fetch("/api/stream", {
+    return fetch("/api/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stream),

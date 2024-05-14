@@ -133,18 +133,18 @@ InternetRadioSearch.propTypes = {
     onChange: PropTypes.func.isRequired,
 };
 
-function validateInput(streamFields, streamTemplate) {
-    streamTemplate['fields'].filter((f) => f.required).map( (f) => {
-        if(!streamFields[f.name]) {
-            throw new Error(`Required field not set: ${f.name}`);
-        }
-    });
-}
+// function validateInput(streamFields, streamTemplate) {
+//     streamTemplate['fields'].filter((f) => f.required).map( (f) => {
+//         if(!streamFields[f.name]) {
+//             throw new Error(`Required field not set: ${f.name}`);
+//         }
+//     });
+// }
 
-validateInput.propTypes = {
-    streamFields: PropTypes.object.isRequired,
-    streamTemplate: PropTypes.object.isRequired,
-}
+// validateInput.propTypes = {
+//     streamFields: PropTypes.object.isRequired,
+//     streamTemplate: PropTypes.object.isRequired,
+// }
 
 const StreamModal = ({ stream, onClose, apply, del }) => {
     const [streamFields, setStreamFields] = React.useState(
@@ -166,14 +166,13 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                 onClose();
             }}
             onAccept={() => {
-                try {
-                    validateInput(streamFields, streamTemplate);
-                } catch (error) {
-                    setErrorMessage(error.toString());
-                    return;
-                }
-                apply(streamFields);
-                onClose();
+                apply(streamFields).then((response)=>{
+                    if(response.ok)
+                    {
+                        onClose();
+                    }
+                    response.json().then((error)=>{setErrorMessage(error.detail)});
+                });
             }}
         >
             <div>
