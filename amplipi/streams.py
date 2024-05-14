@@ -86,6 +86,12 @@ def uuid_gen():
   # Generic UUID in case of failure
   return '39ae35cc-b4c1-444d-b13a-294898d771fa'
 
+class StreamError(Exception):
+  def __init__(self, msg):
+    self.msg = msg
+  def __str__(self):
+    return repr(self.msg)
+  
 class Browsable:
   """ A stream that can be browsed for items """
   # technically does nothing but is a marker for streams that can be browsed
@@ -185,6 +191,11 @@ class BaseStream:
   def browse(self, parent: Optional[int] = None) -> List[models.BrowsableItem]:
     """ Browse the stream for items"""
     raise NotImplementedError()
+  
+  def validate_stream(self, **kwargs):
+    """ Validate fields """
+    raise NotImplementedError()
+
 
 class VirtualSources:
   """ Virtual source allocator to mind ALSA limits"""
@@ -372,6 +383,7 @@ class AirPlay(PersistentStream):
 
   def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+    self.validate_stream(name = self.name)
     self.mpris: Optional[MPRIS] = None
     self.ap2 = ap2
     self.ap2_exists = False
@@ -386,6 +398,7 @@ class AirPlay(PersistentStream):
     self._coverart_dir = ''
 
   def reconfig(self, **kwargs):
+    self.validate_stream(**kwargs)
     reconnect_needed = False
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
@@ -545,6 +558,10 @@ class AirPlay(PersistentStream):
     except Exception as e:
       logger.exception(f"error in shairport: {e}")
 
+  def validate_stream(self, **kwargs):
+    if 'name' in kwargs and len(kwargs['name']) > 50:
+      raise StreamError("name cannot exceed 50 characters")
+    
 
 class Spotify(PersistentStream):
   """ A Spotify Stream """
@@ -553,12 +570,13 @@ class Spotify(PersistentStream):
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-
+    self.validate_stream(name = self.name)
     self.connect_port: Optional[int] = None
     self.mpris: Optional[MPRIS] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
 
   def reconfig(self, **kwargs):
+    #self.validate_stream(kwargs)
     reconnect_needed = False
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
@@ -663,6 +681,11 @@ class Spotify(PersistentStream):
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as e:
       raise Exception(f"Error sending command {cmd}: {e}") from e
+    
+  def validate_stream(self, **kwargs):
+    regex = r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
+    if 'name' in kwargs and not re.fullmatch(regex, kwargs['name']):
+      raise StreamError("invalid device name")
 
 class Pandora(PersistentStream, Browsable):
   """ A Pandora Stream """
@@ -676,6 +699,7 @@ class Pandora(PersistentStream, Browsable):
     self.station = station
     self.track = ""
     self.invert_liked_state = False
+    self.validate_stream(user = self.user, password = self.password)
 
     self.stations: List[models.BrowsableItem] = []
 
@@ -701,6 +725,7 @@ class Pandora(PersistentStream, Browsable):
     }
 
   def reconfig(self, **kwargs):
+    self.validate_stream(**kwargs)
     reconnect_needed = False
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
@@ -917,6 +942,11 @@ class Pandora(PersistentStream, Browsable):
     """ Play a specific item """
     self.send_cmd(f'station={item_id}')
 
+  def validate_stream(self, **kwargs):
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if 'user' in kwargs and not re.fullmatch(regex, kwargs['user']):
+      raise StreamError("invalid username")
+
 
 class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid issue, figure out next and prev
   """ A DLNA Stream """
@@ -1051,9 +1081,11 @@ class InternetRadio(BaseStream):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.url = url
     self.logo = logo
+    self.validate_stream(url = self.url, logo = self.logo)
     self.supported_cmds = ['play', 'stop']
 
   def reconfig(self, **kwargs):
+    self.validate_stream(**kwargs)
     reconnect_needed = False
     ir_fields = ['url', 'logo']
     fields = list(ir_fields) + ['name', 'disabled']
@@ -1145,6 +1177,17 @@ class InternetRadio(BaseStream):
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception:
       pass
+
+  def validate_stream(self, **kwargs):
+    regex = ("((http|https)://)(www.)?" +
+             "[a-zA-Z0-9@:%._\\+~#?&//=]" +
+             "{2,256}\\.[a-z]" +
+             "{2,6}\\b([-a-zA-Z0-9@:%" +
+             "._\\+~#?&//=]*)")
+    if 'url' in kwargs and not re.fullmatch(regex, kwargs['url']):
+      raise StreamError("invalid url")
+    if 'logo' in kwargs and not re.fullmatch(regex, kwargs['logo']):
+      raise StreamError("invalid logo url")
 
 
 class Plexamp(BaseStream):

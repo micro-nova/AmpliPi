@@ -41,6 +41,7 @@ import amplipi.streams
 from amplipi.eeprom import EEPROM, BoardType
 from amplipi import auth
 from amplipi import defaults
+import traceback
 
 
 _DEBUG_API = False  # print out a graphical state of the api after each call
@@ -966,8 +967,11 @@ class Api:
         return new_stream
       raise Exception('no stream created')
     except Exception as exc:
+      logger.error(traceback.format_exc())
       if internal:
         raise exc
+      if type(exc) == KeyError:
+        return ApiResponse.error(f'missing stream field: {exc}')
       return ApiResponse.error(f'create stream failed: {exc}')
 
   @save_on_success
@@ -984,8 +988,9 @@ class Api:
       stream.reconfig(**changes)
       self._sync_stream_info()
       return ApiResponse.ok()
-    except Exception as exc:
-      return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
+    except amplipi.streams.StreamError as e:
+      logger.error(traceback.format_exc())
+      return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, e.msg))
 
   def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
