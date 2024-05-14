@@ -371,6 +371,10 @@ class AirPlay(PersistentStream):
   stream_type : ClassVar[str] = 'airplay'
 
   def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
+    if not name:
+      raise Exception("No name provided")
+    if len(name) > 50:
+      raise Exception("Name cannot exceed 50 characters")
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.mpris: Optional[MPRIS] = None
     self.ap2 = ap2
@@ -552,6 +556,11 @@ class Spotify(PersistentStream):
   stream_type : ClassVar[str] = 'spotify'
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if not re.fullmatch(regex, name):
+      raise Exception("Invalid device name")
+    if not name:
+      raise Exception("No device name provided")
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
 
     self.connect_port: Optional[int] = None
@@ -671,6 +680,13 @@ class Pandora(PersistentStream, Browsable):
 
   def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+    if not user:
+      raise Exception("No username provided")
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if not re.fullmatch(regex, user):
+      raise Exception("Invalid username")
+    if not password:
+      raise Exception("No password provided")
     self.user = user
     self.password = password
     self.station = station
@@ -1049,6 +1065,19 @@ class InternetRadio(BaseStream):
 
   def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+    regex = ("((http|https)://)(www.)?" +
+             "[a-zA-Z0-9@:%._\\+~#?&//=]" +
+             "{2,256}\\.[a-z]" +
+             "{2,6}\\b([-a-zA-Z0-9@:%" +
+             "._\\+~#?&//=]*)")
+    if not re.fullmatch(regex, url):
+      raise Exception("Invalid url")
+    if not url:
+      raise Exception("No url provided")
+    if not re.fullmatch(regex, logo):
+      raise Exception("Invalid logo url")
+    if not logo:
+      raise Exception("No logo url provided")
     self.url = url
     self.logo = logo
     self.supported_cmds = ['play', 'stop']
@@ -1413,6 +1442,8 @@ class LMS(PersistentStream):
   stream_type : ClassVar[str] = 'lms'
 
   def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = 9000, disabled: bool = False, mock: bool = False):
+    if not name:
+      raise Exception("No name provided")
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.server: Optional[str] = server
     self.port: Optional[int] = port
