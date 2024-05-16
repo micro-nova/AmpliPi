@@ -679,6 +679,8 @@ class Pandora(PersistentStream, Browsable):
   stream_type : ClassVar[str] = 'pandora'
 
   def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
+    if not name:
+      raise Exception("No name provided")
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     if not user:
       raise Exception("No username provided")
@@ -1064,6 +1066,8 @@ class InternetRadio(BaseStream):
   stream_type : ClassVar[str] = 'internetradio'
 
   def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
+    if not name:
+      raise Exception("No name provided")
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     regex = ("((http|https)://)(www.)?" +
              "[a-zA-Z0-9@:%._\\+~#?&//=]" +

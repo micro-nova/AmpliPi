@@ -296,10 +296,15 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
   if isinstance(resp, ApiResponse):
     if resp.code == ApiCode.OK:
       # general commands return None to indicate success
-      return ctrl.get_state()
-    logging.error(f"Error: {resp.msg}")
+      return ctrl.get_state() 
     # TODO: refine error codes based on error message
-    raise HTTPException(404, resp.msg)
+    if resp.code == ApiCode.ERROR:
+      if 'create stream failed:' in resp.msg:
+        logging.error(f"Error: {resp.msg}")
+        raise HTTPException(400, resp.msg)
+      else:
+        logging.error(f"Error: {resp.msg}")
+        raise HTTPException(404, resp.msg)
   return resp
 
 # sources
