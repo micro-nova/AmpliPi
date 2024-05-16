@@ -1,0 +1,179 @@
+% Built with texlive-latex-base and texlive-latex-extra installed.
+
+\documentclass{article}
+\usepackage[noheadfoot,nomarginpar,margin=0.5in]{geometry}
+\usepackage{parskip}
+\usepackage{wrapfig}
+\usepackage{framed}
+
+\usepackage{tabularx,array}
+\usepackage{enumitem,amssymb}
+\newlist{checklist}{itemize}{2}
+\setlist[checklist]{label=$\square$}
+
+\usepackage{titling}
+\pretitle{\begin{center}\fontsize{17bp}{17bp}\selectfont}
+\posttitle{\par\end{center}}\preauthor{}\postauthor{}\predate{}\date{}\postdate{}
+\setlength{\droptitle}{-8ex}
+
+\title{AP1-S4Z6 (AmpliPro) Main Unit Tests}
+\author{} % A warning is printed if \author isn't defined.
+
+\begin{document}
+\maketitle\thispagestyle{empty}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Basic Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{tabularx}{\textwidth}{XX}
+  Serial Number \hrulefill & Tester Initials \hrulefill
+\end{tabularx}
+
+\bigskip
+\begin{tabularx}{\textwidth}{XX}
+  Date \hrulefill\hspace{0.2em} / \hrulefill &
+    Time \hrulefill\hspace{0.2em} : \hrulefill AM / PM
+\end{tabularx}
+
+\bigskip
+\begin{checklist}
+  \item Boards Tested (Manual - verify QC Passed sticker on each board.)
+\end{checklist}
+
+{\renewcommand{\arraystretch}{1.5} % Make the rows double-height
+\begin{tabularx}{\textwidth}{lXXXXXX}
+  & \textbf{Amp Bd} & \textbf{Power Bd} & \textbf{Preamp Bd} &
+    \textbf{Preout Bd} & \textbf{LED Bd} & \textbf{Expansion Bd} \\
+  \cline{2-7}
+  % Using multicolumns here to change the style from no borders to vertical borders.
+  rev & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{}
+    & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} \\
+  \cline{2-7}
+\end{tabularx}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Day 2 Tests (Placed on the right side of the page.)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{wrapfigure}{r}{0.33\textwidth}
+  \begin{framed}
+    \begin{center}\textbf{\underline{Day Two Testing}}\end{center}
+    \vspace{2ex}
+    \begin{checklist}
+    \item Repeat Tests from Day 1:
+    \begin{checklist}
+      \item Preamp
+      \item Fans and Power
+    \end{checklist}
+    \item UI Radio Test
+    \item Cleanup Pi
+    \end{checklist}
+  \end{framed}
+\end{wrapfigure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Local Tests
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bigskip
+Plug in Ethernet.
+
+\begin{checklist}
+  \item \textbf{Config AmpliPro}
+  \item AmpliPi Software Up-To-Date (amplipi.local $\rightarrow$ Settings $\rightarrow$ Updates)
+\end{checklist}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Remote Tests
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Plug in Ethernet, Aux, Expander, RCA Inputs, and Power. \\
+Click \textbf{Test Main Unit} on Desktop - the tests below should now be available.
+
+\begin{checklist}
+  \item \textbf{Ethernet}
+\end{checklist}
+
+\begin{checklist}
+  \item \textbf{USB Ports}: Top \rule{2em}{0.4pt} Bottom \rule{2em}{0.4pt} Internal \rule{2em}{0.4pt}
+  \item \textbf{Program Main + Exp Preamp}
+  \item \textbf{LEDs}: Red \rule{2em}{0.4pt} Green \rule{2em}{0.4pt} Zones:
+  \item[] \hspace{3em} 1 \rule{2em}{0.4pt} 2 \rule{2em}{0.4pt} 3 \rule{2em}{0.4pt}
+          4 \rule{2em}{0.4pt} 5 \rule{2em}{0.4pt} 6 \rule{2em}{0.4pt}
+\end{checklist}
+
+\begin{checklist}
+  \item \textbf{Aux Input}: L \rule{2em}{0.4pt} R \rule{2em}{0.4pt}
+\end{checklist}
+
+\begin{minipage}[t]{0.44\textwidth}
+  \begin{checklist}
+    \item \textbf{Peak Detect}
+  \end{checklist}
+  {\renewcommand{\arraystretch}{1.5} % Make the rows 1.5x-height
+  \hspace{2em}\begin{tabularx}{\dimexpr\linewidth-2em}{XXXX}
+    Input 1 & Input 2 & Input 3 & Input 4 \\
+    L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} & L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} &
+      L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} & L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} \\
+  \end{tabularx}}
+
+  \begin{checklist}
+    \item \textbf{Preouts}
+  \end{checklist}
+  {\renewcommand{\arraystretch}{1.5} % Make the rows double-height
+  \hspace{2em}\begin{tabularx}{\dimexpr\linewidth-2em}{XXX}
+    Preout 1 & Preout 2 & Preout 3 \\
+    L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} & L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} & L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} \\
+    Preout 4 & Preout 5 & Preout 6 \\
+    L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} & L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} & L\rule{1.2em}{0.4pt} R\rule{1.2em}{0.4pt} \\
+  \end{tabularx}}
+
+  \begin{checklist}
+    \item \textbf{Fans and Power}:
+  \end{checklist}
+  {\renewcommand{\arraystretch}{1.5} % Make the rows double-height
+  \hspace{2em}\begin{tabularx}{\dimexpr\linewidth-2em}{XX}
+    Fans Off  \hfill\rule{3em}{0.4pt} & Fans On    \hfill\rule{3em}{0.4pt} \\
+    PG\_12V   \hfill\rule{3em}{0.4pt} & 12V Supply \hfill\rule{3em}{0.4pt} \\
+    HV1 Temp  \hfill\rule{3em}{0.4pt} &                                    \\
+    AMP1 Temp \hfill\rule{3em}{0.4pt} & AMP2 Temp  \hfill\rule{3em}{0.4pt} \\
+    Temp Rise \hfill\rule{3em}{0.4pt} &                                    \\
+  \end{tabularx}}
+
+  \begin{checklist}
+    \item Display (Manual)
+    \begin{checklist}
+      \item Shows an IP address \item[] (when Ethernet connected)
+      \item Show Disconnected \item[] (when Ethernet disconnected)
+    \end{checklist}
+    \item \textbf{Service Port}
+  \end{checklist}
+\end{minipage}
+\hspace{0.03\textwidth}
+\begin{minipage}[t]{0.52\textwidth}
+  % Keep Preamp in a second column, next to Peak Detect since they are run together.
+  \begin{checklist}
+    \item \textbf{Preamp}
+  \end{checklist}
+  {\renewcommand{\arraystretch}{1.5} % Make the rows 1.5x-height
+  \begin{tabularx}{\linewidth}{XXXXX}
+    Analog 1 & Analog 2 & Analog 3 & Analog 4 & Zone \\
+    L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} &
+      L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & 1 \\
+    Digital 1 & Digital 2 & Digital 3 & Digital 4 & Zone \\
+    L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} &
+      L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & 1 \\
+    An/Dig 1 & An/Dig 2 & An/Dig 3 & An/Dig 4 & Zone \\
+    L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} &
+      L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & 2 \\
+    L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} &
+      L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & 3 \\
+    L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} &
+      L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & 4 \\
+    L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} &
+      L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & 5 \\
+    L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} &
+      L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & 6 \\
+    L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} &
+      L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & L\rule{1.4em}{0.4pt} R\rule{1.4em}{0.4pt} & 7 (exp) \\
+  \end{tabularx}}
+\end{minipage}
+
+\end{document}
