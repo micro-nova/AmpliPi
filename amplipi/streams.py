@@ -185,6 +185,11 @@ class BaseStream:
   def browse(self, parent: Optional[int] = None) -> List[models.BrowsableItem]:
     """ Browse the stream for items"""
     raise NotImplementedError()
+  
+  def validate_stream(self):
+    """ Validate fields """
+    raise NotImplementedError()
+
 
 class VirtualSources:
   """ Virtual source allocator to mind ALSA limits"""
@@ -371,10 +376,7 @@ class AirPlay(PersistentStream):
   stream_type : ClassVar[str] = 'airplay'
 
   def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
-    if not name:
-      raise Exception("No name provided")
-    if len(name) > 50:
-      raise Exception("Name cannot exceed 50 characters")
+    self.validate_stream(name)
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.mpris: Optional[MPRIS] = None
     self.ap2 = ap2
@@ -399,6 +401,7 @@ class AirPlay(PersistentStream):
     if 'ap2' in kwargs and kwargs['ap2'] != self.ap2:
       self.ap2 = kwargs['ap2']
       reconnect_needed = True
+    self.validate_stream(self.name)
     if reconnect_needed and self.is_activated():
       self.reactivate()
 
@@ -549,6 +552,10 @@ class AirPlay(PersistentStream):
     except Exception as e:
       logger.exception(f"error in shairport: {e}")
 
+  def validate_stream(name: str = None):
+    if len(name) > 50:
+      raise Exception("Name cannot exceed 50 characters")
+    
 
 class Spotify(PersistentStream):
   """ A Spotify Stream """
@@ -556,11 +563,7 @@ class Spotify(PersistentStream):
   stream_type : ClassVar[str] = 'spotify'
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
-    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
-    if not re.fullmatch(regex, name):
-      raise Exception("Invalid device name")
-    if not name:
-      raise Exception("No device name provided")
+    self.validate_stream(name)
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
 
     self.connect_port: Optional[int] = None
@@ -574,6 +577,7 @@ class Spotify(PersistentStream):
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
+    self.validate_stream(self.name)
     if reconnect_needed and self.is_activated():
       self.reactivate()
 
@@ -672,6 +676,13 @@ class Spotify(PersistentStream):
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as e:
       raise Exception(f"Error sending command {cmd}: {e}") from e
+    
+  def validate_stream(self, name: str = None):
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if not re.fullmatch(regex, name):
+      raise Exception("Invalid device name")
+    if not name:
+      raise Exception("No device name provided")
 
 class Pandora(PersistentStream, Browsable):
   """ A Pandora Stream """
@@ -679,16 +690,8 @@ class Pandora(PersistentStream, Browsable):
   stream_type : ClassVar[str] = 'pandora'
 
   def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
-    if not name:
-      raise Exception("No name provided")
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    if not user:
-      raise Exception("No username provided")
-    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
-    if not re.fullmatch(regex, user):
-      raise Exception("Invalid username")
-    if not password:
-      raise Exception("No password provided")
+    self.validate_stream(user, password)
     self.user = user
     self.password = password
     self.station = station
@@ -729,6 +732,7 @@ class Pandora(PersistentStream, Browsable):
         self.__dict__[k] = v
         if k in pb_fields:
           reconnect_needed = True
+    self.validate_stream(self.user, self.password)
     if reconnect_needed and self.is_activated():
       self.reactivate()
 
@@ -935,6 +939,15 @@ class Pandora(PersistentStream, Browsable):
     """ Play a specific item """
     self.send_cmd(f'station={item_id}')
 
+  def validate_stream(user: str = None, password: str = None):
+    if not user:
+      raise Exception("No username provided")
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if not re.fullmatch(regex, user):
+      raise Exception("Invalid username")
+    if not password:
+      raise Exception("No password provided")
+
 
 class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid issue, figure out next and prev
   """ A DLNA Stream """
@@ -1066,22 +1079,8 @@ class InternetRadio(BaseStream):
   stream_type : ClassVar[str] = 'internetradio'
 
   def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
-    if not name:
-      raise Exception("No name provided")
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    regex = ("((http|https)://)(www.)?" +
-             "[a-zA-Z0-9@:%._\\+~#?&//=]" +
-             "{2,256}\\.[a-z]" +
-             "{2,6}\\b([-a-zA-Z0-9@:%" +
-             "._\\+~#?&//=]*)")
-    if not re.fullmatch(regex, url):
-      raise Exception("Invalid url")
-    if not url:
-      raise Exception("No url provided")
-    if not re.fullmatch(regex, logo):
-      raise Exception("Invalid logo url")
-    if not logo:
-      raise Exception("No logo url provided")
+    self.validate_stream(url, logo)
     self.url = url
     self.logo = logo
     self.supported_cmds = ['play', 'stop']
@@ -1095,6 +1094,7 @@ class InternetRadio(BaseStream):
         self.__dict__[k] = v
         if k in ir_fields:
           reconnect_needed = True
+    self.validate_stream(self.url, self.logo)
     if reconnect_needed and self._is_running():
       last_src = self.src
       self.disconnect()
@@ -1178,6 +1178,19 @@ class InternetRadio(BaseStream):
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception:
       pass
+
+  def validate_stream(self, url: str = None, logo: str = None):
+    regex = ("((http|https)://)(www.)?" +
+             "[a-zA-Z0-9@:%._\\+~#?&//=]" +
+             "{2,256}\\.[a-z]" +
+             "{2,6}\\b([-a-zA-Z0-9@:%" +
+             "._\\+~#?&//=]*)")
+    if not re.fullmatch(regex, url):
+      raise Exception("Invalid url")
+    if not url:
+      raise Exception("No url provided")
+    if logo and not re.fullmatch(regex, logo):
+      raise Exception("Invalid logo url")
 
 
 class Plexamp(BaseStream):
@@ -1446,8 +1459,6 @@ class LMS(PersistentStream):
   stream_type : ClassVar[str] = 'lms'
 
   def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = 9000, disabled: bool = False, mock: bool = False):
-    if not name:
-      raise Exception("No name provided")
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.server: Optional[str] = server
     self.port: Optional[int] = port
