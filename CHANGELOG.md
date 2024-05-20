@@ -13,6 +13,8 @@
 * API
   * Fix: Zones playing audio on source used for announcement are not muted while announcement is playing
   * Log firmware version for main and expansion units
+* Manufacturing
+  * Display a QR code to the quickstart guide for initial unboxing
 
 ## 0.3.5
 * Web App
