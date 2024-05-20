@@ -186,7 +186,7 @@ class BaseStream:
     """ Browse the stream for items"""
     raise NotImplementedError()
   
-  def validate_stream(self):
+  def validate_stream(self, **kwargs):
     """ Validate fields """
     raise NotImplementedError()
 
@@ -376,8 +376,8 @@ class AirPlay(PersistentStream):
   stream_type : ClassVar[str] = 'airplay'
 
   def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
-    self.validate_stream(name)
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+    self.validate_stream(name = self.name)
     self.mpris: Optional[MPRIS] = None
     self.ap2 = ap2
     self.ap2_exists = False
@@ -392,6 +392,7 @@ class AirPlay(PersistentStream):
     self._coverart_dir = ''
 
   def reconfig(self, **kwargs):
+    self.validate_stream(kwargs)
     reconnect_needed = False
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
@@ -401,7 +402,6 @@ class AirPlay(PersistentStream):
     if 'ap2' in kwargs and kwargs['ap2'] != self.ap2:
       self.ap2 = kwargs['ap2']
       reconnect_needed = True
-    self.validate_stream(self.name)
     if reconnect_needed and self.is_activated():
       self.reactivate()
 
@@ -552,8 +552,8 @@ class AirPlay(PersistentStream):
     except Exception as e:
       logger.exception(f"error in shairport: {e}")
 
-  def validate_stream(name: str = None):
-    if len(name) > 50:
+  def validate_stream(self, **kwargs):
+    if len(kwargs['name']) > 50:
       raise Exception("Name cannot exceed 50 characters")
     
 
@@ -563,21 +563,20 @@ class Spotify(PersistentStream):
   stream_type : ClassVar[str] = 'spotify'
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
-    self.validate_stream(name)
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-
+    self.validate_stream(name = self.name)
     self.connect_port: Optional[int] = None
     self.mpris: Optional[MPRIS] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
 
   def reconfig(self, **kwargs):
+    self.validate_stream(kwargs)
     reconnect_needed = False
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
     if 'name' in kwargs and kwargs['name'] != self.name:
       self.name = kwargs['name']
       reconnect_needed = True
-    self.validate_stream(self.name)
     if reconnect_needed and self.is_activated():
       self.reactivate()
 
@@ -677,12 +676,10 @@ class Spotify(PersistentStream):
     except Exception as e:
       raise Exception(f"Error sending command {cmd}: {e}") from e
     
-  def validate_stream(self, name: str = None):
+  def validate_stream(self, **kwargs):
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
-    if not re.fullmatch(regex, name):
+    if not re.fullmatch(regex, kwargs['name']):
       raise Exception("Invalid device name")
-    if not name:
-      raise Exception("No device name provided")
 
 class Pandora(PersistentStream, Browsable):
   """ A Pandora Stream """
@@ -691,12 +688,12 @@ class Pandora(PersistentStream, Browsable):
 
   def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    self.validate_stream(user, password)
     self.user = user
     self.password = password
     self.station = station
     self.track = ""
     self.invert_liked_state = False
+    self.validate_stream(user = self.user, password = self.password)
 
     self.stations: List[models.BrowsableItem] = []
 
@@ -722,6 +719,7 @@ class Pandora(PersistentStream, Browsable):
     }
 
   def reconfig(self, **kwargs):
+    self.validate_stream(kwargs)
     reconnect_needed = False
     if 'disabled' in kwargs:
       self.disabled = kwargs['disabled']
@@ -732,7 +730,6 @@ class Pandora(PersistentStream, Browsable):
         self.__dict__[k] = v
         if k in pb_fields:
           reconnect_needed = True
-    self.validate_stream(self.user, self.password)
     if reconnect_needed and self.is_activated():
       self.reactivate()
 
@@ -939,14 +936,10 @@ class Pandora(PersistentStream, Browsable):
     """ Play a specific item """
     self.send_cmd(f'station={item_id}')
 
-  def validate_stream(user: str = None, password: str = None):
-    if not user:
-      raise Exception("No username provided")
+  def validate_stream(self, **kwargs):
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
-    if not re.fullmatch(regex, user):
+    if not re.fullmatch(regex, kwargs['user']):
       raise Exception("Invalid username")
-    if not password:
-      raise Exception("No password provided")
 
 
 class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid issue, figure out next and prev
@@ -1080,12 +1073,13 @@ class InternetRadio(BaseStream):
 
   def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    self.validate_stream(url, logo)
     self.url = url
     self.logo = logo
+    self.validate_stream(url = self.url, logo = self.logo)
     self.supported_cmds = ['play', 'stop']
 
   def reconfig(self, **kwargs):
+    self.validate_stream(kwargs)
     reconnect_needed = False
     ir_fields = ['url', 'logo']
     fields = list(ir_fields) + ['name', 'disabled']
@@ -1094,7 +1088,6 @@ class InternetRadio(BaseStream):
         self.__dict__[k] = v
         if k in ir_fields:
           reconnect_needed = True
-    self.validate_stream(self.url, self.logo)
     if reconnect_needed and self._is_running():
       last_src = self.src
       self.disconnect()
@@ -1179,17 +1172,15 @@ class InternetRadio(BaseStream):
     except Exception:
       pass
 
-  def validate_stream(self, url: str = None, logo: str = None):
+  def validate_stream(self, **kwargs):
     regex = ("((http|https)://)(www.)?" +
              "[a-zA-Z0-9@:%._\\+~#?&//=]" +
              "{2,256}\\.[a-z]" +
              "{2,6}\\b([-a-zA-Z0-9@:%" +
              "._\\+~#?&//=]*)")
-    if not re.fullmatch(regex, url):
+    if not re.fullmatch(regex, kwargs['url']):
       raise Exception("Invalid url")
-    if not url:
-      raise Exception("No url provided")
-    if logo and not re.fullmatch(regex, logo):
+    if 'logo' in kwargs and not re.fullmatch(regex, kwargs['logo']):
       raise Exception("Invalid logo url")
 
 
