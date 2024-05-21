@@ -1,0 +1,4 @@
+# Recurring support_tunnel tasks handled by cron
+# Installed by AmpliPi
+0   *   *   *   *   root    /opt/support_tunnel/venv/bin/python3 -m invoke -r /opt/support_tunnel gc
+*/5 *   *   *   *   root    /opt/support_tunnel/venv/bin/python3 -m invoke -r /opt/support_tunnel connect-approved-tunnels

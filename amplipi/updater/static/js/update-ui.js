@@ -270,6 +270,35 @@ async function set_password() {
   alert('Password set.');
 }
 
+async function requestSupportTunnel() {
+  // the below is 2 lines long intentionally, because it renders into a <pre> tag.
+  $('#support-tunnel-detail').text(`Requesting a support tunnel. This may take up to 60s.
+  `);
+
+  $('#support-tunnel-spinner').removeClass("d-none");
+  $('#support-tunnel-detail-container').removeClass("d-none");
+
+  res = await fetch('/support', {
+    method: 'POST',
+  });
+
+  $('#support-tunnel-spinner').addClass("d-none");
+
+  if(!res.ok) {
+    alert(`Error: ${res.statusText}`);
+    return;
+  }
+
+  body = await res.text();
+  $('#support-tunnel-detail').text(body);
+
+  $('#support-tunnel-email').attr(
+      'href',
+      `mailto:support@micro-nova.com?subject=Support%20tunnel%20request&body=${encodeURIComponent(body)}`
+  );
+  $('#support-tunnel-detail-caption').removeClass("d-none");
+}
+
 // Fetch the GitHub Releases and populate the release selector and latest release
 // We use releases/latest to make the decision on what the latest release is,
 //  avoiding having to sort the raw releases endpoint.
@@ -302,3 +331,4 @@ fetch('https://api.github.com/repos/micro-nova/AmpliPi/releases').then((resp) =>
     populate_available_releases(releases);
   }).catch((err) => { ui_show_offline_message(); });
 }).catch((err) => { ui_show_offline_message(); });
+

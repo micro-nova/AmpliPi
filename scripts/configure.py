@@ -114,6 +114,43 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'sudo rm /var/log/user*     && echo "removed user logs"   || echo ok',
     ]
   },
+  'support_tunnel': {
+    'apt': [
+      'libsystemd-dev', # permits logging directly to journald
+      'wireguard', 'wireguard-tools' # -tools for wg-quick usage
+    ],
+    'copy' : [
+      {
+        'from': 'config/support_tunnel_crontab',
+        'to': '/etc/cron.d/support_tunnel',
+        'sudo': 'true'
+      },
+      {
+        'from': 'config/support_group_sudoers',
+        'to': '/etc/sudoers.d/099_support-nopasswd',
+        'sudo': 'true'
+      }
+    ],
+    'script': [
+      'sudo addgroup support',
+      'sudo adduser pi support',
+      'sudo mkdir -p /var/lib/support_tunnel',
+      'sudo chmod 0777 /var/lib/support_tunnel', # TODO: lock this down
+      'if [ ! -e /opt/support_tunnel ] ; then'
+      '  pushd $(mktemp --directory)',
+      '  git clone https://github.com/micro-nova/support_tunnel.git',
+      '  sudo mv support_tunnel /opt',
+      '  popd',
+      'fi',
+      'pushd /opt/support_tunnel',
+      'git fetch && git reset --hard origin/main',
+      'if [ ! -e /opt/support_tunnel/venv ]; then',
+      '  /usr/bin/python3 -m venv venv',
+      'fi',
+      '/opt/support_tunnel/venv/bin/pip install -r requirements.txt',
+      'popd',
+    ]
+  },
   # streams
   # TODO: can stream dependencies be aggregated from the streams themselves?
   'pandora' : {
@@ -373,7 +410,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _from = f"{env['base_dir']}/{_from}"
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
-    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
+    _sudo = "sudo " if 'sudo' in file else ""
+    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
   if env['is_amplipi']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"

@@ -34,6 +34,8 @@ include = [
   "config/bluetooth/*",
   "config/*.rules",
   "config/boot_config.txt",
+  "config/support_tunnel_crontab",
+  "config/support_group_sudoers",
   "debs/**/*",
   "fw/*.sh", # no need to add full source tree
   "fw/bin/*",
