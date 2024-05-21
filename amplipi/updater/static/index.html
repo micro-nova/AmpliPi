@@ -45,6 +45,9 @@
             <li class="nav-item">
               <a class="nav-link" id="set-password-tab" data-toggle="tab" href="#set-password" role="tab" aria-controls="set-password" aria-selected="false">Set Password</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" id="support-tunnel-tab" data-toggle="tab" href="#support-tunnel" role="tab" aria-controls="support-tunnel" aria-selected="false">Support Tunnel</a>
+            </li>
           </ul>
         </div>
         <div class="card-body text-center">
@@ -83,6 +86,24 @@
                 <input id="confirm-password" class="form-control" type="password">
               </div>
               <a id="password" role="button" class="btn btn-lg btn-primary text-center mt-3" onClick="set_password();">Update Password</a>
+            </div>
+            <div class="tab-pane fade text-left" id="support-tunnel" role="tabpanel" aria-labelledby="support-tunnel-tab">
+              <div id="support-tunnel-dialog">
+                This dialog allows you to request a support tunnel. Once requested, you must give the tunnel ID and preshared key to support, who can be reached via <a href="mailto:support@micro-nova.com">support@micro-nova.com</a>.
+              </div>
+              <div id="support-tunnel-button">
+                <a id="request-support-tunnel" role="button" class="btn btn-lg btn-primary text-center mt-3" onClick="requestSupportTunnel();">Request support tunnel
+                  <div id="support-tunnel-spinner" class="spinner-border spinner-border-sm m-1 d-none" role="status">
+                    <span class="sr-only">Loading...</span>
+                  </div>
+                </a>
+              </div>
+              <div id="support-tunnel-detail-container" class="d-none">
+                <pre id="support-tunnel-detail" class="alert alert-dark mt-3"></pre>
+                <div id="support-tunnel-detail-caption">
+                    Copy & paste the above lines in a support request.
+                </div>
+              </div>
             </div>
           </div>
         </div>

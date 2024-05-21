@@ -12,6 +12,7 @@
   * Add serial number to eink display
   * Add ability to display status on eink display
   * Better logging around failed upgrades
+  * Implement opt-in remote support capabilities from the updater
 * Display
   * Add serial number
   * Add status code field
