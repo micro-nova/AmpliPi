@@ -133,19 +133,6 @@ InternetRadioSearch.propTypes = {
     onChange: PropTypes.func.isRequired,
 };
 
-// function validateInput(streamFields, streamTemplate) {
-//     streamTemplate['fields'].filter((f) => f.required).map( (f) => {
-//         if(!streamFields[f.name]) {
-//             throw new Error(`Required field not set: ${f.name}`);
-//         }
-//     });
-// }
-
-// validateInput.propTypes = {
-//     streamFields: PropTypes.object.isRequired,
-//     streamTemplate: PropTypes.object.isRequired,
-// }
-
 const StreamModal = ({ stream, onClose, apply, del }) => {
     const [streamFields, setStreamFields] = React.useState(
         JSON.parse(JSON.stringify(stream))

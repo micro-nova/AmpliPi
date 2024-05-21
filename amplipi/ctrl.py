@@ -988,9 +988,9 @@ class Api:
       stream.reconfig(**changes)
       self._sync_stream_info()
       return ApiResponse.ok()
-    except Exception as exc:
+    except amplipi.streams.StreamError as e:
       logger.error(traceback.format_exc())
-      return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
+      return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, e.msg))
 
   def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""

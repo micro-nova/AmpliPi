@@ -570,7 +570,7 @@ class Spotify(PersistentStream):
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    #self.validate_stream(name = self.name)
+    self.validate_stream(name = self.name)
     self.connect_port: Optional[int] = None
     self.mpris: Optional[MPRIS] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
@@ -682,11 +682,11 @@ class Spotify(PersistentStream):
     except Exception as e:
       raise Exception(f"Error sending command {cmd}: {e}") from e
     
-""" def validate_stream(self, **kwargs):
-    regex = r'\b[A-Za-z0-9._%+-]\b'
-    if not re.fullmatch(regex, kwargs['name']):
-      raise Exception("Invalid device name")
-"""
+  def validate_stream(self, **kwargs):
+    regex = r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
+    if 'name' in kwargs and not re.fullmatch(regex, kwargs['name']):
+      raise StreamError("invalid device name")
+
 class Pandora(PersistentStream, Browsable):
   """ A Pandora Stream """
 
