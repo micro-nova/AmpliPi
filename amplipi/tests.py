@@ -19,7 +19,7 @@ class Client:
 
   TODO: create full fledged client for full AmpliPi API
   """
-  DEFAULT_TIMEOUT = 2
+  DEFAULT_TIMEOUT = 4
   ANNOUCE_TIMEOUT = 10  # requests don't return until announcement is finished
 
   def __init__(self, url='http://localhost/api'):
