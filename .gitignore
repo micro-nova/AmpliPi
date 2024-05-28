@@ -176,14 +176,14 @@ fw/preamp/Release
 # RCA input audio detector
 rca_status
 
+# LaTeX
+*.aux
+*.fdb_latexmk
+*.fls
+*.toc
+*.pdf
+
 # User Manual compilation byproducts
-# Would use docs/manual/manual.*, but we need manual.tex
-docs/manual/manual.aux
-docs/manual/manual.fdb_latexmk
-docs/manual/manual.fls
-docs/manual/manual.log
-docs/manual/manual.toc
-docs/manual/manual.pdf
 docs/manual/_markdown_manual
 
 # Status File
