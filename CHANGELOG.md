@@ -21,6 +21,7 @@
   * Add DLNA metadata and control support
   * Add support for browsing Pandora stations
   * Make Pandora like work and pass tests without metadata race condition
+  * Handle LMS client cleanup better
 * API
   * Fix: Zones playing audio on source used for announcement are not muted while announcement is playing
   * Log firmware version for main and expansion units

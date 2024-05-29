@@ -1519,16 +1519,25 @@ class LMS(PersistentStream):
         src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
         os.system(f'rm -f {src_config_folder}')
         self.proc.terminate()
-        self.proc.communicate()
-        if self.meta_proc is not None:
-          self.meta_proc.terminate()
-          self.meta_proc.communicate()
-          self.meta_proc = None
+        self.proc.communicate(timeout=10)
       except Exception as e:
-        logger.exception(f"failed to terminate LMS stream {self.name}: {e} \nforcefully killing")
-        self.proc.kill()
-        self.proc.communicate()
+        logger.exception(f"failed to gracefully terminate LMS stream {self.name}: {e}")
+        logger.warning(f"forcefully killing LMS stream {self.name}")
+        os.killpg(self.proc.pid, signal.SIGKILL)
+        self.proc.communicate(timeout=3)
+
+    if self.meta_proc is not None:
+      try:
+        self.meta_proc.terminate()
+        self.meta_proc.communicate(timeout=10)
+      except:
+        logger.exception(f"failed to gracefully terminate LMS meta proc for {self.name}: {e}")
+        logger.warning(f"forcefully killing LMS meta proc for {self.name}")
+        os.killpg(self.meta_proc.pid, signal.SIGKILL)
+        self.meta_proc.communicate(timeout=3)
+
     self.proc = None
+    self.meta_proc = None
 
   def info(self) -> models.SourceInfo:
     # Opens and reads the metadata.json file every time the info def is called
