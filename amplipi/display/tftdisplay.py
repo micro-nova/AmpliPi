@@ -20,7 +20,8 @@ from loguru import logger as log
 
 from amplipi import models
 from amplipi.utils import get_identity
-from amplipi.display.common import Color, Display, DefaultPass
+from amplipi.display.common import Color, Display, DefaultPass, get_status
+from amplipi.display.statusinterface import DisplayError, DisplayStatus, set_custom_display_status
 
 # If this is run on anything other than a Raspberry Pi,
 # it won't work. Just quit if not on a Pi.
@@ -178,6 +179,11 @@ class TFTDisplay(Display):
       self.pr = cProfile.Profile()
       self.pr.enable()
 
+    try:
+      set_custom_display_status(DisplayStatus(None))
+    except Exception as e:
+      log.error(f'{e}')
+
     return True
 
   def run(self):
@@ -275,12 +281,14 @@ class TFTDisplay(Display):
 
         # BCM2837B0 is rated for [-40, 85] C
         # For now show green for anything below room temp
+
+        """
         self.draw.text((1 * cw, 0 * ch + 2), 'CPU:', font=self.font, fill=Color.WHITE.value)
         self.draw.text((7 * cw, 0 * ch + 2), cpu_str1, font=self.font, fill=gradient(cpu_pcnt))
         self.draw.text((14 * cw, 0 * ch + 2), cpu_str2, font=self.font, fill=gradient(cpu_temp, min_val=20, max_val=85))
         self.draw.text((22 * cw, 0 * ch + 2), 'Mem:', font=self.font, fill=Color.WHITE.value)
         self.draw.text((28 * cw, 0 * ch + 2), ram_str, font=self.font, fill=gradient(ram_pcnt))
-
+        """
         disk_color = gradient(disk_pcnt)
         self.draw.text((1 * cw, 1 * ch + 2), 'Disk:', font=self.font, fill=Color.WHITE.value)
         self.draw.text((7 * cw, 1 * ch + 2), disk_str1, font=self.font, fill=disk_color)
@@ -293,6 +301,21 @@ class TFTDisplay(Display):
         self.draw.text((11 * cw, 3 * ch + 2), password, font=self.font, fill=pass_color.value)
 
         if connected:
+          if ip_str == 'Disconnected from network.':
+            status = DisplayError.NO_IP
+          else:
+            status, _, expanders = get_status(self.API_URL, no_serial_ok=True)
+
+          if type(status) is str:
+            self.draw.text((1 * cw, 0 * ch * 2), f'Status: {status}', font=self.font, fill=Color.WHITE.value)
+          else:
+            self.draw.text((1 * cw, 0 * ch * 2), f'ERROR!!! Code: {status}', font=self.font, fill=Color.RED.value)
+
+          exp_string = ''
+          if expanders > 0:
+            exp_string += 'Expanders: ' + str(expanders)
+          self.draw.text((22 * cw, 0 * ch * 2), exp_string, font=self.font, fill=Color.WHITE.value)
+
           # Show source input names
           self.draw.text((1 * cw, int(4.5 * ch)), 'Source 1:', font=self.font, fill=Color.WHITE.value)
           self.draw.text((1 * cw, int(5.5 * ch)), 'Source 2:', font=self.font, fill=Color.WHITE.value)

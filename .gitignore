@@ -185,3 +185,6 @@ docs/manual/manual.log
 docs/manual/manual.toc
 docs/manual/manual.pdf
 docs/manual/_markdown_manual
+
+# Status File
+display-status.txt

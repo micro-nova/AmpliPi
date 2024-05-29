@@ -38,7 +38,7 @@ from amplipi import models
 from amplipi import rt
 from amplipi import utils
 import amplipi.streams
-from amplipi.eeprom import EEPROM, BoardType
+from amplipi.eeprom import EEPROM, BoardType, find_boards
 from amplipi import auth
 from amplipi import defaults
 
@@ -112,6 +112,8 @@ class Api:
   status: models.Status
   streams: Dict[int, amplipi.streams.AnyStream]
   lms_mode: bool
+  _serial: Optional[int] = None
+  _expanders: List[int] = []
 
   # TODO: migrate to init setting instance vars to a disconnected state (API requests will throw Api.DisconnectedException() in this state
   # with this reinit will be called connect and will attempt to load the configuration and connect to an AmpliPi (mocked or real)
@@ -137,14 +139,17 @@ class Api:
     # we need to know this before trying to initialize the firmware
     found_boards = []
     try:
-      found_boards = EEPROM.get_available_devices(0)
+      found_boards = find_boards()
       if found_boards:
         logger.info(f'Found boards:')
     except Exception as exc:
       logger.exception(f'Error finding boards: {exc}')
     try:
       for board in found_boards:
-        logger.info(f' - {EEPROM(0, board).get_board_info()}')
+        board_info = EEPROM(board).read_board_info()
+        logger.info(f' - {board_info}')
+        if self._serial == None and board_info is not None:
+          self._serial = board_info.serial
     except Exception as exc:
       logger.exception(f'Error showing board info: {exc}')
 
@@ -231,7 +236,8 @@ class Api:
       lms_mode=self.lms_mode,
       version=utils.detect_version(),
       stream_types_available=amplipi.streams.stream_types_available(),
-      extra_fields=utils.load_extra_fields()
+      extra_fields=utils.load_extra_fields(),
+      serial=str(self._serial)
     )
     for major, minor, ghash, dirty in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}', git_hash=f'{ghash:x}', git_dirty=dirty)
@@ -243,7 +249,7 @@ class Api:
       logger.info(f"No preamp")
     if self.status.info.fw[1:]:
       for i, fw_info in enumerate(self.status.info.fw[1:], start=1):
-          logger.info(f"Expansion unit {i} firmware version: {fw_info.version}")
+        logger.info(f"Expansion unit {i} firmware version: {fw_info.version}")
     else:
       logger.info(f"No expansion units")
     self._update_sys_info()  # TODO: does sys info need to be updated at init time?
@@ -541,9 +547,39 @@ class Api:
       streams.append(stream)
     self.status.streams = streams
 
+  def _update_serial(self) -> None:
+    expanders = []
+    # Preamp Boards
+    eeprom_preamp = EEPROM(BoardType.PREAMP)
+    eeprom_streamer = EEPROM(BoardType.STREAMER_SUPPORT)
+    if eeprom_preamp.present():
+      bi = eeprom_preamp.read_board_info()
+      if bi is not None:
+        self._serial = int(bi.serial)
+        for board in rt.get_dev_addrs()[1:]:  # Check for expanders
+          if eeprom_preamp.present(board):
+            exp_info = eeprom_preamp.read_board_info(board)
+            if exp_info is not None:
+              expanders.append(exp_info.serial)
+        self._expanders = expanders
+        if self.status.info is not None:
+          self.status.info.expanders = expanders
+    elif eeprom_streamer.present():  # Streamers
+      bi = eeprom_streamer.read_board_info()
+      if bi is not None:
+        self._serial = bi.serial
+    else:  # -1 means there is no serial number available from any EEPROM
+      self._serial = -1
+    if self.status.info is not None:
+      self.status.info.serial = str(self._serial)
+
   def get_state(self) -> models.Status:
     """ get the system state """
     self._update_sys_info()
+    # Get serial number
+    if self._serial == None and self.status.info is not None:
+      self._update_serial()
+
     # update source's info
     # TODO: source info should be updated in a background thread
     for src in self.status.sources:
@@ -555,6 +591,7 @@ class Api:
     self._update_sys_info()
     if self.status.info is None:
       raise Exception("No info generated, system in a bad state")
+
     return self.status.info
 
   def get_items(self, tag: str) -> Optional[List[models.Base]]:

@@ -149,7 +149,7 @@ class SourceInfo(BaseModel):
   station: Optional[str]  # name of radio station
   img_url: Optional[str]
   supported_cmds: List[str] = []
-  rating: Optional[PandoraRating] #Only used for pandora
+  rating: Optional[PandoraRating]  # Only used for pandora
 
 
 class Source(Base):
@@ -246,13 +246,15 @@ class BrowsableItem(BaseModel):
   parent: bool                    # is this item a parent item, e.g. can it's children be browsed
   img: Optional[str] = None   # url to an image for this item
 
+
 class BrowsableItemResponse(BaseModel):
   items: List[BrowsableItem]
+
   class Config:
     schema_extra = {
       'examples': {
         'Pandora stream': {
-          'value':{
+          'value': {
             'items': [
               {
                 'id': 0,
@@ -283,7 +285,6 @@ class BrowsableItemResponse(BaseModel):
         }
       }
     }
-
 
 
 class SourceUpdateWithId(SourceUpdate):
@@ -753,8 +754,10 @@ class StreamUpdate(BaseUpdate):
   freq: Optional[str]
   server: Optional[str]
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
-  disabled: Optional[bool] = Field(description="Soft disable use of this stream. It won't be shown as a selectable option")
+  disabled: Optional[bool] = Field(
+    description="Soft disable use of this stream. It won't be shown as a selectable option")
   port: Optional[int] = Field(description='Port used by LMS server for metadata listening')
+
   class Config:
     schema_extra = {
       'examples': {
@@ -929,9 +932,12 @@ class Info(BaseModel):
   latest_release: str = Field(default='unknown', description='Latest software release available from GitHub')
   access_key: str = Field(default='', description='session token/API key used for authentication')
   lms_mode: bool = Field(default=False, description='Are we running in LMS mode?')
+  serial: str = Field(default=False, description='Serial Number of this AmpliPi')
+  expanders: List[str] = Field(default=[], description='Serial Numbers of any expanders connected to this AmpliPi')
   fw: List[FirmwareInfo] = Field(
     default=[], description='firmware information for each connected controller or expansion unit')
-  stream_types_available: List[str] = Field(default=[], description='The stream types available on this particular appliance')
+  stream_types_available: List[str] = Field(
+    default=[], description='The stream types available on this particular appliance')
   extra_fields: Optional[Dict] = Field(default=None, description='Optional fields for customization')
 
   class Config:
@@ -948,6 +954,8 @@ class Info(BaseModel):
             'latest_release': '0.3.4',
             'access_key': '',
             'lms_mode': False,
+            'serial': '212',
+            'expanders': ['112', '113'],
             'fw': [
               {
                 "version": "1.6",
@@ -968,7 +976,8 @@ class Status(BaseModel):
   sources: List[Source] = [Source(id=i, name=str(i)) for i in range(MAX_SOURCES)]
   zones: List[Zone] = [Zone(id=i, name=f'Zone {i + 1}') for i in range(6)]
   groups: List[Group] = []
-  streams: List[Stream] = [Stream(id=995 + i, name=f'Input {i}' if i!=0 else 'Aux', type='rca' if i!= 0 else'aux', index=i-1) for i in range(MAX_SOURCES+1)]
+  streams: List[Stream] = [Stream(id=995 + i, name=f'Input {i}' if i != 0 else 'Aux',
+                                  type='rca' if i != 0 else 'aux', index=i - 1) for i in range(MAX_SOURCES + 1)]
   presets: List[Preset] = []
   info: Optional[Info]
 
