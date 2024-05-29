@@ -9,6 +9,7 @@
 * System
   * Add serial number to eink display
   * Add ability to display status on eink display
+  * Better logging around failed upgrades
 * Display
   * Add serial number
   * Add status code field
