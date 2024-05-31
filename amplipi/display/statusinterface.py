@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Display Status Interface"""
 
+import datetime
+
 from loguru import logger as log
-from datetime import datetime
 from typing import Optional, Union
 from enum import IntEnum
 
@@ -11,10 +12,14 @@ STATUS_FILENAME = 'display-status.txt'
 
 
 class DisplayStatus:
-  status: Optional[Union[str, int]]  # Status as either a string (working normally) or int (error)
-  expiration: Optional[datetime] = None  # When this status is set to expire
+   # Status as either a string (working normally) or int (error)
+  status: Optional[Union[str, int]]
 
-  def __init__(self, status: Optional[Union[str, int]], expiration: Optional[datetime] = None):
+  # When this status is set to expire, default is 10 seconds
+  expiration: Optional[datetime.datetime]
+
+  def __init__(self, status: Optional[Union[str, int]], expiration: Optional[datetime.datetime] =
+               datetime.datetime.now() + datetime.timedelta(seconds=10)):
     self.status = status
     self.expiration = expiration
 

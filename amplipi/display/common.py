@@ -143,14 +143,14 @@ def get_num_expanders(url: str) -> int:
       if info is not None:
         return len(info.expanders)
       else:
-        set_custom_display_status(DisplayStatus(DisplayError.API_NO_EXPANDER, None))
+        set_custom_display_status(DisplayStatus(int(DisplayError.API_NO_EXPANDER)))
         return 0
     else:
-      set_custom_display_status(DisplayStatus(DisplayError.API_NO_EXPANDER, None))
+      set_custom_display_status(DisplayStatus(int(DisplayError.API_NO_EXPANDER)))
       return 0
   except Exception as e:
     log.error(f'Error getting number of expanders: {type(e).__name__}')
-    set_custom_display_status(DisplayStatus(DisplayError.EXPANDER_EXCEPTION, None))
+    set_custom_display_status(DisplayStatus(int(DisplayError.EXPANDER_EXCEPTION)))
     return 0
 
 
@@ -165,8 +165,8 @@ def get_status(url: str, no_serial_ok: bool = False) -> Tuple[Union[str, int], O
     result_status = st
 
   # Check if API is running
-  api_on = os.system("systemctl --user is-active amplipi.service")
-  if api_on != 0:
+  api_on = subprocess.run("systemctl --user is-active amplipi.service".split(), stdout=subprocess.DEVNULL)
+  if api_on.returncode != 0:
     return DisplayError.NO_AMPLIPI_SERVICE, None, 0
 
   if url is None:
