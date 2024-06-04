@@ -1068,6 +1068,8 @@ class Api:
             stream.activate()
           else:
             stream.deactivate()
+      elif cmd in ['restart']:
+        stream.restart()
       else:
         stream.send_cmd(cmd)
     except Exception as exc:

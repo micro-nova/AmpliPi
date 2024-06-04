@@ -139,6 +139,17 @@ class BaseStream:
     self.state = 'connected'
     self.src = src
 
+  def restart(self):
+    """Reset this stream by disconnecting and reconnecting"""
+    try:
+      self.send_cmd('stop')
+    except:
+      logger.info(f'Stream {self.name} does not have a stop response')
+    last_src = self.src # Disconnect sets self.src to none, so temp variable used to keep track
+    self.disconnect()
+    time.sleep(0.1)
+    self.connect(last_src)
+
   def is_connected(self) -> bool:
     return self.src is not None
 
@@ -283,6 +294,16 @@ class PersistentStream(BaseStream):
     if self.is_activated():
       self.deactivate()
       time.sleep(0.1)  # wait a bit just in case
+
+  def restart(self):
+    """Reset this stream by disconnecting and reconnecting"""
+    try:
+      self.send_cmd('stop')
+    except:
+      logger.info(f'Stream {self.name} does not have a stop response')
+    self.deactivate()
+    time.sleep(0.1)
+    self.activate()
 
   def connect(self, src: int):
     """ Connect an output to a given audio source """

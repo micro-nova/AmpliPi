@@ -10,6 +10,7 @@ import ModalCard from "@/components/ModalCard/ModalCard";
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown";
 const DISABLED_DESC = "Don't show this stream in the input dropdown";
+const RESTART_DESC = "Sometimes the stream gets into a bad state and neds to be restarted. If that happened to this stream, click this to restart the stream.";
 
 // We're already using mui, why are we reinventing the wheel? https://mui.com/material-ui/react-text-field/
 // if it's a matter of className control on the underlying components, that still works with the mui textfield with the InputLabelProps prop and other componentProps
@@ -64,6 +65,25 @@ BoolField.propTypes = {
     desc: PropTypes.string.isRequired,
     defaultValue: PropTypes.bool,
     onChange: PropTypes.func.isRequired,
+};
+
+const ButtonField = ({ name, text, onClick, desc }) => {
+    return (
+        <>
+            <div className="stream-field-button">
+                <div className="stream-field-name">{name}</div>
+                <button onClick={onClick == undefined ? () => {} : onClick}>{text}</button>
+            </div>
+            <div className="stream-field-desc">{desc}</div>
+            <Divider />
+        </>
+    );
+};
+ButtonField.propTypes = {
+    name: PropTypes.string.isRequired,
+    text: PropTypes.string.isRequired,
+    desc: PropTypes.string.isRequired,
+    onClick: PropTypes.func.isRequired,
 };
 
 const InternetRadioSearch = ({ onChange }) => {
@@ -134,7 +154,7 @@ InternetRadioSearch.propTypes = {
 };
 
 function validateInput(streamFields, streamTemplate) {
-    streamTemplate['fields'].filter((f) => f.required).map( (f) => {
+    streamTemplate["fields"].filter((f) => f.required).map( (f) => {
         if(!streamFields[f.name]) {
             throw new Error(`Required field not set: ${f.name}`);
         }
@@ -144,7 +164,7 @@ function validateInput(streamFields, streamTemplate) {
 validateInput.propTypes = {
     streamFields: PropTypes.object.isRequired,
     streamTemplate: PropTypes.object.isRequired,
-}
+};
 
 const StreamModal = ({ stream, onClose, apply, del }) => {
     const [streamFields, setStreamFields] = React.useState(
@@ -239,7 +259,16 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                         setStreamFields({ ...streamFields, disabled: v });
                     }}
                 />
-            { errorMessage && <Alert severity="error" variant="filled">{errorMessage}</Alert>}
+
+                <ButtonField
+                    name="Restart"
+                    text="Restart Stream"
+                    desc={RESTART_DESC}
+                    onClick={() => fetch("/api/streams/" + stream.id + "/restart",{
+                        method: "POST"
+                    })}
+                />
+                { errorMessage && <Alert severity="error" variant="filled">{errorMessage}</Alert>}
             </div>
         </ModalCard>
     );

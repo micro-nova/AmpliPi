@@ -797,6 +797,7 @@ class StreamCommand(str, Enum):
   SHELVE = 'shelve'
   ACTIVATE = 'activate'
   DEACTIVATE = 'deactivate'
+  RESTART = 'restart'
 
 
 class PresetState(BaseModel):
@@ -1093,8 +1094,8 @@ class Status(BaseModel):
                                   'name': 'Blackmill Radio - pandora',
                                   'state': 'playing',
                                   'station': 'Blackmill Radio',
-                                  'supported_cmds': ['play', 'pause', 'stop', 'next',
-                                                     'love', 'ban', 'shelve'],
+                                  '': ['play', 'pause', 'stop', 'next',
+                                       'love', 'ban', 'shelve', 'restart'],
                                   'track': 'Chambermaid Swing'},
                          'input': 'stream=1006',
                          'name': 'Input 3'},
@@ -1106,7 +1107,7 @@ class Status(BaseModel):
                                   'state': 'playing',
                                   'station': 'Antonio Vivaldi Radio',
                                   'supported_cmds': ['play', 'pause', 'stop', 'next',
-                                                     'love', 'ban', 'shelve'],
+                                                     'love', 'ban', 'shelve', 'restart'],
                                   'track': 'Nocturne For Piano In C Sharp Minor, Kk '
                                   'Anh.ia/6'},
                          'input': 'stream=1005',

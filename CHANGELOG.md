@@ -6,6 +6,7 @@
   * Add streams to the stream list on the homepage in the order they were added
   * Add firmware version for main and expansion units on About page
   * Limit length of displayed stream names with ellipsis
+  * Add restart stream button to stream player and stream modal
 * System
   * Add serial number to eink display
   * Add ability to display status on eink display
