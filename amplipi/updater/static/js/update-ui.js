@@ -291,7 +291,11 @@ async function requestSupportTunnel() {
 
   body = await res.text();
   $('#support-tunnel-detail').text(body);
-  $('#support-tunnel-email').attr('href', `mailto:support@micro-nova.com?subject=Support%20tunnel%20request&body=${body.replaceAll('\n', '%0D%0A')}`);
+
+  $('#support-tunnel-email').attr(
+      'href',
+      `mailto:support@micro-nova.com?subject=Support%20tunnel%20request&body=${encodeURIComponent(body)}`
+  );
   $('#support-tunnel-detail-caption').removeClass("d-none");
 }
 
