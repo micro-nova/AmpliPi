@@ -276,13 +276,13 @@ async function requestSupportTunnel() {
   `);
 
   $('#support-tunnel-spinner').removeClass("d-none");
+  $('#support-tunnel-detail-container').removeClass("d-none");
 
   res = await fetch('/support', {
     method: 'POST',
   });
 
   $('#support-tunnel-spinner').addClass("d-none");
-  $('#support-tunnel-detail-container').removeClass("d-none");
 
   if(!res.ok) {
     alert(`Error: ${res.statusText}`);
@@ -291,7 +291,8 @@ async function requestSupportTunnel() {
 
   body = await res.text();
   $('#support-tunnel-detail').text(body);
-
+  $('#support-tunnel-email').attr('href', `mailto:support@micro-nova.com?subject=Support%20tunnel%20request&body=${body.replaceAll('\n', '%0D%0A')}`);
+  $('#support-tunnel-detail-caption').removeClass("d-none");
 }
 
 // Fetch the GitHub Releases and populate the release selector and latest release
