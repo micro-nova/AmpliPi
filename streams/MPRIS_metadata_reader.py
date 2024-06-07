@@ -32,6 +32,7 @@ class MPRISMetadataReader:
     self.mpris: Optional[InterfaceProxy] = None
 
     self.last_sent = None
+    self.last_raw = {}
 
     self.ok = True
 
@@ -67,13 +68,25 @@ class MPRISMetadataReader:
       if mpris:
         try:
           raw_metadata = {}
-          try:
-            raw_metadata = mpris.Metadata
-          except Exception as e:
-            metadata['connected'] = False
-            print(f"Dbus error getting MPRIS metadata: {e}")
-            if not self.ok:
-              break
+
+          # get playback status
+          state = mpris.PlaybackStatus.strip("'")
+
+          # if we're playing, get the metadata, otherwise assume it's the same as last time or empty
+          # this may fix some problems with polling spotifyd while paused/stopped
+          if state == 'Playing':
+            try:
+              self.last_raw = raw_metadata
+              raw_metadata = mpris.Metadata
+            except Exception as e:
+              metadata['connected'] = False
+              print(f"Dbus error getting MPRIS metadata: {e}")
+              if not self.ok:
+                break
+          elif state == 'Stopped':
+            raw_metadata = {}
+          else:
+            raw_metadata = self.last_raw
 
           for mapping in METADATA_MAPPINGS:
             try:
@@ -85,7 +98,7 @@ class MPRISMetadataReader:
               break
 
           if self.ok:
-            metadata['state'] = mpris.PlaybackStatus.strip("'")
+            metadata['state'] = state
             metadata['volume'] = mpris.Volume
 
             # initialize last sent if it hasn't been yet
