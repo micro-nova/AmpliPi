@@ -133,7 +133,8 @@ uint8_t getZoneVolume(size_t zone) {
 static void standby(bool standby) {
   for (size_t zone = 0; zone < NUM_ZONES; zone++) {
     // Set pin low to standby
-    pin_write(zone_standby_[zone], !standby);
+    (void)standby;                         // TEST FOR CUSTOMER
+    pin_write(zone_standby_[zone], true);  // !standby TEST FOR CUSTOMER
   }
 }
 
