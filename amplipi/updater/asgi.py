@@ -323,12 +323,16 @@ def set_admin_password(input: PasswordInput):
 @router.post('/support')
 def request_support():
   """ Creates a support tunnel request. """
-  out = subprocess.run(
-    '/opt/support_tunnel/venv/bin/python3 -m invoke request'.split(),
-    capture_output=True,
-    cwd='/opt/support_tunnel'
-  )
-  return Response(content=f"{out.stdout.decode('utf')}", media_type="text/html")
+  try:
+    out = subprocess.run(
+      '/opt/support_tunnel/venv/bin/python3 -m invoke request'.split(),
+      capture_output=True,
+      cwd='/opt/support_tunnel',
+      timeout=120
+    )
+    return Response(content=f"{out.stdout.decode('utf')}", media_type="text/html")
+  except Exception as e:
+    return Response(content=f"failed to request tunnel: {e}", media_type="text/html")
 
 
 app.include_router(auth_router)
