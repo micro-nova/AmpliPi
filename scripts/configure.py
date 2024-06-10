@@ -606,7 +606,7 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
   # wait a bit, so initial failures are detected before is-active is called
   if tasks[-1].success:
     # we need to check if the service is running
-    for _ in range(25): # retry for 5 seconds, giving the service time to start
+    for _ in range(50): # retry for 10 seconds, giving the service time to start
       task_check, running = _service_status(service)
       if running:
         break
@@ -614,7 +614,7 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
     tasks += task_check
     if test_url and running:
       task = None
-      for _ in range(40): # retry for 20 seconds, giving the server time to start
+      for _ in range(60): # retry for 30 seconds, giving the server time to start
         task = _check_url(test_url)
         if task.success:
           break
