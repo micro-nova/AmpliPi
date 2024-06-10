@@ -990,7 +990,7 @@ class Api:
       return ApiResponse.ok()
     except Exception as exc:
       logger.error(traceback.format_exc())
-      return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc.msg))
+      return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
 
   def delete_stream(self, sid: int, internal=False) -> ApiResponse:
     """Deletes an existing stream"""
