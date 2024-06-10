@@ -729,6 +729,7 @@ class Pandora(PersistentStream, Browsable):
     self.track = ""
     self.invert_liked_state = False
     self.validate_stream(user=self.user, password=self.password)
+    self.pianobar_path = f'{utils.get_folder("streams")}/pianobar'
 
     self.stations: List[models.BrowsableItem] = []
 
@@ -814,7 +815,7 @@ class Pandora(PersistentStream, Browsable):
     logger.info(f'Pianobar config at {pb_config_folder}')
     try:
       self.proc = subprocess.Popen(
-        args='pianobar', stdin=subprocess.PIPE, stdout=open(self.pb_output_file, 'w', encoding='utf-8'),
+        args=self.pianobar_path, stdin=subprocess.PIPE, stdout=open(self.pb_output_file, 'w', encoding='utf-8'),
         stderr=open(pb_error_file, 'w', encoding='utf-8'), env={'HOME': pb_home})
       time.sleep(0.1)  # Delay a bit before creating a control pipe to pianobar
       self.ctrl = pb_control_fifo

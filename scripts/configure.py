@@ -153,9 +153,6 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   # streams
   # TODO: can stream dependencies be aggregated from the streams themselves?
-  'pandora' : {
-    'apt' : [ 'pianobar']
-  },
   'airplay' : {
     'apt' : [ 'shairport-sync'],
     'copy' : [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
@@ -242,6 +239,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'spotify' : {
     'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
+  },
+  'pandora' : {
+    'apt' : [
+      'libao4', 'libavcodec58', 'libavfilter7', 'libavformat58', 'libavutil56', 'libc6', 'libcurl3-gnutls', 'libgcrypt20', 'libjson-c3'
+    ],
+    'copy' : [{'from': 'bin/ARCH/pianobar', 'to': 'streams/pianobar'}],
   },
   'bluetooth' : {
     'amplipi_only' : True,
