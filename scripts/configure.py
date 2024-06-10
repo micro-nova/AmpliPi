@@ -198,13 +198,13 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'copy' : [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
     'script' : [
       'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
-      '  wget https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.1_all.deb -O /tmp/logitechmediaserver_8.5.1.deb',
-      '  sudo dpkg -i /tmp/logitechmediaserver_8.5.1.deb',
+      '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
+      '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
       '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
       '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
       'fi',
-      'wget https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_1.9.9-1449_armhf.deb -O /tmp/squeezelite_1.9.9-1449_armhf.deb',
-      'sudo dpkg -i /tmp/squeezelite_1.9.9-1449_armhf.deb',
+      'wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb -O /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
+      'sudo dpkg -i /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
       'sudo systemctl stop squeezelite',
       'sudo systemctl disable squeezelite',
 
