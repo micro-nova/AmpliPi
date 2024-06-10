@@ -6,14 +6,32 @@
   * Add streams to the stream list on the homepage in the order they were added
   * Add firmware version for main and expansion units on About page
   * Limit length of displayed stream names with ellipsis
+  * Minor security increase to Pandora passwords
+  * Add restart stream button to stream player and stream modal
+  * Add dynamic scaling to controls on Player page
+* System
+  * Add serial number to eink display
+  * Add ability to display status on eink display
+  * Better logging around failed upgrades
+* Display
+  * Add serial number
+  * Add status code field
+  * Display number of expanders connected
+  * Reorganize layout to accomodate more text
+  * Add start-up screen to E-Ink Display
 * Streams
   * Add DLNA metadata and control support
   * Add support for browsing Pandora stations
   * Make Pandora like work and pass tests without metadata race condition
   * Validate stream fields when creating or reconfiguring stream
+  * Handle LMS client cleanup better
 * API
   * Fix: Zones playing audio on source used for announcement are not muted while announcement is playing
   * Log firmware version for main and expansion units
+  * Add serial number to API
+  * Add list of Expanders' serial numbers to API
+* Manufacturing
+  * Display a QR code to the quickstart guide for initial unboxing
 
 ## 0.3.5
 * Web App

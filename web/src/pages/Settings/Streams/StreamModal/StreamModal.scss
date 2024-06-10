@@ -21,6 +21,12 @@
   align-items: center;
 }
 
+.stream-field-button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .stream-field-name {
   @include general.regular-font;
   color: general.$text-color;

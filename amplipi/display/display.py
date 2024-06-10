@@ -29,7 +29,7 @@ def main():
                       help='the network interface to display the IP of')
   parser.add_argument('-t', '--test-board', action='store_true', default=False,
                       help='use SPI0 and test board pins')
-  parser.add_argument('-l', '--log', metavar='LEVEL', default='WARNING',
+  parser.add_argument('-l', '--log', metavar='LEVEL', default='INFO',
                       help='set logging level as DEBUG, INFO, WARNING, ERROR, or CRITICAL')
   parser.add_argument('--test-timeout', metavar='SECS', type=float, default=0.0,
                       help='if >0, perform a hardware test and exit on success or timeout')

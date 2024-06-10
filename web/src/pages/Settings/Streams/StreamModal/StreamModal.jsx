@@ -10,16 +10,18 @@ import ModalCard from "@/components/ModalCard/ModalCard";
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown";
 const DISABLED_DESC = "Don't show this stream in the input dropdown";
+const RESTART_DESC = "Sometimes the stream gets into a bad state and neds to be restarted. If that happened to this stream, click this to restart the stream.";
 
 // We're already using mui, why are we reinventing the wheel? https://mui.com/material-ui/react-text-field/
 // if it's a matter of className control on the underlying components, that still works with the mui textfield with the InputLabelProps prop and other componentProps
-const TextField = ({ name, desc, defaultValue, onChange }) => {
+const TextField = ({ name, desc, type="text", defaultValue, onChange }) => {
+
     return (
         <>
             <div className="stream-field">
                 <div className="stream-field-name">{name}</div>
                 <input
-                    type="text"
+                    type={type}
                     defaultValue={defaultValue}
                     onChange={(e) => {
                         onChange(e.target.value);
@@ -34,6 +36,7 @@ const TextField = ({ name, desc, defaultValue, onChange }) => {
 TextField.propTypes = {
     name: PropTypes.string.isRequired,
     desc: PropTypes.string.isRequired,
+    type: PropTypes.string,
     defaultValue: PropTypes.string,
     onChange: PropTypes.func.isRequired,
 };
@@ -64,6 +67,25 @@ BoolField.propTypes = {
     desc: PropTypes.string.isRequired,
     defaultValue: PropTypes.bool,
     onChange: PropTypes.func.isRequired,
+};
+
+const ButtonField = ({ name, text, onClick, desc }) => {
+    return (
+        <>
+            <div className="stream-field-button">
+                <div className="stream-field-name">{name}</div>
+                <button onClick={onClick == undefined ? () => {} : onClick}>{text}</button>
+            </div>
+            <div className="stream-field-desc">{desc}</div>
+            <Divider />
+        </>
+    );
+};
+ButtonField.propTypes = {
+    name: PropTypes.string.isRequired,
+    text: PropTypes.string.isRequired,
+    desc: PropTypes.string.isRequired,
+    onClick: PropTypes.func.isRequired,
 };
 
 const InternetRadioSearch = ({ onChange }) => {
@@ -129,10 +151,10 @@ const InternetRadioSearch = ({ onChange }) => {
         )
     );
 };
+
 InternetRadioSearch.propTypes = {
     onChange: PropTypes.func.isRequired,
 };
-
 const StreamModal = ({ stream, onClose, apply, del }) => {
     const [streamFields, setStreamFields] = React.useState(
         JSON.parse(JSON.stringify(stream))
@@ -175,19 +197,34 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                     // Render fields from StreamFields.json
                     streamTemplate.fields.map((field) => {
                         switch (field.type) {
-                        case "text":
-                            return (
-                                <TextField
-                                    key={field.name}
-                                    name={field.name}
-                                    desc={field.desc}
-                                    required={field.required}
-                                    defaultValue={streamFields[field.name]}
-                                    onChange={(v) => {
-                                        setStreamFields({ ...streamFields, [field.name]: v });
-                                    }}
-                                />
-                            );
+                            case "text":
+                                return (
+                                    <TextField
+                                        key={field.name}
+                                        name={field.name}
+                                        desc={field.desc}
+                                        type={"text"}
+                                        required={field.required}
+                                        defaultValue={streamFields[field.name]}
+                                        onChange={(v) => {
+                                            setStreamFields({ ...streamFields, [field.name]: v });
+                                        }}
+                                    />
+                                );
+                            case "password":
+                                return (
+                                    <TextField
+                                        key={field.name}
+                                        name={field.name}
+                                        desc={field.desc}
+                                        type={"password"}
+                                        required={field.required}
+                                        defaultValue={streamFields[field.name]}
+                                        onChange={(v) => {
+                                            setStreamFields({ ...streamFields, [field.name]: v });
+                                        }}
+                                    />
+                                );
                         case "bool":
                             return (
                                 <BoolField
@@ -225,7 +262,16 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                         setStreamFields({ ...streamFields, disabled: v });
                     }}
                 />
-            { errorMessage && <Alert severity="error" variant="filled">{errorMessage}</Alert>}
+
+                <ButtonField
+                    name="Restart"
+                    text="Restart Stream"
+                    desc={RESTART_DESC}
+                    onClick={() => fetch("/api/streams/" + stream.id + "/restart",{
+                        method: "POST"
+                    })}
+                />
+                { errorMessage && <Alert severity="error" variant="filled">{errorMessage}</Alert>}
             </div>
         </ModalCard>
     );

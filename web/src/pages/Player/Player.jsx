@@ -72,14 +72,19 @@ const Player = () => {
                     <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
                 </Chip>
             </div>
+            {/* There are many sub-divs classed player-inner here because formatting was strange otherwise */}
             <div className="player-inner">
                 <img src={img_url} className="player-album-art" />
+            </div>
+            <div className="player-inner">
                 <SongInfo
                     sourceId={selectedSourceId}
                     artistClassName="player-info-title"
                     albumClassName="player-info-album"
                     trackClassName="player-info-track"
                 />
+            </div>
+            <div className="player-inner">
                 <MediaControl selectedSource={selectedSourceId} />
             </div>
 

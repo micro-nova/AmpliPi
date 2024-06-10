@@ -109,6 +109,9 @@ if $user_host_set; then
   ssh-keygen -f ~/.ssh/known_hosts -R $user_host
 fi
 
+echo -e "clearing & setting eink display to quickstart QR code"
+ssh $user_host "/home/pi/amplipi-dev/scripts/show-delivery-message"
+
 # shutdown amplipi
 sleep 5
 echo -e "\nLogging in to shutdown AmpliPi for shipping and remove any ssh keys"

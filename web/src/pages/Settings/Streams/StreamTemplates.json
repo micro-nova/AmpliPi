@@ -96,7 +96,7 @@
       {
         "title": "Pandora Password",
         "name": "password",
-        "type": "text",
+        "type": "password",
         "required": true
       }
     ]
