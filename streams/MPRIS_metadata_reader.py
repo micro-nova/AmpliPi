@@ -76,8 +76,8 @@ class MPRISMetadataReader:
           # this may fix some problems with polling spotifyd while paused/stopped
           if state == 'Playing':
             try:
-              self.last_raw = raw_metadata
               raw_metadata = mpris.Metadata
+              self.last_raw = raw_metadata
             except Exception as e:
               metadata['connected'] = False
               print(f"Dbus error getting MPRIS metadata: {e}")
