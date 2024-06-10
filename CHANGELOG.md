@@ -18,6 +18,7 @@
   * Better logging around failed upgrades
   * Make upgrades more stable
   * Implement opt-in remote support capabilities from the updater
+  * Upgrade LMS (Lyrion Media Server, formerly Logitech Media Server)
 * Display
   * Add serial number
   * Add status code field
@@ -29,6 +30,7 @@
   * Add support for browsing Pandora stations
   * Make Pandora like work and pass tests without metadata race condition
   * Handle LMS client cleanup better
+  * Upgrade LMS client, squeezelite
 * API
   * Fix: Zones playing audio on source used for announcement are not muted while announcement is playing
   * Log firmware version for main and expansion units
