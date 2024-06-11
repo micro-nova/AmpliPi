@@ -298,7 +298,7 @@ def _check_and_update_streamer(env):
   env['is_streamer'] = os.path.exists(is_streamer_path)
 
 
-def _check_and_setup_platform():
+def _check_and_setup_platform(development, ci_mode):
   script_dir = os.path.dirname(os.path.realpath(__file__))
   env = {
       'user': pwd.getpwuid(os.getuid()).pw_name,
@@ -310,6 +310,7 @@ def _check_and_setup_platform():
       'is_amplipi': False,
       'is_streamer': False,
       'arch': 'unknown',
+      'is_ci': ci_mode,
   }
 
   # Get the platform name
@@ -319,17 +320,28 @@ def _check_and_setup_platform():
 
   # Figure out what platform we are on since we expect to be on a raspberry pi or a debian based development system
   if 'linux' in lplatform:
-    if 'x86_64' in lplatform:
-      apt = subprocess.run('which apt-get'.split(), check=True)
-      env['arch'] = 'x64'
-      if apt:
-        env['has_apt'] = True
-        env['platform_supported'] = True
-    elif 'armv7l' in lplatform and 'debian' in lplatform:
-      env['arch'] = 'arm'
-      env['platform_supported'] = True
+    apt = subprocess.run('which apt-get'.split(), check=True)
+    if apt:
       env['has_apt'] = True
-      env['is_amplipi'] = 'amplipi' in platform.node()  # checks hostname
+
+    if 'x86_64' in lplatform:
+      env['arch'] = 'x64'
+    elif 'armv7l' in lplatform:
+      env['arch'] = 'arm'
+
+    env['is_amplipi'] = 'amplipi' in platform.node()  # checks hostname
+
+    if env['arch'] == 'x64' and env['has_apt']:
+      # possibly a development machine running a debian-based distro
+      env['platform_supported'] = True
+
+    if env['arch'] == 'arm' and 'debian' in lplatform:
+      # possibly a Rasperry Pi running Raspbian
+      env['platform_supported'] = True
+
+  if development:
+    # We're explicitly overriding any checks here; assume we're supported.
+    env['platform_supported'] = True
 
   _check_and_update_streamer(env)
 
@@ -426,10 +438,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
     _sudo = "sudo " if 'sudo' in file else ""
-    # shairport needs the -f if it is running
-    tasks += print_progress(
-        [Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()])
-  if env['is_amplipi']:
+    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()])  # shairport needs the -f if it is running
+  if env['is_amplipi'] or env['is_ci']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"
     _to = "/etc/asound.conf"
@@ -466,7 +476,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
                               "sudo gpasswd -a pi dialout".split()).run()])
       return tasks
     # setup tmpfs (ram disk)
-    tasks += print_progress(_setup_tmpfs(env['base_dir']))
+    tasks += print_progress(_setup_tmpfs(env['base_dir'], env))
     # setup crontab - Replace the entire Pi user's crontab with AmpliPi's config/crontab
     # and point it to the AmpliPi install location's script directory.
     tasks += print_progress([Task("Setting up crontab", [
@@ -532,20 +542,23 @@ Categories=Utility;
   return Task(f'Add desktop icon for {name}', success=success)
 
 
-def _setup_tmpfs(base_dir):
+def _setup_tmpfs(base_dir, env):
   """ Adds tmpfs entries used by AmpliPi to /etc/fstab """
   # Warning: these hide the existing filesystem,
   # if anything is already present at the path created.
   tmpfs_opts = 'defaults,noatime,uid=pi,gid=pi,size=100M'
   conf_entry = f'amplipi/config {base_dir}/config/srcs tmpfs {tmpfs_opts} 0 0'
   web_entry = f'amplipi/web {base_dir}/web/generated tmpfs {tmpfs_opts} 0 0'
-  tasks = [Task('Add tmpfs entries to fstab.', multiargs=[
+  args = [
       'sudo sed -i "/^amplipi/d" /etc/fstab',
       f'echo {conf_entry} | sudo tee -a /etc/fstab',
       f'echo {web_entry} | sudo tee -a /etc/fstab',
       f'mkdir -p {base_dir}/config/srcs {base_dir}/web/generated',
-      f'sudo mount -a',
-  ], shell=True).run()]
+  ]
+  if not env['is_ci']:
+    args.append(f'sudo mount -a')
+
+  tasks = [Task('Add tmpfs entries to fstab.', multiargs=args, shell=True).run()]
   return tasks
 
 
@@ -703,8 +716,6 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
           break
         time.sleep(0.5)
       tasks.append(task)
-      # we also need to enable the service so that it starts on startup
-      tasks += _enable_service(name)
     elif name == 'amplipi':
       tasks[-1].output += "\ntry checking this service failure using 'scripts/run_debug_webserver' on the system"
       tasks.append(Task(
@@ -740,7 +751,7 @@ def _create_dir(directory: str) -> List[Task]:
   return tasks
 
 
-def _create_service(name: str, config: str) -> List[Task]:
+def _create_service(name: str, config: str, env: dict) -> List[Task]:
   filename = f'{name}.service'
   directory = pathlib.Path.home().joinpath('.config/systemd/user')
   tasks = []
@@ -758,9 +769,9 @@ def _create_service(name: str, config: str) -> List[Task]:
   except:
     tasks[-1].output = f'Failed to create {filename}'
 
-  # recreate systemd's dependency tree
-  tasks.append(Task('Reload systemd config',
-               'systemctl --user daemon-reload'.split()).run())
+  if not env['is_ci']:
+    # recreate systemd's dependency tree
+    tasks.append(Task('Reload systemd config', 'systemctl --user daemon-reload'.split()).run())
   return tasks
 
 
@@ -785,11 +796,18 @@ def _configure_authbind() -> List[Task]:
         Task('Setup autobind', f'sudo chmod 777 {PORT_FILE}'.split()).run())
   return tasks
 
+
 # Enable linger so that user manager is started at boot
-
-
-def _enable_linger(user: str) -> List[Task]:
-  return [Task(f'Enable linger for {user} user', f'sudo loginctl enable-linger {user}'.split()).run()]
+def _enable_linger(user: str, env) -> List[Task]:
+  if env['is_ci']:
+    # https://unix.stackexchange.com/a/721463
+    margs = [
+        'sudo mkdir -p /var/lib/systemd/linger'.split(),
+        f'sudo touch /var/lib/systemd/linger/{user}'.split()
+    ]
+  else:
+    margs = [f'sudo loginctl enable-linger {user}'.split()]
+  return [Task(f'Enable linger for {user} user', multiargs=margs).run()]
 
 
 def _copy_old_config(dest_dir: str) -> None:
@@ -837,42 +855,47 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
     return tasks
-  # try to copy the old config into the potentially new directory
-  # This fixes some potential update issues caused by migrating install to a different directory
-  # (using the web updated the install dir used to be amplipi-dev2 and is now amplipi-dev)
-  _copy_old_config(env['base_dir'])
+
   tasks = []
-  # stop amplipi before reconfiguring authbind
-  tasks += print_progress(_stop_service('amplipi'))
+
+  if not env['is_ci']:
+    # try to copy the old config into the potentially new directory
+    # This fixes some potential update issues caused by migrating install to a different directory
+    # (using the web updated the install dir used to be amplipi-dev2 and is now amplipi-dev)
+    _copy_old_config(env['base_dir'])
+
+    # stop amplipi before reconfiguring authbind
+    tasks += print_progress(_stop_service('amplipi'))
+
   # bringup amplipi and updater separately
   tasks += print_progress(_configure_authbind())
-  tasks += print_progress(_create_service('amplipi',
-                          _web_service(env['base_dir'])))
-  tasks += print_progress(_start_service('amplipi',
-                          test_url='http://0.0.0.0'))
-  if not tasks[-1].success:
-    return tasks
-  tasks += print_progress([_check_version('http://0.0.0.0/api')])
-  tasks += print_progress(_create_service('amplipi-updater',
-                          _update_service(env['base_dir'])))
-  if restart_updater:
-    tasks += print_progress(_stop_service('amplipi-updater'))
-    tasks += print_progress(_start_service('amplipi-updater',
-                            test_url='http://0.0.0.0:5001/update'))
-  else:
-    # start a second updater service and check if it serves a url
-    # this allow us to verify the update the updater probably works
-    tasks += print_progress(_create_service('amplipi-updater-test',
-                            _update_service(env['base_dir'], port=5002)))
-    tasks += print_progress(_start_service('amplipi-updater-test',
-                            test_url='http://0.0.0.0:5002/update'))
-    # stop and disable the service so it doesn't start up on a reboot
-    tasks += print_progress(_stop_service('amplipi-updater-test'))
-    tasks += print_progress(_remove_service('amplipi-updater-test'))
-  if env['is_amplipi']:
+  tasks += print_progress(_create_service('amplipi', _web_service(env['base_dir']), env))
+  tasks += print_progress(_enable_service('amplipi'))
+  if not env['is_ci']:
+    tasks += print_progress(_start_service('amplipi', test_url='http://0.0.0.0'))
+    if not tasks[-1].success:
+      return tasks
+    tasks += print_progress([_check_version('http://0.0.0.0/api')])
+
+  tasks += print_progress(_create_service('amplipi-updater', _update_service(env['base_dir']), env))
+  tasks += print_progress(_enable_service('amplipi-updater'))
+  if not env['is_ci']:
+    if restart_updater:
+      tasks += print_progress(_stop_service('amplipi-updater'))
+      tasks += print_progress(_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
+    else:
+      # start a second updater service and check if it serves a url
+      # this allow us to verify the update the updater probably works
+      tasks += print_progress(_create_service('amplipi-updater-test', _update_service(env['base_dir'], port=5002), env))
+      tasks += print_progress(_start_service('amplipi-updater-test', test_url='http://0.0.0.0:5002/update'))
+      # stop and disable the service so it doesn't start up on a reboot
+      tasks += print_progress(_stop_service('amplipi-updater-test'))
+      tasks += print_progress(_remove_service('amplipi-updater-test'))
+
+  if env['is_amplipi'] or env['is_ci']:
     # start the user manager at boot, instead of after first login
     # this is needed so the user systemd services start at boot
-    tasks += print_progress(_enable_linger(env['user']))
+    tasks += print_progress(_enable_linger(env['user'], env))
   return tasks
 
 
@@ -881,14 +904,14 @@ def _update_display(env: dict, progress) -> List[Task]:
     progress(tasks)
     return tasks
   tasks = []
-  tasks += print_progress(_create_service('amplipi-display',
-                          _display_service(env['base_dir'])))
-  tasks += print_progress(_restart_service('amplipi-display'))
+  tasks += print_progress(_create_service('amplipi-display', _display_service(env['base_dir']), env))
   tasks += print_progress(_enable_service('amplipi-display'))
+  if not env['is_ci']:
+    tasks += print_progress(_restart_service('amplipi-display'))
   if env['is_amplipi']:
     # start the user manager at boot, instead of after first login
     # this is needed so the user systemd services start at boot
-    tasks += print_progress(_enable_linger(env['user']))
+    tasks += print_progress(_enable_linger(env['user'], env))
   return tasks
 
 
@@ -897,18 +920,17 @@ def _update_audiodetector(env: dict, progress) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
     return tasks
-  if not env['is_amplipi']:
+  if not env['is_amplipi'] and not env['is_ci']:
     return [Task(name='Update Audio Detector', output='Not on AmpliPi', success=False)]
   tasks = []
-  tasks += print_progress([Task('Build audiodetector',
-                          f'make -C {env["base_dir"]}/amplipi/audiodetector'.split()).run()])
-  tasks += print_progress(_create_service('amplipi-audiodetector',
-                          _audiodetector_service(env['base_dir'])))
-  tasks += print_progress(_restart_service('amplipi-audiodetector'))
+  tasks += print_progress([Task('Build audiodetector', f'make -C {env["base_dir"]}/amplipi/audiodetector'.split()).run()])
+  tasks += print_progress(_create_service('amplipi-audiodetector', _audiodetector_service(env['base_dir']), env))
   tasks += print_progress(_enable_service('amplipi-audiodetector'))
+  if not env['is_ci']:
+    tasks += print_progress(_restart_service('amplipi-audiodetector'))
   # start the user manager at boot, instead of after first login
   # this is needed so the user systemd services start at boot
-  tasks += print_progress(_enable_linger(env['user']))
+  tasks += print_progress(_enable_linger(env['user'], env))
   return tasks
 
 
@@ -1031,7 +1053,7 @@ def add_tests(env, progress) -> List[Task]:
   tasks += _create_dir(str(directory))
 
   tasks += [Task('Remove old tests',
-                 [f'rm {str(directory)}/*'], shell=True).run()]
+                 [f'rm -f {str(directory)}/*'], shell=True).run()]
   for test in tests:
     tasks += [_add_desktop_icon(env, directory, test[0], test[1])]
   progress(tasks)
@@ -1040,7 +1062,7 @@ def add_tests(env, progress) -> List[Task]:
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
             display=True, audiodetector=True, firmware=True, password=True,
-            progress=print_task_results, development=False) -> bool:
+            progress=print_task_results, development=False, ci_mode=False) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -1053,7 +1075,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
         return True
     return False
 
-  env = _check_and_setup_platform()
+  env = _check_and_setup_platform(development, ci_mode)
   if not env['platform_supported'] and not development:
     tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
   else:
@@ -1144,6 +1166,8 @@ if __name__ == '__main__':
                       help="Generate and set a new default password for the pi user.")
   parser.add_argument('--development', action='store_true', default=False,
                       help="Enable development mode.")
+  parser.add_argument('--ci-mode', action='store_true', default=False,
+                      help="Enable CI mode, for automated builds. This mode doesn't attempt to start or check services.")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
   has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
@@ -1154,6 +1178,7 @@ if __name__ == '__main__':
   result = install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
                    display=flags.display, audiodetector=flags.audiodetector,
                    firmware=flags.firmware, password=flags.password,
-                   restart_updater=flags.restart_updater, development=flags.development)
+                   restart_updater=flags.restart_updater, development=flags.development,
+                   ci_mode=flags.ci_mode)
   if not result:
     sys.exit(1)

@@ -3,6 +3,7 @@
 ## Upcoming Release
 * System
   * Fix broken API generation
+  * Permit continuous integration runs in the installer for automated disk image builds
 * Web App
   * Enforce breakpoint styling to ensure that the UI looks the same between mobile, desktop, tablet viewports
   * Groups containing disabled zones now behave as though those zones don't exist
@@ -13,7 +14,7 @@
 * Streams
   * Remove stop command (only accessable through API) from Pandora
   * Disconnect zones from sources when they are disabled
-* Updated Pianobar to fork of 2022.04.01
+  * Updated Pianobar to fork of 2022.04.01
 
 ## 0.3.6
 * Web App
