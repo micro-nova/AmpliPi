@@ -133,6 +133,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     ],
     'script': [
       'sudo addgroup support',
+      'sudo adduser pi support',
       'sudo mkdir -p /var/lib/support_tunnel',
       'sudo chmod 0777 /var/lib/support_tunnel', # TODO: lock this down
       'if [ ! -e /opt/support_tunnel ] ; then'
