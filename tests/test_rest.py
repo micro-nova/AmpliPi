@@ -613,18 +613,181 @@ def removable_stream_ids():
   """ Only removable streams (RCAs are exempt) """
   return [s for s in base_stream_ids() if s not in (RCAs + [AUX_STREAM_ID])]
 
+def airplay_stream_ids():
+  return [s['id'] for s in base_config()['streams'] if s['type'] == 'airplay' or s['type'] == 'shairport']
+
+def airplay_names():
+  return {
+    "AmpliPi": True,
+    "Living Room TV": True,
+    "Kitchen Speaker": True,
+    "Bedroom HomePod": True,
+    "Office Sound System": True,
+    "Den Apple TV": True,
+    "Bathroom Speaker": True,
+    "Patio Sound Bar": True,
+    "Garage Music System": True,
+    "Family Room Home Theater": True,
+    "Guest Room Sound Dock": True,
+    "Living Room TV with Surround Sound and Subwoofer System Installed": False,
+    "Kitchen Speaker with Alexa Integration and Advanced Sound Control": False,
+    "Bedroom HomePod with Personalized Audio Settings and Custom EQ": False,
+    "Office Sound System Featuring High Fidelity Audio and Noise Cancellation": False,
+    "Den Apple TV Connected to Home Theater System with Dolby Atmos Support": False,
+    "Bathroom Speaker with Waterproof Design and Extended Battery Life": False,
+    "Patio Sound Bar with Wireless Subwoofer and Multi-Room Audio Capability": False,
+    "Garage Music System with Enhanced Bass and Treble Controls for Optimum Sound": False,
+    "Family Room Home Theater System with 4K UHD and High Dynamic Range": False,
+    "Guest Room Sound Dock with Bluetooth and Wi-Fi Connectivity for Easy Streaming": False
+  }.items()
+
+def pandora_stream_ids():
+  return [s['id'] for s in base_config()['streams'] if s['type'] == 'pandora']
+
+def pandora_users():
+  return {
+    "change@me.com": True,
+    "user@example.com": True,
+    "john.doe@example.co.uk": True,
+    "user_name123@example.org": True,
+    "user.name+alias@sub.domain.net": True,
+    "user.name@example.travel": True,
+    "username@domain.co": True,
+    "user123@example.io": True,
+    "user@domain.commmm": True,
+    "user@.com": False,
+    "user@domain.c": False,
+    "@example.com": False,
+    "user@domain..com": False,
+    "user@domain_com": False,
+    "user@domain,com": False,
+    "user@domain": False,
+    "userdomain.com": False,
+  }.items()
+
+def spotify_stream_ids():
+  return [s['id'] for s in base_config()['streams'] if s['type'] == 'spotify']
+
+def spotify_names():
+  return {
+    "AmpliPi": True,
+    "device1": True,
+    "device-name": True,
+    "my-device": True,
+    "device.name": True,
+    "device1.device2": True,
+    "my-device.name-2": True,
+    "-device": False,
+    "device-": False,
+    "device..name": False,
+    "device-.name": False,
+    "device.name-": False,
+    "device!name": False,
+    ".device": False,
+    "device..name": False
+  }.items()
+
+def internetradio_stream_ids():
+  return [s['id'] for s in base_config()['streams'] if s['type'] == 'internetradio']
+
+def internetradio_urls():
+  return {
+    "http://ice6.somafm.com/groovesalad-32-aac" : True,
+    "https://www.example.com": True,
+    "http://www.example.com": True,
+    "https://example.com": True,
+    "http://example.com": True,
+    "https://www.example.co.uk": True,
+    "https://subdomain.example.com/path/to/page": True,
+    "http://sub.domain.example.com": True,
+    "ftp://www.example.com": False,
+    "http://www.example": False,
+    "https://example": False,
+}.items()
+
+def internetradio_logos():
+  return {
+    "https://somafm.com/img3/groovesalad-400.jpg": True,
+    "https://www.example.com/logo.jpg" : True,
+    "http://example.com/logo.jpg" : True,
+    "https://www.example.com/logo123.jpg": True,
+    "https://example.com/logo.jpg" : True,
+    "http://www.example.com/logo123.jpg" : True,
+    "https://www.example.com/logo.png" : True,
+    "ftp://www.example.com/logo.jpg" : False,
+    "https://www.example.com/logos/logo.jpg" : True,
+    "https://www.example.com/logo" : False,
+    "https://example.com/logo/jpg" : False,
+    "https://www.example.com/logo?size=medium.jpg ": False
+  }.items()
+
 # /stream post-stream
-def test_create_pandora(client):
-  """ Try creating a Pandora stream """
-  m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': ''}
+@pytest.mark.parametrize('name, valid', airplay_names())
+def test_create_airplay(client, name, valid):
+  """ Try creating a AirPlay stream """
+  m_and_k = { 'name': name, 'type':'airplay'}
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
-  assert rv.status_code == HTTPStatus.OK
-  jrv = rv.json()
-  assert 'id' in jrv
-  assert isinstance(jrv['id'], int)
-  for k, v in m_and_k.items():
-    assert jrv[k] == v
+  if valid:
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    assert 'id' in jrv
+    assert isinstance(jrv['id'], int)
+    for k, v in m_and_k.items():
+      assert jrv[k] == v
+  else:
+    assert rv.status_code == HTTPStatus.BAD_REQUEST
+ 
+# /stream post-stream
+@pytest.mark.parametrize('user, valid', pandora_users())
+def test_create_pandora(client, user, valid):
+  """ Try creating a Pandora stream """
+  m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': user, 'password': ''}
+  rv = client.post('/api/stream', json=m_and_k)
+  # check that the stream has an id added to it and that all of the fields are still there
+  if valid:
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    assert 'id' in jrv
+    assert isinstance(jrv['id'], int)
+    for k, v in m_and_k.items():
+      assert jrv[k] == v
+  else:
+    assert rv.status_code == HTTPStatus.BAD_REQUEST
+
+ # /stream post-stream
+@pytest.mark.parametrize('name, valid', spotify_names())
+def test_create_spotify(client, name, valid):
+  """ Try creating a Spotify stream """
+  m_and_k = { 'name': name, 'type':'spotify'}
+  rv = client.post('/api/stream', json=m_and_k)
+  # check that the stream has an id added to it and that all of the fields are still there
+  if valid:
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    assert 'id' in jrv
+    assert isinstance(jrv['id'], int)
+    for k, v in m_and_k.items():
+      assert jrv[k] == v
+  else:
+    assert rv.status_code == HTTPStatus.BAD_REQUEST
+ 
+@pytest.mark.parametrize('url, valid_url', internetradio_urls())
+@pytest.mark.parametrize('logo, valid_logo', internetradio_logos())
+def test_create_internetradio(client, url, valid_url, logo, valid_logo):
+  """ Try creating an Internet Radio stream """
+  m_and_k = { 'name': 'Beatles Radio', 'type': 'internetradio', 'url': url, 'logo': logo}
+  rv = client.post('/api/stream', json=m_and_k)
+  # check that the stream has an id added to it and that all of the fields are still there
+  if valid_url and valid_logo:
+    assert rv.status_code == HTTPStatus.OK
+    jrv = rv.json()
+    assert 'id' in jrv
+    assert isinstance(jrv['id'], int)
+    for k, v in m_and_k.items():
+      assert jrv[k] == v
+  else:
+    assert rv.status_code == HTTPStatus.BAD_REQUEST
 
 # /streams/{streamId} get-stream
 @pytest.mark.parametrize('sid', base_stream_ids())
@@ -659,6 +822,97 @@ def test_patch_stream_rename(client, sid):
   s = find(jrv['streams'], sid)
   assert s is not None
   assert s['name'] == 'patched-name'
+
+@pytest.mark.parametrize('sid', airplay_stream_ids())
+@pytest.mark.parametrize('name, valid', airplay_names())
+def test_patch_stream_rename_airplay(client, sid, name, valid):
+  """ Try renaming an AirPlay stream """
+  last_state = status_copy(client)
+  rv = client.patch('/api/streams/{}'.format(sid), json={'name': name})
+  if find(last_state['streams'], sid):
+    if valid:
+      assert rv.status_code == HTTPStatus.OK
+    else:
+      assert rv.status_code == HTTPStatus.BAD_REQUEST
+      return
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was renamed
+  s = find(jrv['streams'], sid)
+  assert s is not None
+  assert s['name'] == name
+
+
+@pytest.mark.parametrize('sid', spotify_stream_ids())
+@pytest.mark.parametrize('name, valid', spotify_names())
+def test_patch_stream_rename_spotify(client, sid, name, valid):
+  """ Try renaming a Spotify stream """
+  last_state = status_copy(client)
+  rv = client.patch('/api/streams/{}'.format(sid), json={'name': name})
+  if find(last_state['streams'], sid):
+    if valid:
+      assert rv.status_code == HTTPStatus.OK
+    else:
+      assert rv.status_code == HTTPStatus.BAD_REQUEST
+      return
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was renamed
+  s = find(jrv['streams'], sid)
+  assert s is not None
+  assert s['name'] == name
+
+@pytest.mark.parametrize('sid', pandora_stream_ids())
+@pytest.mark.parametrize('user, valid', pandora_users())
+def test_patch_stream_rename_pandora(client, sid, user, valid):
+  """ Try renaming a Pandora stream """
+  last_state = status_copy(client)
+  rv = client.patch('/api/streams/{}'.format(sid), json={'user': user})
+  if find(last_state['streams'], sid):
+    if valid:
+      assert rv.status_code == HTTPStatus.OK
+    else:
+      assert rv.status_code == HTTPStatus.BAD_REQUEST
+      return
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was renamed
+  s = find(jrv['streams'], sid)
+  assert s is not None
+  assert s['user'] == user
+
+@pytest.mark.parametrize('sid', internetradio_stream_ids())
+@pytest.mark.parametrize('url, valid_url', internetradio_urls())
+@pytest.mark.parametrize('logo, valid_logo', internetradio_logos())
+def test_patch_stream_rename_internetradio(client, sid, url, valid_url, logo, valid_logo):
+  """ Try renaming a Internet Radio stream """
+  last_state = status_copy(client)
+  rv = client.patch('/api/streams/{}'.format(sid), json={'url': url, 'logo': logo})
+  if find(last_state['streams'], sid):
+    if valid_url and valid_logo:
+      assert rv.status_code == HTTPStatus.OK
+    else:
+      assert rv.status_code == HTTPStatus.BAD_REQUEST
+      return
+  else:
+    assert rv.status_code != HTTPStatus.OK
+    return
+  jrv = rv.json() # get the system state returned
+  # TODO: check that the system state is valid
+  # make sure the stream was renamed
+  s = find(jrv['streams'], sid)
+  assert s is not None
+  assert s['url'] == url
+  assert s['logo'] == logo
 
 @pytest.mark.parametrize('sid', base_stream_ids())
 @pytest.mark.parametrize('disable', [True, False])
