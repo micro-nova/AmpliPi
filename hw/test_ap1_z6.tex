@@ -1,0 +1,144 @@
+% Built with texlive-latex-base and texlive-latex-extra installed.
+
+\documentclass{article}
+\usepackage[margin=0.5in,nomarginpar,includefoot]{geometry}
+\usepackage{parskip}
+\usepackage{wrapfig,framed}
+
+% Display version and date at the bottom of the page
+\usepackage{fancyhdr}
+\renewcommand{\headrulewidth}{0pt} % Remove header line
+\fancyhf{}                         % Remove default header/footer text
+\fancyfoot[C]{Last updated \today}
+
+\usepackage{tabularx,array}
+\usepackage{enumitem,amssymb}
+\newlist{checklist}{itemize}{2}
+\setlist[checklist]{label=$\square$}
+
+% Redefine the title generation since we don't need author, date, etc.
+\usepackage{titling}
+\pretitle{\begin{center}\fontsize{17bp}{17bp}\selectfont}
+\posttitle{\par\end{center}}\preauthor{}\postauthor{}\predate{}\date{}\postdate{}
+\setlength{\droptitle}{-8ex}
+
+\title{AP1-Z6 (AmpliPro) Expansion Unit Tests}
+\author{} % A warning is printed if \author isn't defined.
+
+\begin{document}
+\maketitle            % Create the title in the document
+\thispagestyle{fancy} % Use 'fancyhdr' style so we can modify footer.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Basic Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{tabularx}{\textwidth}{XX}
+  Serial Number \hrulefill & Tester Initials \hrulefill
+\end{tabularx}
+
+\bigskip
+\begin{tabularx}{\textwidth}{XX}
+  Date \hrulefill\hspace{0.2em} / \hrulefill &
+    Time \hrulefill\hspace{0.2em} : \hrulefill\hspace{0.2em} AM / PM
+\end{tabularx}
+
+\bigskip
+\begin{checklist}
+  \item Boards Tested (Manual - verify QC Passed sticker on each board.)
+\end{checklist}
+
+{\renewcommand{\arraystretch}{1.5} % Make the rows double-height
+\begin{tabularx}{\textwidth}{lXXXXXX}
+  & \textbf{Amp Bd} & \textbf{Power Bd} & \textbf{Preamp Bd} &
+    \textbf{Preout Bd} & \textbf{LED Bd} & \textbf{Controller Bd} \\
+  \cline{2-7}
+  % Using multicolumns here to change the style from no borders to vertical borders.
+  rev & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{}
+    & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} & \multicolumn{1}{|c|}{} \\
+  \cline{2-7}
+\end{tabularx}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Local Tests
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bigskip
+Plug in the test main unit test second expansion unit,
+with the expansion unit being tested wired in between.
+
+\begin{checklist}
+  \item \textbf{Config AmpliPro}
+\end{checklist}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Remote Tests
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bigskip
+Click \textbf{Test Main Unit} on Desktop - the tests below should now be available.
+
+\begin{checklist}
+  \item \textbf{Program Main + 2 Exp Preamps}
+  \item \textbf{LEDs}: Red \rule{2em}{0.4pt} Green \rule{2em}{0.4pt} Zones:
+  \item[] \hspace{3.2em} 7 \rule{2em}{0.4pt} 8 \rule{2em}{0.4pt} 9 \rule{2em}{0.4pt}
+          10 \rule{2em}{0.4pt} 11 \rule{2em}{0.4pt} 12 \rule{2em}{0.4pt}
+\end{checklist}
+
+\begin{checklist}
+  \item \textbf{Expander Preamp}
+\end{checklist}
+{\renewcommand{\arraystretch}{1.5} % Make the rows 1.5x-height
+\hspace{2em}\begin{tabularx}{40em}{XXXXX}
+  Digital 1 & Digital 2 & Digital 3 & Digital 4 & Zone \\
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+    L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & 7 \\
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+    L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & 8 \\
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+    L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & 9 \\
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+    L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & 10 \\
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+    L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & 11 \\
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+    L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & 12 \\
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+    L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} & 13 (exp) \\
+\end{tabularx}}
+
+\begin{checklist}
+  \item \textbf{Preouts}
+\end{checklist}
+{\renewcommand{\arraystretch}{1.5} % Make the rows 1.5x-height
+\hspace{2em}\begin{tabularx}{48em}{XXXXXX}
+  Preout 1 & Preout 2 & Preout 3 & Preout 4 & Preout 5 & Preout 6 \\
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} &
+  L \rule{2em}{0.4pt} R \rule{2em}{0.4pt} \\
+\end{tabularx}}
+
+\begin{checklist}
+  \item \textbf{Fans and Power}:
+\end{checklist}
+{\renewcommand{\arraystretch}{1.5} % Make the rows 1.5x-height
+\hspace{2em}\begin{tabularx}{40em}{XXXX}
+  Fans Off  \hfill\rule{3em}{0.4pt} & Fans On   \hfill\rule{3em}{0.4pt} & PG\_12V   \hfill\rule{3em}{0.4pt} & 12V Supply \hfill\rule{3em}{0.4pt} \\
+  HV1 Temp  \hfill\rule{3em}{0.4pt} & AMP1 Temp \hfill\rule{3em}{0.4pt} & AMP2 Temp \hfill\rule{3em}{0.4pt} & Temp Rise  \hfill\rule{3em}{0.4pt} \\
+\end{tabularx}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Day 2 Tests
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bigskip
+\textbf{\underline{Day Two Testing}}
+\begin{checklist}
+\item Repeat Tests from Day 1:
+\begin{checklist}
+  \item \textbf{Expander Preamp}
+  \item \textbf{Fans and Power}
+\end{checklist}
+\item UI Radio Test
+\end{checklist}
+
+\end{document}

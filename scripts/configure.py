@@ -925,6 +925,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   def failed():
     for task in tasks:
       if not task.success:
+        print(str(task)) # __str__() on Task renders with an "Error"ed suffix
         return True
     return False
 

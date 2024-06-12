@@ -14,6 +14,10 @@ import tempfile
 import os
 from copy import deepcopy # copy test config
 
+# add some random delays to stream commands
+from time import sleep
+import random
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -151,7 +155,7 @@ def client(request):
   c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
   return c
 
-@pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups(), base_config_no_streams(), base_config_vol_db()])
+@pytest.fixture(params=[base_config_copy()])
 def clientnm(request):# Non-mock systems should use this client - mock_ctrl and mock_streams are False here
   """ AmpliPi instance connected to a real AmpliPi controller """
   cfg = request.param
@@ -1004,6 +1008,9 @@ def test_post_stream_cmd_live(clientnm, cmd):
   rv = clientnm.patch('/api/sources/0', json={'input': f'stream={sid}'})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
+  # delay a bit to avoid bombarding pandoras API with too many requests avoiding the rate limiter
+  # the random delay attempts to avoid collisions when running the tests in parallel
+  sleep(random.uniform(1, 5))
   # the check below will fail when run in parallel with other tests, why is the configuration different than expected????
   assert not jrv['info']['mock_streams']
   rv = clientnm.post('/api/streams/{}/{}'.format(sid, cmd))

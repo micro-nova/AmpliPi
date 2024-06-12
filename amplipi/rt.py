@@ -725,3 +725,7 @@ class Rpi:
       return preamp_addr in self._bus.preamps
     else:
       return True
+
+
+def get_dev_addrs() -> List[int]:
+  return _DEV_ADDRS
