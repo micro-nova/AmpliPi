@@ -88,7 +88,7 @@ const Player = () => {
                 <MediaControl selectedSource={selectedSourceId} />
             </div>
 
-            {!alone && !is_streamer && (
+            {!alone && !is_streamer && zones.length > 0 && (
                 <Card className="player-volume-slider">
                     <CardVolumeSlider sourceId={selectedSourceId} />
                     <IconButton onClick={() => setExpanded(!expanded)}>
