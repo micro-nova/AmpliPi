@@ -9,3 +9,21 @@
   margin: 0.25rem;
   @include general.highlight-hover;
 }
+
+
+@keyframes pulseBackground {
+  0%{
+    background-color: rgba(26, 26, 26, 1);
+  }
+
+  50%{
+    background-color: rgba(26, 26, 26, 0.6590803922);
+  }
+  100%{
+    background-color: rgba(26, 26, 26, 1);
+  }
+}
+
+.pulse {
+  animation: pulseBackground 3s infinite;
+}

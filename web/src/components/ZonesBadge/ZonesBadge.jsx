@@ -8,10 +8,10 @@ import Grid from "@mui/material/Grid/Grid";
 
 import PropTypes from "prop-types";
 
-const ZoneGroupChip = ({ zoneGroup, onClick }) => {
+const ZoneGroupChip = ({ zoneGroup, onClick, pulse}) => {
     return (
         <Grid item xs={"auto"} sm={"auto"} md={"auto"} lg={"auto"} xl={"auto"}>
-            <Chip onClick={onClick} style={{maxWidth: "35vw"}}>
+            <Chip onClick={onClick} style={{maxWidth: "35vw"}} pulse={pulse} >
                 <div className="zone-text">{zoneGroup.name}</div>
             </Chip>
         </Grid>
@@ -20,6 +20,7 @@ const ZoneGroupChip = ({ zoneGroup, onClick }) => {
 ZoneGroupChip.propTypes = {
     zoneGroup: PropTypes.any.isRequired,
     onClick: PropTypes.func.isRequired,
+    pulse: PropTypes.bool,
 };
 
 const ZonesBadge = ({ sourceId, onClick }) => {
@@ -86,6 +87,7 @@ const ZonesBadge = ({ sourceId, onClick }) => {
     } else {
         chips.push(
             <ZoneGroupChip
+                pulse
                 key={0}
                 onClick={onClick}
                 zoneGroup={{ name: "Add Zones" }}
