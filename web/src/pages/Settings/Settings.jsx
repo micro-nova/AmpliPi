@@ -10,6 +10,7 @@ import Config from "./Config/Config";
 import About from "./About/About";
 import { router } from "@/main";
 import { useStatusStore } from "@/App";
+import { updateAvailable } from "@/utils/updateAvailable";
 // import Divider from "@mui/material/Divider";
 import SpeakerIcon from "@mui/icons-material/Speaker";
 import SpeakerGroupIcon from "@mui/icons-material/SpeakerGroup";
@@ -21,6 +22,7 @@ import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import ListItem from "@/components/List/ListItem/ListItem";
 import List from "@/components/List/List";
 import { IsMobileApp, IsSaved, SaveURL, UnsaveURL } from "@/utils/MobileApp";
+import Badge from "@mui/material/Badge";
 
 import PropTypes from "prop-types";
 import Checkbox from "@mui/material/Checkbox";
@@ -160,7 +162,9 @@ const Settings = ({ openPage }) => {
                         }}
                     >
                         <div className="update-icon">
-                            <UpdateIcon fontSize="inherit" />
+                            <Badge badgeContent={updateAvailable() ? " " : null} color="primary">
+                                <UpdateIcon fontSize="inherit" />
+                            </Badge>
                         </div>
                     </ListItem>
 

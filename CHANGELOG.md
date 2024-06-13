@@ -9,6 +9,7 @@
   * Minor security increase to Pandora passwords
   * Add restart stream button to stream player and stream modal
   * Add dynamic scaling to controls on Player page
+  * Make update available badge show up on both Settings page and the menu bar
 * System
   * Add serial number to eink display
   * Add ability to display status on eink display
