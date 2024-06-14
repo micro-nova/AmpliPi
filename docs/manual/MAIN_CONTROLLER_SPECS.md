@@ -23,6 +23,7 @@
 |||
 |Speaker Power     | 55 WPC @ 4 Ω |
 |                  | 32 WPC @ 8 Ω |
+|                  | 23 WPC all-channel driven power |
 |||
 |Speaker Impedance | 4 - 8 Ω |
 |||
