@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2023 MicroNova LLC
+ * Copyright (C) 2021-2024 MicroNova LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -150,12 +150,14 @@ uint8_t readReg(uint8_t addr) {
 
     case REG_POWER: {
       PwrReg msg = {
-          .pg_9v    = pg9v(),
-          .en_9v    = get9vEn(),
-          .pg_12v   = pg12v(),
-          .en_12v   = get12vEn(),
-          .hv2      = isHV2Present(),
+          .pg_9v    = pg_9v(),
+          .en_9v    = get_9v_en(),
+          .pg_12v   = pg_12v(),
+          .en_12v   = get_12v_en(),
+          .pg_5vd   = pg_5vd(),
+          .pg_5va   = pg_5va(),
           .reserved = 0,
+          .hv2      = isHV2Present(),
       };
       out_msg = msg.data;
       break;
@@ -165,8 +167,8 @@ uint8_t readReg(uint8_t addr) {
       FanReg msg = {
           .ctrl       = getFanCtrl(),
           .on         = fansOn(),
-          .ovr_tmp    = overTempMax6644() || overTemp(),
-          .fail       = fanFailMax6644(),
+          .ovr_tmp    = over_temp_max6644() || overTemp(),
+          .fail       = fan_fail_max6644(),
           .smbus_dpot = isDPotSMBus(),
           .reserved   = 0,
       };

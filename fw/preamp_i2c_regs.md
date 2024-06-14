@@ -121,8 +121,8 @@
       <td>POWER</td>
       <td align=center>HV2</td>
       <td align=center>-</td>
-      <td align=center>-</td>
-      <td align=center>-</td>
+      <td align=center>PG_5VA</td>
+      <td align=center>PG_5VD</td>
       <td align=center>EN_12V</td>
       <td align=center>PG_12V</td>
       <td align=center>EN_9V</td>
@@ -394,6 +394,16 @@ always report a '1'.
 | 0      | 12 V on     |
 | 1      | 12 V off    |
 
+| PG_5VD | Description        |
+| ------ | ------------------ |
+| 0      | 5 V (digital) bad  |
+| 1      | 5 V (digital) good |
+
+| PG_5VA | Description       |
+| ------ | ----------------- |
+| 0      | 5 V (analog) bad  |
+| 1      | 5 V (analog) good |
+
 | HV2 | Description     |
 | --- | --------------- |
 | 0   | HV2 not present |
@@ -420,12 +430,12 @@ CTRL_METHOD is read/write, the rest of the bits are read only.
   Writing a value of 3 to these bits forces the fans on.
   If any other value is written or this register is never written to,
   automatic detection of the proper fan control method is done:
-  - MAX6644: Power Board 2.A used a MAX6644 fan controller. This board version
+  * MAX6644: Power Board 2.A used a MAX6644 fan controller. This board version
     is auto-detected and fan control handled by that IC.
-  - PWM: Power Board 3.B moves the fan control into this firmware.
+  * PWM: Power Board 3.B moves the fan control into this firmware.
     With PWM the fans are either off or varied from 30% to 100%,
     based on the current system temperatures.
-  - Linear: Power Board 4.A further improves fan control by allowing the fan
+  * Linear: Power Board 4.A further improves fan control by allowing the fan
     power supply to be adjusted from about 6V to 12V. Similar to the PWM
     control method, the fans are either off or varied from 50% to 100%.
     Linear voltage control produces less audible noise from the fans.
