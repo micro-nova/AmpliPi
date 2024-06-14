@@ -24,6 +24,7 @@ import os
 import time
 import logging
 import sys
+from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Tuple, Union, Optional
 
@@ -87,6 +88,18 @@ class FanCtrl(Enum):
   PWM = 1
   LINEAR = 2
   FORCED = 3
+
+
+@dataclass
+class PowerStatus:
+  """Contains the status of the AmpliPi's various power supplies as measured by the firmware."""
+  pg_5vd: bool  # True if the 5VD rail is good
+  pg_5va: bool  # True if the 5VA rail is good
+  pg_9v: bool  # True if the 9V rail is good
+  en_9v: bool  # True if the 9V rail is enabled
+  pg_12v: bool  # True if the 12V rail is good
+  en_12v: bool  # True if the 12V rail is enabled
+  v12: float  # Fan power supply voltage, nominally 12V
 
 
 def is_amplipi():
@@ -297,29 +310,24 @@ class _Preamps:
       return major, minor, git_hash, dirty
     return None, None, None, None
 
-  def read_power_status(self, preamp: int = 1) -> Tuple[
-    Optional[bool], Optional[bool], Optional[bool], Optional[bool], Optional[float]
-  ]:
+  def read_power_status(self, preamp: int = 1) -> Optional[PowerStatus]:
     """ Read the status of the power supplies
 
-      Returns:
-        pg_9v:    True if the 9V rail is good
-        en_9v:    True if the 9V rail is enabled
-        pg_12v:   True if the 12V rail is good
-        en_12v:   True if the 12V rail is enabled
-        v12:      Fan power supply voltage, nominally 12V
+      Returns the state of the power supplies as a PowerStatus.
     """
     assert 1 <= preamp <= 6
     if self.bus is not None:
       pstat = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['POWER'])
+      pg_5va = (pstat & 0x20) != 0
+      pg_5vd = (pstat & 0x10) != 0
       en_12v = (pstat & 0x08) != 0
       pg_12v = (pstat & 0x04) != 0
       en_9v = (pstat & 0x02) != 0
       pg_9v = (pstat & 0x01) != 0
       fvstat = self.bus.read_byte_data(preamp * 8, _REG_ADDRS['FAN_VOLTS'])
       v12 = fvstat / 2**4
-      return pg_9v, en_9v, pg_12v, en_12v, v12
-    return None, None, None, None, None
+      return PowerStatus(pg_5vd, pg_5va, pg_9v, en_9v, pg_12v, en_12v, v12)
+    return None
 
   def read_fan_status(self, preamp: int = 1) -> Union[
     Tuple[FanCtrl, bool, bool, bool, bool], Tuple[None, None, None, None, None]
