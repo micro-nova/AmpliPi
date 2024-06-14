@@ -185,6 +185,7 @@ rca_status
 
 # User Manual compilation byproducts
 docs/manual/_markdown_manual
+manual.markdown.lua
 
 # Status File
 display-status.txt
