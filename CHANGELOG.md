@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Upcoming Release
+* System
+  * Fix broken API generation
+
 ## 0.3.6
 * Web App
   * Add initial support for song browser (only Pandora stations for now)

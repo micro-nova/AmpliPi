@@ -536,6 +536,7 @@ def play_stream_child(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID,
     raise HTTPException(404, f'source {sid} is not browsable')
 
   stream.play(cid)
+  ctrl.sync_stream_info()
 
   return code_response(ctrl, ctrl.get_state())
 

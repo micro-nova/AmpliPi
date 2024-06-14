@@ -332,7 +332,7 @@ class Api:
         except Exception as exc:
           logger.exception(f"Failed to create '{stream.name}' stream: {exc}")
           failed_streams.append(stream.id)
-    self._sync_stream_info()  # need to update the status with the new streams
+    self.sync_stream_info()  # need to update the status with the new streams
 
     # add/remove dynamic bluetooth stream
     bt_streams = [sid for sid, stream in self.streams.items() if isinstance(stream, amplipi.streams.Bluetooth)]
@@ -361,7 +361,7 @@ class Api:
     for fm_stream in fm_streams:
       logger.info(f"setting FM stream {fm_stream.name} to disabled={fm_disabled} based on hw availability")
       fm_stream.disabled = fm_disabled
-    self._sync_stream_info()  # update stream status with potentially updated streams
+    self.sync_stream_info()  # update stream status with potentially updated streams
 
     # configure all sources so that they are in a known state
     # only models.MAX_SOURCES are supported, keep the config from adding extra
@@ -445,14 +445,11 @@ class Api:
     except Exception as exc:
       logger.exception(f'Error saving config: {exc}')
 
-  def mark_changes(self, sync_streams=False):
+  def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
 
     This attempts to avoid excessive saving and the resulting delays by only saving a small delay after the last change
     """
-    if sync_streams:
-      self._sync_stream_info()
-
     if self._change_notifier:
       self._change_notifier(self.get_state())
     if self._delay_saves:
@@ -532,7 +529,7 @@ class Api:
     self.status.info.latest_release = self._latest_release_cache.get(throttled)
     self.status.info.access_key = auth.get_access_key("admin") if auth.user_access_key_set("admin") else ""
 
-  def _sync_stream_info(self) -> None:
+  def sync_stream_info(self) -> None:
     """Synchronize the stream list to the stream status"""
     # TODO: figure out how to cache stream info, since it only needs to happen when a stream is added/updated
     streams = []
@@ -994,7 +991,7 @@ class Api:
       stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
       self.streams[sid] = stream
-      self._sync_stream_info()
+      self.sync_stream_info()
       # Use get state to populate the contents of the newly created stream and find it in the stream list
       _, new_stream = utils.find(self.get_state().streams, sid)
       if new_stream:
@@ -1019,7 +1016,7 @@ class Api:
     try:
       changes = update.dict(exclude_none=True)
       stream.reconfig(**changes)
-      self._sync_stream_info()
+      self.sync_stream_info()
       return ApiResponse.ok()
     except Exception as exc:
       return ApiResponse.error('Unable to reconfigure stream {}: {}'.format(sid, exc))
@@ -1040,7 +1037,7 @@ class Api:
       i, _ = utils.find(self.status.streams, sid)
       if i is not None:
         del self.status.streams[i]  # delete the cached stream state just in case
-      self._sync_stream_info()
+      self.sync_stream_info()
       if not internal:
         self.mark_changes()
       return ApiResponse.ok()
@@ -1072,6 +1069,7 @@ class Api:
         stream.restart()
       else:
         stream.send_cmd(cmd)
+      self.sync_stream_info()
     except Exception as exc:
       return ApiResponse.error(f'Failed to execute stream command: {cmd}: {exc}')
     return ApiResponse.ok()

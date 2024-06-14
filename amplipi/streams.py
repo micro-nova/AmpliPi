@@ -42,7 +42,6 @@ from pandora.clientbuilder import SettingsDictBuilder # pandora client from pydo
 
 from amplipi import models
 from amplipi import utils
-from amplipi import app
 from amplipi.mpris import MPRIS
 
 # We use Popen for long running process control this error is not useful:
@@ -899,7 +898,6 @@ class Pandora(PersistentStream, Browsable):
               matches = re.findall(r'\" \([0-9]+\)', text)
             if matches:
                 self.station = matches[-1].replace('\" (', '').replace(')', '')
-                app.get_ctrl().mark_changes(sync_streams=True)
                 self.pb_output_file
                 with open(self.pb_output_file, 'w', encoding='utf-8') as file: # clear file
                   file.write('')
