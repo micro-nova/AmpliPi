@@ -14,6 +14,7 @@ import Card from "@/components/Card/Card";
 import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import { getSourceInputType } from "@/utils/getSourceInputType";
 import Chip from "@/components/Chip/Chip";
+import Grid from "@mui/material/Grid/Grid"
 
 import { getSourceZones } from "@/pages/Home/Home";
 
@@ -72,20 +73,39 @@ const Player = () => {
                     <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
                 </Chip>
             </div>
+            <Grid
+              container
+              direction="column"
+              justifyContent="center"
+              alignItems="center"
+            >
+                <Grid item xs={2} sm={4} md={4}>
+                    <img src={img_url} className="player-album-art" />
+                </Grid>
+                <Grid item xs={6} sm={6} md={6} >
+                    <Grid
+                        container
+                        direction="row"
+                        justifyContent="center"
+                        alignItems="center"
+                        >
+                            <Grid item xs={0} sm={2} md={3}> {/* Spacer */} </Grid>
+                            <Grid item xs={12} sm={8} md={6}>
+                                <SongInfo sourceId={selectedSourceId} />
+                            </Grid>
+                            <Grid item xs={0} sm={2} md={3}> {/* Spacer */} </Grid>
+                        </Grid>
+                </Grid>
+                <Grid item xs={2} sm={4} md={4}>
+                    <MediaControl selectedSource={selectedSourceId} />
+                </Grid>
+            </Grid>
             {/* There are many sub-divs classed player-inner here because formatting was strange otherwise */}
             <div className="player-inner">
-                <img src={img_url} className="player-album-art" />
             </div>
             <div className="player-inner">
-                <SongInfo
-                    sourceId={selectedSourceId}
-                    artistClassName="player-info-title"
-                    albumClassName="player-info-album"
-                    trackClassName="player-info-track"
-                />
             </div>
             <div className="player-inner">
-                <MediaControl selectedSource={selectedSourceId} />
             </div>
 
             {!alone && !is_streamer && zones.length > 0 && (

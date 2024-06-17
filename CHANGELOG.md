@@ -3,6 +3,8 @@
 ## Upcoming Release
 * System
   * Fix broken API generation
+* Web App
+  * Enforce breakpoint styling to ensure that the UI looks the same between mobile, desktop, tablet viewports
 
 ## 0.3.6
 * Web App
