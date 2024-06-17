@@ -1,11 +1,5 @@
 @use "src/general";
 
-:root {
-  --start-shadow: 0px 0px 25px 0px rgba(0, 0, 0, 1);
-  --pulse-shadow: 0px 0px 25px 3px rgba(0, 149, 255, 1);
-}
-
-
 .chip {
   display: flex;
   align-items: center;
@@ -19,7 +13,7 @@
 
 @keyframes pulseBackground {
   // Do not edit the steps of this animation unless you intend to not use box-shadow
-  // Update the variables inside of :root at the top of the file instead
+  // Update the variables inside of .pulse at the bottom of the file instead
 
   0%{ // Start
     box-shadow: var(--start-shadow);
@@ -41,5 +35,7 @@
 }
 
 .pulse {
+  --start-shadow: 0px 0px 25px 0px rgba(0, 0, 0, 1);
+  --pulse-shadow: 0px 0px 25px 3px rgba(0, 149, 255, 1);
   animation: pulseBackground 3s infinite;
 }
