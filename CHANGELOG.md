@@ -7,7 +7,7 @@
   * Add firmware version for main and expansion units on About page
   * Limit length of displayed stream names with ellipsis
   * Minor security increase to Pandora passwords
-  * Add restart stream button to stream player and stream modal
+  * Add restart stream button to stream modal
   * Add dynamic scaling to controls on Player page
   * Make update available badge show up on both Settings page and the menu bar
   * Fix stream icons
