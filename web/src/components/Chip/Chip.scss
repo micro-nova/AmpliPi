@@ -32,6 +32,10 @@
   60%{ // Recover 2
     box-shadow: var(--start-shadow);
   }
+
+  100%{ // End
+    box-shadow: var(--start-shadow);
+  }
 }
 
 .pulse {
