@@ -7,33 +7,10 @@
   text-shadow: 1px 2px 3px #000000;
 }
 
-.song-info-marquee{
-  max-width:50%;
-}
-
-.player-info-title {
-  font-size: 1.5rem !important;
-}
-
-.player-info-album {
-  font-size: 0.75rem !important;
-}
-
-.player-info-track {
-  font-size: 1.5rem !important;
-}
-
 .artist-name {
   @include general.header-font;
   color: general.$text-color;
-
-  @media (min-width: 365px) {
-    font-size: 1rem;
-  }
-
-  @media (max-width: 365px) {
-    font-size: 0.5rem;
-  }
+  font-size: 1rem;
 }
 
 .album-name {
@@ -41,25 +18,11 @@
   font-size: 0.75rem;
   @include general.header-font;
   color: general.$text-color;
-
-  @media (min-width: 365px) {
-    font-size: 0.75rem;
-  }
-
-  @media (max-width: 365px) {
-    font-size: 0.375rem;
-  }
+  font-size: 0.75rem;
 }
 
 .track-name {
   @include general.header-font;
   color: general.$text-color;
-
-  @media (min-width: 365px) {
-    font-size: 1rem;
-  }
-
-  @media (max-width: 365px) {
-    font-size: 0.5rem;
-  }
+  font-size: 1rem;
 }
