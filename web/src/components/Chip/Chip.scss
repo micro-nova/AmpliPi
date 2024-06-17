@@ -37,6 +37,10 @@
   12%{ // Reset 2
     transform: var(--left);
   }
+
+  // Because the animation ends on the same phase it begins, there is no need to have anything between 12-100%.
+  // In some animations this is not the case, but due to it being a simple translation there is no issue with snapping back
+  // into the original postion on animation restart
 }
 
 .shake {
