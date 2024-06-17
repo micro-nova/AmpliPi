@@ -4,10 +4,10 @@ import PropTypes from "prop-types";
 import "./Chip.scss";
 import StopProp from "@/components/StopProp/StopProp";
 
-const Chip = ({ children, onClick, style, pulse}) => {
+const Chip = ({ children, onClick, style, shake}) => {
     let className = "chip"
-    if(pulse){
-        className += " pulse"
+    if(shake){
+        className += " shake"
     }
     return (
         <StopProp>

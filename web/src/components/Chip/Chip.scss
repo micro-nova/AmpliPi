@@ -11,35 +11,31 @@
 }
 
 
-@keyframes pulseBackground {
+@keyframes shakeBackground {
   // Do not edit the steps of this animation unless you intend to not use box-shadow
-  // Update the variables inside of .pulse at the bottom of the file instead
+  // Update the variables inside of .shake at the bottom of the file instead
 
   0%{ // Start
-    box-shadow: var(--start-shadow);
+    transform: var(--left);
   }
 
-  15%{ // Pulse 1
-    box-shadow: var(--pulse-shadow);
+  3%{ // Shake 1
+    transform: var(--right);
   }
-  30%{ // Recover 1
-    box-shadow: var(--start-shadow);
-  }
-
-  45%{ // Pulse 2
-    box-shadow: var(--pulse-shadow);
-  }
-  60%{ // Recover 2
-    box-shadow: var(--start-shadow);
+  6%{ // Reset 1
+    transform: var(--left);
   }
 
-  100%{ // End
-    box-shadow: var(--start-shadow);
+  9%{ // Shake 2
+    transform: var(--right);
+  }
+  12%{ // Reset 2
+    transform: var(--left);
   }
 }
 
-.pulse {
-  --start-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
-  --pulse-shadow: 0px 0px 10px 0px rgba(0, 149, 255, 1);
-  animation: pulseBackground 2s infinite;
+.shake {
+  --left: translate(0px, 0px);
+  --right: translate(5px, 0px);
+  animation: shakeBackground 4s infinite;
 }
