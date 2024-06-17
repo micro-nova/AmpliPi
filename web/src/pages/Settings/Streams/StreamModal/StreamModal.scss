@@ -27,6 +27,11 @@
   align-items: center;
 }
 
+.stream-field {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
 .stream-field-name {
   @include general.regular-font;
   color: general.$text-color;

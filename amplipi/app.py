@@ -297,12 +297,17 @@ def code_response(ctrl: Api, resp: Union[ApiResponse, models.BaseModel]):
   if isinstance(resp, ApiResponse):
     if resp.code == ApiCode.OK:
       # general commands return None to indicate success
-      return ctrl.get_state() 
+      return ctrl.get_state()
     # TODO: refine error codes based on error message
     if resp.code == ApiCode.ERROR:
       if 'create stream failed:' in resp.msg or 'Unable to reconfigure stream' in resp.msg:
         logging.error(f"Error: {resp.msg}")
         raise HTTPException(400, resp.msg)
+      elif 'field' in resp.msg:
+        # TODO: refactor this error system to not be dependent on the error message and always return a json response, not just plain text
+        logging.error(f"Error: {resp.msg}")
+        resp.data['msg'] = resp.msg
+        raise HTTPException(400, resp.data)
       else:
         logging.error(f"Error: {resp.msg}")
         raise HTTPException(404, resp.msg)

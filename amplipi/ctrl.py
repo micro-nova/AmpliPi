@@ -70,9 +70,13 @@ class ApiCode(Enum):
 class ApiResponse:
   """ Ctrl Api Response object """
 
-  def __init__(self, code: ApiCode, msg: str = ''):
+  def __init__(self, code: ApiCode, msg: str = '', data: Optional[Dict] = None):
     self.code = code
     self.msg = msg
+    if data:
+      self.data = data
+    else:
+      self.data = {}
 
   def __str__(self):
     if self.code == ApiCode.OK:
@@ -83,6 +87,11 @@ class ApiResponse:
   def error(msg: str):
     """ create an error response """
     return ApiResponse(ApiCode.ERROR, msg)
+
+  @staticmethod
+  def fieldError(field: str, msg: str):
+    """ create an error response for a specific field """
+    return ApiResponse(ApiCode.ERROR, msg, {"field": field})
 
   @staticmethod
   def ok():
@@ -1007,8 +1016,11 @@ class Api:
       logger.error(traceback.format_exc())
       if internal:
         raise exc
-      if type(exc) == KeyError:
+      if isinstance(exc, KeyError):
         return ApiResponse.error(f'missing stream field: {exc}')
+      if isinstance(exc, amplipi.streams.InvalidStreamField):
+        # TODO: any refactor of exceptions should also fix the below
+        return ApiResponse.fieldError(exc.field, exc.msg)
       return ApiResponse.error(f'create stream failed: {exc}')
 
   @save_on_success

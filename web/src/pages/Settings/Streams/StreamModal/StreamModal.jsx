@@ -6,26 +6,28 @@ import Alert from "@mui/material/Alert";
 import "./StreamModal.scss";
 import StreamTemplates from "../StreamTemplates.json";
 import ModalCard from "@/components/ModalCard/ModalCard";
+import TextField from '@mui/material/TextField';
 
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown";
 const DISABLED_DESC = "Don't show this stream in the input dropdown";
 const RESTART_DESC = "Sometimes the stream gets into a bad state and neds to be restarted. If that happened to this stream, click this to restart the stream.";
 
-// We're already using mui, why are we reinventing the wheel? https://mui.com/material-ui/react-text-field/
-// if it's a matter of className control on the underlying components, that still works with the mui textfield with the InputLabelProps prop and other componentProps
-const TextField = ({ name, desc, type="text", defaultValue, onChange }) => {
+const TextArg = ({ name, desc, type="text", defaultValue, onChange, required, error }) => {
 
     return (
         <>
             <div className="stream-field">
-                <div className="stream-field-name">{name}</div>
-                <input
+                <TextField
                     type={type}
+                    label={name}
+                    error={error}
                     defaultValue={defaultValue}
                     onChange={(e) => {
                         onChange(e.target.value);
                     }}
+                    required={required}
+                    id={required? "outlined-required" : "outlined-basic"}
                 />
                 <div className="stream-field-desc">{desc}</div>
             </div>
@@ -33,12 +35,14 @@ const TextField = ({ name, desc, type="text", defaultValue, onChange }) => {
         </>
     );
 };
-TextField.propTypes = {
+TextArg.propTypes = {
     name: PropTypes.string.isRequired,
-    desc: PropTypes.string.isRequired,
+    desc: PropTypes.string,
     type: PropTypes.string,
     defaultValue: PropTypes.string,
     onChange: PropTypes.func.isRequired,
+    required: PropTypes.bool.isRequired,
+    error: PropTypes.bool
 };
 
 // this could be collapsed into TextField by adding a prop named something like "mode" or "type" with a switch dependant on it to return a version with checkbox or text
@@ -162,9 +166,20 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
 
     const [errorMessage, setErrorMessage] = React.useState("");
 
+    const [errorField, setErrorField] = React.useState("");
+
     const streamTemplate = StreamTemplates.filter(
         (t) => t.type === stream.type
     )[0];
+    // HACK slight hack to ensure name is always present
+    if(streamTemplate.fields.filter((field) => field.name === "Name").length === 0){
+        streamTemplate.fields.unshift(
+            {
+                "name": "Name",
+                "type": "name",
+                "required": true
+            });
+    }
 
     return (
         <ModalCard
@@ -175,56 +190,92 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                 onClose();
             }}
             onAccept={() => {
+                // Check if all required fields are filled
+                for (const field of streamTemplate.fields) {
+                    if (field.required && (!(field.name.toLowerCase() in streamFields) || streamFields[field.name.toLowerCase()] === "")) {
+                        setErrorField(field.name);
+                        setErrorMessage(`Field ${field.name} is required`);
+                        return;
+                    }
+                }
                 apply(streamFields).then((response)=>{
                     if(response.ok)
                     {
+                        setErrorField("");
                         onClose();
                     }
-                    response.json().then((error)=>{setErrorMessage(error.detail)});
+                    response.json().then((error)=>{
+                        /*
+                            Check type of error detail...
+                            if it's a string it's some internal error
+                            if it's an object it's a field error
+                            otherwise we don't even know how to render it
+                            TODO:   if/when we refactor API errors this probably
+                                    also needs a refactor
+                        */
+                        if(typeof error.detail === "string"){
+                            setErrorMessage(error.detail);
+                        }
+                        else if(typeof error.detail === "object"){
+                            setErrorField(error.detail.field);
+                            setErrorMessage(error.detail.msg);
+                        }
+                        else{
+                            setErrorMessage("Unknown error");
+                        }
+                    });
                 });
             }}
         >
             <div>
-                <TextField
-                    name="Name"
-                    desc={NAME_DESC}
-                    defaultValue={streamFields.name}
-                    onChange={(v) => {
-                        setStreamFields({ ...streamFields, name: v });
-                    }}
-                />
                 {
                     // Render fields from StreamFields.json
                     streamTemplate.fields.map((field) => {
                         switch (field.type) {
-                            case "text":
-                                return (
-                                    <TextField
-                                        key={field.name}
-                                        name={field.name}
-                                        desc={field.desc}
-                                        type={"text"}
-                                        required={field.required}
-                                        defaultValue={streamFields[field.name]}
-                                        onChange={(v) => {
-                                            setStreamFields({ ...streamFields, [field.name]: v });
-                                        }}
-                                    />
-                                );
-                            case "password":
-                                return (
-                                    <TextField
-                                        key={field.name}
-                                        name={field.name}
-                                        desc={field.desc}
-                                        type={"password"}
-                                        required={field.required}
-                                        defaultValue={streamFields[field.name]}
-                                        onChange={(v) => {
-                                            setStreamFields({ ...streamFields, [field.name]: v });
-                                        }}
-                                    />
-                                );
+                        case "name":
+                            return (
+                                <TextArg
+                                    key="Name"
+                                    name="Name"
+                                    desc={NAME_DESC}
+                                    defaultValue={streamFields.name}
+                                    required={field.required == true}
+                                    error={errorField.toLowerCase()==field.name.toLowerCase()}
+                                    onChange={(v) => {
+                                        setStreamFields({ ...streamFields, name: v });
+                                    }}
+                                />
+                            );
+                        case "text":
+                            return (
+                                <TextArg
+                                    key={field.name}
+                                    name={field.name}
+                                    desc={field.desc}
+                                    type={"text"}
+                                    required={field.required == true}
+                                    error={errorField.toLowerCase()==field.name.toLowerCase()}
+                                    defaultValue={streamFields[field.name]}
+                                    onChange={(v) => {
+                                        setStreamFields({ ...streamFields, [field.name]: v });
+                                    }}
+                                />
+                            );
+                        case "password":
+                            return (
+                                <TextArg
+                                    key={field.name}
+                                    name={field.name}
+                                    desc={field.desc}
+                                    type={"password"}
+                                    required={field.required == true}
+                                    error={errorField.toLowerCase()==field.name.toLowerCase()}
+                                    defaultValue={streamFields[field.name]}
+                                    onChange={(v) => {
+                                        setStreamFields({ ...streamFields, [field.name]: v });
+                                    }}
+                                />
+                            );
                         case "bool":
                             return (
                                 <BoolField
@@ -280,7 +331,7 @@ StreamModal.propTypes = {
     stream: PropTypes.any.isRequired,
     onClose: PropTypes.func.isRequired,
     apply: PropTypes.func.isRequired,
-    del: PropTypes.func.isRequired,
+    del: PropTypes.func,
 };
 
 export default StreamModal;

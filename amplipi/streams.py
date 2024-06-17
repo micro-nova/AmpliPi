@@ -87,11 +87,12 @@ def uuid_gen():
   return '39ae35cc-b4c1-444d-b13a-294898d771fa'
 
 class InvalidStreamField(Exception):
-  def __init__(self, msg):
-    self.msg = "invalid stream field(" + msg + ")"
+  def __init__(self, field, message):
+    self.msg = f"invalid stream field '{field}': {message}"
+    self.field = field
   def __str__(self):
     return repr(self.msg)
-  
+
 class Browsable:
   """ A stream that can be browsed for items """
   # technically does nothing but is a marker for streams that can be browsed
@@ -202,7 +203,7 @@ class BaseStream:
   def browse(self, parent: Optional[int] = None) -> List[models.BrowsableItem]:
     """ Browse the stream for items"""
     raise NotImplementedError()
-  
+
   def validate_stream(self, **kwargs):
     """ Validate fields """
     raise NotImplementedError()
@@ -581,8 +582,8 @@ class AirPlay(PersistentStream):
 
   def validate_stream(self, **kwargs):
     if 'name' in kwargs and len(kwargs['name']) > 50:
-      raise InvalidStreamField("name cannot exceed 50 characters")
-    
+      raise InvalidStreamField("name", "name cannot exceed 50 characters")
+
 
 class Spotify(PersistentStream):
   """ A Spotify Stream """
@@ -702,11 +703,11 @@ class Spotify(PersistentStream):
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception as e:
       raise Exception(f"Error sending command {cmd}: {e}") from e
-    
+
   def validate_stream(self, **kwargs):
     regex = r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
     if 'name' in kwargs and not re.fullmatch(regex, kwargs['name']):
-      raise InvalidStreamField("invalid device name")
+      raise InvalidStreamField("name", "invalid device name")
 
 class Pandora(PersistentStream, Browsable):
   """ A Pandora Stream """
@@ -966,7 +967,7 @@ class Pandora(PersistentStream, Browsable):
   def validate_stream(self, **kwargs):
     regex = r'\b[A-Za-z0-9._%+-]+@(?:(?!.*\.\.)[A-Za-z0-9.-])+(\.[A-Za-z]{2,7})\b'
     if 'user' in kwargs and not re.fullmatch(regex, kwargs['user']):
-      raise InvalidStreamField("invalid username")
+      raise InvalidStreamField("user", "invalid username")
 
 
 class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid issue, figure out next and prev
@@ -1203,9 +1204,9 @@ class InternetRadio(BaseStream):
     url_regex = r'^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$'
     logo_regex = r'^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)\.(?:jpg|gif|png)$'
     if 'url' in kwargs and not re.fullmatch(url_regex, kwargs['url']):
-      raise InvalidStreamField("invalid url")
+      raise InvalidStreamField("url", "invalid url")
     if 'logo' in kwargs and not re.fullmatch(logo_regex, kwargs['logo']):
-      raise InvalidStreamField("invalid logo url")
+      raise InvalidStreamField("logo", "invalid logo url")
 
 
 class Plexamp(BaseStream):
