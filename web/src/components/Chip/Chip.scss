@@ -11,9 +11,14 @@
 }
 
 
-@keyframes shakeBackground {
-  // Do not edit the steps of this animation unless you intend to not use box-shadow
+@keyframes shakeComponent {
+  // Shakes a component. Used to draw attention to the add zones button when there are no zones connnected to a source
+  // We've tried animations that change the color and opacity of the background, and animations that change the size and color of the shadow
+  // We landed on a shake to provide accessibility to the color blind
+
+  // Do not edit the steps of this animation unless you intend to not use translate
   // Update the variables inside of .shake at the bottom of the file instead
+  // The prime directive when changing this is to have something that draws attention, but doesn't demand it; Don't overdo the animation.
 
   0%{ // Start
     transform: var(--left);
@@ -37,5 +42,5 @@
 .shake {
   --left: translate(0px, 0px);
   --right: translate(5px, 0px);
-  animation: shakeBackground 4s infinite;
+  animation: shakeComponent 4s infinite;
 }
