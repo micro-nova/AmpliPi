@@ -11,6 +11,13 @@
     "editor.rulers": [100]
   },
   "C_Cpp.default.cStandard": "c23",
+  "C_Cpp.default.defines": [
+    "STM32F030", // Define the type of STM32 used on the preamp.
+
+    // TODO: Remove true/false once the C/C++ extension's intellisense supports this feature of c23.
+    "false=0", // Not used for compilation, only intellisense.
+    "true=1"   // Not used for compilation, only intellisense.
+  ],
   "files.associations": {
     // The C/C++ extension treats *.h files as "non-standard" C files,
     // and updates this list every time a .h file is opened.

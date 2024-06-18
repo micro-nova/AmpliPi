@@ -35,6 +35,7 @@
 
 // I2C GPIO registers
 const I2CReg pwr_io_dir_  = {0x42, 0x00};
+const I2CReg pwr_io_gppu_ = {0x42, 0x06};
 const I2CReg pwr_io_gpio_ = {0x42, 0x09};
 const I2CReg pwr_io_olat_ = {0x42, 0x0A};
 
@@ -245,7 +246,8 @@ void initInternalI2C() {
   pin_write(exp_nrst_, true);
 
   // Set the direction for the power board GPIO
-  writeRegI2C2(pwr_io_dir_, 0x7C);  // 0=output, 1=input
+  writeRegI2C2(pwr_io_dir_, (uint8_t)~PWR_GPIO_OUT_MASK);   // 0=output, 1=input
+  writeRegI2C2(pwr_io_gppu_, (uint8_t)~PWR_GPIO_OUT_MASK);  // Give inputs a 100k pullup to +3.3V.
 
   // If the Preamp's EEPROM is present, then this is a Rev4+ board with inverted mux enable logic.
   rev4_ = i2c_detect(EEPROM_I2C_ADDR_BASE);  // The preamp's EEPROM has address 0.
@@ -295,7 +297,7 @@ void updateInternalI2C(bool initialized) {
       pwr_gpio.fan_fail_n = !false;
       pwr_gpio.ovr_tmp_n  = !false;
     }
-    setPwrGpio(pwr_gpio);
+    set_pwr_gpio(pwr_gpio);
 
     // Update the LED Board's LED state (possible I2C write)
     updateLeds(initialized);
@@ -307,7 +309,7 @@ void updateInternalI2C(bool initialized) {
       .en_12v = true,  // Always enable 12V
       .fan_on = getFanOnFromDuty(),
   };
-  if (gpio_request.data != (PWR_GPIO_OUT_MASK & getPwrGpio().data)) {
+  if (gpio_request.data != (PWR_GPIO_OUT_MASK & get_pwr_gpio().data)) {
     writeRegI2C2(pwr_io_gpio_, gpio_request.data);
   }
 

@@ -61,10 +61,10 @@ def print_status(p: rt._Preamps, u: int):
     sys.exit(ExitCode.BAD_VERSION)
   print(f'  Version {major}.{minor}-{git_hash:07X}, {"dirty" if dirty else "clean"}')
 
-  # Power - note: failed only exists on Rev2 Power Board
-  pg_9v, en_9v, pg_12v, en_12v, v12 = p.read_power_status(u)
-  print(f'   9V: EN={en_9v}, PG={pg_9v}')
-  print(f'  12V: EN={en_12v}, PG={pg_12v}, {v12} V')
+  # Power
+  pstat = p.read_power_status(u)
+  print(f'  Power: PG_5VD={pstat.pg_5vd}, PG_5VA={pstat.pg_5va}, PG_9V={pstat.pg_9v}, PG_12V={pstat.pg_12v}')
+  print(f'         9V_EN={pstat.en_9v}, 12V_EN={pstat.en_12v}, {pstat.v12} V')
 
   # 24V and temp
   hv1, hv2 = p.read_hv(u)
@@ -103,11 +103,15 @@ def self_check(p: rt._Preamps, unit: Optional[int] = None) -> bool:
   success = True
   for u in range(len(p.preamps)):
     if not unit or u + 1 == unit:  # u is 0-based, unit is 1-based
-      _, _, pg_12v, _, v12 = p.read_power_status(u + 1)
-      v12_ok = 6 < v12 < 12.5
-      success &= pg_12v and v12_ok
-      print_cond(u, pg_12v, f'PG_12V {"ok" if pg_12v else "bad"}')
-      print_cond(u, v12_ok, f'12V supply {"ok" if v12_ok else "bad"} - {v12:.2f}V')
+      pstat = p.read_power_status(u + 1)
+      v12_ok = 6 < pstat.v12 < 12.5
+      success &= pstat.pg_5vd and pstat.pg_5va and pstat.pg_9v and pstat.pg_12v and v12_ok
+      print_cond(u, pstat.pg_5vd, f'PG_5VD {"ok" if pstat.pg_5vd else "bad"}')
+      print_cond(u, pstat.pg_5va, f'PG_5VA {"ok" if pstat.pg_5va else "bad"}')
+      print_cond(u, pstat.pg_9v, f'PG_9V {"ok" if pstat.pg_9v else "bad"}')
+      print_cond(u, pstat.pg_12v, f'PG_12V {"ok" if pstat.pg_12v else "bad"}')
+      print_cond(u, v12_ok, f'12V supply {"ok" if v12_ok else "bad"} - {pstat.v12:.2f}V')
+
       hv1_tmp, hv2_tmp, amp1_tmp, amp2_tmp = p.read_temps(u + 1)
       hv2_present = hv2_tmp is not None
       hv1_ok = -19 <= hv1_tmp <= 106
