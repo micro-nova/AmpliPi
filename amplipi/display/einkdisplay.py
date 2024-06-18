@@ -102,10 +102,10 @@ class EInkDisplay(Display):
         # poll stale by checking if info differs
         new_info = get_info(self.iface, default_pass, self._boot)
 
-        # Ensure start up screen times out when 60 seconds pass
         if self._boot and datetime.datetime.now() > self._boot_timeout:
           self._boot = False
-          set_custom_display_status(None)
+          set_custom_display_status(DisplayStatus(None, None))
+          display_change_counter = self.refresh_interval + 1
 
         if new_info != info:
           info = new_info
