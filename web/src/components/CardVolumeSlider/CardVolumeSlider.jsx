@@ -40,6 +40,19 @@ const CardVolumeSlider = ({ sourceId }) => {
     const zones = useStatusStore((s) => s.status.zones);
     const setZonesVol = useStatusStore((s) => s.setZonesVol);
     const setZonesMute = useStatusStore((s) => s.setZonesMute);
+    const state = useStatusStore((s) => s.status.sources[sourceId].info.state);
+
+    const [playing, setPlaying] = React.useState(false);
+
+    React.useEffect(() => {
+        if(state == "playing"){
+            setPlaying(true);
+        } else {
+            setPlaying(false);
+        }
+
+        console.log(`State for source ${sourceId}: ${state}`)
+    }, [state])
 
     const setPlayerVolRaw = (vol) =>
         applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
@@ -90,6 +103,7 @@ const CardVolumeSlider = ({ sourceId }) => {
     return (
         <div className="volume-slider">
             <VolumeSlider
+                playing={playing}
                 vol={value}
                 mute={mute}
                 setMute={setMute}
