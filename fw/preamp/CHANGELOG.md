@@ -1,5 +1,9 @@
 # Preamp Board Firmware Changelog
 
+## 1.9-7CCD3BD
+
+- Added support for the new 5VD, 5VA, and 9V power-good signals on the Rev6.A power board.
+
 ## 1.8-1743BFB
 
 - Removed debug messages from release build and created separate debug build. Fixes #587.
