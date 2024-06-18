@@ -1,6 +1,6 @@
 # AmpliPi Software Releases
 
-## Upcoming Release
+## 0.3.6
 * Web App
   * Add initial support for song browser (only Pandora stations for now)
   * Add streams to the stream list on the homepage in the order they were added
