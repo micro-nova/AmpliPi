@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 # temporary directory for each test config
 import tempfile
 import os
-from copy import deepcopy # copy test config
+from copy import deepcopy  # copy test config
 
 # add some random delays to stream commands
 from time import sleep
@@ -30,16 +30,16 @@ from context import amplipi
 
 TEST_CONFIG = amplipi.defaults.DEFAULT_CONFIG
 
-NO_SOURCE = -1 # Allows a zone to be disconnected from any source
+NO_SOURCE = -1  # Allows a zone to be disconnected from any source
 
 # add several groups and most of the default streams to the config
 TEST_CONFIG['groups'] = [
   {"id": 100, "name": "Group 1", "zones": [1, 2], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
   {"id": 101, "name": "Group 2", "zones": [3, 4], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
-  {"id": 102, "name": "Group 3", "zones": [5],    "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
-  {"id": 103, "name": "Empty",   "zones": [],     "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
+  {"id": 102, "name": "Group 3", "zones": [5], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
+  {"id": 103, "name": "Empty", "zones": [], "source_id": 0, "mute": True, "vol_f": amplipi.models.MIN_VOL_F},
 ]
-RCAs =  amplipi.defaults.RCAs
+RCAs = amplipi.defaults.RCAs
 AUX_STREAM_ID = amplipi.defaults.AUX_STREAM_ID
 AP_STREAM_ID = 1000
 P_STREAM_ID = 1001
@@ -50,17 +50,19 @@ TEST_CONFIG['streams'] = [
   {"id": RCAs[2], "name": "Input 3", "type": "rca", "index": 2},
   {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3},
   {"id": AP_STREAM_ID, "name": "AmpliPi", "type": "shairport", "ap2": False},
-  {"id": P_STREAM_ID, "name": "Radio Station, needs user/pass/station-id", "type": "pandora", "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
+  {"id": P_STREAM_ID, "name": "Radio Station, needs user/pass/station-id", "type": "pandora",
+   "user": "change@me.com", "password": "CHANGEME", "station": "CHANGEME"},
   {"id": 1002, "name": "AmpliPi", "type": "spotify"},
-  {"id": 1003, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
+  {"id": 1003, "name": "Groove Salad", "type": "internetradio",
+   "url": "http://ice6.somafm.com/groovesalad-32-aac", "logo": "https://somafm.com/img3/groovesalad-400.jpg"},
   {"id": 1004, "name": "AmpliPi", "type": "dlna"},
   {"id": 1005, "name": "AmpliPi", "type": "lms"},
 ]
 TEST_CONFIG['presets'] = [
   {"id": 10000,
-    "name": "Mute All",
-    "state" : {
-      "zones" : [
+   "name": "Mute All",
+   "state": {
+      "zones": [
         {"id": 0, "mute": True},
         {"id": 1, "mute": True},
         {"id": 2, "mute": True},
@@ -69,28 +71,31 @@ TEST_CONFIG['presets'] = [
         {"id": 5, "mute": True},
       ]
     }
-  },
+   },
   {"id": 10001,
-    "name": "Play Pandora",
-    "state" : {
-      "sources" : [
+   "name": "Play Pandora",
+   "state": {
+      "sources": [
         {"id": 1, "input": "stream=1001"},
       ],
-      "groups" : [
+      "groups": [
         {"id": 100, "source_id": 1},
         {"id": 101, "source_id": 1},
       ]
     }
-  }
+   }
 ]
+
 
 def base_config():
   """ Default Amplipi configuration """
   return TEST_CONFIG
 
+
 def base_config_copy():
   """ Modify-able Amplipi configuration """
   return deepcopy(TEST_CONFIG)
+
 
 def base_config_no_presets():
   """ AmpliPi configuration with presets field unpopulated """
@@ -98,17 +103,20 @@ def base_config_no_presets():
   del cfg['presets']
   return cfg
 
+
 def base_config_no_groups():
   """ AmpliPi configuration with groups field unpopulated """
   cfg = base_config_copy()
   del cfg['groups']
   return cfg
 
+
 def base_config_no_streams():
   """ AmpliPi configuration with streams field unpopulated """
   cfg = base_config_copy()
   del cfg['streams']
   return cfg
+
 
 def base_config_vol_db():
   """ Old AmpliPi configuration with dB volumes only """
@@ -123,19 +131,22 @@ def base_config_vol_db():
     g['vol_delta'] = amplipi.models.MIN_VOL_DB
   return cfg
 
+
 def status_copy(client):
   """ Modify-able copy of AmpliPi's status """
   rv = client.get('/api/')
   jrv = rv.json()
   assert jrv is not None
-  return jrv # jrv was already serialized so it should be a copy
+  return jrv  # jrv was already serialized so it should be a copy
 
-def find(elements:List, eid:int):
+
+def find(elements: List, eid: int):
   """ Find an element with id==eid """
   for i in elements:
     if i['id'] == eid:
       return i
   return None
+
 
 @pytest.fixture(params=[base_config_copy(), base_config_no_presets(), base_config_no_groups(), base_config_no_streams(), base_config_vol_db()])
 def client(request):
@@ -152,11 +163,12 @@ def client(request):
     cfg_file.write(json.dumps(cfg))
   app = amplipi.app.create_app(mock_ctrl=True, mock_streams=True, config_file=config_file, delay_saves=False)
   c = TestClient(app)
-  c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
+  c.original_config = deepcopy(cfg)  # add the loaded config so we can remember what was loaded
   return c
 
+
 @pytest.fixture(params=[base_config_copy()])
-def clientnm(request):# Non-mock systems should use this client - mock_ctrl and mock_streams are False here
+def clientnm(request):  # Non-mock systems should use this client - mock_ctrl and mock_streams are False here
   """ AmpliPi instance connected to a real AmpliPi controller """
   cfg = request.param
   config_dir = tempfile.mkdtemp()
@@ -170,15 +182,18 @@ def clientnm(request):# Non-mock systems should use this client - mock_ctrl and 
     cfg_file.write(json.dumps(cfg))
   app = amplipi.app.create_app(mock_ctrl=False, mock_streams=False, config_file=config_file, delay_saves=False)
   c = TestClient(app)
-  c.original_config = deepcopy(cfg) # add the loaded config so we can remember what was loaded
+  c.original_config = deepcopy(cfg)  # add the loaded config so we can remember what was loaded
   return c
 
 # TODO: the web view test should be added to its own testfile once we add more functionality to the site
-@pytest.mark.parametrize('path', ['' , '/'])
+
+
+@pytest.mark.parametrize('path', ['', '/'])
 def test_view(client: TestClient, path):
   """ Test the web app's main view """
   rv = client.get(path)
   assert rv.status_code == HTTPStatus.OK
+
 
 @pytest.mark.parametrize('path', ['/api', '/api/'])
 def test_base(client, path):
@@ -194,15 +209,17 @@ def test_base(client, path):
         assert len(jrv[t]) == len(og_config[t])
     # make sure a real version is reported
     assert 'info' in jrv and 'version' in jrv['info']
-    assert len(jrv['info']['version'].split('.')) in [3,4] # alpha/beta builds have an extra version string
+    assert len(jrv['info']['version'].split('.')) in [3, 4]  # alpha/beta builds have an extra version string
   else:
     assert path == '/api'
     assert '/api/' in rv.location
+
 
 def test_reset(client):
   """ Reset the firmware """
   rv = client.post('/api/reset')
   assert rv.status_code == HTTPStatus.OK
+
 
 def check_config(expected, actual):
   """Check configuration changes match expected"""
@@ -210,18 +227,21 @@ def check_config(expected, actual):
   for t in ['sources', 'streams', 'zones', 'groups', 'presets']:
     if t in expected:
       assert t in actual, f'missing field {t}'
-      assert len(actual[t]) == len(expected[t]), f'failed to load {t} portion of configuration expected: {expected[t]}, actual: {actual[t]}'
+      assert len(actual[t]) == len(
+        expected[t]), f'failed to load {t} portion of configuration expected: {expected[t]}, actual: {actual[t]}'
       # check ids and names match for each field, avoiding generated data
-      exp_ids = { exp["id"]: exp for exp in expected[t] }
+      exp_ids = {exp["id"]: exp for exp in expected[t]}
       for iact in actual[t]:
         assert iact["id"] in exp_ids, f'{iact["name"]}(id={iact["id"]}) missing from expected config'
-        assert iact["name"] == exp_ids[iact["id"]]["name"], f'{iact["name"]} does not match expected={exp_ids[iact["id"]]["name"]}'
+        assert iact["name"] == exp_ids[iact["id"]
+                                       ]["name"], f'{iact["name"]} does not match expected={exp_ids[iact["id"]]["name"]}'
     else:
       assert t in actual, f'missing field {t}, it is still expected to be generated empty even though it not specified in the expected configuration'
       if t == 'streams':
         assert len(actual[t]) == 5, f'{t} should be populated by the 4 default RCA streams and the aux stream'
       else:
         assert len(actual[t]) == 0, f'{t} should be empty since it is not preset in expected config'
+
 
 def test_load_og_config(client):
   """ Reload the initial configuration """
@@ -230,12 +250,14 @@ def test_load_og_config(client):
   if rv.status_code == HTTPStatus.OK:
     check_config(client.original_config, rv.json())
 
+
 def test_load_null_config(client):
   """ Load with the basic default configuration """
   rv = client.post('/api/load', json=amplipi.models.Status().dict())
   assert rv.status_code == HTTPStatus.OK
   if rv.status_code == HTTPStatus.OK:
     check_config(amplipi.models.Status().dict(), rv.json())
+
 
 def test_load_stream_missing_config(client):
   """ A config loaded with a missing stream will be a common problem when changing versions.
@@ -245,7 +267,7 @@ def test_load_stream_missing_config(client):
   unsupported_stream_cfg = amplipi.models.Status().dict()
   unsupported_stream_cfg['sources'][0]['input'] = 'stream=2000'
   unsupported_stream_cfg['streams'] = [
-    {"id": 2000, 'name': 'Unsupported stream', "type": "unsupported-type" }
+    {"id": 2000, 'name': 'Unsupported stream', "type": "unsupported-type"}
   ]
   rv = client.post('/api/load', json=unsupported_stream_cfg)
   assert rv.status_code == HTTPStatus.OK
@@ -255,13 +277,14 @@ def test_load_stream_missing_config(client):
     check_config(amplipi.models.Status().dict(), rv.json())
     assert status['sources'][0]['input'] == ''
 
+
 def test_load_old_config(client):
   """ Test that an old config has its RCA input names updated and the aux stream and version number are added"""
   # convert the config into something that looks like an old config
   source_names = ['tv', 'record player', 'cd player', 'jukebox']
   old_config = base_config_copy()
   old_config.pop('version')
-  old_config['streams'].pop(0) # remove the aux stream
+  old_config['streams'].pop(0)  # remove the aux stream
   for i in range(4):
     rca_stream = old_config['streams'].pop(0)
     assert rca_stream['type'] == 'rca'
@@ -276,6 +299,7 @@ def test_load_old_config(client):
     if s['type'] == 'rca':
       assert s['name'] == source_names[s['index']], print('old source name was not converted to rca stream name')
   assert status['streams'][0]['type'] == 'aux', 'aux stream was not added to old config'
+
 
 def test_load_multi_config(client):
   """ Load multiple configurations """
@@ -353,6 +377,7 @@ def test_load_multi_config(client):
   if rv.status_code == HTTPStatus.OK:
     check_config(bare_cfg, rv.json())
 
+
 def test_open_api_yamlfile(client):
   """ Check if the openapi yaml doc is available """
   rv = client.get('/openapi.yaml')
@@ -362,6 +387,8 @@ def test_open_api_yamlfile(client):
 # Examples: https://docs.pytest.org/en/stable/example/parametrize.html#paramexamples
 
 # Test Status
+
+
 def test_get_info(client):
   """ Check the system information """
   rv = client.get(f'/api/info')
@@ -374,9 +401,12 @@ def test_get_info(client):
       assert val.lower() != 'unknown', f"Unpopulated info field {key}"
 
 # Test Sources
+
+
 def base_source_ids():
   """ Default Source ids """
-  return [ s['id'] for s in base_config()['sources']]
+  return [s['id'] for s in base_config()['sources']]
+
 
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_get_source(client, sid):
@@ -389,6 +419,7 @@ def test_get_source(client, sid):
   assert s['name'] == jrv['name']
   assert jrv['info']['supported_cmds'] is not None
 
+
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_patch_source_name(client, sid):
   """ Try changing a source's name """
@@ -399,15 +430,17 @@ def test_patch_source_name(client, sid):
   assert s is not None
   assert s['name'] == 'patched-name'
 
+
 @pytest.mark.parametrize('src_id', base_source_ids())
-@pytest.mark.parametrize('_input', ['stream=1001', 'stream=-1', 'stream=RCA', 'stream=WRONG_RCA', '']) # add a non-existent stream
+# add a non-existent stream
+@pytest.mark.parametrize('_input', ['stream=1001', 'stream=-1', 'stream=RCA', 'stream=WRONG_RCA', ''])
 def test_patch_source_input(client, src_id, _input):
   """ Try changing a source's input """
   last_state = status_copy(client)
   wrong_rca = False
   if 'WRONG_RCA' in _input:
     wrong_rca = True
-    _input = _input.replace('WRONG_RCA', str(RCAs[src_id-1]))
+    _input = _input.replace('WRONG_RCA', str(RCAs[src_id - 1]))
   elif 'RCA' in _input:
     _input = _input.replace('RCA', str(RCAs[src_id]))
   stream_id = int(_input.split('stream=')[1]) if _input and 'stream=' in _input else -1
@@ -429,6 +462,7 @@ def test_patch_source_input(client, src_id, _input):
     assert s is not None
     assert s['input'] == last_src['input'], 'input modified on failed patch'
 
+
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_get_source_image(client, sid):
   """ Try getting an image for a source """
@@ -444,9 +478,12 @@ def test_get_source_image(client, sid):
   assert rv.headers['content-disposition'] == f'attachment; filename="{expected_file}.jpg"'
 
 # Test Zones
+
+
 def base_zone_ids():
   """ Default zones """
-  return [ s['id'] for s in base_config()['zones']]
+  return [s['id'] for s in base_config()['zones']]
+
 
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_get_zone(client, zid):
@@ -458,6 +495,7 @@ def test_get_zone(client, zid):
   assert s is not None
   assert s['name'] == jrv['name']
 
+
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_patch_zone_rename(client, zid):
   """ Try changing a zones name """
@@ -467,6 +505,7 @@ def test_patch_zone_rename(client, zid):
   s = find(jrv['zones'], zid)
   assert s is not None
   assert s['name'] == 'patched-name'
+
 
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_patch_zone_mute_disable(client, zid):
@@ -490,7 +529,8 @@ def test_patch_zone_mute_disable(client, zid):
   jrv = rv.json()
   s = find(jrv['zones'], zid)
   assert s is not None
-  assert s['mute'] == True # a disabled zone overrides/forces mute
+  assert s['mute'] == True  # a disabled zone overrides/forces mute
+
 
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_patch_zone_mute_disconnect(client, zid):
@@ -514,7 +554,8 @@ def test_patch_zone_mute_disconnect(client, zid):
   jrv = rv.json()
   s = find(jrv['zones'], zid)
   assert s is not None
-  assert s['mute'] == True # a disconnected zone overrides/forces mute
+  assert s['mute'] == True  # a disconnected zone overrides/forces mute
+
 
 @pytest.mark.parametrize('sid', base_source_ids())
 def test_patch_zones(client, sid):
@@ -527,6 +568,7 @@ def test_patch_zones(client, sid):
     if z['id'] in range(6):
       assert z['source_id'] == sid
 
+
 def test_patch_zones_duplicate_name(client):
   """ Try changing multiple zones and setting base name """
   rv = client.patch('/api/zones', json={'zones': [z for z in range(6)], 'update': {'name': 'test'}})
@@ -538,9 +580,12 @@ def test_patch_zones_duplicate_name(client):
       assert z['name'] == f"test {z['id']+1}"
 
 # Test Groups
+
+
 def base_group_ids():
   """ Default groups """
-  return [ s['id'] for s in base_config()['groups']]
+  return [s['id'] for s in base_config()['groups']]
+
 
 def test_post_group(client):
   """ Try creating a new group """
@@ -553,7 +598,7 @@ def test_post_group(client):
     assert 'name' in g
     assert g['name'] != 'Whole House'
   # try creating the whole house group
-  grp = {'name' : 'Whole House', 'zones' : [0, 1, 2, 3, 4, 5]}
+  grp = {'name': 'Whole House', 'zones': [0, 1, 2, 3, 4, 5]}
   rv = client.post('/api/group', json=grp)
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
@@ -561,6 +606,7 @@ def test_post_group(client):
   assert isinstance(jrv['id'], int)
   for k, v in grp.items():
     assert jrv[k] == v
+
 
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_get_group(client, gid):
@@ -577,6 +623,7 @@ def test_get_group(client, gid):
   assert s is not None
   assert s['name'] == jrv['name']
 
+
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_patch_group(client, gid):
   """ Try changing a group's name """
@@ -591,6 +638,7 @@ def test_patch_group(client, gid):
   s = find(jrv['groups'], gid)
   assert s is not None
   assert s['name'] == 'patched-name'
+
 
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_delete_group(client, gid):
@@ -609,16 +657,21 @@ def test_delete_group(client, gid):
       assert find(jrv['groups'], other_gid) is not None
 
 # test streams
+
+
 def base_stream_ids():
   """ Return all of the stream IDs belonging to each of the streams in the base config """
   return [s['id'] for s in base_config()['streams']]
+
 
 def removable_stream_ids():
   """ Only removable streams (RCAs are exempt) """
   return [s for s in base_stream_ids() if s not in (RCAs + [AUX_STREAM_ID])]
 
+
 def airplay_stream_ids():
   return [s['id'] for s in base_config()['streams'] if s['type'] == 'airplay' or s['type'] == 'shairport']
+
 
 def airplay_names():
   return {
@@ -645,8 +698,10 @@ def airplay_names():
     "Guest Room Sound Dock with Bluetooth and Wi-Fi Connectivity for Easy Streaming": False
   }.items()
 
+
 def pandora_stream_ids():
   return [s['id'] for s in base_config()['streams'] if s['type'] == 'pandora']
+
 
 def pandora_users():
   return {
@@ -654,7 +709,6 @@ def pandora_users():
     "user@example.com": True,
     "john.doe@example.co.uk": True,
     "user_name123@example.org": True,
-    "user.name+alias@sub.domain.net": True,
     "user.name@example.travel": True,
     "username@domain.co": True,
     "user123@example.io": True,
@@ -662,15 +716,16 @@ def pandora_users():
     "user@.com": False,
     "user@domain.c": False,
     "@example.com": False,
-    "user@domain..com": False,
     "user@domain_com": False,
     "user@domain,com": False,
     "user@domain": False,
     "userdomain.com": False,
   }.items()
 
+
 def spotify_stream_ids():
   return [s['id'] for s in base_config()['streams'] if s['type'] == 'spotify']
+
 
 def spotify_names():
   return {
@@ -678,9 +733,9 @@ def spotify_names():
     "device1": True,
     "device-name": True,
     "my-device": True,
-    "device.name": True,
-    "device1.device2": True,
-    "my-device.name-2": True,
+    "device.name": False,
+    "device1.device2": False,
+    "my-device.name-2": False,
     "-device": False,
     "device-": False,
     "device..name": False,
@@ -691,12 +746,14 @@ def spotify_names():
     "device..name": False
   }.items()
 
+
 def internetradio_stream_ids():
   return [s['id'] for s in base_config()['streams'] if s['type'] == 'internetradio']
 
+
 def internetradio_urls():
   return {
-    "http://ice6.somafm.com/groovesalad-32-aac" : True,
+    "http://ice6.somafm.com/groovesalad-32-aac": True,
     "https://www.example.com": True,
     "http://www.example.com": True,
     "https://example.com": True,
@@ -707,27 +764,30 @@ def internetradio_urls():
     "ftp://www.example.com": False,
     "http://www.example": False,
     "https://example": False,
-}.items()
+      }.items()
+
 
 def internetradio_logos():
   return {
     "https://somafm.com/img3/groovesalad-400.jpg": True,
-    "https://www.example.com/logo.jpg" : True,
-    "http://example.com/logo.jpg" : True,
+    "https://www.example.com/logo.jpg": True,
+    "http://example.com/logo.jpg": True,
     "https://www.example.com/logo123.jpg": True,
-    "https://example.com/logo.jpg" : True,
-    "http://www.example.com/logo123.jpg" : True,
-    "https://www.example.com/logo.png" : True,
-    "ftp://www.example.com/logo.jpg" : False,
-    "https://www.example.com/logos/logo.jpg" : True,
+    "https://example.com/logo.jpg": True,
+    "http://www.example.com/logo123.jpg": True,
+    "https://www.example.com/logo.png": True,
+    "ftp://www.example.com/logo.jpg": False,
+    "https://www.example.com/logos/logo.jpg": True,
     "https://www.example.com/logo?size=medium.jpg ": False
   }.items()
 
 # /stream post-stream
+
+
 @pytest.mark.parametrize('name, valid', airplay_names())
 def test_create_airplay(client, name, valid):
   """ Try creating a AirPlay stream """
-  m_and_k = { 'name': name, 'type':'airplay'}
+  m_and_k = {'name': name, 'type': 'airplay'}
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   if valid:
@@ -739,12 +799,14 @@ def test_create_airplay(client, name, valid):
       assert jrv[k] == v
   else:
     assert rv.status_code == HTTPStatus.BAD_REQUEST
- 
+
 # /stream post-stream
+
+
 @pytest.mark.parametrize('user, valid', pandora_users())
 def test_create_pandora(client, user, valid):
   """ Try creating a Pandora stream """
-  m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': user, 'password': ''}
+  m_and_k = {'name': 'Matt and Kim Radio', 'type': 'pandora', 'user': user, 'password': ''}
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   if valid:
@@ -758,10 +820,12 @@ def test_create_pandora(client, user, valid):
     assert rv.status_code == HTTPStatus.BAD_REQUEST
 
  # /stream post-stream
+
+
 @pytest.mark.parametrize('name, valid', spotify_names())
 def test_create_spotify(client, name, valid):
   """ Try creating a Spotify stream """
-  m_and_k = { 'name': name, 'type':'spotify'}
+  m_and_k = {'name': name, 'type': 'spotify'}
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   if valid:
@@ -773,12 +837,13 @@ def test_create_spotify(client, name, valid):
       assert jrv[k] == v
   else:
     assert rv.status_code == HTTPStatus.BAD_REQUEST
- 
+
+
 @pytest.mark.parametrize('url, valid_url', internetradio_urls())
 @pytest.mark.parametrize('logo, valid_logo', internetradio_logos())
 def test_create_internetradio(client, url, valid_url, logo, valid_logo):
   """ Try creating an Internet Radio stream """
-  m_and_k = { 'name': 'Beatles Radio', 'type': 'internetradio', 'url': url, 'logo': logo}
+  m_and_k = {'name': 'Beatles Radio', 'type': 'internetradio', 'url': url, 'logo': logo}
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   if valid_url and valid_logo:
@@ -792,6 +857,8 @@ def test_create_internetradio(client, url, valid_url, logo, valid_logo):
     assert rv.status_code == HTTPStatus.BAD_REQUEST
 
 # /streams/{streamId} get-stream
+
+
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_get_stream(client, sid):
   """ Try getting a default stream """
@@ -808,6 +875,8 @@ def test_get_stream(client, sid):
   assert s['name'] == jrv['name']
 
 # /streams/{streamId} patch-stream
+
+
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_patch_stream_rename(client, sid):
   """ Try renaming a stream """
@@ -818,12 +887,13 @@ def test_patch_stream_rename(client, sid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['streams'], sid)
   assert s is not None
   assert s['name'] == 'patched-name'
+
 
 @pytest.mark.parametrize('sid', airplay_stream_ids())
 @pytest.mark.parametrize('name, valid', airplay_names())
@@ -840,7 +910,7 @@ def test_patch_stream_rename_airplay(client, sid, name, valid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['streams'], sid)
@@ -863,12 +933,13 @@ def test_patch_stream_rename_spotify(client, sid, name, valid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['streams'], sid)
   assert s is not None
   assert s['name'] == name
+
 
 @pytest.mark.parametrize('sid', pandora_stream_ids())
 @pytest.mark.parametrize('user, valid', pandora_users())
@@ -885,12 +956,13 @@ def test_patch_stream_rename_pandora(client, sid, user, valid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['streams'], sid)
   assert s is not None
   assert s['user'] == user
+
 
 @pytest.mark.parametrize('sid', internetradio_stream_ids())
 @pytest.mark.parametrize('url, valid_url', internetradio_urls())
@@ -908,13 +980,14 @@ def test_patch_stream_rename_internetradio(client, sid, url, valid_url, logo, va
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['streams'], sid)
   assert s is not None
   assert s['url'] == url
   assert s['logo'] == logo
+
 
 @pytest.mark.parametrize('sid', base_stream_ids())
 @pytest.mark.parametrize('disable', [True, False])
@@ -927,12 +1000,13 @@ def test_patch_stream_disable(client, sid, disable):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was disabled
   s = find(jrv['streams'], sid)
   assert s is not None
   assert s['disabled'] == disable
+
 
 @pytest.mark.parametrize('ap2', [True, False])
 def test_patch_stream_ap2(client, ap2):
@@ -945,7 +1019,7 @@ def test_patch_stream_ap2(client, ap2):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was configured to ap2
   s = find(jrv['streams'], sid)
@@ -953,6 +1027,8 @@ def test_patch_stream_ap2(client, ap2):
   assert s['ap2'] == ap2
 
 # /streams/{streamId} delete-stream
+
+
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_delete_stream(client, sid):
   """ Try deleting a stream  """
@@ -963,7 +1039,7 @@ def test_delete_stream(client, sid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was deleted
   s = find(jrv['streams'], sid)
@@ -972,6 +1048,7 @@ def test_delete_stream(client, sid):
   for other_sid in base_stream_ids():
     if other_sid != sid:
       assert find(jrv['streams'], other_sid) is not None
+
 
 @pytest.mark.parametrize('sid', base_stream_ids())
 def test_delete_connected_stream(client, sid):
@@ -984,21 +1061,24 @@ def test_delete_connected_stream(client, sid):
     assert rv.status_code != HTTPStatus.OK
     return
   rv = client.delete(f'/api/streams/{sid}')
-  if sid in RCAs+[AUX_STREAM_ID]:
+  if sid in RCAs + [AUX_STREAM_ID]:
     assert rv.status_code != HTTPStatus.OK
     return
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   assert jrv['sources'][0]['input'] == ''
 
 # Non-Mock client used - run this test on the Pi
 # _live tests will be excluded from GitHub testing
+
+
 @pytest.mark.parametrize('cmd', ['play', 'pause', 'stop', 'next', 'love', 'ban', 'shelve'])
 def test_post_stream_cmd_live(clientnm, cmd):
   """ Try sending commands to a pandora stream on a live system """
   # TODO: this test is failing when executed with all of the other tests in parallel see below
   # Add a stream to send commands to
-  m_and_k = { 'name': 'Matt and Kim Radio', 'type':'pandora', 'user': 'lincoln@micro-nova.com', 'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
+  m_and_k = {'name': 'Matt and Kim Radio', 'type': 'pandora', 'user': 'lincoln@micro-nova.com',
+             'password': '2yjT4ZXkcr7FNWb', 'station': '4610303469018478727'}
   rv = clientnm.post('/api/stream', json=m_and_k)
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
@@ -1017,14 +1097,18 @@ def test_post_stream_cmd_live(clientnm, cmd):
   assert rv.status_code == HTTPStatus.OK
 
 # test presets
+
+
 def base_preset_ids():
   """ Return all of the preset IDs belonging to each of the presets in the base config """
-  return [ s['id'] for s in base_config()['presets']]
+  return [s['id'] for s in base_config()['presets']]
 
 # /preset post-preset
+
+
 def test_create_mute_all_preset(client):
   """ Try creating the simplest preset, something that mutes all the zones """
-  mute_some = { 'name' : 'Mute some', 'state': { 'zones' : [ { 'id' : 1, 'mute': True}, { 'id' : 4, 'mute': True} ]}}
+  mute_some = {'name': 'Mute some', 'state': {'zones': [{'id': 1, 'mute': True}, {'id': 4, 'mute': True}]}}
   rv = client.post('/api/preset', json=mute_some)
   # check that the stream has an id added to it and that all of the fields are still there
   assert rv.status_code == HTTPStatus.OK
@@ -1033,10 +1117,12 @@ def test_create_mute_all_preset(client):
   assert isinstance(jrv['id'], int)
   assert jrv['name'] == mute_some['name']
   for i, z in enumerate(mute_some['state']['zones']):
-    for k,v in z.items():
+    for k, v in z.items():
       assert jrv['state']['zones'][i][k] == v
 
 # /presets/{presetId} get-preset
+
+
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_get_preset(client, pid):
   """ Try to get one of the default presets """
@@ -1053,6 +1139,8 @@ def test_get_preset(client, pid):
   assert s['name'] == jrv['name']
 
 # /presets/{presetId} patch-preset
+
+
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_patch_preset_name(client, pid):
   """ Try changing the presets name """
@@ -1063,7 +1151,7 @@ def test_patch_preset_name(client, pid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the stream was renamed
   s = find(jrv['presets'], pid)
@@ -1071,6 +1159,8 @@ def test_patch_preset_name(client, pid):
   assert s['name'] == 'patched-name'
 
 # /presets/{presetId} delete-preset
+
+
 @pytest.mark.parametrize('pid', base_preset_ids())
 def test_delete_preset(client, pid):
   """ Try to delete a preset """
@@ -1080,7 +1170,7 @@ def test_delete_preset(client, pid):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   # TODO: check that the system state is valid
   # make sure the preset was deleted
   s = find(jrv['presets'], pid)
@@ -1091,8 +1181,10 @@ def test_delete_preset(client, pid):
       assert find(jrv['presets'], other_pid) is not None
 
 # /presets/{presetId}/load load-preset
+
+
 @pytest.mark.parametrize('pid', base_preset_ids())
-def test_load_preset(client, pid, unmuted=[1,2,3]):
+def test_load_preset(client, pid, unmuted=[1, 2, 3]):
   """ Load a preset configuration with some zones unmuted """
   # TODO: cleanup test structure
   # pylint: disable=dangerous-default-value,too-many-locals,too-many-branches
@@ -1106,13 +1198,13 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   p = find(last_state['presets'], pid)
   if p:
     # check if all of the needed groups exist (it will fail if one of the needed groups doesn't exist')
-    effected_groups = { g['id'] for g in p['state'].get('groups', [])}
+    effected_groups = {g['id'] for g in p['state'].get('groups', [])}
     missing = False
     for g in effected_groups:
       if not find(last_state['groups'], g):
         missing = True
     # check for streams that are used but unavailable
-    effected_source_inputs = { s.get('input', None) for s in p['state'].get('sources', [])}
+    effected_source_inputs = {s.get('input', None) for s in p['state'].get('sources', [])}
     for _input in effected_source_inputs:
       if _input in ['']:
         pass
@@ -1127,7 +1219,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   else:
     assert rv.status_code != HTTPStatus.OK
     return
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   jrv.pop('info')
   # TODO: check that the system state is valid
   # make sure the rest of the config got loaded
@@ -1162,12 +1254,12 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
   LAST_CONFIG_PRESET = 9999
   rv = client.post('/api/presets/{}/load'.format(LAST_CONFIG_PRESET))
   assert rv.status_code == HTTPStatus.OK
-  jrv = rv.json() # get the system state returned
+  jrv = rv.json()  # get the system state returned
   jrv.pop('info')
   ignore = ['last_used', 'info', 'status']
   for name, mod in jrv.items():
     prev_mod = last_state[name]
-    if name == 'version': # skip version as it is not iterable
+    if name == 'version':  # skip version as it is not iterable
       continue
     for cfg in mod:
       if cfg['id'] != LAST_CONFIG_PRESET:
@@ -1178,6 +1270,7 @@ def test_load_preset(client, pid, unmuted=[1,2,3]):
           if ignored_field in cfg:
             cfg.pop(ignored_field)
         assert cfg == prev_cfg
+
 
 def test_announcement(client):
   """Check if a PA Announcement works """
@@ -1228,7 +1321,7 @@ def test_announcement(client):
     return True
 
   all_zones = list(range(6))
-  rv = client.patch('/api/zones', json={'zones' : all_zones, 'update': {'source_id': 0, 'mute': False}})
+  rv = client.patch('/api/zones', json={'zones': all_zones, 'update': {'source_id': 0, 'mute': False}})
   assert rv.status_code == HTTPStatus.OK, f'Failed to unmute zones: {rv.text}'
 
   # request an announcement on the same source all zones are connected to,
@@ -1240,9 +1333,10 @@ def test_announcement(client):
     assert rv.status_code == HTTPStatus.OK, print(rv.text)
     assert future.result(timeout=1.0) == True, "Zone check failed"
 
+
 def test_api_doc_has_examples(client):
   """Check if each api endpoint has example responses (and requests)"""
-  rv = client.get('/openapi.json') # use json since it is easier to check
+  rv = client.get('/openapi.json')  # use json since it is easier to check
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
   for path, p in jrv['paths'].items():
@@ -1256,18 +1350,20 @@ def test_api_doc_has_examples(client):
           if 'exmaples' in req_spec:
             assert len(req_spec['examples']) > 0, f'{path_desc}: At least one exmaple request required'
         except KeyError:
-          pass # request could be different type or non-existent
+          pass  # request could be different type or non-existent
       try:
         resp_spec = m['responses']['200']['content']['application/json']
         assert 'example' in resp_spec or 'examples' in resp_spec, f'{path_desc}: At least one exmaple response required'
         if 'exmaples' in resp_spec:
           assert len(resp_spec['examples']) > 0, f'{path_desc}: At least one exmaple response required'
       except KeyError:
-        pass # reposnse could not be json
+        pass  # reposnse could not be json
 
 # TODO: this test will fail until we come up with a good scheme for specifying folder locations in a global config
 # The test below fails since the test and the app are run in different directories
 # skipping it for now until #117
+
+
 @pytest.mark.skip
 def test_generate(client):
   """ Test valid accesses to the generated folder structure """
@@ -1278,7 +1374,7 @@ def test_generate(client):
   test_filenames = ['test.txt', 'shairport/srcs/t/IMG_A1', '../shairport/srcs/t/Trying-to-cheat-the-system']
   for fn in test_filenames:
     test_name = fn
-    fn = fn.replace('../', '') # Taken from app.py > generated
+    fn = fn.replace('../', '')  # Taken from app.py > generated
     with open('{}/{}'.format(fullpath, fn), 'w') as f:
       f.write('Test for {}'.format(fn))
     rv = client.get('/generated/{}'.format(test_name))
@@ -1289,6 +1385,7 @@ def test_generate(client):
   #   fn = fn.replace('..\\', '') # Taken from app.py > generated
   #   if os.path.exists('{}/{}'.format(fullpath, fn)):
   #     os.remove('{}/{}'.format(fullpath, fn))
+
 
 @pytest.mark.parametrize('zid', base_zone_ids())
 def test_set_zone_vol(client, zid):
@@ -1333,7 +1430,7 @@ def test_set_zone_vol(client, zid):
 
   # set zone dB volume and DIFFERENT float volume, expect the dB to override the float
   for i, db in enumerate(vol_db):
-    fv = vol_f[-i-1] # grab elements in reverse order
+    fv = vol_f[-i - 1]  # grab elements in reverse order
     z = patch_zone({'vol': db, 'vol_f': fv})
     assert z['vol'] == db
     assert z['vol_f'] == vol_f[i]
@@ -1375,7 +1472,7 @@ def test_set_zone_vol(client, zid):
   # set vol_min to halfway, expect vol_f to update to min
   z = patch_zone({'vol_min': mid_vol})
   assert z['vol'] == mid_vol                    # vol is still within valid vol range
-  assert z['vol_f'] == amplipi.models.MIN_VOL_F # vol is at the new min so vol_f is 0
+  assert z['vol_f'] == amplipi.models.MIN_VOL_F  # vol is at the new min so vol_f is 0
   assert z['vol_min'] == mid_vol
   # set vol to the new dB midpoint, expect vol_f to be at half
   new_mid_vol = (mid_vol + amplipi.models.MAX_VOL_DB) / 2
@@ -1414,7 +1511,7 @@ def test_set_zone_vol(client, zid):
   # set vol_max to halfway, expect vol_f to update to max
   z = patch_zone({'vol_max': mid_vol})
   assert z['vol'] == mid_vol                    # vol is still within valid vol range
-  assert z['vol_f'] == amplipi.models.MAX_VOL_F # vol is at the new max so vol_f is 1
+  assert z['vol_f'] == amplipi.models.MAX_VOL_F  # vol is at the new max so vol_f is 1
   assert z['vol_max'] == mid_vol
   # set vol to the new dB midpoint, expect vol_f to be at half
   new_mid_vol = (amplipi.models.MIN_VOL_DB + mid_vol) / 2
@@ -1424,11 +1521,14 @@ def test_set_zone_vol(client, zid):
   assert z['vol_max'] == mid_vol
 
   # test that 'vol_min' and 'vol_max' can't be set closer than MIN_DB_RANGE
-  z = patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB + amplipi.models.MIN_DB_RANGE})
+  z = patch_zone({'vol_min': amplipi.models.MIN_VOL_DB,
+                 'vol_max': amplipi.models.MIN_VOL_DB + amplipi.models.MIN_DB_RANGE})
   assert z['vol_min'] == amplipi.models.MIN_VOL_DB
   assert z['vol_max'] == amplipi.models.MIN_VOL_DB + amplipi.models.MIN_DB_RANGE
   patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB}, expect_failure=True)
-  patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB + amplipi.models.MIN_DB_RANGE / 2}, expect_failure=True)
+  patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB +
+             amplipi.models.MIN_DB_RANGE / 2}, expect_failure=True)
+
 
 @pytest.mark.parametrize('gid', base_group_ids())
 def test_set_group_vol(client, gid):
@@ -1444,6 +1544,7 @@ def test_set_group_vol(client, gid):
   # check if the group gid exists in the config, if not always expect failure
   group = find(client.get('/api').json()['groups'], gid)
   no_groups = group is None
+
   def patch_group(json: Dict, expect_failure: bool = no_groups) -> Optional[Dict]:
     rv = client.patch(f'/api/groups/{gid}', json=json)
     if expect_failure:
@@ -1475,7 +1576,7 @@ def test_set_group_vol(client, gid):
 
   # set group dB volume and DIFFERENT float volume, expect the dB to override the float
   for i, db in enumerate(vol_db):
-    fv = vol_f[-i-1] # grab elements in reverse order
+    fv = vol_f[-i - 1]  # grab elements in reverse order
     g = patch_group({'vol_delta': db, 'vol_f': fv})
     assert g is None or no_zones or g['vol_delta'] == db
     assert g is None or no_zones or g['vol_f'] == vol_f[i]

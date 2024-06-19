@@ -36,9 +36,9 @@ import ast
 import json
 import signal
 import socket
-import hashlib # md5 for string -> MAC generation
+import hashlib  # md5 for string -> MAC generation
 
-from pandora.clientbuilder import SettingsDictBuilder # pandora client from pydora
+from pandora.clientbuilder import SettingsDictBuilder  # pandora client from pydora
 
 from amplipi import models
 from amplipi import utils
@@ -53,6 +53,7 @@ sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 
 DEBUG = os.environ.get('DEBUG', True)
+
 
 def write_config_file(filename, config):
   """ Write a simple config file (@filename) with key=value pairs given by @config """
@@ -86,16 +87,20 @@ def uuid_gen():
   # Generic UUID in case of failure
   return '39ae35cc-b4c1-444d-b13a-294898d771fa'
 
+
 class InvalidStreamField(Exception):
   def __init__(self, field, message):
     self.msg = f"invalid stream field '{field}': {message}"
     self.field = field
+
   def __str__(self):
     return repr(self.msg)
+
 
 class Browsable:
   """ A stream that can be browsed for items """
   # technically does nothing but is a marker for streams that can be browsed
+
 
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
@@ -152,7 +157,7 @@ class BaseStream:
       self.send_cmd('stop')
     except:
       logger.info(f'Stream {self.name} does not have a stop response')
-    last_src = self.src # Disconnect sets self.src to none, so temp variable used to keep track
+    last_src = self.src  # Disconnect sets self.src to none, so temp variable used to keep track
     self.disconnect()
     time.sleep(0.1)
     self.connect(last_src)
@@ -359,7 +364,7 @@ class PersistentStream(BaseStream):
 class RCA(BaseStream):
   """ A built-in RCA input """
 
-  stream_type : ClassVar[str] = 'rca'
+  stream_type: ClassVar[str] = 'rca'
 
   def __init__(self, name: str, index: int, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, only_src=index, disabled=disabled, mock=mock)
@@ -401,11 +406,11 @@ class RCA(BaseStream):
 class AirPlay(PersistentStream):
   """ An AirPlay Stream """
 
-  stream_type : ClassVar[str] = 'airplay'
+  stream_type: ClassVar[str] = 'airplay'
 
   def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    self.validate_stream(name = self.name)
+    self.validate_stream(name=self.name)
     self.mpris: Optional[MPRIS] = None
     self.ap2 = ap2
     self.ap2_exists = False
@@ -588,11 +593,11 @@ class AirPlay(PersistentStream):
 class Spotify(PersistentStream):
   """ A Spotify Stream """
 
-  stream_type : ClassVar[str] = 'spotify'
+  stream_type: ClassVar[str] = 'spotify'
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    self.validate_stream(name = self.name)
+    self.validate_stream(name=self.name)
     self.connect_port: Optional[int] = None
     self.mpris: Optional[MPRIS] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
@@ -705,14 +710,15 @@ class Spotify(PersistentStream):
       raise Exception(f"Error sending command {cmd}: {e}") from e
 
   def validate_stream(self, **kwargs):
-    regex = r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
-    if 'name' in kwargs and not re.fullmatch(regex, kwargs['name']):
+    HOSTNAME_LIKE = r"[a-zA-Z0-9][A-Za-z0-9\-]*[a-zA-Z0-9]"
+    if 'name' in kwargs and not re.fullmatch(HOSTNAME_LIKE, kwargs['name']):
       raise InvalidStreamField("name", "invalid device name")
+
 
 class Pandora(PersistentStream, Browsable):
   """ A Pandora Stream """
 
-  stream_type : ClassVar[str] = 'pandora'
+  stream_type: ClassVar[str] = 'pandora'
 
   def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
@@ -721,19 +727,18 @@ class Pandora(PersistentStream, Browsable):
     self.station = station
     self.track = ""
     self.invert_liked_state = False
-    self.validate_stream(user = self.user, password = self.password)
+    self.validate_stream(user=self.user, password=self.password)
 
     self.stations: List[models.BrowsableItem] = []
 
     # pandora api client, the values in here come from the pandora android app
     self.pyd_client = SettingsDictBuilder({
-    "DECRYPTION_KEY": "R=U!LH$O2B#",
-    "ENCRYPTION_KEY": "6#26FRL$ZWD",
-    "PARTNER_USER": "android",
-    "PARTNER_PASSWORD": "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7",
-    "DEVICE": "android-generic",
+        "DECRYPTION_KEY": "R=U!LH$O2B#",
+        "ENCRYPTION_KEY": "6#26FRL$ZWD",
+        "PARTNER_USER": "android",
+        "PARTNER_PASSWORD": "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7",
+        "DEVICE": "android-generic",
     }).build()
-
 
     self.ctrl = ''  # control fifo location
     self.supported_cmds = {
@@ -766,7 +771,7 @@ class Pandora(PersistentStream, Browsable):
     This will start up pianobar with a configuration specific to @src
     """
     try:
-      self.pyd_client.login(self.user, self.password);
+      self.pyd_client.login(self.user, self.password)
     except Exception as e:
       logger.exception(f'Failed to login to Pandora: {e}')
       pass
@@ -814,7 +819,7 @@ class Pandora(PersistentStream, Browsable):
       time.sleep(0.1)  # Delay a bit before creating a control pipe to pianobar
       self.ctrl = pb_control_fifo
 
-      if not self.station: # if no station is specified, we need to start playing in order to get the station list
+      if not self.station:  # if no station is specified, we need to start playing in order to get the station list
         with open(self.ctrl, 'w', encoding='utf-8') as f:
           f.write('0\n')
           f.flush()
@@ -852,14 +857,14 @@ class Pandora(PersistentStream, Browsable):
           line = line.strip()
           if line:
             data = line.split(',,,')
-            if self.track != data[1]: # When song changes, stop inverting state
+            if self.track != data[1]:  # When song changes, stop inverting state
               self.invert_liked_state = False
             source.state = self.state
             source.artist = data[0]
             source.track = data[1]
             self.track = data[1]
             source.album = data[2]
-            source.img_url = data[3].replace('http:', 'https:') # HACK: kind of a hack to just replace with https
+            source.img_url = data[3].replace('http:', 'https:')  # HACK: kind of a hack to just replace with https
             initial_rating = models.PandoraRating(int(data[4]))
 
             source.rating = initial_rating
@@ -889,8 +894,8 @@ class Pandora(PersistentStream, Browsable):
     try:
       if cmd in self.supported_cmds:
         if cmd == "love":
-            self.info() # Ensure liked state is synced with current song
-            self.invert_liked_state = not self.invert_liked_state
+          self.info()  # Ensure liked state is synced with current song
+          self.invert_liked_state = not self.invert_liked_state
 
         with open(self.ctrl, 'w', encoding='utf-8') as file:
           file.write(self.supported_cmds[cmd]['cmd'])
@@ -902,14 +907,14 @@ class Pandora(PersistentStream, Browsable):
       elif 'station' in cmd:
         station_id = int(cmd.replace('station=', ''))
         if station_id is not None:
-          with open(self.pb_output_file, 'w', encoding='utf-8') as file: # clear output file to detect new station
+          with open(self.pb_output_file, 'w', encoding='utf-8') as file:  # clear output file to detect new station
             file.write('')
           with open(self.ctrl, 'w', encoding='utf-8') as file:
             file.write('s')
             file.flush()
             file.write(f'{station_id}\n')
             file.flush()
-          for _ in range(50): # try over a max of 5 seconds to get the new station
+          for _ in range(50):  # try over a max of 5 seconds to get the new station
             time.sleep(0.1)
             # open output file and find ID from end of file
             matches = []
@@ -917,19 +922,19 @@ class Pandora(PersistentStream, Browsable):
               text = file.read()
               matches = re.findall(r'\" \([0-9]+\)', text)
             if matches:
-                self.station = matches[-1].replace('\" (', '').replace(')', '')
-                app.get_ctrl().mark_changes(sync_streams=True)
-                self.pb_output_file
-                with open(self.pb_output_file, 'w', encoding='utf-8') as file: # clear file
-                  file.write('')
-                self.state = 'playing'
-                logger.info(f'Changed pandora station to {self.station}')
-                time.sleep(1) # give pianobar awhile to update metadata before we end the api call
-                break
-            elif "Receiving new playlist... Ok." in text: # if we see this message, we know the station has been changed but we may have simply switched to the same station
+              self.station = matches[-1].replace('\" (', '').replace(')', '')
+              app.get_ctrl().mark_changes(sync_streams=True)
+              self.pb_output_file
+              with open(self.pb_output_file, 'w', encoding='utf-8') as file:  # clear file
+                file.write('')
+              self.state = 'playing'
+              logger.info(f'Changed pandora station to {self.station}')
+              time.sleep(1)  # give pianobar awhile to update metadata before we end the api call
+              break
+            elif "Receiving new playlist... Ok." in text:  # if we see this message, we know the station has been changed but we may have simply switched to the same station
               logger.info(f'Changed pandora station to same station ({self.station})')
               break
-          else: # if we don't find the station in 5 seconds, raise an error
+          else:  # if we don't find the station in 5 seconds, raise an error
             logger.error("Failed to change pandora station!")
             raise RuntimeError('Failed to change pandora station')
         else:
@@ -944,7 +949,7 @@ class Pandora(PersistentStream, Browsable):
 
     if len(self.stations) == 0:
       try:
-        pd_stations = {s.name.upper() : s.art_url for s in self.pyd_client.get_station_list()}
+        pd_stations = {s.name.upper(): s.art_url for s in self.pyd_client.get_station_list()}
       except Exception as e:
         logger.exception(f'Error browsing for pandora stations: {e}')
         return []
@@ -965,15 +970,15 @@ class Pandora(PersistentStream, Browsable):
     self.send_cmd(f'station={item_id}')
 
   def validate_stream(self, **kwargs):
-    regex = r'\b[A-Za-z0-9._%+-]+@(?:(?!.*\.\.)[A-Za-z0-9.-])+(\.[A-Za-z]{2,7})\b'
-    if 'user' in kwargs and not re.fullmatch(regex, kwargs['user']):
+    USER_LIKE = r'^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,})$'
+    if 'user' in kwargs and not re.fullmatch(USER_LIKE, kwargs['user']):
       raise InvalidStreamField("user", "invalid username")
 
 
-class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid issue, figure out next and prev
+class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid issue, figure out next and prev
   """ A DLNA Stream """
 
-  stream_type : ClassVar[str] = 'dlna'
+  stream_type: ClassVar[str] = 'dlna'
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__('dlna', name, disabled=disabled, mock=mock)
@@ -1026,21 +1031,21 @@ class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid is
     os.system(f'mkdir -p {self._src_web_folder}')
 
     # Make the fifo to be used for commands
-    os.mkfifo(f'{self._src_config_folder}/cmd') # lazily open fifo so startup is faster
+    os.mkfifo(f'{self._src_config_folder}/cmd')  # lazily open fifo so startup is faster
 
     # startup the metadata process and the DLNA process
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
-                '--gstout-audiodevice', utils.real_output_device(src), '--gstout-initial-volume-db',
-                '0.0', '-p', f'{portnum}', '-u', f'{self._uuid}',
-                '-f', f'{self.name}']
-    meta_args = [ sys.executable,
+                 '--gstout-audiodevice', utils.real_output_device(src), '--gstout-initial-volume-db',
+                 '0.0', '-p', f'{portnum}', '-u', f'{self._uuid}',
+                 '-f', f'{self.name}']
+    meta_args = [sys.executable,
                  f'{utils.get_folder("streams")}/dlna_meta.py',
                  f'{self.name}',
                  f'{self._src_config_folder}/cmd',
                  f'{self._src_config_folder}/meta.json',
                  self._src_web_folder,
-                ]
-                # '-d']
+                 ]
+    # '-d']
 
     self.proc = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._metadata_proc = subprocess.Popen(args=meta_args, stdin=subprocess.PIPE, stdout=sys.stdout, stderr=sys.stderr)
@@ -1063,17 +1068,17 @@ class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid is
 
       data = json.load(open(f'{self._src_config_folder}/meta.json'))
       source.state = data.get('state', 'stopped') if data else 'stopped'
-      if source.state != 'stopped': # if the state is stopped, just use default values
+      if source.state != 'stopped':  # if the state is stopped, just use default values
         source.artist = data.get('artist', '')
         source.track = data.get('title', '')
         source.album = data.get('album', '')
         if data.get('album_art', '') != '':
           source.img_url = f'generated/{self.src}/{data.get("album_art", "")}'
 
-      source.supported_cmds=self.supported_cmds # set supported commands only if we hear back from the DLNA server
+      source.supported_cmds = self.supported_cmds  # set supported commands only if we hear back from the DLNA server
       self._got_data = True
     except Exception as e:
-      if self._got_data: # ignore if we havent gotten data yet since we're still waiting for the metadata process to start
+      if self._got_data:  # ignore if we havent gotten data yet since we're still waiting for the metadata process to start
         logger.exception(f'Error getting DLNA info: {e}')
       pass
 
@@ -1081,12 +1086,14 @@ class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid is
 
   def send_cmd(self, cmd):
     if not self._fifo_open:
-      self._fifo = os.open(f'{self._src_config_folder}/cmd', os.O_WRONLY, os.O_NONBLOCK) # open the fifo for writing but don't block in case something goes wrong
+      # open the fifo for writing but don't block in case something goes wrong
+      self._fifo = os.open(f'{self._src_config_folder}/cmd', os.O_WRONLY, os.O_NONBLOCK)
       self._fifo_open = True
 
     try:
       if cmd in self.supported_cmds and self.src != None:
-        os.write(self._fifo, bytearray(cmd+'\r\n', encoding="utf8")) # must end line since metadata_reader uses readline()
+        # must end line since metadata_reader uses readline()
+        os.write(self._fifo, bytearray(cmd + '\r\n', encoding="utf8"))
         os.fsync(self._fifo)
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
@@ -1094,16 +1101,17 @@ class DLNA(BaseStream): # TODO: make DLNA a persistent stream to fix the uuid is
       logger.exception(f'Error sending command to DLNA "{cmd}": {e}')
       pass
 
+
 class InternetRadio(BaseStream):
   """ An Internet Radio Stream """
 
-  stream_type : ClassVar[str] = 'internetradio'
+  stream_type: ClassVar[str] = 'internetradio'
 
   def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.url = url
     self.logo = logo
-    self.validate_stream(url = self.url, logo = self.logo)
+    self.validate_stream(url=self.url, logo=self.logo)
     self.supported_cmds = ['play', 'stop']
 
   def reconfig(self, **kwargs):
@@ -1213,7 +1221,7 @@ class Plexamp(BaseStream):
   TODO: old plexamp interface was disabled, integrate support for new PlexAmp
   """
 
-  stream_type : ClassVar[str] = 'plexamp'
+  stream_type: ClassVar[str] = 'plexamp'
 
   def __init__(self, name: str, client_id, token, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
@@ -1244,7 +1252,7 @@ class Plexamp(BaseStream):
 class Aux(BaseStream):
   """ A stream to play from the aux input. """
 
-  stream_type : ClassVar[str] = 'aux'
+  stream_type: ClassVar[str] = 'aux'
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
@@ -1269,7 +1277,8 @@ class Aux(BaseStream):
     # Start audio via runvlc.py
     vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.real_output_device(src)} alsa://plughw:cmedia8chint,0 vlc://quit'
     logger.info(f'running: {vlc_args}')
-    self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
     return
 
@@ -1289,7 +1298,7 @@ class Aux(BaseStream):
 class FilePlayer(BaseStream):
   """ An Single one shot file player - initially intended for use as a part of the PA Announcements """
 
-  stream_type : ClassVar[str] = 'fileplayer'
+  stream_type: ClassVar[str] = 'fileplayer'
 
   def __init__(self, name: str, url: str, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
@@ -1320,7 +1329,7 @@ class FilePlayer(BaseStream):
       vlc_args = f'cvlc -A alsa --alsa-audio-device {utils.real_output_device(src)} {self.url} vlc://quit'
       logger.info(f'running: {vlc_args}')
       self.proc = subprocess.Popen(args=vlc_args.split(), stdin=subprocess.PIPE,
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._connect(src)
     # make a thread that waits for a couple of secends and returns after setting info to stopped
     self.bkg_thread = threading.Thread(target=self.wait_on_proc)
@@ -1352,7 +1361,7 @@ class FilePlayer(BaseStream):
 class FMRadio(BaseStream):
   """ An FMRadio Stream using RTLSDR """
 
-  stream_type : ClassVar[str] = 'fmradio'
+  stream_type: ClassVar[str] = 'fmradio'
 
   def __init__(self, name: str, freq, logo: Optional[str] = None, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
@@ -1471,14 +1480,15 @@ class FMRadio(BaseStream):
 class LMS(PersistentStream):
   """ An LMS Stream using squeezelite"""
 
-  stream_type : ClassVar[str] = 'lms'
+  stream_type: ClassVar[str] = 'lms'
 
   def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = 9000, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.server: Optional[str] = server
     self.port: Optional[int] = port
-    self.meta_proc : Optional[subprocess.Popen] = None
-    self.meta = {'artist': 'Launching metadata reader', 'album': 'If this step takes a long time,', 'track': 'please restart the unit/stream, or contact support', 'image_url': 'static/imgs/lms.png'}
+    self.meta_proc: Optional[subprocess.Popen] = None
+    self.meta = {'artist': 'Launching metadata reader', 'album': 'If this step takes a long time,',
+                 'track': 'please restart the unit/stream, or contact support', 'image_url': 'static/imgs/lms.png'}
 
   def is_persistent(self):
     return True
@@ -1514,7 +1524,7 @@ class LMS(PersistentStream):
       src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
       os.system(f'mkdir -p {src_config_folder}')
       with open(f"{src_config_folder}/lms_metadata.json", "w", encoding="UTF-8") as f:
-        json.dump(self.meta, f, indent = 2)
+        json.dump(self.meta, f, indent=2)
 
       # mac address, needs to be unique but not tied to actual NIC MAC hash the name with src id, to avoid aliases on move
       md5 = hashlib.md5()
@@ -1595,10 +1605,10 @@ class LMS(PersistentStream):
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      img_url= self.meta.get('image_url', ''),
-      track= self.meta.get('track', ''),
-      album= self.meta.get('album', ''),
-      artist= self.meta.get('artist', '')
+      img_url=self.meta.get('image_url', ''),
+      track=self.meta.get('track', ''),
+      album=self.meta.get('album', ''),
+      artist=self.meta.get('artist', '')
     )
     return source
 
@@ -1606,7 +1616,7 @@ class LMS(PersistentStream):
 class Bluetooth(BaseStream):
   """ A source for Bluetooth streams, which requires an external Bluetooth USB dongle """
 
-  stream_type : ClassVar[str] = 'bluetooth'
+  stream_type: ClassVar[str] = 'bluetooth'
 
   def __init__(self, name, disabled=False, mock=False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
@@ -1748,15 +1758,16 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
 
+
 def stream_types_available() -> List[str]:
   """ Returns a list of the available streams on this particular appliance.
   """
   stypes = [RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-    Aux, FilePlayer, LMS]
+            Aux, FilePlayer, LMS]
   if Bluetooth.is_hw_available():
     stypes.append(Bluetooth)
   if FMRadio.is_hw_available():
     stypes.append(FMRadio)
   # the below line is not type checked because mypy isn't smart enough to see this is a relatively
   # constrained set of types, and instead evaluates this as a `list[type]`
-  return [s.stream_type for s in stypes] # type: ignore
+  return [s.stream_type for s in stypes]  # type: ignore
