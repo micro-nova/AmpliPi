@@ -1201,11 +1201,10 @@ class InternetRadio(BaseStream):
       pass
 
   def validate_stream(self, **kwargs):
-    url_regex = r'^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$'
-    logo_regex = r'^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)\.(?:jpg|gif|png)$'
-    if 'url' in kwargs and not re.fullmatch(url_regex, kwargs['url']):
+    URL_LIKE = r'^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$'
+    if 'url' in kwargs and not re.fullmatch(URL_LIKE, kwargs['url']):
       raise InvalidStreamField("url", "invalid url")
-    if 'logo' in kwargs and not re.fullmatch(logo_regex, kwargs['logo']):
+    if 'logo' in kwargs and not re.fullmatch(URL_LIKE, kwargs['logo']):
       raise InvalidStreamField("logo", "invalid logo url")
 
 

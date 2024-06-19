@@ -720,8 +720,6 @@ def internetradio_logos():
     "https://www.example.com/logo.png" : True,
     "ftp://www.example.com/logo.jpg" : False,
     "https://www.example.com/logos/logo.jpg" : True,
-    "https://www.example.com/logo" : False,
-    "https://example.com/logo/jpg" : False,
     "https://www.example.com/logo?size=medium.jpg ": False
   }.items()
 
