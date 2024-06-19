@@ -4,19 +4,23 @@ import { getSourceZones } from "@/pages/Home/Home.jsx";
 import { useStatusStore } from "@/App.jsx";
 import Chip from "../Chip/Chip";
 import { getFittestRep } from "@/utils/GroupZoneFiltering";
+import Grid from "@mui/material/Grid/Grid";
 
 import PropTypes from "prop-types";
 
-const ZoneGroupChip = ({ zoneGroup, onClick }) => {
+const ZoneGroupChip = ({ zoneGroup, onClick, shake}) => {
     return (
-        <Chip onClick={onClick}>
-            <div className="zone-text">{zoneGroup.name}</div>
-        </Chip>
+        <Grid item xs={"auto"} sm={"auto"} md={"auto"} lg={"auto"} xl={"auto"}>
+            <Chip onClick={onClick} style={{maxWidth: "35vw"}} shake={shake} >
+                <div className="zone-text">{zoneGroup.name}</div>
+            </Chip>
+        </Grid>
     );
 };
 ZoneGroupChip.propTypes = {
     zoneGroup: PropTypes.any.isRequired,
     onClick: PropTypes.func.isRequired,
+    shake: PropTypes.bool,
 };
 
 const ZonesBadge = ({ sourceId, onClick }) => {
@@ -83,6 +87,7 @@ const ZonesBadge = ({ sourceId, onClick }) => {
     } else {
         chips.push(
             <ZoneGroupChip
+                shake
                 key={0}
                 onClick={onClick}
                 zoneGroup={{ name: "Add Zones" }}
@@ -90,7 +95,13 @@ const ZonesBadge = ({ sourceId, onClick }) => {
         );
     }
 
-    return <div className="zones-container">{chips}</div>;
+    return (
+        <div className="zones-container">
+            <Grid container padding={2}>
+                {chips}
+            </Grid>
+        </div>
+    );
 };
 ZonesBadge.propTypes = {
     sourceId: PropTypes.any.isRequired,

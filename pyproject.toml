@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "amplipi"
-version = "0.3.5"
+version = "0.3.6"
 description = "A Pi-based whole house audio controller"
 authors = [
   "Lincoln Lorenz <lincoln@micro-nova.com>",
@@ -34,6 +34,8 @@ include = [
   "config/bluetooth/*",
   "config/*.rules",
   "config/boot_config.txt",
+  "config/support_tunnel_crontab",
+  "config/support_group_sudoers",
   "debs/**/*",
   "fw/*.sh", # no need to add full source tree
   "fw/bin/*",

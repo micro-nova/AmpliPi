@@ -44,6 +44,7 @@ class EInkDisplay(Display):
     self._ok = False
     self._log_level = log_level
     self._boot = True
+    self._boot_timeout = datetime.datetime.now() + datetime.timedelta(seconds=60)
     self._displayed_boot = False
     self._cached_status: Optional[Union[str, int]] = None
     log.remove()
@@ -100,6 +101,11 @@ class EInkDisplay(Display):
       while self._ok:
         # poll stale by checking if info differs
         new_info = get_info(self.iface, default_pass, self._boot)
+
+        if self._boot and datetime.datetime.now() > self._boot_timeout:
+          self._boot = False
+          set_custom_display_status(DisplayStatus(None, None))
+          display_change_counter = self.refresh_interval + 1
 
         if new_info != info:
           info = new_info

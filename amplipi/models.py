@@ -143,6 +143,7 @@ class PandoraRating(Enum):
 class SourceInfo(BaseModel):
   name: str
   state: str  # paused, playing, stopped, unknown, loading ???
+  type: Optional[str]
   artist: Optional[str]
   track: Optional[str]
   album: Optional[str]
@@ -189,6 +190,7 @@ class Source(Base):
               'station': 'Regina Spektor Radio',
               'track': 'Eet',
               'state': 'playing',
+              'type': 'pandora',
             }
           }
         },
@@ -211,6 +213,7 @@ class Source(Base):
             'info': {
               'img_url': 'static/imgs/rca_inputs.svg',
               'state': 'unknown',
+              'type': 'rca',
             }
           }
         },
@@ -1094,8 +1097,8 @@ class Status(BaseModel):
                                   'name': 'Blackmill Radio - pandora',
                                   'state': 'playing',
                                   'station': 'Blackmill Radio',
-                                  '': ['play', 'pause', 'stop', 'next',
-                                       'love', 'ban', 'shelve', 'restart'],
+                                  'supported_cmds': ['play', 'pause', 'stop', 'next',
+                                                     'love', 'ban', 'shelve', 'restart'],
                                   'track': 'Chambermaid Swing'},
                          'input': 'stream=1006',
                          'name': 'Input 3'},

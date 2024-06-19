@@ -114,6 +114,43 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'sudo rm /var/log/user*     && echo "removed user logs"   || echo ok',
     ]
   },
+  'support_tunnel': {
+    'apt': [
+      'libsystemd-dev', # permits logging directly to journald
+      'wireguard', 'wireguard-tools' # -tools for wg-quick usage
+    ],
+    'copy' : [
+      {
+        'from': 'config/support_tunnel_crontab',
+        'to': '/etc/cron.d/support_tunnel',
+        'sudo': 'true'
+      },
+      {
+        'from': 'config/support_group_sudoers',
+        'to': '/etc/sudoers.d/099_support-nopasswd',
+        'sudo': 'true'
+      }
+    ],
+    'script': [
+      'sudo addgroup support',
+      'sudo adduser pi support',
+      'sudo mkdir -p /var/lib/support_tunnel',
+      'sudo chmod 0777 /var/lib/support_tunnel', # TODO: lock this down
+      'if [ ! -e /opt/support_tunnel ] ; then'
+      '  pushd $(mktemp --directory)',
+      '  git clone https://github.com/micro-nova/support_tunnel.git',
+      '  sudo mv support_tunnel /opt',
+      '  popd',
+      'fi',
+      'pushd /opt/support_tunnel',
+      'git fetch && git reset --hard origin/main',
+      'if [ ! -e /opt/support_tunnel/venv ]; then',
+      '  /usr/bin/python3 -m venv venv',
+      'fi',
+      '/opt/support_tunnel/venv/bin/pip install -r requirements.txt',
+      'popd',
+    ]
+  },
   # streams
   # TODO: can stream dependencies be aggregated from the streams themselves?
   'pandora' : {
@@ -157,17 +194,17 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     ]
   },
   'lms' : {
-    'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl'], # needed for ShairTunes2W support
+    'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0'],
     'copy' : [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
     'script' : [
       'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
-      '  wget https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.1_all.deb -O /tmp/logitechmediaserver_8.5.1.deb',
-      '  sudo dpkg -i /tmp/logitechmediaserver_8.5.1.deb',
+      '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
+      '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
       '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
       '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
       'fi',
-      'wget https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_1.9.9-1449_armhf.deb -O /tmp/squeezelite_1.9.9-1449_armhf.deb',
-      'sudo dpkg -i /tmp/squeezelite_1.9.9-1449_armhf.deb',
+      'wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb -O /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
+      'sudo dpkg -i /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
       'sudo systemctl stop squeezelite',
       'sudo systemctl disable squeezelite',
 
@@ -373,7 +410,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _from = f"{env['base_dir']}/{_from}"
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
-    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
+    _sudo = "sudo " if 'sudo' in file else ""
+    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
   if env['is_amplipi']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"

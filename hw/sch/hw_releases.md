@@ -69,9 +69,11 @@ voltage from 0.7 Vrms to 2.0 Vrms.
 | Controller     | [6.A](controller_board/controller_board_6a.pdf) |
 | LED            | [2.A](led_board/led_board_2a.pdf)               |
 | E-Ink          | [0.A](eink_board/eink_board_0a.pdf)             |
-| Power          | [4.A](power_board/power_board_4a.pdf)           |
+| Power          | [4.A](power_board/power_board_4a.pdf)/[6.A](power_board/power_board_6a.pdf)* |
 | Preamp         | [4.A](preamp_board/preamp_board_3a.pdf)         |
 | Preout         | [1.A](preout_board/preout_board_1a.pdf)         |
+
+\* 6.A added 2 new power supply monitor signals, see the [Power Board CHANGELOG](power_board/CHANGELOG.md)
 
 ## Zone Expanders
 
@@ -98,9 +100,11 @@ Up to 5 Zone Expanders can be added to one Controller.
 | Amplifier[^1] | [4.A](amplifier_board/amplifier_board_4a.pdf)   |
 | Expansion     | [3.A](expansion_board/expansion_board_3a.pdf)   |
 | LED           | [2.A](led_board/led_board_2a.pdf)               |
-| Power[^2]     | [4.A](power_board/power_board_4a.pdf)           |
+| Power         | [4.A](power_board/power_board_4a.pdf)/[6.A](power_board/power_board_6a.pdf)* |
 | Preamp        | [4.A](preamp_board/preamp_board_3a.pdf)         |
 | Preout        | [1.A](preout_board/preout_board_1a.pdf)         |
+
+\* 6.A added 2 new power supply monitor signals, see the [Power Board CHANGELOG](power_board/CHANGELOG.md)
 
 ## AmpliPro Streamers
 

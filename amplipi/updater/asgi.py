@@ -38,7 +38,7 @@ import asyncio
 
 # web framework
 import requests
-from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter
+from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter, Response
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 from starlette.responses import FileResponse
@@ -319,6 +319,20 @@ def set_admin_password(input: PasswordInput):
   else:
     set_password_hash(username, input.password)
     create_access_key(username)
+
+@router.post('/support')
+def request_support():
+  """ Creates a support tunnel request. """
+  try:
+    out = subprocess.run(
+      '/opt/support_tunnel/venv/bin/python3 -m invoke request'.split(),
+      capture_output=True,
+      cwd='/opt/support_tunnel',
+      timeout=120
+    )
+    return Response(content=f"{out.stdout.decode('utf')}", media_type="text/html")
+  except Exception as e:
+    return Response(content=f"failed to request tunnel: {e}", media_type="text/html")
 
 
 app.include_router(auth_router)

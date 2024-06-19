@@ -1,19 +1,28 @@
 # AmpliPi Software Releases
 
 ## Upcoming Release
+* System
+  * Fix broken API generation
+
+## 0.3.6
 * Web App
   * Add initial support for song browser (only Pandora stations for now)
   * Add streams to the stream list on the homepage in the order they were added
   * Add firmware version for main and expansion units on About page
   * Limit length of displayed stream names with ellipsis
   * Minor security increase to Pandora passwords
-  * Add restart stream button to stream player and stream modal
+  * Add restart stream button to stream modal
   * Add dynamic scaling to controls on Player page
+  * Make update available badge show up on both Settings page and the menu bar
+  * Fix stream icons
+  * Make it clearer when a stream needs a zone added on the home screen
 * System
   * Add serial number to eink display
   * Add ability to display status on eink display
   * Better logging around failed upgrades
   * Make upgrades more stable
+  * Implement opt-in remote support capabilities from the updater
+  * Upgrade LMS (Lyrion Media Server, formerly Logitech Media Server)
 * Display
   * Add serial number
   * Add status code field
@@ -26,6 +35,7 @@
   * Make Pandora like work and pass tests without metadata race condition
   * Validate stream fields when creating or reconfiguring stream
   * Handle LMS client cleanup better
+  * Upgrade LMS client, squeezelite
 * API
   * Fix: Zones playing audio on source used for announcement are not muted while announcement is playing
   * Log firmware version for main and expansion units

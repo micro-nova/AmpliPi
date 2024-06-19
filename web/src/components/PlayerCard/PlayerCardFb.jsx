@@ -1,7 +1,7 @@
 import React from "react";
 import Card from "@/components/Card/Card";
 import StreamBadge from "@/components/StreamBadge/StreamBadge";
-import SongInfo from "../SongInfo/SongInfo";
+import SongInfoMarquee from "../SongInfo/SongInfoMarquee";
 import CardVolumeSlider from "../CardVolumeSlider/CardVolumeSlider";
 import { useState } from "react";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
@@ -14,10 +14,15 @@ import CloseIcon from "@mui/icons-material/Close";
 import { IconButton } from "@mui/material";
 import StopProp from "@/components/StopProp/StopProp";
 import StreamerOutputBadge from "../StreamerOutputBadge/StreamerOutputBadge";
+import { getSourceZones } from "@/pages/Home/Home.jsx";
 
 import PropTypes from "prop-types";
 
 const PlayerCardFb = ({ sourceId, setVol }) => {
+    const zones = getSourceZones(
+        sourceId,
+        useStatusStore((s) => s.status.zones)
+    );
     const [streamModalOpen, setStreamModalOpen] = useState(false);
     const [zoneModalOpen, setZoneModalOpen] = useState(false);
     const setSelectedSource = usePersistentStore((s) => s.setSelectedSource);
@@ -75,10 +80,10 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                             <StreamerOutputBadge sourceId={sourceId} />
                         </div>
                     )}
-                    <SongInfo sourceId={sourceId} />
+                    <SongInfoMarquee sourceId={sourceId} />
                 </div>
 
-                { !is_streamer && (
+                { !is_streamer && zones.length > 0 && (
                     <CardVolumeSlider
                         sourceId={sourceId}
                         onChange={(event, vol) => {

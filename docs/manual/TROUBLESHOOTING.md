@@ -32,3 +32,19 @@ Had an issue with an update? Want to try a beta release? Follow these steps:
 3. Click the **Older Releases** tab
 4. Select the release you would like to use from the dropdown menu
 5. Click the **Start Update** button
+
+## Reimaging AmpliPro
+For directions on how to bring AmpliPro system back to a previous version, scan the QR labeled "Reimaging Instructions" on the links page at the start of this manual.
+
+## Still need help?
+
+You can contact our support. We can be reached via email at [support@micro.nova.com](mailto:support@micro-nova.com).
+
+We may ask you to open a support tunnel so we can connect to your running appliance. When you request a tunnel, the web interface will generate and provide you with two pieces of information - the tunnel ID and a preshared key. Without these pieces of information, we are _incapable_ of connecting to your appliance. Additionally, a support tunnel can be stopped at any time and has an expiration date of 2 weeks after it was created. This is for your privacy and security.
+
+You can request a tunnel by following these steps:
+
+1. Click the gear icon in the bottom right corner to go to the configuration page
+2. Select **Updates**, and click the **Support Tunnel** Tab
+3. Click the **Request support tunnel** button. It may 60 seconds for the request to complete.
+4. Once the request has been created, this page provides you with the tunnel ID and a preshared key. Please provide both of these to our support personnel in your communications.

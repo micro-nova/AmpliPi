@@ -1,6 +1,6 @@
 /*
  * AmpliPi Home Audio
- * Copyright (C) 2023 MicroNova LLC
+ * Copyright (C) 2021-2024 MicroNova LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,9 @@ typedef union {
     uint8_t en_9v    : 1;  // R
     uint8_t pg_12v   : 1;  // R
     uint8_t en_12v   : 1;  // R
-    uint8_t reserved : 3;
+    uint8_t pg_5vd   : 1;  // R
+    uint8_t pg_5va   : 1;  // R
+    uint8_t reserved : 1;
     uint8_t hv2      : 1;  // R
   };
   uint8_t data;

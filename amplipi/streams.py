@@ -42,7 +42,6 @@ from pandora.clientbuilder import SettingsDictBuilder  # pandora client from pyd
 
 from amplipi import models
 from amplipi import utils
-from amplipi import app
 from amplipi.mpris import MPRIS
 
 # We use Popen for long running process control this error is not useful:
@@ -379,7 +378,11 @@ class RCA(BaseStream):
       self.disabled = kwargs['disabled']
 
   def info(self) -> models.SourceInfo:
-    src_info = models.SourceInfo(img_url='static/imgs/rca_inputs.svg', name=self.full_name(), state='stopped')
+    src_info = models.SourceInfo(
+      type=self.stream_type,
+      img_url='static/imgs/rca_inputs.svg',
+      name=self.full_name(),
+      state='stopped')
     playing = False
     status_file = f'{utils.get_folder("config")}/srcs/rca_status'
     try:
@@ -524,7 +527,8 @@ class AirPlay(PersistentStream):
     source = models.SourceInfo(
       name=f"Connect to {self.name} on Airplay{'2' if self.ap2 else ''}",
       state=self.state,
-      img_url='static/imgs/shairport.png'
+      img_url='static/imgs/shairport.png',
+      type=self.stream_type
     )
 
     # if stream is airplay2 and other airplay2s exist show error message
@@ -672,7 +676,8 @@ class Spotify(PersistentStream):
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      img_url='static/imgs/spotify.png'  # report generic spotify image in place of unspecified album art
+      img_url='static/imgs/spotify.png',  # report generic spotify image in place of unspecified album art
+      type=self.stream_type
     )
     if self.mpris is None:
       return source
@@ -849,7 +854,8 @@ class Pandora(PersistentStream, Browsable):
       name=self.full_name(),
       state=self.state,
       supported_cmds=list(self.supported_cmds.keys()),
-      img_url='static/imgs/pandora.png'
+      img_url='static/imgs/pandora.png',
+      type=self.stream_type
     )
     try:
       with open(loc, 'r', encoding='utf-8') as file:
@@ -922,16 +928,15 @@ class Pandora(PersistentStream, Browsable):
               text = file.read()
               matches = re.findall(r'\" \([0-9]+\)', text)
             if matches:
-              self.station = matches[-1].replace('\" (', '').replace(')', '')
-              app.get_ctrl().mark_changes(sync_streams=True)
-              self.pb_output_file
-              with open(self.pb_output_file, 'w', encoding='utf-8') as file:  # clear file
-                file.write('')
-              self.state = 'playing'
-              logger.info(f'Changed pandora station to {self.station}')
-              time.sleep(1)  # give pianobar awhile to update metadata before we end the api call
-              break
-            elif "Receiving new playlist... Ok." in text:  # if we see this message, we know the station has been changed but we may have simply switched to the same station
+                self.station = matches[-1].replace('\" (', '').replace(')', '')
+                self.pb_output_file
+                with open(self.pb_output_file, 'w', encoding='utf-8') as file: # clear file
+                  file.write('')
+                self.state = 'playing'
+                logger.info(f'Changed pandora station to {self.station}')
+                time.sleep(1) # give pianobar awhile to update metadata before we end the api call
+                break
+            elif "Receiving new playlist... Ok." in text: # if we see this message, we know the station has been changed but we may have simply switched to the same station
               logger.info(f'Changed pandora station to same station ({self.station})')
               break
           else:  # if we don't find the station in 5 seconds, raise an error
@@ -1063,7 +1068,12 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
     self.dlna_proc = None
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/dlna.png')
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url='static/imgs/dlna.png',
+      type=self.stream_type
+    )
     try:
 
       data = json.load(open(f'{self._src_config_folder}/meta.json'))
@@ -1172,7 +1182,8 @@ class InternetRadio(BaseStream):
     source = models.SourceInfo(name=self.full_name(),
                                state=self.state,
                                img_url='static/imgs/internet_radio.png',
-                               supported_cmds=self.supported_cmds)
+                               supported_cmds=self.supported_cmds,
+                               type=self.stream_type)
     if self.logo:
       source.img_url = self.logo
     try:
@@ -1244,7 +1255,12 @@ class Plexamp(BaseStream):
     self._disconnect()
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url='static/imgs/plexamp.png',
+      type=self.stream_type
+    )
     source.track = "Not currently supported"
     return source
 
@@ -1291,7 +1307,8 @@ class Aux(BaseStream):
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(name=self.full_name(),
                                img_url='static/imgs/aux_input.svg',
-                               state=self.state)
+                               state=self.state,
+                               type=self.stream_type)
     return source
 
 
@@ -1354,7 +1371,12 @@ class FilePlayer(BaseStream):
     self._disconnect()
 
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url='static/imgs/plexamp.png')
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url='static/imgs/plexamp.png',
+      type=self.stream_type
+    )
     return source
 
 
@@ -1421,7 +1443,12 @@ class FMRadio(BaseStream):
     loc = f'{src_config_folder}/currentSong'
     if not self.logo:
       self.logo = "static/imgs/fmradio.png"
-    source = models.SourceInfo(name=self.full_name(), state=self.state, img_url=self.logo)
+    source = models.SourceInfo(
+      name=self.full_name(),
+      state=self.state,
+      img_url=self.logo,
+      type=self.stream_type
+    )
     try:
       with open(loc, 'r', encoding='utf-8') as file:
         data = json.loads(file.read())
@@ -1605,10 +1632,11 @@ class LMS(PersistentStream):
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      img_url=self.meta.get('image_url', ''),
-      track=self.meta.get('track', ''),
-      album=self.meta.get('album', ''),
-      artist=self.meta.get('artist', '')
+      img_url= self.meta.get('image_url', ''),
+      track= self.meta.get('track', ''),
+      album= self.meta.get('album', ''),
+      artist= self.meta.get('artist', ''),
+      type=self.stream_type
     )
     return source
 
@@ -1689,7 +1717,8 @@ class Bluetooth(BaseStream):
     source = models.SourceInfo(name=self.full_name(),
                                state=self.state,
                                img_url=self.logo,
-                               supported_cmds=self.supported_cmds)
+                               supported_cmds=self.supported_cmds,
+                               type=self.stream_type)
     try:
       with open(loc, 'r') as file:
         data = json.loads(file.read())

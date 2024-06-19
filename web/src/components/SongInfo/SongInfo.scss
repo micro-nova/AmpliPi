@@ -7,6 +7,22 @@
   text-shadow: 1px 2px 3px #000000;
 }
 
+.song-info-marquee{
+  max-width:50%;
+}
+
+.player-info-title {
+  font-size: 1.5rem !important;
+}
+
+.player-info-album {
+  font-size: 0.75rem !important;
+}
+
+.player-info-track {
+  font-size: 1.5rem !important;
+}
+
 .artist-name {
   @include general.header-font;
   color: general.$text-color;
@@ -22,6 +38,7 @@
 
 .album-name {
   margin: 0.1rem;
+  font-size: 0.75rem;
   @include general.header-font;
   color: general.$text-color;
 

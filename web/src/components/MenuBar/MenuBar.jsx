@@ -11,6 +11,7 @@ import Badge from "@mui/material/Badge";
 import { useStatusStore, usePersistentStore } from "@/App";
 import { getSourceInputType } from "@/utils/getSourceInputType";
 import { router } from "@/main";
+import { updateAvailable } from "@/utils/updateAvailable";
 
 import PropTypes from "prop-types";
 
@@ -31,16 +32,6 @@ const MenuBar = ({ pageNumber }) => {
             break;
         }
     };
-
-    const updateAvailable = useStatusStore(
-        (s) =>
-            s.status.info.version
-                .split("+")[0]
-                .localeCompare(s.status.info.latest_release, undefined, {
-                    numeric: true,
-                    sensitivity: "base",
-                }) < 0
-    );
 
     const selectedSourceId = usePersistentStore((s) => s.selectedSource);
     const selectedSource = useStatusStore(s => s.status.sources[selectedSourceId]);
@@ -67,7 +58,7 @@ const MenuBar = ({ pageNumber }) => {
                 <BottomNavigationAction
                     label="Settings"
                     icon={
-                        <Badge badgeContent={updateAvailable ? " " : null} color="primary">
+                        <Badge badgeContent={updateAvailable() ? " " : null} color="primary">
                             <SettingsIcon />
                         </Badge>
                     }

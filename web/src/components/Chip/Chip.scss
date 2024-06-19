@@ -9,3 +9,42 @@
   margin: 0.25rem;
   @include general.highlight-hover;
 }
+
+
+@keyframes shakeComponent {
+  // Shakes a component. Used to draw attention to the add zones button when there are no zones connnected to a source
+  // We've tried animations that change the color and opacity of the background, and animations that change the size and color of the shadow
+  // We landed on a shake to provide accessibility to the color blind
+
+  // Do not edit the steps of this animation unless you intend to not use translate
+  // Update the variables inside of .shake at the bottom of the file instead
+  // The prime directive when changing this is to have something that draws attention, but doesn't demand it; Don't overdo the animation.
+
+  0%{ // Start
+    transform: var(--left);
+  }
+
+  3%{ // Shake 1
+    transform: var(--right);
+  }
+  6%{ // Reset 1
+    transform: var(--left);
+  }
+
+  9%{ // Shake 2
+    transform: var(--right);
+  }
+  12%{ // Reset 2
+    transform: var(--left);
+  }
+
+  // Because the animation ends on the same phase it begins, there is no need to have anything between 12-100%.
+  // In some animations this is not the case, but due to it being a simple translation there is no issue with snapping back
+  // into the original postion on animation restart
+}
+
+.shake {
+  --left: translate(0px, 0px);
+  --right: translate(5px, 0px);
+  animation: shakeComponent 4s infinite;
+}
