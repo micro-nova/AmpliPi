@@ -171,15 +171,16 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
     const streamTemplate = StreamTemplates.filter(
         (t) => t.type === stream.type
     )[0];
-    // HACK slight hack to ensure name is always present
-    if(streamTemplate.fields.filter((field) => field.name === "Name").length === 0){
-        streamTemplate.fields.unshift(
-            {
-                "name": "Name",
-                "type": "name",
-                "required": true
-            });
-    }
+
+    // prepend name field to template fields
+    const templateFields = [{
+        "key": "name",
+        "name": "name",
+        "title": "Name",
+        "type": "text",
+        "desc": NAME_DESC,
+        "required": true
+    }].concat(streamTemplate.fields);
 
     return (
         <ModalCard
@@ -191,7 +192,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
             }}
             onAccept={() => {
                 // Check if all required fields are filled
-                for (const field of streamTemplate.fields) {
+                for (const field of templateFields) {
                     if (field.required && (!(field.name.toLowerCase() in streamFields) || streamFields[field.name.toLowerCase()] === "")) {
                         setErrorField(field.name);
                         setErrorMessage(`Field ${field.name} is required`);
@@ -230,27 +231,13 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
             <div>
                 {
                     // Render fields from StreamFields.json
-                    streamTemplate.fields.map((field) => {
+                    templateFields.map((field) => {
                         switch (field.type) {
-                        case "name":
-                            return (
-                                <TextArg
-                                    key="Name"
-                                    name="Name"
-                                    desc={NAME_DESC}
-                                    defaultValue={streamFields.name}
-                                    required={field.required == true}
-                                    error={errorField.toLowerCase()==field.name.toLowerCase()}
-                                    onChange={(v) => {
-                                        setStreamFields({ ...streamFields, name: v });
-                                    }}
-                                />
-                            );
                         case "text":
                             return (
                                 <TextArg
                                     key={field.name}
-                                    name={field.name}
+                                    name={field.title}
                                     desc={field.desc}
                                     type={"text"}
                                     required={field.required == true}
@@ -265,7 +252,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                             return (
                                 <TextArg
                                     key={field.name}
-                                    name={field.name}
+                                    name={field.title}
                                     desc={field.desc}
                                     type={"password"}
                                     required={field.required == true}
@@ -280,7 +267,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                             return (
                                 <BoolField
                                     key={field.name}
-                                    name={field.name}
+                                    name={field.title}
                                     desc={field.desc}
                                     defaultValue={streamFields[field.name]}
                                     onChange={(v) => {
