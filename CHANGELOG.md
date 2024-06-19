@@ -9,6 +9,7 @@
   * Groups containing only disabled zones no longer selectable
   * Only show not-playing streams in the new stream modal
   * Ensure that Pandora credentials are valid when adding a Pandora stream
+  * Increase responsiveness of Config page
 * Streams
   * Remove stop command (only accessable through API) from Pandora
   * Disconnect zones from sources when they are disabled
