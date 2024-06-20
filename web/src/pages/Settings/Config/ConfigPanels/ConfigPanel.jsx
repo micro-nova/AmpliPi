@@ -10,12 +10,12 @@ import Alert from"@mui/material/Alert/Alert";
 
 export default function ConfigPanel(props) {
     const {
-        Base,
-        Contents,
-        handler,
-        modalTitle,
-        modalBody,
-        successText,
+        title,
+        subheader,
+        Contents, // Component that takes some sort of input (typically a button) and a "useFunction" prop (generally equivalent to onClick, termed "useFunction" due to switches using "onChange" instead)
+        handler, // Required, the onClick/onChange function, taken separately from Contents' useFunction prop so we can control whether it's an onClick event or if it belongs to the "yes" button on the confirmation modal
+        modalBody, // Optional, the content of the modal. Explains what you're doing when you hit "yes"
+        successText, // Required, what the success modal says when there isn't any errors
     } = props;
 
     const [loading, setLoading] = React.useState(false);
@@ -24,37 +24,34 @@ export default function ConfigPanel(props) {
     const [success, setSuccess] = React.useState(false);
     const statusBody = React.useRef("");
 
-    function handleLoad() {
+     async function handleLoad() {
         setLoading(true);
         setModalOpen(false);
 
-        const response = handler();
+        const response = await handler();
         if(response.ok){
             setLoading(false);
             setSuccess(true);
             statusBody.current = successText;
-            setStatusOpen(true);
         } else {
-            response.json().then(
-                (data) => {
-                    setLoading(false);
-                    setSuccess(false);
-                    statusBody.current = data.detail.message;
-                    setStatusOpen(true);
-                }
-            );
+            const data = await response.json()
+            setLoading(false);
+            setSuccess(false);
+            statusBody.current = data.detail.message;
         }
+        setStatusOpen(true);
     };
 
 
     function StatusBar() {
-        function PassFail() {
+        const [severity, setSeverity] = React.useState("error");
+        React.useEffect(() => {
             if(success){
-                return("success");
+                setSeverity("success");
             } else {
-                return("error");
+                setSeverity("error");
             }
-        }
+        }, [success])
 
         return(
             <Snackbar
@@ -63,7 +60,12 @@ export default function ConfigPanel(props) {
                 open={statusOpen}
                 onClose={() => {setStatusOpen(false)}}
             >
-                <Alert onClose={() => {setStatusOpen(false);}} severity={() => {return PassFail();}} variant="filled" sx={{width: "100%"}}>
+                <Alert
+                    onClose={() => {setStatusOpen(false);}}
+                    severity={severity}
+                    variant="filled"
+                    style={{width: "100%"}}
+                >
                     {statusBody.current}
                 </Alert>
             </Snackbar>
@@ -72,18 +74,19 @@ export default function ConfigPanel(props) {
 
     if(loading){
         return(
-            <>
-                <Base>
-                    <CircularProgress />
-                </Base>
-                <Divider />
-            </>
+            <div>
+                {title}
+                <div className="config-desc">
+                    {subheader}
+                </div>
+                <CircularProgress />
+            </div>
         )
     } else {
         function useFunction() {
             // Not all buttons need an 'Are you sure?' before executing their function
             // This function modulates whether clicking the button does the thing directly, or if it has a layer of indirection to the modal
-            if(modalTitle && modalBody){
+            if(modalBody){
                 setModalOpen(true);
             } else {
                 return handleLoad();
@@ -91,18 +94,22 @@ export default function ConfigPanel(props) {
         }
         return(
             <>
-                <Base>
+                <div>
+                    {title}
+                    <div className="config-desc">
+                        {subheader}
+                    </div>
                     <Contents useFunction={() => {useFunction();}}/>
-                </Base>
+                </div>
                 <StatusBar />
                 <Divider />
 
                 <Dialog open={modalOpen} maxWidth="xs">
-                    <DialogTitle>
-                        Are you sure you wish to {modalTitle}?
+                    <DialogTitle style={{textAlign: "center"}}>
+                        Are you sure?
                     </DialogTitle>
                     <DialogContent>
-                        This will {modalBody}
+                        {modalBody}
                     </DialogContent>
                     <Button variant="contained" color="error" fullWidth onClick={() => {setModalOpen(false);}}>No</Button>
                     <Button variant="contained" color="success" fullWidth onClick={() => {handleLoad();}}>Yes</Button>

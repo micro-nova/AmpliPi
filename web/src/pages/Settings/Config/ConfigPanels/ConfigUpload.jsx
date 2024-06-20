@@ -8,19 +8,6 @@ export default function ConfigDownload(){
     const [file, setFile] = React.useState([]);
     const [filePicked, setFilePicked] = React.useState(false);
 
-    function Base(props) {
-        const { children } = props;
-        return(
-            <div>
-                Upload Config
-                <div className="config-desc">
-                    {"Uploads the selected configuration file."}
-                </div>
-                {children}
-            </div>
-        )
-    }
-
     const UploadConfig = () => {
         return fetch("/api/load", {
             method: "POST",
@@ -45,7 +32,7 @@ export default function ConfigDownload(){
         };
 
         return(
-            <div>
+            <>
                 <input
                     type="file"
                     accept=".json,application/json"
@@ -54,13 +41,18 @@ export default function ConfigDownload(){
                 <Button disabled={!filePicked} onClick={useFunction}>
                     Upload
                 </Button>
-            </div>
+            </>
         )
     }
 
-    const title = "Upload Config";
-    const body = "replace the previous config, ensure you've downloaded the current config if you wish to keep it!";
     return(
-        <ConfigPanel Base={Base} handler={UploadConfig} Contents={Contents} modalTitle={title} modalBody={body} />
+        <ConfigPanel
+            title={"Upload Config"}
+            subheader={"Downloads the current configuration."}
+            handler={UploadConfig}
+            Contents={Contents}
+            modalBody={"This will replace the previous config, ensure you've downloaded the current config if you wish to keep it!"}
+            successText={"Config uploaded successfully!"}
+        />
     )
 };
