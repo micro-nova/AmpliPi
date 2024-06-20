@@ -297,7 +297,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -317,7 +316,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -722,7 +720,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -742,7 +739,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -1147,7 +1143,6 @@ paths:
                       supported_cmds:
                       - play
                       - pause
-                      - stop
                       - next
                       - love
                       - ban
@@ -1167,7 +1162,6 @@ paths:
                       supported_cmds:
                       - play
                       - pause
-                      - stop
                       - next
                       - love
                       - ban
@@ -1563,7 +1557,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -1583,7 +1576,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -1999,7 +1991,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -2019,7 +2010,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -2425,7 +2415,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -2445,7 +2434,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -2748,7 +2736,6 @@ paths:
                     supported_cmds:
                     - play
                     - pause
-                    - stop
                     - next
                     - love
                     - ban
@@ -2768,7 +2755,6 @@ paths:
                     supported_cmds:
                     - play
                     - pause
-                    - stop
                     - next
                     - love
                     - ban
@@ -3089,7 +3075,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -3109,7 +3094,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -3795,7 +3779,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -3815,7 +3798,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -4426,7 +4408,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -4446,7 +4427,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -5143,7 +5123,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -5163,7 +5142,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -5634,7 +5612,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -5654,7 +5631,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -6440,7 +6416,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -6460,7 +6435,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -6940,7 +6914,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -6960,7 +6933,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -7431,7 +7403,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -7451,7 +7422,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -8116,7 +8086,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -8136,7 +8105,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -8753,7 +8721,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -8773,7 +8740,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -9220,7 +9186,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -9240,7 +9205,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -9668,7 +9632,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -9688,7 +9651,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -10123,7 +10085,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -10143,7 +10104,6 @@ paths:
                         supported_cmds:
                         - play
                         - pause
-                        - stop
                         - next
                         - love
                         - ban
@@ -11605,7 +11565,6 @@ components:
                 supported_cmds:
                 - play
                 - pause
-                - stop
                 - next
                 - love
                 - ban
@@ -11625,7 +11584,6 @@ components:
                 supported_cmds:
                 - play
                 - pause
-                - stop
                 - next
                 - love
                 - ban
@@ -12039,7 +11997,6 @@ components:
       - pause
       - next
       - prev
-      - stop
       - love
       - ban
       - shelve

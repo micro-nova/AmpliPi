@@ -37,7 +37,6 @@
         "supported_cmds": [
           "play",
           "pause",
-          "stop",
           "next",
           "love",
           "ban",
@@ -56,7 +55,6 @@
         "supported_cmds": [
           "play",
           "pause",
-          "stop",
           "next",
           "love",
           "ban",
