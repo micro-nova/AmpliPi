@@ -47,12 +47,22 @@ const ZonesModal = ({
     const zones = useStatusStore
         .getState()
         .status.zones.filter((zone) => !zone.disabled);
-    const groups = useStatusStore.getState().status.groups;
+
+    const disabled_zone_ids = useStatusStore
+        .getState()
+        .status.zones.filter((zone) => zone.disabled).map((z => z.id));
+
+
+    const groups = useStatusStore.getState().status.groups.filter((group) =>
+        group.zones.some((zone) => (zones.map((z) => z.id).includes(zone)))
+    );
+
     const [checkedZonesIds, setCheckedZoneIds] = useState(
         zones
             .filter((zone) => zone.source_id === sourceId && loadZonesGroups)
             .map((zone) => zone.id)
     );
+
     const [checkedGroupIds, setCheckedGroupIds] = useState(
         groups
             .filter((group) => group.source_id === sourceId && loadZonesGroups)
@@ -61,7 +71,12 @@ const ZonesModal = ({
 
     const computeCheckedGroups = (newCheckedZonesIds) => {
         const newGroups = groups
-            .filter((g) => g.zones.every((id) => newCheckedZonesIds.includes(id)))
+            .filter((g) => g.zones.every((id) => {
+                if (disabled_zone_ids.find((d_id) => id === d_id)) {
+                    return true;
+                }
+                return newCheckedZonesIds.includes(id);
+            }))
             .map((g) => g.id);
         setCheckedGroupIds(newGroups);
     };

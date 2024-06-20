@@ -756,6 +756,11 @@ class Api:
         # parse and check the source id
         sid = utils.parse_int(source_id, range(models.SOURCE_DISCONNECTED, models.MAX_SOURCES))
 
+        # disconnect zone from source if it's disabled.
+        if zone.disabled:
+          sid = models.SOURCE_DISCONNECTED
+          update_source_id = True
+
         # any zone disabled by source disconnection or a 'disabled' flag should not be able to play anything
         implicit_mute = zone.disabled or sid == models.SOURCE_DISCONNECTED
         if implicit_mute and not mute:
@@ -870,6 +875,10 @@ class Api:
     """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
     for group in self.status.groups:
       zones = [self.status.zones[z] for z in group.zones]
+
+      # remove disabled from further calculations
+      zones = [z for z in zones if not z.disabled]
+
       mutes = [z.mute for z in zones]
       sources = {z.source_id for z in zones}
       vols = [z.vol_f for z in zones]

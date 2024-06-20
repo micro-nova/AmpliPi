@@ -38,13 +38,11 @@ export const getFittestGroups = (zones, groups) => {
     let best = [];
     for (const group of groups) {
         let fitness = groupZoneMatchCount(zones, group);
-        if (groupIsSubset(group, zones)) {
-            if (fitness > bestFitness) {
-                bestFitness = fitness;
-                best = [group];
-            } else if (fitness == bestFitness) {
-                best.push(group);
-            }
+        if (fitness > bestFitness) {
+            bestFitness = fitness;
+            best = [group];
+        } else if (fitness == bestFitness) {
+            best.push(group);
         }
     }
 
