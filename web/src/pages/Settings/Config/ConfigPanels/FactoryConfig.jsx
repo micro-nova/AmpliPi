@@ -11,9 +11,9 @@ export default function FactoryConfig(){
     };
 
     function Contents(props) {
-        const { useFunction } = props;
+        const { onClick } = props;
         return(
-            <Button onClick={useFunction}>Reset</Button>
+            <Button onClick={onClick}>Reset</Button>
         )
     }
 

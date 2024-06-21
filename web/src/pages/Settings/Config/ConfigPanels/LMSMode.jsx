@@ -3,30 +3,10 @@ import "../Config.scss";
 import ConfigPanel from './ConfigPanel.jsx';
 import { useStatusStore } from "@/App.jsx";
 import Switch from '@mui/material/Switch/Switch';
-import { IsMobileApp } from "@/utils/MobileApp";
+import DownloadConfig from './DownloadConfig';
 
 export default function LMSMode() {
     const lmsMode = useStatusStore((s) => s.status.info.lms_mode);
-
-    function DownloadConfig() {
-        if (IsMobileApp()) {
-            alert("This feature is not available in the mobile app.");
-            return;
-        }
-        fetch("/api").then((response) => {
-            response.json().then((json) => {
-                const element = document.createElement("a");
-                const d = new Date();
-                const file = new Blob([JSON.stringify(json, undefined, 2)], {
-                    type: "application/json",
-                });
-                element.href = URL.createObjectURL(file);
-                element.download = `amplipi-config-${d.toJSON()}.json`;
-                document.body.appendChild(element);
-                element.click();
-            });
-        });
-    };
 
     const LMSModeHandler = () => {
         DownloadConfig();
@@ -35,11 +15,11 @@ export default function LMSMode() {
     };
 
     function Contents(props) {
-        const { useFunction } = props;
+        const { onClick } = props;
         return(
             <Switch
                 checked={lmsMode}
-                onChange={useFunction}
+                onClick={onClick}
                 inputProps={{ "aria-label": "controlled" }}
             />
         )

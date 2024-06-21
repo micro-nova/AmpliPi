@@ -10,15 +10,15 @@ export default function HardwareReset() {
     };
 
     function Contents(props) {
-        const { useFunction } = props;
+        const { onClick } = props;
         return(
-            <Button onClick={useFunction}>Reset</Button>
+            <Button onClick={onClick}>Reset</Button>
         )
     }
 
     return(
         <ConfigPanel
-            title={"HW Reset"}
+            title={"Hardware Reset"}
             subheader={"Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)"}
             handler={HWReset}
             Contents={Contents}
