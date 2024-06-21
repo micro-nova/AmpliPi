@@ -1,29 +1,33 @@
 import React from 'react';
 import "../Config.scss";
-import ConfigPanel from "./ConfigPanel.jsx";
+import ConfigPanel from "./ConfigTemplates/ConfigPanel.jsx";
 import Button from '@mui/material/Button/Button';
+import ConfigModal from './ConfigTemplates/ConfigModal';
 
 export default function HardwareReset() {
+    const [modalOpen, setModalOpen] = React.useState(false);
+
     const HWReset = () => {
         const response = fetch("/api/reset", { method: "POST" });
         return response;
     };
 
-    function Contents(props) {
-        const { onClick } = props;
-        return(
-            <Button onClick={onClick}>Reset</Button>
-        )
-    }
-
     return(
-        <ConfigPanel
-            title={"Hardware Reset"}
-            subheader={"Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)"}
-            handler={HWReset}
-            Contents={Contents}
-            modalBody={"This will reset the preamp hardware and controller software. This will take some time, during which amplipi will not be able to play audio."}
-            successText={"Hardware has been reset successfully!"}
-        />
+        <>
+            <ConfigPanel
+                title={"Hardware Reset"}
+                subheader={"Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)"}
+                successText={"Hardware has been reset successfully!"}
+            >
+                <Button onClick={() => {setModalOpen(true);}}>Reset</Button>
+            </ConfigPanel>
+
+            <ConfigModal
+                body={"This will reset the preamp hardware and controller software. This will take some time, during which amplipi will not be able to play audio."}
+                confirm={() => {HWReset();}}
+                open={modalOpen}
+                setOpen={setModalOpen}
+            />
+        </>
     )
 }
