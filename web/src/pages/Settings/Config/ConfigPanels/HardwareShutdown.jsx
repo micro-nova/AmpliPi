@@ -10,20 +10,20 @@ export default function HardwareShutdown() {
     };
 
     function Contents(props) {
-        const { useFunction } = props;
+        const { onClick } = props;
         return(
-            <Button onClick={useFunction}>Shutdown</Button>
+            <Button onClick={onClick}>Shutdown</Button>
         )
     }
 
     return(
         <ConfigPanel
-            title={"HW Shutdown"}
+            title={"Hardware Shutdown"}
             subheader={"Trigger a shutdown of the Raspberry Pi-based controller"}
             handler={HWShutdown}
             Contents={Contents}
-            modalBody={"This will shut the unit off. It will need to be physically accessed to turn it back on."}
-            successText={"Hardware shut down successfully!"}
+            modalBody={"This will shut the unit off. It will need to be physically accessed to be turned back on."}
+            successText={"Hardware shut down successfully!"} // You're never going to see this but it's required so eh
         />
     )
 }

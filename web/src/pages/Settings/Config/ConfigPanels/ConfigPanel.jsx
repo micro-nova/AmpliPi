@@ -15,7 +15,7 @@ export default function ConfigPanel(props) {
         Contents, // Component that takes some sort of input (typically a button) and a "useFunction" prop (generally equivalent to onClick, termed "useFunction" due to switches using "onChange" instead)
         handler, // Required, the onClick/onChange function, taken separately from Contents' useFunction prop so we can control whether it's an onClick event or if it belongs to the "yes" button on the confirmation modal
         modalBody, // Optional, the content of the modal. Explains what you're doing when you hit "yes"
-        successText, // Required, what the success modal says when there isn't any errors
+        successText, // Required, what the success popup says when there isn't any errors
     } = props;
 
     const [loading, setLoading] = React.useState(false);
@@ -24,17 +24,17 @@ export default function ConfigPanel(props) {
     const [success, setSuccess] = React.useState(false);
     const statusBody = React.useRef("");
 
-     async function handleLoad() {
+    async function handleLoad() {
         setLoading(true);
         setModalOpen(false);
 
-        const response = await handler();
+        const response = await handler(); // requires async-await or response.ok is undefined by the time the if statement is executed
         if(response.ok){
             setLoading(false);
             setSuccess(true);
             statusBody.current = successText;
         } else {
-            const data = await response.json()
+            const data = await response.json();
             setLoading(false);
             setSuccess(false);
             statusBody.current = data.detail.message;
@@ -44,18 +44,11 @@ export default function ConfigPanel(props) {
 
 
     function StatusBar() {
-        const [severity, setSeverity] = React.useState("error");
-        React.useEffect(() => {
-            if(success){
-                setSeverity("success");
-            } else {
-                setSeverity("error");
-            }
-        }, [success])
+        const severity = success ? "success" : "error";
 
         return(
             <Snackbar
-                autoHideDuration={6000}
+                autoHideDuration={3000}
                 anchorOrigin={{vertical: "bottom", horizontal: "left"}}
                 open={statusOpen}
                 onClose={() => {setStatusOpen(false)}}
@@ -83,7 +76,7 @@ export default function ConfigPanel(props) {
             </div>
         )
     } else {
-        function useFunction() {
+        function onClick() {
             // Not all buttons need an 'Are you sure?' before executing their function
             // This function modulates whether clicking the button does the thing directly, or if it has a layer of indirection to the modal
             if(modalBody){
@@ -99,7 +92,7 @@ export default function ConfigPanel(props) {
                     <div className="config-desc">
                         {subheader}
                     </div>
-                    <Contents useFunction={() => {useFunction();}}/>
+                    <Contents onClick={() => {onClick();}}/>
                 </div>
                 <StatusBar />
                 <Divider />

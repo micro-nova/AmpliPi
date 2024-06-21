@@ -17,8 +17,7 @@ export default function ConfigDownload(){
     };
 
     function Contents(props) {
-        const { useFunction } = props;
-
+        const { onClick } = props;
 
         const onChange = (event) => {
             if (!event.target.files[0]) {
@@ -38,7 +37,7 @@ export default function ConfigDownload(){
                     accept=".json,application/json"
                     onChange={onChange}
                 />
-                <Button disabled={!filePicked} onClick={useFunction}>
+                <Button disabled={!filePicked} onClick={onClick}>
                     Upload
                 </Button>
             </>
@@ -48,7 +47,7 @@ export default function ConfigDownload(){
     return(
         <ConfigPanel
             title={"Upload Config"}
-            subheader={"Downloads the current configuration."}
+            subheader={"Uploads the selected configuration file."}
             handler={UploadConfig}
             Contents={Contents}
             modalBody={"This will replace the previous config, ensure you've downloaded the current config if you wish to keep it!"}

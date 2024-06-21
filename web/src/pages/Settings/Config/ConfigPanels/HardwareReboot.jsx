@@ -10,15 +10,15 @@ export default function HardwareReboot() {
     };
 
     function Contents(props) {
-        const { useFunction } = props;
+        const { onClick } = props;
         return(
-            <Button onClick={useFunction}>Reboot</Button>
+            <Button onClick={onClick}>Reboot</Button>
         )
     }
 
     return(
         <ConfigPanel
-            title={"HW Reboot"}
+            title={"Hardware Reboot"}
             subheader={"Reboots the Raspberry Pi-based controller"}
             handler={HWReboot}
             Contents={Contents}
