@@ -51,6 +51,6 @@ export default function StatusBar(props) {
 }
 StatusBar.propTypes = {
     successText: PropTypes.string.isRequired,
-    response: PropTypes.any.isRequired, // Needs to be a promise / completed fetch request, PropTypes doesn't have a type for those
+    response: PropTypes.instanceOf(Promise).isRequired,
 };
 
