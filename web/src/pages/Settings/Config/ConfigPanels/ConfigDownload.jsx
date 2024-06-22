@@ -1,28 +1,34 @@
 
 import React from 'react';
 import "../Config.scss";
+import StatusBar from './ConfigTemplates/StatusBar.jsx';
 import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
 import Button from '@mui/material/Button/Button';
-import ConfigModal from './ConfigTemplates/ConfigModal';
+import DownloadConfig from './DownloadConfig';
 
 export default function ConfigDownload(){
-    const [modalOpen, setModalOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [response, setResponse] = React.useState(null);
+
+    async function handler(){
+        setLoading(true);
+        const resp = await DownloadConfig();
+        setResponse(resp);
+        setLoading(false);
+    }
 
     return(
         <>
             <ConfigPanel
                 title={"Download Config"}
                 subheader={"Downloads the current configuration."}
-                successText={"Config downloaded successfully!"}
+                loading={loading}
             >
-                <Button onClick={() => {setModalOpen(true);}}>Download</Button>
+                <Button onClick={() => {handler();}}>Download</Button>
             </ConfigPanel>
-
-            <ConfigModal
-                body={"This will reset all settings to factory default, ensure you've downloaded your current config if you wish to keep it!"}
-                confirm={() => {DownloadConfig();}}
-                open={modalOpen}
-                setOpen={setModalOpen}
+            <StatusBar
+                successText={"Config downloaded successfully!"}
+                response={response}
             />
         </>
     )

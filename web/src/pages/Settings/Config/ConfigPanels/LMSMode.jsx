@@ -5,15 +5,20 @@ import { useStatusStore } from "@/App.jsx";
 import Switch from '@mui/material/Switch/Switch';
 import DownloadConfig from './DownloadConfig';
 import ConfigModal from './ConfigTemplates/ConfigModal';
+import StatusBar from './ConfigTemplates/StatusBar.jsx';
 
 export default function LMSMode() {
     const lmsMode = useStatusStore((s) => s.status.info.lms_mode);
     const [modalOpen, setModalOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [response, setResponse] = React.useState(null);
 
-    const LMSModeHandler = () => {
+    async function LMSModeHandler(){
+        setLoading(true);
         DownloadConfig();
-        const response = fetch("/api/lms_mode", { method: "POST" });
-        return response;
+        const resp = await fetch("/api/lms_mode", { method: "POST" });
+        setResponse(resp);
+        setLoading(false);
     };
 
     function LMSModal(){
@@ -44,7 +49,7 @@ export default function LMSMode() {
             <ConfigPanel
                 title={"Lyrion Media Server (LMS) Mode"}
                 subheader={"Toggles LMS Mode on or off. LMS is useful for piggy-backing off integrations AmpliPi does not have natively. This will wipe out the current config! As a result, it downloads the current config before proceeding with LMS mode."}
-                successText={"LMS Mode activated successfully!"}
+                loading={loading}
             >
                 <Switch
                     checked={lmsMode}
@@ -54,6 +59,10 @@ export default function LMSMode() {
             </ConfigPanel>
 
             <LMSModal />
+            <StatusBar
+                successText={"LMS Mode activated successfully!"}
+                response={response}
+            />
         </>
     )
 }

@@ -6,25 +6,20 @@ import ConfigModal from './ConfigTemplates/ConfigModal';
 
 export default function HardwareShutdown() {
     const [modalOpen, setModalOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
 
-    const HWShutdown = () => {
-        const response = fetch("/api/shutdown", { method: "POST" });
-        return response;
+    async function HWShutdown(){
+        setLoading(true);
+        fetch("/api/shutdown", { method: "POST" });
+        setLoading(false);
     };
-
-    function Contents(props) {
-        const { onClick } = props;
-        return(
-            <Button onClick={onClick}></Button>
-        )
-    }
 
     return(
         <>
             <ConfigPanel
                 title={"Hardware Shutdown"}
                 subheader={"Trigger a shutdown of the Raspberry Pi-based controller"}
-                successText={"Hardware shut down successfully!"} // You're never going to see this but it's required so eh
+                loading={loading}
             >
                 <Button onClick={() => {setModalOpen(true);}}>Shutdown</Button>
             </ConfigPanel>
