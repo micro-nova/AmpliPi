@@ -5,8 +5,8 @@ import "./Config.scss";
 
 import PageHeader from "@/components/PageHeader/PageHeader";
 
-import ConfigUpload from "./ConfigPanels/ConfigUpload.jsx";
-import ConfigDownload from "./ConfigPanels/ConfigDownload.jsx";
+import UploadConfig from "./ConfigPanels/UploadConfig.jsx";
+import DownloadConfig from "./ConfigPanels/DownloadConfig.jsx";
 import FactoryConfig from "./ConfigPanels/FactoryConfig.jsx";
 import LMSMode from "./ConfigPanels/LMSMode.jsx";
 import HardwareReset from "./ConfigPanels/HardwareReset.jsx";
@@ -19,9 +19,9 @@ export default function Config(props) {
         <div className="page-container">
             <PageHeader title="Config" onClose={onClose} />
             <div className="page-body">
-                <ConfigUpload />
+                <UploadConfig />
 
-                <ConfigDownload />
+                <DownloadConfig />
 
                 <FactoryConfig />
 
