@@ -3,6 +3,7 @@ import Dialog from "@mui/material/Dialog/Dialog";
 import DialogTitle from "@mui/material/DialogTitle/DialogTitle";
 import DialogContent from "@mui/material/DialogContent/DialogContent";
 import Button from "@mui/material/Button/Button";
+import PropTypes from "prop-types";
 
 export default function ConfigModal(props) {
     const {
@@ -25,3 +26,9 @@ export default function ConfigModal(props) {
         </Dialog>
     )
 }
+ConfigModal.propTypes = {
+    body: PropTypes.string.isRequired,
+    confirm: PropTypes.func.isRequired,
+    open: PropTypes.bool.isRequired,
+    setOpen: PropTypes.func.isRequired,
+};
