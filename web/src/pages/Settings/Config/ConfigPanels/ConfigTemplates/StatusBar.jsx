@@ -1,5 +1,6 @@
 import React from "react";
 import { Snackbar, Alert } from "@mui/material";
+import PropTypes from "prop-types";
 
 
 export default function StatusBar(props) {
@@ -48,3 +49,8 @@ export default function StatusBar(props) {
         </Snackbar>
     );
 }
+StatusBar.propTypes = {
+    successText: PropTypes.string.isRequired,
+    response: PropTypes.any.isRequired, // Needs to be a promise / completed fetch request, PropTypes doesn't have a type for those
+};
+
