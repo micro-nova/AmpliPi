@@ -4,19 +4,25 @@ import "../Config.scss";
 import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
 import Button from '@mui/material/Button/Button';
 import ConfigModal from './ConfigTemplates/ConfigModal';
+import StatusBar from './ConfigTemplates/StatusBar.jsx';
 
 export default function ConfigDownload(){
     const [file, setFile] = React.useState([]);
     const [filePicked, setFilePicked] = React.useState(false);
     const [modalOpen, setModalOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [response, setResponse] = React.useState(null);
 
-    const UploadConfig = () => {
-        return fetch("/api/load", {
+    async function UploadConfig(){
+        setLoading(true);
+        const resp = await fetch("/api/load", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(file),
         });
-    };
+        setResponse(resp);
+        setLoading(false);
+    }
 
     const onChange = (event) => {
         if (!event.target.files[0]) {
@@ -34,7 +40,7 @@ export default function ConfigDownload(){
             <ConfigPanel
                 title={"Upload Config"}
                 subheader={"Uploads the selected configuration file."}
-                successText={"Config uploaded successfully!"}
+                loading={loading}
             >
                 <input
                     type="file"
@@ -51,6 +57,10 @@ export default function ConfigDownload(){
                 confirm={() => {UploadConfig();}}
                 open={modalOpen}
                 setOpen={setModalOpen}
+            />
+            <StatusBar
+                successText={"Config uploaded successfully!"}
+                response={response}
             />
         </>
     )

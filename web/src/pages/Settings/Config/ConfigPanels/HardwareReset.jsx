@@ -3,13 +3,18 @@ import "../Config.scss";
 import ConfigPanel from "./ConfigTemplates/ConfigPanel.jsx";
 import Button from '@mui/material/Button/Button';
 import ConfigModal from './ConfigTemplates/ConfigModal';
+import StatusBar from './ConfigTemplates/StatusBar.jsx';
 
 export default function HardwareReset() {
     const [modalOpen, setModalOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [response, setResponse] = React.useState(null);
 
-    const HWReset = () => {
-        const response = fetch("/api/reset", { method: "POST" });
-        return response;
+    async function HWReset(){
+        setLoading(true);
+        const resp = await fetch("/api/reset", { method: "POST" });
+        setResponse(resp);
+        setLoading(false);
     };
 
     return(
@@ -17,7 +22,7 @@ export default function HardwareReset() {
             <ConfigPanel
                 title={"Hardware Reset"}
                 subheader={"Resets the preamp hardware and controller software (does not reboot the Raspberry Pi-based controller)"}
-                successText={"Hardware has been reset successfully!"}
+                loading={loading}
             >
                 <Button onClick={() => {setModalOpen(true);}}>Reset</Button>
             </ConfigPanel>
@@ -27,6 +32,10 @@ export default function HardwareReset() {
                 confirm={() => {HWReset();}}
                 open={modalOpen}
                 setOpen={setModalOpen}
+            />
+            <StatusBar
+                successText={"Hardware has been reset successfully!"}
+                response={response}
             />
         </>
     )

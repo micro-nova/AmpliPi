@@ -21,7 +21,7 @@ export default function ConfigModal(props) {
                 {body}
             </DialogContent>
             <Button variant="contained" color="error" fullWidth onClick={() => {setOpen(false);}}>No</Button>
-            <Button variant="contained" color="success" fullWidth onClick={() => {confirm();}}>Yes</Button>
+            <Button variant="contained" color="success" fullWidth onClick={() => {confirm(); setOpen(false);}}>Yes</Button>
         </Dialog>
     )
 }

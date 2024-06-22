@@ -4,13 +4,18 @@ import "../Config.scss";
 import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
 import Button from '@mui/material/Button/Button';
 import ConfigModal from './ConfigTemplates/ConfigModal';
+import StatusBar from './ConfigTemplates/StatusBar.jsx';
 
 export default function FactoryConfig(){
     const [modalOpen, setModalOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [response, setResponse] = React.useState(null);
 
-    const FactoryReset = () => {
-        const response = fetch("/api/factory_reset", { method: "POST" });
-        return response;
+    async function FactoryReset(){
+        setLoading(true);
+        const resp = await fetch("/api/factory_reset", { method: "POST" });
+        setResponse(resp);
+        setLoading(false);
     };
 
     return(
@@ -18,7 +23,7 @@ export default function FactoryConfig(){
             <ConfigPanel
                 title={"Factory Config"}
                 subheader={"Resets Amplipi to the factory default configuration. We recommend downloading the current configuration beforehand."}
-                successText={"AmpliPi reset to factory settings successfully!"}
+                loading={loading}
             >
                 <Button onClick={() => {setModalOpen(true);}}>Reset</Button>
             </ConfigPanel>
@@ -28,6 +33,10 @@ export default function FactoryConfig(){
                 confirm={() => {FactoryReset();}}
                 open={modalOpen}
                 setOpen={setModalOpen}
+            />
+            <StatusBar
+                successText={"AmpliPi reset to factory settings successfully!"}
+                response={response}
             />
         </>
     )
