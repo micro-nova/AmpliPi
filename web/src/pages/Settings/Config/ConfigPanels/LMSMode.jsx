@@ -3,7 +3,7 @@ import "../Config.scss";
 import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
 import { useStatusStore } from "@/App.jsx";
 import Switch from '@mui/material/Switch/Switch';
-import DownloadConfig from './DownloadConfig';
+import ConfigDownload from './ConfigTemplates/ConfigDownload';
 import ConfigModal from './ConfigTemplates/ConfigModal';
 import StatusBar from './ConfigTemplates/StatusBar.jsx';
 
@@ -15,7 +15,7 @@ export default function LMSMode() {
 
     async function LMSModeHandler(){
         setLoading(true);
-        DownloadConfig();
+        ConfigDownload();
         const resp = await fetch("/api/lms_mode", { method: "POST" });
         setResponse(resp);
         setLoading(false);

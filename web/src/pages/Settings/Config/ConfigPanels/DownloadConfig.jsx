@@ -1,22 +1,36 @@
-import { IsMobileApp } from "@/utils/MobileApp";
 
-export default function DownloadConfig() {
-    if (IsMobileApp()) {
-        alert("This feature is not available in the mobile app.");
-        return;
+import React from 'react';
+import "../Config.scss";
+import StatusBar from './ConfigTemplates/StatusBar.jsx';
+import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
+import Button from '@mui/material/Button/Button';
+import ConfigDownload from './ConfigTemplates/ConfigDownload.jsx';
+
+export default function DownloadConfig(){
+    const [loading, setLoading] = React.useState(false);
+    const [response, setResponse] = React.useState(null);
+
+    async function handler(){
+        setLoading(true);
+        const resp = await ConfigDownload();
+        setResponse(resp);
+        setLoading(false);
     }
-    const response = fetch("/api");
-    response.then((res) => {res.json().then((json) => {
-        const element = document.createElement("a");
-        const d = new Date();
-        const file = new Blob([JSON.stringify(json, undefined, 2)], {
-            type: "application/json",
-        });
-        element.href = URL.createObjectURL(file);
-        element.download = `amplipi-config-${d.toJSON()}.json`;
-        document.body.appendChild(element);
-        element.click();
-        });
-    });
-    return response;
-};
+
+    return(
+        <>
+            <ConfigPanel
+                title={"Download Config"}
+                subheader={"Downloads the current configuration."}
+                loading={loading}
+            >
+                <Button onClick={() => {handler();}}>Download</Button>
+            </ConfigPanel>
+            <StatusBar
+                successText={"Config downloaded successfully!"}
+                response={response}
+            />
+        </>
+    )
+}
+
