@@ -1072,7 +1072,8 @@ def test_delete_connected_stream(client, sid):
 # _live tests will be excluded from GitHub testing
 
 @pytest.mark.parametrize('cmd', ['play', 'pause', 'next', 'love', 'ban', 'shelve'])
-def test_post_stream_cmd_live(clientnm, cmd):  """ Try sending commands to a pandora stream on a live system """
+def test_post_stream_cmd_live(clientnm, cmd):  
+  """ Try sending commands to a pandora stream on a live system """
   # TODO: this test is failing when executed with all of the other tests in parallel see below
   # Add a stream to send commands to
   m_and_k = {'name': 'Matt and Kim Radio', 'type': 'pandora', 'user': 'lincoln@micro-nova.com',
