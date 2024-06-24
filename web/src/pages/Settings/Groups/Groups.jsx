@@ -8,8 +8,9 @@ import { Fab } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import GroupModal from "./GroupModal/GroupModal";
 import { SpeakerGroup } from "@mui/icons-material";
-import List from "@/components/List/List";
-import ListItem from "@/components/List/ListItem/ListItem";
+import List from "@mui/material/List/List";
+import ListItem from "@mui/material/ListItem";
+import Divider from "@mui/material/Divider";
 
 const GroupListItem = ({ group, zones }) => {
     const [modalOpen, setModalOpen] = React.useState(false);
@@ -31,27 +32,31 @@ const GroupListItem = ({ group, zones }) => {
     };
 
     return (
-        <ListItem
-            name={group.name}
-            onClick={() => {
-                setModalOpen(true);
-            }}
-        >
-            <div className="groups-group-icon">
-                <SpeakerGroup fontSize="inherit" />
-            </div>
-            {modalOpen && (
-                <GroupModal
-                    group={group}
-                    zones={zones}
-                    onClose={() => {
-                        setModalOpen(false);
-                    }}
-                    del={deleteGroup}
-                    apply={editGroup}
-                />
-            )}
-        </ListItem>
+        <>
+            <ListItem
+            style={{fontSize: "2rem"}}
+                onClick={() => {
+                    setModalOpen(true);
+                }}
+            >
+                <div className="groups-group-icon">
+                    <SpeakerGroup fontSize="inherit" />
+                </div>
+                {group.name}
+                {modalOpen && (
+                    <GroupModal
+                        group={group}
+                        zones={zones}
+                        onClose={() => {
+                            setModalOpen(false);
+                        }}
+                        del={deleteGroup}
+                        apply={editGroup}
+                    />
+                )}
+            </ListItem>
+            <Divider component="li" />
+        </>
     );
 };
 GroupListItem.propTypes = {
@@ -88,7 +93,7 @@ const Groups = ({ onClose }) => {
                         setModalOpen(true);
                     }}
                 >
-                    <AddIcon></AddIcon>
+                    <AddIcon />
                 </Fab>
             </div>
             {modalOpen && (
