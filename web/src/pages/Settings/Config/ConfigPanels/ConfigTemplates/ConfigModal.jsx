@@ -8,7 +8,7 @@ import PropTypes from "prop-types";
 export default function ConfigModal(props) {
     const {
         body,
-        confirm,
+        onApply,
         open,
         setOpen,
     } = props;
@@ -22,13 +22,13 @@ export default function ConfigModal(props) {
                 {body}
             </DialogContent>
             <Button variant="contained" color="error" fullWidth onClick={() => {setOpen(false);}}>No</Button>
-            <Button variant="contained" color="success" fullWidth onClick={() => {confirm(); setOpen(false);}}>Yes</Button>
+            <Button variant="contained" color="success" fullWidth onClick={() => {onApply(); setOpen(false);}}>Yes</Button>
         </Dialog>
     )
 }
 ConfigModal.propTypes = {
     body: PropTypes.string.isRequired,
-    confirm: PropTypes.func.isRequired,
+    onApply: PropTypes.func.isRequired,
     open: PropTypes.bool.isRequired,
     setOpen: PropTypes.func.isRequired,
 };

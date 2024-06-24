@@ -26,7 +26,7 @@ export default function HardwareShutdown() {
 
             <ConfigModal
                 body={"This will shut the unit off. It will need to be physically accessed to be turned back on."}
-                confirm={() => {HWShutdown();}}
+                onApply={() => {HWShutdown();}}
                 open={modalOpen}
                 setOpen={setModalOpen}
             />
