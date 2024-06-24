@@ -31,6 +31,8 @@ const StreamsModal = ({
 }) => {
     const streams = useStatusStore((state) => state.status.streams);
     const status = useStatusStore((state) => state.status);
+    const playingStreams = status.sources.filter( (s) => s.input !== 'None').map( (s) => parseInt(s.input.replace('stream=', '')));
+    const availableStreams = streams.filter( (s) => !playingStreams.includes(s.id))
 
     const setStream = (stream) => {
         const streamId = stream.id;
@@ -79,7 +81,7 @@ const StreamsModal = ({
 
     let streamsList = [];
 
-    for (const stream of streams) {
+    for (const stream of availableStreams) {
         if (!stream.disabled) {
             const icon = getIcon(stream.type);
             streamsList.push(

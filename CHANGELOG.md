@@ -7,6 +7,7 @@
   * Enforce breakpoint styling to ensure that the UI looks the same between mobile, desktop, tablet viewports
   * Groups containing disabled zones now behave as though those zones don't exist
   * Groups containing only disabled zones no longer selectable
+  * Only show not-playing streams in the new stream modal
 * Streams
   * Remove stop command (only accessable through API) from Pandora
   * Disconnect zones from sources when they are disabled
