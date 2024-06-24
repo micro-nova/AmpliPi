@@ -8,6 +8,7 @@ import time
 from typing import Any, Dict, Optional
 from dasbus.connection import SessionMessageBus
 from dasbus.client.proxy import disconnect_proxy, InterfaceProxy
+from dasbus.loop import EventLoop
 METADATA_MAPPINGS = [
     ('artist', 'xesam:artist'),
     ('title', 'xesam:title'),
@@ -45,83 +46,71 @@ class MPRISMetadataReader:
 
   def run(self):
     """Run the mpris metadata process."""
-    while self.ok:
+    self.last_sent:Dict[str, Any] = {'state_changed_time': 0, 'state':''}
 
+    while self.ok:
       metadata: Dict[str, Any] = {}
       if not self.mpris:
         try:
-          if self.debug:
-            print(f'connecting to {self.service_suffix}')
+          # if self.debug:
+          #   print(f'connecting to {self.service_suffix}')
+
           mpris = SessionMessageBus().get_proxy(
               service_name=f"org.mpris.MediaPlayer2.{self.service_suffix}",
               object_path="/org/mpris/MediaPlayer2",
               interface_name="org.mpris.MediaPlayer2.Player"
           )
-        except Exception as e:
-          metadata['connected'] = False
-          print(f"failed to connect mpris {e}", flush=True)
-          if not self.ok:
-            break
 
-      if self.debug:
-        print(f"getting mrpis metadata from {self.service_suffix}")
-      if mpris:
-        try:
-          raw_metadata = {}
+          properties_changed = SessionMessageBus().get_proxy(
+            service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
+            object_path = "/org/mpris/MediaPlayer2",
+            interface_name = "org.freedesktop.DBus.Properties"
+          )
 
-          # get playback status
-          state = mpris.PlaybackStatus.strip("'")
-
-          # if we're playing, get the metadata, otherwise assume it's the same as last time or empty
-          # this may fix some problems with polling spotifyd while paused/stopped
-          if state == 'Playing':
+          def read_metadata(a,b,c):
+            print('reading metadata')
             try:
               raw_metadata = mpris.Metadata
-              self.last_raw = raw_metadata
             except Exception as e:
               metadata['connected'] = False
               print(f"Dbus error getting MPRIS metadata: {e}")
-              if not self.ok:
-                break
-          elif state == 'Stopped':
-            raw_metadata = {}
-          else:
-            raw_metadata = self.last_raw
 
-          for mapping in METADATA_MAPPINGS:
-            try:
-              metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
-            except KeyError as e:
-              if self.debug:
-                print(f"Metadata mapping error: {e}")
-            if not self.ok:
-              break
+            for mapping in METADATA_MAPPINGS:
+              try:
+                metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
+              except KeyError as e:
+                if self.debug:
+                  print(f"Metadata mapping error: {e}")
 
-          if self.ok:
+            state = mpris.PlaybackStatus.strip("'")
+
             metadata['state'] = state
-            metadata['volume'] = mpris.Volume
 
-            # initialize last sent if it hasn't been yet
-            if self.last_sent is None:
-              self.last_sent = metadata
-
-            if metadata['state'] != self.last_sent['state']:
+            if state != self.last_sent['state']:
               metadata['state_changed_time'] = time.time()
             else:
               metadata['state_changed_time'] = self.last_sent['state_changed_time']
 
             metadata['connected'] = True
 
-          if metadata != self.last_sent:
             self.last_sent = metadata
+
             with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
               json.dump(metadata, metadata_file)
 
+          properties_changed.PropertiesChanged.connect(read_metadata)
+
+          loop = EventLoop()
+
+          loop.run()
+
+
         except Exception as e:
-          if self.debug:
-            print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}")
+          # if self.debug:
+            # print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}")
           try:
             disconnect_proxy(mpris)
+            disconnect_proxy(properties_changed)
           except Exception as e_proxy:
             print(f'Error disconnecting MPRIS proxy: {e_proxy}', flush=True)
           finally:
@@ -139,6 +128,7 @@ class MPRISMetadataReader:
         if self.debug:
           print('disconnecting from MPRIS proxy', flush=True)
         disconnect_proxy(mpris)
+        disconnect_proxy(properties_changed)
       except Exception as e:
         print(e, flush=True)
 
