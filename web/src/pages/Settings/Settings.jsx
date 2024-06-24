@@ -27,23 +27,6 @@ import Badge from "@mui/material/Badge";
 import PropTypes from "prop-types";
 import Checkbox from "@mui/material/Checkbox";
 
-// TODO klayton: delete?
-// const PageListItem = ({ name, onClick, children }) => {
-//     return (
-//         <div className="settings-list-item" onClick={onClick}>
-//             <div className="settings-list-item-inner">
-//                 {children} {name}
-//             </div>
-//             <Divider />
-//         </div>
-//     );
-// };
-// PageListItem.propTypes = {
-//     name: PropTypes.string.isRequired,
-//     onClick: PropTypes.func.isRequired,
-//     children: PropTypes.any,
-// };
-
 const close = () => router.navigate("/settings");
 
 const CorePage = ({ openPage }) => {
