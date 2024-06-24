@@ -211,8 +211,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo cp scripts/udisks2-listener.sh /usr/local/bin',
             'sudo cp scripts/edit_media_directories.py /usr/local/bin',
             'sudo cp scripts/udisks2-listener.service /etc/systemd/system',
+            'sudo chmod 444 /etc/systemd/system/udisks2-listener.service',
             'sudo systemctl enable udisks2-listener.service',
-            'sudo systemctl start udisks2-listener.service',
         ]
     },
     'dlna': {
