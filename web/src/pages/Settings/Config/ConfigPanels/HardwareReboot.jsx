@@ -29,7 +29,7 @@ export default function HardwareReboot() {
 
             <ConfigModal
                 body={"This will reboot the CPU, which will take some time during which amplipi will not be able to play audio."}
-                confirm={() => {HWReboot();}}
+                onApply={() => {HWReboot();}}
                 open={modalOpen}
                 setOpen={setModalOpen}
             />

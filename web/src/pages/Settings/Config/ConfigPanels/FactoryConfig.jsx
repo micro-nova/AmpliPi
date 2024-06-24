@@ -30,7 +30,7 @@ export default function FactoryConfig(){
 
             <ConfigModal
                 body={"This will reset all settings to factory default, ensure you've downloaded your current config if you wish to keep it!"}
-                confirm={() => {FactoryReset();}}
+                onApply={() => {FactoryReset();}}
                 open={modalOpen}
                 setOpen={setModalOpen}
             />

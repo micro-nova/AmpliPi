@@ -15,7 +15,6 @@ export default function LMSMode() {
 
     async function LMSModeHandler(){
         setLoading(true);
-        ConfigDownload();
         const resp = await fetch("/api/lms_mode", { method: "POST" });
         setResponse(resp);
         setLoading(false);
@@ -26,7 +25,7 @@ export default function LMSMode() {
             return(
                 <ConfigModal
                     body={"This will reset AmpliPi to factory settings, you will have to either manually reconfigure it or reupload the config that was downloaded when LMS mode was initially toggled."}
-                    confirm={() => {LMSModeHandler();}}
+                    onApply={() => {LMSModeHandler();}}
                     open={modalOpen}
                     setOpen={setModalOpen}
                 />
@@ -35,7 +34,7 @@ export default function LMSMode() {
             return(
                 <ConfigModal
                     body={"This will automatically download a copy of your current config to the device accessing this dialog, and set your AmpliPro to a locked-down mode for use with third party frontend software."}
-                    confirm={() => {LMSModeHandler();}}
+                    onApply={() => {ConfigDownload(); LMSModeHandler();}}
                     open={modalOpen}
                     setOpen={setModalOpen}
                 />

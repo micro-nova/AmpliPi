@@ -29,7 +29,7 @@ export default function HardwareReset() {
 
             <ConfigModal
                 body={"This will reset the preamp hardware and controller software. This will take some time, during which amplipi will not be able to play audio."}
-                confirm={() => {HWReset();}}
+                onApply={() => {HWReset();}}
                 open={modalOpen}
                 setOpen={setModalOpen}
             />

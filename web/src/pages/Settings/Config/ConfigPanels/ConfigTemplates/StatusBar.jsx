@@ -44,7 +44,7 @@ export default function StatusBar(props) {
                 variant="filled"
                 style={{width: "100%"}}
             >
-                {text}
+                {text.current}
             </Alert>
         </Snackbar>
     );
