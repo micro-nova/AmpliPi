@@ -18,7 +18,7 @@ export default function HardwareShutdown() {
         <>
             <ConfigPanel
                 title={"Hardware Shutdown"}
-                subheader={"Trigger a shutdown of the Raspberry Pi-based controller"}
+                subheader={"Trigger a shutdown of the embedded linux controller"}
                 loading={loading}
             >
                 <Button onClick={() => {setModalOpen(true);}}>Shutdown</Button>
