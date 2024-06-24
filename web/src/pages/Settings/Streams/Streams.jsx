@@ -10,8 +10,9 @@ import AddIcon from "@mui/icons-material/Add";
 import TypeSelectModal from "./TypeSelectModal/TypeSelectModal";
 import StreamTemplates from "./StreamTemplates.json";
 import { getIcon } from "@/utils/getIcon";
-import List from "@/components/List/List";
-import ListItem from "@/components/List/ListItem/ListItem";
+import List from "@mui/material/List/List";
+import ListItem from "@mui/material/ListItem";
+import Divider from "@mui/material/Divider";
 
 const initEmptyStream = (type) => {
     const streamTemplate = StreamTemplates.filter((t) => t.type === type)[0];
@@ -46,24 +47,27 @@ const StreamListItem = ({ stream }) => {
     const [showModal, setShowModal] = React.useState(false);
     const icon = getIcon(stream.type);
     return (
-        <ListItem
-            key={stream.id}
-            name={stream.name}
-            onClick={() => setShowModal(true)}
-        >
-            <img src={icon} className="stream-modal-icon" alt="stream icon" />
-
-            {showModal && (
-                <StreamModal
-                    stream={stream}
-                    onClose={() => {
-                        setShowModal(false);
-                    }}
-                    apply={applyStreamChanges}
-                    del={deleteStream}
-                />
-            )}
-        </ListItem>
+        <>
+            <ListItem
+                key={stream.id}
+                onClick={() => setShowModal(true)}
+                style={{fontSize: "2rem"}}
+            >
+                <img src={icon} className="stream-modal-icon" alt="stream icon" />
+                {stream.name}
+                {showModal && (
+                    <StreamModal
+                        stream={stream}
+                        onClose={() => {
+                            setShowModal(false);
+                        }}
+                        apply={applyStreamChanges}
+                        del={deleteStream}
+                    />
+                )}
+            </ListItem>
+            <Divider component="li" />
+        </>
     );
 };
 StreamListItem.propTypes = {

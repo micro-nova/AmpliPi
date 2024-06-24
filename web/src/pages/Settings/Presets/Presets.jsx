@@ -9,21 +9,26 @@ import AddIcon from "@mui/icons-material/Add";
 import CreatePresetModal from "./CreatePresetModal/CreatePresetModal";
 import EditPresetModal from "./EditPresetModal/EditPresetModal";
 import { PlaylistAdd } from "@mui/icons-material";
-import List from "@/components/List/List";
-import ListItem from "@/components/List/ListItem/ListItem";
+import List from "@mui/material/List/List";
+import ListItem from "@mui/material/ListItem";
+import Divider from "@mui/material/Divider";
 
 const PresetListItem = ({ preset }) => {
     const [presetOpen, setPresetOpen] = React.useState(false);
 
     return (
-        <ListItem name={preset.name} onClick={() => setPresetOpen(true)}>
-            <div className="presets-item-icon">
-                <PlaylistAdd fontSize="inherit" />
-            </div>
-            {presetOpen && (
-                <EditPresetModal onClose={() => setPresetOpen(false)} preset={preset} />
-            )}
-        </ListItem>
+        <>
+            <ListItem onClick={() => setPresetOpen(true)} style={{fontSize: "2rem"}}>
+                <div className="presets-item-icon">
+                    <PlaylistAdd fontSize="inherit" />
+                </div>
+                {preset.name}
+                {presetOpen && (
+                    <EditPresetModal onClose={() => setPresetOpen(false)} preset={preset} />
+                )}
+            </ListItem>
+            <Divider component="li" />
+        </>
     );
 };
 PresetListItem.propTypes = {

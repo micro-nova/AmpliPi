@@ -3,6 +3,8 @@
 ## Upcoming Release
 * Web App
   * Fix internet radio search on IOS app
+  * Update styling on Settings pages, ensure they fit all mobile screens properly
+  * Change "<- Back to App" button on the updater page to redirect to the settings page rather than the homepage
 
 ## 0.4.2
 * Streams
