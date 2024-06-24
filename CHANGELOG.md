@@ -4,6 +4,7 @@
 * System
   * Fix broken API generation
   * Permit continuous integration runs in the installer for automated disk image builds
+  * Make udisks2-listener.service stop spamming logs on startup
 * Web App
   * Enforce breakpoint styling to ensure that the UI looks the same between mobile, desktop, tablet viewports
   * Groups containing disabled zones now behave as though those zones don't exist
