@@ -1,7 +1,7 @@
 import React from "react";
 import Card from "@/components/Card/Card";
 import StreamBadge from "@/components/StreamBadge/StreamBadge";
-import SongInfoMarquee from "../SongInfo/SongInfoMarquee";
+import SongInfo from "../SongInfo/SongInfo";
 import CardVolumeSlider from "../CardVolumeSlider/CardVolumeSlider";
 import { useState } from "react";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
@@ -11,7 +11,7 @@ import { usePersistentStore, useStatusStore } from "@/App.jsx";
 import { router } from "@/main";
 import "./PlayerCardFb.scss";
 import CloseIcon from "@mui/icons-material/Close";
-import { IconButton } from "@mui/material";
+import { Grid, IconButton } from "@mui/material";
 import StopProp from "@/components/StopProp/StopProp";
 import StreamerOutputBadge from "../StreamerOutputBadge/StreamerOutputBadge";
 import { getSourceZones } from "@/pages/Home/Home.jsx";
@@ -70,17 +70,30 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                     </StopProp>
                 </div>
                 <div className="content">
-                    { !is_streamer && (
-                        <div className="zones">
-                          <ZonesBadge sourceId={sourceId} onClick={openZones} />
-                        </div>
-                    )}
-                    { is_streamer && (
-                        <div className="streamer-outputs">
-                            <StreamerOutputBadge sourceId={sourceId} />
-                        </div>
-                    )}
-                    <SongInfoMarquee sourceId={sourceId} />
+                    <Grid
+                        container
+                        direction="row"
+                        justifyContent="center"
+                        alignItems="center"
+                    >
+                        <Grid item xs={6} sm={5} md={4}>
+                            { !is_streamer && (
+                                <div className="zones">
+                                  <ZonesBadge sourceId={sourceId} onClick={openZones} />
+                                </div>
+                            )}
+                            { is_streamer && (
+                                <div className="streamer-outputs">
+                                    <StreamerOutputBadge sourceId={sourceId} />
+                                </div>
+                            )}
+                        </Grid>
+                        <Grid item xs={0} sm={2} md={4}> {/* Spacer */} </Grid>
+                        <Grid item xs={6} sm={5} md={4}>
+                            <SongInfo sourceId={sourceId}/>
+                        </Grid>
+
+                    </Grid>
                 </div>
 
                 { !is_streamer && zones.length > 0 && (

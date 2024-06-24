@@ -313,10 +313,6 @@ class PersistentStream(BaseStream):
 
   def restart(self):
     """Reset this stream by disconnecting and reconnecting"""
-    try:
-      self.send_cmd('stop')
-    except:
-      logger.info(f'Stream {self.name} does not have a stop response')
     self.deactivate()
     time.sleep(0.1)
     self.activate()
@@ -749,7 +745,6 @@ class Pandora(PersistentStream, Browsable):
     self.supported_cmds = {
       'play': {'cmd': 'P\n', 'state': 'playing'},
       'pause': {'cmd': 'S\n', 'state': 'paused'},
-      'stop': {'cmd': 'q\n', 'state': 'stopped'},
       'next': {'cmd': 'n\n', 'state': 'playing'},
       'love': {'cmd': '+\n', 'state': None},  # love does not change state
       'ban': {'cmd': '-\n', 'state': 'playing'},
