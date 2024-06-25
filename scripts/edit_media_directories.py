@@ -59,7 +59,7 @@ def edit_directories(logger: logging.Logger):
           drives += f"{drive}, "
         logger.info(f"Detected drives: {drives}")
         logger.info("If you wish to mount these to the internal LMS server, please go to Config and set LMS Mode")
-  except urllib3.exceptions.MaxRetryError:
+  except (urllib3.exceptions.MaxRetryError, urllib3.exceptions.NewConnectionError, requests.exceptions.ConnectionError):
     # This error is extremely common during startup, but isn't actually broken
     # It seemingly only occurs on startup, leading me to believe it is a race condition with other things starting up
     logger.error("LMS Automated Drive Mounting has encountered an error due to a race condition during startup, if this persists (or happened outside of startup) please contact support@micro-nova.com with a copy of these logs")
