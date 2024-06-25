@@ -1,5 +1,7 @@
 [Unit]
 Description="Service for listening to UDisks2 and creating events when drives are mounted"
+After=logitechmediaserver.service
+Requires=logitechmediaserver.service
 
 [Service]
 Type=simple
