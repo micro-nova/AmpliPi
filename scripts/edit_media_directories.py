@@ -8,7 +8,7 @@ import subprocess
 import urllib3
 import urllib3.exceptions
 
-def CheckLMSMode():
+def checkLMSMode():
     try:
         status_output = subprocess.check_output('systemctl is-active logitechmediaserver', shell=True).decode().strip()
         return status_output == 'active'
@@ -32,8 +32,8 @@ def edit_directories(logger: logging.Logger):
   """Update LMS server with list of drives"""
   try:
     usb_drives = get_usb_drives(logger) # Get list of available drives
-    LMSMode = CheckLMSMode()
-    if LMSMode:
+    isLMSMode = checkLMSMode()
+    if isLMSMode:
       usb_drives.append("") # Add blank drive to reflect empty string that is always at the end of the mediadirs section of request body
       url = 'http://localhost:9000/settings/server/basic.html'
       data = {
