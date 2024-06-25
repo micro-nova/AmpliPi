@@ -60,8 +60,9 @@ def edit_directories(logger: logging.Logger):
         logger.info(f"Detected drives: {drives}")
         logger.info("If you wish to mount these to the internal LMS server, please go to Config and set LMS Mode")
   except (urllib3.exceptions.MaxRetryError, urllib3.exceptions.NewConnectionError, requests.exceptions.ConnectionError):
-    # This error is extremely common during startup, but isn't actually broken
-    # It seemingly only occurs on startup, leading me to believe it is a race condition with other things starting up
+    # This error seemingly only occurs on startup, leading me to believe it is a race condition
+    # Specifically, I think that there's a chunk of time between CheckLMSMode() being able to return true and LMS being fully loaded on the Amplipi
+    # During which time this list of errors occur (they are the same error, but wrapped separately due to how the packages are)
     logger.error("LMS Automated Drive Mounting has encountered an error due to a race condition during startup, if this persists (or happened outside of startup) please contact support@micro-nova.com with a copy of these logs")
   except Exception as e:
     logger.error(f"LMS Automated Drive Mounting has encountered an error: {e}")
