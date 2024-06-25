@@ -32,4 +32,4 @@ pytest tests/test_zeroconf.py -vvv
 
 # Live tests require some amplipi streams to be setup, which means real audio
 # sinks are required. These tests will not run in Github Actions.
-pytest -vvv -k '_live'
+#pytest -vvv -k '_live'

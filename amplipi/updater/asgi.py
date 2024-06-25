@@ -320,6 +320,7 @@ def set_admin_password(input: PasswordInput):
     set_password_hash(username, input.password)
     create_access_key(username)
 
+
 @router.post('/support')
 def request_support():
   """ Creates a support tunnel request. """

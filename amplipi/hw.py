@@ -45,6 +45,7 @@ logger.setLevel(logging.DEBUG)
 sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 
+
 class FwVersion:
   """ Represents the Preamp Board's firmware version """
 

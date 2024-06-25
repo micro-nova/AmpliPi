@@ -8,7 +8,7 @@ import platform
 import subprocess
 import os
 import pathlib
-import pwd # username
+import pwd  # username
 import glob
 from typing import List, Union, Tuple, Dict, Any, Optional
 import time
@@ -77,23 +77,23 @@ $IncludeConfig /etc/rsyslog.d/*.conf
 """
 
 _os_deps: Dict[str, Dict[str, Any]] = {
-  'base' : {
-    'apt' : ['python3-pip', 'python3-venv', 'curl', 'authbind',
-             'python3-pil', 'libopenjp2-7', # Pillow dependencies
-             'libatlas-base-dev',           # numpy dependencies
-             'stm32flash',                  # Programming Preamp Board
-             'xkcdpass',                    # Random passphrase generation
-             'systemd-journal-remote',      # Remote/web based log access
-             'jq',                          # JSON parser used in check-release script
-             # pygobject dependencies (Spotifyd)
-             'libgirepository1.0-dev', 'libcairo2-dev',
+  'base': {
+    'apt': ['python3-pip', 'python3-venv', 'curl', 'authbind',
+            'python3-pil', 'libopenjp2-7',  # Pillow dependencies
+            'libatlas-base-dev',           # numpy dependencies
+            'stm32flash',                  # Programming Preamp Board
+            'xkcdpass',                    # Random passphrase generation
+            'systemd-journal-remote',      # Remote/web based log access
+            'jq',                          # JSON parser used in check-release script
+            # pygobject dependencies (Spotifyd)
+            'libgirepository1.0-dev', 'libcairo2-dev',
             ],
   },
-  'logging' : {
-    'script' : [
+  'logging': {
+    'script': [
       'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
       f"echo '{RSYSLOG_CFG}' | sudo tee /etc/rsyslog.conf",
-      'sudo systemctl enable rsyslog.service', # just in case it was disabled...
+      'sudo systemctl enable rsyslog.service',  # just in case it was disabled...
       'sudo systemctl restart rsyslog.service',
 
       'echo "reconfiguring journald to only log to RAM"',
@@ -116,10 +116,10 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   },
   'support_tunnel': {
     'apt': [
-      'libsystemd-dev', # permits logging directly to journald
-      'wireguard', 'wireguard-tools' # -tools for wg-quick usage
+      'libsystemd-dev',  # permits logging directly to journald
+      'wireguard', 'wireguard-tools'  # -tools for wg-quick usage
     ],
-    'copy' : [
+    'copy': [
       {
         'from': 'config/support_tunnel_crontab',
         'to': '/etc/cron.d/support_tunnel',
@@ -135,7 +135,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'sudo addgroup support',
       'sudo adduser pi support',
       'sudo mkdir -p /var/lib/support_tunnel',
-      'sudo chmod 0777 /var/lib/support_tunnel', # TODO: lock this down
+      'sudo chmod 0777 /var/lib/support_tunnel',  # TODO: lock this down
       'if [ ! -e /opt/support_tunnel ] ; then'
       '  pushd $(mktemp --directory)',
       '  git clone https://github.com/micro-nova/support_tunnel.git',
@@ -171,13 +171,13 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         'popd',
     ]
   },
-  'internet_radio' : {
-    'apt' : [ 'vlc' ]
+  'internet_radio': {
+    'apt': ['vlc']
   },
-  'fmradio' : {
-    'apt' : [ 'rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev' ],
-    'script' : [
-      'if ! which redsea  > /dev/null; then', # TODO: check version
+  'fmradio': {
+    'apt': ['rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev'],
+    'script': [
+      'if ! which redsea  > /dev/null; then',  # TODO: check version
       '  echo "Installing redsea"',
       '  cd /tmp',
       '  git clone --depth 1 https://github.com/windytan/redsea.git',
@@ -190,10 +190,10 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'fi',
     ]
   },
-  'lms' : {
+  'lms': {
     'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0'],
-    'copy' : [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
-    'script' : [
+    'copy': [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
+    'script': [
       'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
       '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
       '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
@@ -214,12 +214,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'sudo systemctl start udisks2-listener.service',
     ]
   },
-  'dlna' : {
-    'apt' : [ 'uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
-              'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
-              'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
-              'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git' ],
-    'script' : [
+  'dlna': {
+    'apt': ['uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
+            'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
+            'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
+            'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git'],
+    'script': [
       'if [ ! -d "gmrender-resurrect" ] ; then',
       '  git clone https://github.com/hzeller/gmrender-resurrect.git gmrender-resurrect',
       '  cd gmrender-resurrect',
@@ -233,12 +233,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
       'sudo make install',
     ],
   },
-  'plexamp' : {
+  'plexamp': {
     # TODO: do a full install of plexamp, the partial install below is not useful
     # 'script' : [ './streams/plexamp_nodeinstall.bash' ]
   },
-  'spotify' : {
-    'copy' : [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
+  'spotify': {
+    'copy': [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
   },
   'pandora' : {
     'apt' : [
@@ -289,10 +289,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
   }
 }
 
+
 def _check_and_update_streamer(env):
   """Check if this is a streamer (no preamp firmware)"""
   is_streamer_path = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'is_streamer')
   env['is_streamer'] = os.path.exists(is_streamer_path)
+
 
 def _check_and_setup_platform():
   script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -325,15 +327,17 @@ def _check_and_setup_platform():
       env['arch'] = 'arm'
       env['platform_supported'] = True
       env['has_apt'] = True
-      env['is_amplipi'] = 'amplipi' in platform.node() # checks hostname
+      env['is_amplipi'] = 'amplipi' in platform.node()  # checks hostname
 
   _check_and_update_streamer(env)
 
   return env
 
+
 class Task:
   """ Task runner for scripted installation tasks """
-  def __init__(self, name: str, args:Optional[List[str]]=None, multiargs=None, output='', success=False, wd=None, shell=False):
+
+  def __init__(self, name: str, args: Optional[List[str]] = None, multiargs=None, output='', success=False, wd=None, shell=False):
     # pylint: disable=too-many-arguments
     self.name = name
     if multiargs:
@@ -368,12 +372,14 @@ class Task:
         break
     return self
 
+
 def _setup_loopbacks(base_dir) -> List[Task]:
   """ Configure ALSA loopbacks using snd_aloop kernel module """
   return [Task('copy loopback module configuration', multiargs=[
-              f'sudo cp {base_dir}/config/modules.conf /etc/modules'.split(),
-              f'sudo cp {base_dir}/config/sound.conf /etc/modprobe.d/sound.conf'.split(),
-          ]).run()]
+      f'sudo cp {base_dir}/config/modules.conf /etc/modules'.split(),
+      f'sudo cp {base_dir}/config/sound.conf /etc/modprobe.d/sound.conf'.split(),
+  ]).run()]
+
 
 def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   def print_progress(tasks):
@@ -383,7 +389,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
   # TODO: add extra apt repos
   # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
   # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
-  tasks += print_progress([Task('get latest debian packages', 'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
+  tasks += print_progress([Task('get latest debian packages',
+                          'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
   # Upgrade current packages
   print_progress([Task("upgrading debian packages, this will take 10+ minutes", success=True)])
@@ -414,7 +421,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
     _sudo = "sudo " if 'sudo' in file else ""
-    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()]) # shairport needs the -f if it is running
+    # shairport needs the -f if it is running
+    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()])
   if env['is_amplipi']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"
@@ -423,7 +431,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     # copy boot_config.txt RPi firmware configuration file
     _boot_config_from = f"{env['base_dir']}/config/boot_config.txt"
     _boot_config_to = "/boot/config.txt"
-    tasks += print_progress([Task(f"copy {_boot_config_from} to {_boot_config_to}", f"sudo cp {_boot_config_from} {_boot_config_to}".split()).run()])
+    tasks += print_progress([Task(f"copy {_boot_config_from} to {_boot_config_to}",
+                            f"sudo cp {_boot_config_from} {_boot_config_to}".split()).run()])
     # fix usb soundcard name
     usb_audio_rule_path = '/etc/udev/rules.d/85-amplipi-usb-audio.rules'
     if not os.path.exists(usb_audio_rule_path):
@@ -431,7 +440,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _to = usb_audio_rule_path
       tasks += print_progress([Task('fix usb soundcard id', multiargs=[
         f"sudo cp {_from} {_to}".split(),               # add new rule (udev watches this directory for changes)
-        'sudo udevadm trigger -s sound -c add'.split(), # trigger an 'add' action on the 'sound' subsystem
+        'sudo udevadm trigger -s sound -c add'.split(),  # trigger an 'add' action on the 'sound' subsystem
         'udevadm settle'.split(),                       # wait for udev rules to fire and settle
       ]).run()])
     # disable pulseaudio (it was muting some inputs and is not needed)
@@ -443,13 +452,15 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
     if not tasks[-1].success:
-      tasks += print_progress([Task("Giving pi serial permission. !!!AmpliPi will need to be restarted after this!!!", "sudo gpasswd -a pi dialout".split()).run()])
+      tasks += print_progress([Task("Giving pi serial permission. !!!AmpliPi will need to be restarted after this!!!",
+                              "sudo gpasswd -a pi dialout".split()).run()])
       return tasks
     # setup tmpfs (ram disk)
     tasks += print_progress(_setup_tmpfs(env['base_dir']))
     # setup crontab - Replace the entire Pi user's crontab with AmpliPi's config/crontab
     # and point it to the AmpliPi install location's script directory.
-    tasks += print_progress([Task("Setting up crontab", [f"cat {env['base_dir']}/config/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts@' | crontab -"], shell=True).run()])
+    tasks += print_progress([Task("Setting up crontab", [
+                            f"cat {env['base_dir']}/config/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts@' | crontab -"], shell=True).run()])
     # setup loopbacks
     tasks += print_progress(_setup_loopbacks(env['base_dir']))
   # install debian packages
@@ -476,6 +487,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
 
   return tasks
 
+
 def _install_python_deps(env: dict, deps: List[str]):
   tasks = []
   if len(deps) > 0:
@@ -484,6 +496,7 @@ def _install_python_deps(env: dict, deps: List[str]):
     tasks += [Task('install python packages', 'bash install_python_deps.bash'.split()).run()]
     os.chdir(last_dir)
   return tasks
+
 
 def _add_desktop_icon(env, directory: pathlib.Path, name, command) -> Task:
   """ Add a desktop icon to the pi """
@@ -504,6 +517,7 @@ Categories=Utility;
     success = False
   return Task(f'Add desktop icon for {name}', success=success)
 
+
 def _setup_tmpfs(base_dir):
   """ Adds tmpfs entries used by AmpliPi to /etc/fstab """
   # Warning: these hide the existing filesystem,
@@ -512,13 +526,14 @@ def _setup_tmpfs(base_dir):
   conf_entry = f'amplipi/config {base_dir}/config/srcs tmpfs {tmpfs_opts} 0 0'
   web_entry = f'amplipi/web {base_dir}/web/generated tmpfs {tmpfs_opts} 0 0'
   tasks = [Task('Add tmpfs entries to fstab.', multiargs=[
-        'sudo sed -i "/^amplipi/d" /etc/fstab',
-        f'echo {conf_entry} | sudo tee -a /etc/fstab',
-        f'echo {web_entry} | sudo tee -a /etc/fstab',
-        f'mkdir -p {base_dir}/config/srcs {base_dir}/web/generated',
-        f'sudo mount -a',
-      ], shell=True).run()]
+      'sudo sed -i "/^amplipi/d" /etc/fstab',
+      f'echo {conf_entry} | sudo tee -a /etc/fstab',
+      f'echo {web_entry} | sudo tee -a /etc/fstab',
+      f'mkdir -p {base_dir}/config/srcs {base_dir}/web/generated',
+      f'sudo mount -a',
+  ], shell=True).run()]
   return tasks
+
 
 def _web_service(directory: str):
   return f"""\
@@ -536,7 +551,8 @@ Restart=always
 WantedBy=default.target
 """
 
-def _update_service(directory: str, port: int=5001):
+
+def _update_service(directory: str, port: int = 5001):
   return f"""\
 [Unit]
 Description=Amplipi Software Updater
@@ -552,6 +568,7 @@ Restart=on-abort
 WantedBy=default.target
 """
 
+
 def _display_service(directory: str):
   return f"""\
 [Unit]
@@ -566,6 +583,7 @@ Restart=on-abort
 [Install]
 WantedBy=default.target
 """
+
 
 def _audiodetector_service(directory: str):
   return f"""\
@@ -584,12 +602,14 @@ RestartSec=10
 WantedBy=default.target
 """
 
+
 def systemctl_cmd(system: bool) -> str:
   """ Get the relevant systemctl command based on @system {True: system, False: user} """
   if system:
     return 'sudo systemctl'
   # user
-  return  'systemctl --user'
+  return 'systemctl --user'
+
 
 def _service_status(service: str, system: bool = False) -> Tuple[List[Task], bool]:
   # Status can be: active, reloading, inactive, failed, activating, or deactivating
@@ -602,6 +622,8 @@ def _service_status(service: str, system: bool = False) -> Tuple[List[Task], boo
   return (tasks, active)
 
 # Stop a systemd service. By default use the Session (user) session
+
+
 def _stop_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
   tasks, running = _service_status(service, system)
@@ -609,6 +631,7 @@ def _stop_service(name: str, system: bool = False) -> List[Task]:
     cmd = f'{systemctl_cmd(system)} stop {service}'
     tasks.append(Task(f'Stop {service}', cmd.split()).run())
   return tasks
+
 
 def _remove_service(name: str) -> List[Task]:
   filename = f'{name}.service'
@@ -624,17 +647,20 @@ def _remove_service(name: str) -> List[Task]:
     tasks[0].success = False
   return tasks
 
+
 def _enable_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
   cmd = f'{systemctl_cmd(system)} enable {service}'
   tasks = [Task(f'Enable {service}', cmd.split()).run()]
   return tasks
 
+
 def _disable_service(name: str, system: bool = False) -> List[Task]:
   service = f'{name}.service'
   cmd = f'{systemctl_cmd(system)} disable {service}'
   tasks = [Task(f'Disable {service}', cmd.split()).run()]
   return tasks
+
 
 def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] = None) -> List[Task]:
   service = f'{name}.service'
@@ -647,7 +673,7 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
   # wait a bit, so initial failures are detected before is-active is called
   if tasks[-1].success:
     # we need to check if the service is running
-    for _ in range(50): # retry for 10 seconds, giving the service time to start
+    for _ in range(50):  # retry for 10 seconds, giving the service time to start
       task_check, running = _service_status(service)
       if running:
         break
@@ -655,7 +681,7 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
     tasks += task_check
     if test_url and running:
       task = None
-      for _ in range(60): # retry for 30 seconds, giving the server time to start
+      for _ in range(60):  # retry for 30 seconds, giving the server time to start
         task = _check_url(test_url)
         if task.success:
           break
@@ -671,11 +697,14 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
       tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
   return tasks
 
+
 def _start_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
   return _start_restart_service(name, restart=False, test_url=test_url)
 
+
 def _restart_service(name: str, test_url: Union[None, str] = None) -> List[Task]:
   return _start_restart_service(name, restart=True, test_url=test_url)
+
 
 def _create_dir(directory: str) -> List[Task]:
   tasks = [Task(f'Create directory {directory}')]
@@ -691,6 +720,7 @@ def _create_dir(directory: str) -> List[Task]:
     except:
       tasks[-1].output = f'Failed to create {directory}'
   return tasks
+
 
 def _create_service(name: str, config: str) -> List[Task]:
   filename = f'{name}.service'
@@ -714,7 +744,9 @@ def _create_service(name: str, config: str) -> List[Task]:
   tasks.append(Task('Reload systemd config', 'systemctl --user daemon-reload'.split()).run())
   return tasks
 
+
 PORT_FILE = '/etc/authbind/byport/80'
+
 
 def _configure_authbind() -> List[Task]:
   """ Configure access to port 80 so we can run amplipi as a non-root user
@@ -734,8 +766,11 @@ def _configure_authbind() -> List[Task]:
   return tasks
 
 # Enable linger so that user manager is started at boot
+
+
 def _enable_linger(user: str) -> List[Task]:
   return [Task(f'Enable linger for {user} user', f'sudo loginctl enable-linger {user}'.split()).run()]
+
 
 def _copy_old_config(dest_dir: str) -> None:
   # try to copy the config of the current running amplipi service into base_dir/house.json
@@ -746,6 +781,7 @@ def _copy_old_config(dest_dir: str) -> None:
       subprocess.run(['cp', f'{old_dir}/house.json', f'{dest_dir}/house.json'], check=False)
     except:
       pass
+
 
 def _check_url(url) -> Task:
   task = Task(f'Check url {url}')
@@ -760,6 +796,7 @@ def _check_url(url) -> Task:
     task.output = 'Failed to check url, this happens when the server is offline'
   return task
 
+
 def _check_version(url) -> Task:
   task = Task('Checking version reported by API')
   task.output = f'\nusing: {url}'
@@ -772,6 +809,7 @@ def _check_version(url) -> Task:
   except Exception:
     task.output = 'Failed checking version'
   return task
+
 
 def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   def print_progress(tasks):
@@ -809,6 +847,7 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+
 def _update_display(env: dict, progress) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
@@ -823,15 +862,17 @@ def _update_display(env: dict, progress) -> List[Task]:
     tasks += print_progress(_enable_linger(env['user']))
   return tasks
 
+
 def _update_audiodetector(env: dict, progress) -> List[Task]:
   """ Create and run the RCA input audio detector service if on AmpliPi hardware """
   def print_progress(tasks):
     progress(tasks)
     return tasks
   if not env['is_amplipi']:
-    return [Task(name='Update Audio Detector', output = 'Not on AmpliPi', success=False)]
+    return [Task(name='Update Audio Detector', output='Not on AmpliPi', success=False)]
   tasks = []
-  tasks += print_progress([Task('Build audiodetector', f'make -C {env["base_dir"]}/amplipi/audiodetector'.split()).run()])
+  tasks += print_progress([Task('Build audiodetector',
+                          f'make -C {env["base_dir"]}/amplipi/audiodetector'.split()).run()])
   tasks += print_progress(_create_service('amplipi-audiodetector', _audiodetector_service(env['base_dir'])))
   tasks += print_progress(_restart_service('amplipi-audiodetector'))
   tasks += print_progress(_enable_service('amplipi-audiodetector'))
@@ -839,6 +880,7 @@ def _update_audiodetector(env: dict, progress) -> List[Task]:
   # this is needed so the user systemd services start at boot
   tasks += print_progress(_enable_linger(env['user']))
   return tasks
+
 
 def _check_password(env: dict, progress) -> List[Task]:
   """ If a random default password hasn't been generated, generate, set, and
@@ -866,6 +908,7 @@ def _check_password(env: dict, progress) -> List[Task]:
   progress([task])
   return [task]
 
+
 def _fw_ver_from_filename(name: str) -> int:
   """ Input: .bin filename, with the pattern 'preamp_X.Y.bin'.
       X = major version, Y = minor version.
@@ -878,6 +921,7 @@ def _fw_ver_from_filename(name: str) -> int:
     return (major << 8) + minor
   # by default return 0 so non-standard file names won't be considered
   return 0
+
 
 def _update_firmware(env: dict, progress) -> List[Task]:
   """ If on AmpliPi with preamp hardware, update to the latest firmware """
@@ -904,10 +948,11 @@ def _update_firmware(env: dict, progress) -> List[Task]:
   return [task]
 
 
-def print_task_results(tasks : List[Task]) -> None:
+def print_task_results(tasks: List[Task]) -> None:
   """ Print out all of the task results """
   for task in tasks:
     print(task)
+
 
 def fix_file_props(env, progress) -> List[Task]:
   """ Fix file properties that get smashed by Windows """
@@ -922,6 +967,7 @@ def fix_file_props(env, progress) -> List[Task]:
     tasks += [Task('Make scripts executable', cmd.split()).run()]
   progress(tasks)
   return tasks
+
 
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
@@ -940,7 +986,7 @@ def add_tests(env, progress) -> List[Task]:
     ('Display', './hw/tests/display.bash --wait'),
     ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
     ('Fans and Power', './hw/tests/fans.bash'),
-    ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'), # just for info, not a specific test
+    ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'),  # just for info, not a specific test
     ('Streamer', './hw/tests/built_in.bash streamer'),
     ('Config Streamer', './hw/tests/config_streamer.bash'),
     ('Aux Input', './hw/tests/built_in.bash aux'),
@@ -957,16 +1003,18 @@ def add_tests(env, progress) -> List[Task]:
   progress(tasks)
   return tasks
 
+
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
             display=True, audiodetector=True, firmware=True, password=True,
             progress=print_task_results, development=False) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
+
   def failed():
     for task in tasks:
       if not task.success:
-        print(str(task)) # __str__() on Task renders with an "Error"ed suffix
+        print(str(task))  # __str__() on Task renders with an "Error"ed suffix
         return True
     return False
 
@@ -1014,7 +1062,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     if failed():
       return False
   if env['is_amplipi']:
-      tasks += add_tests(env, progress)
+    tasks += add_tests(env, progress)
   if firmware:
     tasks += _update_firmware(env, progress)
     if failed():
@@ -1036,30 +1084,31 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     progress([Task(UPDATER_MSG, success=True)])
   return True
 
+
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Configure AmpliPi installation')
   parser.add_argument('--python-deps', action='store_true', default=False,
-    help='Install python dependencies (using venv)')
+                      help='Install python dependencies (using venv)')
   parser.add_argument('--os-deps', action='store_true', default=False,
-    help='Install os dependencies using apt')
-  parser.add_argument('--web','--webserver', action='store_true', default=False,
-    help="Install and configure webserver")
+                      help='Install os dependencies using apt')
+  parser.add_argument('--web', '--webserver', action='store_true', default=False,
+                      help="Install and configure webserver")
   parser.add_argument('--restart-updater', '--reboot', action='store_true', default=False,
-    help="""Restart AmpliPis OS, rebooting all of Ampli's services \
+                      help="""Restart AmpliPis OS, rebooting all of Ampli's services \
       Only do this if you are running this from the command line. \
       When this is set False system will need to be restarted to complete an update""")
   # --restart-updater is needed by the web updater and hasn't been changed to --reboot to simplify updgrade/downgrade logic
   parser.add_argument('--display', action='store_true', default=False,
-    help="Install and run the front-panel display service")
+                      help="Install and run the front-panel display service")
   parser.add_argument('--audiodetector', action='store_true', default=False,
-    help="Install and run the RCA input audio detector service")
+                      help="Install and run the RCA input audio detector service")
   parser.add_argument('--firmware', action='store_true', default=False,
-    help="Flash the latest firmware")
+                      help="Flash the latest firmware")
   parser.add_argument('--password', action='store_true', default=False,
-    help="Generate and set a new default password for the pi user.")
+                      help="Generate and set a new default password for the pi user.")
   parser.add_argument('--development', action='store_true', default=False,
-    help="Enable development mode.")
+                      help="Enable development mode.")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
   has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
@@ -1068,8 +1117,8 @@ if __name__ == '__main__':
   if sys.version_info.major < 3 or sys.version_info.minor < 7:
     print('  WARNING: minimum python version is 3.7')
   result = install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
-          display=flags.display, audiodetector=flags.audiodetector,
-          firmware=flags.firmware, password=flags.password,
-          restart_updater=flags.restart_updater, development=flags.development)
+                   display=flags.display, audiodetector=flags.audiodetector,
+                   firmware=flags.firmware, password=flags.password,
+                   restart_updater=flags.restart_updater, development=flags.development)
   if not result:
     sys.exit(1)

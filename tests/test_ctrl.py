@@ -14,21 +14,24 @@ from copy import deepcopy
 from context import amplipi
 
 # several starting configurations to load for testing including a corrupted configuration
-DEFAULT_STATUS = deepcopy(amplipi.defaults.DEFAULT_CONFIG) # pylint: disable=no-member
+DEFAULT_STATUS = deepcopy(amplipi.defaults.DEFAULT_CONFIG)  # pylint: disable=no-member
 # make a good config string, that has more groups than the default (so we can tell the difference)
 GOOD_STATUS = deepcopy(DEFAULT_STATUS)
 # vol_delta need to be equal to the average volume of zones 0-5, here it is hardcoded
 vol = 0
 for zone in GOOD_STATUS['zones']:
   vol += zone['vol_f']
-vol_f = vol / len( GOOD_STATUS['zones'])
-GOOD_STATUS['groups'] = [{'id': 100, 'name': 'test group', 'mute': True, 'vol_f': vol_f, 'source_id': 0, 'zones': [0, 1, 2, 3, 4, 5]}]
-GOOD_CONFIG = json.dumps(GOOD_STATUS) # make it a json string we can write to a config file
+vol_f = vol / len(GOOD_STATUS['zones'])
+GOOD_STATUS['groups'] = [{'id': 100, 'name': 'test group', 'mute': True,
+                          'vol_f': vol_f, 'source_id': 0, 'zones': [0, 1, 2, 3, 4, 5]}]
+GOOD_CONFIG = json.dumps(GOOD_STATUS)  # make it a json string we can write to a config file
 # corrupt the json string by only taking the first half
 # ( simulating what would happen if the program was terminated while writing the config file)
-CORRUPTED_CONFIG = GOOD_CONFIG[0:len(GOOD_CONFIG)//2]
+CORRUPTED_CONFIG = GOOD_CONFIG[0:len(GOOD_CONFIG) // 2]
 # an non-existant config file
 NO_CONFIG = None
+
+
 def delete_file(file_path):
   """ Delete a config file """
   try:
@@ -37,15 +40,19 @@ def delete_file(file_path):
     pass
   assert not os.path.exists(file_path)
 
+
 def write_file(file_path, content):
   """ Write a new config File """
   with open(file_path, 'w') as cfg:
     cfg.write(content)
   assert os.path.exists(file_path)
 
+
 # config file paths for testing
 CONFIG_FILE = 'test_config.json'
 CONFIG_FILE_BACKUP = CONFIG_FILE + '.bak'
+
+
 def setup_test_configs(config=None, backup_config=None):
   """ Setup the api's configuration file and its backup,
         config/backup_config=None removes the config file
@@ -64,6 +71,7 @@ def setup_test_configs(config=None, backup_config=None):
   if backup_config:
     write_file(CONFIG_FILE_BACKUP, backup_config)
 
+
 def api_w_mock_rt(config=None, backup_config=None):
   """ Copy in specfic config files (paths) to know config locations
   this sets the initial configuration
@@ -75,6 +83,7 @@ def api_w_mock_rt(config=None, backup_config=None):
   settings.config_file = CONFIG_FILE
   settings.mock_ctrl = True
   return amplipi.ctrl.Api(settings)
+
 
 def api_w_rpi_rt(config=None, backup_config=None):
   """ Copy in specfic config files (paths) to know config locations
@@ -88,11 +97,13 @@ def api_w_rpi_rt(config=None, backup_config=None):
   settings.mock_ctrl = False
   return amplipi.ctrl.Api(settings)
 
+
 def use_tmpdir():
   """ Use a temporary directory so we don't mess with other tests config files """
   test_dir = tempfile.mkdtemp()
   os.chdir(test_dir)
   assert test_dir == os.getcwd()
+
 
 def prune_state(state: amplipi.models.Status):
   """ Prune generated fields from system state to make comparable """
@@ -107,41 +118,48 @@ def prune_state(state: amplipi.models.Status):
     field.pop('vol_delta')
   return dstate
 
+
 def test_no_config():
   """ Test loading an empty config (should load default config) """
-  use_tmpdir() # run from temp dir so we don't mess with current directory
+  use_tmpdir()  # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
+
 
 def test_good_config():
   """ Test loading a known good config file by making a copy of it and loading the api with the copy """
-  use_tmpdir() # run from temp dir so we don't mess with current directory
+  use_tmpdir()  # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(GOOD_CONFIG)
   assert GOOD_STATUS == prune_state(api.get_state())
 
+
 def test_corrupted_config():
   """ Test loading a corrupted config file with a good backup """
-  use_tmpdir() # run from temp dir so we don't mess with current directory
+  use_tmpdir()  # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=GOOD_CONFIG)
   assert GOOD_STATUS == prune_state(api.get_state())
 
+
 def test_doubly_corrupted_config():
   """ Test loading a corrupted config file and a corrupted backup """
-  use_tmpdir() # run from temp dir so we don't mess with current directory
+  use_tmpdir()  # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(CORRUPTED_CONFIG, backup_config=CORRUPTED_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
 
+
 def test_missing_config():
   """ Test loading a missing config file with a good backup """
-  use_tmpdir() # run from temp dir so we don't mess with current directory
+  use_tmpdir()  # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(NO_CONFIG, backup_config=GOOD_CONFIG)
   assert GOOD_STATUS == prune_state(api.get_state())
 
+
 def test_doubly_missing_config():
   """ Test loading a missing config file and a missing backup """
-  use_tmpdir() # run from temp dir so we don't mess with current directory
+  use_tmpdir()  # run from temp dir so we don't mess with current directory
   api = api_w_mock_rt(NO_CONFIG, backup_config=NO_CONFIG)
   assert DEFAULT_STATUS == prune_state(api.get_state())
+
 
 if __name__ == '__main__':
   # run tests without pytest

@@ -17,6 +17,7 @@ logger.setLevel(logging.DEBUG)
 sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 
+
 class CommandTypes(Enum):
   PLAY = auto()
   PAUSE = auto()

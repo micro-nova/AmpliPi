@@ -213,12 +213,15 @@ def real_output_device(sid: int) -> str:
     return dev
   return 'default'
 
+
 def enable_aux_input():
   """ Select the Aux input as the capture source """
   try:
-    subprocess.check_call('amixer -D hw:cmedia8chint set "PCM Capture Source",0 Line', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.check_call('amixer -D hw:cmedia8chint set "PCM Capture Source",0 Line',
+                          shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   except subprocess.CalledProcessError as e:
     logger.exception(f'Failed to enable Aux input: {e}')
+
 
 def zones_from_groups(status: models.Status, groups: List[int]) -> Set[int]:
   """ Get the set of zones from some groups """
@@ -406,6 +409,7 @@ def set_identity(settings: Dict):
   with open(os.path.join(USER_CONFIG_DIR, 'identity'), encoding='utf-8', mode='w') as identity_file:
     json.dump(identity, identity_file)
 
+
 def load_extra_fields(filename: str = 'extra_fields.json') -> Optional[Dict]:
   """ This function is used to scrape extra fields for 3rd party integrations from a
       local file on the filesystem. At present, these fields end up populating in the
@@ -416,7 +420,8 @@ def load_extra_fields(filename: str = 'extra_fields.json') -> Optional[Dict]:
       return json.load(extra_fields_file)
   except Exception:
     return None
-  
+
+
 def careful_proc_shutdown(proc: subprocess.Popen, proc_name="process"):
   """ Shutdown a process, waiting for it to exit """
   try:

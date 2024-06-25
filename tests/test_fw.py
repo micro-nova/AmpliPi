@@ -10,7 +10,7 @@ This file is expected to be run on the controller board Pi, connected to a pream
 import subprocess
 
 import pytest
-#import tempfile
+# import tempfile
 
 # Use the internal amplipi library
 from context import amplipi
@@ -21,13 +21,17 @@ NUM_EXPANDERS = 0
 BIN_FILE = 'fw/preamp/build/preamp_bd.bin'
 
 # The 'request' fixture contains info of the requesting test function.
+
+
 @pytest.fixture
 def fw_path(request) -> str:
   return f'{request.fspath.dirname}/../fw/preamp'
 
+
 @pytest.fixture
 def fw_bin_path(fw_path) -> str:
   return f'{fw_path}/build/preamp_bd.bin'
+
 
 @pytest.mark.dependency()
 def test_fw_build(fw_path):
@@ -49,9 +53,11 @@ def test_fw_build(fw_path):
                                 cwd=fw_path, shell=True, check=False)
   assert build_result.returncode == 0
 
+
 # Only run the following tests on AmpliPi
 if not amplipi.utils.is_amplipi():
-  pytest.skip("Not running on AmpliPi hardware, skipping firmware tests", allow_module_level = True)
+  pytest.skip("Not running on AmpliPi hardware, skipping firmware tests", allow_module_level=True)
+
 
 @pytest.mark.dependency(depends=['test_fw_build'])
 def test_flash_master(fw_bin_path):
@@ -61,17 +67,18 @@ def test_flash_master(fw_bin_path):
   print(ver)
   assert ver.major == 1
 
+
 @pytest.mark.dependency(depends=['test_flash_master'])
 def test_set_address():
   preamps = amplipi.hw.Preamps()
   for i in range(10):
-    preamps.reset(unit=0, bootloader = False)
+    preamps.reset(unit=0, bootloader=False)
     if len(preamps) < 1:
       pytest.fail(f'Failed resetting then setting address after {i} tries.')
   for i in range(10):
     if not preamps.set_i2c_address():
       pytest.fail(f'Failed setting address after {i} tries.')
-    #ver = preamps[0].read_version()
+    # ver = preamps[0].read_version()
 
 # TODO: Fully exercise firmware interfaces
 
@@ -80,6 +87,6 @@ def test_set_address():
 #   preamps = amplipi.hw.Preamps()
 #   assert preamps[NUM_EXPANDERS] is not None
 
-#@pytest.mark.dependency(depends=['test_read_i2c'])
-#def test_multi_baud():
+# @pytest.mark.dependency(depends=['test_read_i2c'])
+# def test_multi_baud():
 #  assert False

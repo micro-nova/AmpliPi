@@ -1,29 +1,19 @@
 """ Test the authentication system """
 
-from typing import Dict, List, Optional
-
 # json utils
 import json
 from http import HTTPStatus
 
 # temporary directory for each test config
-import tempfile
 import os
-from copy import deepcopy # copy test config
-
-from pathlib import Path
-
-import time
-
-import pytest
 from fastapi.testclient import TestClient
 
 # testing context
+# autopep8: off
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from amplipi import auth, defaults
-
-import netifaces as ni
+# autopep8: on
 
 # pylint: disable=redefined-outer-name
 # pylint: disable=invalid-name
@@ -111,6 +101,7 @@ def test_configured_user(tmp_path, monkeypatch):
   assert client.get(f"/api/?api-key={key}").status_code == HTTPStatus.OK
   cookie_header = {"Cookie": f"amplipi-session={key}"}
   assert client.get("/api", headers=cookie_header).status_code == HTTPStatus.OK
+
 
 def test_config_creation(tmp_path, monkeypatch):
   """ Tests that we can use the UI, create users and a user configuration from nothing. """

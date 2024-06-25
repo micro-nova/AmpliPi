@@ -27,14 +27,6 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install pylint mypy pytest pytest-cov # Add any testing dependencies not in requirements.txt
-    - name: autopep8
-      id: autopep8
-      uses: peter-evans/autopep8@v2
-      with:
-        args: --recursive --in-place --aggressive amplipi tests
-    - name: Fail if autopep8 made changes
-      if: steps.autopep8.outputs.exit-code == 2
-      run: exit 1
     - name: Lint with pylint
       run: |
         pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
@@ -54,6 +46,14 @@ jobs:
         pytest tests/test_rest.py -vvv -k 'not _live' --cov=./ --cov-report=xml
         pytest tests/test_auth.py -vvv
         pytest tests/test_zeroconf.py -vvv
+    - name: autopep8
+      id: autopep8
+      uses: peter-evans/autopep8@v2
+      with:
+        args: --recursive --in-place .
+    - name: Fail if autopep8 made changes
+      if: steps.autopep8.outputs.exit-code == 2
+      run: exit 1
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

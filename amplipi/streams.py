@@ -924,15 +924,15 @@ class Pandora(PersistentStream, Browsable):
               text = file.read()
               matches = re.findall(r'\" \([0-9]+\)', text)
             if matches:
-                self.station = matches[-1].replace('\" (', '').replace(')', '')
-                self.pb_output_file
-                with open(self.pb_output_file, 'w', encoding='utf-8') as file: # clear file
-                  file.write('')
-                self.state = 'playing'
-                logger.info(f'Changed pandora station to {self.station}')
-                time.sleep(1) # give pianobar awhile to update metadata before we end the api call
-                break
-            elif "Receiving new playlist... Ok." in text: # if we see this message, we know the station has been changed but we may have simply switched to the same station
+              self.station = matches[-1].replace('\" (', '').replace(')', '')
+              self.pb_output_file
+              with open(self.pb_output_file, 'w', encoding='utf-8') as file:  # clear file
+                file.write('')
+              self.state = 'playing'
+              logger.info(f'Changed pandora station to {self.station}')
+              time.sleep(1)  # give pianobar awhile to update metadata before we end the api call
+              break
+            elif "Receiving new playlist... Ok." in text:  # if we see this message, we know the station has been changed but we may have simply switched to the same station
               logger.info(f'Changed pandora station to same station ({self.station})')
               break
           else:  # if we don't find the station in 5 seconds, raise an error
@@ -1628,10 +1628,10 @@ class LMS(PersistentStream):
     source = models.SourceInfo(
       name=self.full_name(),
       state=self.state,
-      img_url= self.meta.get('image_url', ''),
-      track= self.meta.get('track', ''),
-      album= self.meta.get('album', ''),
-      artist= self.meta.get('artist', ''),
+      img_url=self.meta.get('image_url', ''),
+      track=self.meta.get('track', ''),
+      album=self.meta.get('album', ''),
+      artist=self.meta.get('artist', ''),
       type=self.stream_type
     )
     return source
