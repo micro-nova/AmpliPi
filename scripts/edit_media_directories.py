@@ -5,6 +5,8 @@ import requests
 import logging
 import sys
 import subprocess
+import urllib3
+import urllib3.exceptions
 
 def CheckLMSMode():
     try:
@@ -28,27 +30,42 @@ def get_usb_drives(logger: logging.Logger):
 
 def edit_directories(logger: logging.Logger):
   """Update LMS server with list of drives"""
-  usb_drives = get_usb_drives(logger) # Get list of available drives
-  LMSMode = CheckLMSMode()
-  if LMSMode:
-    usb_drives.append("") # Add blank drive to reflect empty string that is always at the end of the mediadirs section of request body
-    url = 'http://localhost:9000/settings/server/basic.html'
-    data = {
-      'saveSettings': '1',
-      'useAJAX': '0',
-      'page': 'BASIC_SERVER_SETTINGS',
-      'pref_language': 'EN',
-      'pref_libraryname': '',
-      'pref_playlistdir': '',
-      'pref_rescantype': '1rescan'
-    } # All default headers, mediadirs added in loop
-    for d, drive in enumerate(usb_drives):
-      data[f"pref_mediadirs{d}"] = drive
-      data[f"pref_ignoreInAudioScan{d}"] = 1
+  try:
+    usb_drives = get_usb_drives(logger) # Get list of available drives
+    LMSMode = CheckLMSMode()
+    if LMSMode:
+      usb_drives.append("") # Add blank drive to reflect empty string that is always at the end of the mediadirs section of request body
+      url = 'http://localhost:9000/settings/server/basic.html'
+      data = {
+        'saveSettings': '1',
+        'useAJAX': '0',
+        'page': 'BASIC_SERVER_SETTINGS',
+        'pref_language': 'EN',
+        'pref_libraryname': '',
+        'pref_playlistdir': '',
+        'pref_rescantype': '1rescan'
+      } # All default headers, mediadirs added in loop
+      for d, drive in enumerate(usb_drives):
+        data[f"pref_mediadirs{d}"] = drive
+        data[f"pref_ignoreInAudioScan{d}"] = 1
 
-  logger.info("Adding drives to LMS settings...")
-  requests.post(url, data=data, verify=False, timeout=5)
-  logger.info("Drives added, LMS scanning now.")
+      logger.info("Adding drives to LMS settings...")
+      requests.post(url, data=data, verify=False, timeout=1000)
+      logger.info("Drives added, LMS scanning now.")
+    else:
+      if len(usb_drives) > 0:
+        drives = ""
+        for drive in usb_drives:
+          drives += f"{drive}, "
+        logger.info(f"Detected drives: {drives}")
+        logger.info("If you wish to mount these to the internal LMS server, please go to Config and set LMS Mode")
+  except urllib3.exceptions.MaxRetryError:
+    # This error is extremely common during startup, but isn't actually broken
+    # It seemingly only occurs on startup, leading me to believe it is a race condition with other things starting up
+    logger.error("LMS Automated Drive Mounting has encountered an error due to a race condition during startup, if this persists (or happened outside of startup) please contact support@micro-nova.com with a copy of these logs")
+  except Exception as e:
+    logger.error(f"LMS Automated Drive Mounting has encountered an error: {e}")
+
 
 
 
