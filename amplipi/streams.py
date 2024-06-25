@@ -735,11 +735,11 @@ class Pandora(PersistentStream, Browsable):
 
     # pandora api client, the values in here come from the pandora android app
     self.pyd_client = SettingsDictBuilder({
-        "DECRYPTION_KEY": "R=U!LH$O2B#",
-        "ENCRYPTION_KEY": "6#26FRL$ZWD",
-        "PARTNER_USER": "android",
-        "PARTNER_PASSWORD": "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7",
-        "DEVICE": "android-generic",
+      "DECRYPTION_KEY": "R=U!LH$O2B#",
+      "ENCRYPTION_KEY": "6#26FRL$ZWD",
+      "PARTNER_USER": "android",
+      "PARTNER_PASSWORD": "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7",
+      "DEVICE": "android-generic",
     }).build()
 
     self.ctrl = ''  # control fifo location
@@ -957,8 +957,8 @@ class Pandora(PersistentStream, Browsable):
       with open(self.pb_stations_file) as f:
         # try to match PianoBar's list of stations with those returned by the Pandora API
         # NOTE: duplicate station names will only match the last duplicate station returned by the Pandora API
-        for l in f.readlines():
-          sinfo = l.rstrip("\n").split(":")
+        for line in f.readlines():
+          sinfo = line.rstrip("\n").split(":")
           if len(sinfo) >= 2:
             station_id = sinfo[0]
             name = sinfo[1]
@@ -1097,7 +1097,7 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
       self._fifo_open = True
 
     try:
-      if cmd in self.supported_cmds and self.src != None:
+      if cmd in self.supported_cmds and self.src is not None:
         # must end line since metadata_reader uses readline()
         os.write(self._fifo, bytearray(cmd + '\r\n', encoding="utf8"))
         os.fsync(self._fifo)
@@ -1195,7 +1195,7 @@ class InternetRadio(BaseStream):
 
   def send_cmd(self, cmd):
     try:
-      if cmd in self.supported_cmds and self.src != None:
+      if cmd in self.supported_cmds and self.src is not None:
         if cmd == 'play':
           if not self._is_running():
             self.connect(self.src)

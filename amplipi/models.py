@@ -1098,7 +1098,7 @@ class Status(BaseModel):
                                   'state': 'playing',
                                   'station': 'Blackmill Radio',
                                   'supported_cmds': ['play', 'pause', 'next',
-                                       'love', 'ban', 'shelve', 'restart'],
+                                                     'love', 'ban', 'shelve', 'restart'],
                                   'track': 'Chambermaid Swing'},
                          'input': 'stream=1006',
                          'name': 'Input 3'},

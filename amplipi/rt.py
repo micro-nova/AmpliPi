@@ -229,17 +229,17 @@ class _Preamps:
   def new_preamp(self, addr: int):
     """ Populate initial register values """
     self.preamps[addr] = [
-        0x0F,
-        0x00,
-        0x00,
-        0x3F,
-        0x00,
-        0x4F,
-        0x4F,
-        0x4F,
-        0x4F,
-        0x4F,
-        0x4F,
+      0x0F,
+      0x00,
+      0x00,
+      0x3F,
+      0x00,
+      0x4F,
+      0x4F,
+      0x4F,
+      0x4F,
+      0x4F,
+      0x4F,
     ]
 
   def write_byte_data(self, preamp_addr, reg, data):
@@ -386,7 +386,7 @@ class _Preamps:
 
   def read_temps(self, preamp: int = 1) -> Union[
       Tuple[float, float, float, float], Tuple[float, None, float, float], Tuple[None, None, None, None]
-    ]:
+  ]:
     """ Measure the temperature of the power supply and both amp heatsinks
 
       Args:
@@ -662,7 +662,7 @@ class Rpi:
     source_cfg456 = 0x00
     for z in range(6):
       src = sources[preamp * 6 + z]
-      assert type(src) == int or src == None
+      assert type(src) == int or src is None
       if z < 3:
         source_cfg123 = source_cfg123 | (src << (z * 2))
       else:

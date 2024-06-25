@@ -59,7 +59,7 @@ html_sidebars = {
     "index": [],
     "**": [],
 }
-#singlehtml_sidebars = {"index": ["project.html", "localtoc.html"]}
+# singlehtml_sidebars = {"index": ["project.html", "localtoc.html"]}
 html_static_path = ["_static"]
 html_favicon = "../web/static/imgs/amplipi_icon_white.png"
 html_logo = "../web/static/imgs/amplipi_icon_white.png"

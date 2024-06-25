@@ -189,7 +189,7 @@ def get_status(url: str, no_serial_ok: bool = False) -> Tuple[Union[str, int], O
           for source in sources:
             if source.info is not None and source.info.state == "playing":
               result_status = "PLAYING"
-            elif result_status == None:
+            elif result_status is None:
               result_status = "READY"
 
         else:

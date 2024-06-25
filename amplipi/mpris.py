@@ -42,9 +42,9 @@ class MPRIS:
 
   def __init__(self, service_suffix, metadata_path, debug=False) -> None:
     self.mpris = SessionMessageBus().get_proxy(
-        service_name=f"org.mpris.MediaPlayer2.{service_suffix}",
-        object_path="/org/mpris/MediaPlayer2",
-        interface_name="org.mpris.MediaPlayer2.Player"
+      service_name=f"org.mpris.MediaPlayer2.{service_suffix}",
+      object_path="/org/mpris/MediaPlayer2",
+      interface_name="org.mpris.MediaPlayer2.Player"
     )
 
     self.debug = debug

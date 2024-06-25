@@ -701,7 +701,7 @@ def add_response_examples(openapi_schema, route: APIRoute) -> None:
       piece = route.path.replace('/api/', '')
       example_status = list(models.Status.Config.schema_extra['examples'].values())[0]['value']
       openapi_schema['paths'][route.path]['get']['responses']['200'][
-          'content']['application/json']['example'] = {piece: example_status[piece]}
+        'content']['application/json']['example'] = {piece: example_status[piece]}
 
 
 def get_live_examples(tags: List[Union[str, Enum]]) -> Dict[str, Dict[str, Any]]:

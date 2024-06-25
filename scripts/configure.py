@@ -77,237 +77,239 @@ $IncludeConfig /etc/rsyslog.d/*.conf
 """
 
 _os_deps: Dict[str, Dict[str, Any]] = {
-  'base': {
-    'apt': ['python3-pip', 'python3-venv', 'curl', 'authbind',
-            'python3-pil', 'libopenjp2-7',  # Pillow dependencies
-            'libatlas-base-dev',           # numpy dependencies
-            'stm32flash',                  # Programming Preamp Board
-            'xkcdpass',                    # Random passphrase generation
-            'systemd-journal-remote',      # Remote/web based log access
-            'jq',                          # JSON parser used in check-release script
-            # pygobject dependencies (Spotifyd)
-            'libgirepository1.0-dev', 'libcairo2-dev',
-            ],
-  },
-  'logging': {
-    'script': [
-      'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
-      f"echo '{RSYSLOG_CFG}' | sudo tee /etc/rsyslog.conf",
-      'sudo systemctl enable rsyslog.service',  # just in case it was disabled...
-      'sudo systemctl restart rsyslog.service',
+    'base': {
+        'apt': ['python3-pip', 'python3-venv', 'curl', 'authbind',
+                'python3-pil', 'libopenjp2-7',  # Pillow dependencies
+                'libatlas-base-dev',           # numpy dependencies
+                'stm32flash',                  # Programming Preamp Board
+                'xkcdpass',                    # Random passphrase generation
+                'systemd-journal-remote',      # Remote/web based log access
+                'jq',                          # JSON parser used in check-release script
+                # pygobject dependencies (Spotifyd)
+                'libgirepository1.0-dev', 'libcairo2-dev',
+                ],
+    },
+    'logging': {
+        'script': [
+            'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
+            f"echo '{RSYSLOG_CFG}' | sudo tee /etc/rsyslog.conf",
+            # just in case it was disabled...
+            'sudo systemctl enable rsyslog.service',
+            'sudo systemctl restart rsyslog.service',
 
-      'echo "reconfiguring journald to only log to RAM"',
-      r'echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
-      'sudo systemctl enable systemd-journald.service',
-      'sudo systemctl restart systemd-journald.service',
+            'echo "reconfiguring journald to only log to RAM"',
+            r'echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
+            'sudo systemctl enable systemd-journald.service',
+            'sudo systemctl restart systemd-journald.service',
 
-      'echo "enable socket to the journald server to allow easy access to system logs"',
-      'sudo systemctl enable systemd-journal-gatewayd.socket',
-      'sudo systemctl restart systemd-journal-gatewayd.socket',
+            'echo "enable socket to the journald server to allow easy access to system logs"',
+            'sudo systemctl enable systemd-journal-gatewayd.socket',
+            'sudo systemctl restart systemd-journal-gatewayd.socket',
 
-      'echo "deleting some old logs"',
-      'sudo journalctl --rotate',
-      'sudo journalctl --vacuum-time=10m',
-      'sudo rm /var/log/daemon*   && echo "removed daemon logs" || echo ok',
-      'sudo rm /var/log/syslog*   && echo "removed syslogs"     || echo ok',
-      'sudo rm /var/log/messages* && echo "removed messages"    || echo ok',
-      'sudo rm /var/log/user*     && echo "removed user logs"   || echo ok',
-    ]
-  },
-  'support_tunnel': {
-    'apt': [
-      'libsystemd-dev',  # permits logging directly to journald
-      'wireguard', 'wireguard-tools'  # -tools for wg-quick usage
-    ],
-    'copy': [
-      {
-        'from': 'config/support_tunnel_crontab',
-        'to': '/etc/cron.d/support_tunnel',
-        'sudo': 'true'
-      },
-      {
-        'from': 'config/support_group_sudoers',
-        'to': '/etc/sudoers.d/099_support-nopasswd',
-        'sudo': 'true'
-      }
-    ],
-    'script': [
-      'sudo addgroup support',
-      'sudo adduser pi support',
-      'sudo mkdir -p /var/lib/support_tunnel',
-      'sudo chmod 0777 /var/lib/support_tunnel',  # TODO: lock this down
-      'if [ ! -e /opt/support_tunnel ] ; then'
-      '  pushd $(mktemp --directory)',
-      '  git clone https://github.com/micro-nova/support_tunnel.git',
-      '  sudo mv support_tunnel /opt',
-      '  popd',
-      'fi',
-      'pushd /opt/support_tunnel',
-      'git fetch && git reset --hard origin/main',
-      'if [ ! -e /opt/support_tunnel/venv ]; then',
-      '  /usr/bin/python3 -m venv venv',
-      'fi',
-      '/opt/support_tunnel/venv/bin/pip install -r requirements.txt',
-      'popd',
-    ]
-  },
-  # streams
-  # TODO: can stream dependencies be aggregated from the streams themselves?
-  'airplay' : {
-    'apt' : [ 'shairport-sync'],
-    'copy' : [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
-              {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
-    'script': [
-        'if which nqptp  > /dev/null; then exit 0; fi',
-        'pushd $(mktemp --directory)',
-        'git clone https://github.com/mikebrady/nqptp.git',
-        'pushd nqptp',
-        'autoreconf -fi',
-        './configure --with-systemd-startup',
-        'make',
-        'sudo make install',
-        'sudo systemctl enable nqptp && sudo systemctl restart nqptp',
-        'popd',
-        'popd',
-    ]
-  },
-  'internet_radio': {
-    'apt': ['vlc']
-  },
-  'fmradio': {
-    'apt': ['rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev'],
-    'script': [
-      'if ! which redsea  > /dev/null; then',  # TODO: check version
-      '  echo "Installing redsea"',
-      '  cd /tmp',
-      '  git clone --depth 1 https://github.com/windytan/redsea.git',
-      '  cd redsea',
-      '  ./autogen.sh && ./configure && make',
-      '  sudo make install',
-      '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
-      '  sudo udevadm control --reload-rules',
-      '  sudo udevadm trigger',
-      'fi',
-    ]
-  },
-  'lms': {
-    'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0'],
-    'copy': [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
-    'script': [
-      'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
-      '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
-      '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
-      '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
-      '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
-      'fi',
-      'wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb -O /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
-      'sudo dpkg -i /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
-      'sudo systemctl stop squeezelite',
-      'sudo systemctl disable squeezelite',
+            'echo "deleting some old logs"',
+            'sudo journalctl --rotate',
+            'sudo journalctl --vacuum-time=10m',
+            'sudo rm /var/log/daemon*   && echo "removed daemon logs" || echo ok',
+            'sudo rm /var/log/syslog*   && echo "removed syslogs"     || echo ok',
+            'sudo rm /var/log/messages* && echo "removed messages"    || echo ok',
+            'sudo rm /var/log/user*     && echo "removed user logs"   || echo ok',
+        ]
+    },
+    'support_tunnel': {
+        'apt': [
+            'libsystemd-dev',  # permits logging directly to journald
+            'wireguard', 'wireguard-tools'  # -tools for wg-quick usage
+        ],
+        'copy': [
+            {
+                'from': 'config/support_tunnel_crontab',
+                'to': '/etc/cron.d/support_tunnel',
+                'sudo': 'true'
+            },
+            {
+                'from': 'config/support_group_sudoers',
+                'to': '/etc/sudoers.d/099_support-nopasswd',
+                'sudo': 'true'
+            }
+        ],
+        'script': [
+            'sudo addgroup support',
+            'sudo adduser pi support',
+            'sudo mkdir -p /var/lib/support_tunnel',
+            'sudo chmod 0777 /var/lib/support_tunnel',  # TODO: lock this down
+            'if [ ! -e /opt/support_tunnel ] ; then'
+            '  pushd $(mktemp --directory)',
+            '  git clone https://github.com/micro-nova/support_tunnel.git',
+            '  sudo mv support_tunnel /opt',
+            '  popd',
+            'fi',
+            'pushd /opt/support_tunnel',
+            'git fetch && git reset --hard origin/main',
+            'if [ ! -e /opt/support_tunnel/venv ]; then',
+            '  /usr/bin/python3 -m venv venv',
+            'fi',
+            '/opt/support_tunnel/venv/bin/pip install -r requirements.txt',
+            'popd',
+        ]
+    },
+    # streams
+    # TODO: can stream dependencies be aggregated from the streams themselves?
+    'airplay': {
+        'apt': ['shairport-sync'],
+        'copy': [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
+                 {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
+        'script': [
+            'if which nqptp  > /dev/null; then exit 0; fi',
+            'pushd $(mktemp --directory)',
+            'git clone https://github.com/mikebrady/nqptp.git',
+            'pushd nqptp',
+            'autoreconf -fi',
+            './configure --with-systemd-startup',
+            'make',
+            'sudo make install',
+            'sudo systemctl enable nqptp && sudo systemctl restart nqptp',
+            'popd',
+            'popd',
+        ]
+    },
+    'internet_radio': {
+        'apt': ['vlc']
+    },
+    'fmradio': {
+        'apt': ['rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev'],
+        'script': [
+            'if ! which redsea  > /dev/null; then',  # TODO: check version
+            '  echo "Installing redsea"',
+            '  cd /tmp',
+            '  git clone --depth 1 https://github.com/windytan/redsea.git',
+            '  cd redsea',
+            '  ./autogen.sh && ./configure && make',
+            '  sudo make install',
+            '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
+            '  sudo udevadm control --reload-rules',
+            '  sudo udevadm trigger',
+            'fi',
+        ]
+    },
+    'lms': {
+        'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0'],
+        'copy': [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
+        'script': [
+            'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
+            '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
+            '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
+            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
+            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
+            'fi',
+            'wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb -O /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
+            'sudo dpkg -i /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
+            'sudo systemctl stop squeezelite',
+            'sudo systemctl disable squeezelite',
 
-      'sudo chmod 755 /media/pi',
-      'sudo chmod 755 /media/pi/*',
-      'sudo cp scripts/udisks2-listener.sh /usr/local/bin',
-      'sudo cp scripts/edit_media_directories.py /usr/local/bin',
-      'sudo cp scripts/udisks2-listener.service /etc/systemd/system',
-      'sudo systemctl enable udisks2-listener.service',
-      'sudo systemctl start udisks2-listener.service',
-    ]
-  },
-  'dlna': {
-    'apt': ['uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
-            'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
-            'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
-            'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git'],
-    'script': [
-      'if [ ! -d "gmrender-resurrect" ] ; then',
-      '  git clone https://github.com/hzeller/gmrender-resurrect.git gmrender-resurrect',
-      '  cd gmrender-resurrect',
-      'else',
-      '  cd gmrender-resurrect',
-      '  git pull https://github.com/hzeller/gmrender-resurrect.git',
-      'fi',
-      './autogen.sh',
-      './configure',
-      'make',
-      'sudo make install',
-    ],
-  },
-  'plexamp': {
-    # TODO: do a full install of plexamp, the partial install below is not useful
-    # 'script' : [ './streams/plexamp_nodeinstall.bash' ]
-  },
-  'spotify': {
-    'copy': [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
-  },
-  'pandora' : {
-    'apt' : [
-      'libao4', 'libavcodec58', 'libavfilter7', 'libavformat58', 'libavutil56', 'libc6', 'libcurl3-gnutls', 'libgcrypt20', 'libjson-c3'
-    ],
-    'copy' : [{'from': 'bin/ARCH/pianobar', 'to': 'streams/pianobar'}],
-  },
-  'bluetooth' : {
-    'amplipi_only' : True,
-    'apt' : [ 'libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
-              'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4' ],
-    'script' : [
-      # referencing arm here is okay because bluetooth is marked as 'amplipi_only'
-      'sudo cp bin/arm/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
-      'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
-      'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
-      # TODO: investigate where to put these services
-      'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
-      'sudo cp streams/bluetooth_agent /usr/local/bin/',
-      'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
+            'sudo chmod 755 /media/pi',
+            'sudo chmod 755 /media/pi/*',
+            'sudo cp scripts/udisks2-listener.sh /usr/local/bin',
+            'sudo cp scripts/edit_media_directories.py /usr/local/bin',
+            'sudo cp scripts/udisks2-listener.service /etc/systemd/system',
+            'sudo systemctl enable udisks2-listener.service',
+            'sudo systemctl start udisks2-listener.service',
+        ]
+    },
+    'dlna': {
+        'apt': ['uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
+                'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
+                'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
+                'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git'],
+        'script': [
+            'if [ ! -d "gmrender-resurrect" ] ; then',
+            '  git clone https://github.com/hzeller/gmrender-resurrect.git gmrender-resurrect',
+            '  cd gmrender-resurrect',
+            'else',
+            '  cd gmrender-resurrect',
+            '  git pull https://github.com/hzeller/gmrender-resurrect.git',
+            'fi',
+            './autogen.sh',
+            './configure',
+            'make',
+            'sudo make install',
+        ],
+    },
+    'plexamp': {
+        # TODO: do a full install of plexamp, the partial install below is not useful
+        # 'script' : [ './streams/plexamp_nodeinstall.bash' ]
+    },
+    'spotify': {
+        'copy': [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
+    },
+    'pandora': {
+        'apt': [
+            'libao4', 'libavcodec58', 'libavfilter7', 'libavformat58', 'libavutil56', 'libc6', 'libcurl3-gnutls', 'libgcrypt20', 'libjson-c3'
+        ],
+        'copy': [{'from': 'bin/ARCH/pianobar', 'to': 'streams/pianobar'}],
+    },
+    'bluetooth': {
+        'amplipi_only': True,
+        'apt': ['libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
+                'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4'],
+        'script': [
+            # referencing arm here is okay because bluetooth is marked as 'amplipi_only'
+            'sudo cp bin/arm/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
+            'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
+            'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
+            # TODO: investigate where to put these services
+            'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
+            'sudo cp streams/bluetooth_agent /usr/local/bin/',
+            'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
 
-      # Install SBC
-      'if ! [ -e /usr/local/lib/libsbc.so.1.3.1 ]',
-      'then',
-        'echo Installing SBC...',
-        'pushd $(mktemp --directory)',
-        'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
-        'cd sbc',
-        'git checkout 8dc5d5ba381512ad5b1afa45c63ec6b0a3833244',  # sbc release 2.0
-        'sudo ./bootstrap-configure',
-        'sudo ./configure',
-        'sudo make',
-        'sudo make install',
-        'popd',
-      'else',
-        'echo SBC already installed, skipping installation.',
-      'fi',
+            # Install SBC
+            'if ! [ -e /usr/local/lib/libsbc.so.1.3.1 ]',
+            'then',
+            'echo Installing SBC...',
+            'pushd $(mktemp --directory)',
+            'git clone https://git.kernel.org/pub/scm/bluetooth/sbc.git',
+            'cd sbc',
+            'git checkout 8dc5d5ba381512ad5b1afa45c63ec6b0a3833244',  # sbc release 2.0
+            'sudo ./bootstrap-configure',
+            'sudo ./configure',
+            'sudo make',
+            'sudo make install',
+            'popd',
+            'else',
+            'echo SBC already installed, skipping installation.',
+            'fi',
 
-      # Add pi user to bluetooth group so we don't need to run sudo
-      'sudo usermod -G bluetooth -a pi',
+            # Add pi user to bluetooth group so we don't need to run sudo
+            'sudo usermod -G bluetooth -a pi',
 
-      'sudo chmod +x /usr/local/bin/bluetooth_agent',
+            'sudo chmod +x /usr/local/bin/bluetooth_agent',
 
-      'sudo systemctl enable bluetooth',
-      'sudo systemctl enable bluealsa',
-      'sudo systemctl enable bluetooth_agent',
-    ]
-  }
+            'sudo systemctl enable bluetooth',
+            'sudo systemctl enable bluealsa',
+            'sudo systemctl enable bluetooth_agent',
+        ]
+    }
 }
 
 
 def _check_and_update_streamer(env):
   """Check if this is a streamer (no preamp firmware)"""
-  is_streamer_path = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'is_streamer')
+  is_streamer_path = os.path.join(os.path.expanduser(
+      '~'), '.config', 'amplipi', 'is_streamer')
   env['is_streamer'] = os.path.exists(is_streamer_path)
 
 
 def _check_and_setup_platform():
   script_dir = os.path.dirname(os.path.realpath(__file__))
   env = {
-    'user': pwd.getpwuid(os.getuid()).pw_name,
-    'has_apt': False,
-    'is_git_repo': False,
-    'platform_supported': False,
-    'script_dir': script_dir,
-    'base_dir': script_dir.rsplit('/', 1)[0],
-    'is_amplipi': False,
-    'is_streamer': False,
-    'arch': 'unknown',
+      'user': pwd.getpwuid(os.getuid()).pw_name,
+      'has_apt': False,
+      'is_git_repo': False,
+      'platform_supported': False,
+      'script_dir': script_dir,
+      'base_dir': script_dir.rsplit('/', 1)[0],
+      'is_amplipi': False,
+      'is_streamer': False,
+      'arch': 'unknown',
   }
 
   # Get the platform name
@@ -353,7 +355,8 @@ class Task:
     self.shell = shell
 
   def __str__(self):
-    desc = f"{self.name} : {self.margs}" if len(self.margs) > 0 else f"{self.name} :"
+    desc = f"{self.name} : {self.margs}" if len(
+        self.margs) > 0 else f"{self.name} :"
     for line in self.output.splitlines():
       if line:
         desc += f'\n  {line}'
@@ -393,8 +396,10 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
                           'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
   # Upgrade current packages
-  print_progress([Task("upgrading debian packages, this will take 10+ minutes", success=True)])
-  tasks += print_progress([Task('upgrade debian packages', 'sudo apt-get dist-upgrade --assume-yes'.split()).run()])
+  print_progress(
+      [Task("upgrading debian packages, this will take 10+ minutes", success=True)])
+  tasks += print_progress([Task('upgrade debian packages',
+                          'sudo apt-get dist-upgrade --assume-yes'.split()).run()])
 
   # organize stuff to install
   packages = set()
@@ -422,12 +427,14 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _to = f"{env['base_dir']}/{_to}"
     _sudo = "sudo " if 'sudo' in file else ""
     # shairport needs the -f if it is running
-    tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()])
+    tasks += print_progress(
+        [Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()])
   if env['is_amplipi']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"
     _to = "/etc/asound.conf"
-    tasks += print_progress([Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
+    tasks += print_progress(
+        [Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
     # copy boot_config.txt RPi firmware configuration file
     _boot_config_from = f"{env['base_dir']}/config/boot_config.txt"
     _boot_config_to = "/boot/config.txt"
@@ -439,15 +446,18 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _from = f"{env['base_dir']}/config/85-amplipi-usb-audio.rules"
       _to = usb_audio_rule_path
       tasks += print_progress([Task('fix usb soundcard id', multiargs=[
-        f"sudo cp {_from} {_to}".split(),               # add new rule (udev watches this directory for changes)
-        'sudo udevadm trigger -s sound -c add'.split(),  # trigger an 'add' action on the 'sound' subsystem
-        'udevadm settle'.split(),                       # wait for udev rules to fire and settle
+          # add new rule (udev watches this directory for changes)
+          f"sudo cp {_from} {_to}".split(),
+          # trigger an 'add' action on the 'sound' subsystem
+          'sudo udevadm trigger -s sound -c add'.split(),
+          # wait for udev rules to fire and settle
+          'udevadm settle'.split(),
       ]).run()])
     # disable pulseaudio (it was muting some inputs and is not needed)
     tasks += print_progress([Task('disable pulseaudio', multiargs=[
         'systemctl --user mask pulseaudio.socket'.split(),
         'systemctl --user mask pulseaudio.service'.split(),
-      ]).run()])
+    ]).run()])
     # serial port permission granting
     tasks.append(Task('Check serial permissions', 'groups'.split()).run())
     tasks[-1].success = 'pi' in tasks[-1].output
@@ -464,7 +474,8 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     # setup loopbacks
     tasks += print_progress(_setup_loopbacks(env['base_dir']))
   # install debian packages
-  tasks += print_progress([Task('install debian packages', 'sudo apt-get install -y'.split() + list(packages)).run()])
+  tasks += print_progress([Task('install debian packages',
+                          'sudo apt-get install -y'.split() + list(packages)).run()])
 
   # Run scripts
   for dep, script in scripts.items():
@@ -474,8 +485,10 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
         sh.write(scrap + '\n')
     shargs = f'bash {sh_loc}'.split()
     clean = f'rm {sh_loc}'.split()
-    tasks += print_progress([Task(f'run {dep} install script', args=shargs, wd=env['base_dir']).run()])
-    tasks += print_progress([Task(f'remove {dep} temporary script', args=clean, wd=env['base_dir']).run()])
+    tasks += print_progress(
+        [Task(f'run {dep} install script', args=shargs, wd=env['base_dir']).run()])
+    tasks += print_progress(
+        [Task(f'remove {dep} temporary script', args=clean, wd=env['base_dir']).run()])
 
   # cleanup
   sp_check_tasks, sp_active = _service_status('shairport-sync', system=True)
@@ -493,7 +506,8 @@ def _install_python_deps(env: dict, deps: List[str]):
   if len(deps) > 0:
     last_dir = os.path.abspath(os.curdir)
     os.chdir(env['script_dir'])
-    tasks += [Task('install python packages', 'bash install_python_deps.bash'.split()).run()]
+    tasks += [Task('install python packages',
+                   'bash install_python_deps.bash'.split()).run()]
     os.chdir(last_dir)
   return tasks
 
@@ -618,7 +632,7 @@ def _service_status(service: str, system: bool = False) -> Tuple[List[Task], boo
   # The exit code reflects the status of the service, not the command itself.
   # Just assume the command was run successfully.
   tasks[0].success = True
-  active = 'active' in tasks[0].output and not 'inactive' in tasks[0].output
+  active = 'active' in tasks[0].output and 'inactive' not in tasks[0].output
   return (tasks, active)
 
 # Stop a systemd service. By default use the Session (user) session
@@ -665,10 +679,12 @@ def _disable_service(name: str, system: bool = False) -> List[Task]:
 def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] = None) -> List[Task]:
   service = f'{name}.service'
   if restart:
-    tasks = [Task(f'Restart {service}', f'systemctl --user restart {service}'.split()).run()]
+    tasks = [
+        Task(f'Restart {service}', f'systemctl --user restart {service}'.split()).run()]
   else:
     # just start
-    tasks = [Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
+    tasks = [
+        Task(f'Start {service}', f'systemctl --user start {service}'.split()).run()]
 
   # wait a bit, so initial failures are detected before is-active is called
   if tasks[-1].success:
@@ -691,10 +707,12 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
       tasks += _enable_service(name)
     elif name == 'amplipi':
       tasks[-1].output += "\ntry checking this service failure using 'scripts/run_debug_webserver' on the system"
-      tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
+      tasks.append(Task(
+          f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
     elif 'amplipi-updater' in name:
       tasks[-1].output += "\ntry debugging this service failure using 'scripts/run_debug_updater' on the system"
-      tasks.append(Task(f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
+      tasks.append(Task(
+          f'Check {service} Status', f'systemctl --user status {service}'.split()).run())
   return tasks
 
 
@@ -741,7 +759,8 @@ def _create_service(name: str, config: str) -> List[Task]:
     tasks[-1].output = f'Failed to create {filename}'
 
   # recreate systemd's dependency tree
-  tasks.append(Task('Reload systemd config', 'systemctl --user daemon-reload'.split()).run())
+  tasks.append(Task('Reload systemd config',
+               'systemctl --user daemon-reload'.split()).run())
   return tasks
 
 
@@ -758,11 +777,12 @@ def _configure_authbind() -> List[Task]:
   tasks = []
   if not os.path.exists(PORT_FILE):
     tasks.append(Task('Setup autobind', multiargs=[
-      f'sudo touch {PORT_FILE}'.split(),
-      f'sudo chmod 777 {PORT_FILE}'.split()
+        f'sudo touch {PORT_FILE}'.split(),
+        f'sudo chmod 777 {PORT_FILE}'.split()
     ]).run())
   elif os.stat(PORT_FILE).st_mode != 0o1000777:
-    tasks.append(Task('Setup autobind', f'sudo chmod 777 {PORT_FILE}'.split()).run())
+    tasks.append(
+        Task('Setup autobind', f'sudo chmod 777 {PORT_FILE}'.split()).run())
   return tasks
 
 # Enable linger so that user manager is started at boot
@@ -775,10 +795,12 @@ def _enable_linger(user: str) -> List[Task]:
 def _copy_old_config(dest_dir: str) -> None:
   # try to copy the config of the current running amplipi service into base_dir/house.json
   # success is not required since the config will be generated from defaults if missing
-  old_dir = subprocess.getoutput('systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
+  old_dir = subprocess.getoutput(
+      'systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
   if old_dir:
     try:
-      subprocess.run(['cp', f'{old_dir}/house.json', f'{dest_dir}/house.json'], check=False)
+      subprocess.run(
+          ['cp', f'{old_dir}/house.json', f'{dest_dir}/house.json'], check=False)
     except:
       pass
 
@@ -824,20 +846,26 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   tasks += print_progress(_stop_service('amplipi'))
   # bringup amplipi and updater separately
   tasks += print_progress(_configure_authbind())
-  tasks += print_progress(_create_service('amplipi', _web_service(env['base_dir'])))
-  tasks += print_progress(_start_service('amplipi', test_url='http://0.0.0.0'))
+  tasks += print_progress(_create_service('amplipi',
+                          _web_service(env['base_dir'])))
+  tasks += print_progress(_start_service('amplipi',
+                          test_url='http://0.0.0.0'))
   if not tasks[-1].success:
     return tasks
   tasks += print_progress([_check_version('http://0.0.0.0/api')])
-  tasks += print_progress(_create_service('amplipi-updater', _update_service(env['base_dir'])))
+  tasks += print_progress(_create_service('amplipi-updater',
+                          _update_service(env['base_dir'])))
   if restart_updater:
     tasks += print_progress(_stop_service('amplipi-updater'))
-    tasks += print_progress(_start_service('amplipi-updater', test_url='http://0.0.0.0:5001/update'))
+    tasks += print_progress(_start_service('amplipi-updater',
+                            test_url='http://0.0.0.0:5001/update'))
   else:
     # start a second updater service and check if it serves a url
     # this allow us to verify the update the updater probably works
-    tasks += print_progress(_create_service('amplipi-updater-test', _update_service(env['base_dir'], port=5002)))
-    tasks += print_progress(_start_service('amplipi-updater-test', test_url='http://0.0.0.0:5002/update'))
+    tasks += print_progress(_create_service('amplipi-updater-test',
+                            _update_service(env['base_dir'], port=5002)))
+    tasks += print_progress(_start_service('amplipi-updater-test',
+                            test_url='http://0.0.0.0:5002/update'))
     # stop and disable the service so it doesn't start up on a reboot
     tasks += print_progress(_stop_service('amplipi-updater-test'))
     tasks += print_progress(_remove_service('amplipi-updater-test'))
@@ -853,7 +881,8 @@ def _update_display(env: dict, progress) -> List[Task]:
     progress(tasks)
     return tasks
   tasks = []
-  tasks += print_progress(_create_service('amplipi-display', _display_service(env['base_dir'])))
+  tasks += print_progress(_create_service('amplipi-display',
+                          _display_service(env['base_dir'])))
   tasks += print_progress(_restart_service('amplipi-display'))
   tasks += print_progress(_enable_service('amplipi-display'))
   if env['is_amplipi']:
@@ -873,7 +902,8 @@ def _update_audiodetector(env: dict, progress) -> List[Task]:
   tasks = []
   tasks += print_progress([Task('Build audiodetector',
                           f'make -C {env["base_dir"]}/amplipi/audiodetector'.split()).run()])
-  tasks += print_progress(_create_service('amplipi-audiodetector', _audiodetector_service(env['base_dir'])))
+  tasks += print_progress(_create_service('amplipi-audiodetector',
+                          _audiodetector_service(env['base_dir'])))
   tasks += print_progress(_restart_service('amplipi-audiodetector'))
   tasks += print_progress(_enable_service('amplipi-audiodetector'))
   # start the user manager at boot, instead of after first login
@@ -899,7 +929,8 @@ def _check_password(env: dict, progress) -> List[Task]:
     task.output = 'Default password already generated'
   elif not os.path.exists('/run/sshwarn'):
     # no default pass file, but password is not 'raspberry' so already user-set
-    task.margs = [f'mkdir -p {pass_dir}'.split(), f'touch {pass_file}'.split()]
+    task.margs = [f'mkdir -p {pass_dir}'.split(),
+                  f'touch {pass_file}'.split()]
     task.run()
   else:
     # at this point the pi default password of 'raspberry' is still set
@@ -936,7 +967,8 @@ def _update_firmware(env: dict, progress) -> List[Task]:
         latest_file = f
     if latest_ver > 0:
       os.chdir(env['base_dir'])
-      task.margs = [f'bash scripts/program_firmware {latest_file}'.split()]
+      task.margs = [
+          f'bash scripts/program_firmware {latest_file}'.split()]
       task.run()
     else:
       task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
@@ -972,24 +1004,25 @@ def fix_file_props(env, progress) -> List[Task]:
 def add_tests(env, progress) -> List[Task]:
   """ Add test icons """
   tests = [
-    ('Ethernet', './hw/tests/ethernet.bash --wait'),
-    ('USB Ports', './hw/tests/usb.py'),
-    ('Inputs', './hw/tests/built_in.bash inputs'),
-    ('Program Main', './hw/tests/program_preamps.bash'),
-    ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
-    ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
-    ('Amplifier', './hw/tests/built_in.bash amp'),
-    ('LEDs', './hw/tests/built_in.bash led'),
-    ('Preamp', './hw/tests/built_in.bash preamp'),
-    ('Expander Preamp', './hw/tests/built_in.bash preamp --expansion'),
-    ('Preouts', './hw/tests/built_in.bash preout'),
-    ('Display', './hw/tests/display.bash --wait'),
-    ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
-    ('Fans and Power', './hw/tests/fans.bash'),
-    ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'),  # just for info, not a specific test
-    ('Streamer', './hw/tests/built_in.bash streamer'),
-    ('Config Streamer', './hw/tests/config_streamer.bash'),
-    ('Aux Input', './hw/tests/built_in.bash aux'),
+      ('Ethernet', './hw/tests/ethernet.bash --wait'),
+      ('USB Ports', './hw/tests/usb.py'),
+      ('Inputs', './hw/tests/built_in.bash inputs'),
+      ('Program Main', './hw/tests/program_preamps.bash'),
+      ('Program Main + Exp Preamp', './hw/tests/program_preamps.bash 2'),
+      ('Program Main + 2 Exp Preamps', './hw/tests/program_preamps.bash 3'),
+      ('Amplifier', './hw/tests/built_in.bash amp'),
+      ('LEDs', './hw/tests/built_in.bash led'),
+      ('Preamp', './hw/tests/built_in.bash preamp'),
+      ('Expander Preamp', './hw/tests/built_in.bash preamp --expansion'),
+      ('Preouts', './hw/tests/built_in.bash preout'),
+      ('Display', './hw/tests/display.bash --wait'),
+      ('Peak Detect', 'venv/bin/python ./hw/tests/peak_detect.py'),
+      ('Fans and Power', './hw/tests/fans.bash'),
+      # just for info, not a specific test
+      ('Preamp Status', 'venv/bin/python ./hw/tests/preamp.py -w'),
+      ('Streamer', './hw/tests/built_in.bash streamer'),
+      ('Config Streamer', './hw/tests/config_streamer.bash'),
+      ('Aux Input', './hw/tests/built_in.bash aux'),
   ]
   tasks = []
 
@@ -997,7 +1030,8 @@ def add_tests(env, progress) -> List[Task]:
   directory = pathlib.Path.home().joinpath('Desktop', 'tests')
   tasks += _create_dir(str(directory))
 
-  tasks += [Task('Remove old tests', [f'rm {str(directory)}/*'], shell=True).run()]
+  tasks += [Task('Remove old tests',
+                 [f'rm {str(directory)}/*'], shell=True).run()]
   for test in tests:
     tasks += [_add_desktop_icon(env, directory, test[0], test[1])]
   progress(tasks)
@@ -1014,7 +1048,8 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   def failed():
     for task in tasks:
       if not task.success:
-        print(str(task))  # __str__() on Task renders with an "Error"ed suffix
+        # __str__() on Task renders with an "Error"ed suffix
+        print(str(task))
         return True
     return False
 

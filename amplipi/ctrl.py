@@ -158,7 +158,7 @@ class Api:
       for board in found_boards:
         board_info = EEPROM(board).read_board_info()
         logger.info(f' - {board_info}')
-        if self._serial == None and board_info is not None:
+        if self._serial is None and board_info is not None:
           self._serial = board_info.serial
     except Exception as exc:
       logger.exception(f'Error showing board info: {exc}')
@@ -584,7 +584,7 @@ class Api:
     """ get the system state """
     self._update_sys_info()
     # Get serial number
-    if self._serial == None and self.status.info is not None:
+    if self._serial is None and self.status.info is not None:
       self._update_serial()
 
     # update source's info

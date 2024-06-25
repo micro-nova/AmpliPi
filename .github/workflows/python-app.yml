@@ -26,17 +26,29 @@ jobs:
         sudo apt-get install -y libgirepository1.0-dev libcairo2-dev libdbus-1-dev # required for dbus
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install pylint mypy pytest pytest-cov # Add any testing dependencies not in requirements.txt
+    # We go from quickest tests to most time consuming for quick turnaround/lower costs
+    - name: Lint with pycodestyle
+      run: |
+        pip install pycodestyle
+        # TODO: enable pycodestyle on streams/ one day. at the moment there are too many mixes 2 space
+        # & 4 space indented scripts
+        # E501: line too long
+        # E722: do not use bare except, specify exception instead
+        pycodestyle --ignore=E501,E722 --indent-size=2 amplipi/ #streams/
+        pycodestyle --ignore=E501,E722 scripts/ hw/ docs/
     - name: Lint with pylint
       run: |
+        pip install pylint
         pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
         pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
         pylint -E streams
     - name: Lint with mypy, static type checker
       run: |
+        pip install mypy
         mypy amplipi/ --ignore-missing-imports
     - name: Test mock using pytest # rpi cannot be tested directly due to hardware...
       run: |
+        pip install pytest pytest-cov
         pytest tests/test_ctrl.py -vvv -k no_config
         pytest tests/test_ctrl.py -vvv -k good_config
         pytest tests/test_ctrl.py -vvv -k corrupted_config
@@ -46,14 +58,6 @@ jobs:
         pytest tests/test_rest.py -vvv -k 'not _live' --cov=./ --cov-report=xml
         pytest tests/test_auth.py -vvv
         pytest tests/test_zeroconf.py -vvv
-    - name: autopep8
-      id: autopep8
-      uses: peter-evans/autopep8@v2
-      with:
-        args: --recursive --in-place .
-    - name: Fail if autopep8 made changes
-      if: steps.autopep8.outputs.exit-code == 2
-      run: exit 1
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

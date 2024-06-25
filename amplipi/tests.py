@@ -69,18 +69,18 @@ class Client:
 RCA_INPUTS = {sid: 996 + sid for sid in range(models.MAX_SOURCES)}
 
 BEATLES_RADIO = {
-    'id': 1001,
-    'name': 'Beatles Radio',
-    "type": "internetradio",
-    "url": "http://www.beatlesradio.com:8000/stream/1/",
-    "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"
+  'id': 1001,
+  'name': 'Beatles Radio',
+  "type": "internetradio",
+  "url": "http://www.beatlesradio.com:8000/stream/1/",
+  "logo": "http://www.beatlesradio.com/content/images/thumbs/0000587.gif"
 }
 
 AUX_PLAYBACK = {
-    'id': 1002,
-    'name': 'Aux Playback',
-    'type': "fileplayer",
-    'url': "alsa://plughw:cmedia8chint,0",
+  'id': 1002,
+  'name': 'Aux Playback',
+  'type': "fileplayer",
+  'url': "alsa://plughw:cmedia8chint,0",
 }
 
 
@@ -94,11 +94,11 @@ def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
   def pst_all_zones_to_src(name: str, src: int, _input: str, vol=-50):
     """ Create a preset that connects all zones to @src"""
     return {
-        'name': name,
-        'state': {
-            'sources': [{'id': src, 'input': _input}],
-            'zones': [{'id': zid, 'source_id': src, 'vol': vol, 'mute': False} for zid in all_zones(exp_unit)],
-        }
+      'name': name,
+      'state': {
+        'sources': [{'id': src, 'input': _input}],
+        'zones': [{'id': zid, 'source_id': src, 'vol': vol, 'mute': False} for zid in all_zones(exp_unit)],
+      }
     }
 
   status = client.get_status()
@@ -109,49 +109,49 @@ def setup(client: Client, exp_unit: bool) -> Optional[models.Status]:
   is_streamer = len(status.zones) == 0
   if is_streamer:
     presets = [
-        {
-            'name': 'aux-in',
-            'state': {
-                'sources': [{'id': 0, 'input': f'stream={AUX_PLAYBACK["id"]}'}],
-            }
+      {
+        'name': 'aux-in',
+        'state': {
+          'sources': [{'id': 0, 'input': f'stream={AUX_PLAYBACK["id"]}'}],
         }
+      }
     ]
   else:
     presets = [
-        {
-            'name': 'led-0 mute all',
-            'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
-        },
-        # mute all
-        {
-            'name': 'amp-0 mute all',
-            'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
-        },
-        # play music
-        {
-            'name': 'amp-1 play',
-            'state': {
-                'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-                'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
-            }
-        },
-        # play music
-        {
-            'name': 'preout-0 play',
-            'state': {
-                'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
-                'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
-            }
-        },
+      {
+        'name': 'led-0 mute all',
+        'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
+      },
+      # mute all
+      {
+        'name': 'amp-0 mute all',
+        'state': {'zones': [{'id': zid, 'mute': True} for zid in all_zones(exp_unit)]}
+      },
+      # play music
+      {
+        'name': 'amp-1 play',
+        'state': {
+          'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
+          'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
+        }
+      },
+      # play music
+      {
+        'name': 'preout-0 play',
+        'state': {
+          'sources': [{'id': 0, 'input': f'stream={BEATLES_RADIO["id"]}'}],
+          'zones': [{'id': zid, 'mute': False, 'vol': -40} for zid in all_zones(exp_unit)]
+        }
+      },
     ]
 
     # set volume on zoneX
     for zid in all_zones(exp_unit):
       presets += [
-          {
-              'name': f'led-{zid + 1} enable zone {zid + 1}',
-              'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
-          }
+        {
+          'name': f'led-{zid + 1} enable zone {zid + 1}',
+          'state': {'zones': [{'id': zid, 'mute': False, 'vol': -50}]}
+        }
       ]
     presets += [pst_all_zones_to_src(f'preamp-analog-in-{src+1}', src, f'stream={RCA_INPUTS[src]}', -40)
                 for src in range(4)]

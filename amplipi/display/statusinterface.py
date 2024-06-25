@@ -12,7 +12,7 @@ STATUS_FILENAME = 'display-status.txt'
 
 
 class DisplayStatus:
-   # Status as either a string (working normally) or int (error)
+  # Status as either a string (working normally) or int (error)
   status: Optional[Union[str, int]]
 
   # When this status is set to expire, default is 10 seconds
