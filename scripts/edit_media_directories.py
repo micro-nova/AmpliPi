@@ -50,7 +50,7 @@ def edit_directories(logger: logging.Logger):
         data[f"pref_ignoreInAudioScan{d}"] = 1
 
       logger.info("Adding drives to LMS settings...")
-      requests.post(url, data=data, verify=False, timeout=1000)
+      requests.post(url, data=data, verify=False, timeout=5)
       logger.info("Drives added, LMS scanning now.")
     else:
       if len(usb_drives) > 0:
