@@ -30,6 +30,7 @@ parser.add_argument('--log', type=str, help='log file (defaults to stdout)', def
 parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
 
+
 @dataclass
 class MediaInfo:
   """Dataclass to represent the metadata."""
@@ -42,6 +43,7 @@ class MediaInfo:
   def as_json(self):
     return json.dumps(asdict(self))
 
+
 def log(info):
   if args.log:
     try:
@@ -52,6 +54,7 @@ def log(info):
       print(info)
   else:
     print(info)
+
 
 # Run command on bluetooth device (next, pause, etc)
 if args.command is not None and args.device_info is not None:
@@ -98,6 +101,7 @@ if args.command is not None and args.device_info is not None:
 
   sys.exit(1)
 
+
 def get_playing_devices_path_and_mac() -> List[tuple]:
   """Returns a list of tuples of every bt device that is connected and currently playing media. Tuple is (addr,
   dbus_path)."""
@@ -112,6 +116,7 @@ def get_playing_devices_path_and_mac() -> List[tuple]:
         print(f"bluetooth.py: WARNING: {e}")
   return playing_devices
 
+
 def get_all_devices_path_and_mac() -> List[tuple]:
   """Returns a list of tuples of every bt device that is connected. Tuple is (addr, dbus_path)."""
   devices = []
@@ -122,6 +127,7 @@ def get_all_devices_path_and_mac() -> List[tuple]:
         devices.append(addr)
   return devices
 
+
 def mac_to_device_name(mac: str) -> Optional[str]:
   try:
     devices = subprocess.run('bluetoothctl devices'.split(), timeout=0.5, check=True, capture_output=True).stdout.decode()
@@ -131,6 +137,7 @@ def mac_to_device_name(mac: str) -> Optional[str]:
     if line.split()[1].lower() == mac.lower():
       return ' '.join(line.split()[2:])
   return None
+
 
 def update_selected_device(selected_device, selected_playing_device) -> tuple:
   """Determines which bluetooth device to select based on the previously playing and selected devices"""
@@ -157,6 +164,7 @@ def update_selected_device(selected_device, selected_playing_device) -> tuple:
   # there's no players, return None
   return None, None
 
+
 def alter_title(title, device_name) -> str:
   """Adds device name or pairing instructions to the title."""
   if device_name:
@@ -168,6 +176,7 @@ def alter_title(title, device_name) -> str:
       print('WARNING: Bluetooth media player has song title, but no device name!')
       return title + " - Unknown device"
     return "Unknown device"
+
 
 def main():
   p_info = MediaInfo()

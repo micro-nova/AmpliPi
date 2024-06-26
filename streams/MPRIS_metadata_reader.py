@@ -9,13 +9,14 @@ from typing import Any, Dict, Optional
 from dasbus.connection import SessionMessageBus
 from dasbus.client.proxy import disconnect_proxy, InterfaceProxy
 METADATA_MAPPINGS = [
-  ('artist', 'xesam:artist'),
-  ('title', 'xesam:title'),
-  ('art_url', 'mpris:artUrl'),
-  ('album', 'xesam:album')
+    ('artist', 'xesam:artist'),
+    ('title', 'xesam:title'),
+    ('art_url', 'mpris:artUrl'),
+    ('album', 'xesam:album')
 ]
 
 METADATA_REFRESH_RATE = 0.5
+
 
 class MPRISMetadataReader:
   """A class for getting metadata from an MPRIS MediaPlayer2 over dbus."""
@@ -34,14 +35,12 @@ class MPRISMetadataReader:
 
     self.ok = True
 
-
   def sigterm_handler(self, _1: None, _2: None):
     """Handle sigterm."""
     if self.debug:
       print(f"MPRIS metadata process for {self.service_suffix} exiting", flush=True)
     self.ok = False
     sys.exit(0)
-
 
   def run(self):
     """Run the mpris metadata process."""
@@ -53,9 +52,9 @@ class MPRISMetadataReader:
           if self.debug:
             print(f'connecting to {self.service_suffix}')
           mpris = SessionMessageBus().get_proxy(
-            service_name = f"org.mpris.MediaPlayer2.{self.service_suffix}",
-            object_path = "/org/mpris/MediaPlayer2",
-            interface_name = "org.mpris.MediaPlayer2.Player"
+              service_name=f"org.mpris.MediaPlayer2.{self.service_suffix}",
+              object_path="/org/mpris/MediaPlayer2",
+              interface_name="org.mpris.MediaPlayer2.Player"
           )
         except Exception as e:
           metadata['connected'] = False
@@ -118,7 +117,7 @@ class MPRISMetadataReader:
             break
 
       if self.ok:
-        time.sleep(1.0/METADATA_REFRESH_RATE)
+        time.sleep(1.0 / METADATA_REFRESH_RATE)
 
     if self.debug:
       print('metadata reader thread stopped', flush=True)
@@ -137,6 +136,6 @@ if len(sys.argv) < 3:
 
 service_suffix = sys.argv[1]
 metadata_path = sys.argv[2]
-debug = (sys.argv[3].lower()=='true') if len(sys.argv) > 3 else False
+debug = (sys.argv[3].lower() == 'true') if len(sys.argv) > 3 else False
 
 MPRISMetadataReader(service_suffix, metadata_path, debug).run()

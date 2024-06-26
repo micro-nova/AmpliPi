@@ -6,6 +6,8 @@ import signal
 
 args = sys.argv[1:]
 print(f'Starting process monitor for process: {args}')
+
+
 def signal_handler(sig, frame):
   """Signal handler function that sends the received signal to the
    subprocess and exits the script for certain signals."""
@@ -49,4 +51,4 @@ while True:
 
   # If the subprocess exits with a non-zero code, restart it
   print(
-    f"Subprocess exited with non-zero code: {proc.returncode}. Restarting...", flush=True)
+      f"Subprocess exited with non-zero code: {proc.returncode}. Restarting...", flush=True)

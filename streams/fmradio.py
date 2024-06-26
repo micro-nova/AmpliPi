@@ -22,6 +22,7 @@ parser.add_argument('--test', action='store_true', help='verify the frequency is
 parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
 
+
 def log(info):
   if args.log:
     try:
@@ -32,6 +33,7 @@ def log(info):
       print(info)
   else:
     print(info)
+
 
 freq = ""
 if args.freq:
@@ -44,8 +46,8 @@ if args.song_info:
   try:
     f = open(args.song_info, "wt")
 
-    #TODO:
-    #f.write(json.dumps({"station": str(player.get_state())}))
+    # TODO:
+    # f.write(json.dumps({"station": str(player.get_state())}))
     f.close()
   except Exception:
     log(sys.exc_info())
@@ -54,10 +56,10 @@ if args.song_info:
 
 def main():
   latest_info = {
-    'station':'',
-    'callsign':'',
-    'prog_type': '',
-    'radiotext': ''
+      'station': '',
+      'callsign': '',
+      'prog_type': '',
+      'radiotext': ''
   }
 
   update = False
@@ -111,7 +113,7 @@ def main():
               latest_info["radiotext"] = rds["radiotext"]
               update = True
             print(f'rt; "{rds["radiotext"]}"')
-          #elif "partial_radiotext" in rds:
+          # elif "partial_radiotext" in rds:
             # this data is bad a lot of times, probably worth updating on
           #  if rds["partial_radiotext"] != latest_info["radiotext"]:
           #    latest_info["radiotext"] = rds["partial_radiotext"]
@@ -122,10 +124,9 @@ def main():
             log("No RDS data")
 
       except json.JSONDecodeError:
-        #print ("JSONDecodeError. Line was: ")
-        #print(fmradio_proc.stderr.readline())
+        # print ("JSONDecodeError. Line was: ")
+        # print(fmradio_proc.stderr.readline())
         pass
-
 
       if args.test:
         log('success')
@@ -147,7 +148,7 @@ def main():
       update = False
 
   except KeyboardInterrupt:
-    print ("Shutdown requested...exiting")
+    print("Shutdown requested...exiting")
     os.system("killall -9 rtl_fm")
     traceback.print_exc(file=sys.stdout)
     sys.exit(0)
@@ -155,6 +156,7 @@ def main():
     os.system("killall -9 rtl_fm")
     traceback.print_exc(file=sys.stdout)
     sys.exit(0)
+
 
 if __name__ == "__main__":
   main()

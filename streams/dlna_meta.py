@@ -19,20 +19,22 @@ import logging
 import xml.etree.ElementTree as ET
 
 # the interval at which to update the metadata file
-METADATA_UPDATE_INTERVAL = 3 # seconds
+METADATA_UPDATE_INTERVAL = 3  # seconds
 
-MIN_STOP_TIME = 10 # seconds
+MIN_STOP_TIME = 10  # seconds
 
 # Reads metadata from the upnp AVTransport and writes it to a json file in a loop.
+
+
 def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice, debug: bool = False):
   """ Read metadata from the upnp AVTransport and write it to a file. """
   last_file = ''           # last cover art file downloaded
   stop_counter = 0         # counter to prevent empty metadata on transitions
-  metadata = {"state":"stopped",  # metadata dict to write to file
-              "title":"",
-              "artist":"",
-              "album":"",
-              "album_art":""}
+  metadata = {"state": "stopped",  # metadata dict to write to file
+              "title": "",
+              "artist": "",
+              "album": "",
+              "album_art": ""}
 
   with open(metadata_path, 'w') as f:
     while True:
@@ -45,21 +47,21 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
         # try to get the transport state and convert it to a valid string
         try:
           transport_state = service.GetTransportInfo(InstanceID=0)["CurrentTransportState"]
-          if(transport_state == "PLAYING"):
+          if (transport_state == "PLAYING"):
             metadata["state"] = "playing"
-          elif(transport_state == "PAUSED_PLAYBACK"):
+          elif (transport_state == "PAUSED_PLAYBACK"):
             metadata["state"] = "paused"
-          elif(transport_state == "STOPPED"):
+          elif (transport_state == "STOPPED"):
             stop_counter += METADATA_UPDATE_INTERVAL
-            if stop_counter >= MIN_STOP_TIME: # only set to stopped if it's been stopped for a few seconds
+            if stop_counter >= MIN_STOP_TIME:  # only set to stopped if it's been stopped for a few seconds
               metadata["state"] = "stopped"
           else:
-            metadata["state"] = "playing" # default to playing for states like TRANSITIONING
+            metadata["state"] = "playing"  # default to playing for states like TRANSITIONING
 
-          if transport_state == "TRANSITIONING": # metadata is empty while transitioning so just skip this state
+          if transport_state == "TRANSITIONING":  # metadata is empty while transitioning so just skip this state
             continue
 
-          if transport_state != "STOPPED": # reset the stop counter if the state is not stopped
+          if transport_state != "STOPPED":  # reset the stop counter if the state is not stopped
             stop_counter = 0
 
         except Exception as e:
@@ -89,8 +91,8 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
 
               # if the file exists, set the metadata to the file name
               if os.path.exists(f"{album_art_dir}/{fname}"):
-                if fname != last_file: # if it's a new file delete the old one
-                  if last_file: # handle the case where this is the first file downloaded
+                if fname != last_file:  # if it's a new file delete the old one
+                  if last_file:  # handle the case where this is the first file downloaded
                     os.remove(f"{album_art_dir}/{last_file}")
                   last_file = fname
 
@@ -120,7 +122,7 @@ def command_executor(fifo_path: str, service: SSDPDevice, debug: bool = False):
     logger.debug(f"Created fifo file at {fifo_path}")
   else:
     logger.debug(f"Found file at {fifo_path}")
-    if os.path.isfile(fifo_path): # pipes return false for isfile
+    if os.path.isfile(fifo_path):  # pipes return false for isfile
       logger.error(f"Error: file at {fifo_path} is not a fifo")
       sys.exit(1)
 
@@ -134,22 +136,22 @@ def command_executor(fifo_path: str, service: SSDPDevice, debug: bool = False):
         break
 
       logger.debug(f"Received command {cmd}")
-      if cmd=='play':
+      if cmd == 'play':
         try:
           service.Play(InstanceID=0, Speed=1)
         except Exception as e:
           logger.error(f"Error: could not play: {e}")
-      elif cmd=='pause':
+      elif cmd == 'pause':
         try:
           service.Pause(InstanceID=0)
         except Exception as e:
           logger.error(f"Error: could not pause: {e}")
-      elif cmd=='stop':
+      elif cmd == 'stop':
         try:
           service.Stop(InstanceID=0)
         except Exception as e:
           logger.error(f"Error: could not stop: {e}")
-      #TODO: implement next and prev, gmrender-resurrect does not support these commands directly
+      # TODO: implement next and prev, gmrender-resurrect does not support these commands directly
       # elif cmd=='next':
       #   try:
       #     service.Seek(InstanceID=0, Unit='ABS_COUNT', Target=service.GetPositionInfo(InstanceID=0)["AbsCount"])
@@ -187,7 +189,7 @@ logger.addHandler(sh)
 # first, search for upnp devices and pick the one that matches the name
 device = None
 while True:
-  time.sleep(0.25) # wait a bit before checking
+  time.sleep(0.25)  # wait a bit before checking
   devices = upnpy.UPnP().discover()
   for d in devices:
     logger.debug(f"Found upnp device with name {d.friendly_name}.")

@@ -20,6 +20,7 @@ from dataclasses import dataclass
 import requests
 from typing import Tuple
 
+
 @dataclass
 class MetadataHolder:
   """Contains metadata"""
@@ -37,14 +38,14 @@ class MetadataHolder:
   def save_file(self, folder):
     """Saves metadata to a file at the given folder"""
     data = {
-      'album': self.album,
-      'artist': self.artist,
-      'track': self.track,
-      'image_url': self.image_url
+        'album': self.album,
+        'artist': self.artist,
+        'track': self.track,
+        'image_url': self.image_url
     }
 
     with open(f"{folder}/lms_metadata_temp.json", 'wt', encoding='utf-8') as f:
-      json.dump(data, f, indent = 2)
+      json.dump(data, f, indent=2)
     os.replace(f"{folder}/lms_metadata_temp.json", f"{folder}/lms_metadata.json")
 
 
@@ -70,15 +71,14 @@ class LMSMetadataReader:
 
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     self.logger.setLevel(logging.DEBUG)
-    self.meta = MetadataHolder(artist = 'Loading...',
-                          album = 'Loading...',
-                          track = 'Loading...',
-                          image_url = 'static/imgs/lms.png',
-                          logger = self.logger,)
+    self.meta = MetadataHolder(artist='Loading...',
+                               album='Loading...',
+                               track='Loading...',
+                               image_url='static/imgs/lms.png',
+                               logger=self.logger,)
     if not server:
-      self.meta.album =  'If loading takes a long time,'
+      self.meta.album = 'If loading takes a long time,'
       self.meta.track = 'consider adding hostname to stream config'
-
 
   def flatten(self, lms_info: dict) -> dict:
     """ LMS returns data in a very verbose piecewise format to avoid name collisions,
@@ -94,7 +94,7 @@ class LMSMetadataReader:
   def verify_server(self, ip):
     """Verifies if a given IP has the player we're looking for"""
     try:
-      player_json = {"id": 1,	"method": "slim.request",	"params": [self.player_name, ["players", "-", 100, "playerid"]]}
+      player_json = {"id": 1, "method": "slim.request", "params": [self.player_name, ["players", "-", 100, "playerid"]]}
       player_info = requests.get(f'http://{ip}:{self.port}/jsonrpc.js', json=player_json, timeout=5)
       player_load = json.loads(player_info.text)
 
@@ -115,7 +115,6 @@ class LMSMetadataReader:
       time.sleep(0.1)
       return False
 
-
   def resolve_host(self) -> Tuple[bool, str]:
     """Checks if self.server is a hostname or an IP; if hostname try to resolve to IP"""
     try:
@@ -126,24 +125,24 @@ class LMSMetadataReader:
       resolved_server: str = str(self.server)
       ret: bool = False
 
-      if re.match(ip_regex, self.server): #Does the given string fit the format of an IP?
-        ret = True #If the hostname is already an IP, return True
+      if re.match(ip_regex, self.server):  # Does the given string fit the format of an IP?
+        ret = True  # If the hostname is already an IP, return True
       else:
         host = socket.gethostbyname(self.server)
         if re.match(ip_regex, host):
           self.logger.info(f"hostname: {self.server}")
           self.logger.info(f"ip: {host}")
           resolved_server = host
-          ret = True #If the resolved hostname is an IP, return True
+          ret = True  # If the resolved hostname is an IP, return True
         else:
-          ret = False #If the hostname is resolvable but somehow still not an IP, return False
+          ret = False  # If the hostname is resolvable but somehow still not an IP, return False
 
       return (ret, resolved_server)
 
     except Exception:
       self.logger.info("Could not resolve hostname, trying to find LMS server manually")
       self.logger.info("Set local network DNS settings or set 'server' in config to be an IP to avoid this issue in the future")
-      return (False, "") #If there is an error, or the hostname is unresolvable, return false
+      return (False, "")  # If there is an error, or the hostname is unresolvable, return false
 
   def connect(self):
     """Discovers LMS Player and then requests metadata repetitively"""
@@ -153,7 +152,7 @@ class LMSMetadataReader:
     # When not connected, search for player to connect to by the proper name
     while not connected:
       try:
-        resolution_function_success, resolved_host = self.resolve_host() # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
+        resolution_function_success, resolved_host = self.resolve_host()  # Attempt to resolve hostname, if unresolvable then find host with find_lms_server script
         if resolution_function_success:
           connected = self.verify_server(resolved_host)
 
@@ -204,19 +203,19 @@ class LMSMetadataReader:
 
     while connected:
       try:
-        track_json = {"id": 1, "method": "slim.request", "params": [ self.player_name, ["status", "-",100] ]}
+        track_json = {"id": 1, "method": "slim.request", "params": [self.player_name, ["status", "-", 100]]}
         track_info = requests.post(f'http://{self.server}:{self.port}/jsonrpc.js', json=track_json, timeout=1000)
         track_load = json.loads(track_info.text)
 
         track_id = track_load["result"]["playlist_loop"][0]["id"]
-        song_json = {"id":2,"method":"slim.request","params":[ self.player_name, ["songinfo","-",100,f"track_id:{track_id}"]]}
+        song_json = {"id": 2, "method": "slim.request", "params": [self.player_name, ["songinfo", "-", 100, f"track_id:{track_id}"]]}
         song_info = requests.post(f'http://{self.server}:{self.port}/jsonrpc.js', json=song_json, timeout=1000)
         song_load = json.loads(song_info.text)
 
         song_data = self.flatten(song_load['result']['songinfo_loop'])
         track_data = self.flatten(track_load['result']['playlist_loop'])
 
-        if song_data.get('artist'): # Some stream types (radio streams primarily) dont advertise the artist over LMS
+        if song_data.get('artist'):  # Some stream types (radio streams primarily) dont advertise the artist over LMS
           self.meta.artist = song_data.get('artist') or ""
           self.meta.album = song_data.get('album') or ""
           self.meta.track = song_data.get('title') or ""
@@ -240,13 +239,14 @@ class LMSMetadataReader:
         if self.debug:
           self.meta.log_meta()
           with open(f"{self.folder}/track_raw.json", "w", encoding="UTF-8") as f:
-            json.dump(track_load, f, indent = 2)
+            json.dump(track_load, f, indent=2)
           with open(f"{self.folder}/song_raw.json", "w", encoding="UTF-8") as f:
-            json.dump(song_load, f, indent = 2)
+            json.dump(song_load, f, indent=2)
       except Exception as e:
         self.logger.info(f"Error: {e}, trying again in {self.meta_ref_rate} seconds...")
 
       time.sleep(self.meta_ref_rate)
+
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="LMS Metadata Reader - a script for finding an LMS server and extracting the name of the song, album, and artist as well as getting the album picture of the currently playing song")
@@ -260,4 +260,3 @@ if __name__ == '__main__':
   # There's a few args here that aren't currently used by the system, but can be helpful for debugging in the field
   # some are also there so we can implement future features easier, or so the devs at home can do the same with a minimal lift
   LMSMetadataReader(args.name, args.vsrc, args.server, args.port, args.ref).connect()
-

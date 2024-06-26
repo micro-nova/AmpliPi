@@ -24,11 +24,10 @@ jobs:
     - name: Lint with pycodestyle
       run: |
         pip install pycodestyle
-        # TODO: enable pycodestyle on streams/ one day. at the moment there are too many mixes 2 space
-        # & 4 space indented scripts
+        # E126: ignore bug due to indent-size=2: https://github.com/hhatto/autopep8/issues/588
         # E501: line too long
         # E722: do not use bare except, specify exception instead
-        pycodestyle --ignore=E501,E722 --indent-size=2 amplipi/ scripts/ hw/ docs/ # streams/
+        pycodestyle --ignore=E126,E501,E722 --indent-size=2 amplipi/ scripts/ hw/ docs/ streams/
     - name: Install dependencies
       run: |
         sudo apt-get update

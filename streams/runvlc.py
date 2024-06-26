@@ -51,13 +51,14 @@ elif args.output:
   alsa_device = args.output
   config += " --alsa-audio-device {}".format(alsa_device)
 
-log_file : Optional[IO[Any]] = None
+log_file: Optional[IO[Any]] = None
 if args.log:
   try:
     os.remove(args.log)
   except Exception:
     pass
   log_file = open(args.log, 'a', encoding='utf-8')
+
 
 def log(info):
   if log_file:
@@ -70,6 +71,7 @@ def log(info):
   else:
     print(info)
 
+
 def update_info(info) -> bool:
   try:
     with open(args.song_info, "wt", encoding='utf-8') as info_file:
@@ -78,6 +80,7 @@ def update_info(info) -> bool:
   except Exception:
     log('Error: %s' % sys.exc_info()[1])
     return False
+
 
 log("Starting VLC instance.")
 instance = vlc.Instance(config.split())
@@ -97,18 +100,20 @@ except Exception:
 # Keep track of the current state so we only update on change
 cur_url = ''
 cur_info = {
-  'track':'',
-  'artist':'',
-  'station': '',
-  'state': 'stopped',
+    'track': '',
+    'artist': '',
+    'station': '',
+    'state': 'stopped',
 }
 if args.song_info:
   if not update_info(cur_info):
     sys.exit(1)
 
 restarts: List[float] = []
+
+
 def restart_vlc():
-  global player, media, instance# TODO: This is ugly
+  global player, media, instance  # TODO: This is ugly
   MAX_DELAY_S = 10
   log('Waiting to restart vlc')
   # prune old restarts from over an hour ago
@@ -137,9 +142,10 @@ def restart_vlc():
   if delay >= MAX_DELAY_S:
     raise Exception('Waited too long for VLC to start playing')
 
+
 # Wait for stream to start playing
-STREAM_OPENING_BACKOFF = 0.25 # 250ms
-MAX_STREAM_OPENING_TIME = 10 # seconds
+STREAM_OPENING_BACKOFF = 0.25  # 250ms
+MAX_STREAM_OPENING_TIME = 10  # seconds
 MAX_STREAM_OPENING_COUNTER = MAX_STREAM_OPENING_TIME / STREAM_OPENING_BACKOFF
 
 opening_counter = 0
@@ -174,10 +180,10 @@ while True:
 
     if state == 'State.Playing':
       latest_info = {
-        'track':'',
-        'artist':'',
-        'station': '',
-        'state': 'playing',
+          'track': '',
+          'artist': '',
+          'station': '',
+          'state': 'playing',
       }
 
       if args.verbose:
@@ -225,10 +231,10 @@ while True:
         log('fail')
         sys.exit(1)
       curr_info = {
-        'track':'',
-        'artist':'',
-        'station': '',
-        'state': 'stopped'
+          'track': '',
+          'artist': '',
+          'station': '',
+          'state': 'stopped'
       }
       if args.song_info:
         update_info(cur_info)
@@ -243,10 +249,10 @@ while True:
     else:
       try:
         curr_info = {
-          'track':'',
-          'artist':'',
-          'station': '',
-          'state': 'stopped'
+            'track': '',
+            'artist': '',
+            'station': '',
+            'state': 'stopped'
         }
         if args.song_info:
           update_info(cur_info)
@@ -255,4 +261,4 @@ while True:
         log(sys.exc_info())
         sys.exit(1)
 
-  time.sleep(1) # throttle metadata
+  time.sleep(1)  # throttle metadata
