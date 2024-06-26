@@ -15,15 +15,21 @@ export default function StatusBar(props) {
 
     async function handleSuccess() {
         if(response != null){
-            if(response.ok){
-                setSuccess(true);
-                text.current = successText;
-            } else {
-                const data = await response.json();
+            try {
+                const res = await response;
+                if (res.ok) {
+                    setSuccess(true);
+                    text.current = successText;
+                } else {
+                    const data = await res.json();
+                    setSuccess(false);
+                    text.current = data.detail.message;
+                }
+            } catch (error) {
                 setSuccess(false);
-                text.current = data.detail.message;
+                text.current = `An error occurred while FETCHing: ${error.message}`;
             }
-        setOpen(true);
+            setOpen(true);
         }
     };
 
