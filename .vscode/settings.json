@@ -29,9 +29,13 @@
     "editor.defaultFormatter": "ms-python.autopep8",
     "editor.rulers": [120]
   },
+
   "autopep8.args": [
     "--indent-size=2",
-    "--ignore=E121", // E121=hanging indent, no way to set to 2.
+    // E126: ignore bug due to indent-size=2: https://github.com/hhatto/autopep8/issues/588
+    // E501: line too long
+    // E722: do not use bare except, specify exception instead
+    "--ignore=E126,E501,E722",
     "--max-line-length=120"
   ],
   "pylint.args": ["--generated-members", "signal.Signals,GPIO.*"],
