@@ -806,7 +806,7 @@ def test_create_airplay(client, name, valid):
 @pytest.mark.parametrize('user, valid', pandora_users())
 def test_create_pandora(client, user, valid):
   """ Try creating a Pandora stream """
-  m_and_k = {'name': 'Matt and Kim Radio', 'type': 'pandora', 'user': user, 'password': ''}
+  m_and_k = {'name': 'Matt and Kim Radio', 'type': 'pandora', 'user': user, 'password': 'CHANGEME'}
   rv = client.post('/api/stream', json=m_and_k)
   # check that the stream has an id added to it and that all of the fields are still there
   if valid:
