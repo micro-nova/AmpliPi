@@ -35,7 +35,8 @@
     // E126: ignore bug due to indent-size=2: https://github.com/hhatto/autopep8/issues/588
     // E501: line too long
     // E722: do not use bare except, specify exception instead
-    "--ignore=E126,E501,E722",
+    // E121: continuation line under-indented for hanging indent, see E126
+    "--ignore=E126,E501,E722,E121",
     "--max-line-length=120"
   ],
   "pylint.args": ["--generated-members", "signal.Signals,GPIO.*"],

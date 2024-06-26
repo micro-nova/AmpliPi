@@ -27,7 +27,8 @@ jobs:
         # E126: ignore bug due to indent-size=2: https://github.com/hhatto/autopep8/issues/588
         # E501: line too long
         # E722: do not use bare except, specify exception instead
-        pycodestyle --ignore=E126,E501,E722 --indent-size=2 amplipi/ scripts/ hw/ docs/ streams/
+        # E121: continuation line under-indented for hanging indent, see E126
+        pycodestyle --ignore=E126,E501,E722,E121 --indent-size=2 amplipi/ scripts/ hw/ docs/ streams/
     - name: Install dependencies
       run: |
         sudo apt-get update

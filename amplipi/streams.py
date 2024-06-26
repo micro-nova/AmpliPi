@@ -715,6 +715,9 @@ class Spotify(PersistentStream):
     if 'name' in kwargs and not re.fullmatch(HOSTNAME_LIKE, kwargs['name']):
       raise InvalidStreamField("name", "invalid device name")
 
+# TODO: A significant amount of complexity could be removed if we switched some features here to using pydora instead of
+# interfacing with pianobar's TUI
+
 
 class Pandora(PersistentStream, Browsable):
   """ A Pandora Stream """
@@ -741,6 +744,8 @@ class Pandora(PersistentStream, Browsable):
       "PARTNER_PASSWORD": "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7",
       "DEVICE": "android-generic",
     }).build()
+
+    self.validate_stream(user=self.user, password=self.password)
 
     self.ctrl = ''  # control fifo location
     self.supported_cmds = {
@@ -974,6 +979,16 @@ class Pandora(PersistentStream, Browsable):
     USER_LIKE = r'^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,})$'
     if 'user' in kwargs and not re.fullmatch(USER_LIKE, kwargs['user']):
       raise InvalidStreamField("user", "invalid username")
+
+    if 'password' in kwargs and len(kwargs['password']) == 0:
+      raise InvalidStreamField("password", "password cannot be empty")
+
+    # don't run if testing so we don't cause problems with CI
+    if not self.mock:
+      try:
+        self.pyd_client.login(self.user, self.password)
+      except Exception as e:
+        raise InvalidStreamField("password", "invalid password or unable to connect to Pandora servers") from e
 
 
 class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid issue, figure out next and prev
