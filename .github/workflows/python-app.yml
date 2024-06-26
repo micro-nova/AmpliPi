@@ -20,12 +20,6 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: 3.7
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgirepository1.0-dev libcairo2-dev libdbus-1-dev # required for dbus
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     # We go from quickest tests to most time consuming for quick turnaround/lower costs
     - name: Lint with pycodestyle
       run: |
@@ -34,8 +28,13 @@ jobs:
         # & 4 space indented scripts
         # E501: line too long
         # E722: do not use bare except, specify exception instead
-        pycodestyle --ignore=E501,E722 --indent-size=2 amplipi/ #streams/
-        pycodestyle --ignore=E501,E722 scripts/ hw/ docs/
+        pycodestyle --ignore=E501,E722 --indent-size=2 amplipi/ scripts/ hw/ docs/ # streams/
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgirepository1.0-dev libcairo2-dev libdbus-1-dev # required for dbus
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with pylint
       run: |
         pip install pylint
