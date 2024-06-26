@@ -9,4 +9,4 @@ ExecStart=/usr/local/bin/udisks2-listener.sh
 Restart=always
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=logitechmediaserver.service
