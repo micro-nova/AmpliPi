@@ -243,7 +243,7 @@ class LMSMetadataReader:
           with open(f"{self.folder}/song_raw.json", "w", encoding="UTF-8") as f:
             json.dump(song_load, f, indent=2)
       except Exception as e:
-        if "playlist_loop" not in str(e): # The line that sets track_data throws a KeyError where e = 'playlist_loop' if nothing is playing yet, suppress that specific error
+        if "playlist_loop" not in str(e):  # The line that sets track_data throws a KeyError where e = 'playlist_loop' if nothing is playing yet, suppress that specific error
           self.logger.info(f"Error: {e}, LMS Metadata Reader trying again in {self.meta_ref_rate} seconds...")
 
       time.sleep(self.meta_ref_rate)

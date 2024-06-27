@@ -6,6 +6,7 @@ import logging
 import sys
 import subprocess
 
+
 def check_lms_mode():
     try:
         status_output = subprocess.check_output('systemctl is-active logitechmediaserver', shell=True).decode().strip()
@@ -29,10 +30,10 @@ def get_usb_drives(logger: logging.Logger):
 def edit_directories(logger: logging.Logger):
   """Update LMS server with list of drives"""
   try:
-    usb_drives = get_usb_drives(logger) # Get list of available drives
+    usb_drives = get_usb_drives(logger)  # Get list of available drives
     is_lms_mode = check_lms_mode()
     if is_lms_mode:
-      usb_drives.append("") # Add blank drive to reflect empty string that is always at the end of the mediadirs section of request body
+      usb_drives.append("")  # Add blank drive to reflect empty string that is always at the end of the mediadirs section of request body
       url = 'http://localhost:9000/settings/server/basic.html'
       data = {
         'saveSettings': '1',
@@ -42,7 +43,7 @@ def edit_directories(logger: logging.Logger):
         'pref_libraryname': '',
         'pref_playlistdir': '',
         'pref_rescantype': '1rescan'
-      } # All default headers, mediadirs added in loop
+      }  # All default headers, mediadirs added in loop
       for d, drive in enumerate(usb_drives):
         data[f"pref_mediadirs{d}"] = drive
         data[f"pref_ignoreInAudioScan{d}"] = 1
@@ -59,8 +60,6 @@ def edit_directories(logger: logging.Logger):
         logger.info("If you wish to mount these to the internal LMS server, please go to Config and set LMS Mode")
   except Exception as e:
     logger.error(f"LMS Automated Drive Mounting has encountered an error: {e}")
-
-
 
 
 if __name__ == "__main__":
