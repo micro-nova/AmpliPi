@@ -8,8 +8,9 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Button } from "@mui/material";
 import Speaker from "@mui/icons-material/Speaker";
-import List from "@/components/List/List";
-import ListItem from "@/components/List/ListItem/ListItem";
+import List from "@mui/material/List/List";
+import ListItem from "@mui/material/ListItem";
+import Divider from "@mui/material/Divider";
 
 const ZoneListItem = ({ zone }) => {
     const [open, setOpen] = React.useState(false);
@@ -127,7 +128,12 @@ const Zones = ({ onClose }) => {
     const zones = useStatusStore((state) => state.status.zones);
 
     const listItems = zones.map((zone) => {
-        return <ZoneListItem zone={zone} key={zone.id} />;
+        return(
+            <>
+                <ZoneListItem zone={zone} key={zone.id} />
+                <Divider component="li" />
+            </>
+        );
     });
 
     return (
