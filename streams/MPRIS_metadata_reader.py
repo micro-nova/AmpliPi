@@ -1,4 +1,4 @@
-"""MPRIS metadata reader, Polls the MPRIS interface specified and outputs the
+"""MPRIS metadata reader, waits for an update on MPRIS interface specified and outputs the
    content to a JSON file."""
 
 import json
@@ -8,134 +8,145 @@ import time
 from typing import Any, Dict, Optional
 from dasbus.connection import SessionMessageBus
 from dasbus.client.proxy import disconnect_proxy, InterfaceProxy
+from dasbus.loop import EventLoop
+import logging
+import argparse
+
 METADATA_MAPPINGS = [
-    ('artist', 'xesam:artist'),
-    ('title', 'xesam:title'),
-    ('art_url', 'mpris:artUrl'),
-    ('album', 'xesam:album')
+  ('artist', 'xesam:artist'),
+  ('title', 'xesam:title'),
+  ('art_url', 'mpris:artUrl'),
+  ('album', 'xesam:album')
 ]
 
-METADATA_REFRESH_RATE = 0.5
+METADATA_RESET_DELAY = 3.0
 
 
 class MPRISMetadataReader:
   """A class for getting metadata from an MPRIS MediaPlayer2 over dbus."""
 
-  def __init__(self, service_suffix, metadata_path, debug):
+  def __init__(self, service_suffix, metadata_path, logger):
     signal.signal(signal.SIGTERM, self.sigterm_handler)
 
-    self.debug = debug
+    self.logger = logger
 
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
 
     self.mpris: Optional[InterfaceProxy] = None
+    self.properties_changed: Optional[InterfaceProxy] = None
 
-    self.last_sent = None
+    self.last_sent: Dict[str, Any] = {'state_changed_time': 0, 'state': ''}
+    self.last_raw = {}
 
     self.ok = True
 
   def sigterm_handler(self, _1: None, _2: None):
     """Handle sigterm."""
-    if self.debug:
-      print(f"MPRIS metadata process for {self.service_suffix} exiting", flush=True)
+    logger.debug(f"MPRIS metadata process for {self.service_suffix} exiting")
     self.ok = False
     sys.exit(0)
 
   def run(self):
     """Run the mpris metadata process."""
+
     while self.ok:
-
       metadata: Dict[str, Any] = {}
-      if not self.mpris:
-        try:
-          if self.debug:
-            print(f'connecting to {self.service_suffix}')
-          mpris = SessionMessageBus().get_proxy(
-              service_name=f"org.mpris.MediaPlayer2.{self.service_suffix}",
-              object_path="/org/mpris/MediaPlayer2",
-              interface_name="org.mpris.MediaPlayer2.Player"
-          )
-        except Exception as e:
-          metadata['connected'] = False
-          print(f"failed to connect mpris {e}", flush=True)
-          if not self.ok:
-            break
+      try:
+        logger.debug(f'connecting to {self.service_suffix}')
 
-      if self.debug:
-        print(f"getting mrpis metadata from {self.service_suffix}")
-      if mpris:
-        try:
-          raw_metadata = {}
+        mpris = SessionMessageBus().get_proxy(
+          service_name=f"org.mpris.MediaPlayer2.{self.service_suffix}",
+          object_path="/org/mpris/MediaPlayer2",
+          interface_name="org.mpris.MediaPlayer2.Player"
+        )
+
+        properties_changed = SessionMessageBus().get_proxy(
+          service_name=f"org.mpris.MediaPlayer2.{self.service_suffix}",
+          object_path="/org/mpris/MediaPlayer2",
+          interface_name="org.freedesktop.DBus.Properties"
+        )
+
+        def read_metadata(_a, _b, _c):
+          logger.debug('reading metadata')
+
+          # grab the raw metadata
           try:
             raw_metadata = mpris.Metadata
           except Exception as e:
             metadata['connected'] = False
-            print(f"Dbus error getting MPRIS metadata: {e}")
-            if not self.ok:
-              break
+            logger.error(f"Dbus error getting MPRIS metadata: {e}")
 
+          # iterate over the metadata mappings and try to add them to the metadata dict
           for mapping in METADATA_MAPPINGS:
             try:
               metadata[mapping[0]] = str(raw_metadata[mapping[1]]).strip("[]'")
             except KeyError as e:
-              if self.debug:
-                print(f"Metadata mapping error: {e}")
-            if not self.ok:
-              break
+              # not error since some metadata might not be available on all streams
+              logger.debug(f"Metadata mapping error: {e}")
 
-          if self.ok:
-            metadata['state'] = mpris.PlaybackStatus.strip("'")
-            metadata['volume'] = mpris.Volume
+          # Strip playback status of single quotes, for some reason these only appear on stopped
+          state = mpris.PlaybackStatus.strip("'")
 
-            # initialize last sent if it hasn't been yet
-            if self.last_sent is None:
-              self.last_sent = metadata
+          metadata['state'] = state
 
-            if metadata['state'] != self.last_sent['state']:
-              metadata['state_changed_time'] = time.time()
-            else:
-              metadata['state_changed_time'] = self.last_sent['state_changed_time']
+          if state != self.last_sent['state']:
+            metadata['state_changed_time'] = time.time()
+          else:
+            metadata['state_changed_time'] = self.last_sent['state_changed_time']
 
-            metadata['connected'] = True
+          metadata['connected'] = True
 
-          if metadata != self.last_sent:
-            self.last_sent = metadata
-            with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
-              json.dump(metadata, metadata_file)
+          self.last_sent = metadata
 
-        except Exception as e:
-          if self.debug:
-            print(f"Error writing MPRIS metadata to file at {self.metadata_path}: {e}")
-          try:
-            disconnect_proxy(mpris)
-          except Exception as e_proxy:
-            print(f'Error disconnecting MPRIS proxy: {e_proxy}', flush=True)
-          finally:
-            mpris = None
-          if not self.ok:
-            break
+          with open(self.metadata_path, 'w', encoding='utf-8') as metadata_file:
+            json.dump(metadata, metadata_file)
 
+        properties_changed.PropertiesChanged.connect(read_metadata)
+
+        # setup and run event loop
+        loop = EventLoop()
+        loop.run()
+
+      except Exception as e:
+        logger.debug(f"Error getting or writing MPRIS metadata to file at {self.metadata_path}: {e}")
+        try:
+          disconnect_proxy(mpris)
+          disconnect_proxy(properties_changed)
+        except Exception as e_proxy:
+          logger.error(f'Error disconnecting MPRIS/properties proxies: {e_proxy}')
+          # if we can't disconnect the proxy, we should probably just stop
+          self.ok = False
+        finally:
+          mpris = None
+
+      # if we get here, something has broken, if we're still ok then try to restart
       if self.ok:
-        time.sleep(1.0 / METADATA_REFRESH_RATE)
+        logger.error('MPRIS metadata reader crashed, restarting')
+        # wait a bit before restarting
+        time.sleep(1.0 / METADATA_RESET_DELAY)
+      else:
+        break
 
-    if self.debug:
-      print('metadata reader thread stopped', flush=True)
+    logger.debug('metadata reader thread stopped')
     if mpris:
       try:
-        if self.debug:
-          print('disconnecting from MPRIS proxy', flush=True)
+        logger.debug('disconnecting from MPRIS proxy')
         disconnect_proxy(mpris)
+        disconnect_proxy(properties_changed)
       except Exception as e:
-        print(e, flush=True)
+        logger.error(e)
 
 
-if len(sys.argv) < 3:
-  print("Usage: MPRIS_metadata_reader.py <service_suffix> <metadata_path> [debug]")
-  sys.exit(1)
+logger = logging.getLogger(__name__)
 
-service_suffix = sys.argv[1]
-metadata_path = sys.argv[2]
-debug = (sys.argv[3].lower() == 'true') if len(sys.argv) > 3 else False
+parser = argparse.ArgumentParser(description='Script to read MPRIS metadata and write it to a file.')
+parser.add_argument('service_suffix', metavar='service_suffix', type=str, help='end of the MPRIS service name, e.g. "vlc" for org.mpris.MediaPlayer2.vlc')
+parser.add_argument('metadata_path', metavar='metadata_path', type=str, help='path to the metadata file')
+parser.add_argument('-d', '--debug', action='store_true', help='print debug messages')
+args = parser.parse_args()
 
-MPRISMetadataReader(service_suffix, metadata_path, debug).run()
+if args.debug:
+  logger.setLevel(logging.DEBUG)
+
+MPRISMetadataReader(args.service_suffix, args.metadata_path, logger).run()
