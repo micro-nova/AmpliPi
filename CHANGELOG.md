@@ -16,6 +16,7 @@
   * Remove stop command (only accessable through API) from Pandora
   * Disconnect zones from sources when they are disabled
   * Updated Pianobar to fork of 2022.04.01
+  * Reset buggy LMS clients on a regular basis
 
 ## 0.3.6
 * Web App
