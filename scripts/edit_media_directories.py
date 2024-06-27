@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # A program for automatically adding and removing removable drives to the LMS media drives list
 import psutil
-import requests
 import logging
 import sys
 import subprocess
+
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 def check_lms_mode():
@@ -27,7 +30,7 @@ def get_usb_drives(logger: logging.Logger):
   return usb_drives
 
 
-def edit_directories(logger: logging.Logger):
+def edit_directories(logger: logging.Logger, sesh: requests.Session):
   """Update LMS server with list of drives"""
   try:
     usb_drives = get_usb_drives(logger)  # Get list of available drives
@@ -49,7 +52,7 @@ def edit_directories(logger: logging.Logger):
         data[f"pref_ignoreInAudioScan{d}"] = 1
 
       logger.info("Adding drives to LMS settings...")
-      requests.post(url, data=data, verify=False, timeout=5)
+      sesh.post(url, data=data, verify=False, timeout=5)
       logger.info("Drives added, LMS scanning now.")
     else:
       if len(usb_drives) > 0:
@@ -68,4 +71,9 @@ if __name__ == "__main__":
   sh = logging.StreamHandler(sys.stdout)
   logger.addHandler(sh)
 
-  edit_directories(logger)
+
+  session = requests.Session()
+  retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+  session.mount('http://', HTTPAdapter(max_retries=retries))
+
+  edit_directories(logger, session)
