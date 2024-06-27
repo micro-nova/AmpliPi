@@ -71,7 +71,6 @@ if __name__ == "__main__":
   sh = logging.StreamHandler(sys.stdout)
   logger.addHandler(sh)
 
-
   session = requests.Session()
   retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
   session.mount('http://', HTTPAdapter(max_retries=retries))
