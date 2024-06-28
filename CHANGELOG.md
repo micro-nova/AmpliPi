@@ -5,6 +5,9 @@
   * Migrate more inputs to MUI
   * Fix internet radio searching during stream creation
   * Download appliance config when toggling LMS mode off
+  * Add hoverover effects on unselected player cards
+  * Handle missing source selection
+  * Autoselect newly created sources
 * System
   * Reduce noisy logging from lms_metadata.py
   * Fix install of FM radio software `redsea`

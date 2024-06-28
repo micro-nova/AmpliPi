@@ -7,6 +7,7 @@ import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import PresetsModal from "@/components/PresetsModal/PresetsModal";
 import StreamerOutputModal from "@/components/StreamerOutputModal/StreamerOutputModal";
 import { executeApplyAction } from "@/components/StreamsModal/StreamsModal";
+import selectActiveSource from "@/utils/selectActiveSource";
 
 import PropTypes from "prop-types";
 
@@ -104,6 +105,8 @@ const Home = () => {
         // open first modal
         setStreamsModalOpen(true);
     };
+
+    selectActiveSource();
 
     return (
         <div className="home-outer">

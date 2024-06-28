@@ -22,6 +22,10 @@ export const usePersistentStore = create(
             setSelectedSource: (selected) => {
                 set({ selectedSource: selected });
             },
+            autoselectSource: true, // Only used to toggle the autoselection script in utils/selectActiveSource.jsx
+            setAutoselectSource: (value) => {
+                set({ autoselectSource: value });
+            }
         }),
         {
             name: "persistent-store",
