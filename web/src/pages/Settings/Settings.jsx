@@ -19,30 +19,14 @@ import UpdateIcon from "@mui/icons-material/Update";
 import HandymanIcon from "@mui/icons-material/Handyman";
 import InfoIcon from "@mui/icons-material/Info";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import ListItem from "@/components/List/ListItem/ListItem";
-import List from "@/components/List/List";
+import List from "@mui/material/List/List";
+import ListItem from "@mui/material/ListItem";
+import Divider from "@mui/material/Divider";
 import { IsMobileApp, IsSaved, SaveURL, UnsaveURL } from "@/utils/MobileApp";
 import Badge from "@mui/material/Badge";
 
 import PropTypes from "prop-types";
 import Checkbox from "@mui/material/Checkbox";
-
-// TODO klayton: delete?
-// const PageListItem = ({ name, onClick, children }) => {
-//     return (
-//         <div className="settings-list-item" onClick={onClick}>
-//             <div className="settings-list-item-inner">
-//                 {children} {name}
-//             </div>
-//             <Divider />
-//         </div>
-//     );
-// };
-// PageListItem.propTypes = {
-//     name: PropTypes.string.isRequired,
-//     onClick: PropTypes.func.isRequired,
-//     children: PropTypes.any,
-// };
 
 const close = () => router.navigate("/settings");
 
@@ -85,6 +69,22 @@ Page.propTypes = {
     openPage: PropTypes.string.isRequired,
 };
 
+function SettingsListItem(props){
+    const {
+        onClick,
+        children,
+    } = props;
+
+    return(
+        <>
+            <ListItem className="list-item" onClick={onClick}>
+                {children}
+            </ListItem>
+            <Divider component="li" />
+        </>
+    )
+}
+
 const Settings = ({ openPage }) => {
     const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
     const [isSavedUrl, setIsSavedUrl] = React.useState(IsSaved());
@@ -96,104 +96,87 @@ const Settings = ({ openPage }) => {
     return (
         <div className="settings-outer">
             <div className="settings-header">Settings</div>
-            <div className="settings-body">
-                <List>
-                    <ListItem
-                        name="Streams"
-                        onClick={() => router.navigate("/settings/streams")}
-                    >
-                        <div className="streams-icon">
-                            <VolumeUpIcon fontSize="inherit" />
-                        </div>
-                    </ListItem>
+            <List style={{width: "400px", maxWidth: "100%"}}>
+                <SettingsListItem onClick={() => router.navigate("/settings/streams")} >
+                    <div className="streams-icon">
+                        <VolumeUpIcon fontSize="inherit" />
+                    </div>
+                    Streams
+                </SettingsListItem>
 
-                    {!is_streamer && (
-                        <>
-                            <ListItem
-                                name="Zones"
-                                onClick={() => router.navigate("/settings/zones")}
-                            >
-                                <div className="zones-icon">
-                                    <SpeakerIcon fontSize="inherit" />
-                                </div>
-                            </ListItem>
+                {!is_streamer && (
+                    <>
+                        <SettingsListItem onClick={() => router.navigate("/settings/zones")} >
+                            <div className="zones-icon">
+                                <SpeakerIcon fontSize="inherit" />
+                            </div>
+                            Zones
+                        </SettingsListItem>
 
-                            <ListItem
-                                name="Groups"
-                                onClick={() => router.navigate("/settings/groups")}
-                            >
-                                <div className="groups-icon">
-                                    <SpeakerGroupIcon fontSize="inherit" />
-                                </div>
-                            </ListItem>
-                        </>
-                    )}
+                        <SettingsListItem onClick={() => router.navigate("/settings/groups")} >
+                            <div className="groups-icon">
+                                <SpeakerGroupIcon fontSize="inherit" />
+                            </div>
+                            Groups
+                        </SettingsListItem>
+                    </>
+                )}
 
-                    {/* <ListItem
-            name="Sessions"
-            onClick={() => router.navigate("/settings/sessions")}
-          >
-            <div className="sessions-icon"><CableIcon fontSize="inherit"/></div>
-          </ListItem> */}
+                {/* <SettingsListItem onClick={() => router.navigate("/settings/sessions")} >
+                  <div className="sessions-icon"><CableIcon fontSize="inherit"/></div>
+                  Sessions
+                </SettingsListItem> */}
 
-                    <ListItem
-                        name="Presets"
-                        onClick={() => router.navigate("/settings/presets")}
-                    >
-                        <div className="presets-icon">
-                            <PlaylistAddIcon fontSize="inherit" />
-                        </div>
-                    </ListItem>
+                <SettingsListItem onClick={() => router.navigate("/settings/presets")} >
+                    <div className="presets-icon">
+                        <PlaylistAddIcon fontSize="inherit" />
+                    </div>
+                    Presets
+                </SettingsListItem>
 
-                    <ListItem
-                        name="Configuration"
-                        onClick={() => router.navigate("/settings/config")}
-                    >
-                        <div className="config-icon">
-                            <HandymanIcon fontSize="inherit" />
-                        </div>
-                    </ListItem>
+                <SettingsListItem onClick={() => router.navigate("/settings/config")} >
+                    <div className="config-icon">
+                        <HandymanIcon fontSize="inherit" />
+                    </div>
+                    Configuration
+                </SettingsListItem>
 
-                    <ListItem
-                        name="Updates"
-                        onClick={() => {
-                            window.location.href =
-                                "http://" + window.location.hostname + ":5001/update";
-                        }}
-                    >
-                        <div className="update-icon">
+                <SettingsListItem onClick={() => {
+                        window.location.href =
+                            "http://" + window.location.hostname + ":5001/update";
+                    }}
+                >
+                    <div className="update-icon">
                             <Badge badgeContent={updateAvailable() ? " " : null} color="primary">
                                 <UpdateIcon fontSize="inherit" />
                             </Badge>
                         </div>
-                    </ListItem>
+                    Updates
+                </SettingsListItem>
 
-                    <ListItem
-                        name="About"
-                        onClick={() => router.navigate("/settings/about")}
-                    >
-                        <div className="about-icon">
-                            <InfoIcon fontSize="inherit" />
-                        </div>
-                    </ListItem>
-                    {IsMobileApp() && (
-                        <div>
-                            <text>Always connect to this Amplipi</text>
-                            <Checkbox
-                                checked={isSavedUrl}
-                                onChange={(e) => {
-                                    if (e.target.checked) {
-                                        SaveURL();
-                                    } else {
-                                        UnsaveURL();
-                                    }
-                                    setIsSavedUrl(e.target.checked);
-                                }}
-                            />
-                        </div>
-                    )}
-                </List>
-            </div>
+                <SettingsListItem onClick={() => router.navigate("/settings/about")}>
+                    <div className="about-icon">
+                        <InfoIcon fontSize="inherit" />
+                    </div>
+                    About
+                </SettingsListItem>
+                {IsMobileApp() && (
+                    <div>
+                        <text>Always connect to this Amplipi</text>
+                        <Checkbox
+                            checked={isSavedUrl}
+                            onChange={(e) => {
+                                if (e.target.checked) {
+                                    SaveURL();
+                                } else {
+                                    UnsaveURL();
+                                }
+                                setIsSavedUrl(e.target.checked);
+                            }}
+                        />
+                    </div>
+                )}
+            </List>
         </div>
     );
 };

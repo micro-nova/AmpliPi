@@ -12,6 +12,8 @@
   * Only show not-playing streams in the new stream modal
   * Ensure that Pandora credentials are valid when adding a Pandora stream
   * Increase responsiveness of Config page
+  * Update styling on Settings pages, ensure they fit all mobile screens properly
+  * Change "<- Back to App" button on the updater page to redirect to the settings page rather than the homepage
 * Streams
   * Remove stop command (only accessable through API) from Pandora
   * Disconnect zones from sources when they are disabled
