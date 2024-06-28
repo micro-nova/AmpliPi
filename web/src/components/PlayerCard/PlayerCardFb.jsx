@@ -47,7 +47,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
     };
 
     return (
-        <Card backgroundImage={img_url} selected={selected} onClick={select}>
+        <Card backgroundImage={img_url} selected={selected} onClick={select} selectable>
             <div className="container">
                 <div className="top">
                     <StreamBadge sourceId={sourceId} onClick={openStreams} />

@@ -36,8 +36,7 @@ const MenuBar = ({ pageNumber }) => {
     const selectedSourceId = usePersistentStore((s) => s.selectedSource);
     const selectedSource = useStatusStore(s => s.status.sources[selectedSourceId]);
     const sourceInputType = getSourceInputType(selectedSource);
-    const sourceIsInactive =
-    sourceInputType === "none" || sourceInputType == "unknown";
+    const sourceIsInactive = sourceInputType === "none" || sourceInputType == "unknown";
     const isSourceBrowsable = useStatusStore((s) => sourceIsInactive?false:s.status.streams.filter(i=>i.id==selectedSource.input.split("=")[1])[0].browsable);
 
     return (

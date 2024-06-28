@@ -1,7 +1,7 @@
 import React from "react";
 import "./StreamsModal.scss";
 import ModalCard from "@/components/ModalCard/ModalCard";
-import { useStatusStore } from "@/App";
+import { useStatusStore, usePersistentStore } from "@/App";
 import { getIcon } from "@/utils/getIcon";
 import { setRcaSourceId } from "../ZonesModal/ZonesModal";
 import { moveSourceContents, setSourceStream } from "@/utils/APIHelper";
@@ -14,12 +14,23 @@ import PropTypes from "prop-types";
 const LIST_ITEM_FONT_SIZE = "1.5rem";
 
 let applyAction = null;
+let setSelectedSource = null; // Must be provided from the context of StreamsModal due to how hooks work
+let setAutoselectSource = null; // Must be provided from the context of StreamsModal due to how hooks work
 
-export const executeApplyAction = (customSourceId) => {
-    if (applyAction !== null) {
+export const executeApplyAction = async (customSourceId) => {
+    if (applyAction !== null && setSelectedSource !== null && setAutoselectSource !== null) {
         const temp = applyAction;
         applyAction = null;
-        return temp(customSourceId);
+
+        // temp returns undefined if called when sources are loading, a loop is used to ensure we only accept loaded variables
+        let ret = undefined;
+        while(ret == undefined){
+            ret = await temp(customSourceId);
+        };
+        let sliced = parseInt(String(ret.url).slice(-1));
+        setSelectedSource(sliced);
+        setAutoselectSource(false);
+        return ret;
     }
 };
 
@@ -33,6 +44,8 @@ const StreamsModal = ({
     const status = useStatusStore((state) => state.status);
     const playingStreams = status.sources.filter( (s) => s.input !== 'None').map( (s) => parseInt(s.input.replace('stream=', '')));
     const availableStreams = streams.filter( (s) => !playingStreams.includes(s.id))
+    setSelectedSource = usePersistentStore((s) => s.setSelectedSource);
+    setAutoselectSource = usePersistentStore((s) => s.setAutoselectSource);
 
     const setStream = (stream) => {
         const streamId = stream.id;
@@ -59,7 +72,7 @@ const StreamsModal = ({
                         });
                         setRcaStatus(statusModified);
                         console.log(`move source. streamId: ${streamId}`);
-                        setSourceStream(currentSourceId, streamId);
+                        return setSourceStream(currentSourceId, streamId);
                     }
                 );
             } else if (typeof customSourceId == "number") { // 0 is falsy, but a valid index

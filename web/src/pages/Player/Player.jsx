@@ -15,6 +15,7 @@ import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import { getSourceInputType } from "@/utils/getSourceInputType";
 import Chip from "@/components/Chip/Chip";
 import Grid from "@mui/material/Grid/Grid"
+import selectActiveSource from "@/utils/selectActiveSource";
 
 import { getSourceZones } from "@/pages/Home/Home";
 
@@ -59,6 +60,8 @@ const Player = () => {
     );
     // This is a bootleg XOR statement, only works if there is exactly one zone or exactly one group, no more than that and not both
     const alone = ((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length > 0) && (zonesLeft.length > 0));
+
+    selectActiveSource();
 
     return (
         <div className="player-outer">
