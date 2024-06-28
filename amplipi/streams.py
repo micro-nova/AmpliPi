@@ -730,7 +730,6 @@ class Pandora(PersistentStream, Browsable):
     self.station = station
     self.track = ""
     self.invert_liked_state = False
-    self.validate_stream(user=self.user, password=self.password)
     self.pianobar_path = f'{utils.get_folder("streams")}/pianobar'
 
     self.stations: List[models.BrowsableItem] = []
