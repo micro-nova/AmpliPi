@@ -66,7 +66,7 @@ const StreamListItem = ({ stream }) => {
                     />
                 )}
             </ListItem>
-                <Divider component="li" />
+            <Divider component="li" />
         </>
     );
 };
