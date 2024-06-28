@@ -93,7 +93,7 @@ const Groups = ({ onClose }) => {
                         setModalOpen(true);
                     }}
                 >
-                    <AddIcon></AddIcon>
+                    <AddIcon />
                 </Fab>
             </div>
             {modalOpen && (

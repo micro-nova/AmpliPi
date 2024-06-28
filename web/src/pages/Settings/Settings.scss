@@ -53,6 +53,12 @@
   font-size: 2.5rem;
 }
 
+.list-item {
+  @include general.header-font;
+  font-size: 2rem;
+  align-items: left;
+}
+
 .streams-icon {
   @include settings-icon(general.$stream-color);
 }
