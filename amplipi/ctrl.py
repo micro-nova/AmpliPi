@@ -30,6 +30,7 @@ from pathlib import Path
 import time
 import logging
 import sys
+import datetime
 
 import threading
 import wrapt
@@ -583,6 +584,7 @@ class Api:
   def get_state(self) -> models.Status:
     """ get the system state """
     self._update_sys_info()
+    self._delete_unused_temporary_streams()
     # Get serial number
     if self._serial is None and self.status.info is not None:
       self._update_serial()
@@ -650,6 +652,24 @@ class Api:
     for s, src in enumerate(sources):
       src_cfg[s] = self._is_digital(src.input)
     return src_cfg
+
+  def _delete_unused_temporary_streams(self):
+    """Removes temporary file players if they are disconnected and have no connected sources"""
+    temp_streams = []
+    for stream in self.status.streams:
+      if stream.type == 'fileplayer' and stream.temporary and stream.timeout is not None:
+        time = datetime.datetime.strptime(stream.timeout, '%Y-%m-%d %H:%M:%S.%f')
+        if time < datetime.datetime.now():
+          temp_streams.append(stream)
+
+    for source in self.status.sources:
+      for stream in temp_streams:
+        if source.input[7:].isdigit() and int(source.input[7:]) == stream.id:
+          temp_streams.remove(stream)
+
+    for stream in temp_streams:
+      logger.info(f'Deleting unused temporary stream {stream.id}')
+      self.delete_stream(stream.id)
 
   def set_source(self, sid: int, update: models.SourceUpdate, force_update: bool = False, internal: bool = False) -> ApiResponse:
     """Modifes the configuration of one of the 4 system sources
@@ -1315,7 +1335,9 @@ class Api:
     """ Create and play an announcement """
     # create a temporary announcement stream using fileplayer
     resp0 = self.create_stream(models.Stream(type='fileplayer', name='Announcement',
-                               url=announcement.media), internal=True)
+                               url=announcement.media, temporary=True,
+                               timeout=str(datetime.datetime.now() + datetime.timedelta(seconds=5)),
+                               has_pause=False), internal=True)
     if isinstance(resp0, ApiResponse):
       return resp0
     stream = resp0
@@ -1372,3 +1394,72 @@ class Api:
       return resp5
     self.mark_changes()
     return resp4
+
+  def play_media(self, media: models.PlayMedia) -> ApiResponse:
+    """Play media to a file player on a specified source"""
+    stream = None
+    # First, check if we already have a media player here
+    cur_stream = None
+    for source in self.status.sources:
+      if source.id == media.source_id and len(source.input) > 7:
+        cur_stream = int(source.input[7:])
+
+    logger.info(f'Stream found is {cur_stream}')
+    for tmp_stream in self.status.streams:
+      if tmp_stream.id == cur_stream and tmp_stream.type == 'fileplayer':
+        stream = tmp_stream
+
+    # If we do not have a media player already allocated, create one
+    if stream is None:
+      resp0 = self.create_stream(models.Stream(type='fileplayer', name='External Media',
+                                               url=media.media, internal=True, temporary=True,
+                                               timeout=str(datetime.datetime.now() + datetime.timedelta(seconds=5)),
+                                               has_pause=True))
+
+      if isinstance(resp0, ApiResponse):
+        return resp0
+      stream = resp0
+
+    zones = []
+    for zone in self.status.zones:
+      if zone.source_id == media.source_id and zone not in zones:
+        zones.append(zone)
+
+    if len(zones) == 0:
+      return ApiResponse.error("No zones playing on this source")
+
+    for zone in zones:
+      update = models.ZoneUpdate()
+      update.vol_min = None
+      update.vol_max = None
+      update.disabled = None
+
+      if media.vol is not None:
+        update.vol = media.vol
+        update.vol_f = None
+        update.mute = False
+      elif media.vol_f is not None:
+        update.vol_f = media.vol_f
+        update.vol = None
+        update.mute = False
+      else:
+        update.vol = zone.vol
+        update.vol_f = zone.vol_f
+        update.mute = zone.mute
+
+      update.source_id = media.source_id
+      update.name = zone.name
+      self.set_zone(zone.id, update, True, False)
+
+    if stream.id is not None:
+      self.streams[stream.id].reconfig(url=media.media, temporary=True,
+                                       timeout=str(datetime.datetime.now() + datetime.timedelta(seconds=5)))
+      self.sync_stream_info()
+      self.mark_changes()
+
+    src_update = models.SourceUpdate()
+    src_update.name = None
+    src_update.input = f'stream={stream.id}'
+    self.set_source(media.source_id, src_update, True, True)
+
+    return ApiResponse.ok()
