@@ -710,9 +710,9 @@ class Spotify(PersistentStream):
       raise Exception(f"Error sending command {cmd}: {e}") from e
 
   def validate_stream(self, **kwargs):
-    HOSTNAME_LIKE = r"[a-zA-Z0-9][A-Za-z0-9\-]*[a-zA-Z0-9]"
-    if 'name' in kwargs and not re.fullmatch(HOSTNAME_LIKE, kwargs['name']):
-      raise InvalidStreamField("name", "invalid device name")
+    NAME = r"[a-zA-Z0-9][A-Za-z0-9\- ]*[a-zA-Z0-9]"
+    if 'name' in kwargs and not re.fullmatch(NAME, kwargs['name']):
+      raise InvalidStreamField("name", "Invalid stream name")
 
 # TODO: A significant amount of complexity could be removed if we switched some features here to using pydora instead of
 # interfacing with pianobar's TUI
