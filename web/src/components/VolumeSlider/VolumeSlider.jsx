@@ -7,6 +7,7 @@ import VolumeDownIcon from "@mui/icons-material/VolumeDown";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import StopProp from "@/components/StopProp/StopProp";
+import { isIOS } from "@/utils/isIOS";
 
 import PropTypes from "prop-types";
 
@@ -51,10 +52,18 @@ const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
                     step={0.01}
                     max={1}
                     value={vol}
-                    onChange={(_, val) => {
+                    // https://github.com/mui/material-ui/issues/32737#issuecomment-2060439608
+                    // ios does some weird emulation of mouse events from touch events, ignore those
+                    onChange={(e, val) => {
+                        if(isIOS() && e.type === "mousedown"){
+                            return;
+                        }
                         setVol(val);
                     }}
-                    onChangeCommitted={(_, val) => {
+                    onChangeCommitted={(e, val) => {
+                        if(isIOS() && e.type === "mouseup"){
+                            return;
+                        }
                         setVol(val, true);
                     }}
                 />
