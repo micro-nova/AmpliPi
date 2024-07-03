@@ -1,6 +1,6 @@
 # AmpliPi Software Releases
 
-## Upcoming Release
+## 0.4.0
 * System
   * Fix broken API generation
   * Permit continuous integration runs in the installer for automated disk image builds

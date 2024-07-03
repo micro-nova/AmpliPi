@@ -6103,15 +6103,6 @@ paths:
           Jasons House:
             value: 1002
             summary: Jasons House - spotify
-          Matt and Kim Radio:
-            value: 1004
-            summary: Matt and Kim Radio - pandora
-          Classical:
-            value: 1005
-            summary: Classical - pandora
-          Blackmill Radio:
-            value: 1006
-            summary: Blackmill Radio - pandora
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
@@ -6216,15 +6207,6 @@ paths:
           Jasons House:
             value: 1002
             summary: Jasons House - spotify
-          Matt and Kim Radio:
-            value: 1004
-            summary: Matt and Kim Radio - pandora
-          Classical:
-            value: 1005
-            summary: Classical - pandora
-          Blackmill Radio:
-            value: 1006
-            summary: Blackmill Radio - pandora
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
@@ -6694,15 +6676,6 @@ paths:
           Jasons House:
             value: 1002
             summary: Jasons House - spotify
-          Matt and Kim Radio:
-            value: 1004
-            summary: Matt and Kim Radio - pandora
-          Classical:
-            value: 1005
-            summary: Classical - pandora
-          Blackmill Radio:
-            value: 1006
-            summary: Blackmill Radio - pandora
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
@@ -7203,15 +7176,6 @@ paths:
           Jasons House:
             value: 1002
             summary: Jasons House - spotify
-          Matt and Kim Radio:
-            value: 1004
-            summary: Matt and Kim Radio - pandora
-          Classical:
-            value: 1005
-            summary: Classical - pandora
-          Blackmill Radio:
-            value: 1006
-            summary: Blackmill Radio - pandora
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
@@ -7682,15 +7646,6 @@ paths:
           Jasons House:
             value: 1002
             summary: Jasons House - spotify
-          Matt and Kim Radio:
-            value: 1004
-            summary: Matt and Kim Radio - pandora
-          Classical:
-            value: 1005
-            summary: Classical - pandora
-          Blackmill Radio:
-            value: 1006
-            summary: Blackmill Radio - pandora
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
@@ -7775,15 +7730,6 @@ paths:
           Jasons House:
             value: 1002
             summary: Jasons House - spotify
-          Matt and Kim Radio:
-            value: 1004
-            summary: Matt and Kim Radio - pandora
-          Classical:
-            value: 1005
-            summary: Classical - pandora
-          Blackmill Radio:
-            value: 1006
-            summary: Blackmill Radio - pandora
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
@@ -7877,15 +7823,6 @@ paths:
           Jasons House:
             value: 1002
             summary: Jasons House - spotify
-          Matt and Kim Radio:
-            value: 1004
-            summary: Matt and Kim Radio - pandora
-          Classical:
-            value: 1005
-            summary: Classical - pandora
-          Blackmill Radio:
-            value: 1006
-            summary: Blackmill Radio - pandora
           Beatles Radio:
             value: 1007
             summary: Beatles Radio - internetradio
@@ -10644,24 +10581,6 @@ components:
 
 
         Volume, mute, and source_id fields are aggregates of the member zones.'
-      creation_examples:
-        Upstairs Group:
-          value:
-            name: Upstairs
-            zones:
-            - 1
-            - 2
-            - 3
-            - 4
-            - 5
-        Downstairs Group:
-          value:
-            name: Downstairs
-            zones:
-            - 6
-            - 7
-            - 8
-            - 9
       examples:
         Upstairs Group:
           value:
@@ -10686,6 +10605,24 @@ components:
             - 9
             vol_delta: -30
             vol_f: 0.63
+      creation_examples:
+        Upstairs Group:
+          value:
+            name: Upstairs
+            zones:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+        Downstairs Group:
+          value:
+            name: Downstairs
+            zones:
+            - 6
+            - 7
+            - 8
+            - 9
     GroupUpdate:
       title: GroupUpdate
       type: object
@@ -11007,9 +10944,10 @@ components:
 
         In addition to most of the configuration found in Status, this can contain
         commands as well that configure the state of different streaming services.'
-      creation_examples:
-        Add Mute All:
+      examples:
+        Mute All:
           value:
+            id: 10000
             name: Mute All
             state:
               zones:
@@ -11025,10 +10963,9 @@ components:
                 mute: true
               - id: 5
                 mute: true
-      examples:
-        Mute All:
+      creation_examples:
+        Add Mute All:
           value:
-            id: 10000
             name: Mute All
             state:
               zones:
@@ -11872,6 +11809,47 @@ components:
           type: boolean
           description: Can this stream be browsed?
       description: 'Digital stream such as Pandora, AirPlay or Spotify '
+      examples:
+        Regina Spektor Radio:
+          value:
+            id: 90890
+            name: Regina Spektor Radio
+            password: ''
+            station: '4473713754798410236'
+            status: connected
+            type: pandora
+            user: example1@micro-nova.com
+            browsable: true
+        Matt and Kim Radio (disconnected):
+          value:
+            id: 90891
+            info:
+              details: No info available
+            name: Matt and Kim Radio
+            password: ''
+            station: '4610303469018478727'
+            status: disconnected
+            type: pandora
+            user: example2@micro-nova.com
+            browsable: true
+        AirPlay (connected):
+          value:
+            id: 44590
+            info:
+              details: No info available
+            name: Jason's iPhone
+            status: connected
+            type: airplay
+            browsable: false
+        AirPlay (disconnected):
+          value:
+            id: 4894
+            info:
+              details: No info available
+            name: Rnay
+            status: disconnected
+            type: airplay
+            browsable: false
       creation_examples:
         Add Beatles Internet Radio Station:
           value:
@@ -11949,47 +11927,6 @@ components:
             type: lms
             server: mylmsserver
             port: 9000
-      examples:
-        Regina Spektor Radio:
-          value:
-            id: 90890
-            name: Regina Spektor Radio
-            password: ''
-            station: '4473713754798410236'
-            status: connected
-            type: pandora
-            user: example1@micro-nova.com
-            browsable: true
-        Matt and Kim Radio (disconnected):
-          value:
-            id: 90891
-            info:
-              details: No info available
-            name: Matt and Kim Radio
-            password: ''
-            station: '4610303469018478727'
-            status: disconnected
-            type: pandora
-            user: example2@micro-nova.com
-            browsable: true
-        AirPlay (connected):
-          value:
-            id: 44590
-            info:
-              details: No info available
-            name: Jason's iPhone
-            status: connected
-            type: airplay
-            browsable: false
-        AirPlay (disconnected):
-          value:
-            id: 4894
-            info:
-              details: No info available
-            name: Rnay
-            status: disconnected
-            type: airplay
-            browsable: false
     StreamCommand:
       title: StreamCommand
       enum:
@@ -11997,6 +11934,7 @@ components:
       - pause
       - next
       - prev
+      - stop
       - love
       - ban
       - shelve
