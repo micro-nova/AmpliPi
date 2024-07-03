@@ -660,12 +660,11 @@ class Spotify(PersistentStream):
     if self.proc:
       utils.careful_proc_shutdown(self.proc, "spotify stream")
       self.proc = None
-    if self.mpris:
-      try:
-        del self.mpris
-      except Exception:
-        pass
-      self.mpris = None
+    try:
+      del self.mpris
+    except Exception:
+      pass
+    self.mpris = None
     self.connect_port = None
 
   def info(self) -> models.SourceInfo:
