@@ -9,21 +9,13 @@
   * Reduce noisy logging from lms_metadata.py
   * Fix install of FM radio software `redsea`
   * Fix latest version checking after an update
+  * Fixed updates on systems with an API password set
 * Streams
   * File Players can be temporary. A temporary File Player will remove itself from the list of available streams once disconnected from all sources.
   * File Players run their own Python container process similar to Internet Radio Stations, rather than running a cvlc command.
   * File Players can now be paused, and restarted by pressing the play button when the track ends.
 * API
   * Added a play endpoint which supports playing music to a File Player remotely.
-
-## Upcoming release
-* Web App
-  * Migrate more inputs to MUI
-  * Fix internet radio searching during stream creation
-  * Download appliance config when toggling LMS mode off
-* System
-  * Reduce noisy logging from lms_metadata.py
-  * Fix install of FM radio software `redsea`
 
 ## 0.4.0
 * System

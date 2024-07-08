@@ -15,6 +15,7 @@ import time
 import re
 import sys
 import requests
+import json
 
 # pylint: disable=broad-except
 # pylint: disable=bare-except
@@ -825,8 +826,29 @@ def _copy_old_config(dest_dir: str) -> None:
       pass
 
 
+def _api_key() -> Optional[str]:
+  """ Get a singular API key for use with the updater """
+  user_file_path = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'users.json')
+  try:
+    with open(user_file_path, encoding='utf-8') as user_file:
+      users = json.load(user_file)
+      for user, config in users.items():
+        if "access_key" in config:
+          return config["access_key"]
+  except Exception as e:
+    # This is a little wholesale, but there is the case where a users file doesn't exist.
+    # Additionally, we do not want to print any sensitive information to the console; we
+    # simply bail.
+    return None
+  return None
+
+
 def _check_url(url) -> Task:
   task = Task(f'Check url {url}')
+  key = _api_key()
+  if key:
+    task.name += " (with api key)"
+    url += f'?api-key={key}'
   try:
     req = requests.get(url)
     if req.ok:
@@ -842,6 +864,10 @@ def _check_url(url) -> Task:
 def _check_version(url) -> Task:
   task = Task('Checking version reported by API')
   task.output = f'\nusing: {url}'
+  key = _api_key()
+  if key:
+    url += f"?api-key={key}"
+    task.output += " (with api key)"
   try:
     req = requests.get(url)
     if req.ok:
