@@ -28,8 +28,7 @@
 }
 
 .stream-field {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
+  padding-top: 2rem;
 }
 
 .stream-field-name {
@@ -47,6 +46,12 @@
 
 .stream-button-icon {
   color: general.$controls-color;
+}
+
+.internet-radio-search {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .internet-radio-result {

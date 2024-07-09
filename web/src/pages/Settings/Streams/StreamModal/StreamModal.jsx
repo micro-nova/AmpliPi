@@ -7,31 +7,34 @@ import "./StreamModal.scss";
 import StreamTemplates from "../StreamTemplates.json";
 import ModalCard from "@/components/ModalCard/ModalCard";
 import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown";
 const DISABLED_DESC = "Don't show this stream in the input dropdown";
 const RESTART_DESC = "Sometimes the stream gets into a bad state and neds to be restarted. If that happened to this stream, click this to restart the stream.";
 
-const TextArg = ({ name, desc, type="text", defaultValue, onChange, required, error }) => {
+const TextArg = ({ name, desc, type="text", value, onChange, required, error }) => {
 
     return (
         <>
             <div className="stream-field">
                 <TextField
+                    className="stream-field-input"
                     type={type}
                     label={name}
                     error={error}
-                    defaultValue={defaultValue}
+                    value={value ? value : ''}
                     onChange={(e) => {
                         onChange(e.target.value);
                     }}
                     required={required}
                     id={required? "outlined-required" : "outlined-basic"}
+                    fullWidth
                 />
                 <div className="stream-field-desc">{desc}</div>
             </div>
-            <Divider />
         </>
     );
 };
@@ -39,22 +42,21 @@ TextArg.propTypes = {
     name: PropTypes.string.isRequired,
     desc: PropTypes.string,
     type: PropTypes.string,
-    defaultValue: PropTypes.string,
+    value: PropTypes.string,
     onChange: PropTypes.func.isRequired,
     required: PropTypes.bool.isRequired,
     error: PropTypes.bool
 };
 
 // this could be collapsed into TextField by adding a prop named something like "mode" or "type" with a switch dependant on it to return a version with checkbox or text
-const BoolField = ({ name, desc, defaultValue, onChange }) => {
+const BoolField = ({ name, desc, value, onChange }) => {
     return (
         <>
-            <div>
+            <div className="stream-field">
                 <div className="stream-field-bool">
                     <div className="stream-field-name">{name}</div>
-                    <input
-                        type="checkbox"
-                        defaultChecked={defaultValue}
+                    <Checkbox
+                        checked={value}
                         onChange={(e) => {
                             onChange(e.target.checked);
                         }}
@@ -62,7 +64,6 @@ const BoolField = ({ name, desc, defaultValue, onChange }) => {
                 </div>
                 <div className="stream-field-desc">{desc}</div>
             </div>
-            <Divider />
         </>
     );
 };
@@ -76,12 +77,13 @@ BoolField.propTypes = {
 const ButtonField = ({ name, text, onClick, desc }) => {
     return (
         <>
-            <div className="stream-field-button">
-                <div className="stream-field-name">{name}</div>
-                <button onClick={onClick == undefined ? () => {} : onClick}>{text}</button>
+            <div className="stream-field">
+                <div className="stream-field-button">
+                    <div className="stream-field-name">{name}</div>
+                    <Button variant="outlined" onClick={onClick == undefined ? () => {} : onClick}>{text}</Button>
+                </div>
+                <div className="stream-field-desc">{desc}</div>
             </div>
-            <div className="stream-field-desc">{desc}</div>
-            <Divider />
         </>
     );
 };
@@ -143,15 +145,29 @@ const InternetRadioSearch = ({ onChange }) => {
             );
         }, []),
         (
-            <div className="stream-field">
-                <div className="stream-field-name">Search</div>
-                <input type="text" onChange={(e) => setQuery(e.target.value)} />
-                <input type="button" value="Search" onClick={() => search(query)} />
-                <div className="stream-field-desc">
-          Search for internet radio stations
+            <>
+                <div className="stream-field">
+                    <div className="internet-radio-search">
+                        <TextField
+                            label="Search"
+                            className="internet-radio-search-input"
+                            fullWidth
+                            sx={{ mr: '1rem' }}
+                            onChange={(e) => setQuery(e.target.value)}
+                            onKeyDown={ (e) => {
+                                if (e.key === 'Enter') {
+                                    search(query);
+                                }
+                            }}
+                        />
+                        <Button variant="outlined" className="internet-radio-search-button" onClick={() => search(query)}>Search</Button>
+                    </div>
+                    <div className="stream-field-desc">
+                        Search for internet radio stations
+                    </div>
+                    <div className="radio-search-results">{results}</div>
                 </div>
-                <div className="radio-search-results">{results}</div>
-            </div>
+            </>
         )
     );
 };
@@ -242,7 +258,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                                     type={"text"}
                                     required={field.required == true}
                                     error={errorField.toLowerCase()==field.name.toLowerCase()}
-                                    defaultValue={streamFields[field.name]}
+                                    value={streamFields[field.name]}
                                     onChange={(v) => {
                                         setStreamFields({ ...streamFields, [field.name]: v });
                                     }}
@@ -257,7 +273,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                                     type={"password"}
                                     required={field.required == true}
                                     error={errorField.toLowerCase()==field.name.toLowerCase()}
-                                    defaultValue={streamFields[field.name]}
+                                    value={streamFields[field.name]}
                                     onChange={(v) => {
                                         setStreamFields({ ...streamFields, [field.name]: v });
                                     }}
@@ -269,7 +285,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                                     key={field.name}
                                     name={field.title}
                                     desc={field.desc}
-                                    defaultValue={streamFields[field.name]}
+                                    value={streamFields[field.name]}
                                     onChange={(v) => {
                                         setStreamFields({ ...streamFields, [field.name]: v });
                                     }}
@@ -295,7 +311,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                 <BoolField
                     name="Disable"
                     desc={DISABLED_DESC}
-                    defaultValue={streamFields.disabled}
+                    value={streamFields.disabled}
                     onChange={(v) => {
                         setStreamFields({ ...streamFields, disabled: v });
                     }}
