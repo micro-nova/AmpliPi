@@ -1,7 +1,5 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { CircularProgress } from "@mui/material";
-import { Divider } from "@mui/material";
 import Alert from "@mui/material/Alert";
 import "./StreamModal.scss";
 import StreamTemplates from "../StreamTemplates.json";
@@ -9,6 +7,11 @@ import ModalCard from "@/components/ModalCard/ModalCard";
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
+import List from '@mui/material/List';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemButton from '@mui/material/ListItemButton';
+import Avatar from '@mui/material/Avatar';
 
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown";
@@ -98,9 +101,10 @@ const InternetRadioSearch = ({ onChange }) => {
     const [host, setHost] = React.useState("");
     const [results, setResults] = React.useState([]);
     const [query, setQuery] = React.useState("");
+    const [selectedUuid, setSelectedUuid] = React.useState("");
 
     const search = (name) => {
-        setResults([<CircularProgress key={name} />]);
+        setResults([{name: "Loading..."}]);
 
         if (host === "") {
             return;
@@ -112,20 +116,7 @@ const InternetRadioSearch = ({ onChange }) => {
             body: JSON.stringify({ name: name }),
         }).then((res) =>
             res.json().then((s) => {
-                setResults(
-                    s.slice(0, 10).map((s) => (
-                        <div
-                            className="internet-radio-result"
-                            key={s.changeuuid}
-                            onClick={() => {
-                                onChange({ name: s.name, url: s.url, logo: s.favicon });
-                            }}
-                        >
-                            <img src={s.favicon} className="internet-radio-image" />
-                            <div className="internet-radio-name">{s.name}</div>
-                        </div>
-                    ))
-                );
+                setResults(s.slice(0, 10).valueOf());
             })
         );
     };
@@ -165,7 +156,29 @@ const InternetRadioSearch = ({ onChange }) => {
                     <div className="stream-field-desc">
                         Search for internet radio stations
                     </div>
-                    <div className="radio-search-results">{results}</div>
+                    <List className="radio-search-results">
+                        { results.map((s) => (
+                            <ListItemButton
+                                className="internet-radio-result"
+                                key={s.changeuuid}
+                                selected={selectedUuid == s.changeuuid}
+                                onClick={() => {
+                                    setSelectedUuid(s.changeuuid.valueOf());
+                                    onChange({ name: s.name, url: s.url, logo: s.favicon });
+                                }}
+                            >
+                                <ListItemAvatar>
+                                    <Avatar variant="rounded" 
+                                        src={s.favicon ? s.favicon : null}
+                                        alt={s.name}
+                                        sx={{ height: '2rem' }}
+                                        className="internet-radio-image"
+                                    />
+                                </ListItemAvatar>
+                                <ListItemText className="internet-radio-name">{s.name}</ListItemText>
+                            </ListItemButton>
+                        ))}
+                    </List>
                 </div>
             </>
         )
