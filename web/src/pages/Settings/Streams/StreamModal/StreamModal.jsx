@@ -104,6 +104,13 @@ const InternetRadioSearch = ({ onChange }) => {
     const [selectedUuid, setSelectedUuid] = React.useState("");
 
     const search = (name) => {
+        // A blank search returns a 55MB JSON blob. At best, it reloads the list
+        // once that completes and potentially clear out a successful search; at
+        // worst, it'll mess with low performance machines.
+        if (name === "") {
+            return;
+        }
+
         setResults([{name: "Loading..."}]);
 
         if (host === "") {

@@ -6,6 +6,7 @@ import Poller from "./Poller";
 import "./index.scss";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import { grey } from "@mui/material/colors";
 import "./general.scss";
 
 import { createHashRouter, RouterProvider, Navigate } from "react-router-dom";
@@ -79,11 +80,25 @@ export const router = createHashRouter([
 
 const darkTheme = createTheme({
     palette: {
+        primary: grey,
         mode: "dark",
         background: {
             paper: "#2a2a2a", // TODO: no good way of getting this from scss...
         },
     },
+    typography: {
+        fontFamily: "open sans"
+    },
+    components: {
+        MuiCssBaseline: {
+            styleOverrides: `
+                @font-face {
+                    font-family: 'open sans';
+                    color: '#ffffff';
+                }
+            `,
+        }
+    }
 });
 
 ReactDOM.createRoot(document.getElementById("root")).render(
