@@ -25,7 +25,7 @@ export default function LMSMode() {
             return(
                 <ConfigModal
                     body={"This will reset AmpliPi to factory settings, you will have to either manually reconfigure it or reupload the config that was downloaded when LMS mode was initially toggled."}
-                    onApply={() => {LMSModeHandler();}}
+                    onApply={() => {ConfigDownload(); LMSModeHandler();}}
                     open={modalOpen}
                     setOpen={setModalOpen}
                 />
@@ -59,7 +59,7 @@ export default function LMSMode() {
 
             <LMSModal />
             <StatusBar
-                successText={"LMS Mode activated successfully!"}
+                successText={"LMS Mode toggled successfully!"}
                 response={response}
             />
         </>
