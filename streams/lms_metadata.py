@@ -55,7 +55,9 @@ class LMSMetadataReader:
   # meta_ref is probably an unneccessary variable to pass as an arg since it's obscured from the user, but we can eventually make it an optional setting for the user
   def __init__(self, name: str, vsrc: int, server: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2):
     self.player_name = name
-    self.folder = f'config/srcs/v{vsrc}'
+    self.folder = os.path.join(
+      os.path.expanduser('~'), '.config', 'amplipi', 'srcs', f'v{vsrc}'
+    )
     self.server = server
     self.port = port
     self.meta_ref_rate = meta_ref

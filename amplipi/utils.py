@@ -250,10 +250,18 @@ def enabled_zones(status: models.Status, zones: Set[int]) -> Set[int]:
 
 
 @functools.lru_cache(maxsize=8)
-def get_folder(folder):
+def get_folder(relative_folder, mock=False):
   """ Get a directory
-  Abstracts the directory structure. TODO: This does not find the correct directory when testing. """
-  if not os.path.exists(folder):
+  Abstracts the directory structure. TODO: This does not find the correct directory when testing.
+  """
+  if relative_folder == "config":
+    folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  elif relative_folder == "web":
+    folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'web')
+  else:
+    folder = os.path.join(os.path.expanduser('~'), 'amplipi-dev', relative_folder)
+
+  if not os.path.exists(folder) and not mock:
     try:
       os.mkdir(folder)
     except:

@@ -296,8 +296,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
 
 def _check_and_update_streamer(env):
   """Check if this is a streamer (no preamp firmware)"""
-  is_streamer_path = os.path.join(os.path.expanduser(
-      '~'), '.config', 'amplipi', 'is_streamer')
+  is_streamer_path = os.path.join(env['config_dir'], 'is_streamer')
   env['is_streamer'] = os.path.exists(is_streamer_path)
 
 
@@ -310,6 +309,7 @@ def _check_and_setup_platform(development, ci_mode):
       'platform_supported': False,
       'script_dir': script_dir,
       'base_dir': script_dir.rsplit('/', 1)[0],
+      'config_dir': os.path.join(os.path.expanduser('~'), '.config', 'amplipi'),
       'is_amplipi': False,
       'is_streamer': False,
       'arch': 'unknown',
@@ -479,7 +479,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
                               "sudo gpasswd -a pi dialout".split()).run()])
       return tasks
     # setup tmpfs (ram disk)
-    tasks += print_progress(_setup_tmpfs(env['base_dir'], env))
+    tasks += print_progress(_setup_tmpfs(env['config_dir'], env))
     # setup crontab - Replace the entire Pi user's crontab with AmpliPi's config/crontab
     # and point it to the AmpliPi install location's script directory.
     tasks += print_progress([Task("Setting up crontab", [
@@ -545,18 +545,18 @@ Categories=Utility;
   return Task(f'Add desktop icon for {name}', success=success)
 
 
-def _setup_tmpfs(base_dir, env):
+def _setup_tmpfs(config_dir, env):
   """ Adds tmpfs entries used by AmpliPi to /etc/fstab """
   # Warning: these hide the existing filesystem,
   # if anything is already present at the path created.
   tmpfs_opts = 'defaults,noatime,uid=pi,gid=pi,size=100M'
-  conf_entry = f'amplipi/config {base_dir}/config/srcs tmpfs {tmpfs_opts} 0 0'
-  web_entry = f'amplipi/web {base_dir}/web/generated tmpfs {tmpfs_opts} 0 0'
+  conf_entry = f'amplipi/config {config_dir}/srcs tmpfs {tmpfs_opts} 0 0'
+  web_entry = f'amplipi/web {config_dir}/web/generated tmpfs {tmpfs_opts} 0 0'
   args = [
       'sudo sed -i "/^amplipi/d" /etc/fstab',
       f'echo {conf_entry} | sudo tee -a /etc/fstab',
       f'echo {web_entry} | sudo tee -a /etc/fstab',
-      f'mkdir -p {base_dir}/config/srcs {base_dir}/web/generated',
+      f'mkdir -p {config_dir}/srcs {config_dir}/web/generated',
   ]
   if not env['is_ci']:
     args.append(f'sudo mount -a')
@@ -615,7 +615,7 @@ WantedBy=default.target
 """
 
 
-def _audiodetector_service(directory: str):
+def _audiodetector_service(base_dir: str, config_dir: str):
   return f"""\
 [Unit]
 Description=Amplipi RCA Input Audio Detector
@@ -623,8 +623,8 @@ ConditionPathExists=!/home/pi/.config/amplipi/is_streamer
 
 [Service]
 Type=simple
-WorkingDirectory={directory}/config/srcs
-ExecStart={directory}/amplipi/audiodetector/audiodetector
+WorkingDirectory={config_dir}/srcs
+ExecStart={base_dir}/amplipi/audiodetector/audiodetector
 Restart=on-failure
 RestartSec=10
 
@@ -814,11 +814,12 @@ def _enable_linger(user: str, env) -> List[Task]:
 
 
 def _copy_old_config(dest_dir: str) -> None:
-  # try to copy the config of the current running amplipi service into base_dir/house.json
+  # try to copy the config of the current running amplipi service into dest_dir/house.json
   # success is not required since the config will be generated from defaults if missing
   old_dir = subprocess.getoutput(
       'systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
-  if old_dir:
+  new_path_exists = os.path.exists(f'{dest_dir}/house.json')
+  if old_dir and not new_path_exists:
     try:
       subprocess.run(
           ['cp', f'{old_dir}/house.json', f'{dest_dir}/house.json'], check=False)
@@ -890,7 +891,7 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
     # try to copy the old config into the potentially new directory
     # This fixes some potential update issues caused by migrating install to a different directory
     # (using the web updated the install dir used to be amplipi-dev2 and is now amplipi-dev)
-    _copy_old_config(env['base_dir'])
+    _copy_old_config(env['config_dir'])
 
     # stop amplipi before reconfiguring authbind
     tasks += print_progress(_stop_service('amplipi'))
@@ -952,7 +953,7 @@ def _update_audiodetector(env: dict, progress) -> List[Task]:
     return [Task(name='Update Audio Detector', output='Not on AmpliPi', success=False)]
   tasks = []
   tasks += print_progress([Task('Build audiodetector', f'make -C {env["base_dir"]}/amplipi/audiodetector'.split()).run()])
-  tasks += print_progress(_create_service('amplipi-audiodetector', _audiodetector_service(env['base_dir']), env))
+  tasks += print_progress(_create_service('amplipi-audiodetector', _audiodetector_service(env['base_dir'], env['config_dir']), env))
   tasks += print_progress(_enable_service('amplipi-audiodetector'))
   if not env['is_ci']:
     tasks += print_progress(_restart_service('amplipi-audiodetector'))
@@ -969,8 +970,7 @@ def _check_password(env: dict, progress) -> List[Task]:
   """
   task = Task('Set a default password')
   task.success = True
-  pass_dir = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
-  pass_file = os.path.join(pass_dir, 'default_password.txt')
+  pass_file = os.path.join(env['config_dir'], 'default_password.txt')
   if env['user'] != 'pi':
     task.output = 'Not setting a default password: not running as pi user'
   elif not env['is_amplipi']:
@@ -979,7 +979,7 @@ def _check_password(env: dict, progress) -> List[Task]:
     task.output = 'Default password already generated'
   elif not os.path.exists('/run/sshwarn'):
     # no default pass file, but password is not 'raspberry' so already user-set
-    task.margs = [f'mkdir -p {pass_dir}'.split(),
+    task.margs = [f'mkdir -p {env["config_dir"]}'.split(),
                   f'touch {pass_file}'.split()]
     task.run()
   else:

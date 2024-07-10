@@ -10,6 +10,7 @@
   * Fix install of FM radio software `redsea`
   * Fix latest version checking after an update
   * Fixed updates on systems with an API password set
+  * Move system state out of running software directory
 * Streams
   * File Players can be temporary. A temporary File Player will remove itself from the list of available streams once disconnected from all sources.
   * File Players run their own Python container process similar to Internet Radio Stations, rather than running a cvlc command.
