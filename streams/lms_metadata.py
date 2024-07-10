@@ -62,15 +62,14 @@ class LMSMetadataReader:
     self.debug = os.environ.get('DEBUG', False)
 
     self.logger = logging.getLogger(__name__)
+    log_level = logging.INFO
     if self.debug:
-      self.logger.setLevel(logging.DEBUG)
-    else:
-      self.logger.setLevel(logging.INFO)
+      log_level = logging.DEBUG
     sh = logging.StreamHandler(sys.stdout)
     self.logger.addHandler(sh)
 
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    self.logger.setLevel(logging.DEBUG)
+    logging.basicConfig(stream=sys.stdout, level=log_level)
+    self.logger.setLevel(log_level)
     self.meta = MetadataHolder(artist='Loading...',
                                album='Loading...',
                                track='Loading...',

@@ -4,6 +4,8 @@
 * Web App
   * Migrate more inputs to MUI
   * Fix internet radio searching during stream creation
+* System
+  * Reduce noisy logging from lms_metadata.py
 
 ## 0.4.0
 * System
