@@ -176,15 +176,17 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         'apt': ['vlc']
     },
     'fmradio': {
-        'apt': ['rtl-sdr', 'git', 'build-essential', 'autoconf', 'libsndfile1-dev', 'libliquid-dev'],
+        'apt': ['rtl-sdr', 'git', 'build-essential', 'libsndfile1-dev', 'libliquid-dev', 'meson'],
         'script': [
             'if ! which redsea  > /dev/null; then',  # TODO: check version
             '  echo "Installing redsea"',
             '  cd /tmp',
             '  git clone --depth 1 https://github.com/windytan/redsea.git',
             '  cd redsea',
-            '  ./autogen.sh && ./configure && make',
-            '  sudo make install',
+            '  meson setup build',
+            '  cd build',
+            '  meson compile',
+            '  sudo cp redsea /usr/local/bin/',
             '  sudo wget https://raw.githubusercontent.com/osmocom/rtl-sdr/master/rtl-sdr.rules -P /etc/udev/rules.d/',
             '  sudo udevadm control --reload-rules',
             '  sudo udevadm trigger',

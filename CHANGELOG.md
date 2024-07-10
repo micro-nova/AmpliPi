@@ -6,6 +6,7 @@
   * Fix internet radio searching during stream creation
 * System
   * Reduce noisy logging from lms_metadata.py
+  * Fix install of FM radio software `redsea`
 
 ## 0.4.0
 * System
