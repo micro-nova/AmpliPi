@@ -151,6 +151,7 @@ class SourceInfo(BaseModel):
   img_url: Optional[str]
   supported_cmds: List[str] = []
   rating: Optional[PandoraRating]  # Only used for pandora
+  temporary: Optional[str]  # Only used for file players
 
 
 class Source(Base):
@@ -578,8 +579,10 @@ class Stream(Base):
   ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
   port: Optional[int] = Field(description='Port used by LMS server for metadata listening')
   browsable: Optional[bool] = Field(description='Can this stream be browsed?')
-
+  temporary: Optional[bool] = Field(description='Will this stream be removed once it is fully disconnected from all sources?')
+  has_pause: Optional[bool] = Field(description='This stream can be paused, only used on FilePlayers')
   # add examples for each type of stream
+
   class Config:
     schema_extra = {
       'creation_examples': {
@@ -760,6 +763,9 @@ class StreamUpdate(BaseUpdate):
   disabled: Optional[bool] = Field(
     description="Soft disable use of this stream. It won't be shown as a selectable option")
   port: Optional[int] = Field(description='Port used by LMS server for metadata listening')
+  temporary: Optional[bool]
+  timeout: Optional[str]
+  has_pause: Optional[bool]
 
   class Config:
     schema_extra = {
@@ -911,6 +917,29 @@ class Announcement(BaseModel):
         'Make NASA Announcement': {
           'value': {
             'media': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3',
+          }
+        }
+      }
+    }
+
+
+class PlayMedia(BaseModel):
+  """ Plays media on a specified source.
+  Will return an error if there is no source specified.
+  """
+  media: str = Field(description="URL to media to play")
+  vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB,
+                             description='Output volume in dB, overrides vol_f')
+  vol_f: float = Field(default=None, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
+  source_id: int = Field(default=None, ge=0, le=MAX_SOURCES - 1, description='Source to announce with')
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Play The Entertainer by Scott Joplin, Arranged by Kevin MacLeod': {
+          'value': {
+            'media': 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/The%20Entertainer.mp3',
+            'source_id': 1
           }
         }
       }
