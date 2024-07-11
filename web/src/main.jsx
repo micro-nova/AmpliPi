@@ -80,7 +80,12 @@ export const router = createHashRouter([
 
 const darkTheme = createTheme({
     palette: {
-        primary: grey,
+        primary: {
+            main: '#90caf9', // MUI default blue
+            light: '#e3f2fd',
+            dark: '#42a5f5',
+            contrastText: '#fff',
+          },
         mode: "dark",
         background: {
             paper: "#2a2a2a", // TODO: no good way of getting this from scss...
