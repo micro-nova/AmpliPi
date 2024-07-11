@@ -1270,6 +1270,25 @@ def test_load_preset(client, pid, unmuted=[1, 2, 3]):
             cfg.pop(ignored_field)
         assert cfg == prev_cfg
 
+def test_play_media(client):
+  """Check if playing external media works """
+  nasa_audio = 'https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3'
+  # error, needs media
+  rv = client.post('/api/play', json={})
+  assert rv.status_code != HTTPStatus.OK, 'Should require media field'
+  # default no source
+  rv = client.post('/api/play', json={'media': nasa_audio})
+  assert rv.status_code != HTTPStatus.OK, print(rv.text)
+  # yes source
+  rv = client.post('/api/play', json={'media': nasa_audio, 'source_id': 0})
+  assert rv.status_code == HTTPStatus.OK, print(rv.text)
+  # db volume
+  rv = client.post('/api/play', json={'media': nasa_audio, 'source_id': 0, 'vol': -40})
+  # relative volume
+  rv = client.post('/api/play', json={'media': nasa_audio, 'source_id': 0, 'vol_f': 0.5})
+  assert rv.status_code == HTTPStatus.OK, print(rv.text)
+  rv = client.post('/api/play', json={'media': nasa_audio, 'source_id': 0, 'vol': -40, 'vol_f': 0.5})
+  assert rv.status_code == HTTPStatus.OK, print(rv.text)
 
 def test_announcement(client):
   """Check if a PA Announcement works """
