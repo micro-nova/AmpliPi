@@ -36,14 +36,22 @@ TEST_ADMIN_USER_CONFIG = {
 
 def test_configured_user(tmp_path, monkeypatch):
   """ Tests an existing configuration with an admin user. """
-  # First we mock some things out.
+  # First we mock some things out. We test with no users first.
   mockconfigdir = str(tmp_path)
   mockusersfile = str(os.path.join(tmp_path, "users.json"))
   with open(mockusersfile, 'w', encoding='utf-8') as users_config:
-    users_config.write(json.dumps(TEST_ADMIN_USER_CONFIG))
-
+    users_config.write(json.dumps(NO_USERS_CONFIG))
   monkeypatch.setattr(auth, "USER_CONFIG_DIR", mockconfigdir)
   monkeypatch.setattr(auth, "USERS_FILE", mockusersfile)
+
+  assert auth.list_users() == []
+  assert auth.user_exists("admin") == False
+  assert auth.user_access_key_set("admin") == False
+  assert auth.no_user_passwords_set()
+
+  # Now we test with our constructed user data
+  with open(mockusersfile, 'w', encoding='utf-8') as users_config:
+    users_config.write(json.dumps(TEST_ADMIN_USER_CONFIG))
 
   # AmpliPi instance with mocked ctrl and streams
   config_file = os.path.join(tmp_path, 'house.json')
@@ -55,8 +63,10 @@ def test_configured_user(tmp_path, monkeypatch):
 
   # Test that the admin user exists and has various things set; can auth; can fail auth
   assert auth.user_exists("admin")
+  assert auth.list_users() == ["admin"]
   assert auth._user_password_set("admin")
   assert auth.user_access_key_set("admin")
+  assert auth.no_user_passwords_set() == False
   assert auth._authenticate_user_with_password("admin", "test")
   assert auth._authenticate_user_with_password("admin", "newpassword") == False
   assert client.get('/api/').status_code == HTTPStatus.UNAUTHORIZED
@@ -69,11 +79,13 @@ def test_configured_user(tmp_path, monkeypatch):
   auth.set_password_hash("admin", "newpassword")
   assert auth._authenticate_user_with_password("admin", "newpassword")
   assert auth.get_access_key("admin") != orig_key
+  assert auth.no_user_passwords_set() == False
 
   # Test if unsetting the password works
   auth.unset_password_hash("admin")
   assert auth._authenticate_user_with_password("admin", "") == False
   assert auth._user_password_set("admin") == False
+  assert auth.no_user_passwords_set()
   assert client.get('/api/').status_code == HTTPStatus.OK
 
   # Test access key bits explicitly
@@ -94,8 +106,10 @@ def test_configured_user(tmp_path, monkeypatch):
   # Create the previously non-existant user and ensure it passes those same tests
   assert auth.set_password_hash("test", "test") == None
   assert auth.user_exists("test")
+  assert auth.list_users() == ["admin", "test"]
   assert auth._user_password_set("test")
   assert auth.user_access_key_set("test")
+  assert auth.no_user_passwords_set() == False
   assert auth._authenticate_user_with_password("test", "test")
   key = auth.get_access_key("test")
   assert client.get(f"/api/?api-key={key}").status_code == HTTPStatus.OK
@@ -119,14 +133,19 @@ def test_config_creation(tmp_path, monkeypatch):
   from amplipi import app
   client = TestClient(app.create_app(mock_ctrl=True, mock_streams=True, config_file=config_file, delay_saves=False))
 
+  assert auth.no_user_passwords_set()
+  assert auth.user_exists("admin") == False
   assert auth._user_password_set("admin") == False
   assert auth._check_access_key("admin") == False
+  assert auth.list_users() == []
   assert client.get('/api/').status_code == HTTPStatus.OK
 
   assert auth.set_password_hash("admin", "test") == None
   assert auth.user_exists("admin")
   assert auth._user_password_set("admin")
   assert auth.user_access_key_set("admin")
+  assert auth.no_user_passwords_set() == False
+  assert auth.list_users() == ["admin"]
   assert auth._authenticate_user_with_password("admin", "test")
   assert client.get('/api/').status_code == HTTPStatus.UNAUTHORIZED
 

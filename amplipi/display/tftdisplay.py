@@ -20,7 +20,7 @@ from loguru import logger as log
 
 from amplipi import models
 from amplipi.utils import get_identity
-from amplipi.display.common import Color, Display, DefaultPass, get_status
+from amplipi.display.common import Color, Display, DefaultPass, get_status, request_params
 from amplipi.display.statusinterface import DisplayError, DisplayStatus, set_custom_display_status
 
 # If this is run on anything other than a Raspberry Pi,
@@ -590,7 +590,7 @@ def get_amplipi_data(base_url: Optional[str]) -> Tuple[bool, List[models.Source]
   try:
     """ TODO: If the AmpliPi server isn't available at this url, there is a
     5-second delay introduced by socket.getaddrinfo """
-    req = requests.get(base_url, timeout=0.2)
+    req = requests.get(base_url, timeout=0.2, params=request_params())
     if req.status_code == 200:
       status = models.Status(**req.json())
       _zones = status.zones

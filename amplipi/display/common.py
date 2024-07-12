@@ -10,16 +10,28 @@ import netifaces as ni
 
 from loguru import logger as log
 from enum import Enum
-from typing import Tuple, Optional, Union
+from typing import Tuple, Optional, Union, Dict
 from collections import namedtuple
 from amplipi.display.statusinterface import set_custom_display_status, STATUS_FILENAME, DisplayStatus, DisplayError
 
 from amplipi import models
+from amplipi import auth
 
 SysInfo = namedtuple('SysInfo', ['hostname', 'password', 'ip', 'status_code', "serial_number", "ext_count"])
 
 
 STARTUP_MSG = "Starting Up"
+
+
+def request_params() -> Optional[Dict]:
+  if not auth.no_user_passwords_set():
+    user = auth.list_users()[0]
+    try:
+      access_key = auth.get_access_key(user)
+      return {'api-key': access_key}
+    except:
+      return None
+  return None
 
 
 class Display:
@@ -136,7 +148,7 @@ def load_status_from_file() -> Optional[Union[str, int]]:
 def get_num_expanders(url: str) -> int:
   """Returns the number of expanders connected to the AmpliPro"""
   try:
-    req = requests.get(url, timeout=0.2)
+    req = requests.get(url, timeout=0.2, params=request_params())
     if req.status_code == 200:
       status = models.Status(**req.json())
       info = status.info
@@ -172,7 +184,7 @@ def get_status(url: str, no_serial_ok: bool = False) -> Tuple[Union[str, int], O
   if url is None:
     return DisplayError.API_CANNOT_CONNECT, None, 0
   try:
-    req = requests.get(url, timeout=0.2)
+    req = requests.get(url, timeout=0.2, params=request_params())
     if req.status_code == 200:
       status = models.Status(**req.json())
       zones = status.zones

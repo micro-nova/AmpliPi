@@ -5,7 +5,7 @@ import secrets
 import logging
 import sys
 
-from typing import Union, Dict
+from typing import Union, Dict, List
 from typing_extensions import Literal
 from datetime import datetime, timedelta, timezone
 
@@ -240,6 +240,11 @@ def no_user_passwords_set() -> bool:
     if _user_password_set(user):
       return False
   return True
+
+
+def list_users() -> List[str]:
+  """ Returns a flat list of username strings. """
+  return list(_get_users())
 
 
 def _next_url(request: Request) -> str:
