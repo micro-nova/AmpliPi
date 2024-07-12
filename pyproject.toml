@@ -36,6 +36,7 @@ include = [
   "config/boot_config.txt",
   "config/support_tunnel_crontab",
   "config/support_group_sudoers",
+  "config/crontab",
   "debs/**/*",
   "fw/*.sh", # no need to add full source tree
   "fw/bin/*",

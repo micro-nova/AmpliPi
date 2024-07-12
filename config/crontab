@@ -3,6 +3,7 @@
 # m   h  dom mon dow   command
 #                      Check for new release, add jitter to avoid overloading GitHub.
   0   5  *   *   *     sleep $(tr -cd 0-9 </dev/urandom | head -c 3)s; SCRIPTS_DIR/check-release
+  @reboot              SCRIPTS_DIR/check-release
 #                      Check for internet access.
   */5 *  *   *   *     SCRIPTS_DIR/check-online
 # GitHub issue #702: LMS stream choppy and distorted after not being used for a few days

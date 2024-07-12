@@ -8,6 +8,7 @@
 * System
   * Reduce noisy logging from lms_metadata.py
   * Fix install of FM radio software `redsea`
+  * Fix latest version checking after an update
 * Streams
   * File Players can be temporary. A temporary File Player will remove itself from the list of available streams once disconnected from all sources.
   * File Players run their own Python container process similar to Internet Radio Stations, rather than running a cvlc command.
