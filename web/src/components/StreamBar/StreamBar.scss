@@ -7,12 +7,22 @@
   flex-direction: row;
   align-items: center;
   justify-content: center; // or center? maybe center text and keep icon to the right?
+
+  @media (min-width: 375px) {
+    max-width: 22rem; // The same width as the album art, until the album art starts to shrink at 375px wide
+  }
+  @media (max-width: 375px) {
+    max-width: 85vw;
+  }
 }
 
 .stream-bar-name {
+  padding-left: 5px;
   color: general.$text-color;
+  max-width: 80%; // Leave space for icon
   font-size: 2.5rem;
   font-weight: medium;
+  text-wrap: nowrap;
   @include general.header-font;
   padding: 0.5rem;
 }

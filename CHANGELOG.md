@@ -8,6 +8,7 @@
   * Add hoverover effects on unselected player cards
   * Handle missing source selection
   * Autoselect newly created sources
+  * Add marquee support to stream names in player view
 * System
   * Reduce noisy logging from lms_metadata.py
   * Fix install of FM radio software `redsea`
