@@ -681,7 +681,7 @@ class Spotify(PersistentStream):
 
       if not self.mpris.is_stopped():
         source.state = 'playing' if self.mpris.is_playing() else 'paused'
-        source.artist = md.artist
+        source.artist = str(md.artist).replace("','", ",") # When a song has multiple artists, they are comma-separated but the comma has '' around it
         source.track = md.title
         source.album = md.album
         source.supported_cmds = self.supported_cmds
