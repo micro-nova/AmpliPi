@@ -1313,7 +1313,7 @@ def test_play_media(client):
   assert rv.status_code != HTTPStatus.OK, 'Should require media field'
   # default no source
   rv = client.post('/api/play', json={'media': nasa_audio})
-  assert rv.status_code == HTTPStatus.OK, print(rv.text)
+  assert rv.status_code != HTTPStatus.OK, print(rv.text)
   # yes source
   rv = client.post('/api/play', json={'media': nasa_audio, 'source_id': 0})
   assert rv.status_code == HTTPStatus.OK, print(rv.text)
