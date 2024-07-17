@@ -1348,15 +1348,15 @@ class USBStick(BaseStream, Browsable):
 
   stream_type: ClassVar[str] = 'usbstick'
 
-  def __init__(self, name: str, url: str, disabled: bool = False, mock: bool = False):
+  def __init__(self, name: str, url: Optional[str], disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.url = url
     self.directory = '/media'
     self.local_directory = '/media'
-    self.bkg_thread = None
+    self.bkg_thread: Optional[threading.Thread] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
-    self.song_list = []
-    self.directory_list = []
+    self.song_list: List[str] = []
+    self.directory_list: List[str] = []
     self.song_index = 0
     self.ended = False
     self._ended_timeout = datetime.datetime.now()
@@ -2038,7 +2038,7 @@ class Bluetooth(BaseStream):
 
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-                  Aux, FilePlayer, FMRadio, LMS, Bluetooth]
+                  Aux, FilePlayer, FMRadio, LMS, Bluetooth, USBStick]
 
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
