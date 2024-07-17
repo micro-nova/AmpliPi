@@ -226,10 +226,10 @@ while True:
     elif state == 'State.Ended':
         if args.song_info:
           update_info({
-          'track': '',
-          'artist': '',
-          'station': '',
-          'state': 'ENDED',})
+            'track': '',
+            'artist': '',
+            'station': '',
+            'state': 'ENDED'})
         sys.exit(0)
     else:
       if args.test:

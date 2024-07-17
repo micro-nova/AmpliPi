@@ -973,6 +973,7 @@ class Info(BaseModel):
     default=[], description='The stream types available on this particular appliance')
   extra_fields: Optional[Dict] = Field(default=None, description='Optional fields for customization')
   connected_drives: List[str] = Field(default=[], description='A list of all external drives connected')
+
   class Config:
     schema_extra = {
       'examples': {
