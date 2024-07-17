@@ -625,8 +625,8 @@ def announce(announcement: models.Announcement, ctrl: Api = Depends(get_ctrl)) -
 def play_media(media: models.PlayMedia, ctrl: Api = Depends(get_ctrl)) -> models.Status:
   """ Play media.
   """
-  if media.source_id is None:
-    raise HTTPException(404, f'source id not found')
+  if media.media == '':
+    raise HTTPException(404, f'media not found')
   return code_response(ctrl, ctrl.play_media(media))
 
 # Info
