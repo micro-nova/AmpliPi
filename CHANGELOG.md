@@ -41,8 +41,9 @@
   * File Players can be temporary. A temporary File Player will remove itself from the list of available streams once disconnected from all sources.
   * File Players run their own Python container process similar to Internet Radio Stations, rather than running a cvlc command.
   * File Players can now be paused, and restarted by pressing the play button when the track ends.
+  * Add USB Player stream type
 * API
-  * Added a play endpoint which supports playing music to a File Player remotely.
+  * Add a play endpoint which supports playing music to a File Player remotely.
 
 ## 0.4.0
 * System
