@@ -39,7 +39,7 @@ const Browse = () => {
             <ListItem key={item.id}
                 name={item.name}
                 nameFontSize="1.5rem"
-                onClick={() => { setLoading(true); setBrowsableStreamSong(sid, item.id).then(()=>{setLoading(false);}); }}
+                onClick={() => { setLoading(true); setBrowsableStreamSong(sid, item.id).then(()=>{setLoading(false);}).then(()=>loadChildren(null)); }}
                 footer={loading ? <CircularProgress/> : (playing == item.name ? <div>Now Playing</div> : [])}>
                 {<img src={item.img != "" ? item.img : getIcon(stream.type)} className="media-image" />}
             </ListItem>

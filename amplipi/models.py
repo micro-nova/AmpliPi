@@ -930,8 +930,8 @@ class PlayMedia(BaseModel):
   media: str = Field(description="URL to media to play")
   vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                              description='Output volume in dB, overrides vol_f')
-  vol_f: float = Field(default=None, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
-  source_id: int = Field(default=None, ge=0, le=MAX_SOURCES - 1, description='Source to announce with')
+  vol_f: float = Field(default=0.5, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
+  source_id: int = Field(default=0, ge=0, le=MAX_SOURCES - 1, description='Source to play media with')
 
   class Config:
     schema_extra = {
@@ -972,7 +972,7 @@ class Info(BaseModel):
   stream_types_available: List[str] = Field(
     default=[], description='The stream types available on this particular appliance')
   extra_fields: Optional[Dict] = Field(default=None, description='Optional fields for customization')
-
+  connected_drives: List[str] = Field(default=[], description='A list of all external drives connected')
   class Config:
     schema_extra = {
       'examples': {
@@ -996,7 +996,8 @@ class Info(BaseModel):
                 "git_dirty": False,
               }
             ],
-            'stream_types_available': ['bluetooth', 'fmradio']
+            'stream_types_available': ['bluetooth', 'fmradio'],
+            'connected_drives': [],
           }
         }
       }

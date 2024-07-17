@@ -31,7 +31,7 @@ import time
 import logging
 import sys
 import datetime
-
+import psutil
 import threading
 import wrapt
 
@@ -535,11 +535,21 @@ class Api:
       pass
     return release
 
+  def get_usb_drives(self):
+    """Reads the mount point for removable drives, returns them in a list"""
+    usb_drives = []
+    for partition in psutil.disk_partitions():
+      # Exclude rootfs, the backup drive that happens to mount to /media/pi
+      if '/media' in partition.mountpoint and 'rootfs' not in partition.mountpoint:
+        usb_drives.append(str(partition.mountpoint))
+    return usb_drives
+
   def _update_sys_info(self, throttled=True) -> None:
     """Update current system information"""
     if self.status.info is None:
       raise Exception("No info generated, system in a bad state")
     self.status.info.online = self._online_cache.get(throttled)
+    self.status.info.connected_drives = self.get_usb_drives()
     self.status.info.latest_release = self._latest_release_cache.get(throttled)
     self.status.info.access_key = auth.get_access_key("admin") if auth.user_access_key_set("admin") else ""
 
