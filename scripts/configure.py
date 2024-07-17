@@ -92,7 +92,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     },
     'usb': {
         'apt': [
-                'udisk2', 'udiskie',           # Required to mount filesystem without desktop installed
+                'udisks2', 'udiskie',           # Required to mount filesystem without desktop installed
         ],
         'copy': [
           {
