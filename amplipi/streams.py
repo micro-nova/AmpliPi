@@ -1362,7 +1362,7 @@ class USBStick(PersistentStream, Browsable):
     self.ended = False
     self._ended_timeout = datetime.datetime.now()
     self.playing = ''
-    self.device = None
+    self.device: Optional[str] = None
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
