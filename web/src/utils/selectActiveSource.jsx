@@ -1,7 +1,8 @@
 import { useStatusStore, usePersistentStore } from "@/App";
 
-// Import and use this function on every page that relies on selected sources
-// Currently, that means the Home and Player pages
+// Import and use this function on every main page
+// Currently, that means the Home, Player, and Settings pages
+// Not the Browse page, as not all selectable streams can be browsed and that feels likely to seem like an error to a user
 export default function selectActiveSource(){ // Selects an active source, if the selected source is inactive
     const sources = useStatusStore((s) => s.status.sources);
     const selectedSource = usePersistentStore((s) => s.selectedSource);
