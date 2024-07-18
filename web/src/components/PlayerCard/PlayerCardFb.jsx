@@ -47,6 +47,12 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
         setZoneModalOpen(true);
     };
 
+    function Trackwave() {
+        return(
+            <Sinewave style={{height: "100%", width: "100%", }} />
+        )
+    }
+
     return (
         <Card backgroundImage={img_url} selected={selected} onClick={select} selectable>
             <div className="container">
@@ -99,18 +105,10 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
 
                 { !is_streamer && zones.length > 0 && (
                     <div style={{width: "100%", position: "relative"}}>
-                        <Sinewave style={{
-                            width: "100%",
-                            zIndex: "1",
-
-                            position: "absolute",
-                            top: "0",
-                            left: "0",
-                            width: "100%",
-                            height: "100%",
-                            PointerEvent: "none",
-                            }} />
                         <CardVolumeSlider
+                            slots = {{
+                                track: Sinewave,
+                            }}
                             sourceId={sourceId}
                             onChange={(event, vol) => {
                                 setVol(sourceId, event, vol);

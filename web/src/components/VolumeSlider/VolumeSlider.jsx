@@ -33,7 +33,7 @@ VolIcon.propTypes = {
 };
 
 // generic volume slider used by other volume sliders
-const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
+const VolumeSlider = ({ vol, mute, setVol, setMute, disabled, ...params }) => {
     return (
         <StopProp>
             <div className="volume-slider-container">
@@ -46,6 +46,7 @@ const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
                     <VolIcon vol={vol} mute={mute} />
                 </div>
                 <Slider
+                    {...params}
                     disabled={disabled}
                     className="volume-slider"
                     min={0}

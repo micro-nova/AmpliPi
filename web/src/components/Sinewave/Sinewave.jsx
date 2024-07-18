@@ -26,6 +26,7 @@ export default function Sinewave({
 
       // Set stroke style for the sine wave
       ctx.strokeStyle = '#90caf9';
+      ctx.lineWidth = 5;
 
       ctx.beginPath();
       ctx.moveTo(0, canvas.height / 2);
@@ -62,9 +63,9 @@ Sinewave.propTypes = {
 };
 
 Sinewave.defaultProps = {
-  maxAmplitude: 20,
+  maxAmplitude: 25,
   length: 100,
   frequency: 15,
-  y: undefined,
+  y: 5,
   style: {}
 };
