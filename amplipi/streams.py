@@ -1393,7 +1393,7 @@ class USBStick(PersistentStream, Browsable):
       if remake_list:
         self.make_song_list()
 
-      if self.song_index < len(self.song_list):
+      if self.song_index < len(self.song_list) and self.device is not None:
         self.url = self.song_list[self.song_index]
         self.vlc_args = [
           sys.executable, f"{utils.get_folder('streams')}/fileplayer.py", self.url, self.device,
