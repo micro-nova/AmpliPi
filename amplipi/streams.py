@@ -248,6 +248,7 @@ class PersistentStream(BaseStream):
     super().__init__(stype, name, None, disabled, mock)
     self.vsrc: Optional[int] = None
     self._cproc: Optional[subprocess.Popen] = None
+    self.device: Optional[str] = None
 
   def __del__(self):
     self.deactivate()
