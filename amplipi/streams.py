@@ -1421,7 +1421,7 @@ class USBStick(PersistentStream, Browsable):
       elif not os.path.isfile(f):
         self.directory_list.append(f)
     return None
-  
+
   def _deactivate(self):
     if self._is_running():
       self.proc.kill()
