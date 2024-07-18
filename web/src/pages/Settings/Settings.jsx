@@ -21,11 +21,10 @@ import InfoIcon from "@mui/icons-material/Info";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import ListItem from "@/components/List/ListItem/ListItem";
 import List from "@/components/List/List";
-import { IsMobileApp, IsSaved, SaveURL, UnsaveURL } from "@/utils/MobileApp";
+import { AlwaysConnect } from "@/utils/MobileApp";
 import Badge from "@mui/material/Badge";
 
 import PropTypes from "prop-types";
-import Checkbox from "@mui/material/Checkbox";
 
 // TODO klayton: delete?
 // const PageListItem = ({ name, onClick, children }) => {
@@ -87,7 +86,6 @@ Page.propTypes = {
 
 const Settings = ({ openPage }) => {
     const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
-    const [isSavedUrl, setIsSavedUrl] = React.useState(IsSaved());
 
     if (openPage != "") {
         return <Page openPage={openPage} />;
@@ -176,22 +174,7 @@ const Settings = ({ openPage }) => {
                             <InfoIcon fontSize="inherit" />
                         </div>
                     </ListItem>
-                    {IsMobileApp() && (
-                        <div>
-                            <text>Always connect to this Amplipi</text>
-                            <Checkbox
-                                checked={isSavedUrl}
-                                onChange={(e) => {
-                                    if (e.target.checked) {
-                                        SaveURL();
-                                    } else {
-                                        UnsaveURL();
-                                    }
-                                    setIsSavedUrl(e.target.checked);
-                                }}
-                            />
-                        </div>
-                    )}
+                    <AlwaysConnect />
                 </List>
             </div>
         </div>
