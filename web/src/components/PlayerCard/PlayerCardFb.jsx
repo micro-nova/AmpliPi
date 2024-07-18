@@ -6,6 +6,7 @@ import CardVolumeSlider from "../CardVolumeSlider/CardVolumeSlider";
 import { useState } from "react";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
 import StreamsModal from "../StreamsModal/StreamsModal";
+import Sinewave from "../Sinewave/Sinewave";
 import ZonesModal from "../ZonesModal/ZonesModal";
 import { usePersistentStore, useStatusStore } from "@/App.jsx";
 import { router } from "@/main";
@@ -97,12 +98,25 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                 </div>
 
                 { !is_streamer && zones.length > 0 && (
-                    <CardVolumeSlider
-                        sourceId={sourceId}
-                        onChange={(event, vol) => {
-                            setVol(sourceId, event, vol);
-                        }}
-                    />
+                    <div style={{width: "100%", position: "relative"}}>
+                        <Sinewave style={{
+                            width: "100%",
+                            zIndex: "1",
+
+                            position: "absolute",
+                            top: "0",
+                            left: "0",
+                            width: "100%",
+                            height: "100%",
+                            PointerEvent: "none",
+                            }} />
+                        <CardVolumeSlider
+                            sourceId={sourceId}
+                            onChange={(event, vol) => {
+                                setVol(sourceId, event, vol);
+                            }}
+                        />
+                    </div>
                 )}
             </div>
 
