@@ -23,6 +23,7 @@ import ListItem from "@/components/List/ListItem/ListItem";
 import List from "@/components/List/List";
 import { IsMobileApp, IsSaved, SaveURL, UnsaveURL } from "@/utils/MobileApp";
 import Badge from "@mui/material/Badge";
+import selectActiveSource from "@/utils/selectActiveSource";
 
 import PropTypes from "prop-types";
 import Checkbox from "@mui/material/Checkbox";
@@ -88,6 +89,10 @@ Page.propTypes = {
 const Settings = ({ openPage }) => {
     const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
     const [isSavedUrl, setIsSavedUrl] = React.useState(IsSaved());
+
+    // Make sure player tab doesn't just disappear when navigating to the settings page
+    // This can only happen due to another user closing the previously selected stream
+    selectActiveSource();
 
     if (openPage != "") {
         return <Page openPage={openPage} />;
