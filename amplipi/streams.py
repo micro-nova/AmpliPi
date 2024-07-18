@@ -327,6 +327,7 @@ class PersistentStream(BaseStream):
         raise Exception('No virtual source found/available')
     virt_dev = utils.virtual_connection_device(self.vsrc)
     phy_dev = utils.real_output_device(src)
+    self.device = phy_dev
     if virt_dev is None or self.mock:
       logger.info('  pretending to connect to loopback (unavailable)')
     else:
@@ -1343,7 +1344,7 @@ class Aux(BaseStream):
 MUSIC_EXTENSIONS = ('.mp3', '.wav', '.aac', '.m4a', '.flac', '.aiff')
 
 
-class USBStick(BaseStream, Browsable):
+class USBStick(PersistentStream, Browsable):
   """ A USB Stick plugged into AmpliPro """
 
   stream_type: ClassVar[str] = 'usbstick'
@@ -1361,6 +1362,7 @@ class USBStick(BaseStream, Browsable):
     self.ended = False
     self._ended_timeout = datetime.datetime.now()
     self.playing = ''
+    self.device = None
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -1371,19 +1373,16 @@ class USBStick(BaseStream, Browsable):
     if 'url' in kwargs:
       self.url = kwargs['url']
       reconnect_needed = True
-    if reconnect_needed:
-      last_src = self.src
-      self.disconnect()
-      time.sleep(0.1)  # delay a bit, is this needed?
-      self.connect(last_src)
+    if reconnect_needed and self.is_activated():
+      self.restart()
 
-  def connect(self, src, remake_list: bool = True):
+  def _activate(self, vsrc: int, remake_list: bool = True):
     """ Connect a short run VLC process with audio output to a given audio source """
-    logger.info(f'connecting {self.name} to {src}...')
+    logger.info(f'connecting {self.name} to {vsrc}...')
 
-    if not self.mock and src is not None:
+    if not self.mock and vsrc is not None:
       # Make all of the necessary dir(s)
-      src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
+      src_config_folder = f"{utils.get_folder('config')}/srcs/v{vsrc}"
       os.system(f'mkdir -p {src_config_folder}')
 
       # Start audio via runvlc.py
@@ -1396,7 +1395,7 @@ class USBStick(BaseStream, Browsable):
       if self.song_index < len(self.song_list):
         self.url = self.song_list[self.song_index]
         self.vlc_args = [
-          sys.executable, f"{utils.get_folder('streams')}/fileplayer.py", self.url, utils.real_output_device(src),
+          sys.executable, f"{utils.get_folder('streams')}/fileplayer.py", self.url, self.device,
           '--song-info', song_info_path, '--log', log_file_path, '--cmd', self.command_file_path
         ]
         logger.info(f'running: {self.vlc_args}')
@@ -1406,8 +1405,8 @@ class USBStick(BaseStream, Browsable):
     # for the mock condition it just waits a couple seconds
     self.bkg_thread = threading.Thread(target=self.wait_on_proc)
     self.bkg_thread.start()
-    self._connect(src)
     self.state = 'playing'
+    self.src = vsrc
 
     return
 
@@ -1422,6 +1421,14 @@ class USBStick(BaseStream, Browsable):
       elif not os.path.isfile(f):
         self.directory_list.append(f)
     return None
+  
+  def _deactivate(self):
+    if self._is_running():
+      self.proc.kill()
+      if self.bkg_thread:
+        self.bkg_thread.join()
+    self._disconnect()
+    self.proc = None
 
   def wait_on_proc(self):
     """ Wait for the vlc process to finish """
@@ -1440,8 +1447,7 @@ class USBStick(BaseStream, Browsable):
     self.song_index = new_song_id
     self.playing = self.song_list[self.song_index]
     last_src = self.src
-    self.disconnect()
-    self.connect(last_src, remake_list=False)
+    self.restart()
 
     f = open(self.command_file_path, 'w')
     f.write('play')
@@ -1484,14 +1490,6 @@ class USBStick(BaseStream, Browsable):
           else:
             self.change_song(self.song_index)
 
-  def disconnect(self):
-    if self._is_running():
-      self.proc.kill()
-      if self.bkg_thread:
-        self.bkg_thread.join()
-    self._disconnect()
-    self.proc = None
-
   def info(self) -> models.SourceInfo:
     self.supported_cmds = ['play', 'pause']
     if self.song_index != 0 and self.playing in self.song_list:
@@ -1507,7 +1505,7 @@ class USBStick(BaseStream, Browsable):
                                img_url=img,
                                supported_cmds=self.supported_cmds,
                                type=self.stream_type)
-    src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+    src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
     loc = f'{src_config_folder}/currentSong'
     try:
       with open(loc, 'r', encoding='utf-8') as file:
@@ -1548,6 +1546,9 @@ class USBStick(BaseStream, Browsable):
     else:
       new_id = id - (1 + len(self.directory_list))
       self.change_song(new_id)
+
+  def is_persistent(self):
+    return True
 
 
 class FilePlayer(BaseStream):
