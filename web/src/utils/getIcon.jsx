@@ -49,7 +49,7 @@ export const getIcon = (type) => {
     case "AUX":
       return aux;
 
-    case "USBSTICK":
+    case "MEDIADEVICE":
       return usb;
 
     default:

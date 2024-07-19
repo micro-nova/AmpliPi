@@ -138,8 +138,8 @@
     "fields": []
   },
   {
-    "name": "USB Player",
-    "type": "usbstick",
+    "name": "Media Device",
+    "type": "mediadevice",
     "fields": [
     ]
   }

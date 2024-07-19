@@ -1345,10 +1345,10 @@ class Aux(BaseStream):
 MUSIC_EXTENSIONS = ('.mp3', '.wav', '.aac', '.m4a', '.flac', '.aiff')
 
 
-class USBStick(PersistentStream, Browsable):
-  """ A USB Stick plugged into AmpliPro """
+class MediaDevice(PersistentStream, Browsable):
+  """ An external media device plugged into AmpliPro """
 
-  stream_type: ClassVar[str] = 'usbstick'
+  stream_type: ClassVar[str] = 'mediadevice'
 
   def __init__(self, name: str, url: Optional[str], disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
@@ -2040,7 +2040,7 @@ class Bluetooth(BaseStream):
 
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-                  Aux, FilePlayer, FMRadio, LMS, Bluetooth, USBStick]
+                  Aux, FilePlayer, FMRadio, LMS, Bluetooth, MediaDevice]
 
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
@@ -2074,8 +2074,8 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
   if stream.type == 'lms':
     return LMS(name, args.get('server'), args.get("port"), disabled=disabled, mock=mock)
-  if stream.type == 'usbstick':
-    return USBStick(name, args.get('url'), disabled=disabled, mock=mock)
+  if stream.type == 'mediadevice':
+    return MediaDevice(name, args.get('url'), disabled=disabled, mock=mock)
   elif stream.type == 'bluetooth':
     return Bluetooth(name, disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
@@ -2085,7 +2085,7 @@ def stream_types_available() -> List[str]:
   """ Returns a list of the available streams on this particular appliance.
   """
   stypes = [RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-            Aux, FilePlayer, LMS, USBStick]
+            Aux, FilePlayer, LMS, MediaDevice]
   if Bluetooth.is_hw_available():
     stypes.append(Bluetooth)
   if FMRadio.is_hw_available():
