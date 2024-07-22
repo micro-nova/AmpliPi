@@ -32,3 +32,37 @@
   flex-direction: column;
   justify-content: center;
 }
+
+@keyframes wiggle {
+  0% {
+    transform: rotate(0deg)
+  }
+
+  10%{
+    transform: rotate(-5deg)
+  }
+
+  20%{
+    transform: rotate(5deg)
+  }
+
+  30%{
+    transform: rotate(-5deg)
+  }
+
+  40%{
+    transform: rotate(5deg)
+  }
+
+  50% {
+    transform: rotate(0deg)
+  }
+
+  100% {
+    transform: rotate(0deg)
+  }
+}
+
+.wiggle {
+  animation: wiggle 3s infinite;
+}

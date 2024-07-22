@@ -33,7 +33,12 @@ VolIcon.propTypes = {
 };
 
 // generic volume slider used by other volume sliders
-const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
+const VolumeSlider = ({ vol, mute, setVol, setMute, disabled, playing }) => {
+    let mute_classes = "volume-slider-icon-container"
+    if(playing){
+        mute_classes += " wiggle"
+    }
+
     return (
         <StopProp>
             <div className="volume-slider-container">
@@ -41,7 +46,7 @@ const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
                     onClick={() => {
                         setMute(!mute);
                     }}
-                    className="volume-slider-icon-container"
+                    className={mute_classes}
                 >
                     <VolIcon vol={vol} mute={mute} />
                 </div>
@@ -77,6 +82,7 @@ VolumeSlider.propTypes = {
     setVol: PropTypes.func.isRequired,
     setMute: PropTypes.func.isRequired,
     disabled: PropTypes.bool,
+    playing: PropTypes.bool,
 };
 VolumeSlider.defaultProps = {
     disabled: false,
