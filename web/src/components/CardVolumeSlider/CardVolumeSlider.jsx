@@ -36,7 +36,7 @@ let sendingPacketCount = 0;
 
 // main volume slider on player and volume slider on player card
 
-const CardVolumeSlider = ({ sourceId }) => {
+const CardVolumeSlider = ({ sourceId, ...params }) => {
     const zones = useStatusStore((s) => s.status.zones);
     const setZonesVol = useStatusStore((s) => s.setZonesVol);
     const setZonesMute = useStatusStore((s) => s.setZonesMute);
@@ -90,6 +90,7 @@ const CardVolumeSlider = ({ sourceId }) => {
     return (
         <div className="volume-slider">
             <VolumeSlider
+                {...params}
                 vol={value}
                 mute={mute}
                 setMute={setMute}

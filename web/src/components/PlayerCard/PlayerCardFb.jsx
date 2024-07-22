@@ -6,6 +6,7 @@ import CardVolumeSlider from "../CardVolumeSlider/CardVolumeSlider";
 import { useState } from "react";
 import ZonesBadge from "../ZonesBadge/ZonesBadge";
 import StreamsModal from "../StreamsModal/StreamsModal";
+import Sinewave from "../Sinewave/Sinewave";
 import ZonesModal from "../ZonesModal/ZonesModal";
 import { usePersistentStore, useStatusStore } from "@/App.jsx";
 import { router } from "@/main";
@@ -45,6 +46,12 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
     const openZones = () => {
         setZoneModalOpen(true);
     };
+
+    function Trackwave() {
+        return(
+            <Sinewave style={{height: "100%", width: "100%", }} />
+        )
+    }
 
     return (
         <Card backgroundImage={img_url} selected={selected} onClick={select} selectable>
@@ -97,12 +104,17 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                 </div>
 
                 { !is_streamer && zones.length > 0 && (
-                    <CardVolumeSlider
-                        sourceId={sourceId}
-                        onChange={(event, vol) => {
-                            setVol(sourceId, event, vol);
-                        }}
-                    />
+                    <div style={{width: "100%", position: "relative"}}>
+                        <CardVolumeSlider
+                            slots = {{
+                                track: Sinewave,
+                            }}
+                            sourceId={sourceId}
+                            onChange={(event, vol) => {
+                                setVol(sourceId, event, vol);
+                            }}
+                        />
+                    </div>
                 )}
             </div>
 
