@@ -1449,7 +1449,7 @@ class MediaDevice(PersistentStream, Browsable):
         self.ended = data['state'] == 'ENDED'
     except Exception:
       pass
-    
+
     if self.state == 'playing' and self.playing in self.song_list and self.ended and self.song_index < len(self.song_list) - 1:
       self.next_song()
     elif self.ended and (self.song_index >= len(self.song_list) - 1 or self.playing not in self.song_list):
