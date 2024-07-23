@@ -1381,7 +1381,7 @@ class MediaDevice(PersistentStream, Browsable):
     """ Connect a short run VLC process with audio output to a given audio source """
     logger.info(f'connecting {self.name} to {vsrc}...')
 
-    if not self.mock and vsrc is not None:
+    if not self.mock:
       # Make all of the necessary dir(s)
       src_config_folder = f"{utils.get_folder('config')}/srcs/v{vsrc}"
       os.system(f'mkdir -p {src_config_folder}')
