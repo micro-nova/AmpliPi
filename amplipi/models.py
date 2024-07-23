@@ -998,7 +998,7 @@ class Info(BaseModel):
               }
             ],
             'stream_types_available': ['bluetooth', 'fmradio'],
-            'connected_drives': [],
+            'connected_drives': ['/media/7FA5-ECB4'],
           }
         }
       }

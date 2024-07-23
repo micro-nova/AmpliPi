@@ -1406,10 +1406,21 @@ class MediaDevice(PersistentStream, Browsable):
     # for the mock condition it just waits a couple seconds
     self.bkg_thread = threading.Thread(target=self.wait_on_proc)
     self.bkg_thread.start()
+    self.command_thread = threading.Thread(target=self.process_commands)
+    self.command_thread.start()
     self.state = 'playing'
     self.src = vsrc
+    self.command_queue = []
+    self.command_queue_lock = threading.Lock()
 
     return
+  
+  def process_commands(self):
+    while self.proc is not None:
+      self.command_queue_lock.acquire()
+      if len(self.command_queue) != 0:
+        next_command = self.command_queue.pop()
+      self.command_queue_lock.release()
 
   def make_song_list(self):
     self.song_list = []
@@ -1459,11 +1470,7 @@ class MediaDevice(PersistentStream, Browsable):
   def send_cmd(self, cmd):
     if cmd in self.supported_cmds:
       if cmd == 'stop':
-        if self._is_running():
-          self.proc.kill()
-          if self.bkg_thread:
-            self.bkg_thread.join()
-        self.proc = None
+        self._deactivate()
       if self.command_file_path is not None:
         if cmd == 'pause':
           f = open(self.command_file_path, 'w')
@@ -1523,7 +1530,6 @@ class MediaDevice(PersistentStream, Browsable):
     return source
 
   def browse(self, parent=None) -> List[models.BrowsableItem]:
-    logger.info(f'BROWSE CALLED AT DIRECTORY {self.local_directory}')
     browsables = []
     id = 1
     if self.local_directory != self.directory:
