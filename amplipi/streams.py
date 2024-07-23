@@ -1342,7 +1342,7 @@ class Aux(BaseStream):
     return source
 
 
-MUSIC_EXTENSIONS = ('.mp3', '.wav', '.aac', '.m4a', '.flac', '.aiff')
+MUSIC_EXTENSIONS = ('.mp3', '.wav', '.aac', '.m4a', '.m4b', '.flac', '.aiff', '.mp4', '.avi', '.wmv', '.mov', '.mpg', '.mpeg', '.wma')
 
 
 class MediaDevice(PersistentStream, Browsable):
@@ -1361,7 +1361,7 @@ class MediaDevice(PersistentStream, Browsable):
     self.directory_list: List[str] = []
     self.song_index = 0
     self.ended = False
-    self._ended_timeout = datetime.datetime.now()
+    self._prev_timeout = datetime.datetime.now()
     self.playing = ''
     self.device: Optional[str] = None
 
@@ -1391,7 +1391,10 @@ class MediaDevice(PersistentStream, Browsable):
       log_file_path = f'{src_config_folder}/log'
       self.command_file_path = f'{src_config_folder}/cmd'
       if remake_list:
-        self.make_song_list()
+        try:
+          self.make_song_list()
+        except Exception as e:
+          logger.error(f'Error processing request: {e}')
 
       if self.song_index < len(self.song_list) and self.device is not None:
         self.url = self.song_list[self.song_index]
@@ -1406,28 +1409,17 @@ class MediaDevice(PersistentStream, Browsable):
     # for the mock condition it just waits a couple seconds
     self.bkg_thread = threading.Thread(target=self.wait_on_proc)
     self.bkg_thread.start()
-    self.command_thread = threading.Thread(target=self.process_commands)
-    self.command_thread.start()
     self.state = 'playing'
     self.src = vsrc
-    self.command_queue = []
-    self.command_queue_lock = threading.Lock()
-
     return
-  
-  def process_commands(self):
-    while self.proc is not None:
-      self.command_queue_lock.acquire()
-      if len(self.command_queue) != 0:
-        next_command = self.command_queue.pop()
-      self.command_queue_lock.release()
 
   def make_song_list(self):
     self.song_list = []
     self.directory_list = []
-
     for filename in os.listdir(self.local_directory):
       f = os.path.join(self.local_directory, filename)
+      if not f.startswith(self.local_directory):
+        raise Exception(f'File path {f} not in {self.local_directory}')
       if os.path.isfile(f) and f.endswith(MUSIC_EXTENSIONS):
         self.song_list.append(f)
       elif not os.path.isfile(f):
@@ -1449,6 +1441,20 @@ class MediaDevice(PersistentStream, Browsable):
     else:
       time.sleep(0.3)  # handles mock case
 
+    src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
+    loc = f'{src_config_folder}/currentSong'
+    try:
+      with open(loc, 'r', encoding='utf-8') as file:
+        data = json.loads(file.read())
+        self.ended = data['state'] == 'ENDED'
+    except Exception:
+      pass
+    
+    if self.state == 'playing' and self.playing in self.song_list and self.ended and self.song_index < len(self.song_list) - 1:
+      self.next_song()
+    elif self.ended and (self.song_index >= len(self.song_list) - 1 or self.playing not in self.song_list):
+      self.state = 'paused'
+
   def next_song(self):
     self.change_song(self.song_index + 1)
 
@@ -1458,13 +1464,12 @@ class MediaDevice(PersistentStream, Browsable):
   def change_song(self, new_song_id):
     self.song_index = new_song_id
     self.playing = self.song_list[self.song_index]
-    last_src = self.src
     self.restart()
 
     f = open(self.command_file_path, 'w')
     f.write('play')
     f.close()
-    self._ended_timeout = datetime.datetime.now() + datetime.timedelta(seconds=3)
+    self._prev_timeout = datetime.datetime.now() + datetime.timedelta(seconds=3)
     self.ended = False
 
   def send_cmd(self, cmd):
@@ -1493,15 +1498,13 @@ class MediaDevice(PersistentStream, Browsable):
         if cmd == 'prev':
           # Restart current song if we are past the first 3 seconds, otherwise go back
 
-          if self._ended_timeout > datetime.datetime.now():
+          if self._prev_timeout > datetime.datetime.now() and self.song_index > 0:
             self.previous_song()
           else:
             self.change_song(self.song_index)
 
   def info(self) -> models.SourceInfo:
-    self.supported_cmds = ['play', 'pause']
-    if self.song_index != 0 and self.playing in self.song_list:
-      self.supported_cmds.append('prev')
+    self.supported_cmds = ['play', 'pause', 'prev']
     if self.song_index != len(self.song_list) - 1 and self.playing in self.song_list:
       self.supported_cmds.append('next')
 
@@ -1516,17 +1519,10 @@ class MediaDevice(PersistentStream, Browsable):
     src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
     loc = f'{src_config_folder}/currentSong'
     try:
-      with open(loc, 'r', encoding='utf-8') as file:
-        data = json.loads(file.read())
+      with open(loc, 'r', encoding='utf-8'):
         source.track = self.playing.split('/')[-1]
-        self.ended = data['state'] == 'ENDED'
     except Exception:
       pass
-
-    if self.state == 'playing' and self.playing in self.song_list and self.ended and self.song_index < len(self.song_list) - 1 and self._ended_timeout < datetime.datetime.now():
-      self.next_song()
-    elif self.ended and (self.song_index >= len(self.song_list) - 1 or self.playing not in self.song_list) and self._ended_timeout < datetime.datetime.now():
-      self.state = 'paused'
     return source
 
   def browse(self, parent=None) -> List[models.BrowsableItem]:
@@ -1543,13 +1539,19 @@ class MediaDevice(PersistentStream, Browsable):
     return browsables
 
   def play(self, id):
-    logger.info(f'id is {id}, local directory is {self.local_directory} and top directory is {self.directory}')
+    logger.debug(f'Playing from media device: id is {id}, local directory is {self.local_directory} and top directory is {self.directory}')
     if id == 0 and self.local_directory != self.directory:
-      self.local_directory = os.path.dirname(self.local_directory)
-      self.make_song_list()
+      try:
+        self.local_directory = os.path.dirname(self.local_directory)
+        self.make_song_list()
+      except Exception as e:
+        logger.error(f'Error processing request: {e}')
     elif id <= len(self.directory_list):
-      self.local_directory = self.directory_list[id - 1]
-      self.make_song_list()
+      try:
+        self.local_directory = self.directory_list[id - 1]
+        self.make_song_list()
+      except Exception as e:
+        logger.error(f'Error processing request: {e}')
     else:
       new_id = id - (1 + len(self.directory_list))
       self.change_song(new_id)
@@ -1605,7 +1607,7 @@ class FilePlayer(BaseStream):
     if not self.mock and src is not None:
       # Make all of the necessary dir(s)
       src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
-      os.system(f'mkdir -p {src_config_folder}')
+      os.makedirs(src_config_folder)
 
       # Start audio via runvlc.py
       song_info_path = f'{src_config_folder}/currentSong'
