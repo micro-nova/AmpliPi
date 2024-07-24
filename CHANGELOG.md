@@ -5,6 +5,11 @@
   * Fix internet radio search on IOS app
   * Update styling on Settings pages, ensure they fit all mobile screens properly
   * Change "<- Back to App" button on the updater page to redirect to the settings page rather than the homepage
+* System
+  * Rename Updater to Updater/Admin Control Panel
+  * Add "Admin Settings" tab to the Updater/Admin Control Panel
+    * Add toggleable option to persist system logs to Admin Settings
+    * Move "Set password" page to be accessible via Admin Settings tab
 
 ## 0.4.2
 * Streams
