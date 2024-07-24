@@ -259,10 +259,10 @@ while True:
       if args.test:
         log('fail')
         curr_info = {
-        'track': '',
-        'artist': '',
-        'station': '',
-        'state': 'stopped'
+          'track': '',
+          'artist': '',
+          'station': '',
+          'state': 'stopped'
         }
         if args.song_info:
           update_info(cur_info)
