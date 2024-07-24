@@ -13,7 +13,11 @@ export default function selectActiveSource(){ // Selects an active source, if th
     let run = false;
 
     // If selected source is not active, select the source with the lowest ID
-    if(!sources || !sources[selectedSource] || !sources[selectedSource]["input"]){
+    if(
+        (!sources[selectedSource] || !sources[selectedSource]["input"])
+        &&
+        sources.some(source => (source["input"] !== "None") && (source['input'] !== "")) // similar to a python "if value in array['header']"
+    ){
         // While testing this script along with the one that autoselects the created source when adding a new source,
         // I found that there were times that a source could reach an undefined variable
 
