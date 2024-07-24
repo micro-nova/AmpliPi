@@ -11,6 +11,7 @@
     <!-- Font Awesome CSS -->
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'
       onerror="this.onerror=null;this.href='static/css/libs/font-awesome/5.15.1/all.min.css';">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <!-- Bootstrap core CSS -->
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'
       onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
@@ -28,22 +29,22 @@
       </p>
       <h1><span class="text-white">Ampli</span><span class="text-danger">Pi</span></h1>
       <p class="lead mb-4">
-        Update your AmpliPi device
+        Update & configure your AmpliPi device
       </p>
       <div class="card">
         <div class="card-header">
           <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
             <li class="nav-item">
-              <a class="nav-link active" id="latest-update-tab" data-toggle="tab" href="#latest-update" role="tab" aria-controls="latest-update" aria-selected="true">Latest</a>
+              <a class="nav-link active" id="latest-update-tab" data-toggle="tab" href="#latest-update" role="tab" aria-controls="latest-update" aria-selected="true">Latest Release</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" id="older-update-tab" data-toggle="tab" href="#older-update" role="tab" aria-controls="older-update" aria-selected="false">Older Releases</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="manual-update-tab" data-toggle="tab" href="#manual-update" role="tab" aria-controls="manual-update" aria-selected="false">Custom</a>
+              <a class="nav-link" id="manual-update-tab" data-toggle="tab" href="#manual-update" role="tab" aria-controls="manual-update" aria-selected="false">Custom Update</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="set-password-tab" data-toggle="tab" href="#set-password" role="tab" aria-controls="set-password" aria-selected="false">Set Password</a>
+              <a class="nav-link" id="admin-settings-tab" data-toggle="tab" href="#admin-settings" role="tab" aria-controls="admin-settings" aria-selected="false">Admin Settings</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" id="support-tunnel-tab" data-toggle="tab" href="#support-tunnel" role="tab" aria-controls="support-tunnel" aria-selected="false">Support Tunnel</a>
@@ -52,6 +53,7 @@
         </div>
         <div class="card-body text-center">
           <div class="tab-content" id="myTabContent">
+
             <div class="tab-pane fade show active" id="latest-update" role="tabpanel" aria-labelledby="latest-update-tab">
               <div id='latest-update-name'>...</div>
               <div id='latest-update-desc' class="text-left"></div>
@@ -59,6 +61,7 @@
                 onclick="ui_start_software_update($('#latest-update').attr('data-url'), $('#latest-update').attr('data-version'));">
                 Start Update</a>
             </div>
+
             <div class="tab-pane fade" id="older-update" role="tabpanel" aria-labelledby="older-update-tab">
               <select class="custom-select" id="older-update-sel" onchange="ui_select_release(this);">
                 <!-- Releases populated from GH -->
@@ -69,12 +72,14 @@
                  onclick="ui_start_software_update($('#older-update-sel').val(), $('#older-update-sel').find(':selected').data('version'));">
                 Start Update</a>
             </div>
+
             <div class="tab-pane fade" id="manual-update" role="tabpanel" aria-labelledby="manual-update-tab">
               <div class="custom-file">
                 <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-custom-update').removeClass('disabled');">
               </div>
               <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="ui_upload_software_update();">Start Update</a>
             </div>
+
             <div class="tab-pane fade text-left" id="set-password" role="tabpanel" aria-labelledby="set-password-tab">
               <div class="set-password-dialog">
                 This form allows you to set a password for the web interface. If the password fields are empty, it will unset the password protection. This will only set a password for the web interface, not the system password. This action will also log out any existing sessions.
@@ -87,6 +92,7 @@
               </div>
               <a id="password" role="button" class="btn btn-lg btn-primary text-center mt-3" onClick="set_password();">Update Password</a>
             </div>
+
             <div class="tab-pane fade text-left" id="support-tunnel" role="tabpanel" aria-labelledby="support-tunnel-tab">
               <div id="support-tunnel-dialog">
                 This dialog allows you to request a support tunnel. Once requested, you must give the tunnel ID and preshared key to support, who can be reached via <a href="mailto:support@micro-nova.com">support@micro-nova.com</a>.
@@ -105,6 +111,127 @@
                 </div>
               </div>
             </div>
+
+            <div class="tab-pane fade text-left" id="admin-settings" role="tabpanel" aria-labelledby="admin-settings-tab">
+              <script>
+                function setVisibility(visible, ...others){
+                  // Sets visibility of the first element to inline, the rest to none
+                  visible.style.display = 'inline';
+                  for(i=0; i < others.length; i++){
+                    others[i].style.display = 'none';
+                  }
+                }
+
+                async function getPersist() {
+                  const response = await fetch("/settings/persist_logs", { method: "GET" });
+                  const data = await response.json();
+                  const checkbox = document.getElementById("persist-checkbox");
+                  const textbox = document.getElementById("persist-input");
+                  checkbox.checked = data.persist_logs;
+                  textbox.value = data.auto_off_delay;
+                }
+
+                async function setPersist() {
+                  const checkbox = document.getElementById("persist-checkbox");
+                  const textbox = document.getElementById("persist-input");
+
+                  const button = document.getElementById('persist-submit');
+                  const spinner = document.getElementById('persist-spinner');
+                  const success = document.getElementById('persist-success');
+                  const fail = document.getElementById('persist-fail');
+
+                  try {
+                    setVisibility(spinner, button, success, fail);
+                    const response = await fetch("/settings/persist_logs", {
+                      method: "POST",
+                      headers: {
+                          "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                          persist_logs: checkbox.checked,
+                          auto_off_delay: parseInt(textbox.value),
+                      }),
+                    });
+                  if(response.ok){
+                    setVisibility(success, spinner, button, fail);
+                  } else {
+                    setVisibility(fail, success, spinner, button);
+                  }
+                  } catch { // The same as response.ok == false
+                    setVisibility(fail, success, spinner, button);
+                  }
+
+                  setTimeout(() => { // Reset to default after delay at the end
+                    setVisibility(button, spinner, success, fail);
+                  }, 1500);
+                }
+
+                window.onload = getPersist;
+              </script>
+
+              <div id="admin-settings-dialog">
+                This tab allows you to change settings relating to the core of AmpliPi
+              </div>
+
+              <!-- Password -->
+              <div id="set-password" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="set-password form-group">
+                  <h6>
+                    Set Password
+                  </h6>
+                  <div class="set-password-dialog">
+                    This form lets you set a web interface password. Leaving the fields empty will remove password protection. Note that this only affects the web interface, not the system password, and will log out any active sessions.
+                  </div>
+                  <div style="float: left">
+                    <label for="password">Password:</label>
+                    <input id="password" type="password">
+                  </div>
+                  <div style="float: left; margin-left: 10px;">
+                    <label for="confirm-password" >Confirm Password:</label>
+                    <input id="confirm-password" type="password">
+                  </div>
+                  <div style="float: left">
+                    <a id="password" role="button" class="btn btn-primary btn-sm text-center" onClick="set_password();">Update Password</a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Log Persistence -->
+              <div id="log-persistence" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="log-persistence form-group">
+                  <h6>
+                    Log Persistence
+                  </h6>
+                  <div style="float: left;">
+                    <input id="persist-checkbox" type="checkbox" onclick="setPersist()" />
+                    <label for="persist-checkbox">Enable</label>
+                  </div>
+                  <div style="float: left; margin-left: 10px;">
+                    <label for="persist-input" class="auto-off-label">
+                      Auto Off Delay:
+                      <span class="auto-off-tooltip">
+                        the Auto Off function will deactivate persistant logs after the specified number of days.
+                        <br/>
+                        Input 0 to not automatically deactivate persistent logs, input 1 to deactivate it tonight at midnight.
+                      </span>
+                    </label>
+                    <input id="persist-input" />
+                  </div>
+                  <div style="float: left; margin-left: 10px;">
+                    <a id="persist-submit" role="button" class="btn btn-primary btn-sm text-center" onClick="setPersist()">Save Persistence & Delay</a>
+                    <a id="persist-success" role="button" class="btn btn-primary btn-sm text-center" style="display: none; background-color: #00AA00;">Success!</a>
+                    <a id="persist-fail" role="button" class="btn btn-primary btn-sm text-center" style="display: none; background-color: #DD0000;">Failure...</a>
+                    <div id="persist-spinner" style="display: none;">
+                      <i class="fa fa-circle-o-notch fa-spin" style="font-size:24px"></i>
+                    </div>
+                  </div>
+                </div>
+                <div class="set-password-dialog">
+                  WARNING: Leaving log persistence on for extended periods can damage your system.
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>

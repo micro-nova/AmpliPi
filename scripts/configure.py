@@ -113,6 +113,18 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         ]
     },
     'logging': {
+        "copy": [
+          {
+            'from': 'config/deactivate_persist_logs_crontab',
+            'to': '/etc/cron.d/deactivate_persist_logs',
+            'sudo': 'true',
+          },
+          {
+            'from': 'scripts/increment_auto_off.py',
+            'to': '/usr/local/bin/increment_auto_off.py',
+            'sudo': 'true',
+          },
+        ],
         'script': [
             'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',
             f"echo '{RSYSLOG_CFG}' | sudo tee /etc/rsyslog.conf",
@@ -120,10 +132,15 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo systemctl enable rsyslog.service',
             'sudo systemctl restart rsyslog.service',
 
-            'echo "reconfiguring journald to only log to RAM"',
-            r'echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
+            'echo "If first deploy, reconfiguring journald to only log to RAM"',
+            r'[ ! -d /var/log/journal ] && echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
             'sudo systemctl enable systemd-journald.service',
             'sudo systemctl restart systemd-journald.service',
+
+            'echo Handle dependencies for log persistence options',
+            'sudo mkdir -p /var/log/journal',
+            'sudo systemd-tmpfiles --create --prefix /var/log/journal',
+            'pip install requests',
 
             'echo "enable socket to the journald server to allow easy access to system logs"',
             'sudo systemctl enable systemd-journal-gatewayd.socket',

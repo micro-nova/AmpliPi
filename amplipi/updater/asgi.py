@@ -36,6 +36,8 @@ import pathlib
 import shutil
 import asyncio
 
+import configparser
+
 # web framework
 import requests
 from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter, Response
@@ -60,6 +62,21 @@ logger.addHandler(sh)
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
 sse_messages: queue.Queue = queue.Queue()
+
+
+def create_logging_ini():
+  """Fallback in case the ini doesn't exist, set to default settings. Only really comes up during github tests."""
+  ini = '/var/log/logging.ini'
+  tmp = '/tmp/logging.ini.tmp'
+
+  if not os.path.exists(ini):
+    conf = configparser.ConfigParser(strict=False, allow_no_value=True)
+    with open(tmp, "+w", encoding="utf-8") as file:
+      conf.read(file)
+      conf.add_section("logging")
+      conf.set("logging", "auto_off_delay", "14")
+      conf.write(file)
+    subprocess.run(['sudo', 'mv', tmp, ini], check=True)
 
 
 class ReleaseInfo(BaseModel):
@@ -93,6 +110,90 @@ except FileNotFoundError:
   pass
 except Exception as e:
   logger.exception(f'Error loading identity file: {e}')
+
+
+class Persist_Logs(BaseModel):
+  """Basemodel that consists of a bool and int, used to change different config files around the system via POST /settings/persist_logs"""
+  persist_logs: bool
+  auto_off_delay: int
+
+
+@router.get("/settings/persist_logs")
+def get_log_persist_state():
+  """
+  Checks /etc/systemd/journald.conf to find if the current storage setting is persistent and returns a bool
+  Note that returning false doesn't necessarily mean that logs are set to volatile, and could just mean that the config file is missing the line being read
+  """
+  create_logging_ini()
+
+  journalconf = configparser.ConfigParser(strict=False, allow_no_value=True)
+  journalconf.read('/etc/systemd/journald.conf')
+
+  logconf = configparser.ConfigParser(strict=False, allow_no_value=True)
+  logconf.read('/var/log/logging.ini')
+
+  ret = Persist_Logs(persist_logs=journalconf.get("Journal", "Storage", fallback="") == "persistent", auto_off_delay=logconf.get("logging", "auto_off_delay", fallback="14"),)
+  return ret
+
+
+@router.post("/settings/persist_logs")
+def toggle_persist_logs(data: Persist_Logs):
+  """Toggles the option within journald to save logs to memory or storage, and sets the length of time before that setting is reset to volatile"""
+  try:
+    state = get_log_persist_state()
+
+    if state.persist_logs != data.persist_logs:
+      journalconf = '/etc/systemd/journald.conf'
+      journaltmp = '/tmp/journald.conf.tmp'
+      journal = configparser.ConfigParser(strict=False, allow_no_value=True)
+      journal.read(journalconf)
+
+      if not journal.has_section("Journal"):
+        journal.add_section('Journal')
+
+      # goal_value is true if you wish to turn persistent logging on and false if you wish to turn it off
+      if data.persist_logs:  # Set persist
+        journal.set('Journal', 'Storage', 'persistent')
+        journal.set('Journal', 'SyncIntervalSec', '30s')
+        journal.set('Journal', 'SystemMaxUse', '64M')
+
+        journal.remove_option('Journal', 'RuntimeMaxUse')
+        journal.remove_option('Journal', 'ForwardToConsole')
+        journal.remove_option('Journal', 'ForwardToWall')
+      else:  # Reset config to default as seen in configure.py
+        journal.set('Journal', 'Storage', 'volatile')
+        journal.set('Journal', 'RuntimeMaxUse', '64M')
+        journal.set('Journal', 'ForwardToConsole', 'no')
+        journal.set('Journal', 'ForwardToWall', 'no')
+
+        journal.remove_option('Journal', 'SyncIntervalSec')
+        journal.remove_option('Journal', 'SystemMaxUse')
+
+      with open(journaltmp, 'w', encoding="utf-8") as conf_file:
+        journal.write(conf_file)
+
+      subprocess.run(['sudo', 'mv', journaltmp, journalconf], check=True)
+      subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journald'], check=True)
+      logger.info(f"persist_logs set to {data.persist_logs}")
+    else:
+      logger.info("persist_logs unchanged")
+
+    if state.auto_off_delay != data.auto_off_delay:
+      logconf = '/var/log/logging.ini'
+      logtmp = '/tmp/logging.ini.tmp'
+      log = configparser.ConfigParser(strict=False, allow_no_value=True)
+      log.read(logconf)
+      log.set('logging', 'auto_off_delay', f"{data.auto_off_delay}")  # Accept auto_off_delay as an int for type checking, parse to str for configParser validity
+      with open(logtmp, 'w', encoding='utf-8') as file:
+        log.write(file)
+      subprocess.run(['sudo', 'mv', logtmp, logconf], check=True)
+      logger.info(f"auto_off_delay set to {data.auto_off_delay}")
+    else:
+      logger.info("auto_off_delay unchanged")
+
+  except Exception as exc:
+    logger.error("persist_logs POST failed!")
+    raise exc
 
 
 @router.get('/update')
