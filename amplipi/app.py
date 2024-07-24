@@ -226,7 +226,7 @@ def shutdown():
   """
   # preemptively save the state (just in case the shutdown procedure doesn't invoke a save)
   get_ctrl().save()
-  # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
+  # start the shutdown process and returning immediately (hopefully before the shutdown process begins)
   Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
 

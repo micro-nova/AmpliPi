@@ -151,7 +151,7 @@ const Settings = ({ openPage }) => {
                                 <UpdateIcon fontSize="inherit" />
                             </Badge>
                         </div>
-                    Updates
+                    Admin Panel
                 </SettingsListItem>
 
                 <SettingsListItem onClick={() => router.navigate("/settings/about")}>

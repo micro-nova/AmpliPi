@@ -36,6 +36,8 @@ import pathlib
 import shutil
 import asyncio
 
+import configparser
+
 # web framework
 import requests
 from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter, Response
@@ -48,7 +50,8 @@ import uvicorn
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
 
-from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
+from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash,\
+  NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
 
 app = FastAPI()
 router = APIRouter(dependencies=[Depends(CookieOrParamAPIKey)])
@@ -60,6 +63,72 @@ logger.addHandler(sh)
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
 sse_messages: queue.Queue = queue.Queue()
+
+
+def validate_logging_ini():
+  """Fallback in case the ini file or any individual header  doesn't exist, set to default settings. Only really comes up during tests."""
+  tmp = '/tmp/logging.ini.tmp'
+  ini = '/var/log/logging.ini'
+  conf = configparser.ConfigParser(strict=False, allow_no_value=True)
+
+  with open(tmp, "+w", encoding="utf-8") as file:
+    if os.path.exists(ini):
+      conf.read(ini)
+    else:
+      conf.read(file)
+
+    if not conf.has_section("logging"):
+      conf.add_section("logging")
+
+    if not conf.has_option("logging", "auto_off_delay"):
+      conf.set("logging", "auto_off_delay", "14")
+    auto_off_delay = conf.get("logging", "auto_off_delay", fallback="14")
+    if not auto_off_delay.isdigit() and bool(re.fullmatch(r'\d*\.\d+', auto_off_delay)):
+      # regex to check decimal state, this would lead to "123.45" and ".45" being true but not "123."
+      # Exclude anything that isdigit() as to not overwrite valid user settings
+      rounded = round(float(auto_off_delay)) if round(float(auto_off_delay)) > 0 else 1  # Avoid instances where it could be zero as to not set the "do not deactivate" setting
+      conf.set("logging", "auto_off_delay", str(rounded))
+    elif not auto_off_delay.isdigit():  # Cannot be merged with the first check in an OR case as valid regex catches would be intercepted by that
+      conf.set("logging", "auto_off_delay", "14")
+    conf.write(file)
+
+  subprocess.run(['sudo', 'mv', tmp, ini], check=True)
+
+
+def validate_journald_conf():
+  """Fallback in case the config file or any individual header doesn't exist, set to default settings"""
+  tmp = '/tmp/journald.conf.tmp'
+  conf = '/etc/systemd/journald.conf'
+  confparse = configparser.ConfigParser(strict=False, allow_no_value=True)
+
+  with open(tmp, "+w", encoding="utf-8") as file:
+    if os.path.exists(conf):
+      confparse.read(conf)
+    else:
+      confparse.read(file)
+
+    if not confparse.has_section("Journal"):
+      confparse.add_section("Journal")
+
+    if not confparse.has_option("Journal", "Storage") or confparse.get("Journal", "Storage") not in ("volatile", "persistent"):
+      # While volatile is the system's default, having that value either not exist or be invalid points to there being a system error that caused it to get that way
+      # Set to persistent just in case
+      confparse.set("Journal", "Storage", "persistent")
+
+    # Set everything else to default while preserving user settings
+    if not confparse.has_option("Journal", "SyncIntervalSec"):
+      confparse.set('Journal', 'SyncIntervalSec', '30s')
+    if not confparse.has_option("Journal", "SystemMaxUse"):
+      confparse.set('Journal', 'SystemMaxUse', '64M')
+    if not confparse.has_option("Journal", "RuntimeMaxUse"):
+      confparse.set('Journal', 'RuntimeMaxUse', '64M')
+    if not confparse.has_option("Journal", "ForwardToConsole"):
+      confparse.set('Journal', 'ForwardToConsole', 'no')
+    if not confparse.has_option("Journal", "ForwardToWall"):
+      confparse.set('Journal', 'ForwardToWall', 'no')
+
+    confparse.write(file)
+  subprocess.run(['sudo', 'mv', tmp, conf], check=True)
 
 
 class ReleaseInfo(BaseModel):
@@ -93,6 +162,81 @@ except FileNotFoundError:
   pass
 except Exception as e:
   logger.exception(f'Error loading identity file: {e}')
+
+
+class Persist_Logs(BaseModel):
+  """Basemodel that consists of a bool and int, used to change different config files around the system via POST /settings/persist_logs"""
+  persist_logs: bool
+  auto_off_delay: int
+
+
+@router.get("/settings/persist_logs")
+def get_log_persist_state():
+  """
+  Checks /etc/systemd/journald.conf to find if the current storage setting is persistent and returns a bool
+  Note that returning false doesn't necessarily mean that logs are set to volatile, and could just mean that the config file is missing the line being read
+  """
+  validate_journald_conf()
+  journalconf = configparser.ConfigParser(strict=False, allow_no_value=True)
+  journalconf.read('/etc/systemd/journald.conf')
+
+  validate_logging_ini()
+  logconf = configparser.ConfigParser(strict=False, allow_no_value=True)
+  logconf.read('/var/log/logging.ini')
+
+  # Fallback set is the default value of the Storage variable under the Journal header of the conf file
+  # Used when the variable cannot be read but the file itself can (implying that the variable is missing, and should be set to a default)
+  ret = Persist_Logs(persist_logs=journalconf.get("Journal", "Storage", fallback="volatile") == "persistent", auto_off_delay=logconf.get("logging", "auto_off_delay", fallback="14"),)
+  return ret
+
+
+@router.post("/settings/persist_logs")
+def toggle_persist_logs(data: Persist_Logs):
+  """Toggles the option within journald to save logs to memory or storage, and sets the length of time before that setting is reset to volatile"""
+  try:
+    # Just in case
+    validate_logging_ini()
+    validate_journald_conf()
+
+    state = get_log_persist_state()
+
+    if state.persist_logs != data.persist_logs:
+      journalconf = '/etc/systemd/journald.conf'
+      journaltmp = '/tmp/journald.conf.tmp'
+      journal = configparser.ConfigParser(strict=False, allow_no_value=True)
+      journal.read(journalconf)
+
+      if not journal.has_section("Journal"):
+        journal.add_section('Journal')
+
+      # goal_value is true if you wish to turn persistent logging on and false if you wish to turn it off
+      journal.set('Journal', 'Storage', 'persistent' if data.persist_logs else 'volatile')
+
+      with open(journaltmp, 'w', encoding="utf-8") as conf_file:
+        journal.write(conf_file)
+
+      subprocess.run(['sudo', 'mv', journaltmp, journalconf], check=True)
+      subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journald'], check=True)
+      logger.info(f"persist_logs set to {data.persist_logs}")
+    else:
+      logger.info("persist_logs unchanged")
+
+    if state.auto_off_delay != data.auto_off_delay:
+      logconf = '/var/log/logging.ini'
+      logtmp = '/tmp/logging.ini.tmp'
+      log = configparser.ConfigParser(strict=False, allow_no_value=True)
+      log.read(logconf)
+      log.set('logging', 'auto_off_delay', f"{data.auto_off_delay}")  # Accept auto_off_delay as an int for type checking, parse to str for configParser validity
+      with open(logtmp, 'w', encoding='utf-8') as file:
+        log.write(file)
+      subprocess.run(['sudo', 'mv', logtmp, logconf], check=True)
+      logger.info(f"auto_off_delay set to {data.auto_off_delay}")
+
+    else:
+      logger.info("auto_off_delay unchanged")
+  except Exception as exc:
+    logger.exception(str(exc))
+    return 500
 
 
 @router.get('/update')
