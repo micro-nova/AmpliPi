@@ -2,16 +2,7 @@
 
 Thanks for considering developing for AmpliPi. We appreciate your support!
 
-## Developing the webapp
-  To develop for the webapp, you will need to install nodejs and any dependencies for [ReactJS](https://react.dev/)
-
-## Developing on a separate computer
-
-This allows remote development with the ability to test changes on your AmpliPi
-1. Checkout [this repo](https://github.com/micro-nova) on a linux based system. A git bash shell on windows works fine as well, we suggest Windows Subsystem for Linux (WSL).
-2. Make changes with your favorite editor, we suggest vscode
-3. Use `scripts/deploy` to deploy the latest software.
-   The pi must have access to the internet to successfully run this script.
+First, let's start with initial setup:
 
 ### Installing Node.js
 
@@ -66,6 +57,7 @@ __You will need to install the following:__
 - git (you will need git bash)
 - vscode (only recommended)
 - python 3 and setup the python path (step 6 in the following guide) https://phoenixnap.com/kb/how-to-install-python-3-windows
+- WSL (optional, used for testing without a unit)
 
 __Notes:__
 - The latest Windows 10 supports mDNS which we use to easily ssh into amplipi, however we had some problems using WiFi so we suggest a ethernet connection on windows.
@@ -125,3 +117,15 @@ It could potentially cause package conflicts on your system.
    Running the script without any arguments will print the instructions.
    After this step is done SSH is enabled from a fresh Raspberry Pi OS at [amplipi.local].
 1. [amplipi.local] should now be hosted on your network.
+
+## Developing on a separate computer
+
+This allows remote development with the ability to test changes on your AmpliPi
+1. Checkout [this repo](https://github.com/micro-nova) on a linux based system. A git bash shell on windows works fine as well, we suggest Windows Subsystem for Linux (WSL).
+2. Make changes with your favorite editor, we suggest vscode
+3. Use `scripts/deploy` to deploy the latest software.
+   The pi must have access to the internet to successfully run this script.
+
+## Developing the webapp
+  To develop for the webapp, you will need to install nodejs and any dependencies for [ReactJS](https://react.dev/)
+  To develop locally, you will need to run `bash ~/AmpliPi/scripts/run_debug_frontend` and `bash ~/AmpliPi/scripts/run_debug_webserver` in separate terminal sessions. To develop on an amplipi, you can change the IP within `/AmpliPi/scripts/run_debug_frontend` to that of an AmpliPi on your network and you will locally host a frontend that points to the amplipi for the backend
