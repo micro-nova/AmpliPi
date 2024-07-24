@@ -1608,7 +1608,8 @@ class FilePlayer(BaseStream):
     if not self.mock and src is not None:
       # Make all of the necessary dir(s)
       src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
-      os.makedirs(src_config_folder)
+      if not os.path.exists(src_config_folder):
+        os.makedirs(src_config_folder)
 
       # Start audio via runvlc.py
       song_info_path = f'{src_config_folder}/currentSong'
