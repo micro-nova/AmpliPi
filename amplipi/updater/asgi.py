@@ -36,6 +36,9 @@ import pathlib
 import shutil
 import asyncio
 
+import configparser
+from typing import Optional
+
 # web framework
 import requests
 from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter, Response
@@ -93,6 +96,64 @@ except FileNotFoundError:
   pass
 except Exception as e:
   logger.exception(f'Error loading identity file: {e}')
+
+
+@router.get("/settings/persist_logs")
+def get_log_persist_state():
+  """
+  Checks /etc/systemd/journald.conf to find if the current storage setting is persistent and returns a bool
+  Note that returning false doesn't necessarily mean that logs are set to volatile, and could just mean that the config file is missing the line being read
+  """
+  conf_path = '/etc/systemd'
+  config = configparser.ConfigParser(strict=False, allow_no_value=True)
+  config.read(f'{conf_path}/journald.conf')
+  return config.get("Journal", "Storage", fallback="") == "persistent"
+
+
+@router.post("/settings/persist_logs")
+def toggle_persist_logs():
+  """Toggles the option within journald to save logs to memory or storage"""
+  try:
+    conf_path = '/etc/systemd'
+    config = configparser.ConfigParser(strict=False, allow_no_value=True)
+    config.read(f'{conf_path}/journald.conf')
+
+    if 'Journal' not in config:
+      config.add_section('Journal')
+
+    # goal_value is true if you wish to turn persistent logging on and false if you wish to turn it off
+    goal_value = not get_log_persist_state()
+
+    if goal_value:  # Set persist
+      config.set('Journal', 'Storage', 'persistent')
+      config.set('Journal', 'SyncIntervalSec', '30s')
+      config.set('Journal', 'SystemMaxUse', '64M')
+
+      config.remove_option('Journal', 'RuntimeMaxUse')
+      config.remove_option('Journal', 'ForwardToConsole')
+      config.remove_option('Journal', 'ForwardToWall')
+
+      logger.info("persist_logs activated!")
+
+    else:  # Reset config to default as seen in configure.py
+      config.set('Journal', 'Storage', 'volatile')
+      config.set('Journal', 'RuntimeMaxUse', '64M')
+      config.set('Journal', 'ForwardToConsole', 'no')
+      config.set('Journal', 'ForwardToWall', 'no')
+
+      config.remove_option('Journal', 'SyncIntervalSec')
+      config.remove_option('Journal', 'SystemMaxUse')
+
+      logger.info("persist_logs deactivated!")
+
+    with open('/tmp/journald.conf.tmp', 'w', encoding="utf-8") as conf_file:
+      config.write(conf_file)
+
+    subprocess.run(['sudo', 'mv', '/tmp/journald.conf.tmp', f'{conf_path}/journald.conf'], check=True)
+    subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journald'], check=True)
+  except Exception as exc:
+    logger.error("persist_logs toggle failed!")
+    raise exc
 
 
 @router.get('/update')
