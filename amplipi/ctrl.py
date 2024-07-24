@@ -222,7 +222,7 @@ class Api:
     except Exception as exc:
       logger.exception("Error setting is_streamer flag: {exc}")
 
-    # determine if we're in LMS mode, based on a file
+    # determine if we're in LMS mode, based on a file existing
     lms_mode_path = Path(defaults.USER_CONFIG_DIR, 'lms_mode')
     if lms_mode_path.exists():
       logger.info("lms mode")

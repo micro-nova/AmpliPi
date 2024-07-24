@@ -6,6 +6,10 @@
   * Add error handling on browser page for instances where the selected stream isn't browsable
   * Add scrollbars to tall modals
   * Change how events are handled with Modals to reduce accidental closures
+  * Rename Updater to Admin Panel
+  * Add "Admin Settings" tab to the Updater/Admin Panel
+    * Add toggleable option to persist system logs to Admin Settings
+    * Move "Set password" page to be accessible via Admin Settings tab
 * System
   * Make update process properly report errors
 
