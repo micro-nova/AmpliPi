@@ -1,6 +1,6 @@
 # AmpliPi Software Releases
 
-## Upcoming Release
+## 0.4.1
 * Web App
   * Migrate more inputs to MUI
   * Fix internet radio searching during stream creation
