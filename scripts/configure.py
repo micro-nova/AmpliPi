@@ -96,12 +96,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         ],
         'copy': [
           {
-            'from': 'scripts/10-udisks.pkla',
+            'from': 'config/10-udisks.pkla',
             'to': '/etc/polkit-1/localauthority/50-local.d/10-udisks.pkla',
             'sudo': 'true',
           },
           {
-            'from': 'scripts/99-udisks2.rules',
+            'from': 'config/99-udisks2.rules',
             'to': '/etc/udev/rules.d/99-udisks2.rules',
             'sudo': 'true',
           }

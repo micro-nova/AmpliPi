@@ -12,4 +12,3 @@ ResultAny=yes
 Identity=unix-group:users
 Action=org.freedesktop.udisks2.filesystem-mount-other-seat;org.freedesktop.udisks2.filesystem-unmount-others;org.freedesktop.udisks2.encrypted-unlock-other-seat;org.freedesktop.udisks2.eject-media-other-seat;org.freedesktop.udisks2.pow$
 ResultAny=yes
-
