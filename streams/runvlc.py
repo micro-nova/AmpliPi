@@ -32,7 +32,15 @@ import time
 import json
 import vlc
 import argparse
+import signal
 from typing import List, Optional, Any, IO
+
+
+def signal_handler(sig, _):
+  """Handle sigterm signal."""
+  log(f"Caught signal {sig}, exiting.")
+  sys.exit(0)
+
 
 parser = argparse.ArgumentParser(prog='runvlc', description='play an internet radio station using vlc')
 parser.add_argument('url', type=str, help='internet radio station url')
@@ -42,6 +50,9 @@ parser.add_argument('--log', type=str, help='log file (defaults to stdout)', def
 parser.add_argument('--test', action='store_true', help='verify the url is valid and return')
 parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
+
+# register signal handlers
+signal.signal(signal.SIGTERM, signal_handler)
 
 config = "--aout=alsa "
 if args.test:

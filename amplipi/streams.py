@@ -1198,8 +1198,8 @@ class InternetRadio(BaseStream):
     self.src = src
 
   def disconnect(self):
-    if self._is_running():
-      self.proc.kill()
+    # try to kill proc gracefully, then forcefully
+    utils.careful_proc_shutdown(self.proc, "internet radio stream")
     self._disconnect()
     self.proc = None
 
