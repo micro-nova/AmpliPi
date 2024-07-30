@@ -20,6 +20,7 @@ import random
 
 import pytest
 from fastapi.testclient import TestClient
+import requests
 
 # testing context
 from context import amplipi
@@ -1071,8 +1072,9 @@ def test_delete_connected_stream(client, sid):
 # Non-Mock client used - run this test on the Pi
 # _live tests will be excluded from GitHub testing
 
+
 @pytest.mark.parametrize('cmd', ['play', 'pause', 'next', 'love', 'ban', 'shelve'])
-def test_post_stream_cmd_live(clientnm, cmd):  
+def test_post_stream_cmd_live(clientnm, cmd):
   """ Try sending commands to a pandora stream on a live system """
   # TODO: this test is failing when executed with all of the other tests in parallel see below
   # Add a stream to send commands to
@@ -1094,6 +1096,38 @@ def test_post_stream_cmd_live(clientnm, cmd):
   jrv = rv.json()
   assert not jrv['info']['mock_streams']
   assert rv.status_code == HTTPStatus.OK
+
+# test internet radio
+
+
+def test_create_internetradio_live(clientnm):
+  """ for 10 most popular internet radio stations plus one fake, try creating an internet radio stream, wait 3 seconds, then check if it errored"""
+  res = requests.post('https://de1.api.radio-browser.info/json/stations/search', json={
+      "offset": 0,
+      "limit": 10,
+      "hidebroken": "true",
+      "has_extended_info": "true",
+      "order": "clickcount",
+      "reverse": "true"
+  })
+  stations = [(s['name'], s['url'], s['favicon']) for s in res.json()]
+  stations.append(('fake', 'http://test.com', 'http://test.com'))
+  for i in stations:
+    res = clientnm.post('/api/stream', json={'name': i[0], 'type': 'internetradio', 'url': i[1], 'logo': i[2]})
+    assert res.status_code == HTTPStatus.OK
+    id = res.json()['id']
+    assert isinstance(id, int)
+    res = clientnm.patch('/api/sources/0', json={'input': f'stream={id}'})
+    assert res.status_code == HTTPStatus.OK
+    sleep(3)
+    res = clientnm.get(f'/api/sources/0')
+    assert res.status_code == HTTPStatus.OK
+    assert res.json()['input'] == f'stream={id}'
+    err = res.json()['info']['state'] == "stopped"
+    if i[1] != 'http://test.com':
+      assert not err
+    else:
+      assert err
 
 # test presets
 
@@ -1270,6 +1304,7 @@ def test_load_preset(client, pid, unmuted=[1, 2, 3]):
             cfg.pop(ignored_field)
         assert cfg == prev_cfg
 
+
 def test_play_media(client):
   """Check if playing external media works """
   nasa_audio = 'https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3'
@@ -1289,6 +1324,7 @@ def test_play_media(client):
   assert rv.status_code == HTTPStatus.OK, print(rv.text)
   rv = client.post('/api/play', json={'media': nasa_audio, 'source_id': 0, 'vol': -40, 'vol_f': 0.5})
   assert rv.status_code == HTTPStatus.OK, print(rv.text)
+
 
 def test_announcement(client):
   """Check if a PA Announcement works """

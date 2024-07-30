@@ -39,7 +39,7 @@ import hashlib  # md5 for string -> MAC generation
 import datetime
 
 from pandora.clientbuilder import SettingsDictBuilder
-import requests  # pandora client from pydora
+import requests
 
 from amplipi import models
 from amplipi import utils
@@ -1199,7 +1199,8 @@ class InternetRadio(BaseStream):
 
   def disconnect(self):
     # try to kill proc gracefully, then forcefully
-    utils.careful_proc_shutdown(self.proc, "internet radio stream")
+    if self.proc:
+      utils.careful_proc_shutdown(self.proc, "internet radio stream")
     self._disconnect()
     self.proc = None
 
@@ -1219,6 +1220,7 @@ class InternetRadio(BaseStream):
         source.artist = data['artist']
         source.track = data['track']
         source.station = data['station']
+        source.state = data['state']
         return source
     except Exception:
       pass
