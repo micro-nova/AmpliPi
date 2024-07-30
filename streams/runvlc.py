@@ -180,6 +180,7 @@ while opening_counter < MAX_STREAM_OPENING_COUNTER:
     # State is something other than playing, buffering or opening, and it's been longer than 10s. We probably wanna bail.
     # Other states: State.NothingSpecial, State.Paused, State.Stopped, State.Ended, State.Error
     log(f"Stream in an unexpected state: {state}. Exiting.")
+    update_info({"track": "Error, cannot connect to station.", "artist": "", "station": "", "state": "stopped"})
     sys.exit(1)
 
 log("Stream has opened.")
