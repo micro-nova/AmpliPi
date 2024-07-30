@@ -131,7 +131,8 @@ def get_all_devices_path_and_mac() -> List[tuple]:
 def mac_to_device_name(mac: str) -> Optional[str]:
   try:
     devices = subprocess.run('bluetoothctl devices'.split(), timeout=0.5, check=True, capture_output=True).stdout.decode()
-  except Exception:
+  except Exception as e:
+    print(f"unable to query bluetooth devices in mac_to_device_name(): {e}")
     devices = ''
   for line in devices.splitlines():
     if line.split()[1].lower() == mac.lower():
@@ -210,9 +211,10 @@ def main():
           baplay_args = f'bluealsa-aplay -d {args.output_device} {selected_device} --single-audio'
           bluealsa_proc = subprocess.Popen(args=baplay_args.split(), preexec_fn=os.setpgrp)
         # write the new mac address to the device info file, used by streams.py bluetooth send command
-        with open(args.device_info, "wt") as f:
-          f.write(selected_device)
-          print(f'Writing {selected_device} to {args.device_info}')
+        if selected_device is not None:
+          with open(args.device_info, "wt") as f:
+            f.write(selected_device)
+            print(f'Writing {selected_device} to {args.device_info}')
 
       if selected_device:
         try:
