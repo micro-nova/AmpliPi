@@ -4,6 +4,8 @@
 * Streams
   * Internet radio can now play playlists from the `pls`, `m3u8`, and `m3u` formats.
   * Fixed bug where internet radio process would not completely stop when the stream was stopped.
+* Web App
+  * Fix a bug that caused re-renders on settings modals
 
 ## 0.4.1
 * Web App
