@@ -38,7 +38,8 @@ import socket
 import hashlib  # md5 for string -> MAC generation
 import datetime
 
-from pandora.clientbuilder import SettingsDictBuilder  # pandora client from pydora
+from pandora.clientbuilder import SettingsDictBuilder
+import requests  # pandora client from pydora
 
 from amplipi import models
 from amplipi import utils
@@ -1164,6 +1165,23 @@ class InternetRadio(BaseStream):
     # Make all of the necessary dir(s)
     src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
     os.system(f'mkdir -p {src_config_folder}')
+
+    # HACK check if url is a playlist and if it is get the first url and play it
+    # this is the most general way to deal with playlists for this stream since the alternative is to actually
+    # parse each playlist type and get the urls from them
+    PLAYLIST_TYPES = ['pls', 'm3u', 'm3u8']
+    if self.url.split('.')[-1] in PLAYLIST_TYPES:
+      logger.info(f'Playlist detected, attempting to get playlist...')
+      try:
+        req = requests.get(self.url)
+        urls = re.compile(r'(http.*?)[\r\n]').findall(req.text)
+        if len(urls) > 0:
+          self.url = urls[0]
+          logger.info(f'using first url: {self.url}')
+        else:
+          raise Exception('No urls found in playlist')
+      except Exception as e:
+        logger.exception(f'Error getting playlist {e}')
 
     # Start audio via runvlc.py
     song_info_path = f'{src_config_folder}/currentSong'

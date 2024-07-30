@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Upcoming Release
+* Streams
+  * Internet radio can now play playlists from the `pls`, `m3u8`, and `m3u` formats.
+
 ## 0.4.1
 * Web App
   * Migrate more inputs to MUI
