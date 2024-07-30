@@ -83,6 +83,11 @@ def log(info):
     print(info)
 
 
+class RestartVlcException(Exception):
+  """ A custom exception for our restart_vlc handler """
+  pass
+
+
 def update_info(info) -> bool:
   try:
     with open(args.song_info, "wt", encoding='utf-8') as info_file:
@@ -151,39 +156,55 @@ def restart_vlc():
     time.sleep(1)
     delay += 1
   if delay >= MAX_DELAY_S:
-    raise Exception('Waited too long for VLC to start playing')
+    raise RestartVlcException('Waited too long for VLC to start playing')
 
 
-# Wait for stream to start playing
+def hail_mary_restart_vlc():
+  """ Restart VLC using restart_vlc(), but ignoring all RestartVlcExceptions """
+  try:
+    restart_vlc()
+  except RestartVlcException:
+    pass
+
+
+# Try to open a stream forever. Wait 10s for stream to start playing, and restart vlc if it's in
+# a funny state. restart_vlc() will sleep for 10 minutes if it is restarting too frequently.
 STREAM_OPENING_BACKOFF = 0.25  # 250ms
 MAX_STREAM_OPENING_TIME = 10  # seconds
 MAX_STREAM_OPENING_COUNTER = MAX_STREAM_OPENING_TIME / STREAM_OPENING_BACKOFF
-
 opening_counter = 0
-while opening_counter < MAX_STREAM_OPENING_COUNTER:
+while True:
   state = str(player.get_state())
   if state == 'State.Playing':
     break
-  elif state in ['State.Opening', 'State.Buffering'] and opening_counter <= MAX_STREAM_OPENING_COUNTER:
+  elif state in ['State.Opening', 'State.Buffering'] and opening_counter < MAX_STREAM_OPENING_COUNTER:
     # give it some time. Some streams take a while.
+    log(f"Stream still opening; waiting {MAX_STREAM_OPENING_TIME - STREAM_OPENING_BACKOFF*opening_counter} more seconds...")
     time.sleep(0.25)
     opening_counter += 1
-    log(f"Stream still opening; waiting {MAX_STREAM_OPENING_TIME - STREAM_OPENING_BACKOFF*opening_counter} more seconds...")
-  elif opening_counter > MAX_STREAM_OPENING_COUNTER:
+  # The below two cases are hail mary efforts to fix a broken stream; either we restart_vlc & try again,
+  # or exit. If we lived under a real process monitor like systemd, I'd probably exit(1) and let it handle
+  # graceful backoffs and restarts... but since we don't have that at the time of writing, we simply restart vlc.
+  elif opening_counter >= MAX_STREAM_OPENING_COUNTER:
     log("Stream took too long to open.")
-    # This is a hail mary; either we restart_vlc & try again, or exit. If we lived under a real process monitor
-    # like systemd, I'd probably exit(1) and let it handle graceful backoffs and restarts... but since we
-    # don't have that at the time of writing, we simply restart vlc.
-    restart_vlc()
+    update_info({"track": "Opening stream took too long; retrying...", "artist": "", "station": "", "state": "stopped"})
+    hail_mary_restart_vlc()
+    opening_counter = 0
+  elif state in ['State.Ended', 'State.Error']:
+    log(f"Stream has ceased unexpectedly during start: {state}. Attempting to restart.")
+    update_info({"track": "Error opening station; retrying...", "artist": "", "station": "", "state": "stopped"})
+    hail_mary_restart_vlc()
     opening_counter = 0
   else:
     # State is something other than playing, buffering or opening, and it's been longer than 10s. We probably wanna bail.
-    # Other states: State.NothingSpecial, State.Paused, State.Stopped, State.Ended, State.Error
+    # Other states: State.NothingSpecial, State.Paused, State.Stopped
     log(f"Stream in an unexpected state: {state}. Exiting.")
     update_info({"track": "Error, cannot connect to station.", "artist": "", "station": "", "state": "stopped"})
     sys.exit(1)
 
+
 log("Stream has opened.")
+
 
 # Monitor track meta data and update currently_playing file if the track changed
 while True:
@@ -252,6 +273,9 @@ while True:
         update_info(cur_info)
       log('State: %s' % state)
       restart_vlc()
+
+  except RestartVlcException as e:
+    log(f"Restarting VLC failed: {e}")
 
   except Exception:
     log('Error: %s' % sys.exc_info()[1])
