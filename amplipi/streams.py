@@ -23,7 +23,6 @@ a consistent interface.
 
 import os
 import traceback
-from re import sub
 import sys
 import subprocess
 import time
@@ -31,7 +30,6 @@ from typing import Union, Optional, List, ClassVar
 import threading
 import re
 import logging
-import ast
 import json
 import signal
 import socket
@@ -1171,7 +1169,7 @@ class InternetRadio(BaseStream):
     # parse each playlist type and get the urls from them
     PLAYLIST_TYPES = ['pls', 'm3u', 'm3u8']
     if self.url.split('.')[-1] in PLAYLIST_TYPES:
-      logger.info(f'Playlist detected, attempting to get playlist...')
+      logger.info('Playlist detected, attempting to get playlist...')
       try:
         req = requests.get(self.url)
         urls = re.compile(r'(http.*?)[\r\n]').findall(req.text)
@@ -1252,7 +1250,8 @@ class InternetRadio(BaseStream):
     URL_LIKE = r'^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$'
     if 'url' in kwargs and not re.fullmatch(URL_LIKE, kwargs['url']):
       raise InvalidStreamField("url", "invalid url")
-    if 'logo' in kwargs and not re.fullmatch(URL_LIKE, kwargs['logo']):
+    # Logo is Optional[str]
+    if 'logo' in kwargs and kwargs['logo'] and not re.fullmatch(URL_LIKE, kwargs['logo']):
       raise InvalidStreamField("logo", "invalid logo url")
 
 
@@ -1687,7 +1686,7 @@ class LMS(PersistentStream):
       try:
         self.meta_proc.terminate()
         self.meta_proc.communicate(timeout=10)
-      except:
+      except Exception as e:
         logger.exception(f"failed to gracefully terminate LMS meta proc for {self.name}: {e}")
         logger.warning(f"forcefully killing LMS meta proc for {self.name}")
         os.killpg(self.meta_proc.pid, signal.SIGKILL)
