@@ -15,6 +15,7 @@
 * System
   * Fixed bug where the logs would be filled with errors when startign Spotify.
   * Take regular configuration backups to the backend
+  * Fix bug where ch0 would not convert mono streams to stereo.
 
 ## 0.4.1
 * Web App
