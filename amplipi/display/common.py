@@ -10,7 +10,7 @@ import netifaces as ni
 
 from loguru import logger as log
 from enum import Enum
-from typing import Tuple, Optional, Union, Dict
+from typing import Tuple, Optional, Union, Dict, List
 from collections import namedtuple
 from amplipi.display.statusinterface import set_custom_display_status, STATUS_FILENAME, DisplayStatus, DisplayError
 
@@ -21,6 +21,7 @@ SysInfo = namedtuple('SysInfo', ['hostname', 'password', 'ip', 'status_code', "s
 
 
 STARTUP_MSG = "Starting Up"
+STATUS = Enum('STATUS', ['PLAYING', 'STOPPED', 'PAUSED', 'MUTED', 'ERROR', 'IGNORE', 'OTHER'])
 
 
 def request_params() -> Optional[Dict]:
@@ -166,7 +167,77 @@ def get_num_expanders(url: str) -> int:
     return 0
 
 
-def get_status(url: str, no_serial_ok: bool = False) -> Tuple[Union[str, int], Optional[int], int]:
+def get_zone_status(zone, sources) -> STATUS:
+  if zone.source_id != -1:
+    source_for_zone = sources[zone.source_id].info
+    if source_for_zone is not None:
+      if source_for_zone.state == "playing":
+        if zone.mute:
+          return STATUS.MUTED
+        else:
+          return STATUS.PLAYING
+      elif source_for_zone.state == 'stopped':
+          return STATUS.STOPPED
+      elif source_for_zone.state == 'paused':
+          return STATUS.PAUSED
+    return STATUS.IGNORE
+  return STATUS.IGNORE
+
+
+def get_source_status(source) -> STATUS:
+  if source.info is not None:
+    if source.info.state == "playing":
+      return STATUS.PLAYING
+    elif source.info.state == 'stopped':
+      return STATUS.STOPPED
+    elif source.info.state == 'paused':
+      return STATUS.PAUSED
+    else:
+      return STATUS.IGNORE
+  return STATUS.IGNORE
+
+
+def total_status_counts(stati: List[STATUS]) -> Dict[STATUS, int]:
+  result = {}
+  result[STATUS.PAUSED] = len([s for s in stati if s == STATUS.PAUSED])
+  result[STATUS.STOPPED] = len([s for s in stati if s == STATUS.STOPPED])
+  result[STATUS.MUTED] = len([s for s in stati if s == STATUS.MUTED])
+  result[STATUS.PLAYING] = len([s for s in stati if s == STATUS.PLAYING])
+  return result
+
+
+def get_emoji_status(url: str, max_length: int = 16) -> Union[str, int]:
+  req = requests.get(url, timeout=0.2, params=request_params())
+  status = models.Status(**req.json())
+  if status.info is None:
+    return DisplayError.API_CANNOT_FIND_STATUS
+
+  zones = status.zones
+  sources = status.sources
+  status_counts = {}
+  if status.info.is_streamer:
+    status_counts = total_status_counts([get_source_status(s) for s in sources])
+  else:
+    status_counts = total_status_counts([get_zone_status(z, sources) for z in zones])
+
+  result = ''
+  if status_counts[STATUS.PLAYING] > 0:
+      result += f'▶x{status_counts[STATUS.PLAYING]} '
+  if status_counts[STATUS.PAUSED] > 0:
+    result += f'⏸x{status_counts[STATUS.PAUSED]} '
+  if status_counts[STATUS.STOPPED] > 0:
+    result += f'⏹x{status_counts[STATUS.STOPPED]} '
+  if status_counts[STATUS.MUTED] > 0:
+    result += f'🔇x{status_counts[STATUS.MUTED]}'
+
+  if result == '':
+    result = 'READY'
+  if len(result) > max_length:
+    result = result[:max_length - 1] + '…'
+  return result
+
+
+def get_status(url: str, no_serial_ok: bool = False, emoji: bool = True, max_length: int = 16) -> Tuple[Union[str, int], Optional[int], int]:
   """Returns the system's status code as either a str or int, a serial number, and how many expanders are hooked up"""
 
   serial: Optional[int] = None
@@ -189,30 +260,28 @@ def get_status(url: str, no_serial_ok: bool = False) -> Tuple[Union[str, int], O
       status = models.Status(**req.json())
       zones = status.zones
       sources = status.sources
-      if starting_up:
-        set_custom_display_status(DisplayStatus(None, None))
-
       result_status = "READY"
       if (status.info is not None and status.info.serial.isdigit()) or no_serial_ok:
         if status.info is not None and status.info.serial.isdigit():
           serial = int(status.info.serial)
-
-        if status.info is not None and status.info.is_streamer:
-          for source in sources:
-            if source.info is not None and source.info.state == "playing":
-              result_status = "PLAYING"
-            elif result_status is None:
-              result_status = "READY"
-
+        if emoji:
+          result_status = get_emoji_status(url, max_length)
         else:
-          for zone in zones:
-            source_for_zone = sources[zone.source_id].info
-            if source_for_zone is not None:
-              if source_for_zone.state == "playing":
-                if zone.mute and result_status != "PLAYING":
-                  result_status = "MUTED"
-                else:
-                  result_status = "PLAYING"
+          if status.info is not None and status.info.is_streamer:
+            for source in sources:
+              if source.info is not None and source.info.state == "playing":
+                result_status = "PLAYING"
+          else:
+            for zone in zones:
+              source_for_zone = sources[zone.source_id].info
+              if source_for_zone is not None:
+                if source_for_zone.state == "playing":
+                  if zone.mute and result_status != "PLAYING":
+                    result_status = "MUTED"
+                  else:
+                    result_status = "PLAYING"
+      if starting_up:
+        set_custom_display_status(DisplayStatus(None, None))
       elif status.info is not None and not status.info.serial.isdigit():
         if not starting_up and not no_serial_ok:
           result_status = DisplayError.NO_SERIAL_NUMBER
@@ -229,7 +298,7 @@ def get_status(url: str, no_serial_ok: bool = False) -> Tuple[Union[str, int], O
       return DisplayError.API_INVALID_RESPONSE, None, 0
   except Exception as e:
     if not starting_up:
-      log.error(f'Exception getting status: {type(e).__name__}')
+      log.error(f'Exception getting status: {type(e).__name__}, {e}')
       return DisplayError.API_ERROR_UNKNOWN, None, 0
 
   if serial is None and not no_serial_ok:
@@ -242,7 +311,7 @@ def get_status(url: str, no_serial_ok: bool = False) -> Tuple[Union[str, int], O
   return result_status, serial, get_num_expanders(url) if not starting_up else 0
 
 
-def get_info(iface, default_pass, boot) -> SysInfo:
+def get_info(iface, default_pass, boot, emoji=False) -> SysInfo:
   """Get amplipi system info to display"""
   password, _ = default_pass.update()
   try:
@@ -256,8 +325,8 @@ def get_info(iface, default_pass, boot) -> SysInfo:
     if boot:
       return SysInfo(hostname, password, ip_str, STARTUP_MSG, -1, 0)
     else:
-      _, serial, expanders = get_status("http://localhost/api")
+      _, serial, expanders = get_status("http://localhost/api", emoji=emoji)
       log.error(f'Failed to get IP address: {type(e).__name__}')
       return SysInfo(hostname, password, ip_str, DisplayError.NO_IP, serial, expanders)
-  status, serial, expanders = get_status("http://localhost/api")
+  status, serial, expanders = get_status("http://localhost/api", emoji=emoji)
   return SysInfo(hostname, password, ip_str, status, serial, expanders)

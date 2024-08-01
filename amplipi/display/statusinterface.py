@@ -35,6 +35,7 @@ class DisplayError(IntEnum):
   NO_SERIAL_NUMBER = 15
   EXPANDER_EXCEPTION = 16
   API_NO_EXPANDER = 17
+  API_CANNOT_FIND_STATUS = 18
 
 
 def set_custom_display_status(status: DisplayStatus) -> None:

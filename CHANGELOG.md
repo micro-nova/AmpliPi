@@ -8,6 +8,8 @@
   * Fixed a bug where a missing logo prevents saving & showing streams
 * Web App
   * Fix a bug that caused re-renders on settings modals
+* Display
+  * Status now displays number of playing, paused, stopped, and muted zones.
 
 ## 0.4.1
 * Web App
