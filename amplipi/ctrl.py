@@ -748,6 +748,10 @@ class Api:
               if not self._rt.update_sources(src_cfg):
                 raise Exception('failed to set source')
           self._update_src_info(src)  # synchronize the source's info
+          if src.input is None or src.input == 'None':
+            zones = [z for z in self.status.zones if z.source_id == sid]
+            for zone in zones:
+              self.set_zone(zone.id, models.ZoneUpdate(source_id=-1), internal=True)
         if not internal:
           self.mark_changes()
       else:
