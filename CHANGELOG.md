@@ -10,6 +10,8 @@
   * Fix a bug that caused re-renders on settings modals
 * Display
   * Status now displays number of playing, paused, stopped, and muted zones.
+* Developing
+  * Delete generated tarball after finishing deploying using scripts/deploy
 * System
   * Fixed bug where the logs would be filled with errors when startign Spotify.
 
