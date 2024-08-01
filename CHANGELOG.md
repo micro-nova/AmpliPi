@@ -10,6 +10,8 @@
   * Fix a bug that caused re-renders on settings modals
 * Display
   * Status now displays number of playing, paused, stopped, and muted zones.
+* System
+  * Fixed bug where the logs would be filled with errors when startign Spotify.
 
 ## 0.4.1
 * Web App
