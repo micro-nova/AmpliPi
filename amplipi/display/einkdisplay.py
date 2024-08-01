@@ -23,7 +23,7 @@ from amplipi.display.statusinterface import set_custom_display_status, DisplaySt
 class EInkDisplay(Display):
   """ Display system information on EInk Panel"""
 
-  fontname = 'DejaVuSansMono-Bold'
+  fontname = f'{pathlib.Path(__file__).parent.resolve()}/DejaVuSansMono-Bold-Emoji.ttf'
   main_fontsize = 16
   pass_fontsize = 12
   pass_min_fontsize = 8
@@ -100,7 +100,7 @@ class EInkDisplay(Display):
 
       while self._ok:
         # poll stale by checking if info differs
-        new_info = get_info(self.iface, default_pass, self._boot)
+        new_info = get_info(self.iface, default_pass, self._boot, emoji=True)
 
         if self._boot and datetime.datetime.now() > self._boot_timeout:
           self._boot = False
@@ -172,7 +172,7 @@ class EInkDisplay(Display):
         draw.text((0, start + 2 * interval), f'SN:   {info.serial_number} {expander_string}', font=self.font, fill=0)
 
       if type(info.status_code) is str:
-        draw.text((0, start + 3 * interval), f'Status:   {info.status_code}', font=self.font, fill=0)
+        draw.text((0, start + 3 * interval), f'Status: {info.status_code}', font=self.font, fill=0)
         if info.status_code != STARTUP_MSG and self._boot:
           self._boot = False
           draw_base = True

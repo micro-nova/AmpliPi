@@ -3,6 +3,7 @@ import json
 import os
 import socket
 import sys
+import pathlib
 import time
 from typing import Dict, List, Optional, Tuple
 
@@ -157,7 +158,7 @@ class TFTDisplay(Display):
     self.backlight(True)
 
     # Get fonts
-    fontname = 'DejaVuSansMono'
+    fontname = f'{pathlib.Path(__file__).parent.resolve()}/DejaVuSansMono-Emoji.ttf'
     try:
       self.font = ImageFont.truetype(fontname, 14)
       self.small_font = ImageFont.truetype(fontname, 10)
@@ -304,7 +305,7 @@ class TFTDisplay(Display):
           if ip_str == 'Disconnected from network.':
             status = DisplayError.NO_IP
           else:
-            status, _, expanders = get_status(self.API_URL, no_serial_ok=True)
+            status, _, expanders = get_status(self.API_URL, no_serial_ok=True, emoji=True, max_length=40)
 
           if type(status) is str:
             self.draw.text((1 * cw, 0 * ch * 2), f'Status: {status}', font=self.font, fill=Color.WHITE.value)
