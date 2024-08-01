@@ -105,8 +105,11 @@ class MPRISMetadataReader:
         properties_changed.PropertiesChanged.connect(read_metadata)
 
         # setup and run event loop
-        loop = EventLoop()
-        loop.run()
+        try:
+          loop = EventLoop()
+          loop.run()
+        except Exception as e:
+          logger.error(f"Error running event loop: {e}. Restarting")
 
       except Exception as e:
         logger.debug(f"Error getting or writing MPRIS metadata to file at {self.metadata_path}: {e}")
@@ -120,11 +123,11 @@ class MPRISMetadataReader:
         finally:
           mpris = None
 
-      # if we get here, something has broken, if we're still ok then try to restart
+      # if we get here, something has broken or the stream isn't completely started,
+      # if we're still ok then try to restart
       if self.ok:
-        logger.error('MPRIS metadata reader crashed, restarting')
         # wait a bit before restarting
-        time.sleep(1.0 / METADATA_RESET_DELAY)
+        time.sleep(METADATA_RESET_DELAY)
       else:
         break
 
