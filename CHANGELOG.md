@@ -14,6 +14,7 @@
   * Delete generated tarball after finishing deploying using scripts/deploy
 * System
   * Fixed bug where the logs would be filled with errors when startign Spotify.
+  * Take regular configuration backups to the backend
 
 ## 0.4.1
 * Web App

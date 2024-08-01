@@ -33,8 +33,22 @@ Had an issue with an update? Want to try a beta release? Follow these steps:
 4. Select the release you would like to use from the dropdown menu
 5. Click the **Start Update** button
 
+## Taking and restoring configuration backups
+
+There are two ways configuration backups are made - manually through the frontend, and nightly within the backend via a scheduled job.
+
+### Manual backups and restores
+
+Manual backups are taken by navigating to ⚙ -> Config -> Download Config. This configuration includes all configured streams. These backups can be restored using ⚙ -> Config -> Upload Config. It is a good idea to take a manual backup before upgrading your appliance.
+
+### Automated system backups and restores
+
+Automated backups are also taken nightly at 2AM and stored for 30 days. These are raw system backups, accessible only by an advanced user via the backend. These backups help either support, or a technical user, to restore prior system configuration from a particular point in time. If the below instructions do not make sense to you, you should feel free to email [support@micro-nova.com](mailto:support@micro-nova.com) and we can help restore a backup from your appliance.
+
+These backups are dated tarballs stored at `~pi/backups`. This tarball contains the entire `~pi/.config/amplipi` directory. To restore this backup, stop the AmpliPi service (`systemctl stop --user amplipi` as the `pi` user), unpack the tarball, overwrite the `~pi/.config/amplipi` directory with the contents of the backup, and start AmpliPi again (`systemctl start --user amplipi`).`
+
 ## Reimaging AmpliPro
-For directions on how to bring AmpliPro system back to a previous version, scan the QR labeled "Reimaging Instructions" on the links page at the start of this manual.
+For directions on how to bring AmpliPro system back to a previous version, scan the QR labeled "Reimaging Instructions" on the links page at the start of this manual, or [click this link](https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md). It is a good idea to take a system backup before running this process; see the above section labelled "Taking and restoring configuration backups".
 
 ## Still need help?
 
