@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Upcoming release
+* System
+  * Reset API password, support tunnels during factory reset
+
 ## 0.4.2
 * Streams
   * Internet radio can now play playlists from the `pls`, `m3u8`, and `m3u` formats.
