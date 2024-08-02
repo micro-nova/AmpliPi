@@ -439,3 +439,44 @@ def careful_proc_shutdown(proc: subprocess.Popen, proc_name="process"):
     logger.exception(f"failed to terminate {proc_name}: {e}")
     proc.kill()
     proc.wait(timeout=3)
+
+
+def clear_custom_configs():
+  """ This clears out any custom configs on the appliance for a factory reset, including:
+      * support tunnels
+      * user configs (as of Aug 2024, just an "admin" user with a password set)
+  """
+  # Attempt to clear any support tunnels before wiping configs.
+  try:
+    running_support_tunnels = subprocess.run(
+      "/opt/support_tunnel/venv/bin/python -m invoke list-running-tunnels".split(),
+      cwd="/opt/support_tunnel",
+      capture_output=True,
+      text=True,
+      check=True
+    )
+    if running_support_tunnels.stdout:
+      for tunnel in [i.split()[0] for i in running_support_tunnels.stdout.split(sep='\n')]:
+        subprocess.run(
+          f"/opt/support_tunnel/venv/bin/python -m invoke stop {tunnel}".split(),
+          cwd="/opt/support_tunnel",
+          check=True
+        )
+  except Exception as e:
+    logger.exception(f"failed to stop support tunnels: {e}")
+
+  try:
+    # Explicitly clear any wireguard configs, in spite of the above cleanup
+    wg_configs = subprocess.run("sudo ls /etc/wireguard".split(), capture_output=True, text=True, check=True)
+    if wg_configs.stdout:
+      for wg_config in wg_configs.stdout.split():
+        subprocess.run(f"sudo rm /etc/wireguard/{wg_config}".split(), check=True)
+  except Exception as e:
+    logger.exception(f"failed to remove wireguard configs: {e}")
+
+  # Remove these paths whole-cloth. They do not need special permissions.
+  for path in ["/var/lib/support_tunnel/device.db", "/home/pi/.config/amplipi/users.json"]:
+    try:
+      os.remove(path)
+    except Exception as e:
+      logger.exception(f"failed to clear device configuration: {e}")

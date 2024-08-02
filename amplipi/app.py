@@ -183,6 +183,7 @@ def load_factory_config(ctrl: Api = Depends(get_ctrl)) -> models.Status:
   This will reset all zone names and streams back to their original configuration.
   We recommend downloading the current configuration beforehand.
   """
+  utils.clear_custom_configs()
   default_config = defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=ctrl.lms_mode)
   return load_config(models.Status(**default_config), ctrl)
 

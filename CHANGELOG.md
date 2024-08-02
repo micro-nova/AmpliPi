@@ -10,6 +10,7 @@
   * Fixed a bug where support tunnel addresses would be served when querying for amplipi.local
   * Stream validation for URLs has been made more robust
   * Minor bugfixes with Airplay 1 stream handling
+  * Reset API password, support tunnels during factory reset
 
 ## 0.4.2
 * Streams
