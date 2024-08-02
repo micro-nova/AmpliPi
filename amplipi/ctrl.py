@@ -44,6 +44,8 @@ from amplipi import auth
 from amplipi import defaults
 import traceback
 
+from amplipi.streams.base_streams import PersistentStream, InvalidStreamField
+
 
 _DEBUG_API = False  # print out a graphical state of the api after each call
 logger = logging.getLogger(__name__)
@@ -661,7 +663,7 @@ class Api:
     for stream_id in self.streams.keys():
       stream = self.streams[stream_id]
       if stream.stream_type == 'fileplayer' and stream.temporary and stream.timeout_expired():
-          temp_streams.append(stream_id)
+        temp_streams.append(stream_id)
 
     for source in self.status.sources:
       for stream_id in temp_streams:
@@ -1045,7 +1047,7 @@ class Api:
         raise exc
       if isinstance(exc, KeyError):
         return ApiResponse.error(f'missing stream field: {exc}')
-      if isinstance(exc, amplipi.streams.InvalidStreamField):
+      if isinstance(exc, InvalidStreamField):
         # TODO: any refactor of exceptions should also fix the below
         return ApiResponse.fieldError(exc.field, exc.msg)
       return ApiResponse.error(f'create stream failed: {exc}')
@@ -1107,7 +1109,7 @@ class Api:
       return ApiResponse.error(f'Unable to get stream {sid}: {exc}')
     try:
       if cmd in ['activate', 'deactivate']:
-        if isinstance(stream, amplipi.streams.PersistentStream):
+        if isinstance(stream, PersistentStream):
           if cmd == 'activate':
             stream.activate()
           else:
