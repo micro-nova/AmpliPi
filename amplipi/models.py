@@ -652,7 +652,7 @@ class Stream(Base):
           'value': {
             'name': 'Play NASA Announcement',
             'type': 'fileplayer',
-            'url': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3'
+            'url': 'https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3'
           }
         },
         'Add FM Radio Station': {
@@ -916,7 +916,7 @@ class Announcement(BaseModel):
       'examples': {
         'Make NASA Announcement': {
           'value': {
-            'media': 'https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3',
+            'media': 'https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3',
           }
         }
       }
