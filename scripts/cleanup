@@ -70,6 +70,10 @@ ssh $user_host "systemctl --user start amplipi"
 echo -e "removing deployments"
 ssh $user_host "rm -rf amplipi-*.tar.gz amplipi-dev/amplipi-*"
 
+echo -e "removing support tunnels"
+ssh $user_host "sudo rm -f /var/lib/support_tunnel/device.db"
+ssh $user_host "sudo rm -f /etc/wireguard/*"
+
 echo -e "removing any temporary firmware binaries"
 ssh $user_host "rm -f preamp_*.bin"
 
