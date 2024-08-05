@@ -30,6 +30,7 @@ import re
 import subprocess
 import shlex
 import pathlib
+import pwd
 from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 from fastapi import HTTPException, status, Depends
 
@@ -455,7 +456,10 @@ def clear_custom_configs():
       text=True,
       check=True
     )
-    if running_support_tunnels.stdout:
+  except Exception as e:
+    logger.exception(f"failed to list support tunnels: {e}")
+  try:
+    if running_support_tunnels and running_support_tunnels.stdout:
       for tunnel in [i.split()[0] for i in running_support_tunnels.stdout.split(sep='\n')]:
         subprocess.run(
           f"/opt/support_tunnel/venv/bin/python -m invoke stop {tunnel}".split(),
@@ -463,16 +467,27 @@ def clear_custom_configs():
           check=True
         )
   except Exception as e:
-    logger.exception(f"failed to stop support tunnels: {e}")
+    logger.exception(f"failed to stop support tunnel: {e}")
 
+  # Explicitly clear any wireguard configs, in spite of the above cleanup.
+  # We use subprocess instead of python native file operations to get priv esc.
   try:
-    # Explicitly clear any wireguard configs, in spite of the above cleanup
     wg_configs = subprocess.run("sudo ls /etc/wireguard".split(), capture_output=True, text=True, check=True)
     if wg_configs.stdout:
       for wg_config in wg_configs.stdout.split():
         subprocess.run(f"sudo rm /etc/wireguard/{wg_config}".split(), check=True)
   except Exception as e:
     logger.exception(f"failed to remove wireguard configs: {e}")
+
+  # Remove any user/group that starts with support*, but leave their home directories.
+  # We leave the home directories in case there is important troubleshooting data, audit logs,
+  # et al, in case a second support tunnel is necessary for a recurring issue or similar.
+  support_users = [u for u in pwd.getpwall() if u.pw_name.startswith("support")]
+  try:
+    for user in support_users:
+      subprocess.run(f"sudo deluser {user.pw_name}".split(), check=True)
+  except Exception as e:
+    logger.exception(f"failed to delete user {user.pw_name}: {e}")
 
   # Remove these paths whole-cloth. They do not need special permissions.
   for path in ["/var/lib/support_tunnel/device.db", "/home/pi/.config/amplipi/users.json"]:
