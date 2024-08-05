@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Upcoming Release
+* Web App
+  * Fix internet radio search on IOS app
+
 ## 0.4.2
 * Streams
   * Internet radio can now play playlists from the `pls`, `m3u8`, and `m3u` formats.
