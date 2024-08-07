@@ -244,12 +244,11 @@ class SourceUpdate(BaseUpdate):
 
 class BrowsableItem(BaseModel):
   """ An item that can be browsed """
-  id: int                         # id for this item that is unique within it's stream
+  id: str                         # id for this item that is unique within it's stream
   name: str                       # name of the item
   playable: bool                  # can this item be played
   parent: bool                    # is this item a parent item, e.g. can it's children be browsed
   img: Optional[str] = None   # url to an image for this item
-
 
 class BrowsableItemResponse(BaseModel):
   items: List[BrowsableItem]
@@ -261,25 +260,25 @@ class BrowsableItemResponse(BaseModel):
           'value': {
             'items': [
               {
-                'id': 0,
+                'id': '0',
                 'name': 'Blink-182 Radio',
                 'playable': True,
                 'parent': False
               },
               {
-                'id': 1,
+                'id': '1',
                 'name': 'Cake Radio',
                 'playable': True,
                 'parent': False
               },
               {
-                'id': 2,
+                'id': '2',
                 'name': 'Chiptune Radio',
                 'playable': True,
                 'parent': False
               },
               {
-                'id': 3,
+                'id': '3',
                 'name': 'Glitch Hop Radio',
                 'playable': True,
                 'parent': False
@@ -899,6 +898,10 @@ class PresetUpdate(BaseUpdate):
     }
 
 
+class BrowserSelection(BaseModel):
+  item: str = Field(description="Identifier of piece of media in browser to play")
+
+
 class Announcement(BaseModel):
   """ A PA-like Announcement
   IF no zones or groups are specified, all available zones are used
@@ -1377,3 +1380,7 @@ class DebugResponse(BaseModel):
         }
       ]
     }
+
+class PlayItemResponse(BaseModel):
+  directory: str                  # Directory that the browser is in
+  status: Status

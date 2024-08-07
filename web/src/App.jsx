@@ -98,11 +98,23 @@ export const useStatusStore = create((set, get) => ({
             })
         );
     },
-    setBrowsableStreamSong: (streamId, itemId) => {
-        return fetch(`/api/streams/${streamId}/${itemId}/play`, { method: "get" }).then((res) => {
+    setBrowsableStreamSong: (streamId, itemId, setPath) => {
+        return fetch(`/api/streams/browser/${streamId}/play`, { 
+            method: "post", 
+            headers: {
+                "content-type": "application/json",
+            },
+            datatype: "json",
+            body: JSON.stringify({
+                item: itemId,
+            }),
+        }).then((res) => {
             if (res.ok) {
                 res.json().then((s) => {
-                    set({ status: s});
+                    set({ status: s.status});
+                    if (setPath != undefined) {
+                        setPath(s.directory);
+                    }
                 });
             }
         });

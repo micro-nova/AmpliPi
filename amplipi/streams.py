@@ -203,7 +203,7 @@ class BaseStream:
     """ Play a BrowsableItem """
     raise NotImplementedError()
 
-  def browse(self, parent: Optional[int] = None) -> List[models.BrowsableItem]:
+  def browse(self, parent: Optional[int] = None, path: Optional[str] = None) -> List[models.BrowsableItem]:
     """ Browse the stream for items"""
     raise NotImplementedError()
 
@@ -857,6 +857,10 @@ class Pandora(PersistentStream, Browsable):
       img_url='static/imgs/pandora.png',
       type=self.stream_type
     )
+
+    if len(self.stations) == 0:
+      self.load_stations()
+
     try:
       with open(loc, 'r', encoding='utf-8') as file:
         for line in file.readlines():
@@ -949,15 +953,13 @@ class Pandora(PersistentStream, Browsable):
     except Exception as exc:
       raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
-  def browse(self, parent=None) -> List[models.BrowsableItem]:
-    """ Browse the stream for items """
-
-    if len(self.stations) == 0:
-      try:
-        pd_stations = {s.name.upper(): s.art_url for s in self.pyd_client.get_station_list()}
-      except Exception as e:
-        logger.exception(f'Error browsing for pandora stations: {e}')
-        return []
+  def load_stations(self) -> List[models.BrowsableItem]:
+    try:
+      pd_stations = {s.name.upper(): s.art_url for s in self.pyd_client.get_station_list()}
+    except Exception as e:
+      logger.exception(f'Error browsing for pandora stations: {e}')
+      return []
+    if os.path.exists(self.pb_stations_file):
       with open(self.pb_stations_file) as f:
         # try to match PianoBar's list of stations with those returned by the Pandora API
         # NOTE: duplicate station names will only match the last duplicate station returned by the Pandora API
@@ -968,6 +970,11 @@ class Pandora(PersistentStream, Browsable):
             name = sinfo[1]
             img = pd_stations.get(name.upper(), "")
             self.stations.append(models.BrowsableItem(name=name, playable=True, id=station_id, parent=False, img=img))
+
+  def browse(self, parent=None, path=None) -> List[models.BrowsableItem]:
+    """ Browse the stream for items """
+    if len(self.stations) == 0:
+      self.load_stations()
     return self.stations
 
   def play(self, item_id):
@@ -1358,11 +1365,10 @@ class MediaDevice(PersistentStream, Browsable):
     self.bkg_thread: Optional[threading.Thread] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']
     self.song_list: List[str] = []
-    self.directory_list: List[str] = []
     self.song_index = 0
     self.ended = False
     self._prev_timeout = datetime.datetime.now()
-    self.playing = ''
+    self.playing = None
     self.device: Optional[str] = None
 
   def reconfig(self, **kwargs):
@@ -1393,7 +1399,7 @@ class MediaDevice(PersistentStream, Browsable):
       self.command_file_path = f'{src_config_folder}/cmd'
       if remake_list:
         try:
-          self.make_song_list()
+          self.make_song_list(os.path.dirname(self.playing))
         except Exception as e:
           logger.error(f'Error processing request: {e}')
 
@@ -1414,18 +1420,18 @@ class MediaDevice(PersistentStream, Browsable):
     self.src = vsrc
     return
 
-  def make_song_list(self):
-    self.song_list = []
-    self.directory_list = []
-    for filename in os.listdir(self.local_directory):
-      f = os.path.join(self.local_directory, filename)
-      if not f.startswith(self.local_directory):
-        raise Exception(f'File path {f} not in {self.local_directory}')
+  def make_song_list(self, path):
+    song_list = []
+    directory_list = []
+    for filename in os.listdir(path):
+      f = os.path.join(path, filename)
+      if not f.startswith(path):
+        raise Exception(f'File path {f} not in {path}')
       if os.path.isfile(f) and f.endswith(MUSIC_EXTENSIONS):
-        self.song_list.append(f)
+        song_list.append(f)
       elif not os.path.isfile(f):
-        self.directory_list.append(f)
-    return None
+        directory_list.append(f)
+    return song_list, directory_list
 
   def _deactivate(self):
     if self._is_running():
@@ -1526,36 +1532,49 @@ class MediaDevice(PersistentStream, Browsable):
       pass
     return source
 
-  def browse(self, parent=None) -> List[models.BrowsableItem]:
+  def browse(self, parent=None, path=None) -> List[models.BrowsableItem]:
     browsables = []
-    id = 1
-    if self.local_directory != self.directory:
-      browsables.append(models.BrowsableItem(name='../', playable=True, parent=False, id=0, img='static/imgs/folder.png'))
-    for directory in self.directory_list:
-      browsables.append(models.BrowsableItem(name=directory.split('/')[-1], playable=True, parent=False, id=id, img='static/imgs/folder.png'))
-      id += 1
-    for song in self.song_list:
-      browsables.append(models.BrowsableItem(name=song.split('/')[-1], playable=True, parent=False, id=id, img='static/imgs/note.png'))
-      id += 1
+    if path is None:
+      if self.playing is None:
+        path = self.directory
+      else:
+        path = os.path.dirname(self.playing)
+
+    song_list, directory_list = self.make_song_list(path)
+
+    if path != self.directory:
+      browsables.append(models.BrowsableItem(name='../', playable=True, parent=False, id=os.path.dirname(path), img='static/imgs/folder.png'))
+    for directory in directory_list:
+      browsables.append(models.BrowsableItem(name=directory.split('/')[-1], playable=True, parent=False, id=directory, img='static/imgs/folder.png'))
+    for song in song_list:
+      browsables.append(models.BrowsableItem(name=song.split('/')[-1], playable=True, parent=False, id=song, img='static/imgs/note.png'))
     return browsables
 
-  def play(self, id):
-    logger.debug(f'Playing from media device: id is {id}, local directory is {self.local_directory} and top directory is {self.directory}')
-    if id == 0 and self.local_directory != self.directory:
+  def play(self, path):
+    logger.info(f'PATH IS {path}')
+    if not path.startswith(self.directory):
+      logger.error(f'Error processing request: Cannot browse path {path}')
+      return
+
+    if not os.path.exists(path):
+      logger.error(f'Error processing request: Path {path} does not exist')
+
+    if os.path.isdir(path):
       try:
-        self.local_directory = os.path.dirname(self.local_directory)
-        self.make_song_list()
-      except Exception as e:
-        logger.error(f'Error processing request: {e}')
-    elif id <= len(self.directory_list):
-      try:
-        self.local_directory = self.directory_list[id - 1]
-        self.make_song_list()
+        return path
       except Exception as e:
         logger.error(f'Error processing request: {e}')
     else:
-      new_id = id - (1 + len(self.directory_list))
-      self.change_song(new_id)
+      dir = os.path.dirname(path)
+      song_list, directory_list = self.make_song_list(dir)
+      if path in song_list:
+        self.song_list = song_list
+        new_id = self.song_list.index(path)
+        self.change_song(new_id)
+        return dir
+      else:
+        logger.error(f'Cannot find song {path}')
+    return path # If an error occurs just return to the original path.
 
   def is_persistent(self):
     return True

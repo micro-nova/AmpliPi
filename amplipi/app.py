@@ -512,18 +512,6 @@ def exec_command(cmd: models.StreamCommand, ctrl: Api = Depends(get_ctrl), sid: 
   return code_response(ctrl, ctrl.exec_stream_command(sid, cmd=cmd))
 
 
-@api.get('/api/streams/{sid}/browse', tags=['stream'])
-def browse_stream(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.BrowsableItemResponse:
-  """ Browse the top level children of the current stream's media """
-  stream = ctrl.streams[sid]
-  if stream is None:
-    raise HTTPException(404, f'source {sid} not found')
-  elif not stream.browsable:
-    raise HTTPException(404, f'source {sid} is not browsable')
-
-  return models.BrowsableItemResponse(items=stream.browse())
-
-
 @api.get('/api/streams/{sid}/{pid}/browse', tags=['stream'])
 def browse_stream_child(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, pid: int = params.ParentID) -> models.BrowsableItemResponse:
   """ Browse the children of a media item in the current stream """
@@ -536,8 +524,24 @@ def browse_stream_child(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamI
   return models.BrowsableItemResponse(items=stream.browse(parent=pid))
 
 
-@api.get('/api/streams/{sid}/{cid}/play', tags=['stream'])
-def play_stream_child(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID, cid: int = params.ChildID) -> models.Status:
+@api.post('/api/streams/browser/{sid}/browse', tags=['stream'])
+def browse_stream(selection: models.BrowserSelection = None, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.BrowsableItemResponse:
+  """ Browse the top level children of the current stream's media """
+  stream = ctrl.streams[sid]
+  logger.info("SOMEONE CALLED BROWSE_STREAM!!!")
+  if stream is None:
+    raise HTTPException(404, f'source {sid} not found')
+  elif not stream.browsable:
+    raise HTTPException(404, f'source {sid} is not browsable')
+
+  if selection is not None:
+    return models.BrowsableItemResponse(items=stream.browse(path=selection.item))
+  else:
+    return models.BrowsableItemResponse(items=stream.browse())
+
+
+@api.post('/api/streams/browser/{sid}/play', tags=['stream'])
+def play_stream_child(selection: models.BrowserSelection, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.PlayItemResponse:
   """ Play a child item from the current stream """
   stream = ctrl.streams[sid]
   if stream is None:
@@ -545,10 +549,11 @@ def play_stream_child(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID,
   elif not stream.browsable:
     raise HTTPException(404, f'source {sid} is not browsable')
 
-  stream.play(cid)
+  directory = stream.play(selection.item)
   ctrl.sync_stream_info()
+  state = code_response(ctrl, ctrl.get_state())
 
-  return code_response(ctrl, ctrl.get_state())
+  return models.PlayItemResponse(directory=directory, status=state)
 
 
 # presets
