@@ -104,7 +104,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo systemctl restart systemd-journald.service',
 
             'echo "If first deploy, create logging.ini and set default log level to INFO"',
-            r'echo -e "[logging]\nlog_level=INFO\n" | sudo tee /var/log/logging.ini',
+            r'[ ! -d /var/log/logging.ini ] && echo -e "[logging]\nlog_level=INFO\n" | sudo tee /var/log/logging.ini',
 
             # Create directories and cronjobs for log persistence option
             'sudo mkdir -p /var/log/journal',
