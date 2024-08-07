@@ -100,13 +100,14 @@ _os_deps: Dict[str, Dict[str, Any]] = {
 
             'echo "If first deploy, reconfiguring journald to only log to RAM"',
             r'[ ! -d /var/log/journal ] && echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
+
             'sudo systemctl enable systemd-journald.service',
             'sudo systemctl restart systemd-journald.service',
 
             'echo "If first deploy, create logging.ini and set default log level to INFO"',
             r'[ ! -d /var/log/logging.ini ] && echo -e "[logging]\nlog_level=INFO\n" | sudo tee /var/log/logging.ini',
 
-            # Create directories and cronjobs for log persistence option
+            # Create directory for log persistence option
             'sudo mkdir -p /var/log/journal',
             'sudo systemd-tmpfiles --create --prefix /var/log/journal',
 
