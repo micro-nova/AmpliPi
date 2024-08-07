@@ -224,6 +224,18 @@
                   });
                 }
 
+                async function setLogLevel() {
+                  const log_level = document.getElementById("log-level-dropdown");
+                  const response = await fetch("/settings/log_level", {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ "log_level": log_level.value })
+                  });
+                  const resp = await response.json()
+                  console.log(`Log level attempted to set to: ${log_level.value}`);
+                  console.log(`Log level actually set to: ${resp}`);
+                }
+
                 function initSettings(){
                   // Initialize all settings things here
                   getPersist();
@@ -304,7 +316,7 @@
               </div>
 
               <!-- Timezone -->
-              <div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
                 <h6>
                   NOTE: Clicking "Set Timezone" button will push the change to the system, but will need a system reboot to apply
                   <br/>
@@ -324,9 +336,9 @@
               </div>
 
               <!-- Log Level -->
-              <div>
+              <div style="margin-top: 20px;">
                   <label for="log-level-dropdown">Log Level:</label>
-                  <select name="log-level-dropdown" id="log-level-dropdown" style="width: fit-content">
+                  <select name="log-level-dropdown" id="log-level-dropdown" style="width: fit-content" onchange={setLogLevel()}>
                     <!-- Empty until populated by getLogLevels function -->
                   </select>
               </div>

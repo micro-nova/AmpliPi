@@ -260,13 +260,18 @@ def get_log_level():
 
 class LogLevel(BaseModel):
   """Wrapper for log_level string to be passed into log_level post endpoint"""
-  log_level: str
+  log_level: LogLevels
 
 
 @router.post("/settings/log_level")
 def set_log_level(log_level: LogLevel):
-  config = read_config('/var/log/logging.ini')
-  config.set("logging", "log_level", log_level.log_level)
+  ini = '/var/log/logging.ini'
+  config = read_config(ini)
+  config.set("logging", "log_level", str(log_level.log_level))
+  with open(f"{ini}.tmp", "w", encoding="utf-8") as file:
+    file.write(config)
+
+    subprocess.run(['sudo', 'mv', f'{ini}.tmp', ini], check=True)
   return get_log_level()
 
 

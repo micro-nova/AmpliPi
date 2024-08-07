@@ -134,6 +134,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
 
             'echo "If first deploy, reconfiguring journald to only log to RAM"',
             r'[ ! -d /var/log/journal ] && echo -e "[Journal]\nStorage=volatile\nRuntimeMaxUse=64M\nForwardToConsole=no\nForwardToWall=no\n" | sudo tee /etc/systemd/journald.conf',
+
             'sudo systemctl enable systemd-journald.service',
             'sudo systemctl restart systemd-journald.service',
 
