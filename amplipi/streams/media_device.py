@@ -56,7 +56,7 @@ class MediaDevice(PersistentStream, Browsable):
       song_info_path = f'{src_config_folder}/currentSong'
       log_file_path = f'{src_config_folder}/log'
       self.command_file_path = f'{src_config_folder}/cmd'
-      if remake_list:
+      if remake_list and self.playing is not None:
         try:
           self.song_list, _ = self.make_song_list(os.path.dirname(self.playing))
         except Exception as e:

@@ -245,12 +245,11 @@ class Pandora(PersistentStream, Browsable):
     except Exception as exc:
       raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
-  def load_stations(self) -> List[models.BrowsableItem]:
+  def load_stations(self):
     try:
       pd_stations = {s.name.upper(): s.art_url for s in self.pyd_client.get_station_list()}
     except Exception as e:
       logger.exception(f'Error browsing for pandora stations: {e}')
-      return []
     if os.path.exists(self.pb_stations_file):
       with open(self.pb_stations_file) as f:
         # try to match PianoBar's list of stations with those returned by the Pandora API
