@@ -525,7 +525,7 @@ def browse_stream_child(ctrl: Api = Depends(get_ctrl), sid: int = params.StreamI
 
 
 @api.post('/api/streams/browser/{sid}/browse', tags=['stream'])
-def browse_stream(selection: models.BrowserSelection = None, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.BrowsableItemResponse:
+def browse_stream(selection: Optional[models.BrowserSelection] = None, ctrl: Api = Depends(get_ctrl), sid: int = params.StreamID) -> models.BrowsableItemResponse:
   """ Browse the top level children of the current stream's media """
   stream = ctrl.streams[sid]
   logger.info("SOMEONE CALLED BROWSE_STREAM!!!")
