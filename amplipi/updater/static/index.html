@@ -203,7 +203,35 @@
                   });
                 }
 
-                window.onload = () => {getPersist(); getTimezones();};
+                async function getLogLevel() {
+                  const response1 = await fetch("/settings/log_level", {method: "GET"});
+                  const log_level = await response1.json(); // Get current log_level setting
+
+                  const response2 = await fetch("/settings/log_levels", {method: "GET"});
+                  const log_levels = await response2.json(); // Get all log_level options
+
+                  const dropdown = document.getElementById("log-level-dropdown");
+
+                  log_levels.forEach(level => {
+                    const option = document.createElement("option");
+                    console.log(`level: ${level}`)
+                    option.value = level;
+                    option.textContent = level;
+                    if(level == log_level){
+                      option.selected = true;
+                    }
+                    dropdown.appendChild(option);
+                  });
+                }
+
+                function initSettings(){
+                  // Initialize all settings things here
+                  getPersist();
+                  getTimezones();
+                  getLogLevel();
+                }
+
+                window.onload = initSettings;
               </script>
 
               <div id="admin-settings-dialog">
@@ -294,6 +322,15 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Log Level -->
+              <div>
+                  <label for="log-level-dropdown">Log Level:</label>
+                  <select name="log-level-dropdown" id="log-level-dropdown" style="width: fit-content">
+                    <!-- Empty until populated by getLogLevels function -->
+                  </select>
+              </div>
+
             </div>
 
           </div>

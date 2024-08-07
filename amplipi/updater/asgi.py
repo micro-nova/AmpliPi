@@ -49,6 +49,7 @@ import uvicorn
 # models
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
+from enum import Enum
 
 from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
 
@@ -112,6 +113,12 @@ except Exception as e:
   logger.exception(f'Error loading identity file: {e}')
 
 
+def read_config(file_dir: str):
+  config = configparser.ConfigParser(strict=False, allow_no_value=True)
+  config.read(file_dir)
+  return config
+
+
 class Persist_Logs(BaseModel):
   """Basemodel that consists of a bool and int, used to change different config files around the system via POST /settings/persist_logs"""
   persist_logs: bool
@@ -126,11 +133,9 @@ def get_log_persist_state():
   """
   create_logging_ini()
 
-  journalconf = configparser.ConfigParser(strict=False, allow_no_value=True)
-  journalconf.read('/etc/systemd/journald.conf')
+  journalconf = read_config('/etc/systemd/journald.conf')
 
-  logconf = configparser.ConfigParser(strict=False, allow_no_value=True)
-  logconf.read('/var/log/logging.ini')
+  logconf = read_config('/var/log/logging.ini')
 
   ret = Persist_Logs(persist_logs=journalconf.get("Journal", "Storage", fallback="") == "persistent", auto_off_delay=logconf.get("logging", "auto_off_delay", fallback="14"),)
   return ret
@@ -145,8 +150,7 @@ def toggle_persist_logs(data: Persist_Logs):
     if state.persist_logs != data.persist_logs:
       journalconf = '/etc/systemd/journald.conf'
       journaltmp = '/tmp/journald.conf.tmp'
-      journal = configparser.ConfigParser(strict=False, allow_no_value=True)
-      journal.read(journalconf)
+      journal = read_config(journalconf)
 
       if not journal.has_section("Journal"):
         journal.add_section('Journal')
@@ -233,6 +237,37 @@ def set_timezone(timezone: Timezone):
   subprocess.run(['sudo', 'timedatectl', 'set-timezone', timezone.timezone], check=True)
 
   return get_timezone()
+
+class LogLevels(Enum):
+  DEBUG = "DEBUG"
+  INFO = "INFO"
+  WARNING = "WARNING"
+  ERROR = "ERROR"
+  CRITICAL = "CRITICAL"
+
+
+@router.get("/settings/log_levels")
+def get_log_levels():
+  log_levels = [level.value for level in LogLevels]
+  return log_levels
+
+
+@router.get("/settings/log_level")
+def get_log_level():
+  config = read_config('/var/log/logging.ini')
+  return config.get("logging", "log_level")
+
+
+class LogLevel(BaseModel):
+  """Wrapper for log_level string to be passed into log_level post endpoint"""
+  log_level: str
+
+
+@router.post("/settings/log_level")
+def set_log_level(log_level: LogLevel):
+  config = read_config('/var/log/logging.ini')
+  config.set("logging", "log_level", log_level.log_level)
+  return get_log_level()
 
 
 @router.get('/update')
