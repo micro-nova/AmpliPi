@@ -145,11 +145,11 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
-  def play(self, item: int):
+  def play(self, item: str):
     """ Play a BrowsableItem """
     raise NotImplementedError()
 
-  def browse(self, parent: Optional[int] = None) -> List[models.BrowsableItem]:
+  def browse(self, parent: Optional[int] = None, path: Optional[str] = None) -> List[models.BrowsableItem]:
     """ Browse the stream for items"""
     raise NotImplementedError()
 
