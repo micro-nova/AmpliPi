@@ -32,6 +32,7 @@
         Update & configure your AmpliPi device
       </p>
       <div class="card">
+        <!-- Navigation Tabs -->
         <div class="card-header">
           <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
             <li class="nav-item">
@@ -54,6 +55,7 @@
         <div class="card-body text-center">
           <div class="tab-content" id="myTabContent">
 
+            <!-- Latest Update -->
             <div class="tab-pane fade show active" id="latest-update" role="tabpanel" aria-labelledby="latest-update-tab">
               <div id='latest-update-name'>...</div>
               <div id='latest-update-desc' class="text-left"></div>
@@ -62,6 +64,7 @@
                 Start Update</a>
             </div>
 
+            <!-- Previous Updates -->
             <div class="tab-pane fade" id="older-update" role="tabpanel" aria-labelledby="older-update-tab">
               <select class="custom-select" id="older-update-sel" onchange="ui_select_release(this);">
                 <!-- Releases populated from GH -->
@@ -73,6 +76,7 @@
                 Start Update</a>
             </div>
 
+            <!-- Manual Update -->
             <div class="tab-pane fade" id="manual-update" role="tabpanel" aria-labelledby="manual-update-tab">
               <div class="custom-file">
                 <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-custom-update').removeClass('disabled');">
@@ -80,6 +84,7 @@
               <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="ui_upload_software_update();">Start Update</a>
             </div>
 
+            <!-- Set Password -->
             <div class="tab-pane fade text-left" id="set-password" role="tabpanel" aria-labelledby="set-password-tab">
               <div class="set-password-dialog">
                 This form allows you to set a password for the web interface. If the password fields are empty, it will unset the password protection. This will only set a password for the web interface, not the system password. This action will also log out any existing sessions.
@@ -93,6 +98,7 @@
               <a id="password" role="button" class="btn btn-lg btn-primary text-center mt-3" onClick="set_password();">Update Password</a>
             </div>
 
+            <!-- Support Tunnel -->
             <div class="tab-pane fade text-left" id="support-tunnel" role="tabpanel" aria-labelledby="support-tunnel-tab">
               <div id="support-tunnel-dialog">
                 This dialog allows you to request a support tunnel. Once requested, you must give the tunnel ID and preshared key to support, who can be reached via <a href="mailto:support@micro-nova.com">support@micro-nova.com</a>.
@@ -203,9 +209,13 @@
               <div id="admin-settings-dialog">
                 This tab allows you to change settings relating to the core of AmpliPi
               </div>
-              <p class="">
-                <a class="btn btn-primary btn-sm text-center" id="set-password-button" data-toggle="tab" href="#set-password" role="tab" aria-controls="set-password" aria-selected="false">Set Password</a>
-              </p>
+
+              <!-- Password -->
+              <div>
+                <p class="">
+                  <a class="btn btn-primary btn-sm text-center" id="set-password-button" data-toggle="tab" href="#set-password" role="tab" aria-controls="set-password" aria-selected="false">Set Password</a>
+                </p>
+              </div>
 
               <!-- Password -->
               <div id="set-password" style="display: flex; flex-direction: column; gap: 10px;">
@@ -266,20 +276,22 @@
               </div>
 
               <!-- Timezone -->
-              <h6>
-                NOTE: Clicking "Set Timezone" button will push the change to the system, but will need a system reboot to apply
-                <br/>
-                Go to the config page in the standard config settings page to do a system reboot
-              </h6>
               <div>
-                <div style="float: left">
-                  <label for="timezone-dropdown">Timezone:</label>
-                  <select name="timezone-dropdown" id="timezone-dropdown" style="width: fit-content">
-                    <!-- Empty until populated by getTimezones function -->
-                  </select>
-                </div>
-                <div style="float: left">
-                  <button id="post-timezone-button" type="button" class="btn btn-primary btn-sm text-center" onclick={setTimezone()}>Set Timezone</button>
+                <h6>
+                  NOTE: Clicking "Set Timezone" button will push the change to the system, but will need a system reboot to apply
+                  <br/>
+                  Go to the config page in the standard config settings page to do a system reboot
+                </h6>
+                <div>
+                  <div style="float: left">
+                    <label for="timezone-dropdown">Timezone:</label>
+                    <select name="timezone-dropdown" id="timezone-dropdown" style="width: fit-content">
+                      <!-- Empty until populated by getTimezones function -->
+                    </select>
+                  </div>
+                  <div style="float: left">
+                    <button id="post-timezone-button" type="button" class="btn btn-primary btn-sm text-center" onclick={setTimezone()}>Set Timezone</button>
+                  </div>
                 </div>
               </div>
             </div>
