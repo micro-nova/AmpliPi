@@ -50,6 +50,7 @@ import uvicorn
 # models
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
+from enum import Enum
 
 from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
 
@@ -98,15 +99,19 @@ except Exception as e:
   logger.exception(f'Error loading identity file: {e}')
 
 
+def read_config(file_dir: str):
+  config = configparser.ConfigParser(strict=False, allow_no_value=True)
+  config.read(file_dir)
+  return config
+
+
 @router.get("/settings/persist_logs")
 def get_log_persist_state():
   """
   Checks /etc/systemd/journald.conf to find if the current storage setting is persistent and returns a bool
   Note that returning false doesn't necessarily mean that logs are set to volatile, and could just mean that the config file is missing the line being read
   """
-  conf_path = '/etc/systemd'
-  config = configparser.ConfigParser(strict=False, allow_no_value=True)
-  config.read(f'{conf_path}/journald.conf')
+  config = read_config('/etc/systemd/journald.conf')
   return config.get("Journal", "Storage", fallback="") == "persistent"
 
 
@@ -114,9 +119,7 @@ def get_log_persist_state():
 def toggle_persist_logs():
   """Toggles the option within journald to save logs to memory or storage"""
   try:
-    conf_path = '/etc/systemd'
-    config = configparser.ConfigParser(strict=False, allow_no_value=True)
-    config.read(f'{conf_path}/journald.conf')
+    config = read_config('/etc/systemd/journald.conf')
 
     if 'Journal' not in config:
       config.add_section('Journal')
@@ -149,7 +152,7 @@ def toggle_persist_logs():
     with open('/tmp/journald.conf.tmp', 'w', encoding="utf-8") as conf_file:
       config.write(conf_file)
 
-    subprocess.run(['sudo', 'mv', '/tmp/journald.conf.tmp', f'{conf_path}/journald.conf'], check=True)
+    subprocess.run(['sudo', 'mv', '/tmp/journald.conf.tmp', '/etc/systemd/journald.conf'], check=True)
     subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journald'], check=True)
 
     return get_log_persist_state()
@@ -194,6 +197,37 @@ def set_timezone(timezone: Timezone):
   subprocess.run(['sudo', 'timedatectl', 'set-timezone', timezone.timezone], check=True)
 
   return get_timezone()
+
+class LogLevels(Enum):
+  DEBUG = "DEBUG"
+  INFO = "INFO"
+  WARNING = "WARNING"
+  ERROR = "ERROR"
+  CRITICAL = "CRITICAL"
+
+
+@router.get("/settings/log_levels")
+def get_log_levels():
+  log_levels = [level.value for level in LogLevels]
+  return log_levels
+
+
+@router.get("/settings/log_level")
+def get_log_level():
+  config = read_config('/var/log/logging.ini')
+  return config.get("logging", "log_level")
+
+
+class LogLevel(BaseModel):
+  """Wrapper for log_level string to be passed into log_level post endpoint"""
+  log_level: str
+
+
+@router.post("/settings/log_level")
+def set_log_level(log_level: LogLevel):
+  config = read_config('/var/log/logging.ini')
+  config.set("logging", "log_level", log_level.log_level)
+  return get_log_level()
 
 
 @router.get('/update')
