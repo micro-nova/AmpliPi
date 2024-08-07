@@ -232,7 +232,7 @@ class MediaDevice(PersistentStream, Browsable):
         return dir
       else:
         logger.error(f'Cannot find song {path}')
-    return path # If an error occurs just return to the original path.
+    return path  # If an error occurs just return to the original path.
 
   def is_persistent(self):
     return True
