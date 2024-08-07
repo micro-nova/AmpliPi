@@ -250,6 +250,7 @@ class BrowsableItem(BaseModel):
   parent: bool                    # is this item a parent item, e.g. can it's children be browsed
   img: Optional[str] = None   # url to an image for this item
 
+
 class BrowsableItemResponse(BaseModel):
   items: List[BrowsableItem]
 
@@ -1380,6 +1381,7 @@ class DebugResponse(BaseModel):
         }
       ]
     }
+
 
 class PlayItemResponse(BaseModel):
   directory: Optional[str]  # Directory that the browser is in

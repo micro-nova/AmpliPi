@@ -236,4 +236,3 @@ class MediaDevice(PersistentStream, Browsable):
 
   def is_persistent(self):
     return True
-

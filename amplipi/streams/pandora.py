@@ -287,4 +287,3 @@ class Pandora(PersistentStream, Browsable):
         self.pyd_client.login(self.user, self.password)
       except Exception as e:
         raise InvalidStreamField("password", "invalid password or unable to connect to Pandora servers") from e
-
