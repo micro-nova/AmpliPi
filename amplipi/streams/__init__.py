@@ -40,6 +40,7 @@ from .file_player import FilePlayer
 from .fm_radio import FMRadio
 from .lms import LMS
 from .bluetooth import Bluetooth
+from .media_device import MediaDevice
 from .base_streams import *  # pylint: disable=wildcard-import we need to import these so they are accessible
 
 # We use Popen for long running process control this error is not useful:
@@ -58,7 +59,7 @@ DEBUG = os.environ.get('DEBUG', True)
 
 # Simple handling of stream types before we have a type heirarchy
 AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-                  Aux, FilePlayer, FMRadio, LMS, Bluetooth]
+                  Aux, FilePlayer, FMRadio, LMS, Bluetooth, MediaDevice]
 
 
 def build_stream(stream: models.Stream, mock=False) -> AnyStream:
@@ -94,6 +95,8 @@ def build_stream(stream: models.Stream, mock=False) -> AnyStream:
     return LMS(name, args.get('server'), args.get("port"), disabled=disabled, mock=mock)
   elif stream.type == 'bluetooth':
     return Bluetooth(name, disabled=disabled, mock=mock)
+  elif stream.type == 'mediadevice':
+    return MediaDevice(name, args.get('url'), disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
 
 
@@ -101,7 +104,7 @@ def stream_types_available() -> List[str]:
   """ Returns a list of the available streams on this particular appliance.
   """
   stypes = [RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
-            Aux, FilePlayer, LMS]
+            Aux, FilePlayer, LMS, MediaDevice]
   if Bluetooth.is_hw_available():
     stypes.append(Bluetooth)
   if FMRadio.is_hw_available():

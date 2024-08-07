@@ -149,6 +149,10 @@ class Pandora(PersistentStream, Browsable):
       img_url='static/imgs/pandora.png',
       type=self.stream_type
     )
+
+    if len(self.stations) == 0:
+      self.load_stations()
+
     try:
       with open(loc, 'r', encoding='utf-8') as file:
         for line in file.readlines():
@@ -241,15 +245,13 @@ class Pandora(PersistentStream, Browsable):
     except Exception as exc:
       raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
-  def browse(self, parent=None) -> List[models.BrowsableItem]:
-    """ Browse the stream for items """
-
-    if len(self.stations) == 0:
-      try:
-        pd_stations = {s.name.upper(): s.art_url for s in self.pyd_client.get_station_list()}
-      except Exception as e:
-        logger.exception(f'Error browsing for pandora stations: {e}')
-        return []
+  def load_stations(self) -> List[models.BrowsableItem]:
+    try:
+      pd_stations = {s.name.upper(): s.art_url for s in self.pyd_client.get_station_list()}
+    except Exception as e:
+      logger.exception(f'Error browsing for pandora stations: {e}')
+      return []
+    if os.path.exists(self.pb_stations_file):
       with open(self.pb_stations_file) as f:
         # try to match PianoBar's list of stations with those returned by the Pandora API
         # NOTE: duplicate station names will only match the last duplicate station returned by the Pandora API
@@ -260,6 +262,11 @@ class Pandora(PersistentStream, Browsable):
             name = sinfo[1]
             img = pd_stations.get(name.upper(), "")
             self.stations.append(models.BrowsableItem(name=name, playable=True, id=station_id, parent=False, img=img))
+
+  def browse(self, parent=None, path=None) -> List[models.BrowsableItem]:
+    """ Browse the stream for items """
+    if len(self.stations) == 0:
+      self.load_stations()
     return self.stations
 
   def play(self, item_id):
@@ -280,3 +287,4 @@ class Pandora(PersistentStream, Browsable):
         self.pyd_client.login(self.user, self.password)
       except Exception as e:
         raise InvalidStreamField("password", "invalid password or unable to connect to Pandora servers") from e
+

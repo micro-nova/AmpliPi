@@ -194,6 +194,7 @@ class PersistentStream(BaseStream):
     super().__init__(stype, name, None, disabled, mock)
     self.vsrc: Optional[int] = None
     self._cproc: Optional[subprocess.Popen] = None
+    self.device: Optional[str] = None
 
   def __del__(self):
     self.deactivate()
@@ -273,6 +274,7 @@ class PersistentStream(BaseStream):
         raise Exception('No virtual source found/available')
     virt_dev = utils.virtual_connection_device(self.vsrc)
     phy_dev = utils.real_output_device(src)
+    self.device = phy_dev
     if virt_dev is None or self.mock:
       logger.info('  pretending to connect to loopback (unavailable)')
     else:

@@ -1382,5 +1382,5 @@ class DebugResponse(BaseModel):
     }
 
 class PlayItemResponse(BaseModel):
-  directory: str                  # Directory that the browser is in
+  directory: Optional[str]  # Directory that the browser is in
   status: Status
