@@ -182,13 +182,14 @@ class MediaDevice(PersistentStream, Browsable):
                                img_url=img,
                                supported_cmds=self.supported_cmds,
                                type=self.stream_type)
-    src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
-    loc = f'{src_config_folder}/currentSong'
-    try:
-      with open(loc, 'r', encoding='utf-8'):
-        source.track = self.playing.split('/')[-1]
-    except Exception:
-      pass
+    if self.playing is not None:
+      src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
+      loc = f'{src_config_folder}/currentSong'
+      try:
+        with open(loc, 'r', encoding='utf-8'):
+          source.track = self.playing.split('/')[-1]
+      except Exception:
+        pass
     return source
 
   def browse(self, parent=None, path=None) -> List[models.BrowsableItem]:
