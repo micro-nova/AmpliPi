@@ -1,3 +1,0 @@
-# Recurring persist_log garbage collection function handled by cron
-# Installed by AmpliPi
-0 0 * * * /usr/local/bin/delete_persisted_logs.sh
