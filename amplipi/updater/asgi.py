@@ -191,9 +191,48 @@ def toggle_persist_logs(data: Persist_Logs):
     else:
       logger.info("auto_off_delay unchanged")
 
+    return get_log_persist_state()
   except Exception as exc:
     logger.error("persist_logs POST failed!")
     raise exc
+
+
+@router.get("/settings/timezones")
+def get_timezones():
+  """Returns list of available timezones via timedatectl"""
+  result = subprocess.run(['timedatectl', 'list-timezones'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+  if result.returncode != 0:
+    raise Exception(f"Command 'timedatectl list-timezones' returned an error: {result.stderr}")
+
+  timezones = []
+  for row in result.stdout.split("\n"):
+    if row != "" and row is not None:
+      timezones.append(row)
+  return timezones
+
+
+@router.get("/settings/timezone")
+def get_timezone():
+  """Return current timezone via timedatectl"""
+  result = subprocess.run(['timedatectl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+  if result.returncode != 0:
+    raise Exception(f"Command 'timedatectl' returned an error: {result.stderr}")
+
+  for line in result.stdout.split('\n'):
+      if "Time zone" in line:
+          # Extract the timezone part from the line, which is usually in the format: "Time zone: Region/City (UTC offset)"
+          return line.split(':')[1].split(' ')[1]
+
+class Timezone(BaseModel):
+  """Wrapper for timezone string to be passed into timezone post endpoint"""
+  timezone: str
+
+@router.post("/settings/timezone")
+def set_timezone(timezone: Timezone):
+  """Sets timezone and returns newly selected timezone via timedatectl"""
+  subprocess.run(['sudo', 'timedatectl', 'set-timezone', timezone.timezone], check=True)
+
+  return get_timezone()
 
 
 @router.get('/update')

@@ -112,6 +112,7 @@
               </div>
             </div>
 
+            <!-- Admin Settings -->
             <div class="tab-pane fade text-left" id="admin-settings" role="tabpanel" aria-labelledby="admin-settings-tab">
               <script>
                 function setVisibility(visible, ...others){
@@ -166,12 +167,45 @@
                   }, 1500);
                 }
 
-                window.onload = getPersist;
+                async function getTimezones() {
+                  const response1 = await fetch("/settings/timezones", {method: "GET"});
+                  const timezones = await response1.json(); // All zones
+
+                  const response2 = await fetch("/settings/timezone", {method: "GET"});
+                  const timezone = await response2.json(); // Currently selected zone
+
+                  const dropdown = document.getElementById("timezone-dropdown");
+
+                  timezones.forEach(zone => {
+                    const option = document.createElement("option");
+                    console.log(`zone: ${zone}`)
+                    option.value = zone;
+                    option.textContent = zone;
+                    if(zone == timezone){
+                      option.selected = true;
+                    }
+                    dropdown.appendChild(option);
+                  });
+                }
+
+                async function setTimezone() {
+                  const timezone = document.getElementById("timezone-dropdown");
+                  const response = await fetch("/settings/timezone", {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ "timezone": timezone.value })
+                  });
+                }
+
+                window.onload = () => {getPersist(); getTimezones();};
               </script>
 
               <div id="admin-settings-dialog">
                 This tab allows you to change settings relating to the core of AmpliPi
               </div>
+              <p class="">
+                <a class="btn btn-primary btn-sm text-center" id="set-password-button" data-toggle="tab" href="#set-password" role="tab" aria-controls="set-password" aria-selected="false">Set Password</a>
+              </p>
 
               <!-- Password -->
               <div id="set-password" style="display: flex; flex-direction: column; gap: 10px;">
@@ -228,6 +262,24 @@
                 </div>
                 <div class="set-password-dialog">
                   WARNING: Leaving log persistence on for extended periods can damage your system.
+                </div>
+              </div>
+
+              <!-- Timezone -->
+              <h6>
+                NOTE: Clicking "Set Timezone" button will push the change to the system, but will need a system reboot to apply
+                <br/>
+                Go to the config page in the standard config settings page to do a system reboot
+              </h6>
+              <div>
+                <div style="float: left">
+                  <label for="timezone-dropdown">Timezone:</label>
+                  <select name="timezone-dropdown" id="timezone-dropdown" style="width: fit-content">
+                    <!-- Empty until populated by getTimezones function -->
+                  </select>
+                </div>
+                <div style="float: left">
+                  <button id="post-timezone-button" type="button" class="btn btn-primary btn-sm text-center" onclick={setTimezone()}>Set Timezone</button>
                 </div>
               </div>
             </div>
