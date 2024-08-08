@@ -45,6 +45,7 @@ IDENTITY_FILE = os.path.join(USER_CONFIG_DIR, "identity")
 
 # Helper functions
 
+
 def get_logger(name):
   """Takes the __name__ of a file and returns a logger with the appropriate log level as set by /var/log/logging.ini"""
 
@@ -70,6 +71,7 @@ def get_logger(name):
   log.addHandler(sh)
 
   return log
+
 
 logger = get_logger(__name__)  # Had to be moved down to make sure get_logger was in scope
 
