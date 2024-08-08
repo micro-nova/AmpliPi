@@ -10,6 +10,7 @@
   * Add "Admin Settings" tab to the Updater/Admin Control Panel
     * Add toggleable option to persist system logs to Admin Settings
     * Move "Set password" page to be accessible via Admin Settings tab
+    * Add option to set minimum logging level for most files in the system
 
 ## 0.4.2
 * Streams
