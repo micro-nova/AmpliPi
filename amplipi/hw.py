@@ -40,10 +40,7 @@ if utils.is_amplipi():
 
 PI_SERIAL_PORT = '/dev/serial0'
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+logger = utils.get_logger(__name__)
 
 
 class FwVersion:
