@@ -145,11 +145,11 @@ class BaseStream:
     """
     raise NotImplementedError(f'{self.name} does not support commands')
 
-  def play(self, item: int):
+  def play(self, item: str):
     """ Play a BrowsableItem """
     raise NotImplementedError()
 
-  def browse(self, parent: Optional[int] = None) -> List[models.BrowsableItem]:
+  def browse(self, parent: Optional[int] = None, path: Optional[str] = None) -> List[models.BrowsableItem]:
     """ Browse the stream for items"""
     raise NotImplementedError()
 
@@ -194,6 +194,7 @@ class PersistentStream(BaseStream):
     super().__init__(stype, name, None, disabled, mock)
     self.vsrc: Optional[int] = None
     self._cproc: Optional[subprocess.Popen] = None
+    self.device: Optional[str] = None
 
   def __del__(self):
     self.deactivate()
@@ -273,6 +274,7 @@ class PersistentStream(BaseStream):
         raise Exception('No virtual source found/available')
     virt_dev = utils.virtual_connection_device(self.vsrc)
     phy_dev = utils.real_output_device(src)
+    self.device = phy_dev
     if virt_dev is None or self.mock:
       logger.info('  pretending to connect to loopback (unavailable)')
     else:

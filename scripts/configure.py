@@ -90,6 +90,28 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 'libgirepository1.0-dev', 'libcairo2-dev',
                 ],
     },
+    'usb': {
+        'apt': [
+                'udisks2', 'udiskie',           # Required to mount filesystem without desktop installed
+        ],
+        'copy': [
+          {
+            'from': 'config/10-udisks.pkla',
+            'to': '/etc/polkit-1/localauthority/50-local.d/10-udisks.pkla',
+            'sudo': 'true',
+          },
+          {
+            'from': 'config/99-udisks2.rules',
+            'to': '/etc/udev/rules.d/99-udisks2.rules',
+            'sudo': 'true',
+          }
+        ],
+        'script': [
+            'sudo cp scripts/udiskie.service /etc/systemd/system',
+            'sudo chmod 444 /etc/systemd/system/udiskie.service',
+            'sudo systemctl enable udiskie.service',
+        ]
+    },
     'logging': {
         'script': [
             'echo "reconfiguring secondary logging utility rsyslog to only allow remote logging"',

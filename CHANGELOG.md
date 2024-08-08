@@ -20,6 +20,8 @@
   * Status now displays number of playing, paused, stopped, and muted zones.
 * Developing
   * Delete generated tarball after finishing deploying using scripts/deploy
+* Streams
+  * Add USB Player stream type
 * System
   * Fixed bug where the logs would be filled with errors when startign Spotify.
   * Take regular configuration backups to the backend
@@ -46,7 +48,7 @@
   * File Players run their own Python container process similar to Internet Radio Stations, rather than running a cvlc command.
   * File Players can now be paused, and restarted by pressing the play button when the track ends.
 * API
-  * Added a play endpoint which supports playing music to a File Player remotely.
+  * Add a play endpoint which supports playing music to a File Player remotely.
 
 ## 0.4.0
 * System

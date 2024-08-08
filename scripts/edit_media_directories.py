@@ -24,7 +24,7 @@ def get_usb_drives(logger: logging.Logger):
   logger.debug("Searching for mounted USB devices")
   for partition in psutil.disk_partitions():
     # Exclude rootfs, the backup drive that happens to mount to /media/pi
-    if '/media/pi' in partition.mountpoint and 'rootfs' not in partition.mountpoint:
+    if '/media' in partition.mountpoint and 'rootfs' not in partition.mountpoint:
       usb_drives.append(str(partition.mountpoint))
       logger.info(f"Found USB device at: {partition.mountpoint}")
   return usb_drives

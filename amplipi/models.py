@@ -244,7 +244,7 @@ class SourceUpdate(BaseUpdate):
 
 class BrowsableItem(BaseModel):
   """ An item that can be browsed """
-  id: int                         # id for this item that is unique within it's stream
+  id: str                         # id for this item that is unique within it's stream
   name: str                       # name of the item
   playable: bool                  # can this item be played
   parent: bool                    # is this item a parent item, e.g. can it's children be browsed
@@ -261,25 +261,25 @@ class BrowsableItemResponse(BaseModel):
           'value': {
             'items': [
               {
-                'id': 0,
+                'id': '0',
                 'name': 'Blink-182 Radio',
                 'playable': True,
                 'parent': False
               },
               {
-                'id': 1,
+                'id': '1',
                 'name': 'Cake Radio',
                 'playable': True,
                 'parent': False
               },
               {
-                'id': 2,
+                'id': '2',
                 'name': 'Chiptune Radio',
                 'playable': True,
                 'parent': False
               },
               {
-                'id': 3,
+                'id': '3',
                 'name': 'Glitch Hop Radio',
                 'playable': True,
                 'parent': False
@@ -899,6 +899,21 @@ class PresetUpdate(BaseUpdate):
     }
 
 
+class BrowserSelection(BaseModel):
+  item: str = Field(description="Identifier of piece of media in browser to play")
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Select the Music Directory': {
+          'value': {
+            'item': '/media/USBStick/Music'
+          }
+        }
+      }
+    }
+
+
 class Announcement(BaseModel):
   """ A PA-like Announcement
   IF no zones or groups are specified, all available zones are used
@@ -931,7 +946,7 @@ class PlayMedia(BaseModel):
   vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                              description='Output volume in dB, overrides vol_f')
   vol_f: float = Field(default=None, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
-  source_id: int = Field(default=None, ge=0, le=MAX_SOURCES - 1, description='Source to announce with')
+  source_id: int = Field(default=None, ge=0, le=MAX_SOURCES - 1, description='Source to play media with')
 
   class Config:
     schema_extra = {
@@ -972,6 +987,7 @@ class Info(BaseModel):
   stream_types_available: List[str] = Field(
     default=[], description='The stream types available on this particular appliance')
   extra_fields: Optional[Dict] = Field(default=None, description='Optional fields for customization')
+  connected_drives: List[str] = Field(default=[], description='A list of all external drives connected')
 
   class Config:
     schema_extra = {
@@ -996,7 +1012,8 @@ class Info(BaseModel):
                 "git_dirty": False,
               }
             ],
-            'stream_types_available': ['bluetooth', 'fmradio']
+            'stream_types_available': ['bluetooth', 'fmradio'],
+            'connected_drives': ['/media/7FA5-ECB4'],
           }
         }
       }
@@ -1372,6 +1389,426 @@ class DebugResponse(BaseModel):
           "apmHost": None,
           "version": None,
           "environment": None
+        }
+      ]
+    }
+
+
+class PlayItemResponse(BaseModel):
+  directory: Optional[str]  # Directory that the browser is in
+  status: Status
+
+  class Config:
+    schema_extra = {
+      'examples': [
+        {
+          "directory": "/media/7FA5-ECB4",
+          "status": {
+            "version": 1,
+            "sources": [
+              {
+                "id": 0,
+                "name": "Input 1",
+                "input": "stream=1005",
+                "info": {
+                  "name": "Pandora - pandora",
+                  "state": "playing",
+                  "type": "pandora",
+                  "artist": "The Living Tombstone",
+                  "track": "Discord (feat. Eurobeat Brony)",
+                  "album": "Discord (Single)",
+                  "station": "Lemon Demon Radio",
+                  "img_url": "https://cont-5.p-cdn.us/images/3e/8a/ca/55/11c84108afac9a6ac27f9df3/1080W_1080H.jpg",
+                  "supported_cmds": [
+                    "play",
+                    "pause",
+                    "next",
+                    "love",
+                    "ban",
+                    "shelve"
+                  ],
+                  "rating": 0
+                }
+              },
+              {
+                "id": 1,
+                "name": "Input 2",
+                "input": "stream=1004",
+                "info": {
+                  "name": "File Browser - mediadevice",
+                  "state": "playing",
+                  "type": "mediadevice",
+                  "img_url": "static/imgs/no_note.png",
+                  "supported_cmds": [
+                    "play",
+                    "pause",
+                    "prev"
+                  ]
+                }
+              },
+              {
+                "id": 2,
+                "name": "Input 3",
+                "input": "None",
+                "info": {
+                  "name": "None",
+                  "state": "stopped",
+                  "img_url": "static/imgs/disconnected.png",
+                  "supported_cmds": []
+                }
+              },
+              {
+                "id": 3,
+                "name": "Input 4",
+                "input": "",
+                "info": {
+                  "name": "None",
+                  "state": "stopped",
+                  "img_url": "static/imgs/disconnected.png",
+                  "supported_cmds": []
+                }
+              }
+            ],
+            "zones": [
+              {
+                "id": 0,
+                "name": "Zone 1",
+                "source_id": 1,
+                "mute": False,
+                "vol": -2,
+                "vol_f": 0.975,
+                "vol_min": -80,
+                "vol_max": 0,
+                "disabled": False
+              },
+              {
+                "id": 1,
+                "name": "Zone 2",
+                "source_id": 1,
+                "mute": False,
+                "vol": -10,
+                "vol_f": 0.875,
+                "vol_min": -80,
+                "vol_max": 0,
+                "disabled": False
+              },
+              {
+                "id": 2,
+                "name": "Zone 3",
+                "source_id": -1,
+                "mute": True,
+                "vol": 0,
+                "vol_f": 1,
+                "vol_min": -80,
+                "vol_max": 0,
+                "disabled": False
+              },
+              {
+                "id": 3,
+                "name": "Zone 4",
+                "source_id": -1,
+                "mute": True,
+                "vol": -40,
+                "vol_f": 0.5,
+                "vol_min": -80,
+                "vol_max": 0,
+                "disabled": False
+              },
+              {
+                "id": 4,
+                "name": "Zone 5",
+                "source_id": -1,
+                "mute": True,
+                "vol": -40,
+                "vol_f": 0.5,
+                "vol_min": -80,
+                "vol_max": 0,
+                "disabled": False
+              },
+              {
+                "id": 5,
+                "name": "Zone 6",
+                "source_id": -1,
+                "mute": True,
+                "vol": 0,
+                "vol_f": 1,
+                "vol_min": -80,
+                "vol_max": 0,
+                "disabled": False
+              }
+            ],
+            "groups": [
+              {
+                "id": 100,
+                "name": "Speakers",
+                "source_id": 1,
+                "zones": [
+                  0,
+                  1
+                ],
+                "mute": False,
+                "vol_delta": -6,
+                "vol_f": 0.925
+              }
+            ],
+            "streams": [
+              {
+                "id": 995,
+                "name": "Aux",
+                "type": "aux",
+                "disabled": False,
+                "browsable": False
+              },
+              {
+                "id": 996,
+                "name": "Input 1",
+                "type": "rca",
+                "index": 0,
+                "disabled": False,
+                "browsable": False
+              },
+              {
+                "id": 997,
+                "name": "Input 2",
+                "type": "rca",
+                "index": 1,
+                "disabled": False,
+                "browsable": False
+              },
+              {
+                "id": 998,
+                "name": "Input 3",
+                "type": "rca",
+                "index": 2,
+                "disabled": False,
+                "browsable": False
+              },
+              {
+                "id": 999,
+                "name": "Input 4",
+                "type": "rca",
+                "index": 3,
+                "disabled": False,
+                "browsable": False
+              },
+              {
+                "id": 1000,
+                "name": "Groove Salad",
+                "type": "internetradio",
+                "url": "http://ice6.somafm.com/groovesalad-32-aac",
+                "logo": "https://somafm.com/img3/groovesalad-400.jpg",
+                "disabled": False,
+                "browsable": False
+              },
+              {
+                "id": 1003,
+                "name": "\tTick Tock Radio - 1950",
+                "type": "internetradio",
+                "url": "https://streaming.ticktock.radio/tt/1950/icecast.audio",
+                "logo": "https://ticktock.radio/static/assets/img/apple-icon-120x120.png",
+                "disabled": False,
+                "browsable": False
+              },
+              {
+                "id": 1004,
+                "name": "File Browser",
+                "type": "mediadevice",
+                "url": "/media/7FA5-ECB4/Music/MX FINICULI.mp3",
+                "disabled": False,
+                "browsable": True
+              },
+              {
+                "id": 1005,
+                "name": "Pandora",
+                "type": "pandora",
+                "user": "streaming@micro-nova.com",
+                "password": "efoie6jhwEM*n8rMKU89",
+                "station": "185208337799842483",
+                "disabled": False,
+                "browsable": True
+              }
+            ],
+            "presets": [
+              {
+                "id": 10000,
+                "name": "Mute All",
+                "state": {
+                  "zones": [
+                    {
+                      "mute": True,
+                      "id": 0
+                    },
+                    {
+                      "mute": True,
+                      "id": 1
+                    },
+                    {
+                      "mute": True,
+                      "id": 2
+                    },
+                    {
+                      "mute": True,
+                      "id": 3
+                    },
+                    {
+                      "mute": True,
+                      "id": 4
+                    },
+                    {
+                      "mute": True,
+                      "id": 5
+                    }
+                  ]
+                }
+              },
+              {
+                "id": 9999,
+                "name": "Restore last config",
+                "state": {
+                  "sources": [
+                    {
+                      "name": "Input 1",
+                      "input": "stream=1005",
+                      "id": 0
+                    },
+                    {
+                      "name": "Input 2",
+                      "input": "",
+                      "id": 1
+                    },
+                    {
+                      "name": "Input 3",
+                      "input": "",
+                      "id": 2
+                    },
+                    {
+                      "name": "Input 4",
+                      "input": "stream=1007",
+                      "id": 3
+                    }
+                  ],
+                  "zones": [
+                    {
+                      "name": "Zone 1",
+                      "source_id": 3,
+                      "mute": False,
+                      "vol": -3,
+                      "vol_f": 0.96,
+                      "vol_min": -80,
+                      "vol_max": 0,
+                      "disabled": False,
+                      "id": 0
+                    },
+                    {
+                      "name": "Zone 2",
+                      "source_id": 3,
+                      "mute": False,
+                      "vol": -3,
+                      "vol_f": 0.96,
+                      "vol_min": -80,
+                      "vol_max": 0,
+                      "disabled": False,
+                      "id": 1
+                    },
+                    {
+                      "name": "Zone 3",
+                      "source_id": 3,
+                      "mute": False,
+                      "vol": -3,
+                      "vol_f": 0.96,
+                      "vol_min": -80,
+                      "vol_max": 0,
+                      "disabled": False,
+                      "id": 2
+                    },
+                    {
+                      "name": "Zone 4",
+                      "source_id": 3,
+                      "mute": False,
+                      "vol": -3,
+                      "vol_f": 0.96,
+                      "vol_min": -80,
+                      "vol_max": 0,
+                      "disabled": False,
+                      "id": 3
+                    },
+                    {
+                      "name": "Zone 5",
+                      "source_id": 3,
+                      "mute": False,
+                      "vol": -3,
+                      "vol_f": 0.96,
+                      "vol_min": -80,
+                      "vol_max": 0,
+                      "disabled": False,
+                      "id": 4
+                    },
+                    {
+                      "name": "Zone 6",
+                      "source_id": 3,
+                      "mute": False,
+                      "vol": -3,
+                      "vol_f": 0.96,
+                      "vol_min": -80,
+                      "vol_max": 0,
+                      "disabled": False,
+                      "id": 5
+                    }
+                  ],
+                  "groups": [
+                    {
+                      "name": "Speakers",
+                      "source_id": 3,
+                      "zones": [
+                        0,
+                        1
+                      ],
+                      "mute": False,
+                      "vol_delta": -3,
+                      "vol_f": 0.96,
+                      "id": 100
+                    }
+                  ]
+                }
+              }
+            ],
+            "info": {
+              "version": "0.4.2+312130f-usb-support-dirty",
+              "config_file": "house.json",
+              "mock_ctrl": False,
+              "mock_streams": False,
+              "is_streamer": False,
+              "online": True,
+              "latest_release": "0.1.8",
+              "access_key": "",
+              "lms_mode": False,
+              "serial": "272",
+              "expanders": [],
+              "fw": [
+                {
+                  "version": "1.9",
+                  "git_hash": "de87dba",
+                  "git_dirty": True
+                }
+              ],
+              "stream_types_available": [
+                "rca",
+                "airplay",
+                "spotify",
+                "internetradio",
+                "dlna",
+                "pandora",
+                "plexamp",
+                "aux",
+                "fileplayer",
+                "lms",
+                "mediadevice"
+              ],
+              "connected_drives": [
+                "/media/7FA5-ECB4"
+              ]
+            }
+          }
         }
       ]
     }
