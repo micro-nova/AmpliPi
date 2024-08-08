@@ -84,20 +84,6 @@
               <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="ui_upload_software_update();">Start Update</a>
             </div>
 
-            <!-- Set Password -->
-            <div class="tab-pane fade text-left" id="set-password" role="tabpanel" aria-labelledby="set-password-tab">
-              <div class="set-password-dialog">
-                This form allows you to set a password for the web interface. If the password fields are empty, it will unset the password protection. This will only set a password for the web interface, not the system password. This action will also log out any existing sessions.
-              </div>
-              <div class="set-password form-group">
-                <label for="password" class="form-label">Password:</label>
-                <input id="password" class="form-control" type="password">
-                <label for="confirm-password" class="form-label">Confirm Password:</label>
-                <input id="confirm-password" class="form-control" type="password">
-              </div>
-              <a id="password" role="button" class="btn btn-lg btn-primary text-center mt-3" onClick="set_password();">Update Password</a>
-            </div>
-
             <!-- Support Tunnel -->
             <div class="tab-pane fade text-left" id="support-tunnel" role="tabpanel" aria-labelledby="support-tunnel-tab">
               <div id="support-tunnel-dialog">
@@ -247,14 +233,34 @@
               </script>
 
               <div id="admin-settings-dialog">
-                This tab allows you to change settings relating to the core of AmpliPi
+                This tab allows you to change settings that relate to the core of AmpliPi
+                <br/>
+                Note that <span class="text-danger">*</span> denotes a setting that requires a system reboot to apply, you can reboot the system via the Settings -> Configuration -> Hardware Reboot option in the main AmpliPi app
               </div>
 
+              <br />
+
               <!-- Password -->
-              <div>
-                <p class="">
-                  <a class="btn btn-primary btn-sm text-center" id="set-password-button" data-toggle="tab" href="#set-password" role="tab" aria-controls="set-password" aria-selected="false">Set Password</a>
-                </p>
+              <div id="set-password" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="set-password form-group">
+                  <h6>
+                    Set Password
+                  </h6>
+                  <div class="set-password-dialog">
+                    This form lets you set a web interface password. Leaving the fields empty will remove password protection. Note that this only affects the web interface, not the system password, and will log out any active sessions.
+                  </div>
+                  <div style="float: left">
+                    <label for="password">Password:</label>
+                    <input id="password" type="password">
+                  </div>
+                  <div style="float: left; margin-left: 10px;">
+                    <label for="confirm-password" >Confirm Password:</label>
+                    <input id="confirm-password" type="password">
+                  </div>
+                  <div style="float: left">
+                    <a id="password" role="button" class="btn btn-primary btn-sm text-center" onClick="set_password();">Update Password</a>
+                  </div>
+                </div>
               </div>
 
               <!-- Password -->
@@ -317,14 +323,9 @@
 
               <!-- Timezone -->
               <div style="display: flex; flex-direction: column; gap: 10px;">
-                <h6>
-                  NOTE: Clicking "Set Timezone" button will push the change to the system, but will need a system reboot to apply
-                  <br/>
-                  Go to the config page in the standard config settings page to do a system reboot
-                </h6>
                 <div>
                   <div style="float: left">
-                    <label for="timezone-dropdown">Timezone:</label>
+                    <label for="timezone-dropdown"><span class="text-danger">*</span> Timezone:</label>
                     <select name="timezone-dropdown" id="timezone-dropdown" style="width: fit-content">
                       <!-- Empty until populated by getTimezones function -->
                     </select>
@@ -337,7 +338,7 @@
 
               <!-- Log Level -->
               <div style="margin-top: 20px;">
-                  <label for="log-level-dropdown">Log Level:</label>
+                  <label for="log-level-dropdown"><span class="text-danger">*</span> Log Level:</label>
                   <select name="log-level-dropdown" id="log-level-dropdown" style="width: fit-content" onchange={setLogLevel()}>
                     <!-- Empty until populated by getLogLevels function -->
                   </select>

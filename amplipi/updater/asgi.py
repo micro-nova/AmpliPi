@@ -262,13 +262,14 @@ class LogLevel(BaseModel):
 
 @router.post("/settings/log_level")
 def set_log_level(log_level: LogLevel):
+  tmp = '/tmp/logging.ini.tmp'
   ini = '/var/log/logging.ini'
   config = read_config(ini)
   config.set("logging", "log_level", str(log_level.log_level))
-  with open(f"{ini}.tmp", "w", encoding="utf-8") as file:
-    file.write(config)
+  with open(tmp, "w", encoding="utf-8") as file:
+    config.write(file)
 
-    subprocess.run(['sudo', 'mv', f'{ini}.tmp', ini], check=True)
+    subprocess.run(['sudo', 'mv', tmp, ini], check=True)
   return get_log_level()
 
 
