@@ -19,8 +19,7 @@ import subprocess
 from dataclasses import dataclass
 import requests
 from typing import Tuple
-
-from amplipi import utils
+import configparser
 
 
 @dataclass
@@ -65,7 +64,28 @@ class LMSMetadataReader:
     self.meta_ref_rate = meta_ref
     self.debug = os.environ.get('DEBUG', False)
 
-    self.logger = utils.get_logger(__name__)
+    # copy+paste from utils.py as get_logger() can't be imported here
+    config = configparser.ConfigParser(strict=False, allow_no_value=True)
+    config.read('/var/log/logging.ini')
+    log_level = config.get('logging', 'log_level')
+    logger = logging.getLogger(__name__)
+    if log_level == "DEBUG":
+      logger.setLevel(logging.DEBUG)
+    elif log_level == "INFO":
+      logger.setLevel(logging.INFO)
+    elif log_level == "WARNING":
+      logger.setLevel(logging.WARNING)
+    elif log_level == "ERROR":
+      logger.setLevel(logging.ERROR)
+    elif log_level == "CRITICAL":
+      logger.setLevel(logging.CRITICAL)
+    else:
+      raise Exception("Log level missing or not specified")
+
+    sh = logging.StreamHandler(sys.stdout)
+    logger.addHandler(sh)
+
+    self.logger = logger
     if self.debug:
       log_level = logging.DEBUG
     sh = logging.StreamHandler(sys.stdout)
