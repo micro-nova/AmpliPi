@@ -5,6 +5,8 @@
   * Fix internet radio search on IOS app
   * Update styling on Settings pages, ensure they fit all mobile screens properly
   * Change "<- Back to App" button on the updater page to redirect to the settings page rather than the homepage
+* System
+  * Fixed a bug where support tunnel addresses would be served when querying for amplipi.local
 
 ## 0.4.2
 * Streams

@@ -131,6 +131,21 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 'from': 'config/support_group_sudoers',
                 'to': '/etc/sudoers.d/099_support-nopasswd',
                 'sudo': 'true'
+            },
+            {   # support tunnel scripts must be only be writable by root
+                'from': 'scripts/support_tunnel_post_up.sh',
+                'to': '/usr/local/bin/support_tunnel_post_up.sh',
+                'sudo': 'true'
+            },
+            {
+                'from': 'scripts/support_tunnel_post_down.sh',
+                'to': '/usr/local/bin/support_tunnel_post_down.sh',
+                'sudo': 'true'
+            },
+            {
+                'from': 'config/support_tunnel_config.ini',
+                'to': '/etc/support_tunnel/config.ini',
+                'sudo': 'true'
             }
         ],
         'script': [
@@ -441,6 +456,9 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     if _to[0] != '/':
       _to = f"{env['base_dir']}/{_to}"
     _sudo = "sudo " if 'sudo' in file else ""
+    _parent_dir = pathlib.Path(_to).parent
+    if not _parent_dir.exists():
+      tasks += print_progress([Task(f"creating parent dir(s) for {_from}", f"{_sudo}mkdir -p {_parent_dir}".split()).run()])
     tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()])  # shairport needs the -f if it is running
   if env['is_amplipi'] or env['is_ci']:
     # copy alsa configuration file
