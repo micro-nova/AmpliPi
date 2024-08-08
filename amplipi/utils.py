@@ -19,6 +19,7 @@
 This module contains helper functions are used across the amplipi python library.
 """
 
+import configparser
 import functools
 import io
 import json
@@ -42,12 +43,37 @@ from amplipi.defaults import USER_CONFIG_DIR
 # pylint: disable=bare-except
 
 IDENTITY_FILE = os.path.join(USER_CONFIG_DIR, "identity")
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
 
 # Helper functions
+
+def get_logger(name):
+  """Takes the __name__ of a file and returns a logger with the appropriate log level as set by /var/log/logging.ini"""
+
+  config = configparser.ConfigParser(strict=False, allow_no_value=True)
+  config.read('/var/log/logging.ini')
+  log_level = config.get('logging', 'log_level')
+
+
+  log = logging.getLogger(name)  # would be called logger if not for the logger in the outer scope
+  if log_level == "DEBUG":
+    log.setLevel(logging.DEBUG)
+  elif log_level == "INFO":
+    log.setLevel(logging.INFO)
+  elif log_level == "WARNING":
+    log.setLevel(logging.WARNING)
+  elif log_level == "ERROR":
+    log.setLevel(logging.ERROR)
+  elif log_level == "CRITICAL":
+    log.setLevel(logging.CRITICAL)
+  else:
+    raise Exception("Log level missing or not specified")
+
+  sh = logging.StreamHandler(sys.stdout)
+  log.addHandler(sh)
+
+  return log
+
+logger = get_logger(__name__)  # Had to be moved down to make sure get_logger was in scope
 
 
 def encode(pydata):

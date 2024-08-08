@@ -48,10 +48,7 @@ from amplipi.streams.base_streams import PersistentStream, InvalidStreamField
 
 
 _DEBUG_API = False  # print out a graphical state of the api after each call
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+logger = utils.get_logger(__name__)
 
 
 @wrapt.decorator

@@ -20,6 +20,8 @@ from dataclasses import dataclass
 import requests
 from typing import Tuple
 
+from amplipi import utils
+
 
 @dataclass
 class MetadataHolder:
@@ -63,8 +65,7 @@ class LMSMetadataReader:
     self.meta_ref_rate = meta_ref
     self.debug = os.environ.get('DEBUG', False)
 
-    self.logger = logging.getLogger(__name__)
-    log_level = logging.INFO
+    self.logger = utils.get_logger(__name__)
     if self.debug:
       log_level = logging.DEBUG
     sh = logging.StreamHandler(sys.stdout)

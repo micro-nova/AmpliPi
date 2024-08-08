@@ -2,14 +2,10 @@ import subprocess
 import sys
 import time
 from typing import Optional, List
-import logging
 from amplipi import models
 from amplipi import utils
 
-logger = logging.getLogger(__name__)
-logger.level = logging.DEBUG
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+logger = utils.get_logger(__name__)
 
 
 def write_config_file(filename, config):

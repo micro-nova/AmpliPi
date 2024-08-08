@@ -45,10 +45,7 @@ from .base_streams import *  # pylint: disable=wildcard-import we need to import
 
 # We use Popen for long running process control this error is not useful:
 # pylint: disable=consider-using-with
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+logger = utils.get_logger(__name__)
 
 DEBUG = os.environ.get('DEBUG', True)
 

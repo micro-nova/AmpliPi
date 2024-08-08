@@ -21,7 +21,6 @@
 Simple web based software updates
 """
 # file and process handling
-import logging
 import os
 import subprocess
 import glob
@@ -51,14 +50,12 @@ import uvicorn
 from pydantic import BaseModel
 from enum import Enum
 
+from amplipi import utils
 from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
 
 app = FastAPI()
 router = APIRouter(dependencies=[Depends(CookieOrParamAPIKey)])
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+logger = utils.get_logger(__name__)
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 

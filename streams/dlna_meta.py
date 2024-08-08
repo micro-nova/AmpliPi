@@ -18,6 +18,8 @@ import time
 import logging
 import xml.etree.ElementTree as ET
 
+from amplipi import utils
+
 # the interval at which to update the metadata file
 METADATA_UPDATE_INTERVAL = 3  # seconds
 
@@ -178,11 +180,9 @@ parser.add_argument('-d', '--debug', action='store_true', help='print debug mess
 args = parser.parse_args()
 
 # create logger
-logger = logging.getLogger(__name__)
+logger = utils.get_logger(__name__)
 if args.debug:
   logger.setLevel(logging.DEBUG)
-else:
-  logger.setLevel(logging.INFO)
 sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 
