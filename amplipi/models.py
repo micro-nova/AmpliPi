@@ -904,7 +904,7 @@ class BrowserSelection(BaseModel):
 
   class Config:
     schema_extra = {
-      'examples' : {
+      'examples': {
         'Select the Music Directory': {
           'value': {
             'item': '/media/USBStick/Music'
