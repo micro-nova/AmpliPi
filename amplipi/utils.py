@@ -49,9 +49,21 @@ IDENTITY_FILE = os.path.join(USER_CONFIG_DIR, "identity")
 
 def get_logger(name):
   """Takes the __name__ of a file and returns a logger with the appropriate log level as set by /var/log/logging.ini"""
+  ini = '/var/log/logging.ini'
+  tmp = '/tmp/logging.ini.tmp'
+
+  if not os.path.exists(ini):  # Fallback in case the ini doesn't exist, set to default settings. Only really comes up during github tests.
+    conf = configparser.ConfigParser(strict=False, allow_no_value=True)
+    with open(tmp, "+w", encoding="utf-8") as file:
+      conf.read(tmp)
+      if not "logging" in conf:
+        conf.add_section("logging")
+      conf.set("logging", "log_level", "INFO")
+      conf.write(file)
+    subprocess.run(['sudo', 'mv', tmp, ini], check=True)
 
   config = configparser.ConfigParser(strict=False, allow_no_value=True)
-  config.read('/var/log/logging.ini')
+  config.read(ini)
   log_level = config.get('logging', 'log_level')
 
   log = logging.getLogger(name)  # would be called logger if not for the logger in the outer scope
