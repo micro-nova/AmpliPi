@@ -53,7 +53,6 @@ def get_logger(name):
   config.read('/var/log/logging.ini')
   log_level = config.get('logging', 'log_level')
 
-
   log = logging.getLogger(name)  # would be called logger if not for the logger in the outer scope
   if log_level == "DEBUG":
     log.setLevel(logging.DEBUG)

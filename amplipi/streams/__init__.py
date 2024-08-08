@@ -22,9 +22,7 @@ a consistent interface.
 """
 
 import os
-import sys
 from typing import Union, List
-import logging
 
 from amplipi import models
 

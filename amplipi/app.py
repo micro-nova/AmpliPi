@@ -25,7 +25,6 @@ The FastAPI/Starlette web framework is used to simplify the web plumbing.
 import argparse
 
 import logging
-import sys
 
 import os
 

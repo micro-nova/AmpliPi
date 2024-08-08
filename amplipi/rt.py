@@ -22,8 +22,6 @@ import io
 import math
 import os
 import time
-import logging
-import sys
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Tuple, Union, Optional
@@ -31,6 +29,7 @@ from typing import Dict, List, Tuple, Union, Optional
 from smbus2 import SMBus
 from serial import Serial
 from amplipi import models  # TODO: importing this takes ~0.5s, reduce
+from amplipi import utils
 
 # TODO: move constants like this to their own file
 DEBUG_PREAMPS = False  # print out preamp state after register write

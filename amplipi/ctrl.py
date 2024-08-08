@@ -28,8 +28,6 @@ from copy import deepcopy
 import os  # files
 from pathlib import Path
 import time
-import logging
-import sys
 import datetime
 import psutil
 import threading
