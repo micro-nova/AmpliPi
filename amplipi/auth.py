@@ -39,7 +39,7 @@ prefix = '/auth'
 
 router = APIRouter(prefix=prefix)
 
-utils.get_logger(__name__)
+logger = utils.get_logger(__name__)
 # the template dir ought to be alongside this file
 template_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "templates")
 templates = Jinja2Templates(directory=template_dir)
