@@ -27,10 +27,10 @@ METADATA_RESET_DELAY = 3.0
 class MPRISMetadataReader:
   """A class for getting metadata from an MPRIS MediaPlayer2 over dbus."""
 
-  def __init__(self, service_suffix, metadata_path, logger):
+  def __init__(self, service_suffix, metadata_path, logHandler):
     signal.signal(signal.SIGTERM, self.sigterm_handler)
 
-    self.logger = logger
+    self.logger = logHandler
 
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
