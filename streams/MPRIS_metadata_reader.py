@@ -12,6 +12,8 @@ from dasbus.loop import EventLoop
 import logging
 import argparse
 
+from amplipi import utils
+
 METADATA_MAPPINGS = [
   ('artist', 'xesam:artist'),
   ('title', 'xesam:title'),
@@ -141,7 +143,7 @@ class MPRISMetadataReader:
         logger.error(e)
 
 
-logger = logging.getLogger(__name__)
+logger = utils.get_logger(__name__)
 
 parser = argparse.ArgumentParser(description='Script to read MPRIS metadata and write it to a file.')
 parser.add_argument('service_suffix', metavar='service_suffix', type=str, help='end of the MPRIS service name, e.g. "vlc" for org.mpris.MediaPlayer2.vlc')

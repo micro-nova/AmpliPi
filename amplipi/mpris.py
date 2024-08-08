@@ -12,10 +12,7 @@ from dasbus.connection import SessionMessageBus
 from dasbus.client.proxy import disconnect_proxy
 from amplipi import utils
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+logger = utils.get_logger(__name__)
 
 
 class CommandTypes(Enum):

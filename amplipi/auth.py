@@ -2,8 +2,6 @@ import os
 import json
 import time
 import secrets
-import logging
-import sys
 
 from typing import Union, Dict, List
 from typing_extensions import Literal
@@ -17,6 +15,8 @@ from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse as TemplateResponse
 from argon2 import PasswordHasher, Parameters as Argon2Params, Type as Argon2Type
 from hmac import compare_digest
+
+from amplipi import utils
 
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
@@ -39,11 +39,7 @@ prefix = '/auth'
 
 router = APIRouter(prefix=prefix)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
-
+utils.get_logger(__name__)
 # the template dir ought to be alongside this file
 template_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "templates")
 templates = Jinja2Templates(directory=template_dir)

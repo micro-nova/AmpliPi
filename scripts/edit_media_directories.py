@@ -5,6 +5,7 @@ import logging
 import sys
 import subprocess
 
+from amplipi import utils
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -66,10 +67,7 @@ def edit_directories(logger: logging.Logger, sesh: requests.Session):
 
 
 if __name__ == "__main__":
-  logger = logging.getLogger(__name__)
-  logger.setLevel(logging.DEBUG)
-  sh = logging.StreamHandler(sys.stdout)
-  logger.addHandler(sh)
+  logger = utils.get_logger(__name__)
 
   session = requests.Session()
   retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
