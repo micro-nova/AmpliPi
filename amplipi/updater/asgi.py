@@ -224,9 +224,11 @@ def get_timezone():
           # Extract the timezone part from the line, which is usually in the format: "Time zone: Region/City (UTC offset)"
           return line.split(':')[1].split(' ')[1]
 
+
 class Timezone(BaseModel):
   """Wrapper for timezone string to be passed into timezone post endpoint"""
   timezone: str
+
 
 @router.post("/settings/timezone")
 def set_timezone(timezone: Timezone):
@@ -234,6 +236,7 @@ def set_timezone(timezone: Timezone):
   subprocess.run(['sudo', 'timedatectl', 'set-timezone', timezone.timezone], check=True)
 
   return get_timezone()
+
 
 class LogLevels(Enum):
   DEBUG = "DEBUG"
