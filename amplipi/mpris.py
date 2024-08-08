@@ -5,7 +5,6 @@ from enum import Enum, auto
 import json
 import os
 import sys
-import logging
 from typing import List
 import subprocess
 from dasbus.connection import SessionMessageBus

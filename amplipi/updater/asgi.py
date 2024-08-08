@@ -36,7 +36,6 @@ import shutil
 import asyncio
 
 import configparser
-from typing import Optional
 
 # web framework
 import requests

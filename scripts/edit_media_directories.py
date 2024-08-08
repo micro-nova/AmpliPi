@@ -2,7 +2,6 @@
 # A program for automatically adding and removing removable drives to the LMS media drives list
 import psutil
 import logging
-import sys
 import subprocess
 
 from amplipi import utils
