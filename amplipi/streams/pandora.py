@@ -24,6 +24,8 @@ class Pandora(PersistentStream, Browsable):
     self.track = ""
     self.invert_liked_state = False
     self.pianobar_path = f'{utils.get_folder("streams")}/pianobar'
+    self.pb_stations_file = ''
+    self.pb_output_file = ''
 
     self.stations: List[models.BrowsableItem] = []
 
@@ -277,7 +279,7 @@ class Pandora(PersistentStream, Browsable):
     if 'user' in kwargs and not re.fullmatch(USER_LIKE, kwargs['user']):
       raise InvalidStreamField("user", "invalid username")
 
-    if 'password' in kwargs and len(kwargs['password']) == 0:
+    if 'password' in kwargs and len(kwargs['password']) == 0 and not self.mock:
       raise InvalidStreamField("password", "password cannot be empty")
 
     # don't run if testing so we don't cause problems with CI
