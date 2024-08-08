@@ -56,7 +56,7 @@ def get_logger(name):
     conf = configparser.ConfigParser(strict=False, allow_no_value=True)
     with open(tmp, "+w", encoding="utf-8") as file:
       conf.read(tmp)
-      if not "logging" in conf:
+      if "logging" not in conf:
         conf.add_section("logging")
       conf.set("logging", "log_level", "INFO")
       conf.write(file)
