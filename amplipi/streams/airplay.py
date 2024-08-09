@@ -5,6 +5,7 @@ from amplipi.mpris import MPRIS
 import subprocess
 import time
 import os
+import io
 
 
 def write_sp_config_file(filename, config):
@@ -40,6 +41,7 @@ class AirPlay(PersistentStream):
     self.STATE_TIMEOUT = 300  # seconds
     self._connect_time = 0.0
     self._coverart_dir = ''
+    self._log_file: Optional[io.TextIOBase] = None
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -96,17 +98,18 @@ class AirPlay(PersistentStream):
       },
     }
 
-    # make all of the necessary dir(s)
+    # make all of the necessary dir(s) & files
     os.system(f'rm -r -f {self._coverart_dir}')
     os.system(f'mkdir -p {self._coverart_dir}')
     os.system(f'mkdir -p {src_config_folder}')
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
+    self._log_file = open(f'{src_config_folder}/log', mode='w')
     shairport_args = f"{utils.get_folder('streams')}/shairport-sync{'-ap2' if self.ap2 else ''} -c {config_file}".split(' ')
     logger.info(f'shairport_args: {shairport_args}')
 
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE,
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                 stdout=self._log_file, stderr=self._log_file)
 
     try:
       mpris_name = 'ShairportSync'
@@ -129,6 +132,9 @@ class AirPlay(PersistentStream):
       if self.proc.wait(1) != 0:
         logger.info('killing shairport-sync')
         self.proc.kill()
+      self.proc.communicate()
+    if self._log_file:
+      self._log_file.close()
     if self.src:
       try:
         subprocess.run(f'rm -r {utils.get_folder("config")}/srcs/{self.src}/*', shell=True, check=True)
