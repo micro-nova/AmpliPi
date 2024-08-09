@@ -1,0 +1,11 @@
+[Unit]
+Description="Runs udiskie automount"
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env udiskie
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target

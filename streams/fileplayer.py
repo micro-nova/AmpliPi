@@ -71,6 +71,12 @@ try:
   media = instance.media_new(args.url)
 except (AttributeError, NameError) as e:
   log('%s: %s (%s LibVLC %s)' % (e.__class__.__name__, e, sys.argv[0], vlc.libvlc_get_version()))
+  if args.song_info:
+    update_info({
+      'track': '',
+      'artist': '',
+      'station': '',
+      'state': 'ENDED'})
   sys.exit(1)
 try:
   player = instance.media_player_new()
@@ -78,6 +84,12 @@ try:
   player.play()
 except Exception:
   log(sys.exc_info())
+  if args.song_info:
+    update_info({
+      'track': '',
+      'artist': '',
+      'station': '',
+      'state': 'ENDED'})
   sys.exit(1)
 
 # Keep track of the current state so we only update on change
@@ -90,6 +102,12 @@ cur_info = {
 }
 if args.song_info:
   if not update_info(cur_info):
+    if args.song_info:
+      update_info({
+        'track': '',
+        'artist': '',
+        'station': '',
+        'state': 'ENDED'})
     sys.exit(1)
 
 restarts: List[float] = []
@@ -154,6 +172,12 @@ while opening_counter < MAX_STREAM_OPENING_COUNTER:
     # State is something other than playing, buffering or opening, and it's been longer than 10s. We probably wanna bail.
     # Other states: State.NothingSpecial, State.Paused, State.Stopped, State.Ended, State.Error
     log(f"Stream in an unexpected state: {state}. Exiting.")
+    if args.song_info:
+      update_info({
+        'track': '',
+        'artist': '',
+        'station': '',
+        'state': 'ENDED'})
     sys.exit(1)
 
 log("Stream has opened.")
@@ -224,26 +248,38 @@ while True:
         if args.song_info:
           update_info(cur_info)
     elif state == 'State.Ended':
+        if args.song_info:
+          update_info({
+            'track': '',
+            'artist': '',
+            'station': '',
+            'state': 'ENDED'})
         sys.exit(0)
     else:
       if args.test:
         log('fail')
+        curr_info = {
+          'track': '',
+          'artist': '',
+          'station': '',
+          'state': 'stopped'
+        }
+        if args.song_info:
+          update_info(cur_info)
+        log('State: %s' % state)
         sys.exit(1)
-      curr_info = {
-        'track': '',
-        'artist': '',
-        'station': '',
-        'state': 'stopped'
-      }
-      if args.song_info:
-        update_info(cur_info)
-      log('State: %s' % state)
       restart_vlc()
 
   except Exception:
     log('Error: %s' % sys.exc_info()[1])
     if args.test:
       log('fail')
+      if args.song_info:
+        update_info({
+          'track': '',
+          'artist': '',
+          'station': '',
+          'state': 'ENDED'})
       sys.exit(1)
     else:
       try:
@@ -258,6 +294,12 @@ while True:
         restart_vlc()
       except Exception:
         log(sys.exc_info())
+        if args.song_info:
+          update_info({
+            'track': '',
+            'artist': '',
+            'station': '',
+            'state': 'ENDED'})
         sys.exit(1)
 
   time.sleep(.1)  # throttle metadata

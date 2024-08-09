@@ -24,6 +24,8 @@ class Pandora(PersistentStream, Browsable):
     self.track = ""
     self.invert_liked_state = False
     self.pianobar_path = f'{utils.get_folder("streams")}/pianobar'
+    self.pb_stations_file = ''
+    self.pb_output_file = ''
 
     self.stations: List[models.BrowsableItem] = []
 
@@ -149,6 +151,10 @@ class Pandora(PersistentStream, Browsable):
       img_url='static/imgs/pandora.png',
       type=self.stream_type
     )
+
+    if len(self.stations) == 0:
+      self.load_stations()
+
     try:
       with open(loc, 'r', encoding='utf-8') as file:
         for line in file.readlines():
@@ -241,15 +247,12 @@ class Pandora(PersistentStream, Browsable):
     except Exception as exc:
       raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
 
-  def browse(self, parent=None) -> List[models.BrowsableItem]:
-    """ Browse the stream for items """
-
-    if len(self.stations) == 0:
-      try:
-        pd_stations = {s.name.upper(): s.art_url for s in self.pyd_client.get_station_list()}
-      except Exception as e:
-        logger.exception(f'Error browsing for pandora stations: {e}')
-        return []
+  def load_stations(self):
+    try:
+      pd_stations = {s.name.upper(): s.art_url for s in self.pyd_client.get_station_list()}
+    except Exception as e:
+      logger.exception(f'Error browsing for pandora stations: {e}')
+    if os.path.exists(self.pb_stations_file):
       with open(self.pb_stations_file) as f:
         # try to match PianoBar's list of stations with those returned by the Pandora API
         # NOTE: duplicate station names will only match the last duplicate station returned by the Pandora API
@@ -260,6 +263,11 @@ class Pandora(PersistentStream, Browsable):
             name = sinfo[1]
             img = pd_stations.get(name.upper(), "")
             self.stations.append(models.BrowsableItem(name=name, playable=True, id=station_id, parent=False, img=img))
+
+  def browse(self, parent=None, path=None) -> List[models.BrowsableItem]:
+    """ Browse the stream for items """
+    if len(self.stations) == 0:
+      self.load_stations()
     return self.stations
 
   def play(self, item_id):
@@ -271,7 +279,7 @@ class Pandora(PersistentStream, Browsable):
     if 'user' in kwargs and not re.fullmatch(USER_LIKE, kwargs['user']):
       raise InvalidStreamField("user", "invalid username")
 
-    if 'password' in kwargs and len(kwargs['password']) == 0:
+    if 'password' in kwargs and len(kwargs['password']) == 0 and not self.mock:
       raise InvalidStreamField("password", "password cannot be empty")
 
     # don't run if testing so we don't cause problems with CI

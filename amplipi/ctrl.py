@@ -31,7 +31,7 @@ import time
 import logging
 import sys
 import datetime
-
+import psutil
 import threading
 import wrapt
 
@@ -242,6 +242,7 @@ class Api:
     # populate system info
     self._online_cache = utils.TimeBasedCache(self._check_is_online, 5, 'online')
     self._latest_release_cache = utils.TimeBasedCache(self._check_latest_release, 3600, 'latest release')
+    self._connected_drives_cache = utils.TimeBasedCache(self._get_usb_drives, 5, 'connected drives')
     self.status.info = models.Info(
       mock_ctrl=self._mock_hw,
       mock_streams=self._mock_streams,
@@ -535,11 +536,21 @@ class Api:
       pass
     return release
 
+  def _get_usb_drives(self):
+    """Reads the mount point for removable drives, returns them in a list"""
+    usb_drives = []
+    for partition in psutil.disk_partitions():
+      # Exclude rootfs, the backup drive that happens to mount to /media/pi
+      if '/media' in partition.mountpoint and 'rootfs' not in partition.mountpoint:
+        usb_drives.append(str(partition.mountpoint))
+    return usb_drives
+
   def _update_sys_info(self, throttled=True) -> None:
     """Update current system information"""
     if self.status.info is None:
       raise Exception("No info generated, system in a bad state")
     self.status.info.online = self._online_cache.get(throttled)
+    self.status.info.connected_drives = self._connected_drives_cache.get(throttled)
     self.status.info.latest_release = self._latest_release_cache.get(throttled)
     self.status.info.access_key = auth.get_access_key("admin") if auth.user_access_key_set("admin") else ""
 
