@@ -7,6 +7,7 @@ import pandora from "@/../static/imgs/pandora.png";
 import plexamp from "@/../static/imgs/plexamp.png";
 import lms from "@/../static/imgs/lms.png";
 import internetradio from "@/../static/imgs/internet_radio.png";
+import usb from "@/../static/imgs/usb.png";
 import rca from "@/../static/imgs/rca_inputs.jpg";
 import aux from "@/../static/imgs/aux_input.svg";
 
@@ -47,6 +48,9 @@ export const getIcon = (type) => {
 
     case "AUX":
       return aux;
+
+    case "MEDIADEVICE":
+      return usb;
 
     default:
       return internetradio;
