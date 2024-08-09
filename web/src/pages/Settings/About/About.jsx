@@ -16,17 +16,23 @@ const About = ({ onClose }) => {
         }
         return temp_string
     }
-    
+
     return (
         <>
             <PageHeader title="About" onClose={onClose} />
             <div className="about-body">
-                <a className="link" href="http://www.amplipi.com">
-          Amplipi ™
+                <a
+                    target="_blank"
+                    className="link"
+                    href="http://www.amplipi.com">
+          AmpliPro ™
                 </a>
                 <br />
         by{" "}
-                <a className="link" href="http://www.micro-nova.com">
+                <a
+                    target="_blank"
+                    className="link"
+                    href="http://www.micro-nova.com">
           MicroNova
                 </a>{" "}
         © {new Date(Date.now()).getFullYear()}
@@ -34,13 +40,13 @@ const About = ({ onClose }) => {
         Version: {info.version}
                 <br />
         {!info.is_streamer && ( <>
-        Main Unit Firmware Version: {info.fw.length ? info.fw[0].version: "No Preamp"} 
+        Main Unit Firmware Version: {info.fw.length ? info.fw[0].version: "No Preamp"}
                 <br />
         </> ) }
         {info.fw.length > 1 && ( <>
         Expansion Unit Firmware Version{info.fw.length > 2? "s": ""}: {generateBoardVersionsString(info.fw)}
                 <br />
-        </> ) }               
+        </> ) }
         Latest: {info.latest_release}
                 <br />
         {info.access_key && ( <>
@@ -49,27 +55,35 @@ const About = ({ onClose }) => {
         </> ) }
                 <div className="about-links">
           Links:
-                    <a className="link" href="/doc">
+                    <a
+                        target="_blank"
+                        className="link"
+                        href="/doc">
             Browsable API
                     </a>
-                    <a className="link" href="https://github.com/micro-nova/AmpliPi">
+                    <a
+                        target="_blank"
+                        className="link"
+                        href="https://github.com/micro-nova/AmpliPi">
             Github
                     </a>
-                    <a className="link" href="https://amplipi.discourse.group/">
+                    <a
+                        target="_blank"
+                        className="link"
+                        href="https://amplipi.discourse.group/">
             Community
                     </a>
                     <a
+                        target="_blank"
                         className="link"
                         href="https://github.com/micro-nova/AmpliPi/blob/main/COPYING"
                     >
             License
                     </a>
                     <a
-                        href={window.location.href}
-                        onClick={() => {
-                            window.location.href =
-                "http://" + window.location.hostname + ":19531/entries";
-                        }}
+                        target="_blank"
+                        className="link"
+                        href={`http://${window.location.hostname}:19531/entries`}
                     >
             Logs
                     </a>
