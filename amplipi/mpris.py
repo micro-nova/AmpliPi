@@ -144,10 +144,12 @@ class MPRIS:
   def close(self):
     """Closes the MPRIS object."""
 
-    self.metadata_process.terminate()
-    if self.metadata_process.wait(1) != 0:
-      logger.info('Failed to stop MPRIS metadata process, killing')
-      self.metadata_process.kill()
+    if self.metadata_process:
+      self.metadata_process.terminate()
+      if self.metadata_process.wait(1) != 0:
+        logger.info('Failed to stop MPRIS metadata process, killing')
+        self.metadata_process.kill()
+      self.metadata_process.communicate()
 
     self.metadata_process = None
 
@@ -159,6 +161,8 @@ class MPRIS:
 
     try:
       os.remove(self.metadata_path)
+    except FileNotFoundError:
+      pass
     except Exception as e:
       logger.exception(f'Could not remove metadata file: {e}')
     logger.info(f'Closed MPRIS {self.service_suffix}')

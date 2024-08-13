@@ -3,6 +3,7 @@ from amplipi import models, utils
 from .base_streams import PersistentStream, InvalidStreamField, logger
 from amplipi.mpris import MPRIS
 import subprocess
+import shutil
 import time
 import os
 import io
@@ -72,9 +73,14 @@ class AirPlay(PersistentStream):
         return
 
     src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
-    os.system(f'rm -f {src_config_folder}/currentSong')
+    try:
+      os.remove(f'{src_config_folder}/currentSong')
+    except FileNotFoundError:
+      pass
     self._connect_time = time.time()
     self._coverart_dir = f'{utils.get_folder("web")}/generated/v{vsrc}'
+
+    logger.info("setting up config")
 
     config = {
       'general': {
@@ -99,9 +105,12 @@ class AirPlay(PersistentStream):
     }
 
     # make all of the necessary dir(s) & files
-    os.system(f'rm -r -f {self._coverart_dir}')
-    os.system(f'mkdir -p {self._coverart_dir}')
-    os.system(f'mkdir -p {src_config_folder}')
+    try:
+      shutil.rmtree(self._coverart_dir)
+    except FileNotFoundError:
+      pass
+    os.makedirs(self._coverart_dir, exist_ok=True)
+    os.makedirs(src_config_folder, exist_ok=True)
     config_file = f'{src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
     self._log_file = open(f'{src_config_folder}/log', mode='w')
