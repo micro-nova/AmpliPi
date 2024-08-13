@@ -38,15 +38,14 @@ In the future we plan to integrate with several home automation systems. Below i
 
 |Integrations|Supported|Notes|
 |--|--:|--|
-|Home Assistant|Yes|See https://github.com/brianhealey/hacs_amplipi|
+|Home Assistant|Yes|See https://github.com/micro-nova/hacs_amplipi|
 |openHAB|Yes|See https://next.openhab.org/addons/bindings/amplipi/|
 |Alexa|No|See [#25](http://github.com/micro-nova/AmpliPi/issues/25)|
 |Google Assistant|No|See [#69](http://github.com/micro-nova/AmpliPi/issues/69)|
 
-## Quick Start Guide
+## Manual
 
-If you are one of the lucky few to have a pre-release version of the AmpliPi,
-see [docs/QUICK_START.md](docs/QUICK_START.md) to get started.
+Find the device manual [here](amplipi.com/manual)
 
 ## Wall Panel
 
@@ -60,7 +59,7 @@ Check out our open source wall panel [here](https://github.com/micro-nova/AmpliP
 
 ## Speakers
 
-Notes on picking and installing speakers for whole house audio can be found [here](docs/SPEAKERS.md).
+Notes on picking and installing speakers for whole house audio can be found [here](https://amplipi.discourse.group/t/tested-recommended-speakers-and-speaker-wire/31).
 
 ## Developing
 
@@ -76,7 +75,7 @@ Here's an example of changing group and zone volumes:
   </img>
 </p>
 
-Check out the full documentation for the web app at [docs/WEB_APP.md](docs/WEB_APP.md).
+Check out the full documentation for the web app at [docs/WEB_APP.md](docs/manual/WEB_APP.md).
 
 ## The REST API
 AmpliPi has a REST API that can be used to control volumes, switch and control audio sources, configure different streaming sources, and much more. It allows full configuration and real-time control of the AmpliPi device. The API conforms to the OpenAPI standard. It is fully documented on our [AmpliPi OpenAPI site](https://micro-nova.github.io/AmpliPi).
