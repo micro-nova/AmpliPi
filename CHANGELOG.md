@@ -18,6 +18,7 @@
     * Add toggleable option to persist system logs to Admin Settings
     * Move "Set password" page to be accessible via Admin Settings tab
     * Add option to set minimum logging level for most files in the system
+    * Add option to set timezone for the system
 Streams
   * Fixed a bug where streams would disappear during upgrades by disabling validation when loading from disk
 
