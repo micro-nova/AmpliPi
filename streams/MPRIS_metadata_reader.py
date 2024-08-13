@@ -14,8 +14,8 @@ import argparse
 
 METADATA_MAPPINGS = [
   ('artist', 'xesam:artist'),
-  ('title', 'xesam:title'),
-  ('art_url', 'mpris:artUrl'),
+  ('track', 'xesam:title'),
+  ('img_url', 'mpris:artUrl'),
   ('album', 'xesam:album')
 ]
 
@@ -90,10 +90,10 @@ class MPRISMetadataReader:
 
           metadata['state'] = state
 
-          if state != self.last_sent['state']:
-            metadata['state_changed_time'] = time.time()
-          else:
-            metadata['state_changed_time'] = self.last_sent['state_changed_time']
+          # if state != self.last_sent['state']:
+          #   metadata['state_changed_time'] = time.time()
+          # else:
+          #   metadata['state_changed_time'] = self.last_sent['state_changed_time']
 
           metadata['connected'] = True
 
@@ -149,7 +149,7 @@ parser.add_argument('metadata_path', metavar='metadata_path', type=str, help='pa
 parser.add_argument('-d', '--debug', action='store_true', help='print debug messages')
 args = parser.parse_args()
 
-if args.debug:
-  logger.setLevel(logging.DEBUG)
+# if args.debug:
+logger.setLevel(logging.DEBUG)
 
 MPRISMetadataReader(args.service_suffix, args.metadata_path, logger).run()

@@ -5,6 +5,9 @@ from typing import Optional, List
 import logging
 from amplipi import models
 from amplipi import utils
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+import json
 
 logger = logging.getLogger(__name__)
 logger.level = logging.DEBUG
@@ -59,6 +62,10 @@ class BaseStream:
     self.state = 'disconnected'
     self.stype = stype
     self.browsable = isinstance(self, Browsable)
+    self._cached_info: models.SourceInfo = models.SourceInfo(name=self.full_name(), type=self.stype, state=self.state)
+    self._watch_metadata: bool = True
+    self._observer: Optional[Observer] = None
+
     if validate:
       self.validate_stream(name=name, mock=mock, **kwargs)
 
@@ -72,7 +79,6 @@ class BaseStream:
 
   def full_name(self):
     """ Combine name and type of a stream to make a stream easy to identify.
-
     Many streams will simply be named something like AmpliPi or John, so embedding the '- stype'
     into the name makes the name easier to identify.
     """
@@ -91,11 +97,50 @@ class BaseStream:
       except Exception:
         pass
     self._disconnect()
+    self._stop_info_watcher()
 
   def _connect(self, src):
     logger.info(f'{self.name} connected to {src}')
     self.state = 'connected'
     self.src = src
+    self._start_info_watcher()
+
+  def _get_config_folder(self):
+    return f'{utils.get_folder("config")}/srcs/{self.src}'
+
+  def _start_info_watcher(self):
+    metadata_path = f'{self._get_config_folder()}/metadata.json'
+
+    logger.debug(f'Starting metadata watcher for {self.name} at {metadata_path}')
+
+    # create metadata file
+    with open(metadata_path, 'w+') as f:
+      f.write('{}')
+
+    if self._watch_metadata:
+      # set up watchdog to watch for metadata changes
+      class handler(FileSystemEventHandler):
+        def on_modified(_, event):
+          print("file changed")
+          self._read_info()
+
+      self._observer = Observer()
+      # self._fs_event_handler = FileSystemEventHandler()
+      self._fs_event_handler = handler()
+      # self._fs_event_handler.on_modified = lambda _: self._read_info
+      self._observer.schedule(self._fs_event_handler, metadata_path)
+      self._observer.start()
+
+  def _stop_info_watcher(self):
+    logger.debug(f'Stopping metadata watcher for {self.name}')
+
+    if self._watch_metadata:
+      if self._observer:
+        # TODO: why does this hang????
+        # self._observer.stop()
+        # self._observer.join()
+        self._observer = None
+      self._fs_event_handler = None
 
   def restart(self):
     """Reset this stream by disconnecting and reconnecting"""
@@ -128,11 +173,26 @@ class BaseStream:
       return self.proc.poll() is None
     return False
 
+  def _read_info(self) -> models.SourceInfo:
+    """ Read the current stream info and metadata, caching it """
+    logger.debug(f'Reading metadata for {self.name}')
+    try:
+      with open(f'{self._get_config_folder()}/metadata.json', 'r') as file:
+        info = json.loads(file.read())
+        info['name'] = self.full_name()
+        info['type'] = self.stype
+        self._cached_info = models.SourceInfo(**info)
+        return self._cached_info
+    except Exception as e:
+      logger.exception(f'Error reading metadata for {self.name}: {e}')
+      return models.SourceInfo(name=self.full_name(), state='stopped')
+
   def info(self) -> models.SourceInfo:
-    """ Get stream info and song metadata """
-    return models.SourceInfo(
-      name=self.full_name(),
-      state=self.state)
+    """ Get cached stream info and source metadata """
+    if self._watch_metadata:
+      return self._cached_info
+    else:
+      return self._read_info()
 
   def requires_src(self) -> Optional[int]:
     """ Check if this stream needs to be connected to a specific source
@@ -289,6 +349,10 @@ class PersistentStream(BaseStream):
         logger.exception(f'Failed to start alsaloop connection: {exc}')
         time.sleep(0.1)  # Delay a bit
     self.src = src
+    self._start_info_watcher()
+
+  def _get_config_folder(self):
+    return f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
 
   def disconnect(self):
     """ Disconnect from a DAC """
@@ -303,3 +367,4 @@ class PersistentStream(BaseStream):
         logger.exception(f'PersistentStream disconnect error: {e}')
         pass
     self.src = None
+    self._stop_info_watcher()

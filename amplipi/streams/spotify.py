@@ -84,31 +84,31 @@ class Spotify(PersistentStream):
     self.mpris = None
     self.connect_port = None
 
-  def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(
-      name=self.full_name(),
-      state=self.state,
-      img_url='static/imgs/spotify.png',  # report generic spotify image in place of unspecified album art
-      type=self.stream_type
-    )
-    if self.mpris is None:
-      return source
-    try:
-      md = self.mpris.metadata()
+  # def info(self) -> models.SourceInfo:
+  #   source = models.SourceInfo(
+  #     name=self.full_name(),
+  #     state=self.state,
+  #     img_url='static/imgs/spotify.png',  # report generic spotify image in place of unspecified album art
+  #     type=self.stream_type
+  #   )
+  #   if self.mpris is None:
+  #     return source
+  #   try:
+  #     md = self.mpris.metadata()
 
-      if not self.mpris.is_stopped():
-        source.state = 'playing' if self.mpris.is_playing() else 'paused'
-        source.artist = str(md.artist).replace("', '", ", ")  # When a song has multiple artists, they are comma-separated but the comma has '' around it
-        source.track = md.title
-        source.album = md.album
-        source.supported_cmds = self.supported_cmds
-        if md.art_url:
-          source.img_url = md.art_url
+  #     if not self.mpris.is_stopped():
+  #       source.state = 'playing' if self.mpris.is_playing() else 'paused'
+  #       source.artist = str(md.artist).replace("', '", ", ")  # When a song has multiple artists, they are comma-separated but the comma has '' around it
+  #       source.track = md.title
+  #       source.album = md.album
+  #       source.supported_cmds = self.supported_cmds
+  #       if md.art_url:
+  #         source.img_url = md.art_url
 
-    except Exception as e:
-      logger.exception(f"error in spotify: {e}")
+  #   except Exception as e:
+  #     logger.exception(f"error in spotify: {e}")
 
-    return source
+  #   return source
 
   def send_cmd(self, cmd):
     try:
