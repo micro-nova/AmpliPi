@@ -8,6 +8,7 @@
   * Update links on "About" settings tab to open in a new tab
 * System
   * Fixed a bug where support tunnel addresses would be served when querying for amplipi.local
+  * Stream validation for URLs has been made more robust
 
 ## 0.4.2
 * Streams

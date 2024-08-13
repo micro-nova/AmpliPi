@@ -762,9 +762,23 @@ def internetradio_urls():
     "https://www.example.co.uk": True,
     "https://subdomain.example.com/path/to/page": True,
     "http://sub.domain.example.com": True,
-    "ftp://www.example.com": False,
-    "http://www.example": False,
+    "http://example.com:8383": True,
+    "https://example.com:8383": True,
+    "http://example.com:80/with_path": True,
+    "http://sub.example.com:80/": True,
+    # the `validators` package in 0.33 has a `consider_tlds` param that
+    # allows us to check against a valid list of TLDs, but since we cannot
+    # upgrade to that version and can't check TLDs this could actually be
+    # a valid URL. Additionally, home networks sometimes have their own TLD,
+    # so it's unclear if we should ever use that functionality anyways.
+    # Version 0.33 is only available in Python >3.8
+    "http://www.example": True,
+    # Hostnames can be statically defined in `/etc/hosts`, but until
+    # someone asks for this it should probably fail validation.
     "https://example": False,
+    "http://example.com:80:80": False,
+    "https://sub.example.com:8000:/path": False,
+    "ftp://www.example.com": False,
       }.items()
 
 

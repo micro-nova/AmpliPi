@@ -1,5 +1,6 @@
 from .base_streams import BaseStream, InvalidStreamField, logger
 from typing import ClassVar, Optional
+from urllib.parse import urlparse
 from amplipi import models, utils
 import subprocess
 import time
@@ -8,6 +9,7 @@ import re
 import requests
 import json
 import sys
+import validators
 
 
 class InternetRadio(BaseStream):
@@ -137,9 +139,15 @@ class InternetRadio(BaseStream):
       pass
 
   def validate_stream(self, **kwargs):
-    URL_LIKE = r'^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$'
-    if 'url' in kwargs and not re.fullmatch(URL_LIKE, kwargs['url']):
-      raise InvalidStreamField("url", "invalid url")
+    if 'url' in kwargs and kwargs['url']:
+      if not validators.url(kwargs['url']):
+        raise InvalidStreamField("url", "invalid url")
+      if urlparse(kwargs['url']).scheme not in ['http', 'https']:
+        raise InvalidStreamField("url", "unsupported protocol/scheme in url")
+
     # Logo is Optional[str]
-    if 'logo' in kwargs and kwargs['logo'] and not re.fullmatch(URL_LIKE, kwargs['logo']):
-      raise InvalidStreamField("logo", "invalid logo url")
+    if 'logo' in kwargs and kwargs['logo']:
+      if not validators.url(kwargs['logo']):
+        raise InvalidStreamField("logo", "invalid logo url")
+      if urlparse(kwargs['logo']).scheme not in ['http', 'https']:
+        raise InvalidStreamField("logo", "unsupported protocol/scheme in logo url")
