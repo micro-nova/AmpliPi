@@ -4,10 +4,10 @@ import PageHeader from "@/components/PageHeader/PageHeader";
 import "./Streams.scss";
 import "../PageBody.scss";
 import { useStatusStore } from "@/App.jsx";
-import StreamModal from "./StreamModal/StreamModal";
+import StreamModal from "../../../components/StreamModal/StreamModal";
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
-import TypeSelectModal from "./TypeSelectModal/TypeSelectModal";
+import TypeSelectModal from "../../../components/TypeSelectModal/TypeSelectModal";
 import StreamTemplates from "./StreamTemplates.json";
 import { getIcon } from "@/utils/getIcon";
 import List from "@mui/material/List/List";
@@ -23,24 +23,12 @@ const initEmptyStream = (type) => {
     return stream;
 };
 
-const applyStreamChanges = (stream) => {
-    return fetch(`/api/streams/${stream.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stream),
-    });
-};
-
 const makeNewStream = (stream) => {
     return fetch("/api/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stream),
     });
-};
-
-const deleteStream = (stream) => {
-    fetch(`/api/streams/${stream.id}`, { method: "DELETE" });
 };
 
 const StreamListItem = ({ stream }) => {
@@ -61,8 +49,6 @@ const StreamListItem = ({ stream }) => {
                         onClose={() => {
                             setShowModal(false);
                         }}
-                        apply={applyStreamChanges}
-                        del={deleteStream}
                     />
                 )}
             </ListItem>

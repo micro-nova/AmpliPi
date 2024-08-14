@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import Alert from "@mui/material/Alert";
 import "./StreamModal.scss";
-import StreamTemplates from "../StreamTemplates.json";
+import StreamTemplates from "../../pages/Settings/Streams/StreamTemplates.json";
 import ModalCard from "@/components/ModalCard/ModalCard";
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -197,7 +197,7 @@ const InternetRadioSearch = ({ onChange }) => {
 InternetRadioSearch.propTypes = {
     onChange: PropTypes.func.isRequired,
 };
-const StreamModal = ({ stream, onClose, apply, del }) => {
+const StreamModal = ({ stream, onClose }) => {
     const [streamFields, setStreamFields] = React.useState(
         JSON.parse(JSON.stringify(stream))
     ); // set streamFields to copy of stream
@@ -209,6 +209,18 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
     const streamTemplate = StreamTemplates.filter(
         (t) => t.type === stream.type
     )[0];
+
+    const deleteStream = (stream) => {
+        fetch(`/api/streams/${stream.id}`, { method: "DELETE" });
+    };
+
+    const applyStreamChanges = (stream) => {
+        return fetch(`/api/streams/${stream.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(stream),
+        });
+    };
 
     // prepend name field to template fields
     const templateFields = [{
@@ -225,7 +237,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
             onClose={onClose}
             header={stream.name}
             onDelete={() => {
-                if (del) del(streamFields);
+                deleteStream(streamFields);
                 onClose();
             }}
             onAccept={() => {
@@ -237,7 +249,7 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                         return;
                     }
                 }
-                apply(streamFields).then((response)=>{
+                applyStreamChanges(streamFields).then((response)=>{
                     if(response.ok)
                     {
                         setErrorField("");
@@ -355,8 +367,6 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
 StreamModal.propTypes = {
     stream: PropTypes.any.isRequired,
     onClose: PropTypes.func.isRequired,
-    apply: PropTypes.func.isRequired,
-    del: PropTypes.func,
 };
 
 export default StreamModal;

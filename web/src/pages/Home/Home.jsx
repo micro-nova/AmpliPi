@@ -2,12 +2,15 @@ import React from "react";
 import PlayerCardFb from "@/components/PlayerCard/PlayerCardFb";
 import "./Home.scss";
 import { useStatusStore } from "@/App.jsx";
+import AddButton from "@/components/AddButton/AddButton";
 import ZonesModal from "@/components/ZonesModal/ZonesModal";
 import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import PresetsModal from "@/components/PresetsModal/PresetsModal";
 import StreamerOutputModal from "@/components/StreamerOutputModal/StreamerOutputModal";
 import { executeApplyAction } from "@/components/StreamsModal/StreamsModal";
 import selectActiveSource from "@/utils/selectActiveSource";
+import TypeSelectModal from "@/components/TypeSelectModal/TypeSelectModal";
+import StreamModal from "@/components/StreamModal/StreamModal";
 
 import PropTypes from "prop-types";
 
@@ -35,14 +38,11 @@ const PresetAndAdd = ({
     if (cards.length < sources.length) {
         return (
             <div className="home-presets-container">
-                <div
-                    className="home-add-player-button"
+                <AddButton
                     onClick={() => {
                         initSource(nextAvailableSource);
                     }}
-                >
-          +
-                </div>
+                />
                 <div style={{ width: "1.25rem" }} />
                 <div
                     className="home-presets-button"
@@ -80,6 +80,10 @@ const Home = () => {
     const [streamsModalOpen, setStreamsModalOpen] = React.useState(false);
     const [presetsModalOpen, setPresetsModalOpen] = React.useState(false);
     const [streamerOutputModalOpen, setStreamerOutputModalOpen] = React.useState(false);
+
+    const [selectStreamTypeModalOpen, setSelectStreamTypeModalOpen] = React.useState(false);
+    const [createStreamModalOpen, setCreateStreamModalOpen] = React.useState(false);
+    const [newStream, setNewStream] = React.useState(null);
 
     let nextAvailableSource = null;
     let cards = [];
@@ -144,6 +148,23 @@ const Home = () => {
                     applyImmediately={false}
                     onApply={() => {is_streamer ? setStreamerOutputModalOpen(true) : setZonesModalOpen(true)}}
                     onClose={() => setStreamsModalOpen(false)}
+                    onAdd={() => {setSelectStreamTypeModalOpen(true); setStreamsModalOpen(false);}}
+                />
+            )}
+            { selectStreamTypeModalOpen && (
+                <TypeSelectModal
+                    onClose={() => {setSelectStreamTypeModalOpen(false)}}
+                    onSelect={() => {
+                        setStream();
+                        setCreateStreamModalOpen(true);
+                        setSelectStreamTypeModalOpen(false);
+                    }}
+                />
+            )}
+            { createStreamModalOpen && (
+                <StreamModal
+                    stream={newStream}
+                    onClose={()=>{setCreateStreamModalOpen(false);}}
                 />
             )}
             {presetsModalOpen && (

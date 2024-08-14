@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import "./TypeSelectModal.scss";
-import StreamTemplates from "../StreamTemplates.json";
+import StreamTemplates from "../../pages/Settings/Streams/StreamTemplates.json";
 import Modal from "@/components/Modal/Modal";
 import Card from "@/components/Card/Card";
 import { getIcon } from "@/utils/getIcon";

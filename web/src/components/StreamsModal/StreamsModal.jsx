@@ -8,6 +8,7 @@ import { moveSourceContents, setSourceStream } from "@/utils/APIHelper";
 import { setRcaStatus } from "../ZonesModal/ZonesModal";
 import List from "@/components/List/List";
 import ListItem from "../List/ListItem/ListItem";
+import AddButton from "../AddButton/AddButton";
 
 import PropTypes from "prop-types";
 
@@ -38,6 +39,7 @@ const StreamsModal = ({
     sourceId,
     onApply,
     onClose,
+    onAdd,
     applyImmediately,
 }) => {
     const streams = useStatusStore((state) => state.status.streams);
@@ -113,6 +115,7 @@ const StreamsModal = ({
             );
         }
     }
+    streamsList.push(<AddButton onClick={()=>{onAdd();}} />)
 
     return (
         <ModalCard header="Select Stream" onClose={onClose} onCancel={onClose}>
@@ -124,6 +127,7 @@ StreamsModal.propTypes = {
     sourceId: PropTypes.number.isRequired,
     onApply: PropTypes.func,
     onClose: PropTypes.func.isRequired,
+    onAdd: PropTypes.func.isRequired,
     applyImmediately: PropTypes.bool,
 };
 StreamsModal.defaultProps = {
