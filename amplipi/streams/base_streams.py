@@ -5,14 +5,15 @@ from typing import Optional, List
 import logging
 from amplipi import models
 from amplipi import utils
+from amplipi import app
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import json
 
 logger = logging.getLogger(__name__)
 logger.level = logging.DEBUG
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+# handler is registered in __init__.py
+# registering here will cause duplicate log messages
 
 
 def write_config_file(filename, config):
@@ -123,6 +124,16 @@ class BaseStream:
         def on_modified(_, event):
           print("file changed")
           self._read_info()
+          # logger.debug(f'Metadata changed for {self.name}, info: {self._cached_info}')
+          # mute if paused
+          if self._cached_info.state == 'paused':
+            logger.debug(f'Muting {self.name} because it is paused')
+            zones = [z.id for z in app.get_ctrl().status.zones if z.source_id == self.src]
+            app.get_ctrl().set_zones(models.MultiZoneUpdate(zones=zones, update=models.ZoneUpdate(mute=True)))
+          if self._cached_info.state == 'playing':
+            logger.debug(f'Unmuting {self.name} because it is playing')
+            zones = [z.id for z in app.get_ctrl().status.zones if z.source_id == self.src]
+            app.get_ctrl().set_zones(models.MultiZoneUpdate(zones=zones, update=models.ZoneUpdate(mute=False)))
 
       self._observer = Observer()
       # self._fs_event_handler = FileSystemEventHandler()
@@ -189,6 +200,8 @@ class BaseStream:
 
   def info(self) -> models.SourceInfo:
     """ Get cached stream info and source metadata """
+    # TODO: implement a way to hold default info, e.g. "connect to xyz on spotify" with the spotify logo as art
+    # TODO: send possible commands
     if self._watch_metadata:
       return self._cached_info
     else:

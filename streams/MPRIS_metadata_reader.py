@@ -85,8 +85,9 @@ class MPRISMetadataReader:
               # not error since some metadata might not be available on all streams
               logger.debug(f"Metadata mapping error: {e}")
 
-          # Strip playback status of single quotes, for some reason these only appear on stopped
-          state = mpris.PlaybackStatus.strip("'")
+          # Strip playback status of single quotes (for some reason these only appear on stopped?)
+          # and convert to lowercase
+          state = mpris.PlaybackStatus.strip("'").lower()
 
           metadata['state'] = state
 
@@ -142,6 +143,8 @@ class MPRISMetadataReader:
 
 
 logger = logging.getLogger(__name__)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 parser = argparse.ArgumentParser(description='Script to read MPRIS metadata and write it to a file.')
 parser.add_argument('service_suffix', metavar='service_suffix', type=str, help='end of the MPRIS service name, e.g. "vlc" for org.mpris.MediaPlayer2.vlc')
