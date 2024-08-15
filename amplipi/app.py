@@ -74,6 +74,9 @@ app = FastAPI(openapi_url=None, redoc_url=None,)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+uvicorn_access = logging.getLogger("uvicorn.access")
+uvicorn_access.disabled = True
+
 # This will get generated as a tmpfs on AmpliPi,
 # but won't exist if testing on another machine.
 os.makedirs(GENERATED_DIR, exist_ok=True)

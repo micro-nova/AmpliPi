@@ -36,6 +36,8 @@ class Metadata:
   connected: bool = False
   state_changed_time: float = 0
 
+# TODO: consider removing the script this starts and doing it all here since we no longer poll
+
 
 class MPRIS:
   """A class for interfacing with an MPRIS MediaPlayer2 over dbus."""
@@ -52,14 +54,6 @@ class MPRIS:
     self.service_suffix = service_suffix
     self.metadata_path = metadata_path
     self._closing = False
-
-    # try:
-    #   with open(self.metadata_path, "w", encoding='utf-8') as f:
-    #     m = Metadata()
-    #     m.state = "Stopped"
-    #     json.dump(m.__dict__, f)
-    # except Exception as e:
-    #   logger.exception(f'Exception clearing metadata file: {e}')
 
     try:
       child_args = [sys.executable,
@@ -90,37 +84,6 @@ class MPRIS:
   def play_pause(self) -> None:
     """Plays or pauses depending on current state."""
     self.mpris.PlayPause()
-
-  # def _load_metadata(self) -> Metadata:
-  #   try:
-  #     with open(self.metadata_path, 'r', encoding='utf-8') as f:
-  #       metadata_dict = json.load(f)
-  #       metadata_obj = Metadata()
-
-  #       for k in metadata_dict.keys():
-  #         metadata_obj.__dict__[k] = metadata_dict[k]
-
-  #       return metadata_obj
-  #   except Exception as e:
-  #     logger.exception(f"MPRIS loading metadata at {self.metadata_path} failed: {e}")
-
-    # return Metadata()
-
-  # def metadata(self) -> Metadata:
-  #   """Returns metadata from MPRIS."""
-  #   return self._load_metadata()
-
-  # def is_playing(self) -> bool:
-  #   """Playing?"""
-  #   return self._load_metadata().state == 'Playing'
-
-  # def is_stopped(self) -> bool:
-  #   """Stopped?"""
-  #   return self._load_metadata().state == 'Stopped'
-
-  # def is_connected(self) -> bool:
-  #   """Returns true if we can talk to the MPRIS dbus object."""
-  #   return self._load_metadata().connected
 
   def get_capabilities(self) -> List[CommandTypes]:
     """Returns a list of supported commands."""
