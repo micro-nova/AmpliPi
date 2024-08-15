@@ -6,6 +6,7 @@
   * Update styling on Settings pages, ensure they fit all mobile screens properly
   * Change "<- Back to App" button on the updater page to redirect to the settings page rather than the homepage
   * Update links on "About" settings tab to open in a new tab
+  * Add scrollbars to more modals, stylize them to fit the app better
 * System
   * Fixed a bug where support tunnel addresses would be served when querying for amplipi.local
   * Stream validation for URLs has been made more robust

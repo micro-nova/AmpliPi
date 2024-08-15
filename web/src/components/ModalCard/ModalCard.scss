@@ -29,6 +29,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   width: 100%;
+  scrollbar-width: none;
+  scrollbar-color: general.$text-color general.$bg;
 }
 
 .modal-footer {
