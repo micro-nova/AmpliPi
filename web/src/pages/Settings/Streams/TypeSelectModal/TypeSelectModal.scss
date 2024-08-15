@@ -11,6 +11,10 @@
   width: 90vw;
   max-width: 20em;
   padding: 1rem;
+  max-height: 75vh;
+  overflow-y: scroll;
+  scrollbar-width: none;
+  scrollbar-color: general.$text-color general.$bg;
 }
 
 .type-icon {
