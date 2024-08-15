@@ -62,27 +62,27 @@ AnyStream = Union[RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
                   Aux, FilePlayer, FMRadio, LMS, Bluetooth, MediaDevice]
 
 
-def build_stream(stream: models.Stream, mock=False) -> AnyStream:
+def build_stream(stream: models.Stream, mock: bool = False, validate: bool = True) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
 
   we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
   """
   # pylint: disable=too-many-return-statements
   args = stream.dict(exclude_none=True)
-  name = args.pop('name')
+  name: str = args.pop('name')
   disabled = args.pop('disabled', False)
   if stream.type == 'rca':
     return RCA(name, args['index'], disabled=disabled, mock=mock)
   if stream.type == 'pandora':
-    return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock)
+    return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock, validate=validate)
   if stream.type in ['shairport', 'airplay']:  # handle older configs
-    return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock)
+    return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'spotify':
-    return Spotify(name, disabled=disabled, mock=mock)
+    return Spotify(name, disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'dlna':
     return DLNA(name, disabled=disabled, mock=mock)
   if stream.type == 'internetradio':
-    return InternetRadio(name, args['url'], args.get('logo'), disabled=disabled, mock=mock)
+    return InternetRadio(name, args['url'], args.get('logo'), disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'plexamp':
     return Plexamp(name, args['client_id'], args['token'], disabled=disabled, mock=mock)
   if stream.type == 'aux':

@@ -27,9 +27,8 @@ class AirPlay(PersistentStream):
 
   stream_type: ClassVar[str] = 'airplay'
 
-  def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    self.validate_stream(name=self.name)
+  def __init__(self, name: str, ap2: bool, disabled: bool = False, mock: bool = False, validate: bool = True):
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate)
     self.mpris: Optional[MPRIS] = None
     self.ap2 = ap2
     self.ap2_exists = False

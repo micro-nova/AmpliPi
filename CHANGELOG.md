@@ -12,6 +12,8 @@
   * Stream validation for URLs has been made more robust
   * Minor bugfixes with Airplay 1 stream handling
   * Reset API password, support tunnels during factory reset
+Streams
+  * Fixed a bug where streams would disappear during upgrades by disabling validation when loading from disk
 
 ## 0.4.2
 * Streams

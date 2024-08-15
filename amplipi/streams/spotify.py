@@ -13,9 +13,8 @@ class Spotify(PersistentStream):
 
   stream_type: ClassVar[str] = 'spotify'
 
-  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
-    self.validate_stream(name=self.name)
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False, validate: bool = True):
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate)
     self.connect_port: Optional[int] = None
     self.mpris: Optional[MPRIS] = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev']

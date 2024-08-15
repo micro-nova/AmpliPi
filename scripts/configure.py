@@ -479,7 +479,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
       _to = f"{env['base_dir']}/{_to}"
     _sudo = "sudo " if 'sudo' in file else ""
     _parent_dir = pathlib.Path(_to).parent
-    if not _parent_dir.exists():
+    if _sudo or not _parent_dir.exists():
       tasks += print_progress([Task(f"creating parent dir(s) for {_from}", f"{_sudo}mkdir -p {_parent_dir}".split()).run()])
     tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()])  # shairport needs the -f if it is running
   if env['is_amplipi'] or env['is_ci']:

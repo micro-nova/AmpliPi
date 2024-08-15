@@ -17,11 +17,10 @@ class InternetRadio(BaseStream):
 
   stream_type: ClassVar[str] = 'internetradio'
 
-  def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+  def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False, validate: bool = True):
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate, url=url, logo=logo)
     self.url = url
     self.logo = logo
-    self.validate_stream(url=self.url, logo=self.logo)
     self.supported_cmds = ['play', 'stop']
 
   def reconfig(self, **kwargs):

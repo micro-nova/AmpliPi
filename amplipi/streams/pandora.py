@@ -16,8 +16,8 @@ class Pandora(PersistentStream, Browsable):
 
   stream_type: ClassVar[str] = 'pandora'
 
-  def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+  def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False, validate: bool = True):
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate, user=user, password=password)
     self.user = user
     self.password = password
     self.station = station
@@ -37,8 +37,6 @@ class Pandora(PersistentStream, Browsable):
       "PARTNER_PASSWORD": "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7",
       "DEVICE": "android-generic",
     }).build()
-
-    self.validate_stream(user=self.user, password=self.password)
 
     self.ctrl = ''  # control fifo location
     self.supported_cmds = {
@@ -283,8 +281,8 @@ class Pandora(PersistentStream, Browsable):
       raise InvalidStreamField("password", "password cannot be empty")
 
     # don't run if testing so we don't cause problems with CI
-    if not self.mock:
+    if not self.mock and 'user' in kwargs and 'password' in kwargs:
       try:
-        self.pyd_client.login(self.user, self.password)
+        self.pyd_client.login(kwargs['user'], kwargs['password'])
       except Exception as e:
         raise InvalidStreamField("password", "invalid password or unable to connect to Pandora servers") from e

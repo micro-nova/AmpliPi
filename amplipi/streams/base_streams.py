@@ -49,7 +49,7 @@ class Browsable:
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
 
-  def __init__(self, stype: str, name: str, only_src=None, disabled: bool = False, mock=False):
+  def __init__(self, stype: str, name: str, only_src=None, disabled: bool = False, mock: bool = False, validate: bool = True, **kwargs):
     self.name = name
     self.disabled = disabled
     self.proc: Optional[subprocess.Popen] = None
@@ -59,6 +59,8 @@ class BaseStream:
     self.state = 'disconnected'
     self.stype = stype
     self.browsable = isinstance(self, Browsable)
+    if validate:
+      self.validate_stream(name=name, mock=mock, **kwargs)
 
   def __del__(self):
     self.disconnect()
@@ -154,8 +156,8 @@ class BaseStream:
     raise NotImplementedError()
 
   def validate_stream(self, **kwargs):
-    """ Validate fields """
-    raise NotImplementedError()
+    """ Validate fields. If we have not implemented a validator, simply pass validation. """
+    return True
 
 
 class VirtualSources:
@@ -190,8 +192,8 @@ vsources = VirtualSources(12)
 class PersistentStream(BaseStream):
   """ Base class for streams that are able to persist without a direct connection to an output """
 
-  def __init__(self, stype: str, name: str, disabled: bool = False, mock=False):
-    super().__init__(stype, name, None, disabled, mock)
+  def __init__(self, stype: str, name: str, disabled: bool = False, mock: bool = False, validate: bool = True, **kwargs):
+    super().__init__(stype, name, None, disabled, mock, validate, **kwargs)
     self.vsrc: Optional[int] = None
     self._cproc: Optional[subprocess.Popen] = None
     self.device: Optional[str] = None
