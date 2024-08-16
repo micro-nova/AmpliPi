@@ -237,7 +237,13 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                         return;
                     }
                 }
-                apply(streamFields).then((response)=>{
+                // Omit any fields that are simply empty. This permits Pydantic to cast to None,
+                // and then our constructors et al use their defaults.
+                // ref: https://github.com/pydantic/pydantic/discussions/2687
+                const filteredStreamFields = Object.fromEntries(
+                    Object.entries(streamFields).filter( ([key, value]) => value !== "" )
+                );
+                apply(filteredStreamFields).then((response)=>{
                     if(response.ok)
                     {
                         setErrorField("");
