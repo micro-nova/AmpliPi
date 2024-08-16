@@ -236,7 +236,7 @@ class BaseStream:
         self._cached_info = models.SourceInfo(**info)
 
         # set stopped message if stream is stopped
-        if self._cached_info.state == 'stopped':
+        if self.stopped_message and self._cached_info.state == 'stopped':
           self._cached_info.artist = self.stopped_message
           self._cached_info.track = ''
           self._cached_info.album = ''

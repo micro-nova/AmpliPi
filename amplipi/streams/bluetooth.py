@@ -19,6 +19,8 @@ class Bluetooth(BaseStream):
     self.logo = "static/imgs/bluetooth.png"
     self.bt_proc = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev', 'stop']
+    self.default_image_url = 'static/imgs/bluetooth.png'
+    self.stopped_message = None
 
   def __del__(self):
     self.disconnect()
@@ -78,27 +80,6 @@ class Bluetooth(BaseStream):
       subprocess.run(args='bluetoothctl power off'.split(), preexec_fn=os.setpgrp)
 
       self._disconnect()
-
-  # def info(self) -> models.SourceInfo:
-  #   src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
-  #   loc = f'{src_config_folder}/currentSong'
-  #   source = models.SourceInfo(name=self.full_name(),
-  #                              state=self.state,
-  #                              img_url=self.logo,
-  #                              supported_cmds=self.supported_cmds,
-  #                              type=self.stream_type)
-  #   try:
-  #     with open(loc, 'r') as file:
-  #       data = json.loads(file.read())
-  #       source.artist = data['artist']
-  #       source.track = data['title']
-  #       source.album = data['album']
-  #       source.state = data['status']
-  #       return source
-  #   except Exception as e:
-  #     logger.exception(f'bluetooth: exception {e}')
-  #     traceback.print_exc()
-  #   return source
 
   def send_cmd(self, cmd):
     logger.info(f'bluetooth: sending command {cmd}')
