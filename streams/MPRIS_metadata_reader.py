@@ -154,7 +154,7 @@ parser.add_argument('metadata_path', metavar='metadata_path', type=str, help='pa
 parser.add_argument('-d', '--debug', action='store_true', help='print debug messages')
 args = parser.parse_args()
 
-# if args.debug:
-logger.setLevel(logging.DEBUG)
+if args.debug:
+  logger.setLevel(logging.DEBUG)
 
 MPRISMetadataReader(args.service_suffix, args.metadata_path, logger).run()
