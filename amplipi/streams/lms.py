@@ -37,7 +37,7 @@ class LMS(PersistentStream):
     if 'server' in kwargs and kwargs['server'] != self.server:
       self.server = kwargs['server']
       reconnect_needed = True
-    if 'port' in kwargs and kwargs['port'] != self.port:
+    if 'port' in kwargs and kwargs['port'] != self.port and kwargs['port']:
       self.port = kwargs['port']
       reconnect_needed = True
     if reconnect_needed:

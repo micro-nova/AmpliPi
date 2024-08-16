@@ -256,8 +256,18 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                             setErrorMessage(error.detail);
                         }
                         else if(typeof error.detail === "object"){
-                            setErrorField(error.detail.field);
-                            setErrorMessage(error.detail.msg);
+                            // We use the 'field' member to report an invalid field during stream validation,
+                            // but this isn't present on simple Pydantic model errors
+                            if(error.detail.field) {
+                                setErrorField(error.detail.field);
+                                setErrorMessage(error.detail.msg);
+                            } else if(error.detail[0]) {
+                                setErrorField(error.detail[0].loc[1]);
+                                // example: 'port: not a valid integer'
+                                setErrorMessage(`${error.detail[0].loc[1]}: ${error.detail[0].msg}`);
+                            } else {
+                                setErrorMessage("Unknown error");
+                            }
                         }
                         else{
                             setErrorMessage("Unknown error");
