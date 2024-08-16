@@ -3,7 +3,7 @@ import "../Config.scss";
 import ConfigPanel from "./ConfigTemplates/ConfigPanel.jsx";
 import Button from '@mui/material/Button/Button';
 import ConfigModal from './ConfigTemplates/ConfigModal';
-import StatusBar from './ConfigTemplates/StatusBar.jsx';
+import ResponseBar from '@/components/StatusBars/ResponseBar.jsx';
 
 export default function HardwareReset() {
     const [modalOpen, setModalOpen] = React.useState(false);
@@ -33,7 +33,7 @@ export default function HardwareReset() {
                 open={modalOpen}
                 setOpen={setModalOpen}
             />
-            <StatusBar
+            <ResponseBar
                 successText={"Hardware has been reset successfully!"}
                 response={response}
             />

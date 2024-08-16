@@ -1,7 +1,7 @@
 
 import React from 'react';
 import "../Config.scss";
-import StatusBar from './ConfigTemplates/StatusBar.jsx';
+import ResponseBar from '@/components/StatusBars/ResponseBar.jsx';
 import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
 import Button from '@mui/material/Button/Button';
 import ConfigDownload from './ConfigTemplates/ConfigDownload.jsx';
@@ -26,7 +26,7 @@ export default function DownloadConfig(){
             >
                 <Button onClick={() => {handler();}}>Download</Button>
             </ConfigPanel>
-            <StatusBar
+            <ResponseBar
                 successText={"Config downloaded successfully!"}
                 response={response}
             />

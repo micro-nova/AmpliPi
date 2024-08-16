@@ -1,9 +1,10 @@
 import React from "react";
-import { Snackbar, Alert } from "@mui/material";
 import PropTypes from "prop-types";
 
+import StatusBar from "./StatusBar";
 
-export default function StatusBar(props) {
+
+export default function ResponseBar(props) {
     const {
         successText,
         response,
@@ -38,24 +39,15 @@ export default function StatusBar(props) {
     }, [response]);
 
     return(
-        <Snackbar
-            autoHideDuration={3000}
-            anchorOrigin={{vertical: "bottom", horizontal: "left"}}
+        <StatusBar
             open={open}
+            status={success}
+            text={text.current}
             onClose={() => {setOpen(false);}}
-        >
-            <Alert
-                onClose={() => {setOpen(false);}}
-                severity={success ? "success" : "error"}
-                variant="filled"
-                style={{width: "100%"}}
-            >
-                {text.current}
-            </Alert>
-        </Snackbar>
+        />
     );
 }
-StatusBar.propTypes = {
+ResponseBar.propTypes = {
     successText: PropTypes.string.isRequired,
     response: PropTypes.instanceOf(Promise).isRequired,
 };
