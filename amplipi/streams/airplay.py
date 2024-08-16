@@ -130,7 +130,7 @@ class AirPlay(PersistentStream):
       logger.exception(f'Error starting airplay MPRIS reader: {exc}')
 
   def _deactivate(self):
-    if self.mpris:
+    if 'mpris' in self.__dir__() and self.mpris:
       self.mpris.close()
     self.mpris = None
     if self._is_running():
@@ -141,7 +141,7 @@ class AirPlay(PersistentStream):
         logger.info('killing shairport-sync')
         self.proc.kill()
       self.proc.communicate()
-    if self._log_file:
+    if '_log_file' in self.__dir__() and self._log_file:
       self._log_file.close()
     if self.src:
       try:

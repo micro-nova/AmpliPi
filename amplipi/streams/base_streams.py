@@ -242,7 +242,7 @@ class PersistentStream(BaseStream):
       raise Exception(f'Failed to deactivate {self.name}: {e}') from e
     finally:
       self.state = "disconnected"  # make this look like a normal stream for now
-      if self.vsrc:
+      if 'vsrc' in self.__dir__() and self.vsrc:
         vsrc = self.vsrc
         self.vsrc = None
         vsources.free(vsrc)
@@ -292,7 +292,7 @@ class PersistentStream(BaseStream):
 
   def disconnect(self):
     """ Disconnect from a DAC """
-    if self._cproc:
+    if '_cproc' in self.__dir__() and self._cproc:
       logger.info(f'  stopping connection {self.vsrc} -> {self.src}')
       try:
         # must use terminate as kill() cannot be intercepted
