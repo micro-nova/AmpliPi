@@ -17,6 +17,18 @@ const ModalCard = ({
     onCancel = null,
     onDelete = null,
 }) => {
+    React.useEffect(() => {
+        const handleKeyDown = (event) => {
+            if(event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {window.removeEventListener('keydown', handleKeyDown);}
+    }, [])
+
     return (
         <Modal className="modal" onClose={onClose}>
             <Card className="modal-card">

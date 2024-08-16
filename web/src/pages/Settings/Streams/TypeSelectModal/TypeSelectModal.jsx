@@ -11,6 +11,18 @@ import { useStatusStore } from "@/App";
 const TypeSelectModal = ({ onClose, onSelect }) => {
     const stream_types_available = useStatusStore((s) => s.status.info.stream_types_available);
 
+    React.useEffect(() => {
+        const handleKeyDown = (event) => {
+            if(event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {window.removeEventListener('keydown', handleKeyDown);}
+    }, [])
+
     return (
         <>
             <Modal className="streams-modal" onClose={onClose}>
