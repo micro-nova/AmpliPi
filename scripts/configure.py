@@ -138,8 +138,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo systemctl enable systemd-journald.service',
             'sudo systemctl restart systemd-journald.service',
 
-            'echo "If first deploy, create logging.ini and set default log level to INFO"',
-            r'[ ! -d /var/log/logging.ini ] && echo -e "[logging]\nlog_level=INFO\n" | sudo tee /var/log/logging.ini',
+            'echo "If first deploy, create logging.ini and set default values"',
+            r'[ ! -f /var/log/logging.ini ] && echo -e "[logging]\nauto_off_delay=14\nlog_level=INFO\n" | sudo tee /var/log/logging.ini',
 
             'echo Handle dependencies for log persistence options',
             'sudo mkdir -p /var/log/journal',

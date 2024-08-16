@@ -170,7 +170,6 @@
 
                   timezones.forEach(zone => {
                     const option = document.createElement("option");
-                    console.log(`zone: ${zone}`)
                     option.value = zone;
                     option.textContent = zone;
                     if(zone == timezone){
@@ -200,7 +199,6 @@
 
                   log_levels.forEach(level => {
                     const option = document.createElement("option");
-                    console.log(`level: ${level}`)
                     option.value = level;
                     option.textContent = level;
                     if(level == log_level){
@@ -217,9 +215,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ "log_level": log_level.value })
                   });
-                  const resp = await response.json()
-                  console.log(`Log level attempted to set to: ${log_level.value}`);
-                  console.log(`Log level actually set to: ${resp}`);
                 }
 
                 function initSettings(){

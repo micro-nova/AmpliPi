@@ -73,6 +73,7 @@ def create_logging_ini():
       conf.read(file)
       conf.add_section("logging")
       conf.set("logging", "auto_off_delay", "14")
+      conf.set('logging', 'log_level', "INFO")
       conf.write(file)
     subprocess.run(['sudo', 'mv', tmp, ini], check=True)
 
@@ -268,7 +269,7 @@ def set_log_level(log_level: LogLevel):
   tmp = '/tmp/logging.ini.tmp'
   ini = '/var/log/logging.ini'
   config = read_config(ini)
-  config.set("logging", "log_level", str(log_level.log_level))
+  config.set("logging", "log_level", log_level.log_level.value)
   with open(tmp, "w", encoding="utf-8") as file:
     config.write(file)
 
