@@ -64,7 +64,7 @@ class Spotify(PersistentStream):
       self.proc = subprocess.Popen(args=spotify_args, cwd=f'{self._get_config_folder()}')
       time.sleep(0.1)  # Delay a bit
 
-      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{self._get_config_folder()}/metadata.json')  # TODO: MPRIS should just need a path!
+      self.mpris = MPRIS(f'spotifyd.instance{self.proc.pid}', f'{self._get_config_folder()}/metadata.json')
 
     except Exception as exc:
       logger.exception(f'error starting spotify: {exc}')
@@ -90,7 +90,7 @@ class Spotify(PersistentStream):
       elif cmd == 'next':
         self.mpris.next()
       elif cmd == 'prev':
-          self.mpris.previous()
+        self.mpris.previous()
     except Exception as e:
       raise Exception(f"Error sending command {cmd}: {e}") from e
 

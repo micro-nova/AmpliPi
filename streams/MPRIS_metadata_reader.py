@@ -77,6 +77,8 @@ class MPRISMetadataReader:
             metadata['connected'] = False
             logger.error(f"Dbus error getting MPRIS metadata: {e}")
 
+          logger.debug(f"raw_metadata: {raw_metadata}")
+
           # iterate over the metadata mappings and try to add them to the metadata dict
           for mapping in METADATA_MAPPINGS:
             try:
@@ -152,7 +154,7 @@ parser.add_argument('metadata_path', metavar='metadata_path', type=str, help='pa
 parser.add_argument('-d', '--debug', action='store_true', help='print debug messages')
 args = parser.parse_args()
 
-if args.debug:
-  logger.setLevel(logging.DEBUG)
+# if args.debug:
+logger.setLevel(logging.DEBUG)
 
 MPRISMetadataReader(args.service_suffix, args.metadata_path, logger).run()
