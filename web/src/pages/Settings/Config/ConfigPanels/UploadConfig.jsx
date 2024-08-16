@@ -3,7 +3,7 @@ import React from 'react';
 import "../Config.scss";
 import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
 import Button from '@mui/material/Button/Button';
-import StatusBar from './ConfigTemplates/StatusBar.jsx';
+import ResponseBar from '@/components/StatusBars/ResponseBar.jsx';
 
 export default function UploadConfig(){
     const [file, setFile] = React.useState([]);
@@ -50,7 +50,7 @@ export default function UploadConfig(){
                 </Button>
             </ConfigPanel>
 
-            <StatusBar
+            <ResponseBar
                 successText={"Config uploaded successfully!"}
                 response={response}
             />

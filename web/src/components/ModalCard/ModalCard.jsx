@@ -40,6 +40,8 @@ const ModalCard = ({
                 <div className="modal-body">{children}</div>
                 <div className="modal-footer">
                     {footer}
+                </div>
+                <div className="modal-footer">
                     {onAccept && (
                         <CheckIcon
                             className="modal-footer-button"
@@ -61,6 +63,7 @@ const ModalCard = ({
                             fontSize="inherit"
                         />
                     )}
+
                 </div>
             </Card>
         </Modal>

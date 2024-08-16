@@ -5,7 +5,7 @@ import { useStatusStore } from "@/App.jsx";
 import Switch from '@mui/material/Switch/Switch';
 import ConfigDownload from './ConfigTemplates/ConfigDownload';
 import ConfigModal from './ConfigTemplates/ConfigModal';
-import StatusBar from './ConfigTemplates/StatusBar.jsx';
+import ResponseBar from '@/components/StatusBars/ResponseBar.jsx';
 
 export default function LMSMode() {
     const lmsMode = useStatusStore((s) => s.status.info.lms_mode);
@@ -58,7 +58,7 @@ export default function LMSMode() {
             </ConfigPanel>
 
             <LMSModal />
-            <StatusBar
+            <ResponseBar
                 successText={"LMS Mode toggled successfully!"}
                 response={response}
             />

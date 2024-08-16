@@ -1,6 +1,5 @@
 import React from "react";
 import PropTypes from "prop-types";
-import Alert from "@mui/material/Alert";
 import "./StreamModal.scss";
 import StreamTemplates from "../StreamTemplates.json";
 import ModalCard from "@/components/ModalCard/ModalCard";
@@ -12,6 +11,8 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemButton from '@mui/material/ListItemButton';
 import Avatar from '@mui/material/Avatar';
+import AlertBar from "@/components/StatusBars/AlertBar";
+
 
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown";
@@ -203,8 +204,9 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
     ); // set streamFields to copy of stream
 
     const [errorMessage, setErrorMessage] = React.useState("");
-
     const [errorField, setErrorField] = React.useState("");
+    const [hasError, setHasError] = React.useState(false); // Need a discrete hasError bool to trigger error
+    const [renderAlertAnimation, setAlertAnimation] = React.useState(0); // Need a discrete hasError bool to trigger error
 
     const streamTemplate = StreamTemplates.filter(
         (t) => t.type === stream.type
@@ -228,12 +230,23 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                 if (del) del(streamFields);
                 onClose();
             }}
+            footer={
+                <AlertBar
+                    renderAnimationState={renderAlertAnimation}
+                    open={hasError}
+                    onClose={() => {setHasError(false);}}
+                    status={false}
+                    text={errorMessage}
+                />
+            }
             onAccept={() => {
                 // Check if all required fields are filled
                 for (const field of templateFields) {
                     if (field.required && (!(field.name.toLowerCase() in streamFields) || streamFields[field.name.toLowerCase()] === "")) {
                         setErrorField(field.name);
                         setErrorMessage(`Field ${field.name} is required`);
+                        setAlertAnimation(renderAlertAnimation + 1);
+                        setHasError(true);
                         return;
                     }
                 }
@@ -363,7 +376,6 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                         method: "POST"
                     })}
                 />
-                { errorMessage && <Alert severity="error" variant="filled">{errorMessage}</Alert>}
             </div>
         </ModalCard>
     );

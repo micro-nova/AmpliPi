@@ -1,0 +1,32 @@
+@use "src/general";
+
+@keyframes errorShake {
+  0%{ // Start
+    transform: var(--center);
+  }
+
+  20%{ // Shake 1
+    transform: var(--left);
+  }
+  40%{ // Shake 1
+    transform: var(--right);
+  }
+
+  60%{ // Shake 2
+    transform: var(--left);
+  }
+  80%{ // Shake 2
+    transform: var(--right);
+  }
+
+  100%{ // Reset
+    transform: var(--center)
+  }
+}
+
+.error {
+  --left: translate(-5px, 0px);
+  --center: translate(0px, 0px);
+  --right: translate(5px, 0px);
+  animation: errorShake 0.5s 1; // Only animate once, reapplying the class will reapply the animation
+}
