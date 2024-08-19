@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import "./EditPresetModal.scss";
 import ModalCard from "@/components/ModalCard/ModalCard.jsx";
+import TextField from "@mui/material/TextField";
 
 const EditPresetModal = ({ onClose, preset }) => {
     const [name, setName] = React.useState(preset.name);
@@ -35,8 +36,9 @@ const EditPresetModal = ({ onClose, preset }) => {
             <div className="preset-name">Edit Preset</div>
             <div className="preset-name-input-container">
                 <div>Name</div>
-                <input
+                <TextField
                     className="preset-name-input"
+                    fullWidth
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}

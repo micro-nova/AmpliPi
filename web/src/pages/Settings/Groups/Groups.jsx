@@ -9,7 +9,7 @@ import AddIcon from "@mui/icons-material/Add";
 import GroupModal from "./GroupModal/GroupModal";
 import { SpeakerGroup } from "@mui/icons-material";
 import List from "@mui/material/List/List";
-import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
 import Divider from "@mui/material/Divider";
 
 const GroupListItem = ({ group, zones }) => {
@@ -33,7 +33,7 @@ const GroupListItem = ({ group, zones }) => {
 
     return (
         <>
-            <ListItem
+            <ListItemButton
             style={{fontSize: "2rem"}}
                 onClick={() => {
                     setModalOpen(true);
@@ -54,7 +54,7 @@ const GroupListItem = ({ group, zones }) => {
                         apply={editGroup}
                     />
                 )}
-            </ListItem>
+            </ListItemButton>
             <Divider component="li" />
         </>
     );

@@ -20,7 +20,7 @@ import HandymanIcon from "@mui/icons-material/Handyman";
 import InfoIcon from "@mui/icons-material/Info";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import List from "@mui/material/List/List";
-import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
 import Divider from "@mui/material/Divider";
 import { IsMobileApp, IsSaved, SaveURL, UnsaveURL } from "@/utils/MobileApp";
 import Badge from "@mui/material/Badge";
@@ -77,9 +77,9 @@ function SettingsListItem(props){
 
     return(
         <>
-            <ListItem className="list-item" onClick={onClick}>
+            <ListItemButton className="list-item" onClick={onClick}>
                 {children}
-            </ListItem>
+            </ListItemButton>
             <Divider component="li" />
         </>
     )

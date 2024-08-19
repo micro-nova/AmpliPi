@@ -12,6 +12,7 @@ import Checkbox from "@mui/material/Checkbox";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
 
 const setCheckedRecur = (dict, checked) => {
     dict.checked = checked;
@@ -227,7 +228,8 @@ const CreatePresetModal = ({ onClose }) => {
             onCancel={onClose}
         >
             <div>Name</div>
-            <input
+            <TextField
+                fullWidth
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}

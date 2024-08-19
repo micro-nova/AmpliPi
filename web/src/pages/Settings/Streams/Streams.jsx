@@ -11,7 +11,7 @@ import TypeSelectModal from "./TypeSelectModal/TypeSelectModal";
 import StreamTemplates from "./StreamTemplates.json";
 import { getIcon } from "@/utils/getIcon";
 import List from "@mui/material/List/List";
-import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
 import Divider from "@mui/material/Divider";
 
 const initEmptyStream = (type) => {
@@ -48,7 +48,7 @@ const StreamListItem = ({ stream }) => {
     const icon = getIcon(stream.type);
     return (
         <>
-            <ListItem
+            <ListItemButton
                 key={stream.id}
                 onClick={() => setShowModal(true)}
                 style={{fontSize: "2rem"}}
@@ -65,7 +65,7 @@ const StreamListItem = ({ stream }) => {
                         del={deleteStream}
                     />
                 )}
-            </ListItem>
+            </ListItemButton>
             <Divider component="li" />
         </>
     );

@@ -10,7 +10,7 @@ import CreatePresetModal from "./CreatePresetModal/CreatePresetModal";
 import EditPresetModal from "./EditPresetModal/EditPresetModal";
 import { PlaylistAdd } from "@mui/icons-material";
 import List from "@mui/material/List/List";
-import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
 import Divider from "@mui/material/Divider";
 
 const PresetListItem = ({ preset }) => {
@@ -18,7 +18,7 @@ const PresetListItem = ({ preset }) => {
 
     return (
         <>
-            <ListItem onClick={() => setPresetOpen(true)} style={{fontSize: "2rem"}}>
+            <ListItemButton onClick={() => setPresetOpen(true)} className="presets-list-item-button">
                 <div className="presets-item-icon">
                     <PlaylistAdd fontSize="inherit" />
                 </div>
@@ -26,7 +26,7 @@ const PresetListItem = ({ preset }) => {
                 {presetOpen && (
                     <EditPresetModal onClose={() => setPresetOpen(false)} preset={preset} />
                 )}
-            </ListItem>
+            </ListItemButton>
             <Divider component="li" />
         </>
     );

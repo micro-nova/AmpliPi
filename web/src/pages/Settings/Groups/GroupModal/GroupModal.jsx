@@ -1,14 +1,11 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ModalCard from "@/components/ModalCard/ModalCard";
-// commented out for eslint due to unused imports
-// import { IconButton } from "@mui/material";
-// import DoneIcon from "@mui/icons-material/Done";
-// import DeleteIcon from "@mui/icons-material/Delete";
 import { Select, MenuItem } from "@mui/material";
 import "./GroupModal.scss";
 import Checkbox from "@mui/material/Checkbox";
 import ListItemText from "@mui/material/ListItemText";
+import TextField from "@mui/material/TextField";
 
 const getZoneNames = (zones, ids) => {
     return zones
@@ -39,19 +36,19 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
             }}
         >
             <div className="group-input-title">Name</div>
-            <div className="group-name-input">
-                <input
-                    type="text"
-                    value={groupName}
-                    onChange={(e) => {
-                        setGroupName(e.target.value);
-                    }}
-                />
-            </div>
+            <TextField className="group-name-input"
+                fullWidth
+                type="text"
+                value={groupName}
+                onChange={(e) => {
+                    setGroupName(e.target.value);
+                }}
+            />
             <div className="group-input-title">Zones</div>
             <Select
                 className="group-multi"
                 multiple
+                fullWidth
                 defaultValue={groupZones}
                 renderValue={(selected) => getZoneNames(zones, selected)}
                 onChange={(e) => {

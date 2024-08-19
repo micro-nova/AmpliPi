@@ -8,6 +8,7 @@
   * Update links on "About" settings tab to open in a new tab
   * Add scroll functionality to more modals, hide the scrollbars
   * Handle errors better in the stream editing dialog
+  * Migrate more components to mui, a Material UI implementation
 * System
   * Fixed a bug where support tunnel addresses would be served when querying for amplipi.local
   * Stream validation for URLs has been made more robust

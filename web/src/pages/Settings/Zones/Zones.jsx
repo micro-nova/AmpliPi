@@ -9,8 +9,11 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Button } from "@mui/material";
 import Speaker from "@mui/icons-material/Speaker";
 import List from "@mui/material/List/List";
-import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
 import Divider from "@mui/material/Divider";
+import TextField from "@mui/material/TextField";
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 const ZoneListItem = ({ zone }) => {
     const [open, setOpen] = React.useState(false);
@@ -36,7 +39,7 @@ const ZoneListItem = ({ zone }) => {
     };
 
     return (
-        <ListItem>
+        <ListItemButton onClick={() => { if(!open) {setOpen(!open)} }}>
             <div className="zones-zone-column">
                 <div className="zones-zone-row">
                     <div className="zones-zone-icon">
@@ -54,70 +57,58 @@ const ZoneListItem = ({ zone }) => {
                             <KeyboardArrowDownIcon
                                 className="zones-zone-expand-icon"
                                 fontSize="inherit"
-                                onClick={() => setOpen(!open)}
                             />
                         )}
                     </div>
                 </div>
                 {open && (
                     <div className="zone-content-container">
-                        <div>
-              Name:
-                            <input
-                                className="zones-input"
-                                type="text"
-                                name="Name"
-                                value={name}
-                                onChange={(e) => {
-                                    setName(e.target.value);
-                                }}
-                            />
-                        </div>
-                        <div>
-              Max Volume:
-                            <input
-                                className="zones-input"
-                                type="text"
-                                name="Max Volume"
-                                value={vol_max}
-                                onChange={(e) => {
-                                    setVolMax(e.target.value);
-                                }}
-                            />
-                        </div>
-                        <div>
-              Min Volume:
-                            <input
-                                className="zones-input"
-                                type="text"
-                                name="Min Volume"
-                                value={vol_min}
-                                onChange={(e) => {
-                                    setVolMin(e.target.value);
-                                }}
-                            />
-                        </div>
-                        <div>
-              Disabled:
-                            <input
+                        <TextField
+                            className="zones-input"
+                            type="text"
+                            label="Name"
+                            value={name}
+                            margin="dense"
+                            onChange={(e) => {
+                                setName(e.target.value);
+                            }}
+                        />
+                        <TextField
+                            className="zones-input"
+                            type="text"
+                            label="Max Volume"
+                            value={vol_max}
+                            margin="dense"
+                            onChange={(e) => {
+                                setVolMax(e.target.value);
+                            }}
+                        />
+                        <TextField
+                            className="zones-input"
+                            type="text"
+                            label="Min Volume"
+                            value={vol_min}
+                            margin="dense"
+                            onChange={(e) => {
+                                setVolMin(e.target.value);
+                            }}
+                        />
+                        <FormControlLabel label="Disabled"
+                            control={<Switch
                                 className="zones-input"
                                 type="checkbox"
-                                name="Disabled"
+                                label="Disabled"
                                 checked={disabled}
                                 onChange={(e) => {
                                     setDisabled(e.target.checked);
                                 }}
-                            />
-                        </div>
-                        <div>
-                            <Button variant="contained" onClick={applyChanges}>
-                Apply
-                            </Button>
-                        </div>
+                            />}
+                        />
+                        <Button variant="contained" onClick={applyChanges}>Apply</Button>
                     </div>
                 )}
             </div>
-        </ListItem>
+        </ListItemButton>
     );
 };
 ZoneListItem.propTypes = {
