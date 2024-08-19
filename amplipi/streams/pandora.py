@@ -17,7 +17,18 @@ class Pandora(PersistentStream, Browsable):
   stream_type: ClassVar[str] = 'pandora'
 
   def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False, validate: bool = True):
+    # pandora api client, the values in here come from the pandora android app
+    # We set this up here because it permits early account validation during the parent's constructor
+    self.pyd_client = SettingsDictBuilder({
+      "DECRYPTION_KEY": "R=U!LH$O2B#",
+      "ENCRYPTION_KEY": "6#26FRL$ZWD",
+      "PARTNER_USER": "android",
+      "PARTNER_PASSWORD": "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7",
+      "DEVICE": "android-generic",
+    }).build()
+
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate, user=user, password=password)
+
     self.user = user
     self.password = password
     self.station = station
@@ -28,15 +39,6 @@ class Pandora(PersistentStream, Browsable):
     self.pb_output_file = ''
 
     self.stations: List[models.BrowsableItem] = []
-
-    # pandora api client, the values in here come from the pandora android app
-    self.pyd_client = SettingsDictBuilder({
-      "DECRYPTION_KEY": "R=U!LH$O2B#",
-      "ENCRYPTION_KEY": "6#26FRL$ZWD",
-      "PARTNER_USER": "android",
-      "PARTNER_PASSWORD": "AC7IBG09A3DTSYM4R41UJWL07VLN8JI7",
-      "DEVICE": "android-generic",
-    }).build()
 
     self.ctrl = ''  # control fifo location
     self.supported_cmds = {
@@ -285,4 +287,4 @@ class Pandora(PersistentStream, Browsable):
       try:
         self.pyd_client.login(kwargs['user'], kwargs['password'])
       except Exception as e:
-        raise InvalidStreamField("password", "invalid password or unable to connect to Pandora servers") from e
+        raise InvalidStreamField("password", "incorrect password or unable to connect to Pandora servers") from e
