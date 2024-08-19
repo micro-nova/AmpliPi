@@ -88,3 +88,33 @@ hr {
   background-color: #5a6268;
   border-color: #545b62;
 }
+
+.set-password-dialog {
+  color: #aaaaaa !important;
+}
+
+/* lifted from https://www.w3schools.com/css/css_tooltip.asp */
+
+.auto-off-label {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.auto-off-label .auto-off-tooltip{
+  visibility: hidden;
+  width: 750px;
+  background-color: rgba(100, 100, 100, 1);
+  color: #ffffff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+
+  /* Position the tooltip text - see examples below! */
+  position: absolute;
+  z-index: 1;
+}
+
+.auto-off-label:hover .auto-off-tooltip{
+  visibility: visible;
+}

@@ -21,7 +21,6 @@
 Simple web based software updates
 """
 # file and process handling
-import logging
 import os
 import subprocess
 import glob
@@ -36,6 +35,8 @@ import pathlib
 import shutil
 import asyncio
 
+import configparser
+
 # web framework
 import requests
 from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter, Response
@@ -47,19 +48,34 @@ import uvicorn
 # models
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
+from enum import Enum
 
+from amplipi import utils
 from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
 
 app = FastAPI()
 router = APIRouter(dependencies=[Depends(CookieOrParamAPIKey)])
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+logger = utils.get_logger(__name__)
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
 sse_messages: queue.Queue = queue.Queue()
+
+
+def create_logging_ini():
+  """Fallback in case the ini doesn't exist, set to default settings. Only really comes up during github tests."""
+  ini = '/var/log/logging.ini'
+  tmp = '/tmp/logging.ini.tmp'
+
+  if not os.path.exists(ini):
+    conf = configparser.ConfigParser(strict=False, allow_no_value=True)
+    with open(tmp, "+w", encoding="utf-8") as file:
+      conf.read(file)
+      conf.add_section("logging")
+      conf.set("logging", "auto_off_delay", "14")
+      conf.set('logging', 'log_level', "INFO")
+      conf.write(file)
+    subprocess.run(['sudo', 'mv', tmp, ini], check=True)
 
 
 class ReleaseInfo(BaseModel):
@@ -93,6 +109,172 @@ except FileNotFoundError:
   pass
 except Exception as e:
   logger.exception(f'Error loading identity file: {e}')
+
+
+def read_config(file_dir: str):
+  config = configparser.ConfigParser(strict=False, allow_no_value=True)
+  config.read(file_dir)
+  return config
+
+
+class Persist_Logs(BaseModel):
+  """Basemodel that consists of a bool and int, used to change different config files around the system via POST /settings/persist_logs"""
+  persist_logs: bool
+  auto_off_delay: int
+
+
+@router.get("/settings/persist_logs")
+def get_log_persist_state():
+  """
+  Checks /etc/systemd/journald.conf to find if the current storage setting is persistent and returns a bool
+  Note that returning false doesn't necessarily mean that logs are set to volatile, and could just mean that the config file is missing the line being read
+  """
+  create_logging_ini()
+
+  journalconf = read_config('/etc/systemd/journald.conf')
+
+  logconf = read_config('/var/log/logging.ini')
+
+  ret = Persist_Logs(persist_logs=journalconf.get("Journal", "Storage", fallback="") == "persistent", auto_off_delay=logconf.get("logging", "auto_off_delay", fallback="14"),)
+  return ret
+
+
+@router.post("/settings/persist_logs")
+def toggle_persist_logs(data: Persist_Logs):
+  """Toggles the option within journald to save logs to memory or storage, and sets the length of time before that setting is reset to volatile"""
+  try:
+    state = get_log_persist_state()
+
+    if state.persist_logs != data.persist_logs:
+      journalconf = '/etc/systemd/journald.conf'
+      journaltmp = '/tmp/journald.conf.tmp'
+      journal = read_config(journalconf)
+
+      if not journal.has_section("Journal"):
+        journal.add_section('Journal')
+
+      # goal_value is true if you wish to turn persistent logging on and false if you wish to turn it off
+      if data.persist_logs:  # Set persist
+        journal.set('Journal', 'Storage', 'persistent')
+        journal.set('Journal', 'SyncIntervalSec', '30s')
+        journal.set('Journal', 'SystemMaxUse', '64M')
+
+        journal.remove_option('Journal', 'RuntimeMaxUse')
+        journal.remove_option('Journal', 'ForwardToConsole')
+        journal.remove_option('Journal', 'ForwardToWall')
+      else:  # Reset config to default as seen in configure.py
+        journal.set('Journal', 'Storage', 'volatile')
+        journal.set('Journal', 'RuntimeMaxUse', '64M')
+        journal.set('Journal', 'ForwardToConsole', 'no')
+        journal.set('Journal', 'ForwardToWall', 'no')
+
+        journal.remove_option('Journal', 'SyncIntervalSec')
+        journal.remove_option('Journal', 'SystemMaxUse')
+
+      with open(journaltmp, 'w', encoding="utf-8") as conf_file:
+        journal.write(conf_file)
+
+      subprocess.run(['sudo', 'mv', journaltmp, journalconf], check=True)
+      subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journald'], check=True)
+      logger.info(f"persist_logs set to {data.persist_logs}")
+    else:
+      logger.info("persist_logs unchanged")
+
+    if state.auto_off_delay != data.auto_off_delay:
+      logconf = '/var/log/logging.ini'
+      logtmp = '/tmp/logging.ini.tmp'
+      log = configparser.ConfigParser(strict=False, allow_no_value=True)
+      log.read(logconf)
+      log.set('logging', 'auto_off_delay', f"{data.auto_off_delay}")  # Accept auto_off_delay as an int for type checking, parse to str for configParser validity
+      with open(logtmp, 'w', encoding='utf-8') as file:
+        log.write(file)
+      subprocess.run(['sudo', 'mv', logtmp, logconf], check=True)
+      logger.info(f"auto_off_delay set to {data.auto_off_delay}")
+    else:
+      logger.info("auto_off_delay unchanged")
+
+    return get_log_persist_state()
+  except Exception as exc:
+    logger.error("persist_logs POST failed!")
+    raise exc
+
+
+@router.get("/settings/timezones")
+def get_timezones():
+  """Returns list of available timezones via timedatectl"""
+  result = subprocess.run(['timedatectl', 'list-timezones'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+  if result.returncode != 0:
+    raise Exception(f"Command 'timedatectl list-timezones' returned an error: {result.stderr}")
+
+  timezones = []
+  for row in result.stdout.split("\n"):
+    if row != "" and row is not None:
+      timezones.append(row)
+  return timezones
+
+
+@router.get("/settings/timezone")
+def get_timezone():
+  """Return current timezone via timedatectl"""
+  result = subprocess.run(['timedatectl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+  if result.returncode != 0:
+    raise Exception(f"Command 'timedatectl' returned an error: {result.stderr}")
+
+  for line in result.stdout.split('\n'):
+      if "Time zone" in line:
+          # Extract the timezone part from the line, which is usually in the format: "Time zone: Region/City (UTC offset)"
+          return line.split(':')[1].split(' ')[1]
+
+
+class Timezone(BaseModel):
+  """Wrapper for timezone string to be passed into timezone post endpoint"""
+  timezone: str
+
+
+@router.post("/settings/timezone")
+def set_timezone(timezone: Timezone):
+  """Sets timezone and returns newly selected timezone via timedatectl"""
+  subprocess.run(['sudo', 'timedatectl', 'set-timezone', timezone.timezone], check=True)
+
+  return get_timezone()
+
+
+class LogLevels(Enum):
+  DEBUG = "DEBUG"
+  INFO = "INFO"
+  WARNING = "WARNING"
+  ERROR = "ERROR"
+  CRITICAL = "CRITICAL"
+
+
+@router.get("/settings/log_levels")
+def get_log_levels():
+  log_levels = [level.value for level in LogLevels]
+  return log_levels
+
+
+@router.get("/settings/log_level")
+def get_log_level():
+  config = read_config('/var/log/logging.ini')
+  return config.get("logging", "log_level")
+
+
+class LogLevel(BaseModel):
+  """Wrapper for log_level string to be passed into log_level post endpoint"""
+  log_level: LogLevels
+
+
+@router.post("/settings/log_level")
+def set_log_level(log_level: LogLevel):
+  tmp = '/tmp/logging.ini.tmp'
+  ini = '/var/log/logging.ini'
+  config = read_config(ini)
+  config.set("logging", "log_level", log_level.log_level.value)
+  with open(tmp, "w", encoding="utf-8") as file:
+    config.write(file)
+
+    subprocess.run(['sudo', 'mv', tmp, ini], check=True)
+  return get_log_level()
 
 
 @router.get('/update')

@@ -28,8 +28,6 @@ from copy import deepcopy
 import os  # files
 from pathlib import Path
 import time
-import logging
-import sys
 import datetime
 import psutil
 import threading
@@ -48,10 +46,7 @@ from amplipi.streams.base_streams import PersistentStream, InvalidStreamField
 
 
 _DEBUG_API = False  # print out a graphical state of the api after each call
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
+logger = utils.get_logger(__name__)
 
 
 @wrapt.decorator
@@ -222,7 +217,7 @@ class Api:
     except Exception as exc:
       logger.exception("Error setting is_streamer flag: {exc}")
 
-    # determine if we're in LMS mode, based on a file
+    # determine if we're in LMS mode, based on a file existing
     lms_mode_path = Path(defaults.USER_CONFIG_DIR, 'lms_mode')
     if lms_mode_path.exists():
       logger.info("lms mode")
