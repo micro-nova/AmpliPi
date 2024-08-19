@@ -252,6 +252,7 @@ class BaseStream:
 
   def info(self) -> models.SourceInfo:
     """ Get cached stream info and source metadata """
+    
     if self._watch_metadata:
       return self._cached_info
     else:

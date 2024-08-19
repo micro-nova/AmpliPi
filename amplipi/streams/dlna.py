@@ -25,6 +25,10 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
     self._fifo_open = False
     self._fifo = None
 
+    self.stopped_message = f'Nothing is playing, please connect a player to {self.name} and play music'
+    self.default_image_url = 'static/imgs/dlna.png'
+
+
   def reconfig(self, **kwargs):
     reconnect_needed = False
     if 'disabled' in kwargs:
@@ -46,8 +50,9 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
     """ Connect a DLNA device to a given audio source
     This creates a DLNA streaming option based on the configuration
     """
+
+    self._connect(src)
     if self.mock:
-      self._connect(src)
       return
 
     # Generate some of the DLNA_Args
@@ -55,17 +60,14 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
     self._uuid = uuid_gen()
     portnum = 49494 + int(src)
 
-    # Make the (per-source) config and web directories
-    self._src_config_folder = f'{utils.get_folder("config")}/srcs/{src}'
-    os.system(f'rm -r {self._src_config_folder}')
-    os.system(f'mkdir -p {self._src_config_folder}')
+    # Make the (per-source) web directory
 
     self._src_web_folder = f'{utils.get_folder("web")}/generated/{src}'
     os.system(f'rm -r {self._src_web_folder}')
     os.system(f'mkdir -p {self._src_web_folder}')
 
     # Make the fifo to be used for commands
-    os.mkfifo(f'{self._src_config_folder}/cmd')  # lazily open fifo so startup is faster
+    os.mkfifo(f'{self._get_config_folder()}/cmd')  # lazily open fifo so startup is faster
 
     # startup the metadata process and the DLNA process
     dlna_args = ['gmediarender', '--gstout-audiosink', 'alsasink',
@@ -75,11 +77,11 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
     meta_args = [sys.executable,
                  f'{utils.get_folder("streams")}/dlna_meta.py',
                  f'{self.name}',
-                 f'{self._src_config_folder}/cmd',
-                 f'{self._src_config_folder}/meta.json',
+                 f'{self._get_config_folder()}/cmd',
+                 f'{self._get_config_folder()}/metadata.json',
                  self._src_web_folder,
                  ]
-    # '-d']
+    #  '-d']
 
     self.proc = subprocess.Popen(args=dlna_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     self._metadata_proc = subprocess.Popen(args=meta_args, stdin=subprocess.PIPE, stdout=sys.stdout, stderr=sys.stderr)
@@ -96,32 +98,32 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
     self._metadata_proc = None
     self.dlna_proc = None
 
-  def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(
-      name=self.full_name(),
-      state=self.state,
-      img_url='static/imgs/dlna.png',
-      type=self.stream_type
-    )
-    try:
+  # def info(self) -> models.SourceInfo:
+  #   source = models.SourceInfo(
+  #     name=self.full_name(),
+  #     state=self.state,
+  #     img_url='static/imgs/dlna.png',
+  #     type=self.stream_type
+  #   )
+  #   try:
 
-      data = json.load(open(f'{self._src_config_folder}/meta.json'))
-      source.state = data.get('state', 'stopped') if data else 'stopped'
-      if source.state != 'stopped':  # if the state is stopped, just use default values
-        source.artist = data.get('artist', '')
-        source.track = data.get('title', '')
-        source.album = data.get('album', '')
-        if data.get('album_art', '') != '':
-          source.img_url = f'generated/{self.src}/{data.get("album_art", "")}'
+  #     data = json.load(open(f'{self._src_config_folder}/meta.json'))
+  #     source.state = data.get('state', 'stopped') if data else 'stopped'
+  #     if source.state != 'stopped':  # if the state is stopped, just use default values
+  #       source.artist = data.get('artist', '')
+  #       source.track = data.get('title', '')
+  #       source.album = data.get('album', '')
+  #       if data.get('album_art', '') != '':
+  #         source.img_url = f'generated/{self.src}/{data.get("album_art", "")}'
 
-      source.supported_cmds = self.supported_cmds  # set supported commands only if we hear back from the DLNA server
-      self._got_data = True
-    except Exception as e:
-      if self._got_data:  # ignore if we havent gotten data yet since we're still waiting for the metadata process to start
-        logger.exception(f'Error getting DLNA info: {e}')
-      pass
+  #     source.supported_cmds = self.supported_cmds  # set supported commands only if we hear back from the DLNA server
+  #     self._got_data = True
+  #   except Exception as e:
+  #     if self._got_data:  # ignore if we havent gotten data yet since we're still waiting for the metadata process to start
+  #       logger.exception(f'Error getting DLNA info: {e}')
+  #     pass
 
-    return source
+  #   return source
 
   def send_cmd(self, cmd):
     if not self._fifo_open:
