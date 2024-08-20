@@ -58,7 +58,7 @@ class FMRadio(BaseStream):
     self._connect(src)
 
   def _is_running(self):
-    if self.proc:
+    if 'proc' in self.__dir__() and self.proc:
       return self.proc.poll() is None
     return False
 

@@ -64,7 +64,7 @@ class Bluetooth(BaseStream):
     return
 
   def _is_running(self):
-    if self.bt_proc:
+    if 'bt_proc' in self.__dir__() and self.bt_proc:
       return self.bt_proc.poll() is None
     return False
 

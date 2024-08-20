@@ -6,12 +6,12 @@ import { getIcon } from "@/utils/getIcon";
 import { setRcaSourceId } from "../ZonesModal/ZonesModal";
 import { moveSourceContents, setSourceStream } from "@/utils/APIHelper";
 import { setRcaStatus } from "../ZonesModal/ZonesModal";
-import List from "@/components/List/List";
-import ListItem from "../List/ListItem/ListItem";
+import List from "@mui/material/List";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
 
 import PropTypes from "prop-types";
-
-const LIST_ITEM_FONT_SIZE = "1.5rem";
 
 let applyAction = null;
 let setSelectedSource = null; // Must be provided from the context of StreamsModal due to how hooks work
@@ -42,8 +42,25 @@ const StreamsModal = ({
 }) => {
     const streams = useStatusStore((state) => state.status.streams);
     const status = useStatusStore((state) => state.status);
-    const playingStreams = status.sources.filter( (s) => s.input !== 'None').map( (s) => parseInt(s.input.replace('stream=', '')));
-    const availableStreams = streams.filter( (s) => !playingStreams.includes(s.id))
+    const playingStreamIds = status.sources.filter( (s) => s.input !== 'None').map( (s) => parseInt(s.input.replace('stream=', '')));
+    const playingStreams = streams.filter( (s) => playingStreamIds.includes(s.id) );
+    let filteredStreams = streams.filter( (s) => !playingStreamIds.includes(s.id) && !s.disabled);
+
+    // If there are any running bluetooth or FM streams, mark other instances as disabled - we do not (yet)
+    // support more than 1 hardware device at a time.
+    const anyPlayingFmOrBluetooth = playingStreams.filter( (s) => s.type === 'fmradio' || s.type === 'bluetooth');
+    for(const running of anyPlayingFmOrBluetooth) {
+      filteredStreams = filteredStreams.map( (s) => {
+        // we clone because all members of `s` are constant
+        const r = structuredClone(s);
+        if(r.type == running.type) {
+          r.disabled = true;
+          r.name = `${s.name} (hw in use)`;
+        }
+        return r
+      });
+    }
+
     setSelectedSource = usePersistentStore((s) => s.setSelectedSource);
     setAutoselectSource = usePersistentStore((s) => s.setAutoselectSource);
 
@@ -94,24 +111,23 @@ const StreamsModal = ({
 
     let streamsList = [];
 
-    for (const stream of availableStreams) {
-        if (!stream.disabled) {
-            const icon = getIcon(stream.type);
-            streamsList.push(
-                <ListItem
-                    name={stream.name}
-                    key={stream.id}
-                    onClick={() => {
-                        setStream(stream);
-                        onApply();
-                        onClose();
-                    }}
-                    nameFontSize={LIST_ITEM_FONT_SIZE}
-                >
-                    <img src={icon} className="streams-modal-icon" alt="stream icon" />
-                </ListItem>
-            );
-        }
+    for (const stream of filteredStreams) {
+        const icon = getIcon(stream.type);
+        streamsList.push(
+            <ListItemButton
+                key={stream.id}
+                disabled={stream.disabled}
+                onClick={() => {
+                    setStream(stream);
+                    onApply();
+                    onClose();
+                }}
+            >
+                <img src={icon} className="streams-modal-icon" alt="stream icon" />
+                <ListItemText className="streams-modal-item-text" primary={stream.name} />
+            </ListItemButton>
+        );
+        streamsList.push(<Divider aria-hidden="true" />);
     }
 
     return (

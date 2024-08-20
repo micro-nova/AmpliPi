@@ -10,6 +10,7 @@
   * Handle errors better in the stream editing dialog
   * Migrate more components to mui, a Material UI implementation
   * Add marquee functionality the header of all modals, if the header text doesn't fit it will now scroll instead of pushing all the content down
+  * Only allow one FM or Bluetooth stream to run at once
 * System
   * Fixed a bug where support tunnel addresses would be served when querying for amplipi.local
   * Stream validation for URLs has been made more robust
