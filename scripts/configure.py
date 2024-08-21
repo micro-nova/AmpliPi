@@ -853,20 +853,6 @@ def _enable_linger(user: str, env) -> List[Task]:
   return [Task(f'Enable linger for {user} user', multiargs=margs).run()]
 
 
-def _copy_old_config(dest_dir: str) -> None:
-  # try to copy the config of the current running amplipi service into dest_dir/house.json
-  # success is not required since the config will be generated from defaults if missing
-  old_dir = subprocess.getoutput(
-      'systemctl --user show amplipi | grep WorkingDirectory= | sed s/WorkingDirectory=//')
-  new_path_exists = os.path.exists(f'{dest_dir}/house.json')
-  if old_dir and not new_path_exists:
-    try:
-      subprocess.run(
-          ['cp', f'{old_dir}/house.json', f'{dest_dir}/house.json'], check=False)
-    except:
-      pass
-
-
 def _api_key() -> Optional[str]:
   """ Get a singular API key for use with the updater """
   user_file_path = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'users.json')
@@ -882,6 +868,37 @@ def _api_key() -> Optional[str]:
     # simply bail.
     return None
   return None
+
+
+def _copy_old_config(dest_dir: str) -> Task:
+  # try to copy the config of the current running amplipi service into dest_dir/house.json
+  # success is desirable, but not strictly required since the config will be generated from defaults if missing.
+  # This helps us tolerate a changing `dest_dir`, but there's a good chance the service will write-back
+  # its config to this location too.
+  task = Task("Write running config to disk")
+  url = "http://localhost/api"
+  key = _api_key()
+  if key:
+    url += f'?api-key={key}'
+  try:
+    req = requests.get(url)
+    if req.ok:
+      with open(f'{dest_dir}/house.json', 'wb') as f:
+        f.write(req.content)
+      task.output += "\nOk!"
+      task.success = True
+  except Exception as e:
+    task.output += f"\nError: {e}"
+    task.output += f"\nContinuing anyways, in case this current install is broken and needs an upgrade."
+    task.success = True
+  return task
+
+
+def _create_backup(env, suffix: str = "") -> List[Task]:
+  task = Task('Take a configuration backup', f"{env['base_dir']}/scripts/backup_config.sh {suffix}".split())
+  task.run()
+  # Everything that consumes this wants a List, so let's give 'em a list.
+  return [task]
 
 
 def _check_url(url) -> Task:
@@ -931,7 +948,7 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
     # try to copy the old config into the potentially new directory
     # This fixes some potential update issues caused by migrating install to a different directory
     # (using the web updated the install dir used to be amplipi-dev2 and is now amplipi-dev)
-    _copy_old_config(env['config_dir'])
+    tasks += print_progress([_copy_old_config(env['config_dir'])])
 
     # stop amplipi before reconfiguring authbind
     tasks += print_progress(_stop_service('amplipi'))
@@ -1155,6 +1172,10 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   tasks += fix_file_props(env, progress)
   if failed():
     return False
+  if not env['is_ci']:
+    pre_backup = _create_backup(env, "_pre-fw-upgrade")
+    progress(pre_backup)
+    tasks += pre_backup
   if os_deps:
     tasks += _install_os_deps(env, progress, _os_deps)
     if failed():
@@ -1196,6 +1217,10 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     tasks += _check_password(env, progress)
     if failed():
       return False
+  if not env['is_ci']:
+    post_backup = _create_backup(env, "_post-fw-upgrade")
+    progress(post_backup)
+    tasks += post_backup
   if restart_updater:
     # Reboot OS to finish potential kernel upgrade, also restarting the updater
     progress([Task('Reboot os', success=True)])

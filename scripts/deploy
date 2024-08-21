@@ -195,8 +195,6 @@ $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
 $deps && opts="$opts --os-deps --python-deps"
 ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" || echo ""
-echo "Deleting tarball at ${release_name}.tar.gz"
-ssh $user_host "rm ${release_name}.tar.gz"
 
 printf "Waiting for AmpliPi to restart"
 restart_finished=false
@@ -227,6 +225,8 @@ if $restart_finished; then
   if ! $amplipi_found; then
     printf "\nFailed to detect ${host}/api.\n"
   fi
+  echo "Deleting tarball at ${release_name}.tar.gz"
+  ssh $user_host "rm ${release_name}.tar.gz"
 else
   echo "Restart failed."
 fi

@@ -24,6 +24,7 @@ from functools import lru_cache
 from typing import List, Dict, Optional, Union, Set
 from types import SimpleNamespace
 from enum import Enum
+from pathlib import Path
 
 # pylint: disable=no-name-in-module
 from pydantic import BaseSettings, BaseModel, Field
@@ -1364,7 +1365,7 @@ class AppSettings(BaseSettings):
   """ Controller settings """
   mock_ctrl: bool = True
   mock_streams: bool = True
-  config_file: str = 'house.json'
+  config_file: str = str(Path.home() / '.config' / 'amplipi' / 'house.json')
   delay_saves: bool = True
 
 
