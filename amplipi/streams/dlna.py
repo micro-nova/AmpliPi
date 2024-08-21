@@ -28,7 +28,6 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
     self.stopped_message = f'Nothing is playing, please connect a player to {self.name} and play music'
     self.default_image_url = 'static/imgs/dlna.png'
 
-
   def reconfig(self, **kwargs):
     reconnect_needed = False
     if 'disabled' in kwargs:
@@ -97,33 +96,6 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
     self._disconnect()
     self._metadata_proc = None
     self.dlna_proc = None
-
-  # def info(self) -> models.SourceInfo:
-  #   source = models.SourceInfo(
-  #     name=self.full_name(),
-  #     state=self.state,
-  #     img_url='static/imgs/dlna.png',
-  #     type=self.stream_type
-  #   )
-  #   try:
-
-  #     data = json.load(open(f'{self._src_config_folder}/meta.json'))
-  #     source.state = data.get('state', 'stopped') if data else 'stopped'
-  #     if source.state != 'stopped':  # if the state is stopped, just use default values
-  #       source.artist = data.get('artist', '')
-  #       source.track = data.get('title', '')
-  #       source.album = data.get('album', '')
-  #       if data.get('album_art', '') != '':
-  #         source.img_url = f'generated/{self.src}/{data.get("album_art", "")}'
-
-  #     source.supported_cmds = self.supported_cmds  # set supported commands only if we hear back from the DLNA server
-  #     self._got_data = True
-  #   except Exception as e:
-  #     if self._got_data:  # ignore if we havent gotten data yet since we're still waiting for the metadata process to start
-  #       logger.exception(f'Error getting DLNA info: {e}')
-  #     pass
-
-  #   return source
 
   def send_cmd(self, cmd):
     if not self._fifo_open:

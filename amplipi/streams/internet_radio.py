@@ -20,8 +20,12 @@ class InternetRadio(BaseStream):
   def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False, validate: bool = True):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate, url=url, logo=logo)
     self.url = url
-    self.logo = logo
     self.supported_cmds = ['play', 'stop']
+    if logo:
+      self.default_image_url = logo
+    else:
+      self.default_image_url = 'static/imgs/internet_radio.png'
+    self.stopped_message = None
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -45,15 +49,13 @@ class InternetRadio(BaseStream):
     """
     logger.info(f'connecting {self.name} to {src}...')
 
+    self._connect(src)
+
     if self.mock:
       logger.info(f'{self.name} connected to {src}')
       self.state = 'playing'
       self.src = src
       return
-
-    # Make all of the necessary dir(s)
-    src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
-    os.system(f'mkdir -p {src_config_folder}')
 
     # HACK check if url is a playlist and if it is get the first url and play it
     # this is the most general way to deal with playlists for this stream since the alternative is to actually
@@ -73,8 +75,8 @@ class InternetRadio(BaseStream):
         logger.exception(f'Error getting playlist {e}')
 
     # Start audio via runvlc.py
-    song_info_path = f'{src_config_folder}/currentSong'
-    log_file_path = f'{src_config_folder}/log'
+    song_info_path = f'{self._get_config_folder()}/metadata.json'
+    log_file_path = f'{self._get_config_folder()}/log'
     inetradio_args = [
       sys.executable, f"{utils.get_folder('streams')}/runvlc.py", self.url, utils.real_output_device(src),
       '--song-info', song_info_path, '--log', log_file_path
@@ -93,27 +95,27 @@ class InternetRadio(BaseStream):
     self._disconnect()
     self.proc = None
 
-  def info(self) -> models.SourceInfo:
-    src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
-    loc = f'{src_config_folder}/currentSong'
-    source = models.SourceInfo(name=self.full_name(),
-                               state=self.state,
-                               img_url='static/imgs/internet_radio.png',
-                               supported_cmds=self.supported_cmds,
-                               type=self.stream_type)
-    if self.logo:
-      source.img_url = self.logo
-    try:
-      with open(loc, 'r', encoding='utf-8') as file:
-        data = json.loads(file.read())
-        source.artist = data['artist']
-        source.track = data['track']
-        source.station = data['station']
-        source.state = data['state']
-        return source
-    except Exception:
-      pass
-    return source
+  # def info(self) -> models.SourceInfo:
+  #   src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
+  #   loc = f'{src_config_folder}/currentSong'
+  #   source = models.SourceInfo(name=self.full_name(),
+  #                              state=self.state,
+  #                              img_url='static/imgs/internet_radio.png',
+  #                              supported_cmds=self.supported_cmds,
+  #                              type=self.stream_type)
+  #   if self.logo:
+  #     source.img_url = self.logo
+  #   try:
+  #     with open(loc, 'r', encoding='utf-8') as file:
+  #       data = json.loads(file.read())
+  #       source.artist = data['artist']
+  #       source.track = data['track']
+  #       source.station = data['station']
+  #       source.state = data['state']
+  #       return source
+  #   except Exception:
+  #     pass
+  #   return source
 
   def send_cmd(self, cmd):
     try:
