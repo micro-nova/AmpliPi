@@ -12,6 +12,15 @@ import subprocess
 import os
 import sys
 import traceback
+import signal
+
+
+def signal_handler(sig, _):
+  """Handle sigterm signal."""
+  log(f"Caught signal {sig}, exiting.")
+  os.system("killall -9 rtl_fm")
+  traceback.print_exc(file=sys.stdout)
+  sys.exit(0)
 
 parser = argparse.ArgumentParser(prog='runfm', description='play a radio station using an RTL-SDR dongle')
 parser.add_argument('freq', type=str, help='radio station frequency (ex: 96.1)')
@@ -22,6 +31,7 @@ parser.add_argument('--test', action='store_true', help='verify the frequency is
 parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
 
+signal.signal(signal.SIGTERM, signal_handler)
 
 def log(info):
   if args.log:
@@ -148,11 +158,6 @@ def main():
 
       update = False
 
-  except KeyboardInterrupt:
-    print("Shutdown requested...exiting")
-    os.system("killall -9 rtl_fm")
-    traceback.print_exc(file=sys.stdout)
-    sys.exit(0)
   except Exception:
     os.system("killall -9 rtl_fm")
     traceback.print_exc(file=sys.stdout)

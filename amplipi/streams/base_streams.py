@@ -221,38 +221,39 @@ class BaseStream:
   def _read_info(self) -> models.SourceInfo:
     """ Read the current stream info and metadata, caching it """
     try:
-      with open(f'{self._get_config_folder()}/metadata.json', 'r') as file:
-        info = json.loads(file.read())
+      if os.path.exists(f'{self._get_config_folder()}/metadata.json'):
+        with open(f'{self._get_config_folder()}/metadata.json', 'r') as file:
+          info = json.loads(file.read())
 
-        # populate fields that are type-consistent
-        info['name'] = self.full_name()
-        info['type'] = self.stype
-        info['supported_cmds'] = self.supported_cmds
+          # populate fields that are type-consistent
+          info['name'] = self.full_name()
+          info['type'] = self.stype
+          info['supported_cmds'] = self.supported_cmds
 
-        # set state to stopped if it is not present in the metadata (e.g. on startup)
-        if 'state' not in info:
-          info['state'] = 'stopped'
+          # set state to stopped if it is not present in the metadata (e.g. on startup)
+          if 'state' not in info:
+            info['state'] = 'stopped'
 
-        self._cached_info = models.SourceInfo(**info)
+          self._cached_info = models.SourceInfo(**info)
 
-        # set stopped message if stream is stopped
-        if self.stopped_message and self._cached_info.state == 'stopped':
-          self._cached_info.artist = self.stopped_message
-          self._cached_info.track = ''
-          self._cached_info.album = ''
+          # set stopped message if stream is stopped
+          if self.stopped_message and self._cached_info.state == 'stopped':
+            self._cached_info.artist = self.stopped_message
+            self._cached_info.track = ''
+            self._cached_info.album = ''
 
-        # set default image if none is provided
-        if not self._cached_info.img_url:
-          self._cached_info.img_url = self.default_image_url
+          # set default image if none is provided
+          if not self._cached_info.img_url:
+            self._cached_info.img_url = self.default_image_url
 
-        return self._cached_info
+          return self._cached_info
     except Exception as e:
       logger.exception(f'Error reading metadata for {self.name}: {e}')
       return models.SourceInfo(name=self.full_name(), state='stopped')
 
   def info(self) -> models.SourceInfo:
     """ Get cached stream info and source metadata """
-    
+
     if self._watch_metadata:
       return self._cached_info
     else:
