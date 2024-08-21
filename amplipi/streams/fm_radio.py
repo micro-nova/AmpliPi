@@ -18,7 +18,7 @@ class FMRadio(BaseStream):
   def __init__(self, name: str, freq, logo: Optional[str] = None, disabled: bool = False, mock: bool = False):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.freq = freq
-    self.default_image_url = logo
+    self.logo = logo
     self.stopped_message = None
 
   def reconfig(self, **kwargs):
@@ -39,8 +39,8 @@ class FMRadio(BaseStream):
   def connect(self, src):
     """ Connect a fmradio.py output to a given audio source """
 
+    self._connect(src)
     if self.mock:
-      self._connect(src)
       return
 
     song_info_path = f'{self._get_config_folder()}/metadata.json'
@@ -62,48 +62,18 @@ class FMRadio(BaseStream):
 
   def disconnect(self):
     if self._is_running():
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+      utils.careful_proc_shutdown(self.proc)
     self.proc = None
     self._disconnect()
 
-  # def info(self) -> models.SourceInfo:
-  #   src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
-  #   loc = f'{src_config_folder}/currentSong'
-  #   if not self.logo:
-  #     self.logo = "static/imgs/fmradio.png"
-  #   source = models.SourceInfo(
-  #     name=self.full_name(),
-  #     state=self.state,
-  #     img_url=self.logo,
-  #     type=self.stream_type
-  #   )
-  #   try:
-  #     with open(loc, 'r', encoding='utf-8') as file:
-  #       data = json.loads(file.read())
-  #       # Example JSON: "station": "Mixx96.1", "callsign": "KXXO", "prog_type": "Soft rock", "radiotext": "        x96.1"
-  #       # logger.debug(json.dumps(data))
-  #       if data['prog_type']:
-  #         source.artist = data['prog_type']
-  #       else:
-  #         source.artist = self.freq + " FM"
-
-  #       if data['radiotext']:
-  #         source.track = data['radiotext']
-  #       else:
-  #         source.track = self.name
-
-  #       if data['station']:
-  #         source.station = data['station']
-  #       elif data['callsign']:
-  #         source.station = data['callsign']
-  #       else:
-  #         source.station = ""
-
-  #       return source
-  #   except Exception:
-  #     pass
-  #     # logger.exception('Failed to get currentSong - it may not exist: {}'.format(e))
-  #   return source
+  def _read_info(self) -> models.SourceInfo:
+    # we have to override this method because we need to set the img_url
+    super()._read_info()
+    if self.logo:
+      self._cached_info.img_url = self.logo
+    else:
+      self._cached_info.img_url = 'static/imgs/internet_radio.png'
+    return self._cached_info
 
   @staticmethod
   def is_hw_available():

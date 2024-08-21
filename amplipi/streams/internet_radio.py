@@ -20,11 +20,8 @@ class InternetRadio(BaseStream):
   def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False, validate: bool = True):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate, url=url, logo=logo)
     self.url = url
+    self.logo = logo
     self.supported_cmds = ['play', 'stop']
-    if logo:
-      self.default_image_url = logo
-    else:
-      self.default_image_url = 'static/imgs/internet_radio.png'
     self.stopped_message = None
 
   def reconfig(self, **kwargs):
@@ -95,27 +92,14 @@ class InternetRadio(BaseStream):
     self._disconnect()
     self.proc = None
 
-  # def info(self) -> models.SourceInfo:
-  #   src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
-  #   loc = f'{src_config_folder}/currentSong'
-  #   source = models.SourceInfo(name=self.full_name(),
-  #                              state=self.state,
-  #                              img_url='static/imgs/internet_radio.png',
-  #                              supported_cmds=self.supported_cmds,
-  #                              type=self.stream_type)
-  #   if self.logo:
-  #     source.img_url = self.logo
-  #   try:
-  #     with open(loc, 'r', encoding='utf-8') as file:
-  #       data = json.loads(file.read())
-  #       source.artist = data['artist']
-  #       source.track = data['track']
-  #       source.station = data['station']
-  #       source.state = data['state']
-  #       return source
-  #   except Exception:
-  #     pass
-  #   return source
+  def _read_info(self) -> models.SourceInfo:
+    # we have to override this method because we need to set the img_url
+    super()._read_info()
+    if self.logo:
+      self._cached_info.img_url = self.logo
+    else:
+      self._cached_info.img_url = 'static/imgs/internet_radio.png'
+    return self._cached_info
 
   def send_cmd(self, cmd):
     try:
@@ -134,6 +118,7 @@ class InternetRadio(BaseStream):
             except Exception:
               pass
           self.state = 'stopped'
+          self._cached_info.state = 'stopped'
       else:
         raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
     except Exception:
