@@ -27,6 +27,7 @@ import Badge from "@mui/material/Badge";
 
 import PropTypes from "prop-types";
 import Checkbox from "@mui/material/Checkbox";
+import StopProp from "@/components/StopProp/StopProp";
 
 const close = () => router.navigate("/settings");
 
@@ -54,21 +55,6 @@ CorePage.propTypes = {
     openPage: PropTypes.string.isRequired,
 };
 
-// wrap in modal if page is open
-const Page = ({ openPage }) =>
-    openPage === "" ? (
-        <div />
-    ) : (
-        <Modal onClose={close}>
-            <div className="settings-page-container">
-                <CorePage openPage={openPage} />
-            </div>
-        </Modal>
-    );
-Page.propTypes = {
-    openPage: PropTypes.string.isRequired,
-};
-
 function SettingsListItem(props){
     const {
         onClick,
@@ -90,7 +76,13 @@ const Settings = ({ openPage }) => {
     const [isSavedUrl, setIsSavedUrl] = React.useState(IsSaved());
 
     if (openPage != "") {
-        return <Page openPage={openPage} />;
+        return (
+            <div className="settings-page-container">
+                <StopProp>
+                    <CorePage openPage={openPage} />
+                </StopProp>
+            </div>
+        );
     }
 
     return (
