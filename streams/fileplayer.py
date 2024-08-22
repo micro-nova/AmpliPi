@@ -206,7 +206,7 @@ while True:
         'track': '',
         'artist': '',
         'station': '',
-        'state': 'playing',
+        'state': 'playing'if state == 'State.Playing' else 'paused',
       }
 
       if args.verbose:

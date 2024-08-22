@@ -14,7 +14,7 @@ import json
 from threading import Timer
 
 # time before a stream auto-mutes on pause in seconds
-AUTO_MUTE_TIMEOUT = 30.0
+AUTO_MUTE_TIMEOUT = 5.0
 
 logger = logging.getLogger(__name__)
 logger.level = logging.DEBUG
