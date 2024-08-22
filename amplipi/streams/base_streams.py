@@ -354,7 +354,7 @@ class PersistentStream(BaseStream):
 
       if not self.mock:
         self._activate(vsrc)  # might override self.state
-      logger.info(f"Activating {self.name} ({'persistant' if self.is_persistent() else 'temporarily'})")
+      logger.info(f"Activating {self.name} ({'persistent' if self.is_persistent() else 'temporarily'})")
     except Exception as e:
       logger.exception(f'Failed to activate {self.name}: {e}')
       if vsrc is not None:

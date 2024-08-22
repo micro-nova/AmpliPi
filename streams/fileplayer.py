@@ -255,7 +255,7 @@ while True:
           'track': '',
           'artist': '',
           'station': '',
-          'state': 'ENDED'})
+          'state': 'stopped'})
       sys.exit(0)
     else:
       if args.test:

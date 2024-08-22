@@ -25,7 +25,6 @@ class MediaDevice(PersistentStream, Browsable):
     self.bkg_thread: Optional[threading.Thread] = None
     self.song_list: List[str] = []
     self.song_index = 0
-    self.ended = False
     self._prev_timeout = datetime.datetime.now()
     self.playing = None
     self.device: Optional[str] = None
@@ -82,9 +81,9 @@ class MediaDevice(PersistentStream, Browsable):
     else:
       time.sleep(0.3)  # handles mock case
 
-    if self._cached_info.state == 'playing' and self.playing in self.song_list and self.ended and self.song_index < len(self.song_list) - 1:
+    if self._cached_info.state == 'playing' and self.playing in self.song_list and self.song_index < len(self.song_list) - 1:
       self.next_song()
-    elif self.ended and (self.song_index >= len(self.song_list) - 1 or self.playing not in self.song_list):
+    elif (self.song_index >= len(self.song_list) - 1 or self.playing not in self.song_list):
       self.send_cmd('paused')
 
   def next_song(self):
@@ -124,7 +123,6 @@ class MediaDevice(PersistentStream, Browsable):
     f.write('play')
     f.close()
     self._prev_timeout = datetime.datetime.now() + datetime.timedelta(seconds=3)
-    self.ended = False
 
   def send_cmd(self, cmd):
     super().send_cmd(cmd)
