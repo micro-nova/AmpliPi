@@ -399,8 +399,10 @@ class PersistentStream(BaseStream):
   def restart(self):
     """Reset this stream by disconnecting and reconnecting"""
     self.deactivate()
+    self._stop_info_watcher()
     time.sleep(0.1)
     self.activate()
+    self._start_info_watcher()
 
   def connect(self, src: int):
     """ Connect an output to a given audio source """

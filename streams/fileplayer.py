@@ -193,10 +193,12 @@ while True:
         if cmd_file:
           cmd = cmd_file.readline()
           if cmd == 'play':
-              player.set_pause(False)
+            player.set_pause(False)
           elif cmd == 'pause':
-              player.set_pause(True)
+            player.set_pause(True)
         cmd_file.close()
+        if args.verbose:
+          print(f"Command: {cmd}")
       except:
         open(args.cmd, 'x')
 
@@ -248,13 +250,13 @@ while True:
         if args.song_info:
           update_info(cur_info)
     elif state == 'State.Ended':
-        if args.song_info:
-          update_info({
-            'track': '',
-            'artist': '',
-            'station': '',
-            'state': 'ENDED'})
-        sys.exit(0)
+      if args.song_info:
+        update_info({
+          'track': '',
+          'artist': '',
+          'station': '',
+          'state': 'ENDED'})
+      sys.exit(0)
     else:
       if args.test:
         log('fail')
