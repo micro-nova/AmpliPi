@@ -181,9 +181,8 @@ class BaseStream:
 
     if self._watch_metadata:
       if self._observer:
-        # TODO: why does this hang????
-        # self._observer.stop()
-        # self._observer.join()
+        self._observer.stop()
+        self._observer.join()
         self._observer = None
       self._fs_event_handler = None
 
