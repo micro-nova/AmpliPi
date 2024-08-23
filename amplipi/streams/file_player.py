@@ -120,13 +120,3 @@ class FilePlayer(BaseStream):
         self.bkg_thread.join()
     self._disconnect()
     self.proc = None
-
-  # def info(self) -> models.SourceInfo:
-  #   source = models.SourceInfo(
-  #     name=self.full_name(),
-  #     state=self.state,
-  #     img_url='static/imgs/plexamp.png',
-  #     type=self.stream_type
-  #   )
-  #   source.supported_cmds = self.supported_cmds
-  #   return source

@@ -43,7 +43,7 @@ case "$1" in
 
 		echo -n "${artist},,,${title},,,${album},,,${coverArt},,,${rating},,,${stationName}" > "$currentSong"
     truncate -s 0 $metadata
-    printf "{\n\"artist\":\"${artist}\",\n\"track\":\"${title}\",\n\"album\":\"${album}\",\n\"img-url\":\"${coverArt}\",\n\"rating\":${rating},\n\"station\":\"${stationName}\",\n\"state\":\"\"\n}" >> "$metadata"
+    printf "{\n\"artist\":\"${artist}\",\n\"track\":\"${title}\",\n\"album\":\"${album}\",\n\"img_url\":\"${coverArt}\",\n\"rating\":${rating},\n\"station\":\"${stationName}\",\n\"state\":\"\"\n}" >> "$metadata"
 
 		stationList
 		;;

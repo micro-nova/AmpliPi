@@ -148,7 +148,10 @@ class Pandora(PersistentStream, Browsable):
     # HACK skip this read if it doesn't have state and trigger a new one by adding the state
     i: dict = {}
     with open(f"{self._get_config_folder()}/metadata.json", 'r', encoding='utf-8') as file:
-      i = json.load(file)
+      try: # try/catch because the file may be empty due to the way the eventtcmd script is written
+        i = json.load(file)
+      except json.JSONDecodeError:
+        return self._cached_info
 
     if write_state or ("state" in i.keys() and i["state"] == ""):
       i["state"] = self.state
@@ -156,9 +159,13 @@ class Pandora(PersistentStream, Browsable):
         json.dump(i, file)
       return self._cached_info
 
-    self._cached_info.img_url = self._cached_info.img_url.replace('http:', 'https:')  # HACK: hack to just replace with https
 
-    return super()._read_info()
+    super()._read_info()
+
+    if self._cached_info.img_url is not None:
+      self._cached_info.img_url = self._cached_info.img_url.replace('http:', 'https:')  # HACK: hack to just replace with https
+
+    return self._cached_info
 
   def info(self) -> models.SourceInfo:
     i = super().info()
@@ -175,56 +182,7 @@ class Pandora(PersistentStream, Browsable):
           i.rating = models.PandoraRating.DEFAULT
 
     return i
-
-  # def info(self) -> models.SourceInfo:
-  #   src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
-  #   loc = f'{src_config_folder}/.config/pianobar/currentSong'
-  #   source = models.SourceInfo(
-  #     name=self.full_name(),
-  #     state=self.state,
-  #     supported_cmds=list(self.supported_cmds.keys()),
-  #     img_url='static/imgs/pandora.png',
-  #     type=self.stream_type
-  #   )
-
-  #   if len(self.stations) == 0:
-  #     self.load_stations()
-
-  #   try:
-  #     with open(loc, 'r', encoding='utf-8') as file:
-  #       for line in file.readlines():
-  #         line = line.strip()
-  #         if line:
-  #           data = line.split(',,,')
-  #           if self.track != data[1]:  # When song changes, stop inverting state
-  #             self.invert_liked_state = False
-  #           source.state = self.state
-  #           source.artist = data[0]
-  #           source.track = data[1]
-  #           self.track = data[1]
-  #           source.album = data[2]
-  #           source.img_url = data[3].replace('http:', 'https:')  # HACK: kind of a hack to just replace with https
-  #           initial_rating = models.PandoraRating(int(data[4]))
-
-  #           source.rating = initial_rating
-
-  #           # Pianobar doesn't update metadata after a song starts playing
-  #           # so when you like a song you have to change the state manually until next song
-  #           if self.invert_liked_state:
-  #             if int(data[4]) == models.PandoraRating.DEFAULT.value:
-  #               source.rating = models.PandoraRating.LIKED
-  #             elif int(data[4]) == models.PandoraRating.LIKED.value:
-  #               source.rating = models.PandoraRating.DEFAULT
-
-  #           source.station = data[5]
-  #       return source
-  #   except Exception:
-  #     pass
-  #     # logger.error('Failed to get currentSong - it may not exist: {}'.format(e))
-  #   # TODO: report the status of pianobar with station name, playing/paused, song info
-  #   # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-  #   return source
-
+  
   def send_cmd(self, cmd):
     """ Pianobar's commands
       cmd: Command string sent to pianobar's control fifo

@@ -166,10 +166,8 @@ class BaseStream:
               # logger.debug(f'mute timer cancelled for {self.name}')
             self.unmute()
 
-      self._observer = Observer()
-      # self._fs_event_handler = FileSystemEventHandler()
       self._fs_event_handler = handler()
-      # self._fs_event_handler.on_modified = lambda _: self._read_info
+      self._observer = Observer()
       self._observer.schedule(self._fs_event_handler, metadata_path)
       self._observer.start()
 
@@ -181,10 +179,11 @@ class BaseStream:
 
     if self._watch_metadata:
       if self._observer:
-        self._observer.stop()
-        self._observer.join()
+        logger.debug(f'  observer stopped for {self.name}')
+        del self._observer
         self._observer = None
       self._fs_event_handler = None
+    logger.debug("  metadata watcher stopped")
 
   def restart(self):
     """Reset this stream by disconnecting and reconnecting"""
