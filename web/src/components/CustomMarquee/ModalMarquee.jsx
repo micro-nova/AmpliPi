@@ -3,7 +3,8 @@ import Marquee from "react-fast-marquee";
 
 import PropTypes from "prop-types";
 
-function CustomMarquee(props) {
+export default function ModalMarquee(props) {
+// Only use ModalMarquee if you've got sensitive formatting, it is not a one-size-fits-all component
     const {
         children,
         containerRef,
@@ -56,22 +57,29 @@ function CustomMarquee(props) {
     }
     window.addEventListener("resize", handleResize()); // Doesn't call assessMarquee directly to avoid calling thousands of times per second when resizing window
 
-
-    return(
-        <Marquee play={marqueeScroll} speed={30} onCycleComplete={() => {setScroll(false); assessMarquee();}}>
+    if(marqueeScroll){
+        return(
+            <Marquee play={marqueeScroll} speed={30} onCycleComplete={() => {setScroll(false); assessMarquee();}}>
             <div
-                style={{marginLeft: "10px"}} //Needs inline styling for margin to add a gap between start and end of marquee, also keeps marquee from "overscrolling" (stopping a pixel or two after reaching the wraparound point due to minor lag)
-                className="marquee-text"
+                // Unlike MetadataMarquee, ModalMarquee does not need left margin as it gets reinitialized with every flip of the play state
                 ref={childrenRef}
             >
                 {children}
             </div>
-        </Marquee>
-    )
+            </Marquee>
+        )
+    } else {
+        return(
+            <div
+                style={{textOverflow: "hidden", textWrap: "nowrap"}}
+                ref={childrenRef}
+            >
+                {children}
+            </div>
+        )
+    }
 };
-CustomMarquee.propTypes = {
+ModalMarquee.propTypes = {
     children: PropTypes.string.isRequired,
     containerRef: PropTypes.object.isRequired, // Needs to be a React.useRef specifically, but proptypes doesn't let you specify that
 };
-
-export default CustomMarquee;

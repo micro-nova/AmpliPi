@@ -5,7 +5,7 @@ import { useStatusStore } from "@/App.jsx";
 import { getIcon } from "@/utils/getIcon";
 
 import PropTypes from "prop-types";
-import CustomMarquee from "../CustomMarquee/CustomMarquee";
+import MetadataMarquee from "../CustomMarquee/MetadataMarquee";
 
 const StreamBar = ({ sourceId, onClick }) => {
     const nameRef = React.useRef(null);
@@ -20,7 +20,7 @@ const StreamBar = ({ sourceId, onClick }) => {
     // code will be shared with StreamBadge, should be put somewhere else and imported
     return (
         <div onClick={onClick} className="stream-bar">
-            <div className="stream-bar-name" ref={nameRef}><CustomMarquee children={name} containerRef={nameRef} /></div>
+            <div className="stream-bar-name" ref={nameRef}><MetadataMarquee children={name} containerRef={nameRef} /></div>
             <img src={icon} className="stream-bar-icon" alt="stream icon" />
         </div>
     );

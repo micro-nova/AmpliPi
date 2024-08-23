@@ -4,111 +4,36 @@ import "./Zones.scss";
 import "../PageBody.scss";
 import { useStatusStore } from "@/App.jsx";
 import PageHeader from "@/components/PageHeader/PageHeader";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import { Button } from "@mui/material";
 import Speaker from "@mui/icons-material/Speaker";
 import List from "@mui/material/List/List";
-import ListItemButton from "@mui/material/ListItemButton";
 import Divider from "@mui/material/Divider";
-import TextField from "@mui/material/TextField";
-import Switch from "@mui/material/Switch";
-import FormControlLabel from "@mui/material/FormControlLabel";
+import ListItemButton from "@mui/material/ListItemButton";
+
+import ZoneModal from "./ZoneModal/ZoneModal";
+
 
 const ZoneListItem = ({ zone }) => {
-    const [open, setOpen] = React.useState(false);
-    const [name, setName] = React.useState(zone.name);
-    const [vol_max, setVolMax] = React.useState(zone.vol_max);
-    const [vol_min, setVolMin] = React.useState(zone.vol_min);
-    const [disabled, setDisabled] = React.useState(zone.disabled);
-
-    const applyChanges = () => {
-        fetch(`/api/zones/${zone.id}`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-            },
-            body: JSON.stringify({
-                name: name,
-                vol_max: vol_max,
-                vol_min: vol_min,
-                disabled: disabled,
-            }),
-        });
-    };
-
+    const [showModal, setShowModal] = React.useState(false);
     return (
-        <ListItemButton onClick={() => { if(!open) {setOpen(!open)} }}>
-            <div className="zones-zone-column">
-                <div className="zones-zone-row">
-                    <div className="zones-zone-icon">
-                        <Speaker fontSize="inherit" />
-                    </div>
-                    <div className="zones-zone-name">{zone.name}</div>
-                    <div className="zones-zone-expand-button">
-                        {open ? (
-                            <KeyboardArrowUpIcon
-                                className="zones-zone-expand-icon"
-                                fontSize="inherit"
-                                onClick={() => setOpen(!open)}
-                            />
-                        ) : (
-                            <KeyboardArrowDownIcon
-                                className="zones-zone-expand-icon"
-                                fontSize="inherit"
-                            />
-                        )}
-                    </div>
+        <>
+            <ListItemButton
+                key={zone.id}
+                onClick={() => setShowModal(true)}
+                style={{fontSize: "2rem"}}
+            >
+                <div className="zones-zone-icon">
+                    <Speaker fontSize="inherit" />
                 </div>
-                {open && (
-                    <div className="zone-content-container">
-                        <TextField
-                            className="zones-input"
-                            type="text"
-                            label="Name"
-                            value={name}
-                            margin="dense"
-                            onChange={(e) => {
-                                setName(e.target.value);
-                            }}
-                        />
-                        <TextField
-                            className="zones-input"
-                            type="text"
-                            label="Max Volume"
-                            value={vol_max}
-                            margin="dense"
-                            onChange={(e) => {
-                                setVolMax(e.target.value);
-                            }}
-                        />
-                        <TextField
-                            className="zones-input"
-                            type="text"
-                            label="Min Volume"
-                            value={vol_min}
-                            margin="dense"
-                            onChange={(e) => {
-                                setVolMin(e.target.value);
-                            }}
-                        />
-                        <FormControlLabel label="Disabled"
-                            control={<Switch
-                                className="zones-input"
-                                type="checkbox"
-                                label="Disabled"
-                                checked={disabled}
-                                onChange={(e) => {
-                                    setDisabled(e.target.checked);
-                                }}
-                            />}
-                        />
-                        <Button variant="contained" onClick={applyChanges}>Apply</Button>
-                    </div>
-                )}
-            </div>
-        </ListItemButton>
+                <div className="zones-zone-name">{zone.name}</div>
+                {showModal && <ZoneModal
+                    zone={zone}
+                    onClose={() => {
+                        setShowModal(false);
+                    }}
+                />}
+            </ListItemButton>
+            <Divider component="li" />
+        </>
     );
 };
 ZoneListItem.propTypes = {
@@ -120,10 +45,7 @@ const Zones = ({ onClose }) => {
 
     const listItems = zones.map((zone) => {
         return(
-            <>
-                <ZoneListItem zone={zone} key={zone.id} />
-                <Divider component="li" />
-            </>
+            <ZoneListItem zone={zone} />
         );
     });
 

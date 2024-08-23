@@ -1,7 +1,7 @@
 import React from "react";
 import "./SongInfo.scss";
 import { useStatusStore } from "@/App.jsx";
-import CustomMarquee from "../CustomMarquee/CustomMarquee";
+import MetadataMarquee from "../CustomMarquee/MetadataMarquee";
 
 import PropTypes from "prop-types";
 
@@ -17,15 +17,15 @@ const SongInfo = ({
     return (
         <div className="song-info" {...props}>
             <div ref={artistRef} className={"artist-name"}>
-                <CustomMarquee children={info.artist} containerRef={artistRef} />
+                <MetadataMarquee children={info.artist} containerRef={artistRef} />
             </div>
 
             <div ref={albumRef} className={"album-name"}>
-                <CustomMarquee children={info.album} containerRef={albumRef} />
+                <MetadataMarquee children={info.album} containerRef={albumRef} />
             </div>
 
             <div ref={trackRef} className={"track-name"}>
-                <CustomMarquee children={info.track} containerRef={trackRef} />
+                <MetadataMarquee children={info.track} containerRef={trackRef} />
             </div>
         </div>
     );

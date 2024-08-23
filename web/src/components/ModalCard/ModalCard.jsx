@@ -5,7 +5,7 @@ import "./ModalCard.scss";
 import CheckIcon from "@mui/icons-material/Check";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
-import CustomMarquee from "../CustomMarquee/CustomMarquee";
+import ModalMarquee from "../CustomMarquee/ModalMarquee";
 
 import PropTypes from "prop-types";
 
@@ -35,7 +35,7 @@ const ModalCard = ({
         <Modal className="modal" onClose={onClose}>
             <Card className="modal-card">
                 <div className="modal-header" ref={headerRef}>
-                    <CustomMarquee children={header} containerRef={headerRef}/>
+                    <ModalMarquee children={header} containerRef={headerRef}/>
                 </div>
                 <div className="modal-body">{children}</div>
                 <div className="modal-footer">
