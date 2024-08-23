@@ -1,6 +1,6 @@
 # AmpliPi Software Releases
 
-## Upcoming Release
+## 0.4.3
 * Web App
   * Fix internet radio search on IOS app
   * Update styling on Settings pages, ensure they fit all mobile screens properly
