@@ -7,7 +7,6 @@ import time
 import datetime
 import threading
 import sys
-import json
 import pathlib
 
 MUSIC_EXTENSIONS = ('.mp3', '.wav', '.aac', '.m4a', '.m4b', '.flac', '.aiff', '.mp4', '.avi', '.wmv', '.mov', '.mpg', '.mpeg', '.wma')
@@ -24,13 +23,14 @@ class MediaDevice(PersistentStream, Browsable):
     self.directory = '/media'
     self.local_directory = '/media'
     self.bkg_thread: Optional[threading.Thread] = None
-    self.supported_cmds = ['play', 'pause', 'next', 'prev']
     self.song_list: List[str] = []
     self.song_index = 0
-    self.ended = False
     self._prev_timeout = datetime.datetime.now()
     self.playing = None
     self.device: Optional[str] = None
+    self.supported_cmds = ['play', 'pause', 'prev']
+    self.stopped_message = None
+    self.default_image_url = 'static/imgs/no_note.png'
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -46,39 +46,12 @@ class MediaDevice(PersistentStream, Browsable):
 
   def _activate(self, vsrc: int, remake_list: bool = True):
     """ Connect a short run VLC process with audio output to a given audio source """
-
-    if not self.mock:
-      # Make all of the necessary dir(s)
-      src_config_folder = f"{utils.get_folder('config')}/srcs/v{vsrc}"
-      if not os.path.exists(src_config_folder):
-        os.makedirs(src_config_folder)
-
-      # Start audio via runvlc.py
-      song_info_path = f'{src_config_folder}/currentSong'
-      log_file_path = f'{src_config_folder}/log'
-      self.command_file_path = f'{src_config_folder}/cmd'
-      if remake_list and self.playing is not None:
-        try:
-          self.song_list, _ = self.make_song_list(os.path.dirname(self.playing))
-        except Exception as e:
-          logger.error(f'Error processing request: {e}')
-
-      if self.song_index < len(self.song_list) and self.device is not None:
-        self.url = self.song_list[self.song_index]
-        self.vlc_args = [
-          sys.executable, f"{utils.get_folder('streams')}/fileplayer.py", self.url, self.device,
-          '--song-info', song_info_path, '--log', log_file_path, '--cmd', self.command_file_path
-        ]
-        logger.info(f'running: {self.vlc_args}')
-        self.proc = subprocess.Popen(args=self.vlc_args, preexec_fn=os.setpgrp)
-
-    # make a thread that waits for the playback to be done and returns after info shows playback stopped
-    # for the mock condition it just waits a couple seconds
-    self.bkg_thread = threading.Thread(target=self.wait_on_proc)
-    self.bkg_thread.start()
-    self.state = 'playing'
+    if remake_list and self.playing is not None:
+      try:
+        self.song_list, _ = self.make_song_list(os.path.dirname(self.playing))
+      except Exception as e:
+        logger.error(f'Error processing request: {e}')
     self.src = vsrc
-    return
 
   def make_song_list(self, path):
     song_list = []
@@ -108,19 +81,10 @@ class MediaDevice(PersistentStream, Browsable):
     else:
       time.sleep(0.3)  # handles mock case
 
-    src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
-    loc = f'{src_config_folder}/currentSong'
-    try:
-      with open(loc, 'r', encoding='utf-8') as file:
-        data = json.loads(file.read())
-        self.ended = data['state'] == 'ENDED'
-    except Exception:
-      pass
-
-    if self.state == 'playing' and self.playing in self.song_list and self.ended and self.song_index < len(self.song_list) - 1:
+    if self._cached_info.state == 'playing' and self.playing in self.song_list and self.song_index < len(self.song_list) - 1:
       self.next_song()
-    elif self.ended and (self.song_index >= len(self.song_list) - 1 or self.playing not in self.song_list):
-      self.state = 'paused'
+    elif (self.song_index >= len(self.song_list) - 1 or self.playing not in self.song_list):
+      self.send_cmd('paused')
 
   def next_song(self):
     self.change_song(self.song_index + 1)
@@ -129,69 +93,89 @@ class MediaDevice(PersistentStream, Browsable):
     self.change_song(self.song_index - 1)
 
   def change_song(self, new_song_id):
+    if self._is_running():
+      self.proc.kill()
+      if self.bkg_thread:
+        self.bkg_thread.join()
+
     self.song_index = new_song_id
     self.playing = self.song_list[self.song_index]
-    self.restart()
+    # Start audio via runvlc.py
+    song_info_path = f'{self._get_config_folder()}/metadata.json'
+    log_file_path = f'{self._get_config_folder()}/log'
+    self.command_file_path = f'{self._get_config_folder()}/cmd'
+
+    if self.song_index < len(self.song_list) and self.device is not None:
+      self.url = self.song_list[self.song_index]
+      self.vlc_args = [
+        sys.executable, f"{utils.get_folder('streams')}/fileplayer.py", self.url, self.device,
+        '--song-info', song_info_path, '--log', log_file_path, '--cmd', self.command_file_path
+      ]
+      logger.info(f'running: {self.vlc_args}')
+      self.proc = subprocess.Popen(args=self.vlc_args, preexec_fn=os.setpgrp)
+
+    # make a thread that waits for the playback to be done and returns after info shows playback stopped
+    # for the mock condition it just waits a couple seconds
+    self.bkg_thread = threading.Thread(target=self.wait_on_proc)
+    self.bkg_thread.start()
 
     f = open(self.command_file_path, 'w')
     f.write('play')
     f.close()
     self._prev_timeout = datetime.datetime.now() + datetime.timedelta(seconds=3)
-    self.ended = False
 
   def send_cmd(self, cmd):
-    if cmd in self.supported_cmds:
-      if cmd == 'stop':
-        self._deactivate()
-      if self.command_file_path is not None:
-        if cmd == 'pause':
-          f = open(self.command_file_path, 'w')
-          f.write('pause')
-          f.close()
-          self.state = 'paused'
+    super().send_cmd(cmd)
 
-        if cmd == 'play':
-          if not self._is_running():
-            logger.info(f'running: {self.vlc_args}')
-            self.proc = subprocess.Popen(args=self.vlc_args, preexec_fn=os.setpgrp)
-          f = open(self.command_file_path, 'w')
-          f.write('play')
-          f.close()
-          self.state = 'playing'
+    if cmd == 'stop':
+      self._deactivate()
+    if self.command_file_path is not None:
+      if cmd == 'pause':
+        f = open(self.command_file_path, 'w')
+        f.write('pause')
+        logger.info(f'pausing: {self.vlc_args}')
+        f.close()
 
-        if cmd == 'next':
-          self.next_song()
+      if cmd == 'play':
+        if not self._is_running():
+          logger.info(f'running: {self.vlc_args}')
+          self.proc = subprocess.Popen(args=self.vlc_args, preexec_fn=os.setpgrp)
+        f = open(self.command_file_path, 'w')
+        f.write('play')
+        f.close()
 
-        if cmd == 'prev':
-          # Restart current song if we are past the first 3 seconds, otherwise go back
+      if cmd == 'next':
+        self.next_song()
 
-          if self._prev_timeout > datetime.datetime.now() and self.song_index > 0:
-            self.previous_song()
-          else:
-            self.change_song(self.song_index)
+      if cmd == 'prev':
+        # Restart current song if we are past the first 3 seconds, otherwise go back
 
-  def info(self) -> models.SourceInfo:
+        if self._prev_timeout > datetime.datetime.now() and self.song_index > 0:
+          self.previous_song()
+        else:
+          self.change_song(self.song_index)
+
+  def _read_info(self) -> models.SourceInfo:
+    super()._read_info()
+
     self.supported_cmds = ['play', 'pause', 'prev']
     if self.song_index != len(self.song_list) - 1 and self.playing in self.song_list:
       self.supported_cmds.append('next')
 
-    img = 'static/imgs/no_note.png'
-    if self.playing is not None:
-      img = 'static/imgs/note.png'
-    source = models.SourceInfo(name=self.full_name(),
-                               state=self.state,
-                               img_url=img,
-                               supported_cmds=self.supported_cmds,
-                               type=self.stream_type)
-    if self.playing is not None:
-      src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
-      loc = f'{src_config_folder}/currentSong'
-      try:
-        with open(loc, 'r', encoding='utf-8'):
-          source.track = self.playing.split('/')[-1]
-      except Exception:
-        pass
-    return source
+    # replace with file name so currently playing song is correct
+    self._cached_info.track = os.path.basename(self.playing) if self.playing is not None else 'No song playing'
+
+    return self._cached_info
+
+  def info(self) -> models.SourceInfo:
+    info = super().info()
+
+    if self.playing is None or self._cached_info.state != 'playing':
+      info.img_url = 'static/imgs/no_note.png'
+    else:
+      info.img_url = 'static/imgs/note.png'
+
+    return info
 
   def browse(self, parent=None, path=None) -> List[models.BrowsableItem]:
     browsables = []

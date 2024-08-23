@@ -66,13 +66,16 @@ from amplipi.auth import CookieOrParamAPIKey, router as auth_router, NotAuthenti
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
 STATIC_DIR = os.path.abspath('web/static')
-GENERATED_DIR = os.path.abspath('web/generated')
+GENERATED_DIR = os.path.abspath(f'{utils.get_folder("web")}/generated')  # web/generated is now in the user's home directory with all other runtime-generated files
 WEB_DIR = os.path.abspath('web/dist')
 
 # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
 app = FastAPI(openapi_url=None, redoc_url=None,)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+uvicorn_access = logging.getLogger("uvicorn.access")
+uvicorn_access.disabled = True
 
 # This will get generated as a tmpfs on AmpliPi,
 # but won't exist if testing on another machine.

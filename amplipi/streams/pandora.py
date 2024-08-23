@@ -6,6 +6,7 @@ import subprocess
 import os
 import time
 import re
+import json
 
 # TODO: A significant amount of complexity could be removed if we switched some features here to using pydora instead of
 # interfacing with pianobar's TUI
@@ -37,11 +38,13 @@ class Pandora(PersistentStream, Browsable):
     self.pianobar_path = f'{utils.get_folder("streams")}/pianobar'
     self.pb_stations_file = ''
     self.pb_output_file = ''
+    self.stopped_message = None
+    self.default_image_url = 'static/imgs/pandora.png'
 
     self.stations: List[models.BrowsableItem] = []
 
     self.ctrl = ''  # control fifo location
-    self.supported_cmds = {
+    self.cmds = {
       'play': {'cmd': 'P\n', 'state': 'playing'},
       'pause': {'cmd': 'S\n', 'state': 'paused'},
       'next': {'cmd': 'n\n', 'state': 'playing'},
@@ -49,6 +52,7 @@ class Pandora(PersistentStream, Browsable):
       'ban': {'cmd': '-\n', 'state': 'playing'},
       'shelve': {'cmd': 't\n', 'state': 'playing'},
     }
+    self.supported_cmds = list(self.cmds.keys())
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -76,9 +80,8 @@ class Pandora(PersistentStream, Browsable):
       pass
 
     # make a special home/config to launch pianobar in (this allows us to have multiple pianobars)
-    src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
     eventcmd_template = f'{utils.get_folder("streams")}/eventcmd.sh'
-    pb_home = src_config_folder
+    pb_home = self._get_config_folder()
     pb_config_folder = f'{pb_home}/.config/pianobar'
     pb_control_fifo = f'{pb_config_folder}/ctl'
     pb_status_fifo = f'{pb_config_folder}/stat'
@@ -89,7 +92,7 @@ class Pandora(PersistentStream, Browsable):
     pb_src_config_file = f'{pb_home}/.libao'
     self.pb_stations_file = f'{pb_config_folder}/stationList'
     # make all of the necessary dir(s)
-    os.system(f'mkdir -p {pb_config_folder}')
+    os.makedirs(pb_config_folder, exist_ok=True)
     os.system(f'cp {eventcmd_template} {pb_eventcmd_file}')  # Copy to retain executable status
     # write pianobar and libao config files
     pb_conf = {
@@ -141,70 +144,63 @@ class Pandora(PersistentStream, Browsable):
     self.proc = None
     self.ctrl = ''
 
+  def _read_info(self, write_state=False) -> models.SourceInfo:
+    # HACK skip this read if it doesn't have state and trigger a new one by adding the state
+    i: dict = {}
+    with open(f"{self._get_config_folder()}/metadata.json", 'r', encoding='utf-8') as file:
+      try: # try/catch because the file may be empty due to the way the eventtcmd script is written
+        i = json.load(file)
+      except json.JSONDecodeError:
+        return self._cached_info
+
+    if write_state or ("state" in i.keys() and i["state"] == ""):
+      i["state"] = self.state
+      with open(f"{self._get_config_folder()}/metadata.json", 'w', encoding='utf-8') as file:
+        json.dump(i, file)
+      return self._cached_info
+
+
+    super()._read_info()
+
+    if self._cached_info.img_url is not None:
+      self._cached_info.img_url = self._cached_info.img_url.replace('http:', 'https:')  # HACK: hack to just replace with https
+
+    return self._cached_info
+
   def info(self) -> models.SourceInfo:
-    src_config_folder = f'{utils.get_folder("config")}/srcs/v{self.vsrc}'
-    loc = f'{src_config_folder}/.config/pianobar/currentSong'
-    source = models.SourceInfo(
-      name=self.full_name(),
-      state=self.state,
-      supported_cmds=list(self.supported_cmds.keys()),
-      img_url='static/imgs/pandora.png',
-      type=self.stream_type
-    )
+    i = super().info()
 
-    if len(self.stations) == 0:
-      self.load_stations()
+    if i.rating is not None:
+      i.rating = models.PandoraRating(i.rating)
 
-    try:
-      with open(loc, 'r', encoding='utf-8') as file:
-        for line in file.readlines():
-          line = line.strip()
-          if line:
-            data = line.split(',,,')
-            if self.track != data[1]:  # When song changes, stop inverting state
-              self.invert_liked_state = False
-            source.state = self.state
-            source.artist = data[0]
-            source.track = data[1]
-            self.track = data[1]
-            source.album = data[2]
-            source.img_url = data[3].replace('http:', 'https:')  # HACK: kind of a hack to just replace with https
-            initial_rating = models.PandoraRating(int(data[4]))
+      # Pianobar doesn't update metadata after a song starts playing
+      # so a song is liked we invert the state until next song
+      if self.invert_liked_state:
+        if i.rating == models.PandoraRating.DEFAULT:
+          i.rating = models.PandoraRating.LIKED
+        elif i.rating == models.PandoraRating.LIKED:
+          i.rating = models.PandoraRating.DEFAULT
 
-            source.rating = initial_rating
-
-            # Pianobar doesn't update metadata after a song starts playing
-            # so when you like a song you have to change the state manually until next song
-            if self.invert_liked_state:
-              if int(data[4]) == models.PandoraRating.DEFAULT.value:
-                source.rating = models.PandoraRating.LIKED
-              elif int(data[4]) == models.PandoraRating.LIKED.value:
-                source.rating = models.PandoraRating.DEFAULT
-
-            source.station = data[5]
-        return source
-    except Exception:
-      pass
-      # logger.error('Failed to get currentSong - it may not exist: {}'.format(e))
-    # TODO: report the status of pianobar with station name, playing/paused, song info
-    # ie. Playing: "Cameras by Matt and Kim" on "Matt and Kim Radio"
-    return source
-
+    return i
+  
   def send_cmd(self, cmd):
     """ Pianobar's commands
       cmd: Command string sent to pianobar's control fifo
       state: Expected state after successful command execution
     """
+    if not "station" in cmd:
+      super().send_cmd(cmd)
+
     try:
-      if cmd in self.supported_cmds:
+      if cmd in self.cmds:
         if cmd == "love":
           self.info()  # Ensure liked state is synced with current song
           self.invert_liked_state = not self.invert_liked_state
 
         with open(self.ctrl, 'w', encoding='utf-8') as file:
-          file.write(self.supported_cmds[cmd]['cmd'])
+          file.write(self.cmds[cmd]['cmd'])
           file.flush()
-        expected_state = self.supported_cmds[cmd]['state']
+        expected_state = self.cmds[cmd]['state']
 
         if expected_state is not None:
           self.state = expected_state
@@ -246,6 +242,8 @@ class Pandora(PersistentStream, Browsable):
         raise NotImplementedError(f'Command not recognized: {cmd}')
     except Exception as exc:
       raise RuntimeError(f'Command {cmd} failed to send: {exc}') from exc
+
+    self._read_info(write_state=True)
 
   def load_stations(self):
     try:

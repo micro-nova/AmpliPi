@@ -31,10 +31,10 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
   last_file = ''           # last cover art file downloaded
   stop_counter = 0         # counter to prevent empty metadata on transitions
   metadata = {"state": "stopped",  # metadata dict to write to file
-              "title": "",
+              "track": "",
               "artist": "",
               "album": "",
-              "album_art": ""}
+              "img_url": ""}
 
   with open(metadata_path, 'w') as f:
     while True:
@@ -70,12 +70,12 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
         # try to get song-info from the service and parse it
         try:
           meta_xml = ET.fromstring(service.GetMediaInfo(InstanceID=0)["CurrentURIMetaData"])
-          metadata["title"] = ""
+          metadata["track"] = ""
           metadata["artist"] = ""
           metadata["album"] = ""
           for i in meta_xml.iter():
             if i.tag == "{http://purl.org/dc/elements/1.1/}title":
-              metadata["title"] = i.text
+              metadata["track"] = i.text
             elif i.tag == "{urn:schemas-upnp-org:metadata-1-0/upnp/}artist":
               metadata["artist"] = i.text
             elif i.tag == "{urn:schemas-upnp-org:metadata-1-0/upnp/}album":
@@ -96,9 +96,9 @@ def metadata_reader(metadata_path: str, album_art_dir: str, service: SSDPDevice,
                     os.remove(f"{album_art_dir}/{last_file}")
                   last_file = fname
 
-                metadata["album_art"] = fname
+                metadata["img_url"] = f"{album_art_dir.split('/web/')[1]}/{fname}"
               else:
-                metadata["album_art"] = ""
+                metadata["img_url"] = ""
         except Exception as e:
           logger.debug(f"Error: could not get song-info: {e}")
 

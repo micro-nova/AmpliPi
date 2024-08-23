@@ -14,8 +14,8 @@ import argparse
 
 METADATA_MAPPINGS = [
   ('artist', 'xesam:artist'),
-  ('title', 'xesam:title'),
-  ('art_url', 'mpris:artUrl'),
+  ('track', 'xesam:title'),
+  ('img_url', 'mpris:artUrl'),
   ('album', 'xesam:album')
 ]
 
@@ -77,6 +77,8 @@ class MPRISMetadataReader:
             metadata['connected'] = False
             logger.error(f"Dbus error getting MPRIS metadata: {e}")
 
+          logger.debug(f"raw_metadata: {raw_metadata}")
+
           # iterate over the metadata mappings and try to add them to the metadata dict
           for mapping in METADATA_MAPPINGS:
             try:
@@ -85,15 +87,16 @@ class MPRISMetadataReader:
               # not error since some metadata might not be available on all streams
               logger.debug(f"Metadata mapping error: {e}")
 
-          # Strip playback status of single quotes, for some reason these only appear on stopped
-          state = mpris.PlaybackStatus.strip("'")
+          # Strip playback status of single quotes (for some reason these only appear on stopped?)
+          # and convert to lowercase
+          state = mpris.PlaybackStatus.strip("'").lower()
 
           metadata['state'] = state
 
-          if state != self.last_sent['state']:
-            metadata['state_changed_time'] = time.time()
-          else:
-            metadata['state_changed_time'] = self.last_sent['state_changed_time']
+          # if state != self.last_sent['state']:
+          #   metadata['state_changed_time'] = time.time()
+          # else:
+          #   metadata['state_changed_time'] = self.last_sent['state_changed_time']
 
           metadata['connected'] = True
 
@@ -142,6 +145,8 @@ class MPRISMetadataReader:
 
 
 logger = logging.getLogger(__name__)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 parser = argparse.ArgumentParser(description='Script to read MPRIS metadata and write it to a file.')
 parser.add_argument('service_suffix', metavar='service_suffix', type=str, help='end of the MPRIS service name, e.g. "vlc" for org.mpris.MediaPlayer2.vlc')

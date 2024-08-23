@@ -35,10 +35,9 @@ args = parser.parse_args()
 class MediaInfo:
   """Dataclass to represent the metadata."""
   artist: str = ''
-  title: str = ''
+  track: str = ''
   album: str = ''
-  duration: str = ''
-  status: str = ''
+  state: str = ''
 
   def as_json(self):
     return json.dumps(asdict(self))
@@ -224,17 +223,16 @@ def main():
           artist = track_details.get("Artist", "")
           album = track_details.get("Album", "")
           title = track_details.get("Title", "")
-          duration = track_details.get("Duration", "")
 
           # alter/generate a title to include device name
           title = alter_title(title, device_name)
-          info = MediaInfo(artist, title, album, duration, mp.status)
+          info = MediaInfo(artist, title, album, mp.status)
         except Exception:
           # getting info from media player crashed somehow
-          info = MediaInfo(status='stopped')
+          info = MediaInfo(state='stopped')
 
       else:  # selected_device is None
-        info = MediaInfo(status='stopped', title=f"No device connected - Pair device to '{socket.gethostname()}'")
+        info = MediaInfo(state='stopped', track=f"No device connected - Pair device to '{socket.gethostname()}'")
         if args.verbose:
           log('No media player connected')
 

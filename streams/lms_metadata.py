@@ -41,12 +41,13 @@ class MetadataHolder:
         'album': self.album,
         'artist': self.artist,
         'track': self.track,
-        'image_url': self.image_url
+        'img_url': self.image_url,
+        'state': 'playing'
     }
 
-    with open(f"{folder}/lms_metadata_temp.json", 'wt', encoding='utf-8') as f:
-      json.dump(data, f, indent=2)
-    os.replace(f"{folder}/lms_metadata_temp.json", f"{folder}/lms_metadata.json")
+    with open(f"{folder}/metadata.json", 'wt', encoding='utf-8') as f:
+      f.write(json.dumps(data))
+      self.logger.debug(f"Metadata saved to {folder}/metadata.json")
 
 
 class LMSMetadataReader:
@@ -234,8 +235,8 @@ class LMSMetadataReader:
 
         try:
           self.meta.save_file(self.folder)
-        except:
-          pass
+        except Exception as e:
+          logging.exception("Error saving metadata to file: {e}")
 
         if self.debug:
           self.meta.log_meta()

@@ -12,6 +12,15 @@ import subprocess
 import os
 import sys
 import traceback
+import signal
+
+
+def signal_handler(sig, _):
+  """Handle sigterm signal."""
+  log(f"Caught signal {sig}, exiting.")
+  os.system("killall -9 rtl_fm")
+  traceback.print_exc(file=sys.stdout)
+  sys.exit(0)
 
 parser = argparse.ArgumentParser(prog='runfm', description='play a radio station using an RTL-SDR dongle')
 parser.add_argument('freq', type=str, help='radio station frequency (ex: 96.1)')
@@ -22,6 +31,7 @@ parser.add_argument('--test', action='store_true', help='verify the frequency is
 parser.add_argument('--verbose', action='store_true', help='show more verbose output')
 args = parser.parse_args()
 
+signal.signal(signal.SIGTERM, signal_handler)
 
 def log(info):
   if args.log:
@@ -57,9 +67,8 @@ if args.song_info:
 def main():
   latest_info = {
       'station': '',
-      'callsign': '',
-      'prog_type': '',
-      'radiotext': ''
+      'track': '',
+      'artist': '',
   }
 
   update = False
@@ -96,29 +105,31 @@ def main():
             """)
 
           rds = json.loads(rds_raw)
-          if "ps" in rds:
-            if rds["ps"] != latest_info["station"]:
-              latest_info["station"] = rds["ps"]
+
+          if "prog-type" in rds:
+            if rds["prog-type"] != latest_info["artist"]:
+              latest_info["artist"] = rds["prog-type"]
               update = True
-          if "callsign" in rds:
-            if rds["callsign"] != latest_info["callsign"]:
-              latest_info["callsign"] = rds["callsign"]
-              update = True
-          if "prog_type" in rds:
-            if rds["prog_type"] != latest_info["prog_type"]:
-              latest_info["prog_type"] = rds["prog_type"]
-              update = True
+          else:
+            latest_info["artist"] = freq + " FM"
+
           if "radiotext" in rds:
-            if rds["radiotext"] != latest_info["radiotext"]:
-              latest_info["radiotext"] = rds["radiotext"]
+            if rds["radiotext"] != latest_info["track"]:
+              latest_info["track"] = rds["radiotext"]
               update = True
-            print(f'rt; "{rds["radiotext"]}"')
-          # elif "partial_radiotext" in rds:
-            # this data is bad a lot of times, probably worth updating on
-          #  if rds["partial_radiotext"] != latest_info["radiotext"]:
-          #    latest_info["radiotext"] = rds["partial_radiotext"]
-          #    update = True
-          #  print(f'pr: "{rds["partial_radiotext"]}"')
+          else:
+            latest_info["track"] = ""
+
+          if "station" in rds:
+            if rds["station"] != latest_info["station"]:
+              latest_info["station"] = rds["station"]
+              update = True
+          elif "callsign" in rds:
+            if rds["callsign"] != latest_info["station"]:
+              latest_info["station"] = rds["callsign"]
+              update = True
+          else:
+            latest_info["station"] = ""
         else:
           if args.verbose:
             log("No RDS data")
@@ -147,11 +158,6 @@ def main():
 
       update = False
 
-  except KeyboardInterrupt:
-    print("Shutdown requested...exiting")
-    os.system("killall -9 rtl_fm")
-    traceback.print_exc(file=sys.stdout)
-    sys.exit(0)
   except Exception:
     os.system("killall -9 rtl_fm")
     traceback.print_exc(file=sys.stdout)

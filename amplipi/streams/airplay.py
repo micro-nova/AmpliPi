@@ -42,6 +42,11 @@ class AirPlay(PersistentStream):
     self._connect_time = 0.0
     self._coverart_dir = ''
     self._log_file: Optional[io.TextIOBase] = None
+    self.last_info: Optional[models.SourceInfo] = None
+    self.change_time = time.time() - self.STATE_TIMEOUT
+
+    self.default_image_url = 'static/imgs/shairport.png'
+    self.stopped_message = f'Nothing is playing, please connect to {self.name} to play music'
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -109,23 +114,21 @@ class AirPlay(PersistentStream):
     except FileNotFoundError:
       pass
     os.makedirs(self._coverart_dir, exist_ok=True)
-    os.makedirs(src_config_folder, exist_ok=True)
-    config_file = f'{src_config_folder}/shairport.conf'
+    config_file = f'{self._get_config_folder()}/shairport.conf'
     write_sp_config_file(config_file, config)
-    self._log_file = open(f'{src_config_folder}/log', mode='w')
+    self._log_file = open(f'{self._get_config_folder()}/log', mode='w')
     shairport_args = f"{utils.get_folder('streams')}/shairport-sync{'-ap2' if self.ap2 else ''} -c {config_file}".split(' ')
     logger.info(f'shairport_args: {shairport_args}')
 
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE,
                                  stdout=self._log_file, stderr=self._log_file)
-
     try:
       mpris_name = 'ShairportSync'
       # If there are multiple shairport-sync processes, add the pid to the mpris name
       # shairport sync only adds the pid to the mpris name if it cannot use the default name
       if len(os.popen("pgrep shairport-sync").read().strip().splitlines()) > 1:
         mpris_name += f".i{self.proc.pid}"
-      self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
+      self.mpris = MPRIS(mpris_name, f'{self._get_config_folder()}/metadata.json')
     except Exception as exc:
       logger.exception(f'Error starting airplay MPRIS reader: {exc}')
 
@@ -151,69 +154,51 @@ class AirPlay(PersistentStream):
     self._disconnect()
     self.proc = None
 
+  def _read_info(self) -> models.SourceInfo:
+    self.change_time = time.time()  # keep track of the last time the state changed
+    return super()._read_info()
+
   def info(self) -> models.SourceInfo:
-    source = models.SourceInfo(
-      name=f"Connect to {self.name} on Airplay{'2' if self.ap2 else ''}",
-      state=self.state,
-      img_url='static/imgs/shairport.png',
-      type=self.stream_type
-    )
+
+    source = super().info()
+
+    # fake a paused state if the stream has stopped and it hasn't been stopped for too long since airplay doesn't have a paused state
+    if self.last_info and source.state == 'stopped' and not (time.time() - self.change_time > self.STATE_TIMEOUT):
+      source = self.last_info
+      source.state = 'paused'
 
     # if stream is airplay2 and other airplay2s exist show error message
     if self.ap2:
       if self.ap2_exists:
-        source.name = 'An Airplay2 stream already exists!\n Please disconnect it and try again.'
+        source.artist = 'An Airplay2 stream already exists!\n Please disconnect it and try again.'
         return source
 
     if not self.mpris:
       logger.info(f'Airplay: No MPRIS object for {self.name}!')
       return source
 
-    try:
-      md = self.mpris.metadata()
+    if source.track != '':
+      # if there is a title, attempt to get coverart
+      images = os.listdir(self._coverart_dir)
+      logger.info(f'images: {images}')
+      if len(images) > 0:
+        source.img_url = f'generated/v{self.vsrc}/{images[0]}'
 
-      if self.mpris.is_playing():
-        source.state = 'playing'
-      else:
-        # if we've been paused for a while and the state has changed since connecting, then say
-        # we're stopped since shairport-sync doesn't really differentiate between paused and stopped
-        if self._connect_time < md.state_changed_time and time.time() - md.state_changed_time < self.STATE_TIMEOUT:
-          source.state = 'paused'
-        else:
-          source.state = 'stopped'
-
-      if source.state != 'stopped':
-        source.artist = md.artist
-        source.track = md.title
-        source.album = md.album
-        source.supported_cmds = list(self.supported_cmds)
-
-        if md.title != '':
-          # if there is a title, attempt to get coverart
-          images = os.listdir(self._coverart_dir)
-          if len(images) > 0:
-            source.img_url = f'generated/v{self.vsrc}/{images[0]}'
-        else:
-          source.track = "No metadata available"
-
-    except Exception as e:
-      logger.exception(f"error in airplay: {e}")
+    self.last_info = source
 
     return source
 
   def send_cmd(self, cmd):
+    super().send_cmd(cmd)
     try:
-      if cmd in self.supported_cmds:
-        if cmd == 'play':
-          self.mpris.play_pause()
-        elif cmd == 'pause':
-          self.mpris.play_pause()
-        elif cmd == 'next':
-          self.mpris.next()
-        elif cmd == 'prev':
-          self.mpris.previous()
-      else:
-        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
+      if cmd == 'play':
+        self.mpris.play_pause()
+      elif cmd == 'pause':
+        self.mpris.play_pause()
+      elif cmd == 'next':
+        self.mpris.next()
+      elif cmd == 'prev':
+        self.mpris.previous()
     except Exception as e:
       logger.exception(f"error in shairport: {e}")
 
