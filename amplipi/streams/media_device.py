@@ -30,7 +30,6 @@ class MediaDevice(PersistentStream, Browsable):
     self.ended = False
     self._prev_timeout = datetime.datetime.now()
     self.playing = None
-    self.device: Optional[str] = None
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -63,10 +62,10 @@ class MediaDevice(PersistentStream, Browsable):
         except Exception as e:
           logger.error(f'Error processing request: {e}')
 
-      if self.song_index < len(self.song_list) and self.device is not None:
+      if self.song_index < len(self.song_list) and utils.virtual_output_device(vsrc):
         self.url = self.song_list[self.song_index]
         self.vlc_args = [
-          sys.executable, f"{utils.get_folder('streams')}/fileplayer.py", self.url, self.device,
+          sys.executable, f"{utils.get_folder('streams')}/fileplayer.py", self.url, utils.virtual_output_device(vsrc),
           '--song-info', song_info_path, '--log', log_file_path, '--cmd', self.command_file_path
         ]
         logger.info(f'running: {self.vlc_args}')
@@ -95,11 +94,11 @@ class MediaDevice(PersistentStream, Browsable):
 
   def _deactivate(self):
     if self._is_running():
-      self.proc.kill()
+      utils.careful_proc_shutdown(self.proc)
       if self.bkg_thread:
         self.bkg_thread.join()
-    self._disconnect()
     self.proc = None
+    self._disconnect()
 
   def wait_on_proc(self):
     """ Wait for the vlc process to finish """
