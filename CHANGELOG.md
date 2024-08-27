@@ -15,6 +15,7 @@
   * Fix a bug where UI content was cropped on certain mobile platforms
   * Ensure that media device audio streams stop outputting audio when disconnected
   * Limit max height of group creation dropdown
+  * Improve how marquee components look when not scrolling
 * System
   * Fixed a bug where support tunnel addresses would be served when querying for amplipi.local
   * Stream validation for URLs has been made more robust

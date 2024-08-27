@@ -13,6 +13,7 @@
 .stream-title {
   cursor: pointer;
   @include general.button-hover;
+  width: 100%;
 }
 
 .player-inner {

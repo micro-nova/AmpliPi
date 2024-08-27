@@ -5,6 +5,11 @@
   flex-direction: column;
   justify-content: center;
   text-shadow: 1px 2px 3px #000000;
+  padding-left: 5px;
+  padding-right: 5px;
+
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .artist-name {
