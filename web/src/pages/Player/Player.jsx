@@ -71,11 +71,6 @@ const Player = () => {
                     onClose={() => setStreamsModalOpen(false)}
                 />
             )}
-            <div className="stream-title" >
-                <Chip>
-                    <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
-                </Chip>
-            </div>
             <Grid
               container
               direction="column"
@@ -83,21 +78,15 @@ const Player = () => {
               alignItems="center"
             >
                 <Grid item xs={2} sm={4} md={4}>
-                    <img src={img_url} className="player-album-art" />
+                    <div className="stream-title" >
+                        <Chip style={{width: "100%"}}>
+                            <StreamBar sourceId={selectedSourceId} onClick={() => {setStreamsModalOpen(true);}}/>
+                        </Chip>
+                    </div>
                 </Grid>
-                <Grid item xs={6} sm={6} md={6} >
-                    <Grid
-                        container
-                        direction="row"
-                        justifyContent="center"
-                        alignItems="center"
-                        >
-                            <Grid item xs={0} sm={2} md={3}> {/* Spacer */} </Grid>
-                            <Grid item xs={12} sm={8} md={6}>
-                                <SongInfo sourceId={selectedSourceId} />
-                            </Grid>
-                            <Grid item xs={0} sm={2} md={3}> {/* Spacer */} </Grid>
-                        </Grid>
+                <Grid item xs={2} sm={4} md={4} style={{maxWidth: "22rem"}}>
+                    <img src={img_url} className="player-album-art" />
+                    <SongInfo sourceId={selectedSourceId} />
                 </Grid>
                 <Grid item xs={2} sm={4} md={4}>
                     <MediaControl selectedSource={selectedSourceId} />
