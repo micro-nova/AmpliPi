@@ -54,6 +54,23 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
                 onChange={(e) => {
                     setGroupZones(e.target.value);
                 }}
+                MenuProps={{
+                    PaperProps: {
+                        style: {
+                            maxHeight: "30vh",
+                            overflowY: "scroll",  // Ensure scrollbar is always visible (except on iOS because apple hates you)
+                        },
+                        sx: {
+                            "::-webkit-scrollbar": {
+                                    width: "5px",
+                            },
+                            "::-webkit-scrollbar-thumb": {
+                                backgroundColor: "#aaa",
+                                borderRadius: "10px",
+                            },
+                        },
+                    },
+                }}
             >
                 {zones.map((zone) => {
                     return (

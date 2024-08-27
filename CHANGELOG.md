@@ -14,6 +14,7 @@
   * Change how errors are displayed on Stream create/edit modal to be more obvious
   * Fix a bug where UI content was cropped on certain mobile platforms
   * Ensure that media device audio streams stop outputting audio when disconnected
+  * Limit max height of group creation dropdown
 * System
   * Fixed a bug where support tunnel addresses would be served when querying for amplipi.local
   * Stream validation for URLs has been made more robust
