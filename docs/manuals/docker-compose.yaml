@@ -1,0 +1,40 @@
+# This file allows the manual to be generated with a single click in vscode
+# With the docker extension installed right click on this file and select "Compose Up"
+# The file "manual.pdf" will be generated
+version: '3'
+services:
+  main:
+    image: witiko/markdown
+    container_name: markdown-translator-main
+    command: latexmk -lualatex main-manual.tex
+    restart: no
+    working_dir: /docs/manuals
+    volumes:
+      - .:/docs/manuals
+
+  expander:
+    image: witiko/markdown
+    container_name: markdown-translator-expander
+    command: latexmk -lualatex expander-manual.tex
+    restart: no
+    working_dir: /docs/manuals
+    volumes:
+      - .:/docs/manuals
+
+  streamer:
+    image: witiko/markdown
+    container_name: markdown-translator-streamer
+    command: latexmk -lualatex streamer-manual.tex
+    restart: no
+    working_dir: /docs/manuals
+    volumes:
+      - .:/docs/manuals
+
+  # wallpanel:
+  #   image: witiko/markdown
+  #   container_name: markdown-translator-wallpanel
+  #   command: latexmk -lualatex wallpanel-manual.tex
+  #   restart: no
+  #   working_dir: /docs/manuals
+  #   volumes:
+  #     - .:/docs/manuals

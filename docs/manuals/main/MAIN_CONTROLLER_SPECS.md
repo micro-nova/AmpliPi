@@ -2,7 +2,7 @@
 
 |Feature||
 |:------|:-----|
-|Streaming Sources | Airplay™, Pandora®, Spotify Connect™, DLNA®, Internet Radio, Bluetooth™*  |
+|Streaming Sources | Airplay™, Pandora®, Spotify Connect™, DLNA®, Internet Radio, Bluetooth™* External Media Drives  |
 |||
 |Control Interfaces| Web App, Mobile App, REST API, Third-Party Software|
 |||
