@@ -18,7 +18,7 @@ export default function ResponseBar(props) {
         if(response != null){
             try {
                 const res = await response;
-                if (res.ok) {
+                if (res.ok && successText !== null) {
                     setSuccess(true);
                     text.current = successText;
                 } else {
@@ -48,7 +48,7 @@ export default function ResponseBar(props) {
     );
 }
 ResponseBar.propTypes = {
-    successText: PropTypes.string.isRequired,
+    successText: PropTypes.string,
     response: PropTypes.instanceOf(Promise).isRequired,
 };
 

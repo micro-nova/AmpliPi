@@ -7,25 +7,45 @@ import ListItem from "@/components/List/ListItem/ListItem";
 import { getIcon } from "@/utils/getIcon";
 import { CircularProgress } from "@mui/material";
 import StreamBar from "@/components/StreamBar/StreamBar";
+import StatusBar from "@/components/StatusBars/StatusBar";
 const Browse = () => {
-
     const selectedSourceId = usePersistentStore((s) => s.selectedSource);
     const [fileTree, setFileTree] = useState([]);
+    const [errorOpen, setErrorOpen] = useState(false);
     const sid = useStatusStore((s) => s.status.sources[selectedSourceId].input.split("=")[1]);
 
     const [path, setPath] = useState(null);
 
+    const errorText = useRef("");
+
     // This is what the browser is actually displaying. If this isn't the desired path, the list will reload.
     const pathCache = useRef(null);
-    const currentlyLoading = useRef(null);
+
+    const dataHandler = (data) => {
+        if(data.detail){
+            if(data.detail[0].msg){
+                throw new Error(data.detail[0].msg);
+            } else {
+                throw new Error(data.detail);
+            }
+        }
+        setFileTree(data.items);
+    };
+
+    const errorHandler = ({name, message}) => {
+        errorText.current = message;
+        setErrorOpen(true);
+    };
 
     const loadChildren = (item) => {
-        if (item == null) { // if item is null do initial load
+        if(sid == null){ // If you manage to get to the browse page without a stream to select
+            errorText.current = "No stream selected!";
+            setErrorOpen(true);
+        }
+        else if (item == null) { // if item is null due initial load
             fetch(`/api/streams/browser/${sid}/browse`, {method: "post"} )
-                .then((res) => res.json())
-                .then((data) => {
-                    setFileTree(data.items);
-                });
+            .then(resp => resp.json())
+            .then(dataHandler).catch(errorHandler);
         }
         else {
             fetch(`/api/streams/browser/${sid}/browse`,
@@ -39,10 +59,8 @@ const Browse = () => {
                         "item": item,
                     })
                 })
-                .then((res) => res.json())
-                .then((data) => {
-                    setFileTree(data.items);
-                });
+            .then(resp => resp.json())
+            .then(dataHandler).catch(errorHandler);
         }
 
         pathCache.current = item;
@@ -65,13 +83,12 @@ const Browse = () => {
             <ListItem key={item.id}
                 name={item.name}
                 nameFontSize="1.5rem"
-                onClick={() => { 
-                    loading.current = true; 
+                onClick={() => {
+                    loading.current = true;
                     reloading.current = true;
                     setBrowsableStreamSong(sid, item.id, setPath).then(()=>{
                         loading.current = false;
                         reloading.current = false;
-                        //fileTree.length = 0;
                     });
                 }}
                 footer={loading.current ? <CircularProgress/> : (playing == item.name ? <div>Now Playing</div> : [])}>
@@ -83,7 +100,6 @@ const Browse = () => {
     FileEntry.propTypes = {
         item: PropTypes.object,
     };
-
     if ((fileTree.length == 0 || pathCache.current != path) && !reloading.current) {
         loadChildren(path);
     }
@@ -93,6 +109,12 @@ const Browse = () => {
             <List>
                 {fileTree.map((i) => <FileEntry key={i.id} item={i} />)}
             </List>
+            <StatusBar
+                open={errorOpen}
+                status={false}
+                text={errorText.current}
+                onClose={()=>{setErrorOpen(false);}}
+            />
         </div>
     );
 };

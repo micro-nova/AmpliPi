@@ -531,7 +531,8 @@ def browse_stream(selection: Optional[models.BrowserSelection] = None, ctrl: Api
   stream = ctrl.streams[sid]
   if stream is None:
     raise HTTPException(404, f'source {sid} not found')
-  elif not stream.browsable:
+
+  if not stream.browsable:
     raise HTTPException(404, f'source {sid} is not browsable')
 
   if selection is not None:
