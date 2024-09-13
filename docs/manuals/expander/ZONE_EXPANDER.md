@@ -16,7 +16,6 @@ Adds 6 output zones to an AmpliPro Controller (often referred to as "AmpliPro Ma
 
 ### Rear Panel
 
-
 ![Zone Expander - Rear Panel]( imgs/expansion_rear_panel.jpg)
 
 - **PREOUT**: Unamplified zone audio outputs, intended for use with powered speakers/subwoofers.
