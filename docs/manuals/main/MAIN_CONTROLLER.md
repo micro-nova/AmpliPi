@@ -1,7 +1,7 @@
 ## Main Controller
 ### Front Panel
 
-![Controller - Front Panel]( imgs/front_panel_main.png)
+![Controller - Front Panel]( main/front_main_panel.png)
 
 1. **DISPLAY**: Displays IP Address, Hostname, and SSH Password.
 2. **ON/STANDBY**: Displays the state of the audio controller:
@@ -14,7 +14,7 @@
 
 ### Rear Panel
 
-![Controller - Rear Panel]( imgs/back_panel_main.png)
+![Controller - Rear Panel]( main/rear_main_panel.png)
 
 - **POWER**: 115V, or optionally 230V connection. See the installation page for more details.
 - **CONTROLLER**:

@@ -43,7 +43,7 @@ There are two ways configuration backups are made - manually through the fronten
 
 ### Manual backups and restores
 
-Manual backups are taken by navigating to ⚙ -> Config -> Download Config. This configuration includes all configured streams. These backups can be restored using ⚙ -> Config -> Upload Config. It is a good idea to take a manual backup before upgrading your appliance.
+Manual backups are taken by navigating to Settings (gear icon) -> Config -> Download Config. This configuration includes all configured streams. These backups can be restored going to Settings -> Config -> Upload Config and selecting the downloaded config file. It is a good idea to take a manual backup before upgrading your appliance.
 
 ### Automated system backups and restores
 
