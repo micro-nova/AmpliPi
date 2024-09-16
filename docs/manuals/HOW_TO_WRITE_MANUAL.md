@@ -9,6 +9,7 @@ In VSCode:
 
 Some reasons why compilation might fail:
 - You've used SVGs (the LaTex module that supported SVGs has seemingly been abandoned)
+- Your files are routed wrong. In VSCode, right click and copy relative path of a given file to get an accurate pathing, then parse down to the proper relative path from where you're at. This is useful to avoid spelling errors, but also remove any differences between windows and linux in filenames.
 
 ## QR CODES
 When collecting QR codes, follow these steps:
