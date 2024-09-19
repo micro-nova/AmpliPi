@@ -14,4 +14,6 @@
 
 - SSH: Secure Shell, a computer protocol used to wirelessly access the device
 
+- Tarball: Type of compressed file with the `.tar` or `.tar.gz` extension. Typically used to store and transfer software packages in Linux.
+
 - Zone: Pair of speakers connected to one of the device's outputs. Can be added or removed from Streams to change what audio is playing to said speakers, and multiple zones can be organized into groups as to be controlled all at once rather than individually.

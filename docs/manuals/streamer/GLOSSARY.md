@@ -11,3 +11,6 @@
 - Source / Stream: Source of audio, such as an RCA or 3.5mm input or an instance of Spotify, Pandora, Internet Radio, etc.
 
 - SSH: Secure Shell, a computer protocol used to wirelessly access the device
+
+- Tarball: Type of compressed file, typically used to transfer software packages in Linux
+
