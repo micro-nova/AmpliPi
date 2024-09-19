@@ -1,5 +1,5 @@
 # Overview
-AmpliPro Streamer is a multi-source home audio controller made for whole-home audio systems with many zones, the Streamer being specifically designed to be compatible with preexisting setups. It can play up to 4 simultaneous audio streams (Airplay™, Pandora®, Spotify Connect™, etc.) with each routed to one of the outputs, all of which are configurable in real-time using the mobile apps (see QR codes on the first page of this manual), self-hosted AmpliPi Web App, or the underlying REST API.
+AmpliPro Streamer (sometimes referred to as "the unit" or "the device" by this manual) is a multi-source home audio controller made for whole-home audio systems with many zones, specifically designed to be compatible with preexisting setups. It can play up to 4 simultaneous audio streams (Airplay™, Pandora®, Spotify Connect™, etc.) with each routed to one of the outputs, all of which are configurable in real-time using the mobile apps (see QR codes on the first page of this manual), self-hosted AmpliPi Web App, or the underlying REST API.
 \
 \
 Your AmpliPro Streamer Unit includes the following components:

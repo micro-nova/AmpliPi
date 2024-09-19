@@ -1,13 +1,13 @@
 # Installation
 ## Overview
-It's time to power on your AmpliPro Streamer and try it out. To avoid damaging the unit, please read through this guide before installing and powering your AmpliPro Streamer!
+It's time to power on your AmpliPro Streamer and try it out. To avoid damaging your device, please read through this guide before installing and powering your AmpliPro Streamer!
 
 ## Mounting and Placement
 
-AmpliPro Streamer units ship with built-in 19" rackmount ears, so that they can be easily installed into a server rack. Also included are four silicone "feet" if you prefer to run the unit from a shelf.
-The weight of the unit is approximately 5 pounds (2.3 kilograms)
+AmpliPro Streamer ships with built-in 19" rackmount ears, so that they can be easily installed into a server rack. Also included are four silicone "feet" if you prefer to run the Streamer from a shelf.
+The weight of the device is approximately 5 pounds (2.3 kilograms)
 
-Some things to keep in mind to avoid overheating the unit:
+Some things to keep in mind to avoid overheating your Streamer:
 - Don't block the vent holes on the side
 - Don't allow dust to build up inside the unit. See cleaning instructions on the safety page for more details.
 

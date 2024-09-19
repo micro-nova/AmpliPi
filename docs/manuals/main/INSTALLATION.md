@@ -87,4 +87,4 @@ Now that the AmpliPro unit is powered on, it's time to use the software. To acce
 1. Click the plus (+) icon and select a stream
     - The Groove Salad - InternetRadio stream comes preconfigured (needs an internet connection).
 2. Change the volume on the zone you would like to output music on. Zones may be hidden inside a group. Click on the different groups to see which zones belong to them.
-3. If you wish to change the default group and zone names or add different streaming sources, click on the gear icon on the bottom right to reach the settings page where you can configure inputs, zones, and groups.
+3. If you wish to change the default zone names or add different streams, click on the gear icon on the bottom right to reach the settings page where you can configure zones and streams.
