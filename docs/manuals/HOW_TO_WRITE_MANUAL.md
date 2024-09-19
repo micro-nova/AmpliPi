@@ -13,6 +13,5 @@ Some reasons why compilation might fail:
 
 ## QR CODES
 When collecting QR codes, follow these steps:
-1. Use this free website: [https://new.express.adobe.com/tools/generate-qr-code](https://new.express.adobe.com/tools/generate-qr-code)
-2. Use default settings, save as a PNG
-3. Use an image editor and set the margins to 1500px wide, leave height alone unless you are adding other things to the QR code (such as appstore logos). The reason you set it so wide is because there's no way to format images in the LaTex compiler and they will always scale up to max width, increasing width makes it so that the height wont be changed (and you won't get half a page of QR code)
+1. Use the `qrencode` library in linux/wsl using these parameters: `qrencode {url} -o {filename}.svg -t SVG -s 50`
+2. Use an image editor and add the QR code to the appropriate place on the qr-page.png file. If using Affinity Photo (an editor that we have a license for in onepass), make sure you combine all layers into one and then rasterize+trim that last layer before exporting as a png

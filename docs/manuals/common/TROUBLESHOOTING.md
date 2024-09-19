@@ -51,8 +51,8 @@ Automated backups are also taken nightly at 2AM and stored for 90 days, and also
 
 These backups are dated tarballs stored at `/home/pi/backups`. This tarball contains the entire `/home/pi/.config/amplipi` directory. To restore this backup:
 1. Stop the AmpliPi service (`systemctl stop --user amplipi` as the `pi` user).
-1. Unpack a backup tarball and overwrite the contents of `.config/amplipi` (something like `tar --force-local -xvzf backups/config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz -C /`).  Here we use `config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz` as an example backup file.
-1. Start AmpliPi again (`systemctl start --user amplipi`).`
+2. Unpack a backup tarball and overwrite the contents of `.config/amplipi` (something like `tar --force-local -xvzf backups/config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz -C /`).  Here we use `config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz` as an example backup file.
+3. Start AmpliPi again (`systemctl start --user amplipi`).`
 
 ## Reimaging AmpliPro
 For directions on how to bring AmpliPro system back to a previous version, scan the QR labeled "Reimaging Instructions" on the links page at the start of this manual, or [click this link](https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md). It is a good idea to take a system backup before running this process; see the above section labelled "Taking and restoring configuration backups".

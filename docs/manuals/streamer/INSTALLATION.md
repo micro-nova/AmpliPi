@@ -1,6 +1,6 @@
 # Installation
 ## Overview
-It's time to power on your AmpliPro Streamer and try it out. To avoid damaging the unit, please read through this guide before installing and powering your AmpliPro unit!
+It's time to power on your AmpliPro Streamer and try it out. To avoid damaging the unit, please read through this guide before installing and powering your AmpliPro Streamer!
 
 ## Mounting and Placement
 
@@ -12,22 +12,17 @@ Some things to keep in mind to avoid overheating the unit:
 - Don't allow dust to build up inside the unit. See cleaning instructions on the safety page for more details.
 
 
-## Speakers
-Each of your Streamer's zones outputs as a line-level RCA output pair. These outputs can be used to connect powered subwoofers and other active/powered speakers. Unlike with a standard edition AmpliPro, there are no in-app volume controls; volume is intended to be controlled by whatever amplifier or powered speaker solution you choose.
-
-### Running wire in walls and ceilings
-- Most electric codes require the use of CL2-rated speaker wires for in-wall installations. Please refer to local building codes for more details.
-- Avoid running speaker wires next to AC power wires as much as possible to reduce noise.
-- When necessary, cross AC wires at 90-degree angles to avoid introducing any noise into the speakers.
+## Speakers and Amplifiers
+Each of your Streamer's sources outputs as a line-level RCA output pair. These outputs can be used to connect to amplifiers, powered subwoofers, and other active/powered speakers. Unlike with a standard edition AmpliPro, there are no in-app volume controls; volume is intended to be controlled by whatever amplifier or powered speaker solution you choose.
 
 ### More Info
 
-More information on speaker selection and installation can be found in AmpliPro’s community forums that can be reached from the system settings, simply click on "About", then the "Community" link and see the "Installation and Getting Started" topic on our discourse group, also accessible at amplipi.discourse.group.
+More information on installation can be found in AmpliPro’s community forums, or our blog. The community forums can be reached from the system settings, simply click on "About", then the "Community" link and see the "Installation and Getting Started" topic on our discourse group, also accessible at amplipi.discourse.group. Our blog can be found at blog.amplipro.com. Both of these links can be found on the QR codes page at the start of this manual.
 
 
 ## Power
 
-Plug the AmpliPro Streamer into a wall outlet. The ON/STANDBY will start off blinking red and then transition to solid red once the unit is fully powered on. Continue below to enjoy your unit!
+Plug the AmpliPro Streamer into a wall outlet. The ON/STANDBY will turn solid blue once the unit is fully powered on. Continue below to enjoy your unit!
 
 ## Startup and Configuration
 Now that the AmpliPro Streamer is powered on, it's time to use the software. To access the app, there are two options:
