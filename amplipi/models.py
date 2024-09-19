@@ -987,6 +987,7 @@ class Info(BaseModel):
     default=[], description='firmware information for each connected controller or expansion unit')
   stream_types_available: List[str] = Field(
     default=[], description='The stream types available on this particular appliance')
+  wallpanel_fw: Optional[str] = Field(default=None, description='Wallpanel firmware version compatible with this version of AmpliPi')
   extra_fields: Optional[Dict] = Field(default=None, description='Optional fields for customization')
   connected_drives: List[str] = Field(default=[], description='A list of all external drives connected')
 
@@ -1014,6 +1015,7 @@ class Info(BaseModel):
               }
             ],
             'stream_types_available': ['bluetooth', 'fmradio'],
+            'wallpanel_fw': '0.0.1',
             'connected_drives': ['/media/7FA5-ECB4'],
           }
         }

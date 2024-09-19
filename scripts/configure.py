@@ -327,6 +327,13 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo systemctl enable bluealsa',
             'sudo systemctl enable bluetooth_agent',
         ]
+    },
+    # possibly the wrong place to put this, but it's super easy
+    'wallpanel': {
+        'amplipi_only': False,
+        'script': [
+            'wget https://the_public_bucket_url/$(cat ../wallpanel_fw/wallpanel_fw_version) -O ../wallpanel_fw/fw'
+        ],
     }
 }
 

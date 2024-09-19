@@ -251,6 +251,7 @@ class Api:
       lms_mode=self.lms_mode,
       version=utils.detect_version(),
       stream_types_available=amplipi.streams.stream_types_available(),
+      wallpanel_fw=utils.wallpanel_fw_version(),
       extra_fields=utils.load_extra_fields(),
       serial=str(self._serial)
     )

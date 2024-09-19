@@ -335,6 +335,14 @@ def request_support():
   except Exception as e:
     return Response(content=f"failed to request tunnel: {e}", media_type="text/html")
 
+@router.get('/wallpanel_ota_fw')
+def get_wallpanel_ota_fw():
+  """ Returns the raw wallpanel firmware for over-the-air updates """
+  # We try very hard not to import things from the rest of AmpliPi, lest a
+  # broken update break the updater too. We have no access to utils.get_folder,
+  # so we have to make do.
+  return FileResponse(f"{dir_path}/wallpanel_fw/fw") # maybe tack a version number on?
+
 
 app.include_router(auth_router)
 app.include_router(router)

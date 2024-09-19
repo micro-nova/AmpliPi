@@ -259,6 +259,8 @@ def get_folder(relative_folder, mock=False):
     folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
   elif relative_folder == "web":
     folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'web')
+  #elif relative_folder == "wallpanel_fw":
+  #  folder = "/data/some_other_place"
   else:
     folder = os.path.join(os.path.expanduser('~'), 'amplipi-dev', relative_folder)
 
@@ -430,6 +432,16 @@ def load_extra_fields(filename: str = 'extra_fields.json') -> Optional[Dict]:
   except Exception:
     return None
 
+# shoudl this be Optional output? or just exception? might make better sense to exception
+# and let the wallpanel decide what to do with no firmware version reported
+def wallpanel_fw_version(filename: str = 'wallpanel_fw_version') -> Optional[str]:
+  """ Returns the wallpanel version validated against this release as a string """
+  try:
+    fw_dir = get_folder("wallpanel_fw")
+    with open(os.path.join(fw_dir, filename), encoding='utf-8', mode='r') as f:
+      return f.read()
+  except Exception:
+    return None
 
 def careful_proc_shutdown(proc: subprocess.Popen, proc_name="process"):
   """ Shutdown a process, waiting for it to exit """
