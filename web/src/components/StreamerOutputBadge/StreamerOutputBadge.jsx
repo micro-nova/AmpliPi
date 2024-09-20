@@ -20,7 +20,7 @@ StreamerOutputChip.propTypes = {
 };
 
 const StreamerOutputBadge = ({ sourceId, onClick }) => {
-    const output = useStatusStore((s) => 
+    const output = useStatusStore((s) =>
         s.status.sources.find((i) => i.id == sourceId)
     );
 
