@@ -1,11 +1,15 @@
-# AmpliPi Home Audio System
+# AmpliPro Home Audio System
 [![Build Status][workflow-badge]][workflow-link] [![Coverage][coverage-badge]][coverage-link] [![GPL License][license-badge]](COPYING)
 
 ![AmpliPi](docs/imgs/amplipi.jpg)
 
-AmpliPi™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio sources, each of which can be selected from either its analog RCA input or any supported digital stream (Pandora, Spotify, AirPlay, etc). Each source can be routed to one or more zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPi Zone Expanders.
+AmpliPro™ is a multi room/zone home audio controller and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio sources, each of which can be selected from either its analog RCA input or any supported digital stream (Pandora, Spotify, AirPlay, etc). Each source can be routed to one or more zones, all of which are configurable in real-time using the self-hosted AmpliPi Web App or its underlying REST API. It is expandable up to 36 zones using AmpliPro Zone Expanders.
 
-The AmpliPi design is entirely open source, from the software, to the firmware, to the schematics. The REST API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (available in this repo).
+AmpliPro vs AmpliPi: \
+**AmpliPro:** This is the name of the physical hardware device sold by [Micronova](https://www.micro-nova.com/) - the multi-room/zone home audio controller and amplifier unit. \
+**AmpliPi:** This refers to the web app interface that controls the AmpliPro system. "AmpliPro hosts a web app (referred to as 'AmpliPi') that can control the system from any PC or mobile phone on the local network."
+
+The AmpliPro design is entirely open source, from the software, to the firmware, to the schematics. The REST API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (available in this repo).
 
 The system is self-hosted on the Raspberry Pi and is privacy-centric. By design, AmpliPi doesn’t listen to you or spy on you — it just plays your audio! The way it should be. An internet connection is only needed for some external streaming sources, such as Pandora. The Python application running on the Pi hosts a mobile-friendly website and REST API used to control the system. The website is built on top of the REST API.
 
@@ -15,7 +19,7 @@ Check us out on [Kickstarter](https://www.kickstarter.com/projects/micro-nova/am
 
 ## Features
 
-AmpliPi can play many different types of digital streaming inputs. Most of the streaming services supported can be played as independent digital streams on all four sources at once; check out the **Multiple?** heading. Below is the current status of our digital stream integrations.
+AmpliPro can play many different types of digital streaming inputs. Most of the streaming services supported can be played as independent digital streams on all four sources at once; check out the **Multiple?** heading. Below is the current status of our digital stream integrations.
 
 Most of these digital streaming services are provided by other open-source projects; check out the **Provided By** heading.
 
@@ -78,7 +82,7 @@ Here's an example of changing group and zone volumes:
 Check out the full documentation for the web app at [docs/WEB_APP.md](docs/manual/WEB_APP.md).
 
 ## The REST API
-AmpliPi has a REST API that can be used to control volumes, switch and control audio sources, configure different streaming sources, and much more. It allows full configuration and real-time control of the AmpliPi device. The API conforms to the OpenAPI standard. It is fully documented on our [AmpliPi OpenAPI site](https://micro-nova.github.io/AmpliPi).
+AmpliPi has a REST API that can be used to control volumes, switch and control audio sources, configure different streaming sources, and much more. It allows full configuration and real-time control of the AmpliPro device. The API conforms to the OpenAPI standard. It is fully documented on our [AmpliPi OpenAPI site](https://micro-nova.github.io/AmpliPi).
 
 <p align="center">
   <img alt="REST API overview"
@@ -86,9 +90,9 @@ AmpliPi has a REST API that can be used to control volumes, switch and control a
   </img>
 </p>
 
-With the REST API, you can easily add automation to your home audio system. Use the API to trigger your AmpliPi system to play music based on smart home events. For example, only play music in zones of your house where motion has been detected, or start playing Pandora when the front door is unlocked.
+With the REST API, you can easily add automation to your home audio system. Use the API to trigger your AmpliPro system to play music based on smart home events. For example, only play music in zones of your house where motion has been detected, or start playing Pandora when the front door is unlocked.
 
-Not quite sure how to accomplish this? No problem - The AmpliPi controller hosts its API documentation as well. Using a web browser pointed at your local AmpliPi box, you can view the API documentation, as well as test sending and receiving API commands to and from the AmpliPi.
+Not quite sure how to accomplish this? No problem - The AmpliPro controller hosts its API documentation as well. Using a web browser pointed at your local AmpliPro box, you can view the API documentation, as well as test sending and receiving API commands to and from the AmpliPro.
 
 [workflow-badge]:  https://github.com/micro-nova/AmpliPi/actions/workflows/python-app.yml/badge.svg
 [workflow-link]:   https://github.com/micro-nova/AmpliPi/actions?query=workflow%3Apython-app.yml
@@ -100,7 +104,7 @@ Not quite sure how to accomplish this? No problem - The AmpliPi controller hosts
 Releases are available on [GitHub](https://github.com/micro-nova/AmpliPi/releases), see [CHANGELOG.md](CHANGELOG.md)
 for the changes in each release.
 
-To update you AmpliPi to the latest version:
+To update you AmpliPro to the latest version:
 1. Go to the web app at [amplipi.local](http://amplipi.local).
 1. Click the gear icon (⚙) in the upper right corner to go to the configuration page
 1. Select **Updates** and click the **Check for Updates** button
@@ -114,5 +118,5 @@ If you don't see an update button, you have an older version of AmpliPi. It will
 1. The update will mistakenly fail with the message "`Error checking version: NetworkError when attempting to fetch resource`". Just go back to the app at [amplipi.local](http://amplipi.local) to enjoy the new feaures.
 
 For custom changes or offline updating, a .tar.gz file can also be uploaded
-to the AmpliPi. This can be generated from a git checkout with
+to the AmpliPro. This can be generated from a git checkout with
 `poetry version prerelease && poetry build`. The release will be generated to the dist folder.
