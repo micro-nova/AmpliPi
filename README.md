@@ -86,7 +86,7 @@ AmpliPi has a REST API that can be used to control volumes, switch and control a
 
 <p align="center">
   <img alt="REST API overview"
-      src="docs/imgs/rest_api_overview.svg">
+      src="docs/imgs/OverviewRestAPI2.png">
   </img>
 </p>
 
