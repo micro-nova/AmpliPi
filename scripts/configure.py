@@ -1176,6 +1176,8 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     pre_backup = _create_backup(env, "_pre-fw-upgrade")
     progress(pre_backup)
     tasks += pre_backup
+  if failed():
+    return False
   if os_deps:
     tasks += _install_os_deps(env, progress, _os_deps)
     if failed():
@@ -1221,6 +1223,8 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     post_backup = _create_backup(env, "_post-fw-upgrade")
     progress(post_backup)
     tasks += post_backup
+  if failed():
+    return False
   if restart_updater:
     # Reboot OS to finish potential kernel upgrade, also restarting the updater
     progress([Task('Reboot os', success=True)])

@@ -329,7 +329,8 @@ def request_support():
       '/opt/support_tunnel/venv/bin/python3 -m invoke request'.split(),
       capture_output=True,
       cwd='/opt/support_tunnel',
-      timeout=120
+      timeout=120,
+      check=True
     )
     return Response(content=f"{out.stdout.decode('utf')}", media_type="text/html")
   except Exception as e:
