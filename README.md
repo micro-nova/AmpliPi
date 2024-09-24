@@ -82,7 +82,7 @@ Here's an example of changing group and zone volumes:
 Check out the full documentation for the web app at [docs/WEB_APP.md](docs/manual/WEB_APP.md).
 
 ## The REST API
-AmpliPi has a REST API that can be used to control volumes, switch and control audio sources, configure different streaming sources, and much more. It allows full configuration and real-time control of the AmpliPro device. The API conforms to the OpenAPI standard. It is fully documented on our [AmpliPi OpenAPI site](https://micro-nova.github.io/AmpliPi).
+AmpliPi has a flexible API that can be used to control volumes, switch and control audio sources, configure different streaming sources, and much more. It allows full configuration and real-time control of the AmpliPro device. The API conforms to the OpenAPI standard. It is fully documented on our [AmpliPi OpenAPI site](https://micro-nova.github.io/AmpliPi).
 
 <p align="center">
   <img alt="REST API overview"
