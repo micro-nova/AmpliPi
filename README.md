@@ -7,7 +7,7 @@ AmpliPro™ is a multi room/zone home audio controller and amplifier made for wh
 
 AmpliPro vs AmpliPi: \
 **AmpliPro:** This is the name of the physical hardware device sold by [Micronova](https://www.micro-nova.com/) - the multi-room/zone home audio controller and amplifier unit. \
-**AmpliPi:** This refers to the web app interface that controls the AmpliPro system. AmpliPro hosts a web app (referred to as 'AmpliPi') that can control the system from any PC or mobile phone on the local network.
+**AmpliPi:** This refers to the software and web interface that controls the AmpliPro system. AmpliPro hosts a web app (referred to as 'AmpliPi') that can control the system from any PC or mobile phone on the local network.
 
 The AmpliPro design is entirely open source, from the software, to the firmware, to the schematics. The REST API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (available in this repo).
 
