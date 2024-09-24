@@ -90,7 +90,7 @@ AmpliPi has a flexible API that can be used to control volumes, switch and contr
   </img>
 </p>
 
-With the REST API, you can easily add automation to your home audio system. Use the API to trigger your AmpliPro system to play music based on smart home events. For example, only play music in zones of your house where motion has been detected, or start playing Pandora when the front door is unlocked.
+With its API, you can easily add automation to your home audio system. Use the API to trigger your AmpliPro system to play music based on smart home events. For example, only play music in zones of your house where motion has been detected, or start playing Pandora when the front door is unlocked.
 
 Not quite sure how to accomplish this? No problem - The AmpliPro controller hosts its API documentation as well. Using a web browser pointed at your local AmpliPro box, you can view the API documentation, as well as test sending and receiving API commands to and from the AmpliPro.
 
