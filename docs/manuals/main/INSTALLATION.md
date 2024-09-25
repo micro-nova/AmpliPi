@@ -82,7 +82,7 @@ Now that the AmpliPro unit is powered on, it's time to use the software. To acce
 1. Simply enter "amplipi.local" into a web browser, on any device that both has a web browser and is connected to the same network. Android and Windows 7 users will need to type the IP address found on the unit's display into their web browser instead.
 
 
-### From the app:
+### From the App
 
 1. Click the plus (+) icon and select a stream
     - The Groove Salad - InternetRadio stream comes preconfigured (needs an internet connection).

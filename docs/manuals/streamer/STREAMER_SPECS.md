@@ -3,8 +3,8 @@
 |Feature||
 |:------|:-----|
 |Streaming Sources            | Airplay™, Pandora®, Spotify Connect™, DLNA®, |
-|                             | Lyrion Media Server, Internet Radio, |
-|                             | FM Radio\*, Bluetooth™\*, External Media Drives\* |
+|                             | Lyrion Media Server (LMS), Internet Radio, |
+|                             | FM Radio\*, Bluetooth™\*, Local Media Playback\* |
 |||
 |Control Interfaces           | Web App, Mobile App, REST API, Third-Party Drivers |
 |||
@@ -12,11 +12,9 @@
 |||
 |Weight                       | 5 lbs / 2.3 kg |
 |||
-|Power Input                  | IEC 60320 C14 Inlet 100-240VAC 50-60Hz max input 45W |
+|Power Input                  | IEC 60320 C14 Inlet 100-240VAC 50-60Hz |
 |||
 |Power Consumption            | NEEDS TO BE MEASURED |
-|||
-|Peak Current Consumption     | 6.8A @ 115VAC or 3.4A @230VAC |
 |||
 |Outputs                      | 4 x Line-Level RCA   |
 |                             | Ch 1: up to 32-bit 384 kHz DAC output |

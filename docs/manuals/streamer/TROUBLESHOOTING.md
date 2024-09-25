@@ -2,19 +2,6 @@
 
 If you are having problems with your AmpliPro device, start here.
 
-## Audio
-
-### Noise
-Audio noise can have a lot of causes, below are some common reasons:
-* **Mixing grounds**: AmpliPro has two different grounded lines, analog and digital. The most common way to mix them is by plugging in an audio device and attempting to power it with the USB on the rear of the unit, all USB-powered devices must be powered from a wall outlet
-* **Speaker setup**: Some speaker configurations can lead to excess noise being inducted into the output. This is unrelated to the system and has everything to do with how the speakers are wired and installed.
-* **Hardware issues**: See the support page for more info.
-
-### No Audio
-Lack of audio typically has one of a few causes:
-* **No Source / Bad Source**: The source itself isn't outputting audio properly, try changing to a different source to confirm
-* **Bad Output / Bad Zone**: Either the speaker, the speaker wires, or one of the ports on the back of the AmpliPro might be broken or hooked up incorrectly. Try a different speaker, length of wire, or port on the back of the AmpliPro to test each case
-
 ## Updating
 
 From the App
@@ -55,7 +42,7 @@ These backups are dated tarballs stored at `/home/pi/backups`. This tarball cont
 3. Start AmpliPi again (`systemctl start --user amplipi`).`
 
 ## Reimaging AmpliPro
-For directions on how to bring AmpliPro system back to a previous version, scan the QR labeled "Reimaging Instructions" on the links page at the start of this manual, or [click this link](https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md). It is a good idea to take a system backup before running this process; see the above section labelled "Taking and restoring configuration backups".
+For directions on how to bring AmpliPro system back to a previous version, follow this link: www.amplipi.com/reimaging. It is a good idea to take a system backup before running this process; see the above section labelled "Taking and restoring configuration backups".
 
 ## Still need help?
 

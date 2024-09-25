@@ -1,17 +1,29 @@
 \documentclass{article}
 \usepackage{geometry}
- \geometry{
+\geometry{
  a4paper,
  total={170mm,257mm},
  left=20mm,
  top=20mm,
- }
-\usepackage{tgheros}
+}
+
+\usepackage[OT1]{fontenc}
+\renewcommand*\familydefault{\sfdefault}
+
+\usepackage{graphicx}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
-%\usepackage[english]{isodate}
-%\usepackage[parfill]{parskip}
+\usepackage[english]{isodate}
+\usepackage[parfill]{parskip}
 \usepackage[hybrid]{markdown}
+
+\usepackage{xcolor}
+\definecolor{ampliproblue}{RGB}{0, 77, 255}
+\usepackage{sectsty}
+\sectionfont{\color{ampliproblue}}
+\subsectionfont{\color{ampliproblue}}
+\subsubsectionfont{\color{ampliproblue}}
+
 \markdownSetup{
   pipeTables,
   tableCaptions,
@@ -21,9 +33,9 @@
   }
 }
 \title{
-  \textbf{AmpliPro Streamer Unit - User Manual}
+  \textbf{\raisebox{-0.475em}{\includegraphics[height=1.65em]{imgs/amplipro_nobg.png}} Streamer Unit - User Manual}
 }
-\date{ \textbf{ Version: 0.3.5}}
+\date{}
 \setlength\parindent{0pt}
 \begin{document}
 
@@ -35,7 +47,7 @@
 \begin{center}
   \LARGE{ \textbf{ Device Model: AP1-S4}}
 \end{center}
-\includegraphics{ imgs/MicroNova_Logo.jpg}
+\includegraphics{ streamer/MicroNova_Logo.png}
 
 \thispagestyle{empty}
 \newpage
@@ -56,7 +68,7 @@
 \newpage
 \markdownInput{streamer/INSTALLATION.md}
 \newpage
-\markdownInput{common/TROUBLESHOOTING.md}
+\markdownInput{streamer/TROUBLESHOOTING.md}
 \newpage
 \markdownInput{common/WARRANTY.md}
 \newpage

@@ -2,8 +2,9 @@
 
 |Feature||
 |:------|:-----|
-|Streaming Sources          | Airplay™, Pandora®, Spotify Connect™, DLNA®, |
-|                           | Internet Radio\*, Bluetooth™\*, External Media Drives\* |
+|Streaming Sources            | Airplay™, Pandora®, Spotify Connect™, DLNA®, |
+|                             | Lyrion Media Server (LMS), Internet Radio, |
+|                             | FM Radio\*, Bluetooth™\*, Local Media Playback\* |
 |||
 |Control Interfaces         | Web App, Mobile App, REST API, Third-Party Software|
 |||
