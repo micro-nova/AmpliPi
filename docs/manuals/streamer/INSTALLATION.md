@@ -29,7 +29,7 @@ Now that the AmpliPro Streamer is powered on, it's time to use the software. To 
 
 ### Mobile App
 
-1. We offer mobile apps available on Android and iOS, simply search for "Amplipi" on the Google Play Store or Apple's App Store or go to the Links page at the start of this manual for QR codes for each version
+1. We offer mobile apps available on Android and iOS, simply search for "Amplipi" on the Google Play Store or Apple's App Store or go to the Links page at the start of this manual, scan the QR code, and click "Apps". Otherwise, follow this link on a mobile device: https://www.amplipi.com/app.
 2. Once you have the app downloaded, permit the app to access devices on your local network. The app will automatically search your network for active AmpliPro units.
 3. If you have multiple controllers (main units or streamers), it will ask which unit you wish to connect to. We suggest giving different hostnames to each unit if you have multiple controllers on the same network for this reason.
 

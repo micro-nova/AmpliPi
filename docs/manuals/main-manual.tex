@@ -17,6 +17,10 @@
 \usepackage[parfill]{parskip}
 \usepackage[hybrid]{markdown}
 
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{booktabs}
+
 \usepackage{xcolor}
 \definecolor{ampliproblue}{RGB}{0, 77, 255}
 \usepackage{sectsty}
@@ -56,7 +60,7 @@
 \newpage
 \pagenumbering{arabic}
 
-\markdownInput{common/LINKS.md}
+\markdownInput{main/LINKS.md}
 \newpage
 \markdownInput{common/SAFETY.md}
 \newpage
@@ -66,7 +70,8 @@
 \newpage
 \markdownInput{main/MAIN_CONTROLLER.md}
 \newpage
-\markdownInput{main/MAIN_CONTROLLER_SPECS.md}
+\markdownInput{common/SPECS_TITLE.md}
+\input{main/MAIN_CONTROLLER_SPECS.tex}
 \newpage
 \markdownInput{main/INSTALLATION.md}
 \newpage

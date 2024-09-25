@@ -22,4 +22,4 @@ The following optional accessories are available and can be purchased separately
 AmpliPro hosts a web app (referred to as "AmpliPi") that can control the system from any PC or mobile phone on the local network. It is designed with the idea that each of the four audio sources could be controlled separately by different people in the house.
 \
 \
-There is also a downloadable app for iOS and Android devices, simply search for "AmpliPi" on your respective app distributor, or scan the proper QR code for your device on the Links page at the start of this manual
+There is also a downloadable app for iOS and Android devices, simply search for "AmpliPi" on your respective app distributor, or scan the proper QR code for your device on the Links page at the start of this manual, scan the QR code, and click "Apps". Otherwise, follow this link on a mobile device: https://www.amplipi.com/app.

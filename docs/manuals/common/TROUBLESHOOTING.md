@@ -55,7 +55,7 @@ These backups are dated tarballs stored at `/home/pi/backups`. This tarball cont
 3. Start AmpliPi again (`systemctl start --user amplipi`).`
 
 ## Reimaging AmpliPro
-For directions on how to bring AmpliPro system back to a previous version, scan the QR labeled "Reimaging Instructions" on the links page at the start of this manual, or [click this link](https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md). It is a good idea to take a system backup before running this process; see the above section labelled "Taking and restoring configuration backups".
+For directions on how to bring AmpliPro system back to a previous version, scan the QR on the links page at the start of this manual and select "Reimaging Instructions", or [click this link](https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md). It is a good idea to take a system backup before running this process; see the above section labelled "Taking and restoring configuration backups".
 
 ## Still need help?
 

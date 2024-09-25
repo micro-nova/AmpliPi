@@ -17,6 +17,10 @@
 \usepackage[parfill]{parskip}
 \usepackage[hybrid]{markdown}
 
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{booktabs}
+
 \usepackage{xcolor}
 \definecolor{ampliproblue}{RGB}{0, 77, 255}
 \usepackage{sectsty}
@@ -62,7 +66,8 @@
 \newpage
 \markdownInput{expander/OVERVIEW.md}
 \newpage
-\markdownInput{expander/ZONE_EXPANDER_SPECS.md}
+\markdownInput{common/SPECS_TITLE.md}
+\input{expander/ZONE_EXPANDER_SPECS.tex}
 \newpage
 \markdownInput{expander/INSTALLATION.md}
 \newpage
