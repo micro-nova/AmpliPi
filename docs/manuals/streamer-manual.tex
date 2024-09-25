@@ -17,12 +17,16 @@
 \usepackage[parfill]{parskip}
 \usepackage[hybrid]{markdown}
 
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{booktabs}
+
 \usepackage{xcolor}
-\definecolor{ampliproblue}{RGB}{0, 77, 255}
+\definecolor{headerblue}{RGB}{0, 79, 175}
 \usepackage{sectsty}
-\sectionfont{\color{ampliproblue}}
-\subsectionfont{\color{ampliproblue}}
-\subsubsectionfont{\color{ampliproblue}}
+\sectionfont{\color{headerblue}}
+\subsectionfont{\color{headerblue}}
+\subsubsectionfont{\color{headerblue}}
 
 \markdownSetup{
   pipeTables,
@@ -41,13 +45,13 @@
 
 \maketitle
 \setkeys{Gin}{width=.99\linewidth}
-\includegraphics{ streamer/AmpliPro_streamer_front_angled.png}
+\includegraphics{streamer/AmpliPro_streamer_front_angled.png}
 \newline
 \newline
 \begin{center}
   \LARGE{ \textbf{ Device Model: AP1-S4}}
 \end{center}
-\includegraphics{ streamer/MicroNova_Logo.png}
+\includegraphics{streamer/MicroNova_Logo.png}
 
 \thispagestyle{empty}
 \newpage
@@ -64,7 +68,7 @@
 \newpage
 \markdownInput{streamer/OVERVIEW.md}
 \newpage
-\markdownInput{streamer/STREAMER_SPECS.md}
+\input{streamer/STREAMER_SPECS.tex}
 \newpage
 \markdownInput{streamer/INSTALLATION.md}
 \newpage
