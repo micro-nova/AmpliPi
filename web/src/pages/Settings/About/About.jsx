@@ -76,6 +76,12 @@ const About = ({ onClose }) => {
                     <a
                         target="_blank"
                         className="link"
+                        href="https://www.amplipi.com/blog">
+            Blog
+                    </a>
+                    <a
+                        target="_blank"
+                        className="link"
                         href="https://github.com/micro-nova/AmpliPi/blob/main/COPYING"
                     >
             License
