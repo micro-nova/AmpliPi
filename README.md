@@ -5,10 +5,6 @@
 
 AmpliPro™ is a multi room/zone audio streamer, controller, and amplifier made for whole house audio systems with many zones. It can play up to 4 simultaneous audio sources, each of which can be selected from either its analog RCA input or any supported digital stream (Pandora, Spotify, AirPlay, etc). Each source can be routed to one or more zones, all of which are configurable in real-time using the AmpliPi App (Android / iOS / web) or its underlying API. It is expandable up to 36 zones using AmpliPro Zone Expanders.
 
-AmpliPro vs AmpliPi: \
-**AmpliPro:** This is the name of the physical hardware device sold by [Micronova](https://www.micro-nova.com/) - the multi-room/zone home audio controller and amplifier unit. \
-**AmpliPi:** This refers to the software and web interface that controls the AmpliPro system. AmpliPro hosts a web app (referred to as 'AmpliPi') that can control the system from any PC or mobile phone on the local network.
-
 The AmpliPro design is entirely open source, from the software, to the firmware, to the schematics. The API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (available in this repo).
 
 The system is self-hosted on the Raspberry Pi and is privacy-centric. By design, AmpliPi doesn’t listen to you or spy on you — it just plays your audio! The way it should be. An internet connection is only needed for some external streaming sources, such as Pandora. The Python application running on the Pi hosts a mobile-friendly website and API used to control the system. The website is built on top of the API.
