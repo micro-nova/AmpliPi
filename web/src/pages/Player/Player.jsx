@@ -16,6 +16,7 @@ import { getSourceInputType } from "@/utils/getSourceInputType";
 import Chip from "@/components/Chip/Chip";
 import Grid from "@mui/material/Grid/Grid"
 import selectActiveSource from "@/utils/selectActiveSource";
+import Box from "@mui/material/Box/Box";
 
 import { getSourceZones } from "@/pages/Home/Home";
 
@@ -85,7 +86,15 @@ const Player = () => {
                     </div>
                 </Grid>
                 <Grid item xs={2} sm={4} md={4} style={{maxWidth: "22rem"}}>
-                    <img src={img_url} className="player-album-art" />
+                    <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                    >
+                        <img src={img_url} className="player-album-art" />
+                    </Box>
                     <SongInfo sourceId={selectedSourceId} />
                 </Grid>
                 <Grid item xs={2} sm={4} md={4}>
