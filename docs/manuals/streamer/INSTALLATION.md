@@ -17,7 +17,7 @@ Each of your Streamer's sources outputs as a line-level RCA output pair. These o
 
 ### More Info
 
-More information on installation can be found in AmpliPro’s community forums or our blog. The community forums can be reached from the system settings, simply click on "About", then the "Community" link and see the "Installation and Getting Started" topic on our discourse group, also accessible at amplipi.discourse.group. Our blog can be found at https://blog.amplipro.com. Both of these links can be found on the QR codes page at the start of this manual.
+More information on installation can be found on the [AmpliPro community forums](https://www.amplipi.com/community) or our [main website](https://www.amplipro.com). These links can also be found on the "About" page in your system's settings, or on the links page reached via the QR code at the start of this manual.
 
 
 ## Power
@@ -38,6 +38,8 @@ Now that the AmpliPro Streamer is powered on, it's time to use the software. To 
 Simply enter "amplipi.local" into a web browser, on any device that both has a web browser and is connected to the same network. Android and Windows 7 users will need to type the IP address found on the unit's display into their web browser instead.
 
 ### From the App
+
+Here, we give a basic rundown of the app. For more detail please refer to our blog by scanning the QR code at the start of the manual or by going to https://www.amplipi.com/blog where you can find more detailed articles on how to use the app or use third-party integrations such as Nice (formerly ELAN) and more.
 
 1. Click the plus (+) icon and select a stream
   - The Groove Salad - InternetRadio stream comes preconfigured (needs an internet connection).

@@ -3,12 +3,20 @@
 
 ![Controller - Front Panel]( main/front_main_panel.png)
 
-1. **DISPLAY**: Displays IP Address, Hostname, and SSH Password.
-2. **ON/STANDBY**: Displays the state of the audio controller:
+- **DISPLAY**: Displays system information:
+    - Hostname
+    - IP
+    - Device serial number
+    - Current playstate (number of streams playing, paused, and stopped)
+    - SSH Password
+
+\* Note - the display keeps last state when power is lost, this data might not be up do date if the ON/STANDBY light is not on
+
+- **ON/STANDBY**: Displays the state of the audio controller:
     - Green: The unit is on
     - Red: The unit is on Standby
-    - Blinking Red: The unit is updating / booting
-3. **ZONE**: Displays the power state of each zone
+    - Blinking Red: The unit is updating / booting / cannot start the app (see troubleshooting page for details)
+- **ZONE**: Displays the power state of each zone
     - Blue: Zone is on (not muted)
     - None: Zone is off (muted)
 
