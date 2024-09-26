@@ -39,7 +39,7 @@ Simply enter "amplipi.local" into a web browser, on any device that both has a w
 
 ### From the App
 
-Here, we give a basic rundown of the app. For more detail please refer to our blog by scanning the QR code at the start of the manual or by going to https://www.amplipi.com/blog where you can find more detailed articles on how to use the app or use third-party integrations such as Nice (formerly ELAN) and more.
+Here, we give a basic rundown of the app. For more detail, please refer to our blog by scanning the QR code at the start of the manual or by going to https://www.amplipi.com/blog where you can find more detailed articles on how to use the app or use third-party integrations such as Nice (formerly ELAN) and more.
 
 1. Click the plus (+) icon and select a stream
   - The Groove Salad - InternetRadio stream comes preconfigured (needs an internet connection).
