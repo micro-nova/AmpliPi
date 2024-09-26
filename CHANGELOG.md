@@ -1,5 +1,15 @@
 # AmpliPi Software Releases
 
+## 0.4.5
+* Web App
+  * Ensure that abnormally-shaped album art is still horizontally centered
+
+## 0.4.4
+* Web App
+  * Ensure that media device audio streams stop outputting audio when disconnected
+  * Limit max height of group creation dropdown
+  * Improve how marquee components look when not scrolling
+
 ## 0.4.3
 * Web App
   * Fix internet radio search on IOS app
