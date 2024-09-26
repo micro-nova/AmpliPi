@@ -12,7 +12,7 @@ The system is self-hosted on the Raspberry Pi and is privacy-centric. By design,
 AmpliPi and AmpliPro:
 AmpliPi is an open-source software solution for multi-room home audio systems, specifically developed for AmpliPro products. The AmpliPro [product line](https://www.amplipro.com/) is designed by the creators of this project, [Micronova](https://www.micro-nova.com/). These systems have been rigorously tested and successfully implemented in various commercial and residential settings. When you purchase AmpliPro hardware from us, you’re not only supporting the project but also gaining access to a professionally designed audio system that delivers exceptional sound quality, backed by worldwide support from our engineering team.
 
-![High-level Schematic](hw/diagrams/signal_diagram.drawio.svg)
+![High-level Schematic](hw/diagrams/NEWsignal_diagram.drawio.svg)
 
 
 ## Features
