@@ -1,7 +1,7 @@
 ## Main Controller
 ### Front Panel
 
-![Controller - Front Panel]( main/front_main_panel.png)
+![Controller - Front Panel]( main/AmpliPro-Main-Front.png)
 
 - **DISPLAY**: Displays system information:
     - Hostname
@@ -22,7 +22,7 @@
 
 ### Rear Panel
 
-![Controller - Rear Panel]( main/rear_main_panel.png)
+![Controller - Rear Panel]( main/AmpliPro-Main-Back.png)
 
 - **POWER**: 115V, or optionally 230V connection. See the installation page for more details.
 - **CONTROLLER**:
