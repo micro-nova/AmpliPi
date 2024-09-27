@@ -188,3 +188,8 @@ docs/manual/_markdown_manual
 
 # Status File
 display-status.txt
+
+# archives and disk images
+*.img
+*.gz
+*.xz
