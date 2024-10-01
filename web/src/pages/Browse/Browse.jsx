@@ -38,33 +38,35 @@ const Browse = () => {
     };
 
     const loadChildren = (item) => {
-        if(sid == null){ // If you manage to get to the browse page without a stream to select
-            errorText.current = "No stream selected!";
-            setErrorOpen(true);
-        }
-        else if (item == null) { // if item is null due initial load
-            fetch(`/api/streams/browser/${sid}/browse`, {method: "post"} )
-            .then(resp => resp.json())
-            .then(dataHandler).catch(errorHandler);
-        }
-        else {
-            fetch(`/api/streams/browser/${sid}/browse`,
-                {
-                    headers: {
-                        "content-type": "application/json",
-                    },
-                    method: "post",
-                    datatype: "json",
-                    body: JSON.stringify({
-                        "item": item,
+        if(!errorOpen){//Only run function if there is not an active error message to avoid React infinite state-changing loop error
+            if(sid == null){ // If you manage to get to the browse page without a stream to select
+                errorText.current = "No stream selected!";
+                setErrorOpen(true);
+            }
+            else if (item == null) { // if item is null due initial load
+                fetch(`/api/streams/browser/${sid}/browse`, {method: "post"} )
+                .then(resp => resp.json())
+                .then(dataHandler).catch(errorHandler);
+            }
+            else {
+                fetch(`/api/streams/browser/${sid}/browse`,
+                    {
+                        headers: {
+                            "content-type": "application/json",
+                        },
+                        method: "post",
+                        datatype: "json",
+                        body: JSON.stringify({
+                            "item": item,
+                        })
                     })
-                })
-            .then(resp => resp.json())
-            .then(dataHandler).catch(errorHandler);
-        }
+                .then(resp => resp.json())
+                .then(dataHandler).catch(errorHandler);
+            }
 
-        pathCache.current = item;
-        //TODO: make fetch and add children to item
+            pathCache.current = item;
+            //TODO: make fetch and add children to item
+        }
     };
 
     const reloading = useRef(false);
