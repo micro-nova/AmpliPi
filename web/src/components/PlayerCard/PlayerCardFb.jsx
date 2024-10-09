@@ -29,6 +29,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
     const selected = usePersistentStore((s) => s.selectedSource) === sourceId;
     const img_url = useStatusStore((s) => s.status.sources[sourceId].info.img_url);
     const is_streamer = useStatusStore((s) => s.status.info.is_streamer);
+    const getSystemState = useStatusStore((s) => s.getSystemState);
 
     const select = () => {
         if (selected) {
@@ -60,6 +61,8 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                                         "Content-type": "application/json",
                                     },
                                     body: JSON.stringify({ input: "None" }),
+                                }).then(() =>{
+                                    getSystemState();
                                 });
                             }}
                         >

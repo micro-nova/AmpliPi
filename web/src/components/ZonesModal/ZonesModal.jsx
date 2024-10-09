@@ -57,6 +57,8 @@ const ZonesModal = ({
         group.zones.some((zone) => (zones.map((z) => z.id).includes(zone)))
     );
 
+    const getSystemState = useStatusStore((s) => (s.getSystemState));
+
     const [checkedZonesIds, setCheckedZoneIds] = useState(
         zones
             .filter((zone) => zone.source_id === sourceId && loadZonesGroups)
@@ -261,11 +263,13 @@ const ZonesModal = ({
                         setZones();
                         onClose();
                         clearRcaSourceId();
+                        getSystemState();
                     });
                 } else {
                     setZones();
                     onClose();
                     clearRcaSourceId();
+                    getSystemState();
                 }
             }}
             header="Select Zones"

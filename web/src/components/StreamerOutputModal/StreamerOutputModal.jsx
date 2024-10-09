@@ -19,6 +19,7 @@ const StreamerOutputModal = ({
     onClose,
 }) => {
     const outputs = useStatusStore((s) => s.status.sources);
+    const getSystemState = useStatusStore((s) => s.getSystemState);
 
     const StreamerOutputModalOutputItem = (props) => {
         const {
@@ -32,6 +33,7 @@ const StreamerOutputModal = ({
                 onClick={() => {
                     onApply(output.id);
                     onClose();
+                    getSystemState();
                 }}
                 key={output.id}
             >
