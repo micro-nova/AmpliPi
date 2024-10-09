@@ -178,7 +178,7 @@ const ZonesModal = ({
     // };
 
     const setZones = () => {
-    // redefine sourceId
+        // redefine sourceId
 
         const sid = useRcaSourceId ? rcaSourceId : sourceId;
         const zs = useRcaSourceId ? rcaStatus.zones : zones;

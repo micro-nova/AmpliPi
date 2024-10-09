@@ -10,16 +10,16 @@ const UPDATE_INTERVAL = 1500;
 const Poller = ({ children }) => {
     const isLoaded = useStatusStore((s) => s.loaded);
     const disconnected = useStatusStore((s) => s.disconnected);
-    const update = useStatusStore((s) => s.fetch);
+    const getSystemState = useStatusStore((s) => s.getSystemState);
 
     // update immediately at start
     React.useEffect(() => {
-        update();
+        getSystemState();
     }, []);
 
     // update periodically
     useInterval(() => {
-        update();
+        getSystemState();
     }, UPDATE_INTERVAL);
 
     if (!isLoaded || disconnected) {

@@ -80,6 +80,7 @@ const Home = () => {
     const [streamsModalOpen, setStreamsModalOpen] = React.useState(false);
     const [presetsModalOpen, setPresetsModalOpen] = React.useState(false);
     const [streamerOutputModalOpen, setStreamerOutputModalOpen] = React.useState(false);
+    const setSystemState = useStatusStore(s => s.setSystemState);
 
     let nextAvailableSource = null;
     let cards = [];
@@ -126,14 +127,20 @@ const Home = () => {
                     sourceId={nextAvailableSource}
                     loadZonesGroups={false}
                     // on apply, we want to call
-                    onApply={executeApplyAction}
+                    onApply={async (customSourceId) => {
+                        const ret = await executeApplyAction(customSourceId);
+                        if(ret.ok){ret.json().then(s => setSystemState(s))};
+                    }}
                     onClose={() => setZonesModalOpen(false)}
                 />
             )}
             {streamerOutputModalOpen && (
                 <StreamerOutputModal
                     sourceId={nextAvailableSource}
-                    onApply={executeApplyAction}
+                    onApply={async (customSourceId) => {
+                        const ret = await executeApplyAction(customSourceId);
+                        if(ret.ok){ret.json().then(s => setSystemState(s))};
+                    }}
                     onClose={() => setStreamerOutputModalOpen(false)}
                 />
             )}
