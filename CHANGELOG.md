@@ -4,6 +4,7 @@
 * Web App
   * Ensure that abnormally-shaped album art is still horizontally centered
   * Add error handling on browser page for instances where the selected stream isn't browsable
+  * Add scrollbars to tall modals
 * System
   * Make update process properly report errors
 

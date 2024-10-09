@@ -37,7 +37,7 @@ const ModalCard = ({
                 <div className="modal-header" ref={headerRef}>
                     <CustomMarquee children={header} containerRef={headerRef}/>
                 </div>
-                <div className="modal-body">{children}</div>
+                <div className="modal-body pill-scrollbar">{children}</div>
                 <div className="modal-footer">
                     {footer}
                 </div>
