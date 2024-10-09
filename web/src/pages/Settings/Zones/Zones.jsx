@@ -14,6 +14,7 @@ import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import StatusBar from "@/components/StatusBars/StatusBar";
 
 const ZoneListItem = ({ zone }) => {
     const [open, setOpen] = React.useState(false);
@@ -21,6 +22,10 @@ const ZoneListItem = ({ zone }) => {
     const [vol_max, setVolMax] = React.useState(zone.vol_max);
     const [vol_min, setVolMin] = React.useState(zone.vol_min);
     const [disabled, setDisabled] = React.useState(zone.disabled);
+
+    const [alertSuccess, setAlertSuccess] = React.useState(false);
+    const [alertOpen, setAlertOpen] = React.useState(false);
+    const [alertText, setAlertText] = React.useState("");
 
     const applyChanges = () => {
         fetch(`/api/zones/${zone.id}`, {
@@ -35,6 +40,16 @@ const ZoneListItem = ({ zone }) => {
                 vol_min: vol_min,
                 disabled: disabled,
             }),
+        }).then(resp => {
+            if(resp.ok){
+                setAlertText(`Zone ${zone.id} updated successfully!`);
+                setAlertSuccess(true);
+                setAlertOpen(true);
+            } else {
+                setAlertText(`Zone ${zone.id} update failed...`);
+                setAlertSuccess(false);
+                setAlertOpen(true);
+            }
         });
     };
 
@@ -108,6 +123,12 @@ const ZoneListItem = ({ zone }) => {
                     </div>
                 )}
             </div>
+            <StatusBar
+                open={alertOpen}
+                onClose={() => {setAlertOpen(false);}}
+                status={alertSuccess}
+                text={alertText}
+            />
         </ListItemButton>
     );
 };
