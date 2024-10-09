@@ -11,6 +11,7 @@
     * Add toggleable option to persist system logs to Admin Settings
     * Move "Set password" page to be accessible via Admin Settings tab
   * Add success/fail messages to zones settings changes
+  * Add state polling to some user workflows (stream starting, stopping; using presets) to remove the illusion of lag
 * System
   * Make update process properly report errors
 
