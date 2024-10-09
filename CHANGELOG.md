@@ -5,6 +5,7 @@
   * Ensure that abnormally-shaped album art is still horizontally centered
   * Add error handling on browser page for instances where the selected stream isn't browsable
   * Add scrollbars to tall modals
+  * Change how events are handled with Modals to reduce accidental closures
 * System
   * Make update process properly report errors
 
