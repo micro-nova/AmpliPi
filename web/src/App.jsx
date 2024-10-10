@@ -99,8 +99,8 @@ export const useStatusStore = create((set, get) => ({
         );
     },
     setBrowsableStreamSong: (streamId, itemId, setPath) => {
-        return fetch(`/api/streams/browser/${streamId}/play`, { 
-            method: "post", 
+        return fetch(`/api/streams/browser/${streamId}/play`, {
+            method: "post",
             headers: {
                 "content-type": "application/json",
             },
@@ -120,7 +120,7 @@ export const useStatusStore = create((set, get) => ({
         });
     },
 
-    fetch: () => {
+    getSystemState: () => {
     // if (get().skipUpdate) {
     //   set({ skipUpdate: false })
     //   return

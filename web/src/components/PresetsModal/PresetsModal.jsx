@@ -67,6 +67,7 @@ PresetItem.propTypes = {
 
 const PresetsModal = ({ onClose }) => {
     const presets = useStatusStore((state) => state.status.presets);
+    const getSystemState = useStatusStore((s) => s.getSystemState);
     const [presetStates, setPresetStates] = useState(
         presets.map((preset) => {if(preset){return false;}}) // Changed this line so that preset wouldn't go unused as per eslint
     );
@@ -99,6 +100,7 @@ const PresetsModal = ({ onClose }) => {
             )
         );
         onClose();
+        getSystemState();
     };
 
     const presetItems = presets.map((preset, index) => (
