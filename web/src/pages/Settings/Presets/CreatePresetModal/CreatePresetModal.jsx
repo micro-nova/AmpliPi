@@ -14,6 +14,8 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 
+let is_streamer = false;
+
 const setCheckedRecur = (dict, checked) => {
     dict.checked = checked;
     dict.content.forEach((it) => setCheckedRecur(it, checked));
@@ -108,7 +110,7 @@ const buildTreeDict = (status, showInactive = false) => {
 
     const statusClone = JSON.parse(JSON.stringify(status));
     const sourceDicts = statusClone.sources
-        .filter((source) => showInactive || getSourceInputType(source) !== "none")
+        .filter((source) => showInactive || getSourceInputType(source) !== "none" && getSourceInputType(source) !== "unknown")
         .map(dictWithOptions);
     const top = baseDict(false, "All", sourceDicts);
     return top;
@@ -125,14 +127,15 @@ const StructuredDictAsTree = ({ dict, depth = 0, path = [] }) => {
     let entries = [];
     let i = 0;
     for (const d of dict.content) {
-        entries.push(
-            <StructuredDictAsTree
-                key={i}
-                dict={d}
-                depth={depth + 1}
-                path={[...path, i]}
-            />
-        );
+        let e = <StructuredDictAsTree
+            key={i}
+            dict={d}
+            depth={depth + 1}
+            path={[...path, i]}
+        />
+        if(!is_streamer || (is_streamer && depth === 0)) {  // depth=0 only applies to the 4 streamer outputs. This is necessary so that the tree can still save the state of the Stream checkbox without displaying it.
+            entries.push(e)
+        }
         i += 1;
     }
 
@@ -200,6 +203,7 @@ const CreatePresetModal = ({ onClose }) => {
         const newTree = buildTreeDict(status);
         setTree(newTree);
     }, []);
+    is_streamer = useStatusStore((s) => s.status.info.is_streamer);
 
     const savePreset = () => {
     // create preset
