@@ -45,7 +45,7 @@ const PresetItem = ({ index, onClick, presetState }) => {
     // show spinner if presetState is 'loading'
     return (
         <>
-            <ListItem onClick={() => onClick(index)}>
+            <ListItem onClick={() => onClick(index)} columns={false}>
                 <div className="preset-name-and-last-used">
                     <div>{name}</div>
                     <div className="preset-item-last-used">{last_used}</div>

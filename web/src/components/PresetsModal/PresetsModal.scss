@@ -8,6 +8,9 @@
 
 .presets-modal-card {
   max-height: 75vh;
+  width: 90vw;
+  max-width: 30rem;
+  text-overflow: wrap;
   overflow: hidden;
   display: flex;
   flex-direction: column;
