@@ -5,3 +5,9 @@
   color: general.$text-color;
   font-size: 0.75rem;
 }
+
+.config-spacing{
+  @media (min-width: 768px) {
+    margin-left: 30px !important;
+  }
+}
