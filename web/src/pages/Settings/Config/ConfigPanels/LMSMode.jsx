@@ -1,5 +1,7 @@
 import React from 'react';
 import "../Config.scss";
+import Button from "@mui/material/Button/Button";
+import Grid from "@mui/material/Grid/Grid";
 import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
 import { useStatusStore } from "@/App.jsx";
 import Switch from '@mui/material/Switch/Switch';
@@ -19,6 +21,16 @@ export default function LMSMode() {
         setResponse(resp);
         setLoading(false);
     };
+
+    function LMSControlLink() {
+        if(lmsMode){
+            return (
+                <Button target="_blank" href={`http://${window.location.hostname}:9000`} className="config-spacing">
+                    LMS Control Panel
+                </Button>
+            )
+        }
+    }
 
     function LMSModal(){
         if(lmsMode){
@@ -50,11 +62,22 @@ export default function LMSMode() {
                 subheader={"Toggles LMS Mode on or off. LMS is useful for piggy-backing off integrations AmpliPi does not have natively. This will wipe out the current config! As a result, it downloads the current config before proceeding with LMS mode."}
                 loading={loading}
             >
-                <Switch
-                    checked={lmsMode}
-                    onClick={() => {setModalOpen(true);}}
-                    inputProps={{ "aria-label": "controlled" }}
-                />
+                <Grid
+                    container
+                    direction="row"
+                    alignItems="center"
+                >
+                    <Grid item>
+                        <Switch
+                            checked={lmsMode}
+                            onClick={() => {setModalOpen(true);}}
+                            inputProps={{ "aria-label": "controlled" }}
+                        />
+                    </Grid>
+                    <Grid item>
+                        <LMSControlLink/>
+                    </Grid>
+                </Grid>
             </ConfigPanel>
 
             <LMSModal />
