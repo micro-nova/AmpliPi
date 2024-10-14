@@ -1,17 +1,19 @@
 @use "src/general.scss";
 
 .list-item-container {
-  display: grid;
-  grid-template-columns: 0fr 2fr 1fr;
-  grid-template-rows: 1fr;
   align-items: center;
   padding: 0.5rem;
   border-bottom: 1px solid general.$secondary;
   @include general.button-hover;
 }
-
 .list-item-container:last-child {
   border-bottom: none;
+}
+
+.columns{
+  display: grid;
+  grid-template-columns: 0fr 2fr 1fr;
+  grid-template-rows: 1fr;
 }
 
 .list-item-child {
