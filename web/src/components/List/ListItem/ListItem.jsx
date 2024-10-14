@@ -9,11 +9,12 @@ const ListItem = ({
     children,
     onClick,
     nameFontSize,
-    footer
+    footer,
+    columns
 }) => {
     return (
         <div
-            className="list-item-container"
+            className={columns ? "list-item-container columns" : "list-item-container"}
             onClick={onClick != undefined ? onClick : () => {}}
             style={{ cursor: onClick != undefined ? "pointer" : "default" }}
         >
@@ -33,10 +34,12 @@ ListItem.propTypes = {
     onClick: PropTypes.func.isRequired,
     nameFontSize: PropTypes.string.isRequired,
     footer: PropTypes.any,
+    columns: PropTypes.bool,
 };
 ListItem.defaultProps = {
     onClick: undefined,
     nameFontSize: "2rem",
+    columns: true,
 };
 
 export default ListItem;
