@@ -115,6 +115,7 @@ const Streams = ({ onClose }) => {
                     onClose={() => {
                         setShowModal(false);
                     }}
+                    type={selectedType}
                 />
             )}
         </div>
