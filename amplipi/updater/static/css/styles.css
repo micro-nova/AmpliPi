@@ -1,6 +1,20 @@
 /*
   A couple styles to make the demo page look good
  */
+
+ .column-container {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+
+.column-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 16px;
+}
+
 body {
   padding-bottom: 2rem;
   padding-top: 1rem;
@@ -79,6 +93,15 @@ hr {
   background: #4a4a4a;
 }
 
+.margin{
+  margin-left: 0px;
+}
+@media (min-width: 768px) {
+  .margin{
+    margin-left: 10px;
+  }
+}
+
 .fa-circle-notch {
   animation: fa-spin 1s infinite linear;
 }
@@ -87,4 +110,42 @@ hr {
 .btn-primary.disabled, .btn-primary:disabled {
   background-color: #5a6268;
   border-color: #545b62;
+}
+
+.container {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+
+.set-password-dialog {
+  color: #aaaaaa !important;
+}
+
+/* lifted from https://www.w3schools.com/css/css_tooltip.asp */
+
+.hover-label {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.hover-label .hover-tooltip{
+  top: 100%;
+  left: 50%;
+  visibility: hidden;
+  width: 750px;
+  max-width: 70vw;
+  background-color: rgba(100, 100, 100, 1);
+  color: #ffffff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+
+  position: absolute;
+  z-index: 1;
+}
+
+.hover-label:hover .hover-tooltip{
+  visibility: visible;
 }

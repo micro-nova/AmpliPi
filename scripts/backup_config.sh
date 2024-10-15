@@ -12,3 +12,4 @@ tar --one-file-system -czf "${backup_filename}" "${HOME}/.config/amplipi/"
 # remove all backups older than 90 days
 echo "removing old backups..."
 find "${backup_dir}" -type f -ctime +90 -delete
+echo "completed ${0}"

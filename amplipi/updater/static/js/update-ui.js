@@ -243,33 +243,6 @@ function populate_available_releases(releases) {
   }
 }
 
-async function set_password() {
-  password = $('#password').val()
-  confirm_password = $('#confirm-password').val()
-
-  if(password != confirm_password) {
-    alert("Passwords do not match.");
-    return;
-  }
-
-  body = JSON.stringify({'password':password})
-
-  res = await fetch('/password', {
-    method: 'POST',
-    body: body,
-    headers: {
-      "Content-Type": "application/json",
-    }
-  });
-
-  if(!res.ok) {
-    alert(`Error: ${res.statusText}`);
-    return;
-  }
-
-  alert('Password set.');
-}
-
 async function requestSupportTunnel() {
   // the below is 2 lines long intentionally, because it renders into a <pre> tag.
   $('#support-tunnel-detail').text(`Requesting a support tunnel. This may take up to 60s.

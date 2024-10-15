@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """ Interactively configure the Streamer's EEPROM"""
-from amplipi.eeprom import BoardInfo, BoardType, EEPROM, UnitType, BoardRev
 import os
 import re
 import requests
@@ -10,6 +9,7 @@ from typing import Optional, Tuple, Union
 # Add the amplipi directory to PATH
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../..')))
+from amplipi.eeprom import BoardInfo, BoardType, EEPROM, UnitType, BoardRev  # noqa
 
 # accept lower or upper case change designator
 BOARD_REV_RE = re.compile(r"(\d+)([A-z])")

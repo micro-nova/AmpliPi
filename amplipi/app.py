@@ -226,7 +226,7 @@ def shutdown():
   """
   # preemptively save the state (just in case the shutdown procedure doesn't invoke a save)
   get_ctrl().save()
-  # start the shutdown process and returning immediately (hopeully before the shutdown process begins)
+  # start the shutdown process and returning immediately (hopefully before the shutdown process begins)
   Popen('sleep 1 && sudo systemctl poweroff', shell=True)
 
 
@@ -531,7 +531,8 @@ def browse_stream(selection: Optional[models.BrowserSelection] = None, ctrl: Api
   stream = ctrl.streams[sid]
   if stream is None:
     raise HTTPException(404, f'source {sid} not found')
-  elif not stream.browsable:
+
+  if not stream.browsable:
     raise HTTPException(404, f'source {sid} is not browsable')
 
   if selection is not None:

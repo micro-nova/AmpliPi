@@ -41,10 +41,12 @@ jobs:
         pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
         pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
         pylint -E streams
+        pylint -E scripts/increment_auto_off.py
     - name: Lint with mypy, static type checker
       run: |
         pip install mypy
         mypy amplipi/ --ignore-missing-imports
+        mypy scripts/increment_auto_off.py --ignore-missing-imports
     - name: Test mock using pytest # rpi cannot be tested directly due to hardware...
       run: |
         pip install pytest pytest-cov

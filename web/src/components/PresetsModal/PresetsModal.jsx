@@ -70,6 +70,7 @@ const PresetsModal = ({ onClose }) => {
     const [presetStates, setPresetStates] = useState(
         presets.map((preset) => {if(preset){return false;}}) // Changed this line so that preset wouldn't go unused as per eslint
     );
+    const setSystemState = useStatusStore((s) => s.setSystemState);
 
     // resize presetStates (without overriding) if length changes
     if (presetStates.length > presets.length) {
@@ -89,11 +90,12 @@ const PresetsModal = ({ onClose }) => {
         fetch(`/api/presets/${id}/load`, {
             method: "POST",
             accept: "application/json",
-        }).then(() =>
+        }).then(res => {
+            if(res.ok){res.json().then(s => setSystemState(s))}
             setPresetStates(
                 presetStates.map((state, i) => (i === index ? "done" : state))
             )
-        ).catch(() =>
+        }).catch(() =>
             setPresetStates(
                 presetStates.map((state, i) => (i === index ? false : state))
             )

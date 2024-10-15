@@ -99,8 +99,8 @@ export const useStatusStore = create((set, get) => ({
         );
     },
     setBrowsableStreamSong: (streamId, itemId, setPath) => {
-        return fetch(`/api/streams/browser/${streamId}/play`, { 
-            method: "post", 
+        return fetch(`/api/streams/browser/${streamId}/play`, {
+            method: "post",
             headers: {
                 "content-type": "application/json",
             },
@@ -120,11 +120,7 @@ export const useStatusStore = create((set, get) => ({
         });
     },
 
-    fetch: () => {
-    // if (get().skipUpdate) {
-    //   set({ skipUpdate: false })
-    //   return
-    // }
+    getSystemState: () => {
         fetch("/api")
             .then((res) => {
                 if (res.ok) {
@@ -144,6 +140,9 @@ export const useStatusStore = create((set, get) => ({
             .catch(() => {
                 set({ disconnected: true });
             });
+    },
+    setSystemState: (s) => {
+        set({ status: s, loaded: true, disconnected: false });
     },
     setZoneVol: (zoneId, new_vol) => {
         set(

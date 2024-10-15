@@ -1,5 +1,26 @@
 # AmpliPi Software Releases
 
+## Upcoming release
+* Web App
+  * Ensure that abnormally-shaped album art is still horizontally centered
+  * Add error handling on browser page for instances where the selected stream isn't browsable
+  * Add scrollbars to tall modals
+  * Change how events are handled with Modals to reduce accidental closures
+  * Rename Updater to Admin Panel
+  * Add "Admin Settings" tab to the Updater/Admin Panel
+    * Add toggleable option to persist system logs to Admin Settings
+    * Move "Set password" page to be accessible via Admin Settings tab
+  * Add success/fail messages to zones settings changes
+  * Add state polling to some user workflows (stream starting, stopping; using presets) to remove the illusion of lag
+* System
+  * Make update process properly report errors
+
+## 0.4.4
+* Web App
+  * Ensure that media device audio streams stop outputting audio when disconnected
+  * Limit max height of group creation dropdown
+  * Improve how marquee components look when not scrolling
+
 ## 0.4.3
 * Web App
   * Fix internet radio search on IOS app
