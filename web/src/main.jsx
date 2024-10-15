@@ -85,14 +85,17 @@ const darkTheme = createTheme({
             light: '#e3f2fd',
             dark: '#42a5f5',
             contrastText: '#fff',
-          },
+        },
         mode: "dark",
         background: {
             paper: "#2a2a2a", // TODO: no good way of getting this from scss...
         },
     },
     typography: {
-        fontFamily: "open sans"
+        fontFamily: "open sans",
+        body1: {  // Override the default generated class for all mui components, allowing them to be styled on a per-instance css level instead of hardcoding 16px font for some things
+            fontSize: 'inherit',
+        },
     },
     components: {
         MuiCssBaseline: {
@@ -102,9 +105,10 @@ const darkTheme = createTheme({
                     color: '#ffffff';
                 }
             `,
-        }
+        },
     }
 });
+
 
 ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
