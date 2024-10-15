@@ -1,4 +1,7 @@
-# AmpliPro Home Audio System
+# AmpliPi Home Audio Software
+AmpliPi is an open-source software solution for multi-room home audio systems, specifically developed for AmpliPro products. The AmpliPro [product line](https://www.amplipro.com/) is designed by the creators of this project, [Micronova](https://www.micro-nova.com/). These systems have been rigorously tested and successfully implemented in various commercial and residential settings. When you purchase AmpliPro hardware from us, you’re not only supporting the project but also gaining access to a professionally designed audio system that delivers exceptional sound quality, backed by worldwide support from our engineering team.
+
+
 [![Build Status][workflow-badge]][workflow-link] [![Coverage][coverage-badge]][coverage-link] [![GPL License][license-badge]](COPYING)
 
 ![AmpliPi](docs/imgs/AmpliProOverview2.png)
@@ -8,9 +11,6 @@ AmpliPro™ is a multi room/zone audio streamer, controller, and amplifier made 
 The AmpliPro design is entirely open source, from the software, to the firmware, to the schematics. The API and Web App are written in Python and run on a Raspberry Pi 3+ Compute Module. The firmware, which provides the low level volume control and zone configuration, is written in C and configured by the Python API over I2C. All of the internal circuitry comes with full schematics (available in this repo).
 
 The system is self-hosted on the Raspberry Pi and is privacy-centric. By design, AmpliPi doesn’t listen to you or spy on you — it just plays your audio! The way it should be. An internet connection is only needed for some external streaming sources, such as Pandora. The Python application running on the Pi hosts a mobile-friendly website and API used to control the system. The website is built on top of the API.
-
-AmpliPi and AmpliPro:
-AmpliPi is an open-source software solution for multi-room home audio systems, specifically developed for AmpliPro products. The AmpliPro [product line](https://www.amplipro.com/) is designed by the creators of this project, [Micronova](https://www.micro-nova.com/). These systems have been rigorously tested and successfully implemented in various commercial and residential settings. When you purchase AmpliPro hardware from us, you’re not only supporting the project but also gaining access to a professionally designed audio system that delivers exceptional sound quality, backed by worldwide support from our engineering team.
 
 ![High-level Schematic](hw/diagrams/NEWsignal_diagram.drawio.svg)
 
