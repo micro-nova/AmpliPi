@@ -87,8 +87,7 @@ Setup:
 ## Developing the Frontend
 Our frontend is a React webapp, to develop it you must first download and install a few dependencies:
 - [React](https://react.dev/learn/installation)
-- Node.js
-
+- [Node.js](#setting-up-nodejs)
 
 ### Setting Up Node.js
 
@@ -154,6 +153,6 @@ For the best development experience on Windows, we recommend using WSL (Windows 
 All AmpliPro units ship with AmpliPi preflashed onto their Pi controllers. For a fresh installation on a Pi Compute Module, use the following steps:
 
 1. Run the `scripts/bootstrap-pi` script to configure the Pi.
-2. Once complete, SSH should be enabled, and you can access the system at [amplipi.local].
+2. Once complete, SSH should be enabled, and you can access the system at [amplipi.local](amplipi.local).
 
 ---
