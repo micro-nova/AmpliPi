@@ -1,34 +1,104 @@
+
 # Developing for the AmpliPi Project
 
-Thanks for considering developing for AmpliPi. We appreciate your support!
+Thank you for your interest in contributing to AmpliPi! This guide will help you set up your environment and start developing.
 
-## Developing the webapp
-  To develop for the webapp, you will need to install nodejs and any dependencies for [ReactJS](https://react.dev/)
+---
 
-## Developing on a separate computer
+## Table of Contents
 
-This allows remote development with the ability to test changes on your AmpliPi
-1. Checkout [this repo](https://github.com/micro-nova) on a linux based system. A git bash shell on windows works fine as well, we suggest Windows Subsystem for Linux (WSL).
-2. Make changes with your favorite editor, we suggest vscode
-3. Use `scripts/deploy` to deploy the latest software.
-   The pi must have access to the internet to successfully run this script.
+1. [Development Options](#development-options)
+   - [Developing on a Separate Computer](#developing-on-a-separate-computer)
+   - [Developing on an AmpliPi Controller](#developing-on-an-amplipi-controller)
+   - [Mocked Development Setups](#mocked-development-setups)
+2. [Developing the Frontend](#developing-the-frontend)
+   - [Setting Up Node.js](#setting-up-nodejs)
+   - [With an Amplipi](#with-an-amplipi)
+   - [Without an Amplipi](#without-an-amplipi)
+3. [Windows-Specific Setup](#windows-specific-setup)
+   - [Using WSL for Development](#using-wsl-for-development)
+4. [Installing AmpliPi on a Pi Compute Module](#installing-amplipi-on-a-pi-compute-module)
 
-### Installing Node.js
+---
 
-`scripts/deploy` attempts to install any dependencies automatically, except for Node.js.
-AmpliPi is currently built with Node.js version 18.
+## Development Options
 
-TODO: Can Ubuntu 22.04 or Debian Bookworm use what's in their default apt repos?
+### Developing on a Separate Computer
 
-For Ubuntu <=20.04, the version of Node.js from apt is outdated.
-We use [Node Version Manager](https://github.com/nvm-sh/nvm) to install a newer version.
-A simple install that has been tested on Ubuntu 20.04 is below,
-if you run into issues see NVM's readme for more info.
-Before proceeding, verify no node/npm is already installed.
+To develop for AmpliPi on a separate system and remotely test on your AmpliPi controller:
+
+1. Clone the [AmpliPi repository](https://github.com/micro-nova) on a Linux-based system. If you're using Windows, WSL (Windows Subsystem for Linux) is strongly recommended.
+2. Use your favorite text/code editor to make changes. We at MicroNova use VSCode, for example.
+3. Deploy your changes with the `scripts/deploy` script. a typical deployment command looks like `scripts/deploy pi@{IP}`. You may also need the SSH password, which can be found along with the system's IP on the front display of your unit.
+
+After deployment:
+- SSH into AmpliPi (`ssh pi@{IP}`).
+- Navigate to the development root: `cd ~/amplipi-dev`.
+- Run the server in debug mode: `./scripts/run_debug_webserver`, which will start a webserver at [amplipi.local:5000](http://amplipi.local:5000).
+- Restart the AmpliPi service when done with `systemctl --user restart amplipi`.
+
+### Developing on an AmpliPi Controller
+
+To directly develop on an AmpliPi controller over SSH:
+
+1. Clone the repository on the AmpliPi at `~/amplipi-dev`
+2. Make your changes using your preferred editor.
+3. Run the server in debug mode: `./scripts/run_debug_webserver`
+4. When ready, run `./scripts/configure.py --python-deps --os-deps --display --web` to install necessary dependencies and reconfigure services.
+
+---
+
+## Mocked Development Setups
+
+If you don’t have an AmpliPi system, you can use a mocked setup for development and testing.
+
+### Mocked Audio & Controller (Debian-Based System)
+
+This method allows development on systems like a Raspberry Pi or Ubuntu.
+
+Supports:
+- Web interface development
+- API testing
+- Basic stream testing
+
+To set it up:
+1. Clone the repository.
+2. Install streaming dependencies using `./scripts/configure.py --os-deps`.
+3. Install Python dependencies with `./scripts/configure.py --python-deps`.
+4. Run the mock server with `./scripts/run_debug_webserver` (add the `--mock-streams` flag if you didn’t install the streaming dependencies).
+
+### Mocked Controller with 4 Stereo Audio Channels (Raspberry Pi OS)
+
+This method requires a Raspberry Pi with a compatible USB audio device.
+
+Supports:
+- Web interface development
+- API testing
+- Streams integration and testing
+
+Setup:
+1. Install a 32-bit version of Raspberry Pi OS (older than December 2020).
+2. Connect a compatible 7.1 channel USB audio device.
+3. Clone the repository and modify the `asound.conf` to configure the audio device.
+4. Deploy using `scripts/deploy USER@HOSTNAME --mock-ctrl`.
+5. Run the mock controller with `./scripts/run_debug_webserver --mock-ctrl`.
+
+---
+## Developing the Frontend
+Our frontend is a React webapp, to develop it you must first download and install a few dependencies:
+- [React](https://react.dev/learn/installation)
+- Node.js
+
+
+### Setting Up Node.js
+
+AmpliPi is built with Node.js 18. Use `scripts/deploy` to install dependencies, but you’ll need to install Node.js manually:
+
+#### For Ubuntu <=20.04
+The apt version of Node.js is outdated. Use Node Version Manager (NVM) to install a newer version:
 
 ```sh
 NVM_DIR="${HOME}/.nvm"
-
 git clone --branch v0.39.7 https://github.com/nvm-sh/nvm.git "$NVM_DIR"
 cat >> "${HOME}/.bashrc" << EOF
 
@@ -39,89 +109,51 @@ source "$NVM_DIR/nvm.sh"
 nvm install 18
 ```
 
-If building directly on an AmpliPi, the `npm run build` step must be set to limit its memory usage with
-`NODE_OPTIONS=--max_old_space_size=768 npm run build`.
+#### Memory Limitation for AmpliPi
+When building directly on the AmpliPi, limit memory usage during the build step:
 
-### Congratulations! The Amplipi is now running the software you deployed! You can stop now or continue in order to debug over SSH!
+```sh
+NODE_OPTIONS=--max_old_space_size=768 npm run build
+```
 
-1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
-1. Change directory to the development root `~/amplipi-dev` (this is where `deploy` put the software)
-1. To run the amplipi server in debug mode over an ssh connection, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
-1. Restart amplipi service (it was stopped by `./scripts/run_debug_webserver`) with `systemctl --user restart amplipi`.
 
-## Developing on an AmpliPi Controller over SSH
-1. Make a git checkout at `~/amplipi-dev` using `git checkout https://github.com/micro-nova/AmpliPi ~/amplipi-dev` (you may need to delete `amplipi-dev` if it already exists)
-1. Change directory to amplipi-dev `cd ~/amplipi-dev`
-1. Make changes using your favorite editor
-1. To run the amplipi server in debug mode, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
-1. Once you are comfortable with your changes, run `./scripts/configure.py --python-deps --os-deps --display --web`. This will install any required dependencies and reconfigure the amplipi web and display services.
 
-## Developing on an AmpliPi Controller remotely using vscode
+To develop the frontend, your strategy will bifurcate depending on your access to an Amplipi:
 
-See our [remote vscode guide](docs/vscode_remote_dev.md) for more information.
+### With an Amplipi
+You will need to edit the `scripts/run_debug_frontend` file with the IP of an Amplipi and then run said file, making sure to revert the file when you're done as to not push your local IP to the repo. This will use that Amplipi's backend so you can live develop the React app on a localhost that dynamically regenerates the app as you save your files. This is the better option, as you can have the localhost app and the `amplipi.local` app in separate tabs to see the differences between what you make and what is already there, particularly if you run a fresh `scripts/deploy` when based on the `main` branch to ensure the system is at its most up-to-date first.
+Please note that live Frontend development has the risk of getting your system into a bad state if you aren't careful with how you handle endpoint interactions or global state saving.
 
-## Additional setup and notes for testing on Windows
+### Without an Amplipi
+Without an Amplipi to use for development, you'll find yourself running everything on the local machine. Follow the above guide on [how to set up `scripts/run_debug_webserver`](#mocked-controller-with-4-stereo-audio-channels-raspberry-pi-os) and then run `scripts/run_debug_frontend` in a separate terminal to run the frontend locally using a simulated backend.
 
-__You will need to install the following:__
-- git (you will need git bash)
-- vscode (only recommended)
-- python 3 and setup the python path (step 6 in the following guide) https://phoenixnap.com/kb/how-to-install-python-3-windows
+---
 
-__Notes:__
-- The latest Windows 10 supports mDNS which we use to easily ssh into amplipi, however we had some problems using WiFi so we suggest a ethernet connection on windows.
+## Windows-Specific Setup
 
-## Different development setups
-Below are a couple of different ways you can start developing for the AmpliPi without an actual system:
-* Mocked out audio and mocked out controller (needs: debian based system such as Pi or Ubuntu)
+### Requirements
+For development on Windows, you’ll need the following tools:
+- Git Bash - This can be achieved in multiple ways, from running inside of WSL or downloading some form of client.
+- [VSCode](https://code.visualstudio.com/) (only recommended, any text editor or IDE will do)
+- [Python 3](https://phoenixnap.com/kb/how-to-install-python-3-windows) (ensure it’s set up in your PATH)
 
-  Supports:
-  * Web interface development
-  * API testing
-  * Basic Streams testing
+### Notes
+- Windows 10+ supports mDNS for easy SSH access to AmpliPi, but Ethernet is recommended for reliability.
 
-* Mocked out controller (with 4 stereo audio channels), needs: something running Raspberry Pi OS (previously called raspbian)
+### Using WSL for Development
+For the best development experience on Windows, we recommend using WSL (Windows Subsystem for Linux) with mirrored networking mode. This allows WSL to share the same network interface as your host machine, making it easy to connect to AmpliPi and deploy directly from the WSL environment. Here’s how to get started:
 
-  Supports:
-  * Web interface development
-  * API testing
-  * Streams integration and testing
+1. Install WSL and set up a Linux distribution (Ubuntu recommended).
+2. Ensure networking mode is set to mirrored by checking your WSL configuration in `.wslconfig`.
+3. From WSL, follow the Linux development steps, including cloning the repository and using `scripts/deploy`.
 
-  Requires:
-  * Raspberry Pi OS with ALSA support (any 32-bit image before December 2020) (we recommend: https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/)
-  * A cmedia based, usb, 7.1 channel audio device (we have tested with this connected: https://www.amazon.com/Vantec-NBA-200U-External-Channel-Adapter/dp/B004HXGJ3S)
+---
 
-* Actual system
+## Installing AmpliPi on a Pi Compute Module
 
-  Supports:
-  * Web interface development
-  * API testing
-  * Streams integration and testing
-  * Group and zone configuration
-  * Analog Audio input
+All AmpliPro units ship with AmpliPi preflashed onto their Pi controllers. For a fresh installation on a Pi Compute Module, use the following steps:
 
-## Developing with a mocked out controller on a debian based os
-This is the simplest way to develop new features for AmpliPi without an AmpliPi controller.
-Optionally you can install some streaming sources for partial streaming testing.
-1. Checkout this repo
-1. (Optional) Install streaming os dependencies with `./scripts/configure.py --os-deps`.
-The dependencies will be installed globally with apt.
-This is optional since it installs many packages needed by the various streaming sources.
-It could potentially cause package conflicts on your system.
-1. Install python dependencies to AmpliPi's virtual environment with `./scripts/configure.py --python-deps`
-1. Use ```./scripts/run_debug_webserver``` to start the mock server, if the streaming deps were not installed add the **--mock-streams** flag like ```./scripts/run_debug_webserver --mock-streams```.
+1. Run the `scripts/bootstrap-pi` script to configure the Pi.
+2. Once complete, SSH should be enabled, and you can access the system at [amplipi.local].
 
-## Developing with a mocked out controller (with 4 stereo channel audio) on something running Raspberry Pi OS
-1. Start with a 32-bit version of Rasberry Pi OS. This needs to be older than december 2020 since our system only supports the ALSA audio backend currently.
-1. Connect a cmedia based, usb, 7.1 channel audio device to the pi. We have tested using this one: https://www.amazon.com/Vantec-NBA-200U-External-Channel-Adapter/dp/B004HXGJ3S
-1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well)
-1. Edit config/asound.conf. Uncomment the "Old Prototype" section at the bottom, and comment out the similar configuration above. This should be the configuration needed for the 7.1 channel USB audio card. Depending on the setup the card will either show up as #2 or #3. That needs to be changed on lines 27 and 32. Find the card # using ```aplay -l | grep "USB Sound Device"``` and edit those lines to include the correct #.
-1. Execute ```scripts/deploy USER@HOSTNAME --mock-ctrl``` or ```scripts/deploy USER@IP_ADDRESS``` replacing USER and HOSTNAME/IP_ADDRESS with the appropriate values for the pi device
-1. Over ssh connection, run ```scripts/run_debug_webserver --mock-ctrl``` from the ```~/amplipi-dev``` directory.
-
-## Installing AmpliPi from scratch on a Pi Compute Module
-1. For a fresh pi compute module, run `scripts/bootstrap-pi`.
-   All pi compute modules shipped with AmpliPi's have already been configured using this script,
-   so this step should not be necessary.
-   Running the script without any arguments will print the instructions.
-   After this step is done SSH is enabled from a fresh Raspberry Pi OS at [amplipi.local].
-1. [amplipi.local] should now be hosted on your network.
+---
