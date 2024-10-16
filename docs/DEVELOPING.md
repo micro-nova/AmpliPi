@@ -140,7 +140,7 @@ For development on Windows, you’ll need the following tools:
 - Windows 10+ supports mDNS for easy SSH access to AmpliPi, but Ethernet is recommended for reliability.
 
 ### Using WSL for Development
-For the best development experience on Windows, we recommend using WSL (Windows Subsystem for Linux) with mirrored networking mode. This allows WSL to share the same network interface as your host machine, making it easy to connect to AmpliPi and deploy directly from the WSL environment. Here’s how to get started:
+For the best development experience on Windows, we recommend using [WSL (Windows Subsystem for Linux)](https://www.microsoft.com/store/productId/9PDXGNCFSCZV?ocid=pdpshare) with mirrored networking mode. This allows WSL to share the same network interface as your host machine, making it easy to connect to AmpliPi and deploy directly from the WSL environment. Here’s how to get started:
 
 1. Install WSL and set up a Linux distribution (Ubuntu recommended).
 2. Ensure networking mode is set to mirrored by checking your WSL configuration in `.wslconfig`.
