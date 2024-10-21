@@ -14,6 +14,8 @@
   * Add state polling to some user workflows (stream starting, stopping; using presets) to remove the illusion of lag
 * System
   * Make update process properly report errors
+* Streams
+  * Replace Spotify Connect backend `spotifyd` with `go-librespot`
 
 ## 0.4.4
 * Web App

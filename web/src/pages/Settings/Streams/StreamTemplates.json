@@ -120,6 +120,11 @@
     "fields": []
   },
   {
+    "name": "Spotify Connect Beta",
+    "type": "spotifyconnect",
+    "fields": []
+  },
+  {
     "name": "Aux Port",
     "type": "aux",
     "noCreate": true,

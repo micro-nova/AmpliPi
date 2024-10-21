@@ -297,6 +297,10 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'spotify': {
         'copy': [{'from': 'bin/ARCH/spotifyd', 'to': 'streams/spotifyd'}],
     },
+    'spotifyconnect': {
+        # from https://github.com/devgianlu/go-librespot's release page
+        'copy': [{'from': 'bin/ARCH/go-librespot', 'to': 'streams/go-librespot'}],
+    },
     'pandora': {
         'apt': [
             'libao4', 'libavcodec58', 'libavfilter7', 'libavformat58', 'libavutil56', 'libc6', 'libcurl3-gnutls', 'libgcrypt20', 'libjson-c3'

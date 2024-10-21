@@ -19,6 +19,9 @@ export const getIcon = (type) => {
     case "SPOTIFY":
       return spotify;
 
+    case "SPOTIFYCONNECT":
+      return spotify;
+
     case "DLNA":
       return dlna;
 
