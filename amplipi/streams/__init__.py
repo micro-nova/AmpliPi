@@ -32,6 +32,7 @@ from .internet_radio import InternetRadio
 from .rca import RCA
 from .airplay import AirPlay
 from .spotify import Spotify
+from .spotify_connect_beta import SpotifyConnect
 from .dlna import DLNA
 from .pandora import Pandora
 from .plexamp import Plexamp
@@ -79,6 +80,8 @@ def build_stream(stream: models.Stream, mock: bool = False, validate: bool = Tru
     return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'spotify':
     return Spotify(name, disabled=disabled, mock=mock, validate=validate)
+  if stream.type == 'spotifyconnect':
+    return SpotifyConnect(name, disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'dlna':
     return DLNA(name, disabled=disabled, mock=mock)
   if stream.type == 'internetradio':
@@ -103,7 +106,7 @@ def build_stream(stream: models.Stream, mock: bool = False, validate: bool = Tru
 def stream_types_available() -> List[str]:
   """ Returns a list of the available streams on this particular appliance.
   """
-  stypes = [RCA, AirPlay, Spotify, InternetRadio, DLNA, Pandora, Plexamp,
+  stypes = [RCA, AirPlay, Spotify, SpotifyConnect, InternetRadio, DLNA, Pandora, Plexamp,
             Aux, FilePlayer, LMS, MediaDevice]
   if Bluetooth.is_hw_available():
     stypes.append(Bluetooth)
