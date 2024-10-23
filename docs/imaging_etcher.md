@@ -15,6 +15,9 @@ Download and install the latest version of RPIBoot from [here](https://github.co
 Download and install (if necessary) the latest version of Etcher from [etcher.io](https://etcher.io/), on windows use the portable version.
 
 ## 4. Connect your AmpliPi to your computer
+
+  **VERY IMPORTANT:** Please connect the USB cable to your computer FIRST before connecting the other side of the cable to the service port of the AmpliPro. Older units were susceptible to ESD damage on the USB service port. Connecting the cable to the computer first will mitigate this risk.
+  
   Unplug your AmpliPi from power and then connect your AmpliPi to your computer via the service port using the micro USB cable. Once connected, plug your AmpliPi back into power.
 
   ![connected to service port](imgs/flashing/plugged_sp.jpg)
