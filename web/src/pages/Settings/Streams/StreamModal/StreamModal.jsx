@@ -14,8 +14,6 @@ import Avatar from '@mui/material/Avatar';
 import AlertBar from "@/components/StatusBars/AlertBar";
 
 
-const NAME_DESC =
-  "This name can be anything - it will be used to select this stream from the source selection dropdown";
 const DISABLED_DESC = "Don't show this stream in the input dropdown";
 const RESTART_DESC = "Sometimes the stream gets into a bad state and neds to be restarted. If that happened to this stream, click this to restart the stream.";
 
@@ -198,7 +196,7 @@ const InternetRadioSearch = ({ onChange }) => {
 InternetRadioSearch.propTypes = {
     onChange: PropTypes.func.isRequired,
 };
-const StreamModal = ({ stream, onClose, apply, del }) => {
+const StreamModal = ({ stream, onClose, apply, del, type }) => {
     const [streamFields, setStreamFields] = React.useState(
         JSON.parse(JSON.stringify(stream))
     ); // set streamFields to copy of stream
@@ -218,7 +216,11 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
         "name": "name",
         "title": "Name",
         "type": "text",
-        "desc": NAME_DESC,
+        "desc": type == "spotify" ?
+            "This name requires a minimum of two non-special characters, and cannot have certain characters such as underscores or slashes - it will be used to select this stream from the source selection dropdown"
+            :
+            "This name can be anything - it will be used to select this stream from the source selection dropdown"
+        ,
         "required": true
     }].concat(streamTemplate.fields);
 
@@ -385,6 +387,10 @@ StreamModal.propTypes = {
     onClose: PropTypes.func.isRequired,
     apply: PropTypes.func.isRequired,
     del: PropTypes.func,
+    type: PropTypes.string,
 };
+StreamModal.defaultProps = {
+    type: "",
+}
 
 export default StreamModal;
