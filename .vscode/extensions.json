@@ -9,5 +9,6 @@
     "ms-vscode.cmake-tools",
     "ms-vscode.cpptools",
     "dbaeumer.vscode-eslint",
+    "streetsidesoftware.code-spell-checker",
   ]
 }

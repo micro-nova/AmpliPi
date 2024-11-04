@@ -1,14 +1,17 @@
-from typing import ClassVar, Optional
-from amplipi import models, utils
-from .base_streams import PersistentStream, InvalidStreamField, logger
-from amplipi.mpris import MPRIS
-import subprocess
-import requests
-import shutil
-import yaml
-import time
-import os
+
+
 import io
+import os
+import sys
+import subprocess
+import time
+from typing import ClassVar, Optional
+import yaml
+from amplipi import models, utils
+from .base_streams import PersistentStream, logger
+
+# Our subprocesses run behind the scenes, is there a more standard way to do this?
+# pylint: disable=consider-using-with
 
 
 class SpotifyConnect(PersistentStream):
@@ -18,18 +21,18 @@ class SpotifyConnect(PersistentStream):
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False, validate: bool = True):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate)
-    self.mpris: Optional[MPRIS] = None
+    # TODO: add command pipe?
     self.supported_cmds = [
-      #'play',
-      #'pause',
-      #'next',
-      #'prev'
+      # 'play',
+      # 'pause',
+      # 'next',
+      # 'prev'
     ]
-    self.STATE_TIMEOUT = 300  # seconds
     self._connect_time = 0.0
-    self._coverart_dir = ''
     self._log_file: Optional[io.TextIOBase] = None
     self._api_port: int
+    self.proc2: Optional[subprocess.Popen] = None
+    self.meta_file: str = ''
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -52,14 +55,13 @@ class SpotifyConnect(PersistentStream):
     except FileNotFoundError:
       pass
     self._connect_time = time.time()
-    self._coverart_dir = f'{utils.get_folder("web")}/generated/v{vsrc}'
     self._api_port = 3678 + vsrc
 
     logger.info("setting up config")
 
     config = {
       'device_name': self.name,
-      'device_type': 'stb', # set top box
+      'device_type': 'stb',  # set top box
       'audio_device': utils.virtual_output_device(vsrc),
       'external_volume': True,
       'credentials': {
@@ -67,53 +69,47 @@ class SpotifyConnect(PersistentStream):
       },
       'server': {
         'enabled': True,
-        'port': self._api_port,
-        'address': '',
-        'allow_origin': 'http://amplipi.local' # TODO: actually get the hostname and use it here
+        'port': self._api_port
       }
     }
 
     # make all of the necessary dir(s) & files
-    try:
-      shutil.rmtree(self._coverart_dir)
-    except FileNotFoundError:
-      pass
-    os.makedirs(self._coverart_dir, exist_ok=True)
     os.makedirs(src_config_folder, exist_ok=True)
 
     config_file = f'{src_config_folder}/config.yml'
-    with open(config_file, 'w') as f:
-        f.write(yaml.dump(config))
+    with open(config_file, 'w', encoding='utf8') as f:
+      f.write(yaml.dump(config))
 
-    self._log_file = open(f'{src_config_folder}/log', mode='w')
+    self.meta_file = f'{src_config_folder}/metadata.json'
+
+    self._log_file = open(f'{src_config_folder}/log', mode='w', encoding='utf8')
     player_args = f"{utils.get_folder('streams')}/go-librespot --config_dir {src_config_folder}".split(' ')
-    logger.debug(f'player args: {player_args}')
+    logger.debug(f'spotify player args: {player_args}')
 
     self.proc = subprocess.Popen(args=player_args, stdin=subprocess.PIPE,
                                  stdout=self._log_file, stderr=self._log_file)
 
-    '''  Yes, this is ripped directly from the shairport sync one. We'll do metadata another way, another day.
-    try:
-      mpris_name = 'ShairportSync'
-      # If there are multiple shairport-sync processes, add the pid to the mpris name
-      # shairport sync only adds the pid to the mpris name if it cannot use the default name
-      if len(os.popen("pgrep shairport-sync").read().strip().splitlines()) > 1:
-        mpris_name += f".i{self.proc.pid}"
-      self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
-    except Exception as exc:
-      logger.exception(f'Error starting airplay MPRIS reader: {exc}')
-    '''
+    url = f"http://localhost:{self._api_port}"
+    meta_reader = f"{utils.get_folder('streams')}/spot_connect_meta.py"
+    logger.info(f'{self.name}: starting metadata reader: {[sys.path, meta_reader, url, self.meta_file]}')
+    self.proc2 = subprocess.Popen(args=[sys.executable, meta_reader, url, self.meta_file], stdout=self._log_file, stderr=self._log_file)
 
   def _deactivate(self):
     if self._is_running():
       self.proc.stdin.close()
+      self.proc2.stdin.close()
       logger.info(f'{self.name}: stopping player')
       self.proc.terminate()
+      self.proc2.terminate()
       if self.proc.wait(1) != 0:
         logger.info(f'{self.name}: killing player')
         self.proc.kill()
+      if self.proc2.wait(1) != 0:
+        logger.info(f'{self.name}: killing metadata reader')
+        self.proc2.kill()
       self.proc.communicate()
-    if '_log_file' in self.__dir__() and self._log_file:
+      self.proc2.communicate()
+    if self._log_file:
       self._log_file.close()
     if self.src:
       try:
@@ -122,6 +118,7 @@ class SpotifyConnect(PersistentStream):
         logger.exception(f'{self.name}: Error removing config files: {e}')
     self._disconnect()
     self.proc = None
+    self.proc2 = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(
@@ -131,67 +128,30 @@ class SpotifyConnect(PersistentStream):
       type=self.stream_type
     )
 
-    try:
-      r = requests.get(f"http://127.0.0.1:{self._api_port}/status")
-      r.raise_for_status()
-    except Exception as e:
-      logger.debug(f"{self.name}: failed to query go-librespot: {e}")
-      return source
-
-    if r.status_code == 204: # No Content; occurs before spotify connects to go-librespot
+    if not os.path.exists(self.meta_file):
       return source
 
     try:
-      metadata = r.json()
+      with open(self.meta_file, 'r', encoding='utf8') as f:
+        metadata = yaml.safe_load(f)
+      if 'track' not in metadata or not metadata['track']['name']:
+        return source  # no track info, there is probably no device connected
       source.name = self.full_name()
       source.track = metadata['track']['name']
       source.album = metadata['track']['album_name']
-      artist_string = ""
-      for i in metadata['track']['artist_names']:
-        artist_string += f"{i}, "
+      artist_string = ", ".join(metadata['track']['artist_names'])
       source.artist = artist_string[:-2]
       if metadata['stopped']:
         source.state = "stopped"
       elif metadata['paused']:
         source.state = "paused"
       else:
-        source.state = "playing" # or "unknown"
+        source.state = "playing"  # or "unknown"
 
-      cover_art = metadata['track']['album_cover_url']
-      if cover_art:
-        aa_filename = f"{cover_art.split('/')[-1]}.jpg"
-        if aa_filename not in os.listdir(self._coverart_dir):
-          aa = requests.get(cover_art)
-          if aa.headers['Content-Type'] != 'image/jpeg':
-            logger.warning(f"album art not a JPEG? {cover_art}")
-          with open(f"{self._coverart_dir}/{aa_filename}", "wb") as f:
-            f.write(aa.content)
-        source.img_url = f"generated/v{self.vsrc}/{aa_filename}"
-        
+      if metadata['track']['album_cover_url']:
+        source.img_url = metadata['track']['album_cover_url']
+
     except Exception as e:
       logger.exception(f"{self.name}: error munging metadata: {e}")
 
     return source
-
-
-  ''' TODO: mpris
-  def send_cmd(self, cmd):
-    try:
-      if cmd in self.supported_cmds:
-        if cmd == 'play':
-          self.mpris.play_pause()
-        elif cmd == 'pause':
-          self.mpris.play_pause()
-        elif cmd == 'next':
-          self.mpris.next()
-        elif cmd == 'prev':
-          self.mpris.previous()
-      else:
-        raise NotImplementedError(f'"{cmd}" is either incorrect or not currently supported')
-    except Exception as e:
-      logger.exception(f"error in shairport: {e}")
-
-  def validate_stream(self, **kwargs):
-    if 'name' in kwargs and len(kwargs['name']) > 50:
-      raise InvalidStreamField("name", "name cannot exceed 50 characters")
-  '''
