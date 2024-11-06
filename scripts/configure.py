@@ -652,7 +652,7 @@ After=redis-server.service
 [Service]
 Type=simple
 WorkingDirectory={directory}
-ExecStart={directory}/venv/bin/python -m amplipi.tasks
+ExecStart={directory}/venv/bin/python -m celery -A amplipi.tasks worker
 Restart=always
 
 [Install]
@@ -1020,7 +1020,6 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   tasks += print_progress(_create_service('amplipi-tasks', _tasks_service(env['base_dir']), env))
   tasks += print_progress(_enable_service('amplipi-tasks'))
   if not env['is_ci']:
-    tasks += print_progress(_restart_service('redis-server'))  # TODO: is this needed?
     tasks += print_progress(_restart_service('amplipi-tasks'))
 
   if env['is_amplipi'] or env['is_ci']:

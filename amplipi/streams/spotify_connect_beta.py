@@ -9,6 +9,7 @@ from typing import ClassVar, Optional
 import yaml
 from amplipi import models, utils
 from .base_streams import PersistentStream, logger
+from .. import tasks
 
 # Our subprocesses run behind the scenes, is there a more standard way to do this?
 # pylint: disable=consider-using-with
@@ -21,18 +22,19 @@ class SpotifyConnect(PersistentStream):
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False, validate: bool = True):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate)
-    # TODO: add command pipe?
     self.supported_cmds = [
-      # 'play',
-      # 'pause',
-      # 'next',
-      # 'prev'
+      'play',
+      'pause',
+      'next',
+      'prev'
     ]
     self._connect_time = 0.0
     self._log_file: Optional[io.TextIOBase] = None
     self._api_port: int
     self.proc2: Optional[subprocess.Popen] = None
     self.meta_file: str = ''
+    self.max_volume: int = 100  # default configuration from 'volume_steps'
+    self.last_volume: float = 0
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -128,6 +130,10 @@ class SpotifyConnect(PersistentStream):
       type=self.stream_type
     )
 
+    if not self.meta_file:
+      logger.error(f'{self.name}: no metadata file. info() called on un-activated stream')
+      return source
+
     if not os.path.exists(self.meta_file):
       return source
 
@@ -143,10 +149,13 @@ class SpotifyConnect(PersistentStream):
       source.artist = artist_string[:-2]
       if metadata['stopped']:
         source.state = "stopped"
+        source.supported_cmds = ['play']
       elif metadata['paused']:
         source.state = "paused"
+        source.supported_cmds = self.supported_cmds
       else:
         source.state = "playing"  # or "unknown"
+        source.supported_cmds = self.supported_cmds
 
       if metadata['track']['album_cover_url']:
         source.img_url = metadata['track']['album_cover_url']
@@ -155,3 +164,29 @@ class SpotifyConnect(PersistentStream):
       logger.exception(f"{self.name}: error munging metadata: {e}")
 
     return source
+
+  def send_cmd(self, cmd: str) -> None:
+    """ Send a command to the Spotify Connect stream
+
+    We use tasks.post to send the command asynchronously avoiding blocking
+
+    see https://github.com/devgianlu/go-librespot/blob/master/api-spec.yml for the API endpoint docs
+    """
+    url = f"http://localhost:{self._api_port}/player/"
+    if cmd == 'play':
+      tasks.post.delay(url + 'resume')
+    elif cmd == 'pause':
+      tasks.post.delay(url + 'pause')
+    elif cmd == 'next':
+      tasks.post.delay(url + 'next', data={})  # necessary since next had several optional parameters
+    elif cmd == 'prev':
+      tasks.post.delay(url + 'prev')
+    else:
+      raise NotImplementedError(f'Spotify command not supported: {cmd}')
+
+  def sync_volume(self, volume: float) -> None:
+    """ Set the volume of amplipi to the Spotify Connect stream"""
+    if volume != self.last_volume:
+      url = f"http://localhost:{self._api_port}/"
+      self.last_volume = volume  # update last_volume for future syncs
+      tasks.post.delay(url + 'volume', data={'volume': int(volume * self.max_volume)})
