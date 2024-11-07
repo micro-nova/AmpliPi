@@ -86,6 +86,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 'xkcdpass',                    # Random passphrase generation
                 'systemd-journal-remote',      # Remote/web based log access
                 'jq',                          # JSON parser used in check-release script
+                'redis',                       # background job queue
                 # pygobject dependencies (Spotifyd)
                 'libgirepository1.0-dev', 'libcairo2-dev',
                 ],
@@ -642,6 +643,23 @@ WantedBy=default.target
 """
 
 
+def _tasks_service(directory: str):
+  return f"""\
+[Unit]
+Description=AmpliPi Background Tasks
+After=redis-server.service
+
+[Service]
+Type=simple
+WorkingDirectory={directory}
+ExecStart={directory}/venv/bin/python -m amplipi.tasks
+Restart=always
+
+[Install]
+WantedBy=default.target
+"""
+
+
 def _update_service(directory: str, port: int = 5001):
   return f"""\
 [Unit]
@@ -997,6 +1015,13 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
       # stop and disable the service so it doesn't start up on a reboot
       tasks += print_progress(_stop_service('amplipi-updater-test'))
       tasks += print_progress(_remove_service('amplipi-updater-test'))
+
+  # bring up amplipi-tasks
+  tasks += print_progress(_create_service('amplipi-tasks', _tasks_service(env['base_dir']), env))
+  tasks += print_progress(_enable_service('amplipi-tasks'))
+  if not env['is_ci']:
+    tasks += print_progress(_restart_service('redis-server'))  # TODO: is this needed?
+    tasks += print_progress(_restart_service('amplipi-tasks'))
 
   if env['is_amplipi'] or env['is_ci']:
     # start the user manager at boot, instead of after first login

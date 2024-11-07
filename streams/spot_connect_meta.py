@@ -10,7 +10,7 @@ from dataclasses import dataclass, field, asdict
 import sys
 import json
 import requests
-from websockets import ConnectionClosedError, InvalidHandshake, InvalidURI
+from websockets.exceptions import ConnectionClosedError, InvalidHandshake, InvalidURI
 from websockets.sync.client import connect
 
 
