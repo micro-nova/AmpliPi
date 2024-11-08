@@ -101,7 +101,6 @@ class SpotifyConnect(PersistentStream):
   def _deactivate(self):
     if self._is_running():
       self.proc.stdin.close()
-      self.proc2.stdin.close()
       logger.info(f'{self.name}: stopping player')
       self.proc.terminate()
       self.proc2.terminate()
