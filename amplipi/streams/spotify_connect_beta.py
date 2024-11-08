@@ -65,7 +65,8 @@ class SpotifyConnect(PersistentStream):
       'device_name': self.name,
       'device_type': 'stb',  # set top box
       'audio_device': utils.virtual_output_device(vsrc),
-      'external_volume': True,
+      'external_volume': True,  # False indicates volume user controllable, volume synchronization is needed for this to be enabled
+      'mixer_device': '',  # where volume control is applied, for '' volume changes are not actually applied to output
       'credentials': {
         'type': 'zeroconf'
       },
