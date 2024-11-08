@@ -7,10 +7,10 @@ import argparse
 import inspect
 from typing import List, Optional, Union
 from dataclasses import dataclass, field, asdict
-import sys
+from time import sleep
 import json
 import requests
-from websockets.exceptions import ConnectionClosedError, InvalidHandshake, InvalidURI
+from websockets.exceptions import ConnectionClosed, InvalidHandshake
 from websockets.sync.client import connect
 
 
@@ -182,6 +182,50 @@ def read_metadata(url) -> Optional[Track]:
     return Status()
 
 
+def watch_metadata(url, metadata_file, debug=False) -> None:
+  """
+  Watches the api at `url` for metadata updates and writes the current state to `metadata_file`.
+  If the metadata file already exists, it will be overwritten.
+  """
+  # Get the websocket-based event updates
+  ws_events = url.replace("http://", "ws://") + "/events"
+  try:
+    # read the initial state
+    metadata = read_metadata(url)
+    with open(metadata_file, 'w', encoding='utf8') as mf:
+      mf.write(json.dumps(asdict(metadata)))
+    if debug:
+      print(f"Initial metadata: {metadata}")
+    # Connect to the websocket and listen for state changes
+    with connect(ws_events, open_timeout=5) as websocket:
+      while True:
+        try:
+          msg = websocket.recv()
+          if debug:
+            print(f"Received: {msg}")
+          event = Event.from_json(json.loads(msg))
+          if event.event_type == "metadata":
+            metadata.track = event.data
+          elif event.event_type == "playing":
+            metadata.stopped = False
+            metadata.paused = False
+          elif event.event_type == "paused":
+            metadata.paused = True
+          elif event.event_type == "stopped":
+            metadata.stopped = True
+            metadata.track = Track()
+          else:
+            continue
+          with open(args.metadata_file, 'w', encoding='utf8') as mf:
+            mf.write(json.dumps(asdict(metadata)))
+        except (KeyError, ConnectionClosed, json.JSONDecodeError) as e:
+          print(f"Error: {e}")
+          break
+  except (OSError, InvalidHandshake, TimeoutError) as e:
+    print(f"Error: {e}")
+    return
+
+
 if __name__ == "__main__":
 
   parser = argparse.ArgumentParser(description="Read metadata from a given URL and write it to a file.")
@@ -192,50 +236,10 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  events = args.url.replace("http://", "ws://") + "/events"
-  metadata = Status(stopped=True)
-
-  # this should probably be a function
   while (True):
-    # read the initial state
     try:
-      metadata = read_metadata(args.url)
-      with open(args.metadata_file, 'w', encoding='utf8') as mf:
-        mf.write(json.dumps(asdict(metadata)))
+      watch_metadata(args.url, args.metadata_file, args.debug)
     except (KeyboardInterrupt, SystemExit):
-      sys.exit()
-    # Get the websocket-based event updates
-    try:
-      with connect(events, open_timeout=5) as websocket:
-        while True:
-          try:
-            msg = websocket.recv()
-            if args.debug:
-              print(f"Received: {msg}")
-            event = Event.from_json(json.loads(msg))
-            if event.event_type == "metadata":
-              metadata.track = event.data
-            elif event.event_type == "playing":
-              metadata.stopped = False
-              metadata.paused = False
-            elif event.event_type == "paused":
-              metadata.paused = True
-            elif event.event_type == "stopped":
-              metadata.stopped = True
-              metadata.track = Track()
-            else:
-              continue
-            with open(args.metadata_file, 'w', encoding='utf8') as mf:
-              mf.write(json.dumps(asdict(metadata)))
-          except (KeyError, ConnectionClosedError, json.JSONDecodeError) as e:
-            print(f"Error: {e}")
-            break
-          except (KeyboardInterrupt, SystemExit):
-            sys.exit()
-    except InvalidURI:
-      print(f"Invalid URL:" f"{events}")
+      print("Exiting...")
       break
-    except (OSError, InvalidHandshake, TimeoutError) as e:
-      continue
-    except (KeyboardInterrupt, SystemExit):
-      break
+    sleep(5)  # wait a bit before checking again

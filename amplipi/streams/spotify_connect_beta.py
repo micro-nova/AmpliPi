@@ -94,8 +94,9 @@ class SpotifyConnect(PersistentStream):
 
     url = f"http://localhost:{self._api_port}"
     meta_reader = f"{utils.get_folder('streams')}/spot_connect_meta.py"
-    logger.info(f'{self.name}: starting metadata reader: {[sys.path, meta_reader, url, self.meta_file]}')
-    self.proc2 = subprocess.Popen(args=[sys.executable, meta_reader, url, self.meta_file], stdout=self._log_file, stderr=self._log_file)
+    meta_args = [sys.executable, meta_reader, url, self.meta_file, '--debug']  # TODO: remove --debug for production
+    logger.info(f'{self.name}: starting metadata reader: {meta_args}')
+    self.proc2 = subprocess.Popen(args=meta_args, stdout=self._log_file, stderr=self._log_file)
 
   def _deactivate(self):
     if self._is_running():
@@ -146,8 +147,7 @@ class SpotifyConnect(PersistentStream):
       source.name = self.full_name()
       source.track = metadata['track']['name']
       source.album = metadata['track']['album_name']
-      artist_string = ", ".join(metadata['track']['artist_names'])
-      source.artist = artist_string[:-2]
+      source.artist = ", ".join(metadata['track']['artist_names'])
       if metadata['stopped']:
         source.state = "stopped"
         source.supported_cmds = ['play']
