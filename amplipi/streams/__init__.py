@@ -77,7 +77,7 @@ def build_stream(stream: models.Stream, mock: bool = False, validate: bool = Tru
     return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock, validate=validate)
   if stream.type in ['shairport', 'airplay']:  # handle older configs
     return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock, validate=validate)
-  if stream.type == 'spotify' or stream.type == 'spotifyconnect':
+  if stream.type == 'spotify':
     return SpotifyConnect(name, disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'dlna':
     return DLNA(name, disabled=disabled, mock=mock)

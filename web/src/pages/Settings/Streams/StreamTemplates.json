@@ -115,13 +115,8 @@
     ]
   },
   {
-    "name": "Spotify Device",
+    "name": "Spotify Connect",
     "type": "spotify",
-    "fields": []
-  },
-  {
-    "name": "Spotify Connect Beta",
-    "type": "spotifyconnect",
     "fields": []
   },
   {

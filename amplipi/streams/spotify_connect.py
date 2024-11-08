@@ -2,13 +2,14 @@
 
 import io
 import os
+import re
 import sys
 import subprocess
 import time
 from typing import ClassVar, Optional
 import yaml
 from amplipi import models, utils
-from .base_streams import PersistentStream, logger
+from .base_streams import PersistentStream, InvalidStreamField, logger
 from .. import tasks
 
 # Our subprocesses run behind the scenes, is there a more standard way to do this?
@@ -18,7 +19,7 @@ from .. import tasks
 class SpotifyConnect(PersistentStream):
   """ A SpotifyConnect Stream based off librespot-go """
 
-  stream_type: ClassVar[str] = 'spotifyconnect'
+  stream_type: ClassVar[str] = 'spotify'
 
   def __init__(self, name: str, disabled: bool = False, mock: bool = False, validate: bool = True):
     super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate)
@@ -112,7 +113,7 @@ class SpotifyConnect(PersistentStream):
         self.proc2.kill()
       self.proc.communicate()
       self.proc2.communicate()
-    if self._log_file:
+    if self.proc and self._log_file:  # prevent checking _log_file when it may not exist, thanks validation!
       self._log_file.close()
     if self.src:
       try:
@@ -183,6 +184,11 @@ class SpotifyConnect(PersistentStream):
       tasks.post.delay(url + 'prev')
     else:
       raise NotImplementedError(f'Spotify command not supported: {cmd}')
+
+  def validate_stream(self, **kwargs):
+    NAME = r"[a-zA-Z0-9][A-Za-z0-9\- ]*[a-zA-Z0-9]"
+    if 'name' in kwargs and not re.fullmatch(NAME, kwargs['name']):
+      raise InvalidStreamField("name", "Invalid stream name")
 
   def sync_volume(self, volume: float) -> None:
     """ Set the volume of amplipi to the Spotify Connect stream"""
