@@ -419,7 +419,7 @@ class Api:
       zone_update = models.ZoneUpdate(source_id=zone.source_id, mute=True, vol=zone.vol)
       self.set_zone(zone.id, zone_update, force_update=True, internal=True)
     # configure all of the groups (some fields may need to be updated)
-    self._update_groups()
+    self._update_aggregate_fields()
 
   def __del__(self):
     # stop save in the future so we can save right away
@@ -702,6 +702,8 @@ class Api:
       if idx is not None and src is not None:
         name, _ = utils.updated_val(update.name, src.name)
         input_, input_updated = utils.updated_val(update.input, src.input)
+        vol_f = update.vol_f
+        mute, mute_updated = utils.updated_val(update.mute, src.mute)
         # update the name
         src.name = str(name)
         if input_updated or force_update:
@@ -761,6 +763,20 @@ class Api:
               if not self._rt.update_sources(src_cfg):
                 raise Exception('failed to set source')
           self._update_src_info(src)  # synchronize the source's info
+        if vol_f is not None or mute_updated:
+          zones = [z for z in self.status.zones if z.source_id == sid and not z.disabled]
+          vols = [z.vol for z in zones]
+          vols.sort()
+          mid_vol = (vols[0] + vols[-1]) / 2
+          vol_delta = vol_f - mid_vol if vol_f is not None else 0
+          for zone in zones:
+            if vol_delta:
+              self.set_zone(zone.id, models.ZoneUpdate(vol=zone.vol + vol_delta, mute=mute, internal=True))
+            elif mute_updated:
+              self.set_zone(zone.id, models.ZoneUpdate(mute=mute, internal=True))
+          if not internal:
+            # update this source's info
+            self._update_aggregate_fields()
         if not internal:
           self.mark_changes()
       else:
@@ -878,7 +894,7 @@ class Api:
 
         if not internal:
           # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
-          self._update_groups()
+          self._update_aggregate_fields()
           self.mark_changes()
     except Exception as exc:
       if internal:
@@ -907,7 +923,7 @@ class Api:
         self.set_zone(zid, zupdate, force_update=force_update, internal=True)
       if not internal:
         # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
-        self._update_groups()
+        self._update_aggregate_fields()
         self.mark_changes()
     except Exception as exc:
       if internal:
@@ -915,19 +931,32 @@ class Api:
       return ApiResponse.error(f'set_zones failed: {exc}')
     return ApiResponse.ok()
 
-  def _update_groups(self) -> None:
-    """Updates the group's aggregate fields to maintain consistency and simplify app interface"""
+  def _update_aggregate_fields(self) -> None:
+    """Updates the aggregate fields to maintain consistency and simplify app interface"""
+    for source in self.status.sources:
+      zones = [z for z in self.status.zones if z.source_id == source.id and not z.disabled]
+      vols = [z.vol_f for z in zones]
+      vols.sort()
+      source.mute = all(z.mute for z in zones)  # source is only considered muted if all zones are muted
+      prev_vol_f = source.vol_f
+      if vols:
+        source.vol_f = (vols[0] + vols[-1]) / 2  # source volume is the midpoint between the highest and lowest source
+      else:
+        source.vol_f = models.MIN_VOL_F
+      # update the stream when its volume changed
+      stream_id = source.get_stream()
+      if stream_id and (prev_vol_f is None or abs(prev_vol_f - source.vol_f) >= 0.01):
+        stream = self.status.streams[stream_id]
+        # TODO: make volume sync-ability a property of the stream
+        if isinstance(stream, amplipi.streams.SpotifyConnect):
+          stream.sync_volume(source.vol_f)
+
     for group in self.status.groups:
-      zones = [self.status.zones[z] for z in group.zones]
-
-      # remove disabled from further calculations
-      zones = [z for z in zones if not z.disabled]
-
-      mutes = [z.mute for z in zones]
+      zones = [self.status.zones[z] for z in group.zones if not self.status.zones[z].disabled]
       sources = {z.source_id for z in zones}
       vols = [z.vol_f for z in zones]
       vols.sort()
-      group.mute = False not in mutes  # group is only considered muted if all zones are muted
+      group.mute = all(z.mute for z in zones)  # group is only considered muted if all zones are muted
       if len(sources) == 1:
         group.source_id = sources.pop()  # TODO: how should we handle different sources in the group?
       else:  # multiple sources
@@ -978,7 +1007,7 @@ class Api:
 
       if not internal:
         # update the group stats
-        self._update_groups()
+        self._update_aggregate_fields()
         self.mark_changes()
     except Exception as exc:
       if internal:
@@ -1007,7 +1036,7 @@ class Api:
     self.status.groups.append(group)
 
     # update the group stats and populate uninitialized fields of the group
-    self._update_groups()
+    self._update_aggregate_fields()
 
     self.mark_changes()
     return group
@@ -1285,7 +1314,7 @@ class Api:
       self.set_zone(zid, zone_update, internal=True)
 
     # update stats
-    self._update_groups()
+    self._update_aggregate_fields()
 
   def load_preset(self, pid: int, internal=False) -> ApiResponse:
     """ To avoid any issues with audio coming out of the wrong speakers, we will need to carefully load a preset configuration.

@@ -158,6 +158,8 @@ class SourceInfo(BaseModel):
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
+  mute: Optional[bool] = fields.Mute
+  vol_f: Optional[float] = fields.VolumeF
   info: Optional[SourceInfo] = Field(
     description='Additional info about the current audio playing from the stream (generated during playback)')
 
@@ -175,6 +177,8 @@ class Source(Base):
     """ Convert to SourceUpdate """
     update = self.dict()
     update.pop('id')
+    update.pop('mute', None)
+    update.pop('vol_f', None)
     return SourceUpdate.parse_obj(update)
 
   class Config:
@@ -226,6 +230,8 @@ class Source(Base):
 class SourceUpdate(BaseUpdate):
   """ Partial reconfiguration of an audio Source """
   input: Optional[str] = fields.AudioInput
+  vol_f: Optional[float] = fields.VolumeF
+  mute: Optional[bool] = fields.Boolean
 
   class Config:
     schema_extra = {
