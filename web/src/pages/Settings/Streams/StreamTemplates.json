@@ -115,7 +115,7 @@
     ]
   },
   {
-    "name": "Spotify Device",
+    "name": "Spotify Connect",
     "type": "spotify",
     "fields": []
   },

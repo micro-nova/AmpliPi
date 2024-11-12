@@ -561,7 +561,7 @@ class Api:
     for sid, stream_inst in self.streams.items():
       # TODO: this functionality should be in the unimplemented streams base class
       # convert the stream instance info to stream data (serialize its current configuration)
-      st_type = type(stream_inst).__name__.lower()
+      st_type = type(stream_inst).stream_type
       stream = models.Stream(id=sid, name=stream_inst.name, type=st_type)
       for field in models.optional_stream_fields():
         if field in stream_inst.__dict__:

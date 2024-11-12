@@ -110,6 +110,11 @@ if [ $(npm --version | cut -f1 -d.) -lt 9 ]; then
   exit 1;
 fi
 
+# check for git lfs
+if ! which git-lfs; then
+  echo "git-lfs needs to be installed to use this script"
+fi
+
 # create a virtual environment and install pip dependencies
 if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate ]]; then
   echo  ""
@@ -156,6 +161,9 @@ pushd ../web            # Change to web directory
 npm install             # Install nodejs dependencies
 npm run build           # Build the web app
 popd
+
+# pull in the latest binaries
+git lfs checkout
 
 # build release file (put in dist/)
 poetry build

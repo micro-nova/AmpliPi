@@ -66,7 +66,7 @@ from amplipi.auth import CookieOrParamAPIKey, router as auth_router, NotAuthenti
 # start in the web directory
 TEMPLATE_DIR = os.path.abspath('web/templates')
 STATIC_DIR = os.path.abspath('web/static')
-GENERATED_DIR = os.path.abspath('web/generated')
+GENERATED_DIR = os.path.join(utils.get_folder("web"), "generated")
 WEB_DIR = os.path.abspath('web/dist')
 
 # we host docs using rapidoc instead via a custom endpoint, so the default endpoints need to be disabled
