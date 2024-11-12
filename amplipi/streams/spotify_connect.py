@@ -140,6 +140,10 @@ class SpotifyConnect(PersistentStream):
       return source
 
     try:
+      # start with a usable state, just in case metadata is invalid
+      source.state = "playing"  # or "unknown"
+      source.supported_cmds = self.supported_cmds
+      # pull in the metadata
       with open(self.meta_file, 'r', encoding='utf8') as f:
         metadata = yaml.safe_load(f)
       if 'track' not in metadata or not metadata['track']['name']:
@@ -153,9 +157,6 @@ class SpotifyConnect(PersistentStream):
         source.supported_cmds = ['play']
       elif metadata['paused']:
         source.state = "paused"
-        source.supported_cmds = self.supported_cmds
-      else:
-        source.state = "playing"  # or "unknown"
         source.supported_cmds = self.supported_cmds
 
       if metadata['track']['album_cover_url']:
