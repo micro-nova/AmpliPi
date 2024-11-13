@@ -2785,12 +2785,12 @@ paths:
         name: sid
         in: path
         examples:
-          TV:
+          Input 1:
             value: 0
-            summary: TV
-          Record Player:
+            summary: Input 1
+          Input 2:
             value: 1
-            summary: Record Player
+            summary: Input 2
           Input 3:
             value: 2
             summary: Input 3
@@ -2862,12 +2862,12 @@ paths:
         name: sid
         in: path
         examples:
-          TV:
+          Input 1:
             value: 0
-            summary: TV
-          Record Player:
+            summary: Input 1
+          Input 2:
             value: 1
-            summary: Record Player
+            summary: Input 2
           Input 3:
             value: 2
             summary: Input 3
@@ -3335,12 +3335,12 @@ paths:
         name: sid
         in: path
         examples:
-          TV:
+          Input 1:
             value: 0
-            summary: TV
-          Record Player:
+            summary: Input 1
+          Input 2:
             value: 1
-            summary: Record Player
+            summary: Input 2
           Input 3:
             value: 2
             summary: Input 3
@@ -4035,60 +4035,24 @@ paths:
         name: zid
         in: path
         examples:
-          Software Office:
+          Zone 1:
             value: 0
-            summary: Software Office
-          Upstairs Living Room:
+            summary: Zone 1
+          Zone 2:
             value: 1
-            summary: Upstairs Living Room
-          Upstairs Dining:
+            summary: Zone 2
+          Zone 3:
             value: 2
-            summary: Upstairs Dining
-          Upstairs Laundry:
+            summary: Zone 3
+          Zone 4:
             value: 3
-            summary: Upstairs Laundry
-          Upstairs Kitchen High:
+            summary: Zone 4
+          Zone 5:
             value: 4
-            summary: Upstairs Kitchen High
-          Upstairs Master Bath:
+            summary: Zone 5
+          Zone 6:
             value: 5
-            summary: Upstairs Master Bath
-          Upstairs Kitchen Low HV:
-            value: 6
-            summary: Upstairs Kitchen Low HV
-          Hardware Office HV:
-            value: 7
-            summary: Hardware Office HV
-          Basement Workshop HV:
-            value: 8
-            summary: Basement Workshop HV
-          Screened Room HV:
-            value: 9
-            summary: Screened Room HV
-          Upstairs Deck Living HV:
-            value: 10
-            summary: Upstairs Deck Living HV
-          Upstairs Main Bedroom HV:
-            value: 11
-            summary: Upstairs Main Bedroom HV
-          Downstairs Living Room:
-            value: 12
-            summary: Downstairs Living Room
-          Downstairs Dining:
-            value: 13
-            summary: Downstairs Dining
-          Downstairs Bath:
-            value: 14
-            summary: Downstairs Bath
-          Downstairs Laundry:
-            value: 15
-            summary: Downstairs Laundry
-          Upstairs Main Bath:
-            value: 16
-            summary: Upstairs Main Bath
-          Downstairs Bedroom:
-            value: 17
-            summary: Downstairs Bedroom
+            summary: Zone 6
       responses:
         '200':
           description: Successful Response
@@ -4144,60 +4108,24 @@ paths:
         name: zid
         in: path
         examples:
-          Software Office:
+          Zone 1:
             value: 0
-            summary: Software Office
-          Upstairs Living Room:
+            summary: Zone 1
+          Zone 2:
             value: 1
-            summary: Upstairs Living Room
-          Upstairs Dining:
+            summary: Zone 2
+          Zone 3:
             value: 2
-            summary: Upstairs Dining
-          Upstairs Laundry:
+            summary: Zone 3
+          Zone 4:
             value: 3
-            summary: Upstairs Laundry
-          Upstairs Kitchen High:
+            summary: Zone 4
+          Zone 5:
             value: 4
-            summary: Upstairs Kitchen High
-          Upstairs Master Bath:
+            summary: Zone 5
+          Zone 6:
             value: 5
-            summary: Upstairs Master Bath
-          Upstairs Kitchen Low HV:
-            value: 6
-            summary: Upstairs Kitchen Low HV
-          Hardware Office HV:
-            value: 7
-            summary: Hardware Office HV
-          Basement Workshop HV:
-            value: 8
-            summary: Basement Workshop HV
-          Screened Room HV:
-            value: 9
-            summary: Screened Room HV
-          Upstairs Deck Living HV:
-            value: 10
-            summary: Upstairs Deck Living HV
-          Upstairs Main Bedroom HV:
-            value: 11
-            summary: Upstairs Main Bedroom HV
-          Downstairs Living Room:
-            value: 12
-            summary: Downstairs Living Room
-          Downstairs Dining:
-            value: 13
-            summary: Downstairs Dining
-          Downstairs Bath:
-            value: 14
-            summary: Downstairs Bath
-          Downstairs Laundry:
-            value: 15
-            summary: Downstairs Laundry
-          Upstairs Main Bath:
-            value: 16
-            summary: Upstairs Main Bath
-          Downstairs Bedroom:
-            value: 17
-            summary: Downstairs Bedroom
+            summary: Zone 6
       requestBody:
         content:
           application/json:
@@ -4838,28 +4766,7 @@ paths:
           description: Stream ID
         name: gid
         in: path
-        examples:
-          Upstairs:
-            value: 100
-            summary: Upstairs
-          Outside:
-            value: 102
-            summary: Outside
-          Offices:
-            value: 103
-            summary: Offices
-          Downstairs:
-            value: 104
-            summary: Downstairs
-          Main Unit:
-            value: 105
-            summary: Main Unit
-          Expander 1 (HV):
-            value: 106
-            summary: Expander 1 (HV)
-          Expander 2:
-            value: 107
-            summary: Expander 2
+        examples: {}
       responses:
         '200':
           description: Successful Response
@@ -4916,28 +4823,7 @@ paths:
           description: Stream ID
         name: gid
         in: path
-        examples:
-          Upstairs:
-            value: 100
-            summary: Upstairs
-          Outside:
-            value: 102
-            summary: Outside
-          Offices:
-            value: 103
-            summary: Offices
-          Downstairs:
-            value: 104
-            summary: Downstairs
-          Main Unit:
-            value: 105
-            summary: Main Unit
-          Expander 1 (HV):
-            value: 106
-            summary: Expander 1 (HV)
-          Expander 2:
-            value: 107
-            summary: Expander 2
+        examples: {}
       responses:
         '200':
           description: Successful Response
@@ -5376,28 +5262,7 @@ paths:
           description: Stream ID
         name: gid
         in: path
-        examples:
-          Upstairs:
-            value: 100
-            summary: Upstairs
-          Outside:
-            value: 102
-            summary: Outside
-          Offices:
-            value: 103
-            summary: Offices
-          Downstairs:
-            value: 104
-            summary: Downstairs
-          Main Unit:
-            value: 105
-            summary: Main Unit
-          Expander 1 (HV):
-            value: 106
-            summary: Expander 1 (HV)
-          Expander 2:
-            value: 107
-            summary: Expander 2
+        examples: {}
       requestBody:
         content:
           application/json:
@@ -5915,7 +5780,7 @@ paths:
                 value:
                   name: Play NASA Announcement
                   type: fileplayer
-                  url: https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3
+                  url: https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3
               Add FM Radio Station:
                 value:
                   name: WXYZ
@@ -6082,12 +5947,12 @@ paths:
           Aux:
             value: 995
             summary: Aux - aux
-          TV:
+          Input 1:
             value: 996
-            summary: TV - rca
-          Record Player:
+            summary: Input 1 - rca
+          Input 2:
             value: 997
-            summary: Record Player - rca
+            summary: Input 2 - rca
           Input 3:
             value: 998
             summary: Input 3 - rca
@@ -6097,18 +5962,6 @@ paths:
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
-          Jason's House:
-            value: 1003
-            summary: Jason's House - dlna
-          Jasons House:
-            value: 1002
-            summary: Jasons House - spotify
-          Beatles Radio:
-            value: 1007
-            summary: Beatles Radio - internetradio
-          Downstairs:
-            value: 1008
-            summary: Downstairs - spotify
       responses:
         '200':
           description: Successful Response
@@ -6186,12 +6039,12 @@ paths:
           Aux:
             value: 995
             summary: Aux - aux
-          TV:
+          Input 1:
             value: 996
-            summary: TV - rca
-          Record Player:
+            summary: Input 1 - rca
+          Input 2:
             value: 997
-            summary: Record Player - rca
+            summary: Input 2 - rca
           Input 3:
             value: 998
             summary: Input 3 - rca
@@ -6201,18 +6054,6 @@ paths:
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
-          Jason's House:
-            value: 1003
-            summary: Jason's House - dlna
-          Jasons House:
-            value: 1002
-            summary: Jasons House - spotify
-          Beatles Radio:
-            value: 1007
-            summary: Beatles Radio - internetradio
-          Downstairs:
-            value: 1008
-            summary: Downstairs - spotify
       responses:
         '200':
           description: Successful Response
@@ -6655,12 +6496,12 @@ paths:
           Aux:
             value: 995
             summary: Aux - aux
-          TV:
+          Input 1:
             value: 996
-            summary: TV - rca
-          Record Player:
+            summary: Input 1 - rca
+          Input 2:
             value: 997
-            summary: Record Player - rca
+            summary: Input 2 - rca
           Input 3:
             value: 998
             summary: Input 3 - rca
@@ -6670,18 +6511,6 @@ paths:
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
-          Jason's House:
-            value: 1003
-            summary: Jason's House - dlna
-          Jasons House:
-            value: 1002
-            summary: Jasons House - spotify
-          Beatles Radio:
-            value: 1007
-            summary: Beatles Radio - internetradio
-          Downstairs:
-            value: 1008
-            summary: Downstairs - spotify
       requestBody:
         content:
           application/json:
@@ -7155,12 +6984,12 @@ paths:
           Aux:
             value: 995
             summary: Aux - aux
-          TV:
+          Input 1:
             value: 996
-            summary: TV - rca
-          Record Player:
+            summary: Input 1 - rca
+          Input 2:
             value: 997
-            summary: Record Player - rca
+            summary: Input 2 - rca
           Input 3:
             value: 998
             summary: Input 3 - rca
@@ -7170,18 +6999,6 @@ paths:
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
-          Jason's House:
-            value: 1003
-            summary: Jason's House - dlna
-          Jasons House:
-            value: 1002
-            summary: Jasons House - spotify
-          Beatles Radio:
-            value: 1007
-            summary: Beatles Radio - internetradio
-          Downstairs:
-            value: 1008
-            summary: Downstairs - spotify
       responses:
         '200':
           description: Successful Response
@@ -7595,90 +7412,6 @@ paths:
                       vol_f: 0.45
                       vol_max: -30
                       vol_min: -70
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - APIKeyCookie: []
-      - APIKeyQuery: []
-  /api/streams/{sid}/browse:
-    get:
-      tags:
-      - stream
-      summary: Browse Stream
-      description: Browse the top level children of the current stream's media
-      operationId: browse_stream_api_streams__sid__browse_get
-      parameters:
-      - description: Stream ID
-        required: true
-        schema:
-          title: Sid
-          minimum: 0.0
-          type: integer
-          description: Stream ID
-        name: sid
-        in: path
-        examples:
-          Aux:
-            value: 995
-            summary: Aux - aux
-          TV:
-            value: 996
-            summary: TV - rca
-          Record Player:
-            value: 997
-            summary: Record Player - rca
-          Input 3:
-            value: 998
-            summary: Input 3 - rca
-          Input 4:
-            value: 999
-            summary: Input 4 - rca
-          Groove Salad:
-            value: 1000
-            summary: Groove Salad - internetradio
-          Jason's House:
-            value: 1003
-            summary: Jason's House - dlna
-          Jasons House:
-            value: 1002
-            summary: Jasons House - spotify
-          Beatles Radio:
-            value: 1007
-            summary: Beatles Radio - internetradio
-          Downstairs:
-            value: 1008
-            summary: Downstairs - spotify
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BrowsableItemResponse'
-              examples:
-                Pandora stream:
-                  value:
-                    items:
-                    - id: 0
-                      name: Blink-182 Radio
-                      playable: true
-                      parent: false
-                    - id: 1
-                      name: Cake Radio
-                      playable: true
-                      parent: false
-                    - id: 2
-                      name: Chiptune Radio
-                      playable: true
-                      parent: false
-                    - id: 3
-                      name: Glitch Hop Radio
-                      playable: true
-                      parent: false
         '422':
           description: Validation Error
           content:
@@ -7709,12 +7442,12 @@ paths:
           Aux:
             value: 995
             summary: Aux - aux
-          TV:
+          Input 1:
             value: 996
-            summary: TV - rca
-          Record Player:
+            summary: Input 1 - rca
+          Input 2:
             value: 997
-            summary: Record Player - rca
+            summary: Input 2 - rca
           Input 3:
             value: 998
             summary: Input 3 - rca
@@ -7724,18 +7457,6 @@ paths:
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
-          Jason's House:
-            value: 1003
-            summary: Jason's House - dlna
-          Jasons House:
-            value: 1002
-            summary: Jasons House - spotify
-          Beatles Radio:
-            value: 1007
-            summary: Beatles Radio - internetradio
-          Downstairs:
-            value: 1008
-            summary: Downstairs - spotify
       - description: ID of the browsable item to browse
         required: true
         schema:
@@ -7756,19 +7477,19 @@ paths:
                 Pandora stream:
                   value:
                     items:
-                    - id: 0
+                    - id: '0'
                       name: Blink-182 Radio
                       playable: true
                       parent: false
-                    - id: 1
+                    - id: '1'
                       name: Cake Radio
                       playable: true
                       parent: false
-                    - id: 2
+                    - id: '2'
                       name: Chiptune Radio
                       playable: true
                       parent: false
-                    - id: 3
+                    - id: '3'
                       name: Glitch Hop Radio
                       playable: true
                       parent: false
@@ -7781,13 +7502,13 @@ paths:
       security:
       - APIKeyCookie: []
       - APIKeyQuery: []
-  /api/streams/{sid}/{cid}/play:
-    get:
+  /api/streams/browser/{sid}/browse:
+    post:
       tags:
       - stream
-      summary: Play Stream Child
-      description: Play a child item from the current stream
-      operationId: play_stream_child_api_streams__sid___cid__play_get
+      summary: Browse Stream
+      description: Browse the top level children of the current stream's media
+      operationId: browse_stream_api_streams_browser__sid__browse_post
       parameters:
       - description: Stream ID
         required: true
@@ -7802,12 +7523,12 @@ paths:
           Aux:
             value: 995
             summary: Aux - aux
-          TV:
+          Input 1:
             value: 996
-            summary: TV - rca
-          Record Player:
+            summary: Input 1 - rca
+          Input 2:
             value: 997
-            summary: Record Player - rca
+            summary: Input 2 - rca
           Input 3:
             value: 998
             summary: Input 3 - rca
@@ -7817,440 +7538,408 @@ paths:
           Groove Salad:
             value: 1000
             summary: Groove Salad - internetradio
-          Jason's House:
-            value: 1003
-            summary: Jason's House - dlna
-          Jasons House:
-            value: 1002
-            summary: Jasons House - spotify
-          Beatles Radio:
-            value: 1007
-            summary: Beatles Radio - internetradio
-          Downstairs:
-            value: 1008
-            summary: Downstairs - spotify
-      - description: ID of the child item to play
-        required: true
-        schema:
-          title: Cid
-          minimum: 0.0
-          type: integer
-          description: ID of the child item to play
-        name: cid
-        in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrowserSelection'
+            examples:
+              Select the Music Directory:
+                value:
+                  item: /media/USBStick/Music
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/BrowsableItemResponse'
               examples:
-                Status of Jason's AmpliPi:
+                Pandora stream:
                   value:
-                    version: 1
-                    groups:
-                    - id: 100
-                      mute: true
-                      name: Upstairs
-                      vol_delta: -39
-                      vol_f: 0.51
-                      zones:
-                      - 0
-                      - 1
-                      - 2
-                      - 3
-                      - 4
-                      - 5
-                      - 6
-                      - 7
-                      - 11
-                      - 16
-                    - id: 102
-                      mute: true
-                      name: Outside
-                      source_id: 1
-                      vol_delta: -41
-                      vol_f: 0.4909090909090909
-                      zones:
-                      - 9
-                      - 10
-                    - id: 103
-                      mute: true
-                      name: Offices
-                      vol_delta: -54
-                      vol_f: 0.33
-                      zones:
-                      - 0
-                      - 7
-                    - id: 104
-                      mute: true
-                      name: Downstairs
-                      source_id: 1
-                      vol_delta: -57
-                      vol_f: 0.28500000000000003
-                      zones:
-                      - 12
-                      - 13
-                      - 14
-                      - 15
-                      - 17
-                    - id: 105
-                      mute: true
-                      name: Main Unit
-                      vol_delta: -39
-                      vol_f: 0.51
-                      zones:
-                      - 0
-                      - 1
-                      - 2
-                      - 3
-                      - 4
-                      - 5
-                    - id: 106
-                      mute: true
-                      name: Expander 1 (HV)
-                      vol_delta: -39
-                      vol_f: 0.515
-                      zones:
-                      - 6
-                      - 7
-                      - 8
-                      - 9
-                      - 10
-                      - 11
-                    - id: 107
-                      mute: true
-                      name: Expander 2
-                      vol_delta: -58
-                      vol_f: 0.275
-                      zones:
-                      - 12
-                      - 13
-                      - 14
-                      - 15
-                      - 16
-                      - 17
+                    items:
+                    - id: '0'
+                      name: Blink-182 Radio
+                      playable: true
+                      parent: false
+                    - id: '1'
+                      name: Cake Radio
+                      playable: true
+                      parent: false
+                    - id: '2'
+                      name: Chiptune Radio
+                      playable: true
+                      parent: false
+                    - id: '3'
+                      name: Glitch Hop Radio
+                      playable: true
+                      parent: false
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
+  /api/streams/browser/{sid}/play:
+    post:
+      tags:
+      - stream
+      summary: Play Stream Browser
+      description: Play an item from the current stream's browser
+      operationId: play_stream_browser_api_streams_browser__sid__play_post
+      parameters:
+      - description: Stream ID
+        required: true
+        schema:
+          title: Sid
+          minimum: 0.0
+          type: integer
+          description: Stream ID
+        name: sid
+        in: path
+        examples:
+          Aux:
+            value: 995
+            summary: Aux - aux
+          Input 1:
+            value: 996
+            summary: Input 1 - rca
+          Input 2:
+            value: 997
+            summary: Input 2 - rca
+          Input 3:
+            value: 998
+            summary: Input 3 - rca
+          Input 4:
+            value: 999
+            summary: Input 4 - rca
+          Groove Salad:
+            value: 1000
+            summary: Groove Salad - internetradio
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrowserSelection'
+            examples:
+              Select the Music Directory:
+                value:
+                  item: /media/USBStick/Music
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayItemResponse'
+              examples:
+              - directory: /media/7FA5-ECB4
+                status:
+                  version: 1
+                  sources:
+                  - id: 0
+                    name: Input 1
+                    input: stream=1005
                     info:
-                      config_file: house.json
-                      fw:
-                      - git_dirty: false
-                        git_hash: de0f8eb
-                        version: '1.6'
-                      - git_dirty: false
-                        git_hash: de0f8eb
-                        version: '1.6'
-                      - git_dirty: false
-                        git_hash: de0f8eb
-                        version: '1.6'
-                      latest_release: 0.1.9
-                      mock_ctrl: false
-                      mock_streams: false
-                      is_streamer: false
-                      lms_mode: false
-                      online: true
-                      stream_types_available:
-                      - fmradio
-                      - internetradio
-                      version: 0.1.9
-                    presets:
-                    - id: 10000
-                      last_used: 1658242203
-                      name: Mute All
-                      state:
-                        zones:
-                        - id: 0
-                          mute: true
-                        - id: 1
-                          mute: true
-                        - id: 2
-                          mute: true
-                        - id: 3
-                          mute: true
-                        - id: 4
-                          mute: true
-                        - id: 5
-                          mute: true
-                        - id: 6
-                          mute: true
-                        - id: 7
-                          mute: true
-                        - id: 8
-                          mute: true
-                        - id: 9
-                          mute: true
-                        - id: 10
-                          mute: true
-                        - id: 11
-                          mute: true
-                        - id: 12
-                          mute: true
-                        - id: 13
-                          mute: true
-                        - id: 14
-                          mute: true
-                        - id: 15
-                          mute: true
-                        - id: 16
-                          mute: true
-                        - id: 17
-                          mute: true
-                    sources:
-                    - id: 0
-                      info:
-                        img_url: static/imgs/disconnected.png
-                        name: None
-                        state: stopped
-                        supported_cmds: []
-                      input: ''
-                      name: TV
-                    - id: 1
-                      info:
-                        img_url: static/imgs/disconnected.png
-                        name: None
-                        state: stopped
-                        supported_cmds: []
-                      input: ''
-                      name: Record Player
-                    - id: 2
-                      info:
-                        album: Charleston Butterfly
-                        artist: Parov Stelar
-                        img_url: http://mediaserver-cont-sv5-2-v4v6.pandora.com/images/00/4c/b7/12/d64a4ffe82251fcc9c44555c/1080W_1080H.jpg
-                        name: Blackmill Radio - pandora
-                        state: playing
-                        station: Blackmill Radio
-                        supported_cmds:
-                        - play
-                        - pause
-                        - next
-                        - love
-                        - ban
-                        - shelve
-                        - restart
-                        track: Chambermaid Swing
-                      input: stream=1006
-                      name: Input 3
-                    - id: 3
-                      info:
-                        album: Joshua Bell, Romance of the Violin
-                        artist: Fryderyk Chopin
-                        img_url: http://cont.p-cdn.us/images/e9/cc/f2/8e/890e4e5e9940c98ba864aaee/1080W_1080H.jpg
-                        name: Classical - pandora
-                        state: playing
-                        station: Antonio Vivaldi Radio
-                        supported_cmds:
-                        - play
-                        - pause
-                        - next
-                        - love
-                        - ban
-                        - shelve
-                        - restart
-                        track: Nocturne For Piano In C Sharp Minor, Kk Anh.ia/6
-                      input: stream=1005
-                      name: Input 4
-                    streams:
-                    - id: 1000
-                      logo: https://somafm.com/img3/groovesalad-400.jpg
-                      name: Groove Salad
-                      type: internetradio
-                      url: http://ice6.somafm.com/groovesalad-32-aac
-                    - id: 1001
-                      name: Jason's House
-                      type: airplay
-                    - id: 1002
-                      name: Jasons House
-                      type: spotify
-                    - id: 1003
-                      name: Jason's House
-                      type: dlna
-                    - id: 1004
-                      name: Matt and Kim Radio
-                      password: ''
-                      station: '135242131387190035'
+                      name: Pandora - pandora
+                      state: playing
                       type: pandora
-                      user: example@micro-nova.com
-                    - id: 1005
-                      name: Classical
-                      password: ''
-                      station: '134892486689565953'
-                      type: pandora
-                      user: example@micro-nova.com
-                    - id: 1006
-                      name: Blackmill Radio
-                      password: ''
-                      station: '91717963601693449'
-                      type: pandora
-                      user: example@micro-nova.com
-                    - id: 1007
-                      logo: http://www.beatlesradio.com/content/images/thumbs/0000587.gif
-                      name: Beatles Radio
-                      type: internetradio
-                      url: http://www.beatlesradio.com:8000/stream/1/
+                      artist: The Living Tombstone
+                      track: Discord (feat. Eurobeat Brony)
+                      album: Discord (Single)
+                      station: Lemon Demon Radio
+                      img_url: https://cont-5.p-cdn.us/images/3e/8a/ca/55/11c84108afac9a6ac27f9df3/1080W_1080H.jpg
+                      supported_cmds:
+                      - play
+                      - pause
+                      - next
+                      - love
+                      - ban
+                      - shelve
+                      rating: 0
+                  - id: 1
+                    name: Input 2
+                    input: stream=1004
+                    info:
+                      name: File Browser - mediadevice
+                      state: playing
+                      type: mediadevice
+                      img_url: static/imgs/no_note.png
+                      supported_cmds:
+                      - play
+                      - pause
+                      - prev
+                  - id: 2
+                    name: Input 3
+                    input: None
+                    info:
+                      name: None
+                      state: stopped
+                      img_url: static/imgs/disconnected.png
+                      supported_cmds: []
+                  - id: 3
+                    name: Input 4
+                    input: ''
+                    info:
+                      name: None
+                      state: stopped
+                      img_url: static/imgs/disconnected.png
+                      supported_cmds: []
+                  zones:
+                  - id: 0
+                    name: Zone 1
+                    source_id: 1
+                    mute: false
+                    vol: -2
+                    vol_f: 0.975
+                    vol_min: -80
+                    vol_max: 0
+                    disabled: false
+                  - id: 1
+                    name: Zone 2
+                    source_id: 1
+                    mute: false
+                    vol: -10
+                    vol_f: 0.875
+                    vol_min: -80
+                    vol_max: 0
+                    disabled: false
+                  - id: 2
+                    name: Zone 3
+                    source_id: -1
+                    mute: true
+                    vol: 0
+                    vol_f: 1
+                    vol_min: -80
+                    vol_max: 0
+                    disabled: false
+                  - id: 3
+                    name: Zone 4
+                    source_id: -1
+                    mute: true
+                    vol: -40
+                    vol_f: 0.5
+                    vol_min: -80
+                    vol_max: 0
+                    disabled: false
+                  - id: 4
+                    name: Zone 5
+                    source_id: -1
+                    mute: true
+                    vol: -40
+                    vol_f: 0.5
+                    vol_min: -80
+                    vol_max: 0
+                    disabled: false
+                  - id: 5
+                    name: Zone 6
+                    source_id: -1
+                    mute: true
+                    vol: 0
+                    vol_f: 1
+                    vol_min: -80
+                    vol_max: 0
+                    disabled: false
+                  groups:
+                  - id: 100
+                    name: Speakers
+                    source_id: 1
                     zones:
-                    - disabled: false
-                      id: 0
-                      mute: true
-                      name: Software Office
-                      source_id: 2
-                      vol: -56
-                      vol_f: 0.28
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 1
-                      mute: true
-                      name: Upstairs Living Room
-                      source_id: 3
-                      vol: -49
-                      vol_f: 0.42
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 2
-                      mute: true
-                      name: Upstairs Dining
-                      source_id: 0
-                      vol: -66
-                      vol_f: 0.08
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 3
-                      mute: true
-                      name: Upstairs Laundry
-                      source_id: 0
-                      vol: -66
-                      vol_f: 0.08
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 4
-                      mute: true
-                      name: Upstairs Kitchen High
-                      source_id: 0
-                      vol: -45
-                      vol_f: 0.5
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 5
-                      mute: true
-                      name: Upstairs Master Bath
-                      source_id: 0
-                      vol: -23
-                      vol_f: 0.94
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 6
-                      mute: true
-                      name: Upstairs Kitchen Low HV
-                      source_id: 0
-                      vol: -66
-                      vol_f: 0.1
-                      vol_max: -30
-                      vol_min: -70
-                    - disabled: false
-                      id: 7
-                      mute: true
-                      name: Hardware Office HV
-                      source_id: 0
-                      vol: -51
-                      vol_f: 0.38
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 8
-                      mute: true
-                      name: Basement Workshop HV
-                      source_id: 0
-                      vol: -13
-                      vol_f: 0.95
-                      vol_max: -10
-                      vol_min: -70
-                    - disabled: false
-                      id: 9
-                      mute: true
-                      name: Screened Room HV
-                      source_id: 1
-                      vol: -43
-                      vol_f: 0.4909090909090909
-                      vol_max: -15
-                      vol_min: -70
-                    - disabled: false
-                      id: 10
-                      mute: true
-                      name: Upstairs Deck Living HV
-                      source_id: 1
-                      vol: -43
-                      vol_f: 0.4909090909090909
-                      vol_max: -15
-                      vol_min: -70
-                    - disabled: false
-                      id: 11
-                      mute: true
-                      name: Upstairs Main Bedroom HV
-                      source_id: 0
-                      vol: -66
-                      vol_f: 0.08
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 12
-                      mute: true
-                      name: Downstairs Living Room
-                      source_id: 1
-                      vol: -48
-                      vol_f: 0.44
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 13
-                      mute: true
-                      name: Downstairs Dining
-                      source_id: 1
-                      vol: -48
-                      vol_f: 0.44
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 14
-                      mute: true
-                      name: Downstairs Bath
-                      source_id: 1
-                      vol: -64
-                      vol_f: 0.12
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 15
-                      mute: true
-                      name: Downstairs Laundry
-                      source_id: 1
-                      vol: -48
-                      vol_f: 0.44
-                      vol_max: -20
-                      vol_min: -70
-                    - disabled: false
-                      id: 16
-                      mute: true
-                      name: Upstairs Main Bath
-                      source_id: 0
-                      vol: -66
-                      vol_f: 0.1
-                      vol_max: -30
-                      vol_min: -70
-                    - disabled: false
-                      id: 17
-                      mute: true
-                      name: Downstairs Bedroom
-                      source_id: 1
-                      vol: -52
-                      vol_f: 0.45
-                      vol_max: -30
-                      vol_min: -70
+                    - 0
+                    - 1
+                    mute: false
+                    vol_delta: -6
+                    vol_f: 0.925
+                  streams:
+                  - id: 995
+                    name: Aux
+                    type: aux
+                    disabled: false
+                    browsable: false
+                  - id: 996
+                    name: Input 1
+                    type: rca
+                    index: 0
+                    disabled: false
+                    browsable: false
+                  - id: 997
+                    name: Input 2
+                    type: rca
+                    index: 1
+                    disabled: false
+                    browsable: false
+                  - id: 998
+                    name: Input 3
+                    type: rca
+                    index: 2
+                    disabled: false
+                    browsable: false
+                  - id: 999
+                    name: Input 4
+                    type: rca
+                    index: 3
+                    disabled: false
+                    browsable: false
+                  - id: 1000
+                    name: Groove Salad
+                    type: internetradio
+                    url: http://ice6.somafm.com/groovesalad-32-aac
+                    logo: https://somafm.com/img3/groovesalad-400.jpg
+                    disabled: false
+                    browsable: false
+                  - id: 1003
+                    name: "\tTick Tock Radio - 1950"
+                    type: internetradio
+                    url: https://streaming.ticktock.radio/tt/1950/icecast.audio
+                    logo: https://ticktock.radio/static/assets/img/apple-icon-120x120.png
+                    disabled: false
+                    browsable: false
+                  - id: 1004
+                    name: File Browser
+                    type: mediadevice
+                    url: /media/7FA5-ECB4/Music/MX FINICULI.mp3
+                    disabled: false
+                    browsable: true
+                  - id: 1005
+                    name: Pandora
+                    type: pandora
+                    user: streaming@micro-nova.com
+                    password: efoie6jhwEM*n8rMKU89
+                    station: '185208337799842483'
+                    disabled: false
+                    browsable: true
+                  presets:
+                  - id: 10000
+                    name: Mute All
+                    state:
+                      zones:
+                      - mute: true
+                        id: 0
+                      - mute: true
+                        id: 1
+                      - mute: true
+                        id: 2
+                      - mute: true
+                        id: 3
+                      - mute: true
+                        id: 4
+                      - mute: true
+                        id: 5
+                  - id: 9999
+                    name: Restore last config
+                    state:
+                      sources:
+                      - name: Input 1
+                        input: stream=1005
+                        id: 0
+                      - name: Input 2
+                        input: ''
+                        id: 1
+                      - name: Input 3
+                        input: ''
+                        id: 2
+                      - name: Input 4
+                        input: stream=1007
+                        id: 3
+                      zones:
+                      - name: Zone 1
+                        source_id: 3
+                        mute: false
+                        vol: -3
+                        vol_f: 0.96
+                        vol_min: -80
+                        vol_max: 0
+                        disabled: false
+                        id: 0
+                      - name: Zone 2
+                        source_id: 3
+                        mute: false
+                        vol: -3
+                        vol_f: 0.96
+                        vol_min: -80
+                        vol_max: 0
+                        disabled: false
+                        id: 1
+                      - name: Zone 3
+                        source_id: 3
+                        mute: false
+                        vol: -3
+                        vol_f: 0.96
+                        vol_min: -80
+                        vol_max: 0
+                        disabled: false
+                        id: 2
+                      - name: Zone 4
+                        source_id: 3
+                        mute: false
+                        vol: -3
+                        vol_f: 0.96
+                        vol_min: -80
+                        vol_max: 0
+                        disabled: false
+                        id: 3
+                      - name: Zone 5
+                        source_id: 3
+                        mute: false
+                        vol: -3
+                        vol_f: 0.96
+                        vol_min: -80
+                        vol_max: 0
+                        disabled: false
+                        id: 4
+                      - name: Zone 6
+                        source_id: 3
+                        mute: false
+                        vol: -3
+                        vol_f: 0.96
+                        vol_min: -80
+                        vol_max: 0
+                        disabled: false
+                        id: 5
+                      groups:
+                      - name: Speakers
+                        source_id: 3
+                        zones:
+                        - 0
+                        - 1
+                        mute: false
+                        vol_delta: -3
+                        vol_f: 0.96
+                        id: 100
+                  info:
+                    version: 0.4.2+312130f-usb-support-dirty
+                    config_file: house.json
+                    mock_ctrl: false
+                    mock_streams: false
+                    is_streamer: false
+                    online: true
+                    latest_release: 0.1.8
+                    access_key: ''
+                    lms_mode: false
+                    serial: '272'
+                    expanders: []
+                    fw:
+                    - version: '1.9'
+                      git_hash: de87dba
+                      git_dirty: true
+                    stream_types_available:
+                    - rca
+                    - airplay
+                    - spotify
+                    - internetradio
+                    - dlna
+                    - pandora
+                    - plexamp
+                    - aux
+                    - fileplayer
+                    - lms
+                    - mediadevice
+                    connected_drives:
+                    - /media/7FA5-ECB4
         '422':
           description: Validation Error
           content:
@@ -8412,9 +8101,6 @@ paths:
           Mute All:
             value: 10000
             summary: Mute All
-          Restore last config:
-            value: 9999
-            summary: Restore last config
       responses:
         '200':
           description: Successful Response
@@ -8470,9 +8156,6 @@ paths:
           Mute All:
             value: 10000
             summary: Mute All
-          Restore last config:
-            value: 9999
-            summary: Restore last config
       responses:
         '200':
           description: Successful Response
@@ -8915,9 +8598,6 @@ paths:
           Mute All:
             value: 10000
             summary: Mute All
-          Restore last config:
-            value: 9999
-            summary: Restore last config
       requestBody:
         content:
           application/json:
@@ -9381,9 +9061,6 @@ paths:
           Mute All:
             value: 10000
             summary: Mute All
-          Restore last config:
-            value: 9999
-            summary: Restore last config
       responses:
         '200':
           description: Successful Response
@@ -9811,21 +9488,46 @@ paths:
       tags:
       - announce
       summary: Announce
-      description: "Make an announcement.\n\n    Make a PA announcement on one or\
-        \ more zones (default: all enabled Zones) with a `media` URL\npointing to\
-        \ local or remote audio. The request returns success when the audio is done\
-        \ playing.\n\n    Each zone that is announced to has its current audio playback\
-        \ paused, the announcement\naudio plays at the volume specified, then when\
-        \ the announcement finishes the audio continues\nplaying with a small delay.\n\
-        \n    The volume of the announcement can be specified in relatively with `vol_f`\
-        \ [0.0, 1.0]\nwhich uses the [zone.vol_min, zone.vol_min] decibel range configured\
-        \ per zone.\nThe volume can alternatively be controlled in absolute decibels\
-        \ with `vol`.\nBy default the volume is `vol_f=0.5` specifying a 50% relative\
-        \ volume for each zone.\n\n    The zones to playback on can be specified through\
-        \ `zones`, `groups`, or a combination of the 2.\nif no zone is specified the\
-        \ announcement is played to all zones.\n\n    Behind the scenes this uses\
-        \ VLC and passes the URL from 'media' verbatim and waits\nfor VLC to exit\
-        \ when it is done playing."
+      description: 'Make an announcement.
+
+
+        Make a PA announcement on one or more zones (default: all enabled Zones) with
+        a `media` URL
+
+        pointing to local or remote audio. The request returns success when the audio
+        is done playing.
+
+
+        Each zone that is announced to has its current audio playback paused, the
+        announcement
+
+        audio plays at the volume specified, then when the announcement finishes the
+        audio continues
+
+        playing with a small delay.
+
+
+        The volume of the announcement can be specified in relatively with `vol_f`
+        [0.0, 1.0]
+
+        which uses the [zone.vol_min, zone.vol_min] decibel range configured per zone.
+
+        The volume can alternatively be controlled in absolute decibels with `vol`.
+
+        By default the volume is `vol_f=0.5` specifying a 50% relative volume for
+        each zone.
+
+
+        The zones to playback on can be specified through `zones`, `groups`, or a
+        combination of the 2.
+
+        if no zone is specified the announcement is played to all zones.
+
+
+        Behind the scenes this uses VLC and passes the URL from ''media'' verbatim
+        and waits
+
+        for VLC to exit when it is done playing.'
       operationId: announce_api_announce_post
       requestBody:
         content:
@@ -9835,7 +9537,7 @@ paths:
             examples:
               Make NASA Announcement:
                 value:
-                  media: https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3
+                  media: https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3
         required: true
       responses:
         '200':
@@ -10736,6 +10438,8 @@ paths:
                     stream_types_available:
                     - bluetooth
                     - fmradio
+                    connected_drives:
+                    - /media/7FA5-ECB4
       security:
       - APIKeyCookie: []
       - APIKeyQuery: []
@@ -10828,7 +10532,7 @@ components:
       examples:
         Make NASA Announcement:
           value:
-            media: https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3
+            media: https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3
     Body_login_auth_login_post:
       title: Body_login_auth_login_post
       required:
@@ -10867,7 +10571,7 @@ components:
       properties:
         id:
           title: Id
-          type: integer
+          type: string
         name:
           title: Name
           type: string
@@ -10896,22 +10600,36 @@ components:
         Pandora stream:
           value:
             items:
-            - id: 0
+            - id: '0'
               name: Blink-182 Radio
               playable: true
               parent: false
-            - id: 1
+            - id: '1'
               name: Cake Radio
               playable: true
               parent: false
-            - id: 2
+            - id: '2'
               name: Chiptune Radio
               playable: true
               parent: false
-            - id: 3
+            - id: '3'
               name: Glitch Hop Radio
               playable: true
               parent: false
+    BrowserSelection:
+      title: BrowserSelection
+      required:
+      - item
+      type: object
+      properties:
+        item:
+          title: Item
+          type: string
+          description: Identifier of piece of media in browser to play
+      examples:
+        Select the Music Directory:
+          value:
+            item: /media/USBStick/Music
     Command:
       title: Command
       required:
@@ -11021,6 +10739,24 @@ components:
 
 
         Volume, mute, and source_id fields are aggregates of the member zones.'
+      creation_examples:
+        Upstairs Group:
+          value:
+            name: Upstairs
+            zones:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+        Downstairs Group:
+          value:
+            name: Downstairs
+            zones:
+            - 6
+            - 7
+            - 8
+            - 9
       examples:
         Upstairs Group:
           value:
@@ -11045,24 +10781,6 @@ components:
             - 9
             vol_delta: -30
             vol_f: 0.63
-      creation_examples:
-        Upstairs Group:
-          value:
-            name: Upstairs
-            zones:
-            - 1
-            - 2
-            - 3
-            - 4
-            - 5
-        Downstairs Group:
-          value:
-            name: Downstairs
-            zones:
-            - 6
-            - 7
-            - 8
-            - 9
     GroupUpdate:
       title: GroupUpdate
       type: object
@@ -11279,6 +10997,13 @@ components:
           title: Extra Fields
           type: object
           description: Optional fields for customization
+        connected_drives:
+          title: Connected Drives
+          type: array
+          items:
+            type: string
+          description: A list of all external drives connected
+          default: []
       description: 'AmpliPi System information '
       examples:
         System info:
@@ -11303,6 +11028,8 @@ components:
             stream_types_available:
             - bluetooth
             - fmradio
+            connected_drives:
+            - /media/7FA5-ECB4
     MultiZoneUpdate:
       title: MultiZoneUpdate
       required:
@@ -11356,6 +11083,321 @@ components:
       - 2
       - 3
       description: An enumeration.
+    PlayItemResponse:
+      title: PlayItemResponse
+      required:
+      - status
+      type: object
+      properties:
+        directory:
+          title: Directory
+          type: string
+        status:
+          $ref: '#/components/schemas/Status'
+      examples:
+      - directory: /media/7FA5-ECB4
+        status:
+          version: 1
+          sources:
+          - id: 0
+            name: Input 1
+            input: stream=1005
+            info:
+              name: Pandora - pandora
+              state: playing
+              type: pandora
+              artist: The Living Tombstone
+              track: Discord (feat. Eurobeat Brony)
+              album: Discord (Single)
+              station: Lemon Demon Radio
+              img_url: https://cont-5.p-cdn.us/images/3e/8a/ca/55/11c84108afac9a6ac27f9df3/1080W_1080H.jpg
+              supported_cmds:
+              - play
+              - pause
+              - next
+              - love
+              - ban
+              - shelve
+              rating: 0
+          - id: 1
+            name: Input 2
+            input: stream=1004
+            info:
+              name: File Browser - mediadevice
+              state: playing
+              type: mediadevice
+              img_url: static/imgs/no_note.png
+              supported_cmds:
+              - play
+              - pause
+              - prev
+          - id: 2
+            name: Input 3
+            input: None
+            info:
+              name: None
+              state: stopped
+              img_url: static/imgs/disconnected.png
+              supported_cmds: []
+          - id: 3
+            name: Input 4
+            input: ''
+            info:
+              name: None
+              state: stopped
+              img_url: static/imgs/disconnected.png
+              supported_cmds: []
+          zones:
+          - id: 0
+            name: Zone 1
+            source_id: 1
+            mute: false
+            vol: -2
+            vol_f: 0.975
+            vol_min: -80
+            vol_max: 0
+            disabled: false
+          - id: 1
+            name: Zone 2
+            source_id: 1
+            mute: false
+            vol: -10
+            vol_f: 0.875
+            vol_min: -80
+            vol_max: 0
+            disabled: false
+          - id: 2
+            name: Zone 3
+            source_id: -1
+            mute: true
+            vol: 0
+            vol_f: 1
+            vol_min: -80
+            vol_max: 0
+            disabled: false
+          - id: 3
+            name: Zone 4
+            source_id: -1
+            mute: true
+            vol: -40
+            vol_f: 0.5
+            vol_min: -80
+            vol_max: 0
+            disabled: false
+          - id: 4
+            name: Zone 5
+            source_id: -1
+            mute: true
+            vol: -40
+            vol_f: 0.5
+            vol_min: -80
+            vol_max: 0
+            disabled: false
+          - id: 5
+            name: Zone 6
+            source_id: -1
+            mute: true
+            vol: 0
+            vol_f: 1
+            vol_min: -80
+            vol_max: 0
+            disabled: false
+          groups:
+          - id: 100
+            name: Speakers
+            source_id: 1
+            zones:
+            - 0
+            - 1
+            mute: false
+            vol_delta: -6
+            vol_f: 0.925
+          streams:
+          - id: 995
+            name: Aux
+            type: aux
+            disabled: false
+            browsable: false
+          - id: 996
+            name: Input 1
+            type: rca
+            index: 0
+            disabled: false
+            browsable: false
+          - id: 997
+            name: Input 2
+            type: rca
+            index: 1
+            disabled: false
+            browsable: false
+          - id: 998
+            name: Input 3
+            type: rca
+            index: 2
+            disabled: false
+            browsable: false
+          - id: 999
+            name: Input 4
+            type: rca
+            index: 3
+            disabled: false
+            browsable: false
+          - id: 1000
+            name: Groove Salad
+            type: internetradio
+            url: http://ice6.somafm.com/groovesalad-32-aac
+            logo: https://somafm.com/img3/groovesalad-400.jpg
+            disabled: false
+            browsable: false
+          - id: 1003
+            name: "\tTick Tock Radio - 1950"
+            type: internetradio
+            url: https://streaming.ticktock.radio/tt/1950/icecast.audio
+            logo: https://ticktock.radio/static/assets/img/apple-icon-120x120.png
+            disabled: false
+            browsable: false
+          - id: 1004
+            name: File Browser
+            type: mediadevice
+            url: /media/7FA5-ECB4/Music/MX FINICULI.mp3
+            disabled: false
+            browsable: true
+          - id: 1005
+            name: Pandora
+            type: pandora
+            user: streaming@micro-nova.com
+            password: efoie6jhwEM*n8rMKU89
+            station: '185208337799842483'
+            disabled: false
+            browsable: true
+          presets:
+          - id: 10000
+            name: Mute All
+            state:
+              zones:
+              - mute: true
+                id: 0
+              - mute: true
+                id: 1
+              - mute: true
+                id: 2
+              - mute: true
+                id: 3
+              - mute: true
+                id: 4
+              - mute: true
+                id: 5
+          - id: 9999
+            name: Restore last config
+            state:
+              sources:
+              - name: Input 1
+                input: stream=1005
+                id: 0
+              - name: Input 2
+                input: ''
+                id: 1
+              - name: Input 3
+                input: ''
+                id: 2
+              - name: Input 4
+                input: stream=1007
+                id: 3
+              zones:
+              - name: Zone 1
+                source_id: 3
+                mute: false
+                vol: -3
+                vol_f: 0.96
+                vol_min: -80
+                vol_max: 0
+                disabled: false
+                id: 0
+              - name: Zone 2
+                source_id: 3
+                mute: false
+                vol: -3
+                vol_f: 0.96
+                vol_min: -80
+                vol_max: 0
+                disabled: false
+                id: 1
+              - name: Zone 3
+                source_id: 3
+                mute: false
+                vol: -3
+                vol_f: 0.96
+                vol_min: -80
+                vol_max: 0
+                disabled: false
+                id: 2
+              - name: Zone 4
+                source_id: 3
+                mute: false
+                vol: -3
+                vol_f: 0.96
+                vol_min: -80
+                vol_max: 0
+                disabled: false
+                id: 3
+              - name: Zone 5
+                source_id: 3
+                mute: false
+                vol: -3
+                vol_f: 0.96
+                vol_min: -80
+                vol_max: 0
+                disabled: false
+                id: 4
+              - name: Zone 6
+                source_id: 3
+                mute: false
+                vol: -3
+                vol_f: 0.96
+                vol_min: -80
+                vol_max: 0
+                disabled: false
+                id: 5
+              groups:
+              - name: Speakers
+                source_id: 3
+                zones:
+                - 0
+                - 1
+                mute: false
+                vol_delta: -3
+                vol_f: 0.96
+                id: 100
+          info:
+            version: 0.4.2+312130f-usb-support-dirty
+            config_file: house.json
+            mock_ctrl: false
+            mock_streams: false
+            is_streamer: false
+            online: true
+            latest_release: 0.1.8
+            access_key: ''
+            lms_mode: false
+            serial: '272'
+            expanders: []
+            fw:
+            - version: '1.9'
+              git_hash: de87dba
+              git_dirty: true
+            stream_types_available:
+            - rca
+            - airplay
+            - spotify
+            - internetradio
+            - dlna
+            - pandora
+            - plexamp
+            - aux
+            - fileplayer
+            - lms
+            - mediadevice
+            connected_drives:
+            - /media/7FA5-ECB4
     PlayMedia:
       title: PlayMedia
       required:
@@ -11383,7 +11425,7 @@ components:
           maximum: 3.0
           minimum: 0.0
           type: integer
-          description: Source to announce with
+          description: Source to play media with
       description: 'Plays media on a specified source.
 
         Will return an error if there is no source specified.'
@@ -11420,10 +11462,9 @@ components:
 
         In addition to most of the configuration found in Status, this can contain
         commands as well that configure the state of different streaming services.'
-      examples:
-        Mute All:
+      creation_examples:
+        Add Mute All:
           value:
-            id: 10000
             name: Mute All
             state:
               zones:
@@ -11439,9 +11480,10 @@ components:
                 mute: true
               - id: 5
                 mute: true
-      creation_examples:
-        Add Mute All:
+      examples:
+        Mute All:
           value:
+            id: 10000
             name: Mute All
             state:
               zones:
@@ -12297,47 +12339,6 @@ components:
           type: boolean
           description: This stream can be paused, only used on FilePlayers
       description: 'Digital stream such as Pandora, AirPlay or Spotify '
-      examples:
-        Regina Spektor Radio:
-          value:
-            id: 90890
-            name: Regina Spektor Radio
-            password: ''
-            station: '4473713754798410236'
-            status: connected
-            type: pandora
-            user: example1@micro-nova.com
-            browsable: true
-        Matt and Kim Radio (disconnected):
-          value:
-            id: 90891
-            info:
-              details: No info available
-            name: Matt and Kim Radio
-            password: ''
-            station: '4610303469018478727'
-            status: disconnected
-            type: pandora
-            user: example2@micro-nova.com
-            browsable: true
-        AirPlay (connected):
-          value:
-            id: 44590
-            info:
-              details: No info available
-            name: Jason's iPhone
-            status: connected
-            type: airplay
-            browsable: false
-        AirPlay (disconnected):
-          value:
-            id: 4894
-            info:
-              details: No info available
-            name: Rnay
-            status: disconnected
-            type: airplay
-            browsable: false
       creation_examples:
         Add Beatles Internet Radio Station:
           value:
@@ -12388,7 +12389,7 @@ components:
           value:
             name: Play NASA Announcement
             type: fileplayer
-            url: https://www.nasa.gov/mp3/640149main_Computers%20are%20in%20Control.mp3
+            url: https://www.nasa.gov/wp-content/uploads/2015/01/640150main_Go20at20Throttle20Up.mp3
         Add FM Radio Station:
           value:
             name: WXYZ
@@ -12415,6 +12416,47 @@ components:
             type: lms
             server: mylmsserver
             port: 9000
+      examples:
+        Regina Spektor Radio:
+          value:
+            id: 90890
+            name: Regina Spektor Radio
+            password: ''
+            station: '4473713754798410236'
+            status: connected
+            type: pandora
+            user: example1@micro-nova.com
+            browsable: true
+        Matt and Kim Radio (disconnected):
+          value:
+            id: 90891
+            info:
+              details: No info available
+            name: Matt and Kim Radio
+            password: ''
+            station: '4610303469018478727'
+            status: disconnected
+            type: pandora
+            user: example2@micro-nova.com
+            browsable: true
+        AirPlay (connected):
+          value:
+            id: 44590
+            info:
+              details: No info available
+            name: Jason's iPhone
+            status: connected
+            type: airplay
+            browsable: false
+        AirPlay (disconnected):
+          value:
+            id: 4894
+            info:
+              details: No info available
+            name: Rnay
+            status: disconnected
+            type: airplay
+            browsable: false
     StreamCommand:
       title: StreamCommand
       enum:
