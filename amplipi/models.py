@@ -21,10 +21,16 @@ Encourages reuse of datastructures across AmpliPi
 
 # type handling, fastapi leverages type checking for performance and easy docs
 from functools import lru_cache
-from typing import List, Dict, Optional, Union, Set
+from typing import List, Dict, Optional, Union, Set, Annotated
 from types import SimpleNamespace
 from enum import Enum
 from pathlib import Path
+
+import os
+import json
+
+from shutil import disk_usage
+from psutil import virtual_memory
 
 # pylint: disable=no-name-in-module
 from pydantic import BaseSettings, BaseModel, Field
@@ -108,6 +114,114 @@ class fields_w_default(SimpleNamespace):
   GroupVolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F,
                        description='Average output volume as a floating-point number')
   Disabled = Field(default=False, description='Set to true if not connected to a speaker')
+
+
+def calc_average(running_average, weight, new_entry):
+  """
+    Calculates an average using three variables:
+
+    running_average, the average so far
+
+    weight, the count of numbers that went into that average
+
+    new_entry, the newest addition to the dataset
+
+
+    Returns the new average, and new weight
+  """
+  return ((running_average * weight) + new_entry) / (weight + 1), weight + 1
+
+
+class StreamUsageSchema(BaseModel):
+  """Schema for individual stream type usage statistics"""
+  # For the purpose of the below comments, a "survey cycle" is defined as how often the device phones home
+
+  # The highest number of concurrent streams running within the survey cycle, constrained to be a number between 0 and 4
+  concurrent_polls: int = 0  # Used to calculate average
+  average_concurrent_streams: Annotated[int, Field(ge=0, le=4)] = 0
+  peak_concurrent_streams: Annotated[int, Field(ge=0, le=4)] = 0
+
+  # The length in seconds of longest-connected instance within the survey cycle, maxing out after 24 hours. Is not additive with multiple concurrent streams.
+  runtime_polls: int = 0  # Used to calculate average
+  average_runtime: Annotated[int, Field(ge=0, le=86400)] = 0
+  peak_runtime: Annotated[int, Field(ge=0, le=86400)] = 0
+
+  # The number of times a stream of this type was reset via the stream settings during a survey cycle
+  times_reset: int = 0
+
+  def get_concurrent_streams(self, concurrent_streams: int):
+    """Takes in number of concurrent streams, records peak and average"""
+    self.peak_concurrent_streams = max(self.peak_concurrent_streams, concurrent_streams)
+    self.average_concurrent_streams, self.concurrent_polls = calc_average(self.average_concurrent_streams, self.concurrent_polls, concurrent_streams)
+
+  def get_runtime(self, current_runtime: int):
+    """Takes in current runtime, records peak and average"""
+    self.peak_runtime = max(self.peak_runtime, current_runtime)
+    self.average_runtime, self.runtime_polls = calc_average(self.average_runtime, self.runtime_polls, current_runtime)
+
+
+class UsageSurveySchema(BaseModel):
+  """A verification layer for JSON objects to be sent to the Usage Survey server"""
+  # Auth code that legitimizes the data as coming from a MicroNova AmpliPro and not some random other source
+  authentication_code: str = os.environ.get('AUTH_CODE', "")
+
+  # These were once in a dict called "streams" that contained the data in the same format, having there not be dicts 3 layers deep seemed prefferable
+  airplay: StreamUsageSchema
+  dlna: StreamUsageSchema
+  internet_radio: StreamUsageSchema
+  lms: StreamUsageSchema
+  pandora: StreamUsageSchema
+  file_player: StreamUsageSchema
+  spotify: StreamUsageSchema
+  local_media: StreamUsageSchema
+
+  # Memory measured in Kb, max is the amount of RAM the system has
+  peak_memory_usage: Annotated[int, Field(ge=0, le=990024)] = 0
+  memory_polls: int = 0  # Used to calculate average usage by weighting the current average before adding the current measurement to the running average
+  average_memory_usage: Annotated[int, Field(ge=0, le=990024)] = 0
+
+  # Disk space measured in Gb
+  # Not Annotated[int, Field(...)] due to storage being increasable in the field with external hard drives
+  # Disk average not collected as it's less variable over time
+  disk_total: int = 0
+  disk_used: int = 0
+  disk_free: int = 0
+
+  # Used to store notable events, such as anything that occurs above a logging level of warning
+  runtime_events: List[str] = []
+
+  def save_to_disk(self):
+    """Saves contents of UsageSurvey to file"""
+    with open("/var/lib/UsageSurvey.json", "w", encoding="UTF-8") as file:
+      file.write(self.json())
+
+  @classmethod
+  def load_from_disk(cls, path="/var/lib/UsageSurvey.json"):
+    """Loads contents of UsageSurvey from saved file"""
+    if os.path.exists(path):
+      with open(path, "r", encoding="UTF-8") as file:
+        data = json.load(file)
+        return cls(**data)
+    return cls()
+
+  def get_disk_usage(self):
+    """Collects and populates disk usage statistics via shutil"""
+    self.disk_total, self.disk_used, self.disk_free = disk_usage("/")
+    self.save_to_disk()
+
+  def get_mem_usage(self):
+    """Collects and populates memory usage statisctics via psutil"""
+    memory_info = virtual_memory()
+    used_memory = memory_info.used
+
+    self.peak_memory_usage = max(self.peak_memory_usage, used_memory)
+    self.average_memory_usage, self.memory_polls = calc_average(self.average_memory_usage, self.memory_polls, used_memory)
+    self.save_to_disk()
+
+  def record_runtime_event(self, event: str):
+    """Takes a string and adds it to the array of runtime events"""
+    self.runtime_events.append(event)
+    self.save_to_disk()
 
 
 class Base(BaseModel):
