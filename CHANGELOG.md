@@ -6,6 +6,7 @@
 * Webapp
   * Update Airplay icon to modern variant
   * Add gradient to background to break up the solid color
+  * Reformat Admin Settings portion of Admin Panel (previously known as the Updater)
 
 ## 0.4.5
 * Web App
