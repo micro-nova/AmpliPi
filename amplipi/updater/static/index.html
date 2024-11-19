@@ -102,8 +102,8 @@
             <div class="tab-pane fade text-left column-container" id="admin-settings" role="tabpanel" aria-labelledby="admin-settings-tab">
               <script>
                 function setVisibility(visible, ...others){
-                  // Sets visibility of the first element to inline, the rest to none
-                  visible.style.display = 'inline';
+                  // Sets visibility of the first element to block, the rest to none
+                  visible.style.display = 'block';
                   for(i=0; i < others.length; i++){
                     others[i].style.display = 'none';
                   }
@@ -199,49 +199,49 @@
               </div>
 
               <!-- Password -->
-              <div id="set-password column-item">
-                <h6 class="hover-label">
-                  Set Password
-                  <span class="hover-tooltip">
-                    This form lets you set a web interface password, which will make it so that you must input the same password to access the system's controls. Leaving the fields empty will remove password protection. Note that this only affects the web interface, not the system password, and will log out any active sessions.
-                  </span>
+              <div style="background-color: inherit; box-shadow: none; width: 100%;" class="card set-password column-item">
+                <h6 class="card-header">
+                  Set Password:
                 </h6>
-                <div class="set-password form-group">
+                <div class="set-password form-group indent">
+                  <div class="description-color">
+                    Set Password allows you to set a password that will be required to access the webapp. Setting a password will log out any active user sessions and will require using the new password to access the app, and setting a blank password will remove all password protections.
+                    <br />
+                    Note that this is not the system password found on the screen on the front of your unit.
+                  </div>
                   <div>
                     <label for="password">
                       Password:
                     </label>
-                    <input id="password" type="password">
+                    <input id="password" type="password" class="pseudo-column">
                   </div>
                   <div>
                     <label for="confirm-password" >Confirm Password:</label>
-                    <input id="confirm-password" type="password">
+                    <input id="confirm-password" type="password" class="pseudo-column">
                   </div>
-                  <div>
-                    <a id="password-submit" role="button" class="btn btn-primary btn-sm text-center" onClick="set_password();">Update Password</a>
-                    <a id="password-success" role="button" class="btn btn-primary btn-sm text-center" style="display: none; background-color: #00AA00;">Success!</a>
-                    <a id="password-fail" role="button" class="btn btn-primary btn-sm text-center" style="display: none; background-color: #DD0000;">Failure...</a>
-                    <a id="password-no-match" role="button" class="btn btn-primary btn-sm text-center" style="display: none; background-color: #DD0000;">Passwords do not match!</a>
+                  <div class="pseudo-column">
+                    <a id="password-submit" role="button" class="btn btn-primary btn-sm text-center wide-button" onClick="set_password();">Update Password</a>
+                    <a id="password-success" role="button" class="btn btn-primary btn-sm text-center wide-button success" style="display: none;">Success!</a>
+                    <a id="password-fail" role="button" class="btn btn-primary btn-sm text-center wide-button error" style="display: none;">Failure...</a>
+                    <a id="password-no-match" role="button" class="btn btn-primary btn-sm text-center wide-button error" style="display: none;">Passwords do not match!</a>
                     <div id="password-spinner" style="display: none;">
                       <i class="fa fa-circle-o-notch fa-spin" style="font-size:24px"></i>
                     </div>
-                  </div>
-                  <div>
                   </div>
                 </div>
               </div>
 
               <!-- Log Persistence -->
-              <div id="log-persistence column-item">
-                <h6 class="hover-label">
-                  Persist Logs
-                  <span class="hover-tooltip">
-                    By default, logs are stored in memory to preserve the limited read/write cycles of the system's EMMC flash storage; this has the effect of deleting all logs on system reboot
-                    <br>
-                    By enabling log persistence, you can save logs to storage instead to persist them between reboots. Over time this may wear out your device; to avoid this, there is also an "auto off delay" that will turn off persistance after X days. Input 0 to not automatically disable log persistance (this is not recommended)
-                  </span>
+              <div style="background-color: inherit; box-shadow: none; width: 100%;" class="card log-persistence column-item">
+                <h6 class="card-header">
+                  Persist Logs:
                 </h6>
-                <div class="log-persistence form-group">
+                <div class="log-persistence form-group indent">
+                  <div class="description-color">
+                    Persist Logs saves logs to system storage instead of deleting them on reboot
+                    <br/>
+                    To prevent wear on the eMMC flash storage, you may set an "auto-off delay" to disable persistence after X days (enter 0 to keep it on indefinitely, at risk of shortening system lifespan).
+                  </div>
                   <div>
                     <input id="persist-checkbox" type="checkbox"/>
                     <label for="persist-checkbox">Enable</label>
@@ -250,19 +250,16 @@
                     <label for="persist-input">
                       Auto Off Delay:
                     </label>
-                    <input id="persist-input" />
+                    <input id="persist-input" class="pseudo-column"/>
                   </div>
-                  <div>
-                    <a id="persist-submit" role="button" class="btn btn-primary btn-sm text-center" onClick="setPersist()">Save Persistence & Delay</a>
-                    <a id="persist-success" role="button" class="btn btn-primary btn-sm text-center" style="display: none; background-color: #00AA00;">Success!</a>
-                    <a id="persist-fail" role="button" class="btn btn-primary btn-sm text-center" style="display: none; background-color: #DD0000;">Failure...</a>
+                  <div class="pseudo-column">
+                    <a id="persist-submit" role="button" class="btn btn-primary btn-sm text-center wide-button" onClick="setPersist()">Save Persistence & Delay</a>
+                    <a id="persist-success" role="button" class="btn btn-primary btn-sm text-center wide-button success" style="display: none;">Success!</a>
+                    <a id="persist-fail" role="button" class="btn btn-primary btn-sm text-center wide-button error" style="display: none;">Failure...</a>
                     <div id="persist-spinner" style="display: none;">
                       <i class="fa fa-circle-o-notch fa-spin" style="font-size:24px"></i>
                     </div>
                   </div>
-                </div>
-                <div class="set-password-dialog">
-                  WARNING: Leaving log persistence on for extended periods can damage your system.
                 </div>
               </div> <!-- log-persistence -->
 
