@@ -3,6 +3,7 @@
 ## 0.4.6
 * System
   * Automatically persist logs during (and for a short time after) updates
+  * Reformat Admin Settings portion of Admin Panel (previously known as the Updater)
 
 ## 0.4.5
 * Web App
