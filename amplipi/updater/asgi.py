@@ -255,11 +255,27 @@ def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None
     upload_file.file.close()
 
 
+def persist_logs_during_update():
+  """Used during system updates to ensure persist logs is activated and has a minimum delay"""
+  persist_data = get_log_persist_state()
+  existing_persist = persist_data.persist_logs
+  existing_delay = persist_data.auto_off_delay
+  # If persist logs is already on and has a larger delay, keep that delay; otherwise ensure it has our sane minimum for support
+  if existing_persist and (existing_delay > 3 or existing_delay == 0):
+    data = Persist_Logs(persist_logs=True, auto_off_delay=existing_delay)
+    toggle_persist_logs(data=data)
+  else:
+    # Three days is an arbitrary number, picked to ensure the next few days of usage post-update are captured for support cases
+    data = Persist_Logs(persist_logs=True, auto_off_delay=3)
+    toggle_persist_logs(data=data)
+
+
 @router.post("/update/upload")
 async def start_upload(file: UploadFile = File(...)):
   """ Start a upload based update """
   logger.info(file.filename)
   try:
+    persist_logs_during_update()
     # TODO: use a temp directory and pass it the installation
     os.makedirs('web/uploads', exist_ok=True)
     save_upload_file(file, pathlib.Path('web/uploads/update.tar.gz'))
@@ -285,6 +301,7 @@ async def download_update(info: ReleaseInfo):
   """ Download the update """
   logger.info(f'downloading update from: {info.url}')
   try:
+    persist_logs_during_update()
     os.makedirs('web/uploads', exist_ok=True)
     download(info.url, 'web/uploads/update.tar.gz')
     return 200
