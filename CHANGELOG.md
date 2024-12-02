@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## 0.4.6
+* System
+  * Automatically persist logs during (and for a short time after) updates
+
 ## 0.4.5
 * Web App
   * Ensure that abnormally-shaped album art is still horizontally centered
