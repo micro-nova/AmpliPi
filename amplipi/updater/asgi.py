@@ -442,9 +442,25 @@ def install_thread():
 @router.get('/update/install')
 def install():
   """ Start the install after update is downloaded """
+  persist_log_during_update()
   t = threading.Thread(target=install_thread)
   t.start()
   return {}
+
+
+def persist_log_during_update():
+  """Used during system updates to ensure persist logs is activated and has a minimum delay"""
+  persist_data = get_log_persist_state()
+  existing_persist = persist_data.persist_logs
+  existing_delay = persist_data.auto_off_delay
+  # If persist logs is already on and has a larger delay, keep that delay; otherwise ensure it has our sane minimum for support
+  if existing_persist and (existing_delay > 3 or existing_delay == 0):
+    data = Persist_Logs(persist_logs=True, auto_off_delay=existing_delay)
+    toggle_persist_logs(data=data)
+  else:
+    # Three days is an arbitrary number, picked to ensure the next few days of usage post-update are captured for support cases
+    data = Persist_Logs(persist_logs=True, auto_off_delay=3)
+    toggle_persist_logs(data=data)
 
 
 class PasswordInput(BaseModel):

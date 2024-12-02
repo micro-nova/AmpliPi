@@ -44,7 +44,7 @@
               <a class="nav-link" id="manual-update-tab" data-toggle="tab" href="#manual-update" role="tab" aria-controls="manual-update" aria-selected="false">Custom Update</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="admin-settings-tab" data-toggle="tab" href="#admin-settings" role="tab" aria-controls="admin-settings" aria-selected="false">Admin Settings</a>
+              <a class="nav-link" id="admin-settings-tab" data-toggle="tab" href="#admin-settings" role="tab" aria-controls="admin-settings" aria-selected="false" onClick="getPersist();">Admin Settings</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" id="support-tunnel-tab" data-toggle="tab" href="#support-tunnel" role="tab" aria-controls="support-tunnel" aria-selected="false">Support Tunnel</a>
@@ -153,6 +153,8 @@
                   const textbox = document.getElementById("persist-input");
                   checkbox.checked = data.persist_logs;
                   textbox.value = data.auto_off_delay;
+
+                  return {"persist_logs": data.persist_logs, "auto_off_delay": data.auto_off_delay}
                 }
 
                 async function setPersist() {
@@ -190,7 +192,6 @@
                   }, 1500);
                 }
 
-                window.onload = getPersist;
               </script>
 
               <div id="admin-settings-dialog">
