@@ -33,6 +33,8 @@ This project follows [Semantic Versioning](https://semver.org/). Here are some e
 - [ ] Checkout main & create a detached HEAD: `git checkout main; git pull; git checkout --detach`
 - [ ] Build the webapp in `web` with `npm run build` and force add the changes with `git add -f web/dist; git commit -m "Build web app for release"`
 - [ ] Tag the changes so we can make a release on GitHub: `git tag -as ${VERSION} -m '' && git push origin ${VERSION}`
-- [ ] Make a release using the GitHub interface
-- [ ] Use the AmpliPi updater to update to the release
-- [ ] Test it again! If it needs changes, pull request your bugfixes against `main` and stamp a new release 😎
+- [ ] Make a release using the GitHub interface. This should be marked as a "prerelease", until all testing and QA has occurred.
+- [ ] Use the AmpliPi updater to update to the release. Since this is marked as a prerelease, you will find it in the 'Older Releases' tab. Sanity check your install - did it download, install, and reboot correctly?
+- [ ] Build an image using [the `micro-nova/amplipi-img-gen` suite](https://github.com/micro-nova/amplipi-img-gen). When built, upload the image, its checksums, and [GPG signatures from a key in our public keyring](https://github.com/micro-nova/micronova-keyring) to the Google Cloud Storage bucket `amplipi-img` in our GCP project named `Amplipi`.
+- [ ] Pass the image and release off to QA.
+- [ ] Once the image and the GitHub package have passed QA, edit the release in GitHub. Uncheck the "Prerelease" check box, and check the "Latest release" box. Congrats! The release is now live and generally available!
