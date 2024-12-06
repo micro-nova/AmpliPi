@@ -43,7 +43,7 @@ There are two ways configuration backups are made - manually through the fronten
 
 ### Manual backups and restores
 
-Manual backups are taken by navigating to Settings (gear icon) -> Config -> Download Config. This configuration includes all configured streams. These backups can be restored going to Settings -> Config -> Upload Config and selecting the downloaded config file. It is a good idea to take a manual backup before upgrading your appliance.
+Manual backups are taken by navigating to Settings (gear icon) $-\textgreater$ Config $-\textgreater$ Download Config. This configuration includes all configured streams. These backups can be restored going to Settings $-\textgreater$ Config $-\textgreater$ Upload Config and selecting the downloaded config file. It is a good idea to take a manual backup before upgrading your appliance.
 
 ### Automated system backups and restores
 
@@ -77,7 +77,7 @@ You can contact our support. We can be reached via email at [support@micro.nova.
 
 ### Gathering Logs
 
-In most cases, the first thing that our support techicians will ask you for is to send us your system logs. These logs are wiped out on system reboot, so when possible try to collect them whenever an issue occurs _before_ rebooting your device.
+In most cases, the first thing that our support technicians will ask you for is to send us your system logs. These logs are wiped out on system reboot unless you set the "log persistence" setting in the admin panel, so when possible try to either collect them whenever an issue occurs _before_ rebooting your device or set log persistence on.
 Logs can be reached by going to Settings -> About -> Logs, or by navigating directly to `http://{Device_IP}:19531/entries`. Once you reach this page, you can either copy and paste the logs into your email, or hit control+S to save them to a file that you can attach to your email.
 
 ### Support Tunnel
