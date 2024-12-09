@@ -9,6 +9,7 @@
 }
 
 .column-item {
+  float: left;  /* Used to prevent elements from above hanging over the top of the next section */
   display: flex;
   flex-direction: column;
   justify-content: space-around;
@@ -118,34 +119,40 @@ hr {
 }
 
 
-.set-password-dialog {
+.description-color {
   color: #aaaaaa !important;
 }
 
-/* lifted from https://www.w3schools.com/css/css_tooltip.asp */
-
-.hover-label {
-  position: relative;
-  display: inline-block;
-  border-bottom: 1px dotted black;
+.indent {
+  padding-left: 35px;
 }
 
-.hover-label .hover-tooltip{
-  top: 100%;
-  left: 50%;
-  visibility: hidden;
-  width: 750px;
-  max-width: 70vw;
-  background-color: rgba(100, 100, 100, 1);
-  color: #ffffff;
-  text-align: center;
-  padding: 5px 0;
-  border-radius: 6px;
-
-  position: absolute;
-  z-index: 1;
+@media (min-width: 768px) {
+  .pseudo-column {
+    width: 250px;
+    margin-right: 55%;
+    float: right;
+  }
 }
 
-.hover-label:hover .hover-tooltip{
-  visibility: visible;
+.wide-button{
+  width: 100%;
+}
+
+/*
+The following classes have a :hover counterpart to counter the buttons they're used
+on having a default :hover that sets them back to the default blue when not overridden
+*/
+.error{
+  background-color: #DD0000;
+}
+.error:hover{
+  background-color: #DD0000;
+}
+
+.success{
+  background-color: #00AA00;
+}
+.success:hover{
+  background-color: #00AA00;
 }
