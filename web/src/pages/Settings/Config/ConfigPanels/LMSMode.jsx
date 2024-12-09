@@ -1,5 +1,6 @@
 import React from 'react';
 import "../Config.scss";
+import Button from "@mui/material/Button/Button";
 import ConfigPanel from './ConfigTemplates/ConfigPanel.jsx';
 import { useStatusStore } from "@/App.jsx";
 import Switch from '@mui/material/Switch/Switch';
@@ -19,6 +20,16 @@ export default function LMSMode() {
         setResponse(resp);
         setLoading(false);
     };
+
+    function LMSControlLink() {
+        if(lmsMode){
+            return (
+                <Button target="_blank" href={`http://${window.location.hostname}:9000`} className="config-spacing">
+                    LMS Control Panel
+                </Button>
+            )
+        }
+    }
 
     function LMSModal(){
         if(lmsMode){
@@ -55,6 +66,8 @@ export default function LMSMode() {
                     onClick={() => {setModalOpen(true);}}
                     inputProps={{ "aria-label": "controlled" }}
                 />
+                <br/>
+                <LMSControlLink/>
             </ConfigPanel>
 
             <LMSModal />
