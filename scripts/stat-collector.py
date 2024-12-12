@@ -187,7 +187,6 @@ class UsageSurveySchema(BaseModel):
             stream_handlers[stream_type]["list"].append(source["info"])
 
       for key, handler in stream_handlers.items():
-        print(key)
         handler["object"].consume(handler["list"], self.poll_count, timediff)
 
       self.poll_count += 1
