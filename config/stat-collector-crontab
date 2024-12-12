@@ -1,0 +1,3 @@
+# Automatically collects stats every 5 minutes for the stat-collector service
+# Installed by AmpliPi
+*/5 * * * * /usr/local/bin/stat-collector.py
