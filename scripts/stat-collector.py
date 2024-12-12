@@ -47,7 +47,6 @@ class StreamUsageSchema(BaseModel):
   runtime_weight: int = 0
   peak_runtime: int = 0
 
-
   def consume(self, source_info: list, poll_count: int, timediff: timedelta):
     """Consumes a list of source["info"] json blobs and updates stream statistics tracker with information found within"""
     stream_names = [item["name"] for item in source_info]
@@ -155,7 +154,6 @@ class UsageSurveySchema(BaseModel):
     # Split logs into individual line items in a list, then add new entries to the notable_logs list
     logs = result.stdout.splitlines()
     self.notable_logs.extend([log for log in logs if log not in self.notable_logs])
-
 
   def get_state(self):
     """Gets system state, saves to relevant places"""
