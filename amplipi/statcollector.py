@@ -13,6 +13,7 @@ from psutil import virtual_memory
 
 path = "/var/lib/UsageSurvey.json"
 
+
 def find_matches(list1: list, list2: list):
   """Takes in two lists, returns a list that only contains data shared by both lists"""
   set1 = {json.dumps(item, sort_keys=True) for item in list1}
