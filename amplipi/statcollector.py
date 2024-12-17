@@ -133,8 +133,8 @@ class UsageSurveySchema(BaseModel):
   def phone_home(self):
     """Send contents back to amplipi devs, and delete current state to refresh the data cycle"""
     url = "Currently unknown"  # TODO: Update this url after finishing the hosted home base side of the stat collector
-    requests.post(url, json = {**self}, timeout=10)
-    if os.path.exists(path):
+    response = requests.post(url, json={**self}, timeout=10)
+    if os.path.exists(path) and response.status_code == 200:
       subprocess.run(['sudo', 'rm', path], check=True)
 
   def get_disk_usage(self):
@@ -173,7 +173,6 @@ class UsageSurveySchema(BaseModel):
     for log in logs:
       if log not in self.notable_logs:
         self.notable_logs.extend([log])
-
 
   def get_state(self):
     """Gets system state, saves to relevant places"""
