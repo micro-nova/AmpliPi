@@ -105,6 +105,62 @@ paths:
                 apmHost: null
                 version: null
                 environment: null
+  /collected_stats/:
+    get:
+      summary: Get Collected Stats
+      description: Get the current contents of statcollector output file after filtering
+        out any empty stream data
+      operationId: get_collected_stats_collected_stats__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
+    post:
+      summary: Post Collected Stats
+      description: Send the contents of the statcollector output file to AmpliPi devs
+      operationId: post_collected_stats_collected_stats__post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
+  /collected_stats:
+    get:
+      summary: Get Collected Stats
+      description: Get the current contents of statcollector output file after filtering
+        out any empty stream data
+      operationId: get_collected_stats_collected_stats__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
+    post:
+      summary: Post Collected Stats
+      description: Send the contents of the statcollector output file to AmpliPi devs
+      operationId: post_collected_stats_collected_stats__post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/:
     get:
       tags:
