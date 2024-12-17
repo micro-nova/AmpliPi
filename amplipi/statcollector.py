@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
+"""Stat Collector for AmpliPi; collects data, saves it to a json file, then phones home with user consent every X days/weeks"""
 import os
 import json
+import re
 import subprocess
 from datetime import datetime, timezone, timedelta
 from shutil import disk_usage
@@ -9,6 +11,7 @@ import requests
 from pydantic import BaseModel
 from psutil import virtual_memory
 
+path = "/var/lib/UsageSurvey.json"
 
 def find_matches(list1: list, list2: list):
   """Takes in two lists, returns a list that only contains data shared by both lists"""
@@ -94,7 +97,7 @@ class UsageSurveySchema(BaseModel):
   disk_free: int = 0
 
   # Used to store notable events, such as anything that occurs above a logging level of warning. See record_logs() function for details.
-  notable_logs: list[str] = []
+  notable_logs: list = []
 
   # These were once in a dict called "streams" that contained the data in the same format, having there not be dicts 3 layers deep seemed prefferable
   airplay: StreamUsageSchema = StreamUsageSchema()
@@ -110,7 +113,7 @@ class UsageSurveySchema(BaseModel):
   rca: StreamUsageSchema = StreamUsageSchema()
   spotify: StreamUsageSchema = StreamUsageSchema()
 
-  def save_to_disk(self, path="/var/lib/UsageSurvey.json"):
+  def save_to_disk(self):
     """Saves contents of UsageSurvey to file"""
     tmp = "/tmp/UsageSurvey.json"
     with open(tmp, "w", encoding="UTF-8") as file:
@@ -118,7 +121,7 @@ class UsageSurveySchema(BaseModel):
     subprocess.run(['sudo', 'mv', tmp, path], check=True)
 
   @classmethod
-  def load_from_disk(cls, path="/var/lib/UsageSurvey.json"):
+  def load_from_disk(cls):
     """Loads contents of UsageSurvey from saved file"""
     if os.path.exists(path):
       with open(path, "r", encoding="UTF-8") as file:
@@ -126,6 +129,13 @@ class UsageSurveySchema(BaseModel):
         return cls(**file_data)
     else:
       return cls()
+
+  def phone_home(self):
+    """Send contents back to amplipi devs, and delete current state to refresh the data cycle"""
+    url = "Currently unknown"  # TODO: Update this url after finishing the hosted home base side of the stat collector
+    requests.post(url, json = {**self}, timeout=10)
+    if os.path.exists(path):
+      subprocess.run(['sudo', 'rm', path], check=True)
 
   def get_disk_usage(self):
     """Collects and populates disk usage statistics via shutil"""
@@ -153,7 +163,17 @@ class UsageSurveySchema(BaseModel):
 
     # Split logs into individual line items in a list, then add new entries to the notable_logs list
     logs = result.stdout.splitlines()
-    self.notable_logs.extend([log for log in logs if log not in self.notable_logs])
+    # Removes the timestamp and hostname of logs, helps sort out logs that are the same but would be seen as different due to a different timestamp
+    pattern = r"^[A-Za-z]{3} \d{1,2} \d{2}:\d{2}:\d{2} \S+ "
+    logs = [re.sub(pattern, "", log) for log in logs]
+
+    # Was once a single line: self.notable_logs.extend([log for log in logs if log not in self.notable_logs])
+    # That didn't work as some duplicates were within logs but not self.notable_logs
+    # so they weren't filtered against and would get flushed to self.notable_logs at the end of the loop
+    for log in logs:
+      if log not in self.notable_logs:
+        self.notable_logs.extend([log])
+
 
   def get_state(self):
     """Gets system state, saves to relevant places"""
@@ -186,7 +206,7 @@ class UsageSurveySchema(BaseModel):
           if stream_type in stream_handlers:
             stream_handlers[stream_type]["list"].append(source["info"])
 
-      for key, handler in stream_handlers.items():
+      for _, handler in stream_handlers.items():
         handler["object"].consume(handler["list"], self.poll_count, timediff)
 
       self.poll_count += 1

@@ -210,13 +210,13 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'stat-collector': {
         "copy": [
           {
-            'from': 'config/stat-collector-crontab',
-            'to': '/etc/cron.d/stat-collector',
+            'from': 'config/stat_collector_crontab',
+            'to': '/etc/cron.d/statcollector',
             'sudo': 'true',
           },
           {
-            'from': 'scripts/stat-collector.py',
-            'to': '/usr/local/bin/stat-collector.py',
+            'from': 'scripts/collect_stats.sh',
+            'to': '/usr/local/bin/collect_stats.sh',
             'sudo': 'true',
           },
         ],
