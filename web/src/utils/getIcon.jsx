@@ -2,7 +2,7 @@ import spotify from "@/../static/imgs/spotify.png";
 import dlna from "@/../static/imgs/dlna.png";
 import bluetooth from "@/../static/imgs/bluetooth.png";
 import fmradio from "@/../static/imgs/fmradio.png";
-import shairport from "@/../static/imgs/shairport.png";
+import shairport from "@/../static/imgs/shairport.svg";
 import pandora from "@/../static/imgs/pandora.png";
 import plexamp from "@/../static/imgs/plexamp.png";
 import lms from "@/../static/imgs/lms.png";
