@@ -42,14 +42,11 @@ export default function CustomMarquee(props) {
         }
     }
 
-    let resizeTimout;
     function handleResize(){
         if(!resizeCooldown.current){
             resizeCooldown.current = true;
 
             assessMarquee()
-
-            resizeTimout = setTimeout(()=>{resizeCooldown.current = false;}, 1000) // set a cooldown for resize checks to avoid excessive renders
         }
     }
     window.addEventListener("resize", handleResize()); // Doesn't call assessMarquee directly to avoid calling thousands of times per second when resizing window
