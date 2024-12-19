@@ -6,13 +6,25 @@
 }
 
 .zone-vol-card {
-  margin-top: 1rem;
-  padding: 0.75rem;
+  @media (max-width: general.$small-mobile){
+    padding: 0.5rem;
+  }
+  @media (min-width: general.$small-mobile){
+    padding: 0.75rem;
+  }
   color: general.$controls-color;
 }
 
 .group-vol-card {
-  margin-top: 1rem;
-  padding: 0.75rem;
+  @media (max-width: general.$small-mobile){
+    padding: 0.5rem;
+  }
+  @media (min-width: general.$small-mobile){
+    padding: 0.75rem;
+  }
   color: general.$controls-color;
+}
+
+.vol-margin {
+  margin-bottom: 1rem;
 }

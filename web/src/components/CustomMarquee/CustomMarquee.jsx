@@ -42,14 +42,13 @@ export default function CustomMarquee(props) {
         }
     }
 
-    let resizeTimout;
+    let resizeTimeout;  // Your IDE will say this is unused, it's actually used to make sure the timeout below is limited to one instance at a time by taking up a specific variable
     function handleResize(){
         if(!resizeCooldown.current){
             resizeCooldown.current = true;
 
             assessMarquee()
-
-            resizeTimout = setTimeout(()=>{resizeCooldown.current = false;}, 1000) // set a cooldown for resize checks to avoid excessive renders
+            resizeTimeout = setTimeout(()=>{resizeCooldown.current = false;}, 1000)
         }
     }
     window.addEventListener("resize", handleResize()); // Doesn't call assessMarquee directly to avoid calling thousands of times per second when resizing window

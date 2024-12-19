@@ -13,8 +13,10 @@ const Card = ({
     selected,
     selectable,
     onClick,
+
+    secondary,
 }) => {
-    const cName = `card ${className} ${selectable && !selected ? "selectable" : ""} ${selected ? "selected" : ""}`
+    const cName = `card ${className} ${selectable && !selected ? "selectable" : ""} ${selected ? "selected" : ""} ${secondary ? "secondary" : "primary"}`
     const onClickFun = onClick === null ? () => {} : onClick;
     const topTransparency = selected ? 0.25 : 0.4;
     const bottomTransparency = selected ? 0.25 : 0.9;
@@ -49,6 +51,8 @@ Card.propTypes = {
     selected: PropTypes.bool,
     selectable: PropTypes.bool,
     onClick: PropTypes.func,
+
+    secondary: PropTypes.bool,
 };
 
 Card.defaultProps = {
@@ -56,7 +60,9 @@ Card.defaultProps = {
     className: "",
     selected: false,
     selectable: false,
-    onClick: null
+    onClick: null,
+
+    secondary: false,
 };
 
 export default Card;

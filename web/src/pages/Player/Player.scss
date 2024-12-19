@@ -28,17 +28,70 @@
 
 .player-album-art {
   align-self: center;
-  max-width: 95vw;
   max-height: 22rem;
   border-radius: 2.5%;
+  @media (general.$is-portrait) {
+    max-width: 85vw;
+  }
+  @media (max-width: general.$small-mobile) {
+    max-width: 50vw;
+  }
 }
 
-.player-volume-slider {
+// Solo vs Grouped media controls are different because solo volumes have titles, making them tall enough to need further adjustment
+.grouped-media-controls {
+  @media (general.$is-portrait) {
+    position: fixed;
+    z-index: 0;
+    bottom: 130px
+  }
+}
+.solo-media-controls {
+  @media (general.$is-portrait) {
+    position: fixed;
+    z-index: 0;
+    bottom: 150px;
+  }
+}
+
+.player-volume-container {
+  @media (general.$is-portrait) {
+    position: fixed;
+    bottom: calc(general.$navbar-height + 7px);
+    z-index: 1;
+  }
+}
+
+.solo-volume {
+  @media (general.$is-portrait) {
+    position: fixed;
+    bottom: calc(general.$navbar-height + 7px);
+    z-index: 1;
+  }
+}
+
+.player-volume-header {
   display: flex;
   flex-direction: row;
   align-items: center;
   color: general.$controls-color;
   width: 90vw;
+}
+
+.player-volume-body {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  @media (general.$is-portrait) {
+    max-height: calc(85vh - 120px);
+    overflow-y: auto;
+  }
+}
+
+.expanded-volume-body {
+  @media (general.$is-portrait) {
+    height: 100vh;
+  }
 }
 
 .player-volume-expand-button {

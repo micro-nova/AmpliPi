@@ -23,6 +23,13 @@ $page-header-height: 3rem;
 // This number is the natural height of the navbar when an explicit height is not provided, and was not set to 56px arbitrarily
 $navbar-height: 56px;
 
+$small-mobile: 365px;
+$medium-mobile: 435px;
+
+// meant to be used directly in @media queries, like @media (general.$is-portrait){stuff}
+$is-portrait: "max-aspect-ratio: 1/1"; // equivalent to `if 100vh > 100vw`
+$is-landscape: "min-aspect-ratio: 1/1"; // equivalent to `if 100vw >= 100vh`
+
 // fonts
 @font-face {
   font-family: 'Open Sans';

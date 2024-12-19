@@ -10,6 +10,12 @@
 
   white-space: nowrap;
   overflow: hidden;
+
+  // Used to ensure the smallest screens still have room for all metadata and controls on one screen without scrolling
+  @media (max-width: general.$medium-mobile){
+    max-height: 50vh;
+    max-width: 50vh;
+  }
 }
 
 .artist-name {

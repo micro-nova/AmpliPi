@@ -2,7 +2,12 @@
 
 .home-outer {
   padding-top: 10px;
-  padding-bottom: 10px;
+  @media (general.$is-landscape) {
+    padding-bottom: 10px;
+  }
+  @media (general.$is-portrait) {
+    padding-bottom: 85px;  // Used to ensure the screen is still scrollable to just above the PresetAndAdd component on mobile
+  }
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -69,6 +74,12 @@
 }
 
 .home-presets-container {
+  @media (general.$is-portrait) {
+    position: fixed;
+    bottom: calc(general.$navbar-height + 10px);
+  }
+
+  z-index: 1; // Needed to ensure that scrolling marquees do not appear on top of the presets button
   display: flex;
 
   flex-direction: row;

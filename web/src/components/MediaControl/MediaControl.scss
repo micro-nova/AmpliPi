@@ -8,7 +8,6 @@
   justify-content: center;
   margin-top: 1rem;
   margin-bottom: 1rem;
-  width: 90vw;
 }
 
 .media-inner {
@@ -19,23 +18,24 @@
 }
 
 .media-control {
+  font-size: 3.5rem;
   color: general.$controls-color;
   padding-left: 1.5rem;
   padding-right: 1.5rem;
 
 
-  @media (max-width: 365px) {
-    font-size: 1.5rem;
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
+  @media (general.$is-portrait) {
+    font-size: 3.5rem;
   }
 
-  @media (min-width: 365px) and (max-width: 425px) {
+  @media (max-width: general.$medium-mobile) {
     font-size: 2.5rem;
   }
 
-  @media (min-width: 425px) {
-    font-size: 3.5rem;
+  @media (max-width: general.$small-mobile) {
+    font-size: 1.5rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
 }
 

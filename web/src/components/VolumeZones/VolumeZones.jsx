@@ -6,12 +6,13 @@ import Card from "../Card/Card";
 
 import PropTypes from "prop-types";
 
-const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft }) => {
+const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, alone }) => {
     const groupVolumeSliders = [];
     for (const group of groups) {
         groupVolumeSliders.push(
-            <Card className="group-vol-card" key={group.id}>
+            <Card secondary={!alone} className={`group-vol-card ${!alone ? "vol-margin" : ""}`} key={group.id}>
                 <GroupVolumeSlider
+                    alone={alone}
                     groupId={group.id}
                     sourceId={sourceId}
                     groupsLeft={groupsLeft}
@@ -23,8 +24,8 @@ const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft }) => {
     const zoneVolumeSliders = [];
     zones.forEach((zone) => {
         zoneVolumeSliders.push(
-            <Card className="zone-vol-card" key={zone.id}>
-                <ZoneVolumeSlider zoneId={zone.id} />
+            <Card secondary={!alone} className={`zone-vol-card ${!alone ? "vol-margin" : ""}`} key={zone.id}>
+                <ZoneVolumeSlider alone={alone} zoneId={zone.id} />
             </Card>
         );
     });
@@ -44,6 +45,10 @@ VolumeZones.propTypes = {
     zones: PropTypes.array.isRequired,
     groups: PropTypes.array.isRequired,
     groupsLeft: PropTypes.array.isRequired,
+    alone: PropTypes.bool,
 };
+VolumeZones.defaultProps = {
+    alone: false,
+}
 
 export default VolumeZones;
