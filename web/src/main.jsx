@@ -3,10 +3,8 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import Settings from "./pages/Settings/Settings";
 import Poller from "./Poller";
-import "./index.scss";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { grey } from "@mui/material/colors";
 import "./general.scss";
 
 import { createHashRouter, RouterProvider, Navigate } from "react-router-dom";
