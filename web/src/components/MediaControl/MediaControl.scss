@@ -12,6 +12,11 @@
 }
 
 .media-inner {
+  @media (max-width: 425px) {
+    position: fixed;
+    bottom: 15vh;
+  }
+
   width: fit-content;
   display: flex;
   justify-content: center;

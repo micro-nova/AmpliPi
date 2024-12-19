@@ -21,15 +21,26 @@
   color: general.$text-color;
   width: 100%;
   max-width: 80%; // Leave space for icon
-  font-size: 2.5rem;
   font-weight: medium;
   white-space: nowrap;
   overflow: hidden;
   @include general.header-font;
   padding: 0.5rem;
+  @media (max-height: 500px){
+    font-size: 1.5rem;
+  }
+  @media (min-height: 500px){
+    font-size: 2.5rem;
+  }
 }
 
 .stream-bar-icon {
-  width: 4rem;
-  height: 4rem;
+  @media (max-height: 500px){
+    width: 2rem;
+    height: 2rem;
+  }
+  @media (min-height: 500px){
+    width: 4rem;
+    height: 4rem;
+  }
 }
