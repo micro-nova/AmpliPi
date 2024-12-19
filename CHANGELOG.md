@@ -5,6 +5,7 @@
   * Automatically persist logs during (and for a short time after) updates
 * Webapp
   * Update Airplay icon to modern variant
+  * Add gradient to background to break up the solid color
 
 ## 0.4.5
 * Web App
