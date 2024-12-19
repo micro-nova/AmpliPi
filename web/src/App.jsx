@@ -222,13 +222,14 @@ Page.propTypes = {
 
 const App = ({ selectedPage }) => {
     return (
-        <div className="app">
+            <div className="app">
             <DisconnectedIcon />
-            <div className="app-body">
-                <Page selectedPage={selectedPage} />
+            <div className="background-gradient"></div>  {/* Used to make sure the background doesn't stretch or stop prematurely on scrollable pages */}
+                <div className="app-body">
+                    <Page selectedPage={selectedPage} />
+                </div>
+                <MenuBar pageNumber={selectedPage} />
             </div>
-            <MenuBar pageNumber={selectedPage} />
-        </div>
     );
 };
 App.propTypes = {
