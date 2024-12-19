@@ -55,11 +55,13 @@ const PresetAndAdd = ({
         );
     } else {
         return (
-            <div
-                className="home-presets-button"
-                onClick={() => setPresetsModalOpen(true)}
-            >
-        Presets
+            <div className="home-presets-container">
+                <div
+                    className="home-presets-button"
+                    onClick={() => setPresetsModalOpen(true)}
+                >
+            Presets
+                </div>
             </div>
         );
     }

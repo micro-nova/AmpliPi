@@ -2,10 +2,16 @@
 
 .card {
   @include general.low-shadow;
-  background-color: general.$primary;
   border-radius: 18px;
 
   color: general.$text-color;
+}
+
+.primary {
+  background-color: general.$primary
+}
+.secondary {
+  background-color: general.$secondary
 }
 
 .selected {

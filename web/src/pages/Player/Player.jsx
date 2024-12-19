@@ -64,6 +64,19 @@ const Player = () => {
 
     selectActiveSource();
 
+    function DropdownArrow() {
+        // If on mobile, inital dropdown is at the bottom of the screen and expands upwards so the arrow should point up
+        // If on desktop, initial dropdown is in the middle of the screen and expands downwards so the arrow should point down
+        const isMobile = window.matchMedia("(max-width: 435px)").matches;
+        const Icon = isMobile ? (expanded ? KeyboardArrowDownIcon : KeyboardArrowUpIcon) : (expanded ? KeyboardArrowUpIcon : KeyboardArrowDownIcon);
+        return(
+            <Icon
+                className="player-volume-expand-button"
+                style={{ width: "3rem", height: "3rem" }}
+            />
+        )
+    }
+
     return (
         <div className="player-outer">
             {streamsModalOpen && (
@@ -87,6 +100,7 @@ const Player = () => {
                 </Grid>
                 <Grid item xs={2} sm={4} md={4} style={{maxWidth: "22rem"}}>
                     <Box
+                        className="album-art-container"
                         sx={{
                           display: 'flex',
                           justifyContent: 'center',
@@ -97,37 +111,31 @@ const Player = () => {
                     </Box>
                     <SongInfo sourceId={selectedSourceId} />
                 </Grid>
-                <Grid item xs={2} sm={4} md={4}>
-                    <MediaControl selectedSource={selectedSourceId} />
-                </Grid>
             </Grid>
-            {/* There are many sub-divs classed player-inner here because formatting was strange otherwise */}
-            <div className="player-inner">
-            </div>
-            <div className="player-inner">
-            </div>
-            <div className="player-inner">
-            </div>
 
-            {!alone && !is_streamer && zones.length > 0 && (
-                <Card className="player-volume-slider">
-                    <CardVolumeSlider sourceId={selectedSourceId} />
-                    <IconButton onClick={() => setExpanded(!expanded)}>
-                        {expanded ? (
-                            <KeyboardArrowUpIcon
-                                className="player-volume-expand-button"
-                                style={{ width: "3rem", height: "3rem" }}
-                            />
-                        ) : (
-                            <KeyboardArrowDownIcon
-                                className="player-volume-expand-button"
-                                style={{ width: "3rem", height: "3rem" }}
-                            />
-                        )}
-                    </IconButton>
-                </Card>
-            )}
-            <VolumeZones open={(expanded || alone)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
+            <div className={alone ? "solo-media-controls" : "grouped-media-controls" } >
+                <MediaControl selectedSource={selectedSourceId} />
+            </div>
+            { (!is_streamer && zones.length > 0) ? (
+                (alone) ? (
+                    <div className="player-volume-container" >
+                        <VolumeZones alone open sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
+                    </div>
+                ) : (
+                    <Card className="player-volume-container">
+                        <div className="player-volume-header">
+                            <CardVolumeSlider sourceId={selectedSourceId} />
+                            <IconButton onClick={() => setExpanded(!expanded)}>
+                                <DropdownArrow />
+                            </IconButton>
+                        </div>
+
+                        <div className={`player-volume-body pill-scrollbar ${expanded ? "expanded-volume-body" : ""}`}>
+                            <VolumeZones open={(expanded)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
+                        </div>
+                    </Card>
+                )
+            ) : null }
         </div>
     );
 };

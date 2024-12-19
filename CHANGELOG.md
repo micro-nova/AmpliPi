@@ -7,6 +7,10 @@
   * Update Airplay icon to modern variant
   * Add gradient to background to break up the solid color
   * Reformat Admin Settings portion of Admin Panel (previously known as the Updater)
+  * Move home screen, player page controls to bottom of screen on mobile
+  * Update CSS breakpoints to scale the player page better on the smallest of screens
+  * Reformat Player page volume controls to look more modern
+  * Add safeguards in an attempt to reduce volume slider misinputs
 
 ## 0.4.5
 * Web App
