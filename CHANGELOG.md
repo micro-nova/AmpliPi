@@ -3,6 +3,8 @@
 ## 0.4.6
 * System
   * Automatically persist logs during (and for a short time after) updates
+* Webapp
+  * Add gradient to background to break up the solid color
 
 ## 0.4.5
 * Web App

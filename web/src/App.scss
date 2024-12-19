@@ -3,7 +3,8 @@
 .app {
   // display: flex;
   // width: 100vw;
-  background-color: general.$bg;
+  height: 100vh;  // Required to not have weird paneling with gradient backgrounds
+  background: general.$bg-gradient;
   // padding-top: 0.6rem;
   // padding-bottom: 0.6rem;
   // padding: 0.6rem;
