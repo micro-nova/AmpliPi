@@ -69,6 +69,11 @@
 }
 
 .home-presets-container {
+  @media (max-width: 425px) {
+    position: fixed;
+    bottom: 65px;
+  }
+
   display: flex;
 
   flex-direction: row;
