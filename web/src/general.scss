@@ -21,26 +21,20 @@ $page-header-height: 3rem;
 
 // fonts
 @font-face {
-  font-family: 'Open Sans';
+  font-family: "Montserrat";
   font-style: normal;
   font-weight: 400;
   font-stretch: normal;
   font-display: swap;
-  src: url(@/../static/fonts/opensans/opensans_v35.ttf) format('truetype');
-}
-@font-face {
-  font-family: 'Raleway';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url(@/../static/fonts/raleway/raleway_v28.ttf) format('truetype');
+  src: url("../static/fonts/Montserrat/Montserrat-VariableFont_wght.ttf") format('truetype');
 }
 
+
 @mixin header-font {
-  font-family: "Raleway";
+  font-family: "Montserrat", serif;
 }
 @mixin regular-font {
-  font-family: "open sans";
+  font-family: "Montserrat", serif;
 }
 
 // shadows

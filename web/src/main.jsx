@@ -92,7 +92,7 @@ const darkTheme = createTheme({
         },
     },
     typography: {
-        fontFamily: "open sans",
+        fontFamily: "Montserrat",
         body1: {  // Override the default generated class for all mui components, allowing them to be styled on a per-instance css level instead of hardcoding 16px font for some things
             fontSize: 'inherit',
         },
@@ -101,7 +101,7 @@ const darkTheme = createTheme({
         MuiCssBaseline: {
             styleOverrides: `
                 @font-face {
-                    font-family: 'open sans';
+                    font-family: "Montserrat";
                     color: '#ffffff';
                 }
             `,
