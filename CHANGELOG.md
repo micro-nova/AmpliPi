@@ -3,6 +3,9 @@
 ## 0.4.6
 * System
   * Automatically persist logs during (and for a short time after) updates
+* Webapp
+  * Move home screen, player page controls to bottom of screen on mobile
+  * Update CSS breakpoints to scale the player page better on the smallest of screens
 
 ## 0.4.5
 * Web App
