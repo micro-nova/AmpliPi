@@ -224,7 +224,7 @@ const App = ({ selectedPage }) => {
     return (
         <div className="app">
             <DisconnectedIcon />
-            <div style={{ paddingBottom: "56px" }}>
+            <div className="app-body">
                 <Page selectedPage={selectedPage} />
             </div>
             <MenuBar pageNumber={selectedPage} />

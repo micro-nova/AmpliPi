@@ -15,6 +15,7 @@ export default function StatusBar(props) {
 
     return(
         <Snackbar
+            className="snackbar"
             autoHideDuration={3000}
             anchorOrigin={{vertical: "bottom", horizontal: "left"}}
             open={open}

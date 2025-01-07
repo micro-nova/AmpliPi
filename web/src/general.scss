@@ -19,6 +19,9 @@ $select-color-gray: #bdbdbd; // for preset used_last
 $mute-color: #dc3545;
 
 $page-header-height: 3rem;
+// Used to ensure that fixed-positioned components don't appear on top of the navbar
+// This number is the natural height of the navbar when an explicit height is not provided, and was not set to 56px arbitrarily
+$navbar-height: 56px;
 
 // fonts
 @font-face {
