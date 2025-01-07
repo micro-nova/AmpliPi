@@ -30,3 +30,7 @@
   --right: translate(5px, 0px);
   animation: errorShake 0.5s 1; // Only animate once, reapplying the class will reapply the animation
 }
+
+.snackbar {
+  bottom: calc(general.$navbar-height + 4px); // Used to keep the snackbar above the navbar at the bottom as to not block controls on mobile
+}
