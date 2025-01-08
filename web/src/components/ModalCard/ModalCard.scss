@@ -28,6 +28,7 @@
 .modal-body {
   padding: 1rem;
   padding-top: 0;
+  padding-bottom: 0;
   overflow-y: auto;
   overflow-x: hidden;
   width: 100%;
@@ -38,7 +39,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-around;
-  font-size: 3.5rem;
+  font-size: 2.5rem;
   margin-left: 1rem;
   margin-right: 1rem;
   margin-bottom: 0.5rem;

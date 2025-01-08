@@ -1,11 +1,11 @@
 import React from "react";
 import "./PresetsModal.scss";
-import Modal from "@/components/Modal/Modal";
-import Card from "@/components/Card/Card";
+import ModalCard from "@/components/ModalCard/ModalCard";
 import { useStatusStore } from "@/App";
 import { useState } from "react";
 import List from "@/components/List/List";
 import ListItem from "@/components/List/ListItem/ListItem";
+import CreatePresetModal from "@/components/CreatePresetModal/CreatePresetModal";
 
 import PropTypes from "prop-types";
 
@@ -65,12 +65,13 @@ PresetItem.propTypes = {
     presetState: PropTypes.any.isRequired,
 };
 
-const PresetsModal = ({ onClose }) => {
+const PresetsModal = ({ onClose, onApply }) => {
     const presets = useStatusStore((state) => state.status.presets);
     const [presetStates, setPresetStates] = useState(
         presets.map((preset) => {if(preset){return false;}}) // Changed this line so that preset wouldn't go unused as per eslint
     );
     const setSystemState = useStatusStore((s) => s.setSystemState);
+    const [createModalOpen, setCreateModalOpen] = React.useState(false);
 
     // resize presetStates (without overriding) if length changes
     if (presetStates.length > presets.length) {
@@ -113,18 +114,28 @@ const PresetsModal = ({ onClose }) => {
     ));
 
     return (
-        <Modal className="presets-modal" onClose={onClose}>
-            <Card className="presets-modal-card">
-                <div className="presets-modal-header">Select Preset</div>
-                <div className="presets-modal-body">
-                    <List>{presetItems}</List>
-                </div>
-            </Card>
-        </Modal>
+        <ModalCard
+            className="presets-modal"
+            onClose={onClose}
+            buttons={[
+                [ "Create Preset", () => {setCreateModalOpen(true);} ],
+                [ "Cancel", onClose ]
+            ]}
+        >
+            <div className="presets-modal-header">Select Preset</div>
+            <div className="presets-modal-body">
+                <List>{presetItems}</List>
+                { createModalOpen && <CreatePresetModal onApply={onApply} onClose={() => {setCreateModalOpen(false); onClose();}} /> }
+            </div>
+        </ModalCard>
     );
 };
 PresetsModal.propTypes = {
     onClose: PropTypes.func.isRequired,
+    onApply: PropTypes.func,
+};
+PresetsModal.defaultProps ={
+    onApply: () => {}
 };
 
 export default PresetsModal;
