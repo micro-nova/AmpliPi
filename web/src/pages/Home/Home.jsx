@@ -1,5 +1,6 @@
 import React from "react";
 import PlayerCardFb from "@/components/PlayerCard/PlayerCardFb";
+import RectangularAddButton from "@/components/RectangularAddButton/RectangularAddButton";
 import "./Home.scss";
 import { useStatusStore } from "@/App.jsx";
 import ZonesModal from "@/components/ZonesModal/ZonesModal";
@@ -35,14 +36,7 @@ const PresetAndAdd = ({
     if (cards.length < sources.length) {
         return (
             <div className="home-presets-container">
-                <div
-                    className="home-add-player-button"
-                    onClick={() => {
-                        initSource(nextAvailableSource);
-                    }}
-                >
-          +
-                </div>
+                <RectangularAddButton onClick={() => {initSource(nextAvailableSource);}} />
                 <div style={{ width: "1.25rem" }} />
                 <div
                     className="home-presets-button"

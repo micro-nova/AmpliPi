@@ -6,8 +6,10 @@ import { useStatusStore } from "@/App";
 import { useState } from "react";
 import List from "@/components/List/List";
 import ListItem from "@/components/List/ListItem/ListItem";
+import CreatePresetModal from "@/components/CreatePresetModal/CreatePresetModal";
 
 import PropTypes from "prop-types";
+import RectangularAddButton from "../RectangularAddButton/RectangularAddButton";
 
 const timeSince = (timeStamp) => {
     var now = new Date(),
@@ -71,6 +73,7 @@ const PresetsModal = ({ onClose }) => {
         presets.map((preset) => {if(preset){return false;}}) // Changed this line so that preset wouldn't go unused as per eslint
     );
     const setSystemState = useStatusStore((s) => s.setSystemState);
+    const [createModalOpen, setCreateModalOpen] = React.useState(false);
 
     // resize presetStates (without overriding) if length changes
     if (presetStates.length > presets.length) {
@@ -118,6 +121,8 @@ const PresetsModal = ({ onClose }) => {
                 <div className="presets-modal-header">Select Preset</div>
                 <div className="presets-modal-body">
                     <List>{presetItems}</List>
+                    <RectangularAddButton onClick={() => {setCreateModalOpen(true);}} />
+                    { createModalOpen && <CreatePresetModal onClose={() => {setCreateModalOpen(false);}} /> }
                 </div>
             </Card>
         </Modal>

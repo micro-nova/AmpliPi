@@ -4,36 +4,18 @@ import PageHeader from "@/components/PageHeader/PageHeader";
 import "./Streams.scss";
 import "../PageBody.scss";
 import { useStatusStore } from "@/App.jsx";
-import StreamModal from "./StreamModal/StreamModal";
+import CreateStreamModal from "@/components/CreateStreamModal/CreateStreamModal";
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
-import TypeSelectModal from "./TypeSelectModal/TypeSelectModal";
-import StreamTemplates from "./StreamTemplates.json";
 import { getIcon } from "@/utils/getIcon";
 import List from "@mui/material/List/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import Divider from "@mui/material/Divider";
-
-const initEmptyStream = (type) => {
-    const streamTemplate = StreamTemplates.filter((t) => t.type === type)[0];
-    let stream = { type: type, disabled: false };
-    streamTemplate.fields.forEach((field) => {
-        stream[field.name] = field.default;
-    });
-    return stream;
-};
+import StreamModal from "@/components/CreateStreamModal/StreamModal/StreamModal";
 
 const applyStreamChanges = (stream) => {
     return fetch(`/api/streams/${stream.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stream),
-    });
-};
-
-const makeNewStream = (stream) => {
-    return fetch("/api/stream", {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stream),
     });
@@ -76,9 +58,7 @@ StreamListItem.propTypes = {
 
 const Streams = ({ onClose }) => {
     const streams = useStatusStore((state) => state.status.streams);
-    const [showModal, setShowModal] = React.useState(false);
     const [showSelect, setShowSelect] = React.useState(false);
-    const [selectedType, setSelectedType] = React.useState("");
 
     return (
         <div className="page-container">
@@ -95,28 +75,7 @@ const Streams = ({ onClose }) => {
                     </Fab>
                 </div>
             </div>
-
-            {showSelect && (
-                <TypeSelectModal
-                    onClose={() => {
-                        setShowSelect(false);
-                    }}
-                    onSelect={(type) => {
-                        setSelectedType(type);
-                        setShowSelect(false);
-                        setShowModal(true);
-                    }}
-                />
-            )}
-            {showModal && (
-                <StreamModal
-                    stream={initEmptyStream(selectedType)}
-                    apply={makeNewStream}
-                    onClose={() => {
-                        setShowModal(false);
-                    }}
-                />
-            )}
+            <CreateStreamModal showSelect={showSelect} onClose={() => {setShowSelect(false);}} />
         </div>
     );
 };

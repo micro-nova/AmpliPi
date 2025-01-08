@@ -30,24 +30,6 @@
   // width: fit-content;
 }
 
-.home-add-player-button {
-  // @include general.low-shadow;
-  width: 100%;
-  height: 4rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  font-size: 3rem;
-  color: general.$controls-color;
-  border-color: general.$secondary;
-  border-style: solid;
-  border-radius: 1rem;
-  background-color: general.$bg;
-
-  @include general.button-hover;
-}
-
 .home-presets-button {
   // @include general.low-shadow;
   @include general.regular-font;
