@@ -3,6 +3,7 @@ import Modal from "@/components/Modal/Modal";
 import Card from "@/components/Card/Card";
 import "./ModalCard.scss";
 import CheckIcon from "@mui/icons-material/Check";
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
 import CustomMarquee from "../CustomMarquee/CustomMarquee";
@@ -15,6 +16,7 @@ const ModalCard = ({
     footer,
     onClose,
     onAccept = null,
+    onAdd = null,
     onCancel = null,
     onDelete = null,
 }) => {
@@ -49,6 +51,13 @@ const ModalCard = ({
                             fontSize="inherit"
                         />
                     )}
+                    {onAdd && (
+                        <AddCircleOutlineIcon
+                            className="modal-footer-button"
+                            onClick={onAdd}
+                            fontSize="inherit"
+                        />
+                    )}
                     {onCancel && (
                         <CloseIcon
                             className="modal-footer-button"
@@ -75,11 +84,13 @@ ModalCard.propTypes = {
     footer: PropTypes.string,
     onClose: PropTypes.func.isRequired,
     onAccept: PropTypes.func,
+    onAdd: PropTypes.func,
     onCancel: PropTypes.func,
     onDelete: PropTypes.func,
 };
 ModalCard.defaultProps={
     onAccept: null,
+    onAdd: null,
     onCancel: null,
     onDelete: null,
 };

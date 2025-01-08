@@ -11,6 +11,7 @@
   * Update CSS breakpoints to scale the player page better on the smallest of screens
   * Reformat Player page volume controls to look more modern
   * Add safeguards in an attempt to reduce volume slider misinputs
+  * Add ability to create streams, presets from the home screen
 
 ## 0.4.5
 * Web App

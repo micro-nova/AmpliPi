@@ -10,6 +10,7 @@ import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
+import CreateStreamModal from "@/components/CreateStreamModal/CreateStreamModal";
 
 import PropTypes from "prop-types";
 
@@ -44,6 +45,7 @@ const StreamsModal = ({
     const status = useStatusStore((state) => state.status);
     const playingStreamIds = status.sources.filter( (s) => s.input !== 'None').map( (s) => parseInt(s.input.replace('stream=', '')));
     const playingStreams = streams.filter( (s) => playingStreamIds.includes(s.id) );
+    const [createModalOpen, setCreateModalOpen] = React.useState(false);
     let filteredStreams = streams.filter( (s) => !playingStreamIds.includes(s.id) && !s.disabled);
 
     // If there are any running bluetooth or FM streams, mark other instances as disabled - we do not (yet)
@@ -131,19 +133,21 @@ const StreamsModal = ({
     }
 
     return (
-        <ModalCard header="Select Stream" onClose={onClose} onCancel={onClose}>
-            <List>{streamsList}</List>
+        <ModalCard header="Select Stream" onAdd={() => {setCreateModalOpen(true);}} onClose={onClose} onCancel={onClose}>
+            <List>
+                {streamsList}
+            </List>
+            <CreateStreamModal showSelect={createModalOpen} onClose={() => {setCreateModalOpen(false);}} />
         </ModalCard>
     );
 };
 StreamsModal.propTypes = {
     sourceId: PropTypes.number.isRequired,
-    onApply: PropTypes.func,
+    onApply: PropTypes.func.isRequired,
     onClose: PropTypes.func.isRequired,
     applyImmediately: PropTypes.bool,
 };
 StreamsModal.defaultProps = {
-    onApply: () => {},
     applyImmediately: true,
 };
 

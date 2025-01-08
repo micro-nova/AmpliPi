@@ -6,7 +6,7 @@ import "./Presets.scss";
 import { useStatusStore } from "@/App.jsx";
 import { Fab } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import CreatePresetModal from "./CreatePresetModal/CreatePresetModal";
+import CreatePresetModal from "@/components/CreatePresetModal/CreatePresetModal";
 import EditPresetModal from "./EditPresetModal/EditPresetModal";
 import { PlaylistAdd } from "@mui/icons-material";
 import List from "@mui/material/List/List";

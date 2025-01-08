@@ -193,7 +193,7 @@ const mergePayloads = (tree) => {
     };
 };
 
-const CreatePresetModal = ({ onClose }) => {
+const CreatePresetModal = ({ onClose, onApply }) => {
     const [name, setName] = React.useState("name");
     const status = useStatusStore((s) => s.status);
     const setTree = useTreeStore((s) => s.setTree);
@@ -216,6 +216,17 @@ const CreatePresetModal = ({ onClose }) => {
                 name: name,
                 state: mergePayloads(tree),
             }),
+        }).then((data) => {
+            if(data.detail){
+                if(data.detail[0].msg){
+                    onApply(false, data.detail[0].msg);
+                    throw new Error(data.detail[0].msg);
+                } else {
+                    onApply(false, data.detail);
+                    throw new Error(data.detail);
+                }
+            }
+            onApply(true, "Preset Created!")
         });
     };
     // creation of tree is delayed due to React.useEffect, so early return is required
@@ -256,6 +267,10 @@ const CreatePresetModal = ({ onClose }) => {
 };
 CreatePresetModal.propTypes = {
     onClose: PropTypes.func.isRequired,
+    onApply: PropTypes.func,
+};
+CreatePresetModal.defaultProps = {
+    onApply: () => {},
 };
 
 export default CreatePresetModal;
