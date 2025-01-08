@@ -10,3 +10,20 @@
 .streams-modal-item-text {
   font-size: 1.5rem
 }
+
+.create-stream-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 20%;
+  margin-right: 0.6rem;
+}
+
+.create-stream-button {
+  border-radius: 1rem !important;
+  border: solid general.$secondary !important;
+  background-color: general.$bg !important;
+}
+
+.create-stream-button:hover {
+  background-color: general.$secondary !important;
+}

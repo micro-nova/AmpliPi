@@ -24,14 +24,10 @@ const EditPresetModal = ({ onClose, preset }) => {
     return (
         <ModalCard
             onClose={onClose}
-            onDelete={() => {
-                deletePreset();
-                onClose();
-            }}
-            onAccept={() => {
-                editPreset();
-                onClose();
-            }}
+            buttons={[
+                [ "Confirm", () => { editPreset(); onClose(); } ],
+                [ "Delete", () => { deletePreset(); onClose(); } ]
+            ]}
         >
             <div className="preset-name">Edit Preset</div>
             <div className="preset-name-input-container">

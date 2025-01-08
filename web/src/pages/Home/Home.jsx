@@ -1,5 +1,6 @@
 import React from "react";
 import PlayerCardFb from "@/components/PlayerCard/PlayerCardFb";
+import RectangularButton from "@/components/RectangularButton/RectangularButton";
 import "./Home.scss";
 import { useStatusStore } from "@/App.jsx";
 import ZonesModal from "@/components/ZonesModal/ZonesModal";
@@ -8,6 +9,7 @@ import PresetsModal from "@/components/PresetsModal/PresetsModal";
 import StreamerOutputModal from "@/components/StreamerOutputModal/StreamerOutputModal";
 import { executeApplyAction } from "@/components/StreamsModal/StreamsModal";
 import selectActiveSource from "@/utils/selectActiveSource";
+import StatusBar from "@/components/StatusBars/StatusBar";
 
 import PropTypes from "prop-types";
 
@@ -35,33 +37,15 @@ const PresetAndAdd = ({
     if (cards.length < sources.length) {
         return (
             <div className="home-presets-container">
-                <div
-                    className="home-add-player-button"
-                    onClick={() => {
-                        initSource(nextAvailableSource);
-                    }}
-                >
-          +
-                </div>
+                <RectangularButton large onClick={() => {initSource(nextAvailableSource);}} label={"+"} />
                 <div style={{ width: "1.25rem" }} />
-                <div
-                    className="home-presets-button"
-                    onClick={() => setPresetsModalOpen(true)}
-                >
-          Presets
-                </div>
-                {/* <IconButton><Add/></IconButton> */}
+                <RectangularButton onClick={() => setPresetsModalOpen(true)} label={"Presets"} />
             </div>
         );
     } else {
         return (
             <div className="home-presets-container">
-                <div
-                    className="home-presets-button"
-                    onClick={() => setPresetsModalOpen(true)}
-                >
-            Presets
-                </div>
+                <RectangularButton onClick={() => setPresetsModalOpen(true)} label={"Presets"} />
             </div>
         );
     }
@@ -83,6 +67,10 @@ const Home = () => {
     const [presetsModalOpen, setPresetsModalOpen] = React.useState(false);
     const [streamerOutputModalOpen, setStreamerOutputModalOpen] = React.useState(false);
     const setSystemState = useStatusStore(s => s.setSystemState);
+
+    const [showStatus, setShowStatus] = React.useState(false);
+    const statusText = React.useRef("");
+    const status = React.useRef(true);
 
     let nextAvailableSource = null;
     let cards = [];
@@ -156,8 +144,11 @@ const Home = () => {
                 />
             )}
             {presetsModalOpen && (
-                <PresetsModal onClose={() => setPresetsModalOpen(false)} />
+                <PresetsModal
+                    onApply={(state, text) => {status.current = state; statusText.current = text; setShowStatus(true);}}
+                    onClose={() => setPresetsModalOpen(false)} />
             )}
+            <StatusBar open={showStatus} status={status.current} text={statusText.current} onClose={() => {setShowStatus(false);}} />
         </div>
     );
 };

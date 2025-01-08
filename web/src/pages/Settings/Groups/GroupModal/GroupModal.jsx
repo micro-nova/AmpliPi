@@ -26,14 +26,10 @@ const GroupModal = ({ group, zones, onClose, del, apply }) => {
         <ModalCard
             onClose={onClose}
             header="Edit Group"
-            onAccept={() => {
-                apply(groupName, groupZones);
-                onClose();
-            }}
-            onDelete={() => {
-                if (del) del();
-                onClose();
-            }}
+            buttons={[
+                [ "Confirm", () => { apply(groupName, groupZones); onClose(); } ],
+                [ del ? "Delete" : "Cancel", () => { if (del) del(); onClose(); } ]
+            ]}
         >
             <div className="group-input-title">Name</div>
             <TextField className="group-name-input"
