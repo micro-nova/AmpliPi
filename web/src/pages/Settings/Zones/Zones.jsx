@@ -42,11 +42,11 @@ const ZoneListItem = ({ zone }) => {
             }),
         }).then(resp => {
             if(resp.ok){
-                setAlertText(`Zone ${zone.id} updated successfully!`);
+                setAlertText(`${name} (ID: ${zone.id}) updated successfully!`);
                 setAlertSuccess(true);
                 setAlertOpen(true);
             } else {
-                setAlertText(`Zone ${zone.id} update failed...`);
+                setAlertText(`${name} (ID: ${zone.id}) update failed...`);
                 setAlertSuccess(false);
                 setAlertOpen(true);
             }
