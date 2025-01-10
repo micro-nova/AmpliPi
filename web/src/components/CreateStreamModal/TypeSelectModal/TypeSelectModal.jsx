@@ -25,7 +25,7 @@ const TypeSelectModal = ({ onClose, onSelect }) => {
 
     return (
         <>
-            <Modal className="streams-modal" onClose={onClose}>
+            <Modal onClose={onClose}>
                 <Card className="type-select-card">
                     <div className="type-select-title">Select A Stream Type</div>
                     <div>
