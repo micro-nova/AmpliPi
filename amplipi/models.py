@@ -71,6 +71,7 @@ class fields(SimpleNamespace):
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F,
                   description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
+  VolumeDeltaF = Field(description='Adjustment to output volume as a floating-point scalar representing the distance between the current and goal volume. Can be anything, but is coerced to never exceed |MAX_VOL_F * 2|')
   VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
   VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
   GroupMute = Field(description='Set to true if output is all zones muted')
@@ -356,6 +357,7 @@ class ZoneUpdate(BaseUpdate):
   mute: Optional[bool] = fields.Mute
   vol: Optional[int] = fields.Volume
   vol_f: Optional[float] = fields.VolumeF
+  vol_delta_f: Optional[float] = fields.VolumeDeltaF
   vol_min: Optional[int] = fields.VolumeMin
   vol_max: Optional[int] = fields.VolumeMax
   disabled: Optional[bool] = fields.Disabled

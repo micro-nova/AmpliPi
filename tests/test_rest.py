@@ -580,6 +580,46 @@ def test_patch_zones_duplicate_name(client):
     if z['id'] in range(6):
       assert z['name'] == f"test {z['id']+1}"
 
+
+def test_patch_zones_vol_delta(client):
+  """ Try changing multiple zones volume using volume delta """
+  zones = [z for z in base_config()['zones']]
+  # set each zone to a random initial volume
+  for z in zones:
+    z['vol_f'] = random.uniform(0.0, 0.9)  # random initial volume
+    rv = client.patch('/api/zones/{}'.format(z['id']), json={'vol_f': z['vol_f']})
+    assert rv.status_code == HTTPStatus.OK
+  # update each zones volume by 10%
+  rv = client.patch('/api/zones', json={'zones': [z['id'] for z in zones], 'update': {'vol_delta_f': 0.1}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  # check that each update worked as expected
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['vol_f'] - (zones[z['id']]['vol_f'] + 0.1) < 0.0001
+
+  # test oversized deltas
+  rv = client.patch('/api/zones', json={'zones': [z['id'] for z in zones], 'update': {'vol_delta_f': -10.0}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  # check that each update worked as expected
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['vol_f'] == amplipi.models.MIN_VOL_F
+
+  # test precedence
+  rv = client.patch('/api/zones', json={'zones': [z['id'] for z in zones], 'update': {'vol_delta_f': 10.0, "vol": amplipi.models.MIN_VOL_DB}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  # check that each update worked as expected
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['vol'] == amplipi.models.MIN_VOL_DB
+
+
 # Test Groups
 
 
@@ -1596,6 +1636,26 @@ def test_set_zone_vol(client, zid):
   patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB}, expect_failure=True)
   patch_zone({'vol_min': amplipi.models.MIN_VOL_DB, 'vol_max': amplipi.models.MIN_VOL_DB +
              amplipi.models.MIN_DB_RANGE / 2}, expect_failure=True)
+
+  # test that volume delta changes work as expected
+  z = patch_zone({'vol_delta_f': -1.0})
+  assert z['vol_f'] == amplipi.models.MIN_VOL_F
+  z = patch_zone({'vol_delta_f': 1.0})
+  assert z['vol_f'] == amplipi.models.MAX_VOL_F
+  z = patch_zone({'vol_delta_f': -0.5})
+  assert z['vol_f'] == (amplipi.models.MAX_VOL_F + amplipi.models.MIN_VOL_F) / 2
+
+  # test oversized deltas
+  z = patch_zone({'vol_delta_f': -10.0})
+  assert z['vol_f'] == amplipi.models.MIN_VOL_F
+  z = patch_zone({'vol_delta_f': 10.0})
+  assert z['vol_f'] == amplipi.models.MAX_VOL_F
+
+  # test field precedence
+  z = patch_zone({'vol_delta_f': 10.0, "vol_f": amplipi.models.MIN_VOL_F})
+  assert z['vol_f'] == amplipi.models.MAX_VOL_F
+  z = patch_zone({'vol_delta_f': 10.0, "vol": amplipi.models.MIN_VOL_DB})
+  assert z['vol'] == amplipi.models.MIN_VOL_DB
 
 
 @pytest.mark.parametrize('gid', base_group_ids())

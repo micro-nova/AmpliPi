@@ -40,6 +40,9 @@ export const useStatusStore = create((set, get) => ({
     skipUpdate: false,
     loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
     disconnected: true,
+    skipNextUpdate: () => {
+        set({ skipUpdate: true });
+    },
     setZonesVol: (vol, zones, sourceId) => {
         set(
             produce((s) => {
@@ -126,6 +129,7 @@ export const useStatusStore = create((set, get) => ({
                 if (res.ok) {
                     res.json().then((s) => {
                         if (get().skipUpdate) {
+                            // Does .then() into skipUpdate and ignores api output to help avoid race conditions
                             set({ skipUpdate: false });
                         } else {
                             set({ status: s, loaded: true, disconnected: false });

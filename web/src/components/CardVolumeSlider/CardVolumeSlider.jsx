@@ -32,40 +32,51 @@ export const applyPlayerVol = (vol, zones, sourceId, apply) => {
     }
 };
 
+// cumulativeDelta reflects the amount of movement that the
+let cumulativeDelta = 0;
 let sendingPacketCount = 0;
 
 // main volume slider on player and volume slider on player card
-
 const CardVolumeSlider = ({ sourceId }) => {
     const zones = useStatusStore((s) => s.status.zones);
     const setZonesVol = useStatusStore((s) => s.setZonesVol);
     const setZonesMute = useStatusStore((s) => s.setZonesMute);
 
-    const setPlayerVolRaw = (vol) =>
-        applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
-            sendingPacketCount += 1;
-            fetch(`/api/zones/${zone_id}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-type": "application/json",
-                },
-                body: JSON.stringify({ vol_f: new_vol, mute: false }),
-            }).then(() => {
-                sendingPacketCount -= 1;
-            });
-        });
-
-    const setPlayerVol = (vol, force = false) => {
-        if (sendingPacketCount <= 0 || force) {
-            setPlayerVolRaw(vol);
-        }
-    };
+    // needed to ensure that polling doesn't cause the delta volume to be made inacurrate during volume slider interactions
+    const skipNextUpdate = useStatusStore((s) => s.skipNextUpdate);
 
     const value = getPlayerVol(sourceId, zones);
 
     const setValue = (vol) => {
         setZonesVol(vol, zones, sourceId);
         setZonesMute(false, zones, sourceId);
+    };
+
+    function setPlayerVol(vol, val) {
+        cumulativeDelta += vol - val;
+
+        if(sendingPacketCount <= 0){
+            sendingPacketCount += 1;
+
+            const delta = cumulativeDelta;
+
+            fetch("/api/zones", {
+                method: "PATCH",
+                headers: {
+                    "Content-type": "application/json",
+                },
+                body: JSON.stringify({
+                    zones: getSourceZones(sourceId, zones).map((z) => z.id),
+                    update: { vol_delta_f: cumulativeDelta, mute: false },
+                }),
+            }).then(() => {
+                // NOTE: This used to just set cumulativeDelta to 0
+                // that would skip all accumulated delta from fetch start to backend response time
+                // causing jittering issues
+                cumulativeDelta -= delta;
+                sendingPacketCount -= 1;
+            });
+        }
     };
 
     const mute = getSourceZones(sourceId, zones)
@@ -93,9 +104,13 @@ const CardVolumeSlider = ({ sourceId }) => {
                 vol={value}
                 mute={mute}
                 setMute={setMute}
-                setVol={(val, force = false) => {
-                    setPlayerVol(val, force);
+                setVol={(val, force) => {
+                    // Cannot use value directly as that changes during the request when setValue() is called
+                    // Cannot call setValue() as a .then() after the request as that causes the ui to feel unresponsive and choppy
+                    let current_val = value;
+                    setPlayerVol(val, current_val);
                     setValue(val);
+                    skipNextUpdate();
                 }}
                 disabled={getSourceZones(sourceId, zones) == 0}
             />
