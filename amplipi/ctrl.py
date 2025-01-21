@@ -790,6 +790,7 @@ class Api:
         mute, update_mutes = utils.updated_val(update.mute, zone.mute)
         vol, update_vol = utils.updated_val(update.vol, zone.vol)
         vol_f, update_vol_f = utils.updated_val(update.vol_f, zone.vol_f)
+        vol_delta_f = update.vol_delta_f
         vol_min, update_vol_min = utils.updated_val(update.vol_min, zone.vol_min)
         vol_max, update_vol_max = utils.updated_val(update.vol_max, zone.vol_max)
         disabled, _ = utils.updated_val(update.disabled, zone.disabled)
@@ -847,13 +848,20 @@ class Api:
           """ Update the zone's volume. Could be triggered by a change in
               vol, vol_f, vol_min, or vol_max.
           """
-          # 'vol' (in dB) takes precedence over vol_f
-          if update.vol_f is not None and update.vol is None:
-            vol_db = utils.vol_float_to_db(vol_f, zone.vol_min, zone.vol_max)
-            vol_f_new = vol_f
+          # Field precedence: vol (db) > vol_delta > vol (float)
+          # NOTE: checks happen in reverse precedence to cover default case of unchanged volume
+          if update.vol_delta_f is not None and update.vol is None:
+            applied_delta = utils.clamp((vol_delta_f + zone.vol_f), 0, 1)
+            vol_db = utils.vol_float_to_db(applied_delta, zone.vol_min, zone.vol_max)
+            vol_f_new = applied_delta
+          elif update.vol_f is not None and update.vol is None:
+            clamp_vol_f = utils.clamp(vol_f, 0, 1)
+            vol_db = utils.vol_float_to_db(clamp_vol_f, zone.vol_min, zone.vol_max)
+            vol_f_new = clamp_vol_f
           else:
             vol_db = utils.clamp(vol, zone.vol_min, zone.vol_max)
             vol_f_new = utils.vol_db_to_float(vol_db, zone.vol_min, zone.vol_max)
+
           if self._rt.update_zone_vol(idx, vol_db):
             zone.vol = vol_db
             zone.vol_f = vol_f_new
@@ -863,7 +871,7 @@ class Api:
         # To avoid potential unwanted loud output:
         # If muting, mute before setting volumes
         # If un-muting, set desired volume first
-        update_volumes = update_vol or update_vol_f or update_vol_min or update_vol_max
+        update_volumes = update_vol or update_vol_f or update_vol_min or update_vol_max or vol_delta_f is not None
         if force_update or (update_mutes and update_volumes):
           if mute:
             set_mute()
