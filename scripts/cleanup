@@ -106,6 +106,13 @@ until $(curl --output /dev/null --silent --fail http://amplipi.local); do
 done
 echo "" # newline
 
+# connecting default streams
+echo -e "\nConnecting Groove Salad, Spotify, Airplay sources"
+curl -X PATCH http://amplipi.local/api/sources/0 -H "Content-Type: application/json" -d '{"input": "stream=1000"}'
+curl -X PATCH http://amplipi.local/api/sources/1 -H "Content-Type: application/json" -d '{"input": "stream=1001"}'
+curl -X PATCH http://amplipi.local/api/sources/2 -H "Content-Type: application/json" -d '{"input": "stream=1004"}'
+curl -X PATCH http://amplipi.local/api/zones -H "Content-Type: application/json" -d '{"zones": [0, 1, 2, 3, 4, 5], "update": {"mute": true, "source_id": 0}}'
+
 # remove old known_hosts entries
 echo -e "\nCleaning old ~/.ssh/known_hosts entries on local machine"
 ssh-keygen -f ~/.ssh/known_hosts -R amplipi.local
