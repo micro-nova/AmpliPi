@@ -19,10 +19,10 @@ USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
 DEFAULT_CONFIG = {  # This is the system state response that will come back from the amplipi box
   "version": 1,
   "sources": [  # this is an array of source objects, each has an id, name, type specifying whether source comes from a local (like RCA) or streaming input like pandora
-    {"id": 0, "name": "Input 1", "input": ""},
-    {"id": 1, "name": "Input 2", "input": ""},
-    {"id": 2, "name": "Input 3", "input": ""},
-    {"id": 3, "name": "Input 4", "input": ""},
+    {"id": 0, "name": "Output 1", "input": ""},
+    {"id": 1, "name": "Output 2", "input": ""},
+    {"id": 2, "name": "Output 3", "input": ""},
+    {"id": 3, "name": "Output 4", "input": ""},
   ],
   # NOTE: streams and groups seem like they should be stored as dictionaries with integer keys
   #       this does not make sense because JSON only allows string based keys
@@ -34,6 +34,10 @@ DEFAULT_CONFIG = {  # This is the system state response that will come back from
     {"id": RCAs[3], "name": "Input 4", "type": "rca", "index": 3, "browsable": False, "disabled": False},
     {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac",
      "logo": "https://somafm.com/img3/groovesalad-400.jpg", "browsable": False, "disabled": False},
+    {"id": 1001, "name": "AmpliPro 1", "type": "spotify", "disabled": False, "browsable": False},
+    {"id": 1002, "name": "AmpliPro 2", "type": "spotify", "disabled": False, "browsable": False},
+    {"id": 1003, "name": "AmpliPro 1", "type": "airplay", "disabled": False, "ap2": False, "browsable": False},
+    {"id": 1004, "name": "AmpliPro 2", "type": "airplay", "disabled": False, "ap2": True, "browsable": False}
   ],
   "zones": [  # this is an array of zones, array length depends on # of boxes connected
     {"id": 0, "name": "Zone 1", "source_id": 0, "mute": True, "disabled": False,
@@ -79,6 +83,10 @@ STREAMER_CONFIG = {  # This is the system state response that will come back fro
     {"id": AUX_STREAM_ID, "name": "Aux", "type": "aux", "browsable": False, "disabled": False},
     {"id": 1000, "name": "Groove Salad", "type": "internetradio", "url": "http://ice6.somafm.com/groovesalad-32-aac",
      "logo": "https://somafm.com/img3/groovesalad-400.jpg", "browsable": False, "disabled": False},
+    {"id": 1001, "name": "AmpliPro 1", "type": "spotify", "disabled": False, "browsable": False},
+    {"id": 1002, "name": "AmpliPro 2", "type": "spotify", "disabled": False, "browsable": False},
+    {"id": 1003, "name": "AmpliPro 1", "type": "airplay", "disabled": False, "ap2": False, "browsable": False},
+    {"id": 1004, "name": "AmpliPro 2", "type": "airplay", "disabled": False, "ap2": True, "browsable": False}
   ],
   "zones": [  # this is an array of zones, array length depends on # of boxes connected
   ],
