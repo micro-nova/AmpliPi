@@ -236,11 +236,10 @@ const CreatePresetModal = ({ onClose, onApply }) => {
         <ModalCard
             onClose={onClose}
             header="Create Preset"
-            onAccept={() => {
-                savePreset();
-                onClose();
-            }}
-            onCancel={onClose}
+            buttons={[
+                ["Create Preset", () => {savePreset(); onClose();} ],
+                [ "Cancel", onClose ]
+            ]}
         >
             <div>Name</div>
             <TextField

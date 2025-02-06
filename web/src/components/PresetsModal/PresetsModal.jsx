@@ -114,7 +114,14 @@ const PresetsModal = ({ onClose, onApply }) => {
     ));
 
     return (
-        <ModalCard className="presets-modal" onClose={onClose} onCancel={onClose} onAdd={() => {setCreateModalOpen(true);}} >
+        <ModalCard
+            className="presets-modal"
+            onClose={onClose}
+            buttons={[
+                [ "Create Preset", () => {setCreateModalOpen(true);} ],
+                [ "Cancel", onClose ]
+            ]}
+        >
             <div className="presets-modal-header">Select Preset</div>
             <div className="presets-modal-body">
                 <List>{presetItems}</List>

@@ -234,10 +234,6 @@ const StreamModal = ({ stream, onClose, del }) => {
         <ModalCard
             onClose={onClose}
             header={stream.name}
-            onDelete={() => {
-                if (del) del(streamFields);
-                onClose();
-            }}
             footer={
                 <AlertBar
                     renderAnimationState={renderAlertAnimation}
@@ -247,61 +243,70 @@ const StreamModal = ({ stream, onClose, del }) => {
                     text={errorMessage}
                 />
             }
-            onAccept={() => {
-                // Check if all required fields are filled
-                for (const field of templateFields) {
-                    if (field.required && (!(field.name.toLowerCase() in streamFields) || streamFields[field.name.toLowerCase()] === "")) {
-                        setErrorField(field.name);
-                        setErrorMessage(`Field ${field.name} is required`);
-                        setAlertAnimation(renderAlertAnimation + 1);
-                        setHasError(true);
-                        return;
-                    }
-                }
-                // Omit any fields that are simply empty. This permits Pydantic to cast to None,
-                // and then our constructors et al use their defaults.
-                // ref: https://github.com/pydantic/pydantic/discussions/2687
-                const filteredStreamFields = Object.fromEntries(
-                    Object.entries(streamFields).filter( ([key, value]) => value !== "" )
-                );
-                apply(filteredStreamFields).then((response)=>{
-                    if(response.ok)
-                    {
-                        setErrorField("");
-                        onClose();
-                    }
-                    response.json().then((error)=>{
-                        /*
-                            Check type of error detail...
-                            if it's a string it's some internal error
-                            if it's an object it's a field error
-                            otherwise we don't even know how to render it
-                            TODO:   if/when we refactor API errors this probably
-                                    also needs a refactor
-                        */
-                        if(typeof error.detail === "string"){
-                            setErrorMessage(error.detail);
-                        }
-                        else if(typeof error.detail === "object"){
-                            // We use the 'field' member to report an invalid field during stream validation,
-                            // but this isn't present on simple Pydantic model errors
-                            if(error.detail.field) {
-                                setErrorField(error.detail.field);
-                                setErrorMessage(error.detail.msg);
-                            } else if(error.detail[0]) {
-                                setErrorField(error.detail[0].loc[1]);
-                                // example: 'port: not a valid integer'
-                                setErrorMessage(`${error.detail[0].loc[1]}: ${error.detail[0].msg}`);
-                            } else {
-                                setErrorMessage("Unknown error");
+            buttons={[
+                [ "Create Stream", () => {
+                        // Check if all required fields are filled
+                        for (const field of templateFields) {
+                            if (field.required && (!(field.name.toLowerCase() in streamFields) || streamFields[field.name.toLowerCase()] === "")) {
+                                setErrorField(field.name);
+                                setErrorMessage(`Field ${field.name} is required`);
+                                setAlertAnimation(renderAlertAnimation + 1);
+                                setHasError(true);
+                                return;
                             }
                         }
-                        else{
-                            setErrorMessage("Unknown error");
-                        }
-                    });
-                });
-            }}
+                        // Omit any fields that are simply empty. This permits Pydantic to cast to None,
+                        // and then our constructors et al use their defaults.
+                        // ref: https://github.com/pydantic/pydantic/discussions/2687
+                        const filteredStreamFields = Object.fromEntries(
+                            Object.entries(streamFields).filter( ([key, value]) => value !== "" )
+                        );
+                        apply(filteredStreamFields).then((response)=>{
+                            if(response.ok)
+                            {
+                                setErrorField("");
+                                onClose();
+                            }
+                            response.json().then((error)=>{
+                                /*
+                                    Check type of error detail...
+                                    if it's a string it's some internal error
+                                    if it's an object it's a field error
+                                    otherwise we don't even know how to render it
+                                    TODO:   if/when we refactor API errors this probably
+                                            also needs a refactor
+                                */
+                                if(typeof error.detail === "string"){
+                                    setErrorMessage(error.detail);
+                                }
+                                else if(typeof error.detail === "object"){
+                                    // We use the 'field' member to report an invalid field during stream validation,
+                                    // but this isn't present on simple Pydantic model errors
+                                    if(error.detail.field) {
+                                        setErrorField(error.detail.field);
+                                        setErrorMessage(error.detail.msg);
+                                    } else if(error.detail[0]) {
+                                        setErrorField(error.detail[0].loc[1]);
+                                        // example: 'port: not a valid integer'
+                                        setErrorMessage(`${error.detail[0].loc[1]}: ${error.detail[0].msg}`);
+                                    } else {
+                                        setErrorMessage("Unknown error");
+                                    }
+                                }
+                                else{
+                                    setErrorMessage("Unknown error");
+                                }
+                            });
+                        });
+                    }
+                ],
+                [
+                    del ? "Delete" : "Cancel", () => {
+                        if (del) del(streamFields);
+                        onClose();
+                    }
+                ]
+            ]}
         >
             <div>
                 {

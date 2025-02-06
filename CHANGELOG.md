@@ -12,6 +12,7 @@
   * Reformat Player page volume controls to look more modern
   * Add safeguards in an attempt to reduce volume slider misinputs
   * Add ability to create streams, presets from the home screen
+  * Change Modal buttons to be textual instead of icon based
 
 ## 0.4.5
 * Web App

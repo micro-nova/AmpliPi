@@ -133,7 +133,14 @@ const StreamsModal = ({
     }
 
     return (
-        <ModalCard header="Select Stream" onAdd={() => {setCreateModalOpen(true);}} onClose={onClose} onCancel={onClose}>
+        <ModalCard
+            header="Select Stream"
+            onClose={onClose}
+            buttons={[
+                ["Create Stream", () => {setCreateModalOpen(true);} ],
+                ["Cancel", onClose ]
+            ]}
+            >
             <List>
                 {streamsList}
             </List>

@@ -2,11 +2,9 @@ import React from "react";
 import Modal from "@/components/Modal/Modal";
 import Card from "@/components/Card/Card";
 import "./ModalCard.scss";
-import CheckIcon from "@mui/icons-material/Check";
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import DeleteIcon from "@mui/icons-material/Delete";
-import CloseIcon from "@mui/icons-material/Close";
 import CustomMarquee from "../CustomMarquee/CustomMarquee";
+import Grid from "@mui/material/Grid/Grid";
+import Button from "@mui/material/Button/Button";
 
 import PropTypes from "prop-types";
 
@@ -15,10 +13,7 @@ const ModalCard = ({
     children,
     footer,
     onClose,
-    onAccept = null,
-    onAdd = null,
-    onCancel = null,
-    onDelete = null,
+    buttons,
 }) => {
     React.useEffect(() => {
         const handleKeyDown = (event) => {
@@ -32,6 +27,14 @@ const ModalCard = ({
         return () => {window.removeEventListener('keydown', handleKeyDown);}
     }, [])
 
+    const footerContent = buttons.map(([text, onClick], index) => {
+        return(
+            <Grid item key={index}>
+                <Button onClick={onClick}>{text}</Button>
+            </Grid>
+        )
+    })
+
     const headerRef = React.useRef(null);
     return (
         <Modal className="modal" onClose={onClose}>
@@ -43,37 +46,17 @@ const ModalCard = ({
                 <div className="modal-footer">
                     {footer}
                 </div>
-                <div className="modal-footer">
-                    {onAccept && (
-                        <CheckIcon
-                            className="modal-footer-button"
-                            onClick={onAccept}
-                            fontSize="inherit"
-                        />
-                    )}
-                    {onAdd && (
-                        <AddCircleOutlineIcon
-                            className="modal-footer-button"
-                            onClick={onAdd}
-                            fontSize="inherit"
-                        />
-                    )}
-                    {onCancel && (
-                        <CloseIcon
-                            className="modal-footer-button"
-                            onClick={onCancel}
-                            fontSize="inherit"
-                        />
-                    )}
-                    {onDelete && (
-                        <DeleteIcon
-                            className="modal-footer-button"
-                            onClick={onDelete}
-                            fontSize="inherit"
-                        />
-                    )}
-
-                </div>
+                <Grid
+                    container
+                    spacing={"auto"}
+                    columns={buttons.length}
+                    direction={"row"}
+                    sx={{
+                        justifyContent: "space-around",
+                    }}
+                >
+                    {footerContent}
+                </Grid>
             </Card>
         </Modal>
     );
@@ -83,16 +66,10 @@ ModalCard.propTypes = {
     children: PropTypes.any.isRequired,
     footer: PropTypes.string,
     onClose: PropTypes.func.isRequired,
-    onAccept: PropTypes.func,
-    onAdd: PropTypes.func,
-    onCancel: PropTypes.func,
-    onDelete: PropTypes.func,
+    buttons: PropTypes.array
 };
 ModalCard.defaultProps={
-    onAccept: null,
-    onAdd: null,
-    onCancel: null,
-    onDelete: null,
+    buttons: [],
 };
 
 export default ModalCard;

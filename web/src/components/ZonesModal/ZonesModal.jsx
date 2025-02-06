@@ -254,20 +254,23 @@ const ZonesModal = ({
     return (
         <ModalCard
             onClose={onClose}
-            onCancel={onClose}
-            onAccept={() => {
-                if (onApply !== null) {
-                    onApply().then(() => {
-                        setZones();
-                        onClose();
-                        clearRcaSourceId();
-                    });
-                } else {
-                    setZones();
-                    onClose();
-                    clearRcaSourceId();
-                }
-            }}
+            buttons={[
+                [ "Confirm", () => {
+                        if (onApply !== null) {
+                            onApply().then(() => {
+                                setZones();
+                                onClose();
+                                clearRcaSourceId();
+                            });
+                        } else {
+                            setZones();
+                            onClose();
+                            clearRcaSourceId();
+                        }
+                    }
+                ],
+                [ "Cancel", onClose ]
+            ]}
             header="Select Zones"
         >
             <List>
