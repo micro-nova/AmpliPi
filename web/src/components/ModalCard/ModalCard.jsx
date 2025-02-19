@@ -52,6 +52,7 @@ const ModalCard = ({
                     columns={buttons.length}
                     direction={"row"}
                     sx={{
+                        padding: "5px",
                         justifyContent: "space-around",
                     }}
                 >
