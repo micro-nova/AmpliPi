@@ -376,6 +376,16 @@ class ZoneUpdate(BaseUpdate):
             'source_id': 3
           }
         },
+        'Decrease volume relative to min/max volume by 10 percent': {
+          'value': {
+            'vol_delta_f': -0.1
+          }
+        },
+        'Increase volume relative to min/max volume by 10 percent': {
+          'value': {
+            'vol_delta_f': 0.1
+          }
+        },
         'Change volume relative to min/max volume': {
           'value': {
             'vol': 0.44
@@ -431,6 +441,18 @@ class MultiZoneUpdate(BaseModel):
           'value': {
             'zones': [0, 1, 2, 3, 4, 5],
             'update': {'vol_f': 0.5, "mute": False}
+          }
+        },
+        'Decrease volume relative to min/max volume by 10 percent on first 3 zones': {
+          'value': {
+            'zones': [0, 1, 2],
+            'update': {'vol_delta_f': -0.1}
+          }
+        },
+        'Increase volume relative to min/max volume by 10 percent on zones 3, 4, and 5': {
+          'value': {
+            'zones': [3, 4, 5],
+            'update': {'vol_delta_f': 0.1}
           }
         },
       },
