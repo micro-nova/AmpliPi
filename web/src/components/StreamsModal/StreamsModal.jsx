@@ -150,11 +150,12 @@ const StreamsModal = ({
 };
 StreamsModal.propTypes = {
     sourceId: PropTypes.number.isRequired,
-    onApply: PropTypes.func.isRequired,
+    onApply: PropTypes.func,
     onClose: PropTypes.func.isRequired,
     applyImmediately: PropTypes.bool,
 };
 StreamsModal.defaultProps = {
+    onApply: () => {},
     applyImmediately: true,
 };
 
