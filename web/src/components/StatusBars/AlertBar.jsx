@@ -45,7 +45,7 @@ AlertBar.propTypes = {
     status: PropTypes.bool.isRequired,
     text: PropTypes.string.isRequired,
     onClose: PropTypes.func.isRequired,
-    renderAnimationState: PropTypes.int,
+    renderAnimationState: PropTypes.number,
 };
 AlertBar.defaultProps = {
     renderAnimationState: 1,
