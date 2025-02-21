@@ -65,7 +65,7 @@ const ModalCard = ({
 ModalCard.propTypes = {
     header: PropTypes.string,
     children: PropTypes.any.isRequired,
-    footer: PropTypes.string,
+    footer: PropTypes.any,
     onClose: PropTypes.func.isRequired,
     buttons: PropTypes.array
 };
