@@ -198,7 +198,7 @@ const InternetRadioSearch = ({ onChange }) => {
 InternetRadioSearch.propTypes = {
     onChange: PropTypes.func.isRequired,
 };
-const StreamModal = ({ stream, onClose, del }) => {
+const StreamModal = ({ stream, onClose, apply, del }) => {
     const [streamFields, setStreamFields] = React.useState(
         JSON.parse(JSON.stringify(stream))
     ); // set streamFields to copy of stream
@@ -207,14 +207,6 @@ const StreamModal = ({ stream, onClose, del }) => {
     const [errorField, setErrorField] = React.useState("");
     const [hasError, setHasError] = React.useState(false); // Need a discrete hasError bool to trigger error
     const [renderAlertAnimation, setAlertAnimation] = React.useState(0); // Need a discrete hasError bool to trigger error
-
-    const apply = (stream) => {
-        return fetch("/api/stream", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(stream),
-        });
-    };
 
     const streamTemplate = StreamTemplates.filter(
         (t) => t.type === stream.type
@@ -243,8 +235,11 @@ const StreamModal = ({ stream, onClose, del }) => {
                     text={errorMessage}
                 />
             }
+
+            // del is only used during edit, so use that to define when the modal should be in edit mode
+            // Would use apply instead of del for the first one if apply didn't have a default as well
             buttons={[
-                [ "Create Stream", () => {
+                [ del ? "Edit Stream" : "Create Stream", () => {
                         // Check if all required fields are filled
                         for (const field of templateFields) {
                             if (field.required && (!(field.name.toLowerCase() in streamFields) || streamFields[field.name.toLowerCase()] === "")) {
@@ -396,7 +391,17 @@ const StreamModal = ({ stream, onClose, del }) => {
 StreamModal.propTypes = {
     stream: PropTypes.any.isRequired,
     onClose: PropTypes.func.isRequired,
+    apply: PropTypes.func,
     del: PropTypes.func,
 };
+StreamModal.defaultProps = {
+    apply: (stream) => {
+        return fetch("/api/stream", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(stream),
+        });
+    },
+}
 
 export default StreamModal;
