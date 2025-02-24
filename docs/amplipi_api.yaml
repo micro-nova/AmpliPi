@@ -4788,7 +4788,10 @@ paths:
           description: Stream ID
         name: gid
         in: path
-        examples: {}
+        examples:
+          Evens:
+            value: 100
+            summary: Evens
       responses:
         '200':
           description: Successful Response
@@ -4845,7 +4848,10 @@ paths:
           description: Stream ID
         name: gid
         in: path
-        examples: {}
+        examples:
+          Evens:
+            value: 100
+            summary: Evens
       responses:
         '200':
           description: Successful Response
@@ -5284,7 +5290,10 @@ paths:
           description: Stream ID
         name: gid
         in: path
-        examples: {}
+        examples:
+          Evens:
+            value: 100
+            summary: Evens
       requestBody:
         content:
           application/json:
