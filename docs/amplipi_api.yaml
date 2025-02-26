@@ -10975,7 +10975,7 @@ components:
         is_streamer:
           title: Is Streamer
           type: boolean
-          description: Are we a streamer unit?
+          description: Are we a streamer?
           default: false
         online:
           title: Online
