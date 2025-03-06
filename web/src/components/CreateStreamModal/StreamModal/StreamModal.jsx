@@ -376,14 +376,15 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                     }}
                 />
 
-                <ButtonField
+                {/* del is only used during edit, so use that to define when the modal should be in edit mode */}
+                {del && <ButtonField
                     name="Restart"
                     text="Restart Stream"
                     desc={RESTART_DESC}
                     onClick={() => fetch("/api/streams/" + stream.id + "/restart",{
                         method: "POST"
                     })}
-                />
+                />}
             </div>
         </ModalCard>
     );
