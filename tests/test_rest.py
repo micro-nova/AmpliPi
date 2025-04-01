@@ -32,6 +32,7 @@ from context import amplipi
 TEST_CONFIG = amplipi.defaults.DEFAULT_CONFIG
 
 NO_SOURCE = -1  # Allows a zone to be disconnected from any source
+ZONE_OFF = -2  # Reflects off state in home assistant and other third party interfaces
 
 # add several groups and most of the default streams to the config
 TEST_CONFIG['groups'] = [
@@ -549,6 +550,13 @@ def test_patch_zone_mute_disconnect(client, zid):
   s = find(jrv['zones'], zid)
   assert s is not None
   assert s['source_id'] == -1
+  assert s['mute'] == True
+  rv = client.patch('/api/zones/{}'.format(zid), json={'source_id': ZONE_OFF})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  s = find(jrv['zones'], zid)
+  assert s is not None
+  assert s['source_id'] == -2
   assert s['mute'] == True
   rv = client.patch('/api/zones/{}'.format(zid), json={'mute': False})
   assert rv.status_code == HTTPStatus.OK

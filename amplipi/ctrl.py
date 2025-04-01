@@ -799,7 +799,8 @@ class Api:
         zone.disabled = disabled
 
         # parse and check the source id
-        sid = utils.parse_int(source_id, range(models.SOURCE_DISCONNECTED, models.MAX_SOURCES))
+        sid = utils.parse_int(source_id, range(models.ZONE_OFF, models.MAX_SOURCES))
+        special_status_sid = sid in [models.ZONE_OFF, models.SOURCE_DISCONNECTED]
 
         # disconnect zone from source if it's disabled.
         if zone.disabled:
@@ -807,7 +808,7 @@ class Api:
           update_source_id = True
 
         # any zone disabled by source disconnection or a 'disabled' flag should not be able to play anything
-        implicit_mute = zone.disabled or sid == models.SOURCE_DISCONNECTED
+        implicit_mute = zone.disabled or special_status_sid
         if implicit_mute and not mute:
           mute = True
           update_mutes = True
@@ -822,7 +823,7 @@ class Api:
 
           # this is setting the state for all zones
           # TODO: cache the fw state and only do this on change, this quickly gets out of hand when changing many zones
-          if sid == models.SOURCE_DISCONNECTED:
+          if special_status_sid:
             # don't send the source id to the firmware if we are disconnecting the source
             zone.source_id = sid
           elif self._rt.update_zone_sources(idx, zone_sources):

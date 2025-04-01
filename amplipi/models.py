@@ -53,6 +53,17 @@ MAX_SOURCES = 4
 SOURCE_DISCONNECTED = -1
 """ Indicate no source connection, simulated in SW by muting zone for now """
 
+ZONE_OFF = -2
+"""
+Indicate that a zone is considered off for the purpose of external interfaces such as home assistant
+
+ON = source_id != ZONE_OFF
+OFF = source_id == ZONE_OFF
+
+To turn off: set to ZONE_OFF
+To turn on: set to SOURCE_DISCONNECTED or any valid source_id
+"""
+
 
 def pcnt2Vol(pcnt: float) -> int:
   """ Convert a percent to volume in dB """
@@ -64,8 +75,8 @@ class fields(SimpleNamespace):
   """ AmpliPi's field types """
   ID = Field(description='Unique identifier')
   Name = Field(description='Friendly name')
-  SourceId = Field(ge=SOURCE_DISCONNECTED, le=MAX_SOURCES - 1,
-                   description='id of the connected source, or -1 for no connection')
+  SourceId = Field(ge=ZONE_OFF, le=MAX_SOURCES - 1,
+                   description='id of the connected source, or -1 for no connection, or -2 for reflecting STATE_OFF in third party interfaces such as home assistant')
   ZoneId = Field(ge=0, le=35)
   Mute = Field(description='Set to true if output is muted')
   Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
@@ -94,8 +105,8 @@ class fields_w_default(SimpleNamespace):
   These are needed because there is ambiguity where an optional field has a default value
   """
   # TODO: less duplication
-  SourceId = Field(default=0, ge=SOURCE_DISCONNECTED, le=MAX_SOURCES - 1,
-                   description='id of the connected source, or -1 for no connection')
+  SourceId = Field(default=0, ge=ZONE_OFF, le=MAX_SOURCES - 1,
+                   description='id of the connected source, or -1 for no connection, or -2 for reflecting STATE_OFF in third party interfaces such as home assistant')
   Mute = Field(default=True, description='Set to true if output is muted')
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F,
