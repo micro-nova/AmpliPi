@@ -2,7 +2,9 @@
 
 ## Upcoming Release
 
-
+## 0.4.7
+* System
+  * Added backend support for the OFF status for home assistant and other third party interfaces
 
 ## 0.4.6
 * System
