@@ -1011,7 +1011,7 @@ class Info(BaseModel):
   mock_ctrl: bool = Field(
     default=False, description='Is the controller being mocked? Indicates AmpliPi hardware is not connected')
   mock_streams: bool = Field(default=False, description='Are streams being faked? Used for testing.')
-  is_streamer: bool = Field(default=False, description='Are we a streamer unit?')
+  is_streamer: bool = Field(default=False, description='Are we a streamer?')
   online: bool = Field(default=False, description='can the system connect to the internet?')
   latest_release: str = Field(default='unknown', description='Latest software release available from GitHub')
   access_key: str = Field(default='', description='session token/API key used for authentication')
