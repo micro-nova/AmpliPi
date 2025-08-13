@@ -67,6 +67,7 @@ class OriginChange:
 class PlayChange(OriginChange):
   """Play change event"""
   uri: str = ''  # Track URI
+  resume: bool = False
 
 
 @dataclass
