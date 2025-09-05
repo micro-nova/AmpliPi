@@ -6,7 +6,7 @@
   * Your AmpliPi
 
 ## 1. Get the Latest AmpliPi Image
-  Download the latest AmpliPi image from [here](https://storage.googleapis.com/amplipi-img/amplipi_0.3.1.img.xz) ([md5sum](https://storage.googleapis.com/amplipi-img/CHECKSUMS), [.sig](https://storage.googleapis.com/amplipi-img/CHECKSUMS.sig)) and save it to your computer.
+  Download the latest AmpliPi image from [here](https://storage.googleapis.com/amplipi-img/amplipi_0.4.8.img.xz) ([md5sum](https://storage.googleapis.com/amplipi-img/CHECKSUMS), [.sig](https://storage.googleapis.com/amplipi-img/CHECKSUMS.sig)) and save it to your computer.
 
 ## 2. Get RPIBoot
 Download and install the latest version of RPIBoot from [here](https://github.com/raspberrypi/usbboot/raw/master/win32/rpiboot_setup.exe) on windows, otherwise refer to the instructions for [building RPIBoot](https://github.com/raspberrypi/usbboot#building).
@@ -17,7 +17,7 @@ Download and install (if necessary) the latest version of Etcher from [etcher.io
 ## 4. Connect your AmpliPi to your computer
 
   **VERY IMPORTANT:** Please connect the USB cable to your computer FIRST before connecting the other side of the cable to the service port of the AmpliPro. Certain older units with TFT displays (not EINK) were susceptible to ESD damage on the USB service port. Connecting the cable to the computer first will mitigate this risk.
-  
+
   Unplug your AmpliPi from power and then connect your AmpliPi to your computer via the service port using the micro USB cable. Once connected, plug your AmpliPi back into power.
 
   ![connected to service port](imgs/flashing/plugged_sp.jpg)
