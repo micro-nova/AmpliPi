@@ -131,9 +131,9 @@ const InternetRadioSearch = ({ onChange }) => {
 
     return (
         React.useEffect(() => {
-            // pinned this to at1 since it appears to be the main server and the
+            // pinned this to fi1 since it appears to be the main server and the
             // HTTPS cert isn't valid for all.api.radio-browser.info
-            fetch("https://at1.api.radio-browser.info/json/servers").then((res) =>
+            fetch("https://fi1.api.radio-browser.info/json/servers").then((res) =>
                 res.json().then(async (s) => {
                     for (const i of s) {
                         const res = await fetch("https://" + i.name);

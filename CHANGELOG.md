@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Future Release
+* System
+  * Fixed internet radio search functionality
+
 ## 0.4.8
 * System
   * Update our spotify provider `go-librespot` to `0.3.2` to accomodate spotify's API update

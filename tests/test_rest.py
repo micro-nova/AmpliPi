@@ -1164,7 +1164,7 @@ def test_post_stream_cmd_live(clientnm, cmd):
 
 def test_create_internetradio_live(clientnm):
   """ for 10 most popular internet radio stations plus one fake, try creating an internet radio stream, wait 3 seconds, then check if it errored"""
-  res = requests.post('https://de1.api.radio-browser.info/json/stations/search', json={
+  res = requests.post('https://fi1.api.radio-browser.info/json/stations/search', json={
       "offset": 0,
       "limit": 10,
       "hidebroken": "true",
