@@ -1,5 +1,9 @@
 # AmpliPi Software Releases
 
+## Future Release
+* System
+  * Update `go-librespot` to `0.4.0` to increase stability of spotify streams
+
 ## 0.4.8
 * System
   * Update our spotify provider `go-librespot` to `0.3.2` to accomodate spotify's API update

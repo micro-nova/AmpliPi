@@ -67,6 +67,7 @@ class OriginChange:
 class PlayChange(OriginChange):
   """Play change event"""
   uri: str = ''  # Track URI
+  context_uri: str = ''  # Playlist/Station URI
   resume: bool = False
 
 
