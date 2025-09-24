@@ -29,7 +29,7 @@ To update your AmpliPi software to the latest version:
 ### Prereleases and using previous versions
 Had an issue with an update? Want to try a beta release? Follow these steps:
 
-3. Click the **Older Releases** tab
+3. Click the **Other Releases** tab
 4. Select the release you would like to use from the dropdown menu
 5. Click the **Start Update** button
 
@@ -47,7 +47,7 @@ Automated backups are also taken nightly at 2AM and stored for 90 days, and also
 
 These backups are dated tarballs stored at `/home/pi/backups`. This tarball contains the entire `/home/pi/.config/amplipi` directory. To restore this backup:
 1. Stop the AmpliPi service (`systemctl stop --user amplipi` as the `pi` user).
-1. Unpack a backup tarball and overwrite the contents of `.config/amplipi` (something like `tar --force-local -xvzf backups/config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz -C /`).  Here we use `config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz` as an example backup file. 
+1. Unpack a backup tarball and overwrite the contents of `.config/amplipi` (something like `tar --force-local -xvzf backups/config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz -C /`).  Here we use `config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz` as an example backup file.
 1. Start AmpliPi again (`systemctl start --user amplipi`).`
 
 ## Reimaging AmpliPro
