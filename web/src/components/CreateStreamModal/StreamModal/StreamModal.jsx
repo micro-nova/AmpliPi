@@ -13,6 +13,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import Avatar from '@mui/material/Avatar';
 import AlertBar from "@/components/StatusBars/AlertBar";
 
+import { useStatusStore } from "@/App";
 
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown";
@@ -99,52 +100,38 @@ ButtonField.propTypes = {
 };
 
 const InternetRadioSearch = ({ onChange }) => {
-    const [host, setHost] = React.useState("");
     const [results, setResults] = React.useState([]);
     const [query, setQuery] = React.useState("");
     const [selectedUuid, setSelectedUuid] = React.useState("");
+
+    const server_urls = useStatusStore((s) => s.status.info.internet_radio_servers);
 
     const search = (name) => {
         // A blank search returns a 55MB JSON blob. At best, it reloads the list
         // once that completes and potentially clear out a successful search; at
         // worst, it'll mess with low performance machines.
-        if (name === "") {
-            return;
-        }
-
         setResults([{name: "Loading..."}]);
 
-        if (host === "") {
-            return;
-        }
 
-        fetch(`https://${host}/json/stations/search`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: name }),
-        }).then((res) =>
-            res.json().then((s) => {
-                setResults(s.slice(0, 10).valueOf());
-            })
-        );
+        for (const url of server_urls) {
+            try {
+                fetch(`https://${url}/json/stations/search`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: name }),
+                }).then((res) =>
+                    res.json().then((s) => {
+                        setResults(s.slice(0, 10).valueOf());
+                    })
+                );
+                break;
+            } catch (err) {
+            console.warn(`Request to ${url} failed with error: ${err.message}`);
+            }
+        }
     };
 
     return (
-        React.useEffect(() => {
-            // pinned this to fi1 since it appears to be the main server and the
-            // HTTPS cert isn't valid for all.api.radio-browser.info
-            fetch("https://fi1.api.radio-browser.info/json/servers").then((res) =>
-                res.json().then(async (s) => {
-                    for (const i of s) {
-                        const res = await fetch("https://" + i.name);
-                        if (res.ok && res.status === 200) {
-                            setHost(i.name);
-                            break;
-                        }
-                    }
-                })
-            );
-        }, []),
         (
             <>
                 <div className="stream-field">

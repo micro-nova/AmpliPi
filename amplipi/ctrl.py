@@ -252,7 +252,8 @@ class Api:
       version=utils.detect_version(),
       stream_types_available=amplipi.streams.stream_types_available(),
       extra_fields=utils.load_extra_fields(),
-      serial=str(self._serial)
+      serial=str(self._serial),
+      internet_radio_servers=utils.get_radio_servers(),
     )
     for major, minor, ghash, dirty in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}', git_hash=f'{ghash:x}', git_dirty=dirty)
@@ -285,7 +286,7 @@ class Api:
       _, zone = utils.find(self.status.zones, zid)
       if zone is None and self._rt.exists(zid):
         added_zone = True
-        self.status.zones.append(models.Zone(id=zid, name=f'Zone {zid+1}'))
+        self.status.zones.append(models.Zone(id=zid, name=f'Zone {zid + 1}'))
     # save new config if zones were added
     if added_zone:
       self.save()
@@ -385,11 +386,11 @@ class Api:
       self.status.sources[:] = self.status.sources[0:models.MAX_SOURCES]
     except Exception as exc:
       logger.exception('Error configuring sources: using all defaults')
-      self.status.sources[:] = [models.Source(id=i, name=f'Input {i+1}') for i in range(models.MAX_SOURCES)]
+      self.status.sources[:] = [models.Source(id=i, name=f'Input {i + 1}') for i in range(models.MAX_SOURCES)]
     # populate any missing sources, to match the underlying system's capabilities
     for sid in range(len(self.status.sources), models.MAX_SOURCES):
       logger.warning(f'Error: missing source {sid}, inserting default source')
-      self.status.sources.insert(sid, models.Source(id=sid, name=f'Input {sid+1}'))
+      self.status.sources.insert(sid, models.Source(id=sid, name=f'Input {sid + 1}'))
     # sequentially number sources if necessary
     for sid, src in enumerate(self.status.sources):
       if src.id != sid:
@@ -912,7 +913,7 @@ class Api:
         zupdate = multi_update.update.copy()  # we potentially need to make changes to the underlying update
         if zupdate.name:
           # ensure all zones don't get named the same
-          zupdate.name = f'{zupdate.name} {zid+1}'
+          zupdate.name = f'{zupdate.name} {zid + 1}'
         self.set_zone(zid, zupdate, force_update=force_update, internal=True)
       if not internal:
         # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)
