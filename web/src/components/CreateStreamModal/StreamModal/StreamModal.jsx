@@ -112,7 +112,7 @@ const InternetRadioSearch = ({ onChange }) => {
         // worst, it'll mess with low performance machines.
         setResults([{name: "Loading..."}]);
 
-
+        // Loop through known servers to find the first one that works
         for (const url of server_urls) {
             try {
                 fetch(`https://${url}/json/stations/search`, {

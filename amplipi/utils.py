@@ -34,6 +34,7 @@ import pwd
 import requests
 from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 from fastapi import HTTPException, status, Depends
+# pylint: disable=no-name-in-module
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
