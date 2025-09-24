@@ -88,6 +88,9 @@ TEST_CONFIG['presets'] = [
    }
 ]
 
+SERVERS_REQUEST = requests.get("https://all.api.radio-browser.info/json/servers", timeout=5)
+SERVERS_JSON = SERVERS_REQUEST.json()
+
 
 def base_config():
   """ Default Amplipi configuration """
@@ -1164,10 +1167,8 @@ def test_post_stream_cmd_live(clientnm, cmd):
 
 def test_create_internetradio_live(clientnm):
   """ for 10 most popular internet radio stations plus one fake, try creating an internet radio stream, wait 3 seconds, then check if it errored"""
-  servers_request = requests.get("https://all.api.radio-browser.info/json/servers")
-  servers_json = servers_request.json()
 
-  res = requests.post(f'https://{servers_json[0]["name"]}/json/stations/search', json={
+  res = requests.post(f'https://{SERVERS_JSON[0]["name"]}/json/stations/search', json={
       "offset": 0,
       "limit": 10,
       "hidebroken": "true",
