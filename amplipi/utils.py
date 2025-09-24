@@ -540,7 +540,7 @@ def get_radio_servers():
   # ]
 
   seen = set()
-  servers: list[ServerDataPackage] = []
+  servers: List[ServerDataPackage] = []
   for entry in json:
     if entry["name"] not in seen:
       seen.add(entry["name"])
