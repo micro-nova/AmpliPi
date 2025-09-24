@@ -586,7 +586,7 @@ def test_patch_zones_duplicate_name(client):
   assert len(jrv['zones']) >= 6
   for z in jrv['zones']:
     if z['id'] in range(6):
-      assert z['name'] == f"test {z['id']+1}"
+      assert z['name'] == f"test {z['id'] + 1}"
 
 
 def test_patch_zones_vol_delta(client):
@@ -1164,7 +1164,10 @@ def test_post_stream_cmd_live(clientnm, cmd):
 
 def test_create_internetradio_live(clientnm):
   """ for 10 most popular internet radio stations plus one fake, try creating an internet radio stream, wait 3 seconds, then check if it errored"""
-  res = requests.post('https://fi1.api.radio-browser.info/json/stations/search', json={
+  servers_request = requests.get("https://all.api.radio-browser.info/json/servers")
+  servers_json = servers_request.json()
+
+  res = requests.post(f'https://{servers_json[0]["name"]}/json/stations/search', json={
       "offset": 0,
       "limit": 10,
       "hidebroken": "true",
