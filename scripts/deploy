@@ -115,6 +115,11 @@ if ! which git-lfs; then
   echo "git-lfs needs to be installed to use this script"
 fi
 
+if ! git lfs fsck; then
+  echo "Git LFS pointer files or missing objects detected, run git lfs fetch to solve this now that git-lfs is installed"
+  exit 1
+fi
+
 # create a virtual environment and install pip dependencies
 if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate ]]; then
   echo  ""
