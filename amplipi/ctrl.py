@@ -243,6 +243,7 @@ class Api:
     self._online_cache = utils.TimeBasedCache(self._check_is_online, 5, 'online')
     self._latest_release_cache = utils.TimeBasedCache(self._check_latest_release, 3600, 'latest release')
     self._connected_drives_cache = utils.TimeBasedCache(self._get_usb_drives, 5, 'connected drives')
+    self._internet_radio_server_cache = utils.TimeBasedCache(utils.get_radio_servers, 3600, 'internet radio servers')
     self.status.info = models.Info(
       mock_ctrl=self._mock_hw,
       mock_streams=self._mock_streams,
@@ -253,7 +254,7 @@ class Api:
       stream_types_available=amplipi.streams.stream_types_available(),
       extra_fields=utils.load_extra_fields(),
       serial=str(self._serial),
-      internet_radio_servers=utils.get_radio_servers(),
+      internet_radio_servers=self._internet_radio_server_cache.get(throttled=True)  # not set to utils.TimeBasedCache to retain the functionality of a List field within a pydantic basemodel
     )
     for major, minor, ghash, dirty in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}', git_hash=f'{ghash:x}', git_dirty=dirty)
