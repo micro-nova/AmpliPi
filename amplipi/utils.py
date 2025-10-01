@@ -546,6 +546,7 @@ def get_radio_servers():
       seen.add(entry["name"])
       servers.append({'url': entry["name"]})
 
+  valid_servers: List[ServerDataPackage] = []
   with ThreadPoolExecutor(max_workers=8) as executor:
     future_to_server = {
         executor.submit(test_server_latency, server['url']): server
@@ -553,7 +554,9 @@ def get_radio_servers():
     }
     for future in as_completed(future_to_server):
       server = future_to_server[future]
-      server['latency'] = future.result()
+      result = future.result()
+      if result is not None:
+        valid_servers.append({"url": server["url"], "latency": result})
 
-  servers.sort(key=lambda s: s['latency'])
-  return [s['url'] for s in servers if s['latency'] is not None]
+  valid_servers.sort(key=lambda s: s['latency'])
+  return [s['url'] for s in valid_servers if s['latency'] is not None]
