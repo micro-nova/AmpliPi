@@ -460,7 +460,7 @@ class Api:
         cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as exc:
-      logger.exception(f'Error saving config: {exc}')
+      logger.exception(f'Error saving config: {exc}\nopen is: {open}')
 
   def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
