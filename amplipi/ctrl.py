@@ -124,7 +124,7 @@ class Api:
   config_file_valid: bool
   is_streamer: bool
   status: models.Status
-  streams: Dict[int, amplipi.streams.AnyStream]
+  streams: Dict[int, amplipi.streams.AnyStream] = {}
   lms_mode: bool
   _serial: Optional[int] = None
   _expanders: List[int] = []
@@ -335,7 +335,6 @@ class Api:
       self.status.streams.insert(0, models.Stream(id=defaults.AUX_STREAM_ID, type="aux", name="Aux"))
 
     # configure all streams into a known state
-    self.streams = {}
     failed_streams: List[int] = []
     for stream in self.status.streams:
       assert stream.id is not None
@@ -461,7 +460,7 @@ class Api:
         cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as exc:
-      logger.exception(f'Error saving config: {exc}\nopen is: {open}')
+      logger.exception(f'Error saving config: {exc}\n self.streams is {self.streams}')
 
   def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
