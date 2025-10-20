@@ -26,6 +26,7 @@ from enum import Enum
 
 from copy import deepcopy
 import os  # files
+from io import open
 from pathlib import Path
 import time
 import logging
