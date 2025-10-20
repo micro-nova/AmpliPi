@@ -196,6 +196,7 @@ class Api:
     errors = []
     if config:
       self.status = config
+      self.streams = config.streams
       loaded_config = True
     else:
       # try to load the config file or its backup
@@ -205,6 +206,7 @@ class Api:
         try:
           if os.path.exists(cfg_path):
             self.status = models.Status.parse_file(cfg_path)
+            self.status = self.status.streams
             loaded_config = True
             break
           errors.append(f'config file "{cfg_path}" does not exist')
