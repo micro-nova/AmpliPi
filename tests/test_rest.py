@@ -1177,14 +1177,27 @@ def test_post_stream_cmd_live(clientnm, cmd):
 def test_create_internetradio_live(clientnm):
   """ for 10 most popular internet radio stations plus one fake, try creating an internet radio stream, wait 3 seconds, then check if it errored"""
 
-  res = requests.post(f'https://{SERVERS_JSON[0]["name"]}/json/stations/search', json={
-      "offset": 0,
-      "limit": 10,
-      "hidebroken": "true",
-      "has_extended_info": "true",
-      "order": "clickcount",
-      "reverse": "true"
-  })
+  payload = {
+        "offset": 0,
+        "limit": 10,
+        "hidebroken": "true",
+        "has_extended_info": "true",
+        "order": "clickcount",
+        "reverse": "true"
+    }
+
+  res = None
+  for server in SERVERS_JSON:
+    url = f'https://{server["name"]}/json/stations/search'
+    try:
+      print(f"Trying {url} ...")
+      res = requests.post(url, json=payload, timeout=5)
+      res.raise_for_status()
+      break  # If raise for status doesn't throw an error, break the loop
+
+    except requests.exceptions.RequestException as err:
+      print(f"Request to {server['name']} failed: {err}")
+
   stations = [(s['name'], s['url'], s['favicon']) for s in res.json()]
   stations.append(('fake', 'http://test.com', 'http://test.com'))
   for i in stations:
