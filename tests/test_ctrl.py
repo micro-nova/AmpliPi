@@ -7,6 +7,7 @@ this file is expected to be run using pytest, ie. pytest tests/test_ctrl.py
 
 import json
 import os
+from io import open
 import tempfile
 from copy import deepcopy
 
