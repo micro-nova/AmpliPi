@@ -107,29 +107,47 @@ const InternetRadioSearch = ({ onChange }) => {
     const server_urls = useStatusStore((s) => s.status.info.internet_radio_servers);
 
     const search = (name) => {
-        // A blank search returns a 55MB JSON blob. At best, it reloads the list
-        // once that completes and potentially clear out a successful search; at
-        // worst, it'll mess with low performance machines.
-        setResults([{name: "Loading..."}]);
+        setResults([{ name: "Loading..." }]);
 
-        // Loop through known servers to find the first one that works
-        for (const url of server_urls) {
-            try {
-                fetch(`https://${url}/json/stations/search`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: name }),
-                }).then((res) =>
-                    res.json().then((s) => {
-                        setResults(s.slice(0, 10).valueOf());
-                    })
-                );
-                break;
-            } catch (err) {
-            console.warn(`Request to ${url} failed with error: ${err.message}`);
-            }
-        }
+        let found = false;
+
+        const fetchWithTimeout = (url, options, timeoutMs) => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+            return fetch(url, { ...options, signal: controller.signal })
+                .finally(() => clearTimeout(timer));
+        };
+
+        const tryNext = (index = 0) => {
+            if (index >= server_urls.length || found) return;
+
+            const url = server_urls[index];
+
+            fetchWithTimeout(`https://${url}/json/stations/search`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name }),
+            }, 5000)
+                .then((res) => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then((stations) => {
+                    if (found) return;
+                    found = true;
+                    setResults(stations.slice(0, 10).valueOf());
+                })
+                .catch((err) => {
+                    console.warn(`Request to ${url} failed: ${err.message}`);
+                    tryNext(index + 1);
+                });
+        };
+
+        tryNext(0);
     };
+
+
 
     return (
         (

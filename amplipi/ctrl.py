@@ -26,7 +26,6 @@ from enum import Enum
 
 from copy import deepcopy
 import os  # files
-from io import open
 from pathlib import Path
 import time
 import logging
@@ -429,6 +428,7 @@ class Api:
     if self._save_timer:
       self._save_timer.cancel()
       self._save_timer = None
+    self.save()
     # stop any streams
     for stream in self.streams.values():
       stream.disconnect()
@@ -459,7 +459,7 @@ class Api:
         cfg.write(self.status.json(exclude_none=True, indent=2))
       self.config_file_valid = True
     except Exception as exc:
-      logger.exception(f'Error saving config: {exc}\n self.streams is {self.streams}')
+      logger.exception(f'Error saving config: {exc}')
 
   def mark_changes(self):
     """ Mark api changes to update listeners and save the system state in the future
