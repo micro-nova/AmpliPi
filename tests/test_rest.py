@@ -1,6 +1,7 @@
 """ Test the amplipi rest API """
 
 from typing import Dict, List, Optional, Set
+from io import open
 
 # json utils
 import json
