@@ -88,8 +88,17 @@ TEST_CONFIG['presets'] = [
    }
 ]
 
-SERVERS_REQUEST = requests.get("https://all.api.radio-browser.info/json/servers", timeout=5)
-SERVERS_JSON = SERVERS_REQUEST.json()
+# SERVERS_REQUEST = requests.get("https://all.api.radio-browser.info/json/servers", timeout=5)
+# SERVERS_JSON = SERVERS_REQUEST.json()
+
+SERVERS_JSON = [
+  {"ip": "2a01:4f8:c2c:f004::1", "name": "de2.api.radio-browser.info"},
+  {"ip": "2a01:4f9:c012:3620::1", "name": "fi1.api.radio-browser.info"},
+  {"ip": "2a0a:4cc0:c0:27c1::1", "name": "de1.api.radio-browser.info"},
+  {"ip": "162.55.180.156", "name": "de2.api.radio-browser.info"},
+  {"ip": "37.27.202.89", "name": "fi1.api.radio-browser.info"},
+  {"ip": "152.53.85.3", "name": "de1.api.radio-browser.info"}
+]
 
 
 def base_config():
