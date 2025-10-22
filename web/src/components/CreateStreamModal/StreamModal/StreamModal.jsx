@@ -13,6 +13,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import Avatar from '@mui/material/Avatar';
 import AlertBar from "@/components/StatusBars/AlertBar";
 
+import { useStatusStore } from "@/App";
 
 const NAME_DESC =
   "This name can be anything - it will be used to select this stream from the source selection dropdown";
@@ -99,52 +100,71 @@ ButtonField.propTypes = {
 };
 
 const InternetRadioSearch = ({ onChange }) => {
-    const [host, setHost] = React.useState("");
     const [results, setResults] = React.useState([]);
     const [query, setQuery] = React.useState("");
     const [selectedUuid, setSelectedUuid] = React.useState("");
 
     const search = (name) => {
-        // A blank search returns a 55MB JSON blob. At best, it reloads the list
-        // once that completes and potentially clear out a successful search; at
-        // worst, it'll mess with low performance machines.
-        if (name === "") {
-            return;
-        }
 
-        setResults([{name: "Loading..."}]);
-
-        if (host === "") {
-            return;
-        }
-
-        fetch(`https://${host}/json/stations/search`, {
-            method: "POST",
+        fetch("https://all.api.radio-browser.info/json/servers", {
+            method: "GET",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: name }),
-        }).then((res) =>
-            res.json().then((s) => {
-                setResults(s.slice(0, 10).valueOf());
-            })
-        );
+            cache: "default",
+        }).then(r => r.json().then(servers => {
+
+            const fetchWithTimeout = (url, options, timeoutMs) => {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+                return fetch(url, { ...options, signal: controller.signal })
+                    .finally(() => clearTimeout(timer));
+            };
+
+            // A blank search returns a 55MB JSON blob. At best, it reloads the list
+            // once that completes and potentially clear out a successful search; at
+            // worst, it'll mess with low performance machines.
+            if (name === "") {
+                return;
+            }
+
+            setResults([{ name: "Loading..." }]);
+
+            let found = false;
+
+            const tryNext = (index = 0) => {
+                if (index >= servers.length || found) return;
+
+                const url = servers[index]["name"];
+
+                // Every server is pinged one by one until there's a successful result, with a max wait time of 5 seconds for any given server
+                // After this, the standard browser caching rules apply: If the same search is made within (time period defined by browser)
+                fetchWithTimeout(`https://${url}/json/stations/search`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name }),
+                }, 5000)
+                    .then((res) => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then((stations) => {
+                        if (found) return;
+                        found = true;
+                        setResults(stations.slice(0, 10).valueOf());
+                    })
+                    .catch((err) => {
+                        console.warn(`Request to ${url} failed: ${err.message}`);
+                        tryNext(index + 1);
+                    });
+            };
+
+            tryNext(0);
+        }));
     };
 
+
+
     return (
-        React.useEffect(() => {
-            // pinned this to at1 since it appears to be the main server and the
-            // HTTPS cert isn't valid for all.api.radio-browser.info
-            fetch("https://at1.api.radio-browser.info/json/servers").then((res) =>
-                res.json().then(async (s) => {
-                    for (const i of s) {
-                        const res = await fetch("https://" + i.name);
-                        if (res.ok && res.status === 200) {
-                            setHost(i.name);
-                            break;
-                        }
-                    }
-                })
-            );
-        }, []),
         (
             <>
                 <div className="stream-field">
@@ -240,60 +260,60 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
             // Would use apply instead of del for the first one if apply didn't have a default as well
             buttons={[
                 [ del ? "Edit Stream" : "Create Stream", () => {
-                        // Check if all required fields are filled
-                        for (const field of templateFields) {
-                            if (field.required && (!(field.name.toLowerCase() in streamFields) || streamFields[field.name.toLowerCase()] === "")) {
-                                setErrorField(field.name);
-                                setErrorMessage(`Field ${field.name} is required`);
-                                setAlertAnimation(renderAlertAnimation + 1);
-                                setHasError(true);
-                                return;
-                            }
+                    // Check if all required fields are filled
+                    for (const field of templateFields) {
+                        if (field.required && (!(field.name.toLowerCase() in streamFields) || streamFields[field.name.toLowerCase()] === "")) {
+                            setErrorField(field.name);
+                            setErrorMessage(`Field ${field.name} is required`);
+                            setAlertAnimation(renderAlertAnimation + 1);
+                            setHasError(true);
+                            return;
                         }
-                        // Omit any fields that are simply empty. This permits Pydantic to cast to None,
-                        // and then our constructors et al use their defaults.
-                        // ref: https://github.com/pydantic/pydantic/discussions/2687
-                        const filteredStreamFields = Object.fromEntries(
-                            Object.entries(streamFields).filter( ([key, value]) => value !== "" )
-                        );
-                        apply(filteredStreamFields).then((response)=>{
-                            if(response.ok)
-                            {
-                                setErrorField("");
-                                onClose();
+                    }
+                    // Omit any fields that are simply empty. This permits Pydantic to cast to None,
+                    // and then our constructors et al use their defaults.
+                    // ref: https://github.com/pydantic/pydantic/discussions/2687
+                    const filteredStreamFields = Object.fromEntries(
+                        Object.entries(streamFields).filter( ([key, value]) => value !== "" )
+                    );
+                    apply(filteredStreamFields).then((response)=>{
+                        if(response.ok)
+                        {
+                            setErrorField("");
+                            onClose();
+                        }
+                        response.json().then((error)=>{
+                            /*
+                                Check type of error detail...
+                                if it's a string it's some internal error
+                                if it's an object it's a field error
+                                otherwise we don't even know how to render it
+                                TODO:   if/when we refactor API errors this probably
+                                        also needs a refactor
+                            */
+                            if(typeof error.detail === "string"){
+                                setErrorMessage(error.detail);
                             }
-                            response.json().then((error)=>{
-                                /*
-                                    Check type of error detail...
-                                    if it's a string it's some internal error
-                                    if it's an object it's a field error
-                                    otherwise we don't even know how to render it
-                                    TODO:   if/when we refactor API errors this probably
-                                            also needs a refactor
-                                */
-                                if(typeof error.detail === "string"){
-                                    setErrorMessage(error.detail);
-                                }
-                                else if(typeof error.detail === "object"){
-                                    // We use the 'field' member to report an invalid field during stream validation,
-                                    // but this isn't present on simple Pydantic model errors
-                                    if(error.detail.field) {
-                                        setErrorField(error.detail.field);
-                                        setErrorMessage(error.detail.msg);
-                                    } else if(error.detail[0]) {
-                                        setErrorField(error.detail[0].loc[1]);
-                                        // example: 'port: not a valid integer'
-                                        setErrorMessage(`${error.detail[0].loc[1]}: ${error.detail[0].msg}`);
-                                    } else {
-                                        setErrorMessage("Unknown error");
-                                    }
-                                }
-                                else{
+                            else if(typeof error.detail === "object"){
+                                // We use the 'field' member to report an invalid field during stream validation,
+                                // but this isn't present on simple Pydantic model errors
+                                if(error.detail.field) {
+                                    setErrorField(error.detail.field);
+                                    setErrorMessage(error.detail.msg);
+                                } else if(error.detail[0]) {
+                                    setErrorField(error.detail[0].loc[1]);
+                                    // example: 'port: not a valid integer'
+                                    setErrorMessage(`${error.detail[0].loc[1]}: ${error.detail[0].msg}`);
+                                } else {
                                     setErrorMessage("Unknown error");
                                 }
-                            });
+                            }
+                            else{
+                                setErrorMessage("Unknown error");
+                            }
                         });
-                    }
+                    });
+                }
                 ],
                 [
                     del ? "Delete" : "Cancel", () => {
