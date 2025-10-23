@@ -31,12 +31,12 @@ const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, alone }) => {
     });
 
     if(open){
-      return (
-          <div className="volume-sliders-container">
-              {groupVolumeSliders}
-              {zoneVolumeSliders}
-          </div>
-      );
+        return (
+            <div className="volume-sliders-container">
+                {groupVolumeSliders}
+                {zoneVolumeSliders}
+            </div>
+        );
     }
 };
 VolumeZones.propTypes = {

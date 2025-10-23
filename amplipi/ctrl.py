@@ -847,14 +847,20 @@ class Api:
 
         def set_vol():
           """ Update the zone's volume. Could be triggered by a change in
-              vol, vol_f, vol_min, or vol_max.
+              vol, vol_f, vol_f_delta, vol_min, or vol_max.
           """
           # Field precedence: vol (db) > vol_delta > vol (float)
-          # NOTE: checks happen in reverse precedence to cover default case of unchanged volume
+          # vol (db) is first in precedence yet last in the stack to cover the default case of no volume change
           if update.vol_delta_f is not None and update.vol is None:
-            applied_delta = utils.clamp((vol_delta_f + zone.vol_f), 0, 1)
-            vol_db = utils.vol_float_to_db(applied_delta, zone.vol_min, zone.vol_max)
-            vol_f_new = applied_delta
+            true_vol_f = zone.vol_f + zone.vol_f_overflow
+            expected_vol_total = update.vol_delta_f + true_vol_f
+            vol_f_new = utils.clamp(expected_vol_total, models.MIN_VOL_F, models.MAX_VOL_F)
+
+            vol_db = utils.vol_float_to_db(vol_f_new, zone.vol_min, zone.vol_max)
+            zone.vol_f_overflow = 0 if models.MIN_VOL_F < expected_vol_total and expected_vol_total < models.MAX_VOL_F \
+              else utils.clamp((expected_vol_total - vol_f_new), models.MIN_VOL_F_OVERFLOW, models.MAX_VOL_F_OVERFLOW)
+            # Clamp the remaining delta to be between -1 and 1
+
           elif update.vol_f is not None and update.vol is None:
             clamp_vol_f = utils.clamp(vol_f, 0, 1)
             vol_db = utils.vol_float_to_db(clamp_vol_f, zone.vol_min, zone.vol_max)
@@ -866,8 +872,13 @@ class Api:
           if self._rt.update_zone_vol(idx, vol_db):
             zone.vol = vol_db
             zone.vol_f = vol_f_new
+
           else:
             raise Exception('unable to update zone volume')
+
+          # Reset the overflow when vol_f goes in bounds, there is no longer an overflow
+          # Avoids reporting spurious volume oscillations
+          zone.vol_f_overflow = 0 if vol_f_new != models.MIN_VOL_F and vol_f_new != models.MAX_VOL_F else zone.vol_f_overflow
 
         # To avoid potential unwanted loud output:
         # If muting, mute before setting volumes

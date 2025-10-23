@@ -82,7 +82,7 @@ const PlayerCardFb = ({ sourceId, setVol }) => {
                         <Grid item xs={6} sm={5} md={4}>
                             { !is_streamer && (
                                 <div className="zones">
-                                  <ZonesBadge sourceId={sourceId} onClick={openZones} />
+                                    <ZonesBadge sourceId={sourceId} onClick={openZones} />
                                 </div>
                             )}
                             { is_streamer && (
