@@ -850,7 +850,7 @@ class Api:
               vol, vol_f, vol_f_delta, vol_min, or vol_max.
           """
           # Field precedence: vol (db) > vol_delta > vol (float)
-          # vol (db) is first in precedence yet last in the stack to cover the default case of no volume change
+          # vol (db) is first in precedence yet last in the stack to cover the default case of a None volume change, but when it does have a value it overrides the other options
           if update.vol_delta_f is not None and update.vol is None:
             true_vol_f = zone.vol_f + zone.vol_f_overflow
             expected_vol_total = update.vol_delta_f + true_vol_f

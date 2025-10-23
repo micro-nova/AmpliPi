@@ -65,7 +65,7 @@ AnyStream = Union[RCA, AirPlay, SpotifyConnect, InternetRadio, DLNA, Pandora, Pl
 def build_stream(stream: models.Stream, mock: bool = False, validate: bool = True) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
 
-  we are waiting on Pydantic's implemenatation of discriminators to fully integrate streams into our model definitions
+  we are waiting on Pydantic's implementation of discriminators to fully integrate streams into our model definitions
   """
   # pylint: disable=too-many-return-statements
   args = stream.dict(exclude_none=True)
