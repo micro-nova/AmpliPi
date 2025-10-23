@@ -16,11 +16,20 @@ let sendingRequestCount = 0;
 // volume slider for a group in the volumes drawer
 const GroupVolumeSlider = ({ groupId, sourceId, groupsLeft }) => {
     const group = useStatusStore(s => s.status.groups.filter(g => g.id === groupId)[0]);
-    const volume = group.vol_f;
+    const zones = useStatusStore(s => s.status.zones);
     const setGroupVol = useStatusStore(s => s.setGroupVol);
     const setGroupMute = useStatusStore(s => s.setGroupMute);
     const [slidersOpen, setSlidersOpen] = React.useState(false);
 
+    const getVolume = () => { // Make sure group sliders account for vol_f_buffer
+        let v = 0;
+        for(let i = 0; i < group.zones.length; i++){
+            v += (zones[group.zones[i]].vol_f + zones[group.zones[i]].vol_f_buffer);
+        }
+
+        return v / group.zones.length;
+    };
+    const volume = getVolume();
 
     // get zones for this group
     const groupZones = getSourceZones(sourceId, useStatusStore(s => s.status.zones)).filter(z => group.zones.includes(z.id));
