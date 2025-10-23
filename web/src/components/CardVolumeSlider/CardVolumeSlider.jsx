@@ -11,7 +11,7 @@ const getPlayerVol = (sourceId, zones) => {
     let n = 0;
     for (const i of getSourceZones(sourceId, zones)) {
         n += 1;
-        vol += i.vol_f;
+        vol += i.vol_f + i.vol_f_buffer; // Add buffer to retain proper relative space when doing an action that would un-overload the slider
     }
 
     const avg = vol / n;
@@ -27,13 +27,12 @@ export const applyPlayerVol = (vol, zones, sourceId, apply) => {
     let delta = vol - getPlayerVol(sourceId, zones);
 
     for (let i of getSourceZones(sourceId, zones)) {
-        let set_pt = Math.max(0, Math.min(1, i.vol_f + delta));
-        apply(i.id, set_pt);
+        apply(i.id, i.vol_f + delta);
     }
 };
 
 // cumulativeDelta reflects the amount of movement that the
-let cumulativeDelta = 0;
+let cumulativeDelta = 0.0;
 let sendingPacketCount = 0;
 
 // main volume slider on player and volume slider on player card
@@ -41,8 +40,9 @@ const CardVolumeSlider = ({ sourceId }) => {
     const zones = useStatusStore((s) => s.status.zones);
     const setZonesVol = useStatusStore((s) => s.setZonesVol);
     const setZonesMute = useStatusStore((s) => s.setZonesMute);
+    const setSystemState = useStatusStore((s) => s.setSystemState);
 
-    // needed to ensure that polling doesn't cause the delta volume to be made inacurrate during volume slider interactions
+    // needed to ensure that polling doesn't cause the delta volume to be made inaccurate during volume slider interactions
     const skipNextUpdate = useStatusStore((s) => s.skipNextUpdate);
 
     const value = getPlayerVol(sourceId, zones);
@@ -69,15 +69,16 @@ const CardVolumeSlider = ({ sourceId }) => {
                     zones: getSourceZones(sourceId, zones).map((z) => z.id),
                     update: { vol_delta_f: cumulativeDelta, mute: false },
                 }),
-            }).then(() => {
+            }).then(res => {
                 // NOTE: This used to just set cumulativeDelta to 0
                 // that would skip all accumulated delta from fetch start to backend response time
                 // causing jittering issues
                 cumulativeDelta -= delta;
                 sendingPacketCount -= 1;
+                if(res.ok){res.json().then(s => setSystemState(s));}
             });
         }
-    };
+    }
 
     const mute = getSourceZones(sourceId, zones)
         .map((z) => z.mute)

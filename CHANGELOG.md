@@ -8,6 +8,8 @@
 
 * System
   * Update our spotify provider `go-librespot` to `0.5.2` to accomodate spotify's API update
+* Web App
+  * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
 
 ## 0.4.8
 * System

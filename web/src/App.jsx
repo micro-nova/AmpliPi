@@ -50,7 +50,11 @@ export const useStatusStore = create((set, get) => ({
                 applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
                     for (const i in s.status.zones) {
                         if (s.status.zones[i].id === zone_id) {
-                            s.status.zones[i].vol_f = new_vol;
+                            let true_vol = Math.round((new_vol + s.status.zones[i].vol_f_buffer) * 100) / 100;
+                            let clamped = Math.min(Math.max(true_vol, 0), 1);
+
+                            s.status.zones[i].vol_f = clamped;
+                            s.status.zones[i].vol_f_buffer = true_vol - clamped;
                         }
                     }
                 });
@@ -61,11 +65,17 @@ export const useStatusStore = create((set, get) => ({
     setZonesMute: (mute, zones, source_id) => {
         set(
             produce((s) => {
-                for (const i of getSourceZones(source_id, zones)) {
-                    for (const j of s.status.zones) {
-                        if (j.id === i.id) {
-                            j.mute = mute;
-                        }
+                const affectedZones = getSourceZones(source_id, zones).map(z => z.id);
+                for (const j of s.status.zones) {
+                    if (affectedZones.includes(j.id)) {
+                        j.mute = mute;
+                    }
+                }
+
+                // Also update groups that consist entirely of affected zones
+                for (const g of s.status.groups) {
+                    if (g.zones.every(zid => affectedZones.includes(zid))) {
+                        g.mute = mute;
                     }
                 }
             })
@@ -131,7 +141,7 @@ export const useStatusStore = create((set, get) => ({
                         if (get().skipUpdate) {
                             // Does .then() into skipUpdate and ignores api output to help avoid race conditions
                             set({ skipUpdate: false });
-                        } else {
+                        } else if(get().status == null){
                             set({ status: s, loaded: true, disconnected: false });
                         }
                     });
@@ -164,7 +174,7 @@ export const useStatusStore = create((set, get) => ({
                 const g = s.status.groups.filter((g) => g.id === groupId)[0];
                 for (const i of g.zones) {
                     s.skipUpdate = true;
-                    s.status.zones[i].vol_f = new_vol;
+                    s.status.zones[i].vol_f = new_vol + s.status.zones[i].vol_f_buffer;
                 }
 
                 updateGroupVols(s);
@@ -198,7 +208,7 @@ export const useStatusStore = create((set, get) => ({
 const updateGroupVols = (s) => {
     s.status.groups.forEach((g) => {
         if (g.zones.length > 1) {
-            const vols = g.zones.map((id) => s.status.zones[id].vol_f);
+            const vols = g.zones.map((id) => s.status.zones[id].vol_f + s.status.zones[id].vol_f_buffer);
             let calculated_vol = Math.min(...vols) * 0.5 + Math.max(...vols) * 0.5;
             g.vol_f = calculated_vol;
         } else if (g.zones.length == 1) {
@@ -226,14 +236,14 @@ Page.propTypes = {
 
 const App = ({ selectedPage }) => {
     return (
-            <div className="app">
+        <div className="app">
             <DisconnectedIcon />
             <div className="background-gradient"></div>  {/* Used to make sure the background doesn't stretch or stop prematurely on scrollable pages */}
-                <div className="app-body">
-                    <Page selectedPage={selectedPage} />
-                </div>
-                <MenuBar pageNumber={selectedPage} />
+            <div className="app-body">
+                <Page selectedPage={selectedPage} />
             </div>
+            <MenuBar pageNumber={selectedPage} />
+        </div>
     );
 };
 App.propTypes = {

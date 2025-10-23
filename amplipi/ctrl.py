@@ -852,9 +852,14 @@ class Api:
           # Field precedence: vol (db) > vol_delta > vol (float)
           # NOTE: checks happen in reverse precedence to cover default case of unchanged volume
           if update.vol_delta_f is not None and update.vol is None:
-            applied_delta = utils.clamp((vol_delta_f + zone.vol_f), 0, 1)
+            true_vol_f = zone.vol_f + zone.vol_f_buffer
+            totaled_delta = update.vol_delta_f + true_vol_f
+            applied_delta = utils.clamp(totaled_delta, 0, 1)
+
             vol_db = utils.vol_float_to_db(applied_delta, zone.vol_min, zone.vol_max)
             vol_f_new = applied_delta
+            zone.vol_f_buffer = 0 if models.MIN_VOL_F < totaled_delta and totaled_delta < models.MAX_VOL_F else utils.clamp((totaled_delta - applied_delta), -1.0, 1.0)
+
           elif update.vol_f is not None and update.vol is None:
             clamp_vol_f = utils.clamp(vol_f, 0, 1)
             vol_db = utils.vol_float_to_db(clamp_vol_f, zone.vol_min, zone.vol_max)
@@ -866,8 +871,11 @@ class Api:
           if self._rt.update_zone_vol(idx, vol_db):
             zone.vol = vol_db
             zone.vol_f = vol_f_new
+
           else:
             raise Exception('unable to update zone volume')
+
+          zone.vol_f_buffer = 0 if models.MIN_VOL_F < vol_f_new and vol_f_new < models.MAX_VOL_F else zone.vol_f_buffer
 
         # To avoid potential unwanted loud output:
         # If muting, mute before setting volumes
