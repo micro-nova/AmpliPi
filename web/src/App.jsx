@@ -141,7 +141,7 @@ export const useStatusStore = create((set, get) => ({
                         if (get().skipUpdate) {
                             // Does .then() into skipUpdate and ignores api output to help avoid race conditions
                             set({ skipUpdate: false });
-                        } else if(get().status == null){
+                        } else {
                             set({ status: s, loaded: true, disconnected: false });
                         }
                     });

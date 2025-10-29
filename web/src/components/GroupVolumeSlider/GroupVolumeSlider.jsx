@@ -15,6 +15,7 @@ let sendingRequestCount = 0;
 
 // volume slider for a group in the volumes drawer
 const GroupVolumeSlider = ({ groupId, sourceId, groupsLeft }) => {
+    const setSystemState = useStatusStore((s) => s.setSystemState);
     const group = useStatusStore(s => s.status.groups.filter(g => g.id === groupId)[0]);
     const zones = useStatusStore(s => s.status.zones);
     const setGroupVol = useStatusStore(s => s.setGroupVol);
@@ -77,6 +78,8 @@ const GroupVolumeSlider = ({ groupId, sourceId, groupsLeft }) => {
                 "Content-type": "application/json",
             },
             body: JSON.stringify({ mute: mute }),
+        }).then(res => {
+            if(res.ok){res.json().then(s => setSystemState(s));}
         });
     };
 
