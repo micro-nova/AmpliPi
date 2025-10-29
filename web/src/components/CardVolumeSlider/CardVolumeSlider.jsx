@@ -96,6 +96,8 @@ const CardVolumeSlider = ({ sourceId }) => {
                 zones: getSourceZones(sourceId, zones).map((z) => z.id),
                 update: { mute: mute },
             }),
+        }).then(res => {
+            if(res.ok){res.json().then(s => setSystemState(s));}
         });
     };
 
