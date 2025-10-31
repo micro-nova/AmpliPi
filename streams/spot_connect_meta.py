@@ -12,6 +12,7 @@ import json
 import requests
 from websockets.exceptions import ConnectionClosed, InvalidHandshake
 from websockets.sync.client import connect
+# from ..amplipi import tasks
 
 
 @dataclass
@@ -141,7 +142,7 @@ class Event:
   data: Union[None, Track, PlayChange, VolumeChange, SeekChange, ValueChange] = None
 
   @staticmethod
-  def from_json(json_data: dict) -> "Event":
+  def from_json(parent: "SpotifyMetadataReader", json_data: dict) -> "Event":
     """Create an Event object from a JSON payload"""
     e = Event(event_type=json_data["type"])
     if e.event_type in ["active", "inactive"]:
@@ -157,76 +158,94 @@ class Event:
       e.data = SeekChange(**json_data["data"])
     elif e.event_type == "volume":
       e.data = VolumeChange(**json_data["data"])
+      volume = e.data.value
+      if volume != parent.last_volume:
+        url = f"http://localhost:{parent._api_port}"  # TODO: Implement spotify-side volume bar to reflect the source volume bar's position
+        # tasks.post.delay(url + 'volume', data={'volume': int(volume * 100)})
+        delta = float((volume - parent.last_volume) / 100)
+        vol_change = requests.patch("http://localhost/api/zones", json={"zones": [0, 1, 2, 3, 4, 5], "update": {"vol_delta_f": delta}}, timeout=5)  # TODO: set zone list correctly
+        if vol_change.ok:
+          parent.last_volume = volume  # update last_volume for future syncs
+
     elif e.event_type in ["shuffle_context", "repeat_context", "repeat_track"]:
       e.data = ValueChange(**json_data["data"])
     return e
 
 
-def read_metadata(url) -> Optional[Track]:
-  """
-  Reads metadata from the given URL and writes it to the specified metadata file.
-  If the metadata file already exists, it will be overwritten.
-  """
-  endpoint = url + "/status"
+class SpotifyMetadataReader:
 
-  # Send a GET request to the URL to retrieve the metadata
-  response = requests.get(endpoint, timeout=2)
+  def __init__(self, url, metadata_file, debug=False):
+    self.url: str = url
+    self.metadata_file: str = metadata_file
+    self.debug: bool = debug
 
-  # Check if the request was successful
-  if response.status_code == 200:
-    # Parse the metadata from the response
-    return Status.from_dict(response.json())
-  elif response.status_code == 204:
-    # the metadata isn't populated yet
-    return Status(stopped=True)
-  else:
-    # If the request failed, print an error message
-    print(f"Failed to retrieve metadata from {endpoint}. Status code: {response.status_code}")
-    return Status()
+    self.last_volume: float = 0
+    self._api_port: int = 3678 + int([char for char in metadata_file if char.isdigit()][0])
 
+  def read_metadata(self) -> Optional[Track]:
+    """
+    Reads metadata from the given URL and writes it to the specified metadata file.
+    If the metadata file already exists, it will be overwritten.
+    """
+    endpoint = self.url + "/status"
 
-def watch_metadata(url, metadata_file, debug=False) -> None:
-  """
-  Watches the api at `url` for metadata updates and writes the current state to `metadata_file`.
-  If the metadata file already exists, it will be overwritten.
-  """
-  # Get the websocket-based event updates
-  ws_events = url.replace("http://", "ws://") + "/events"
-  try:
-    # read the initial state
-    metadata = read_metadata(url)
-    with open(metadata_file, 'w', encoding='utf8') as mf:
-      mf.write(json.dumps(asdict(metadata)))
-    if debug:
-      print(f"Initial metadata: {metadata}")
-    # Connect to the websocket and listen for state changes
-    with connect(ws_events, open_timeout=5) as websocket:
-      while True:
-        try:
-          msg = websocket.recv()
-          if debug:
-            print(f"Received: {msg}")
-          event = Event.from_json(json.loads(msg))
-          if event.event_type == "metadata":
-            metadata.track = event.data
-          elif event.event_type == "playing":
-            metadata.stopped = False
-            metadata.paused = False
-          elif event.event_type == "paused":
-            metadata.paused = True
-          elif event.event_type == "stopped":
-            metadata.stopped = True
-            metadata.track = Track()
-          else:
-            continue
-          with open(args.metadata_file, 'w', encoding='utf8') as mf:
-            mf.write(json.dumps(asdict(metadata)))
-        except (KeyError, ConnectionClosed, json.JSONDecodeError) as e:
-          print(f"Error: {e}")
-          break
-  except (OSError, InvalidHandshake, TimeoutError) as e:
-    print(f"Error: {e}")
-    return
+    # Send a GET request to the URL to retrieve the metadata
+    response = requests.get(endpoint, timeout=2)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+      # Parse the metadata from the response
+      return Status.from_dict(response.json())
+    elif response.status_code == 204:
+      # the metadata isn't populated yet
+      return Status(stopped=True)
+    else:
+      # If the request failed, print an error message
+      print(f"Failed to retrieve metadata from {endpoint}. Status code: {response.status_code}")
+      return Status()
+
+  def watch_metadata(self) -> None:
+    """
+    Watches the api at `url` for metadata updates and writes the current state to `metadata_file`.
+    If the metadata file already exists, it will be overwritten.
+    """
+    # Get the websocket-based event updates
+    ws_events = self.url.replace("http://", "ws://") + "/events"
+    try:
+      # read the initial state
+      metadata = self.read_metadata()
+      with open(self.metadata_file, 'w', encoding='utf8') as mf:
+        mf.write(json.dumps(asdict(metadata)))
+      if self.debug:
+        print(f"Initial metadata: {metadata}")
+      # Connect to the websocket and listen for state changes
+      with connect(ws_events, open_timeout=5) as websocket:
+        while True:
+          try:
+            msg = websocket.recv()
+            if self.debug:
+              print(f"Received: {msg}")
+            event = Event.from_json(self, json.loads(msg))
+            if event.event_type == "metadata":
+              metadata.track = event.data
+            elif event.event_type == "playing":
+              metadata.stopped = False
+              metadata.paused = False
+            elif event.event_type == "paused":
+              metadata.paused = True
+            elif event.event_type == "stopped":
+              metadata.stopped = True
+              metadata.track = Track()
+            else:
+              continue
+            with open(args.metadata_file, 'w', encoding='utf8') as mf:
+              mf.write(json.dumps(asdict(metadata)))
+          except (KeyError, ConnectionClosed, json.JSONDecodeError) as e:
+            print(f"Error: {e}")
+            break
+    except (OSError, InvalidHandshake, TimeoutError) as e:
+      print(f"Error: {e}")
+      return
 
 
 if __name__ == "__main__":
@@ -241,7 +260,7 @@ if __name__ == "__main__":
 
   while (True):
     try:
-      watch_metadata(args.url, args.metadata_file, args.debug)
+      SpotifyMetadataReader(args.url, args.metadata_file, args.debug).watch_metadata()
     except (KeyboardInterrupt, SystemExit):
       print("Exiting...")
       break
