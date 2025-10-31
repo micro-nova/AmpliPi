@@ -5,6 +5,7 @@ from typing import Optional, List
 import logging
 from amplipi import models
 from amplipi import utils
+from amplipi import app
 
 logger = logging.getLogger(__name__)
 logger.level = logging.DEBUG
@@ -50,6 +51,7 @@ class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
 
   def __init__(self, stype: str, name: str, only_src=None, disabled: bool = False, mock: bool = False, validate: bool = True, **kwargs):
+
     self.name = name
     self.disabled = disabled
     self.proc: Optional[subprocess.Popen] = None
@@ -61,6 +63,24 @@ class BaseStream:
     self.browsable = isinstance(self, Browsable)
     if validate:
       self.validate_stream(name=name, mock=mock, **kwargs)
+
+  def get_zone_data(self):
+    if self.src is not None:
+      ctrl = app.get_ctrl()
+      state = ctrl.get_state()
+      return [zone for zone in state.zones if zone.source_id == self.src]
+
+  @property
+  def connected_zones(self) -> List[int]:
+    connected_zones = self.get_zone_data()
+    return [zone.id for zone in connected_zones]
+
+  @property
+  def volume(self) -> float:
+    connected_zones = self.get_zone_data()
+    if connected_zones:
+      return sum([zone.vol_f for zone in connected_zones]) / len(connected_zones)
+    return 0
 
   def __del__(self):
     self.disconnect()

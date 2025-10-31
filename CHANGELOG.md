@@ -4,6 +4,8 @@
 * Web App
   * Fixed internet radio search functionality
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
+* Streams:
+  * Upgraded Spotify to sync Spotify's volume with AmpliPi and vice-versa
 
 # 0.4.9
 * System

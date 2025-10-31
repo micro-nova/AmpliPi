@@ -119,7 +119,7 @@ const Home = () => {
                     // on apply, we want to call
                     onApply={async (customSourceId) => {
                         const ret = await executeApplyAction(customSourceId);
-                        if(ret.ok){ret.json().then(s => setSystemState(s))};
+                        if(ret.ok){ret.json().then(s => setSystemState(s));}
                     }}
                     onClose={() => setZonesModalOpen(false)}
                 />
@@ -129,7 +129,7 @@ const Home = () => {
                     sourceId={nextAvailableSource}
                     onApply={async (customSourceId) => {
                         const ret = await executeApplyAction(customSourceId);
-                        if(ret.ok){ret.json().then(s => setSystemState(s))};
+                        if(ret.ok){ret.json().then(s => setSystemState(s));}
                     }}
                     onClose={() => setStreamerOutputModalOpen(false)}
                 />
