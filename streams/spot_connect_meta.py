@@ -12,7 +12,6 @@ import json
 import requests
 from websockets.exceptions import ConnectionClosed, InvalidHandshake
 from websockets.sync.client import connect
-# from ..amplipi import tasks
 
 
 @dataclass
@@ -158,15 +157,6 @@ class Event:
       e.data = SeekChange(**json_data["data"])
     elif e.event_type == "volume":
       e.data = VolumeChange(**json_data["data"])
-      volume = e.data.value
-      if volume != parent.last_volume:
-        url = f"http://localhost:{parent._api_port}"  # TODO: Implement spotify-side volume bar to reflect the source volume bar's position
-        # tasks.post.delay(url + 'volume', data={'volume': int(volume * 100)})
-        delta = float((volume - parent.last_volume) / 100)
-        vol_change = requests.patch("http://localhost/api/zones", json={"zones": [0, 1, 2, 3, 4, 5], "update": {"vol_delta_f": delta}}, timeout=5)  # TODO: set zone list correctly
-        if vol_change.ok:
-          parent.last_volume = volume  # update last_volume for future syncs
-
     elif e.event_type in ["shuffle_context", "repeat_context", "repeat_track"]:
       e.data = ValueChange(**json_data["data"])
     return e
@@ -178,11 +168,9 @@ class SpotifyMetadataReader:
     self.url: str = url
     self.metadata_file: str = metadata_file
     self.debug: bool = debug
-
-    self.last_volume: float = 0
     self._api_port: int = 3678 + int([char for char in metadata_file if char.isdigit()][0])
 
-  def read_metadata(self) -> Optional[Track]:
+  def read_metadata(self) -> Optional[Status]:
     """
     Reads metadata from the given URL and writes it to the specified metadata file.
     If the metadata file already exists, it will be overwritten.
