@@ -41,12 +41,11 @@ class AmpliPiData:
 
   def get_volume(self):
     if self.connected_zones:
-      total_vol_f = 0
-      for zone in self.connected_zones:
-        total_vol_f += zone["vol_f"]
+      total_vol_f = sum([zone["vol_f"] for zone in self.connected_zones])
+      avg_vol = total_vol_f / len(self.connected_zones)
       if self.debug:
-        print(f"Got AmpliPi volume: {total_vol_f / len(self.connected_zones)}")
-      return total_vol_f / len(self.connected_zones)
+        print(f"Got AmpliPi volume: {avg_vol}")
+      return avg_vol
 
 
 class SpotifyVolumeHandler:
