@@ -114,7 +114,7 @@ class SpotifyVolumeHandler:
 
     if abs(spotify_volume - self.shared_volume) <= self.tolerance:
       if self.debug:
-        print("Ignored minor Spotify→AmpliPi change")
+        print("Ignored minor Spotify -> AmpliPi change")
       return
 
     delta = float(spotify_volume - self.shared_volume)
@@ -126,10 +126,7 @@ class SpotifyVolumeHandler:
       },
       timeout=5,
     ).json())
-
     self.shared_volume = spotify_volume
-    if self.debug:
-      print(f"AmpliPi updated, shared_volume={self.shared_volume:.3f}")
 
   def update_spotify_volume(self):
     """Update Spotify's volume slider to match AmpliPi"""
@@ -147,31 +144,6 @@ class SpotifyVolumeHandler:
     requests.post(url + '/player/volume', json={"volume": new_vol}, timeout=5)
     self.shared_volume = amplipi_volume
 
-  def handle_volume_changes(self):
-    """Handle volume changes and synchronize sides"""
-    if self.shared_volume is None:
-      self.shared_volume = self.amplipi.get_volume()
-    try:
-      amplipi_volume = self.amplipi.volume
-      spotify_volume = self.spotify.volume
-
-      if self.debug:
-        print(f"amplipi={amplipi_volume}, spotify={spotify_volume}, shared={self.shared_volume}")
-
-      if spotify_volume is None:
-        if self.debug:
-          print("Spotify volume uninitialized, syncing from AmpliPi")
-        self.update_spotify_volume()
-
-      elif abs(spotify_volume - self.shared_volume) > self.tolerance:
-        self.update_amplipi_volume()
-
-      elif abs(amplipi_volume - self.shared_volume) > self.tolerance:
-        self.update_spotify_volume()
-
-    except Exception as e:
-      print(f"Error: {e}")
-
 
 if __name__ == "__main__":
 
@@ -186,8 +158,10 @@ if __name__ == "__main__":
   while True:
     try:
       event = handler.event_queue.get(timeout=2)
-      if event in ("spotify_volume_changed", "amplipi_volume_changed"):
-        handler.handle_volume_changes()
+      if event in "spotify_volume_changed":
+        handler.update_amplipi_volume()
+      elif event in "amplipi_volume_changed":
+        handler.update_spotify_volume()
     except queue.Empty:
       continue
     except (KeyboardInterrupt, SystemExit):
