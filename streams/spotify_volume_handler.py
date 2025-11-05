@@ -25,6 +25,7 @@ class SpotifyData:
   async def watch_vol(self):
     try:
       # Connect to the websocket and listen for state changes
+      # E1101: ignore websockets.connect does not exist
       async with websockets.connect(f"ws://localhost:{self.api_port}/events", open_timeout=5) as websocket:
         while True:
           try:
