@@ -1,21 +1,24 @@
-
+"""Script for synchronizing AmpliPi and Spotify volumes"""
 import argparse
 from time import sleep
 import requests
-import websockets
-from spot_connect_meta import Event
 import json
 import asyncio
 import threading
+import websockets
+import queue
+from spot_connect_meta import Event
 
 
 class SpotifyData:
+  """A class that watches and tracks changes to spotify-side volume"""
 
-  def __init__(self, api_port, debug=False):
+  def __init__(self, api_port: int, callback, debug: bool = False):
     self.api_port: int = api_port
+    self.callback = callback
     self.debug = debug
 
-    self.volume: int = None
+    self.volume: float = None
 
     threading.Thread(target=self.run_async_watch, daemon=True).start()
 
@@ -32,7 +35,8 @@ class SpotifyData:
             msg = await websocket.recv()
             event = Event.from_json(json.loads(msg))
             if event.event_type == "volume":
-              self.volume = event.data.value
+              self.volume = event.data.value / 100  # AmpliPi volume is between 0 and 1, Spotify is between 0 and 100. Dividing by 100 is more accurate than multiplying by 100 due to floating point errors.
+              self.callback("spotify_volume_changed")
 
           except Exception as e:
             print(f"Error: {e}")
@@ -43,74 +47,120 @@ class SpotifyData:
 
 
 class AmpliPiData:
+  """A class to record amplipi's api output and calculate the volume of a given source"""
 
-  def __init__(self, source_id, debug=False):
+  def __init__(self, source_id: int, callback, debug: bool = False):
     self.source_id = source_id
+    self.callback = callback
     self.debug = debug
     self.status: dict = None
+    self.volume: float = None
 
     self.connected_zones: list = []
 
+    threading.Thread(target=self.get_status, daemon=True).start()
+
   def get_status(self):
-    self.status = requests.get("http://localhost/api", timeout=5).json()
+    while True:
+      last_vol = float(self.volume) if self.volume is not None else None
+
+      self.consume_status(requests.get("http://localhost/api", timeout=5).json())
+
+      if last_vol != self.volume:
+        self.callback("amplipi_volume_changed")
+
+  def consume_status(self, status):
+    self.status = status
 
     self.connected_zones = [zone for zone in self.status["zones"] if zone["source_id"] == self.source_id]
+    self.volume = self.get_volume()
 
   def get_volume(self):
-    if not self.status:
-      self.get_status()
-
     if self.connected_zones:
       total_vol_f = sum([zone["vol_f"] for zone in self.connected_zones])  # Note that accounting for the vol_f overflow variables here would make it impossible to use those overflows while also using this volume bar
-      return round(total_vol_f / len(self.connected_zones), 3)  # Round down to 2 decimals
+      return round(total_vol_f / len(self.connected_zones), 2)  # Round down to 2 decimals to assist with float accuracy
 
 
 class SpotifyVolumeHandler:
+  """Volume synchronizer for Spotify and AmpliPi volume sliders"""
 
   def __init__(self, port, debug=False):
-    self.amplipi = AmpliPiData(port - 3679, debug)
-    self.spotify = SpotifyData(port, debug)
+    self.event_queue = queue.Queue()
+    self.amplipi = AmpliPiData(port - 3679, self.on_child_event, debug)
+    self.spotify = SpotifyData(port, self.on_child_event, debug)
     self.debug: bool = debug
+
     self.shared_volume = self.amplipi.get_volume()
+    self.tolerance = 0.005  # Reduces jitters from floating point inaccuracy from either side
 
-  def update_amplipi_volume(self, amplipi_volume):
+  def on_child_event(self, event_type):
+    self.event_queue.put(event_type)
+
+  def update_amplipi_volume(self):
     """Update AmpliPi's volume via the Spotify client volume slider"""
-    delta = float((self.spotify.volume / 100) - amplipi_volume)
-    requests.patch("http://localhost/api/zones", json={"zones": [zone["id"] for zone in self.amplipi.connected_zones], "update": {"vol_delta_f": delta, "mute": False}}, timeout=5)
-    self.shared_volume = self.spotify.volume / 100
+    spotify_volume = self.spotify.volume
+    if spotify_volume is None:
+      return
 
-  def update_spotify_volume(self, amplipi_volume):
-    """Update the Spotify client's volume slider position based on the averaged volume of all connected zones in AmpliPi"""
+    if abs(spotify_volume - self.shared_volume) <= self.tolerance:
+      if self.debug:
+        print("Ignored minor Spotify→AmpliPi change")
+      return
+
+    delta = float(spotify_volume - self.shared_volume)
+    self.amplipi.consume_status(requests.patch(
+      "http://localhost/api/zones",
+      json={
+        "zones": [zone["id"] for zone in self.amplipi.connected_zones],
+        "update": {"vol_delta_f": delta, "mute": False},
+      },
+      timeout=5,
+    ).json())
+
+    self.shared_volume = spotify_volume
     if self.debug:
-      print(f"Spotify vol updated: {amplipi_volume}")
+      print(f"AmpliPi updated, shared_volume={self.shared_volume:.3f}")
+
+  def update_spotify_volume(self):
+    """Update Spotify's volume slider to match AmpliPi"""
+    amplipi_volume = self.amplipi.volume
+    if amplipi_volume is None:
+      return
+
+    if abs(amplipi_volume - self.shared_volume) <= self.tolerance:
+      if self.debug:
+        print("Ignored minor AmpliPi -> Spotify change")
+      return
+
     url = f"http://localhost:{self.spotify.api_port}"
     new_vol = int(amplipi_volume * 100)
     requests.post(url + '/player/volume', json={"volume": new_vol}, timeout=5)
     self.shared_volume = amplipi_volume
 
-  def handle_volumes(self):
-    while True:
-      try:
-        self.amplipi.get_status()
-        amplipi_volume = self.amplipi.get_volume()
+  def handle_volume_changes(self):
+    """Handle volume changes and synchronize sides"""
+    if self.shared_volume is None:
+      self.shared_volume = self.amplipi.get_volume()
+    try:
+      amplipi_volume = self.amplipi.volume
+      spotify_volume = self.spotify.volume
 
+      if self.debug:
+        print(f"amplipi={amplipi_volume}, spotify={spotify_volume}, shared={self.shared_volume}")
+
+      if spotify_volume is None:
         if self.debug:
-          print(f"amplipi: {amplipi_volume}, spotify: {self.spotify.volume}, shared: {self.shared_volume}")
-          print("\n\n\n")
+          print("Spotify volume uninitialized, syncing from AmpliPi")
+        self.update_spotify_volume()
 
-        if self.spotify.volume is None:  # Useful for getting spotify's initial state (by forcibly setting it)
-          self.update_spotify_volume(amplipi_volume)
-        elif self.spotify.volume != (self.shared_volume * 100):
-          if self.debug:
-            print("Updating AmpliPi vol...")
-          self.update_amplipi_volume(amplipi_volume)
-        elif amplipi_volume != self.shared_volume or (int(amplipi_volume * 100) != self.spotify.volume):
-          if self.debug:
-            print("Updating Spotify vol...")
-          self.update_spotify_volume(amplipi_volume)
-      except Exception as e:
-        print(f"Error: {e}")
-      sleep(2)
+      elif abs(spotify_volume - self.shared_volume) > self.tolerance:
+        self.update_amplipi_volume()
+
+      elif abs(amplipi_volume - self.shared_volume) > self.tolerance:
+        self.update_spotify_volume()
+
+    except Exception as e:
+      print(f"Error: {e}")
 
 
 if __name__ == "__main__":
@@ -123,9 +173,13 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   handler = SpotifyVolumeHandler(args.port, args.debug)
-  while (True):
+  while True:
     try:
-      handler.handle_volumes()
+      event = handler.event_queue.get(timeout=2)
+      if event in ("spotify_volume_changed", "amplipi_volume_changed"):
+        handler.handle_volume_changes()
+    except queue.Empty:
+      continue
     except (KeyboardInterrupt, SystemExit):
       print("Exiting...")
       break
@@ -133,3 +187,4 @@ if __name__ == "__main__":
       print(f"Error: {e}")
       sleep(5)
       continue
+  sleep(2)
