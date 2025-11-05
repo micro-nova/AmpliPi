@@ -50,11 +50,11 @@ export const useStatusStore = create((set, get) => ({
                 applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
                     for (const i in s.status.zones) {
                         if (s.status.zones[i].id === zone_id) {
-                            let true_vol = Math.round((new_vol + s.status.zones[i].vol_f_buffer) * 100) / 100;
+                            let true_vol = Math.round((new_vol + s.status.zones[i].vol_f_overflow) * 100) / 100;
                             let clamped = Math.min(Math.max(true_vol, 0), 1);
 
                             s.status.zones[i].vol_f = clamped;
-                            s.status.zones[i].vol_f_buffer = true_vol - clamped;
+                            s.status.zones[i].vol_f_overflow = true_vol - clamped;
                         }
                     }
                 });
@@ -174,7 +174,7 @@ export const useStatusStore = create((set, get) => ({
                 const g = s.status.groups.filter((g) => g.id === groupId)[0];
                 for (const i of g.zones) {
                     s.skipUpdate = true;
-                    s.status.zones[i].vol_f = new_vol + s.status.zones[i].vol_f_buffer;
+                    s.status.zones[i].vol_f = new_vol + s.status.zones[i].vol_f_overflow;
                 }
 
                 updateGroupVols(s);
@@ -208,7 +208,7 @@ export const useStatusStore = create((set, get) => ({
 const updateGroupVols = (s) => {
     s.status.groups.forEach((g) => {
         if (g.zones.length > 1) {
-            const vols = g.zones.map((id) => s.status.zones[id].vol_f + s.status.zones[id].vol_f_buffer);
+            const vols = g.zones.map((id) => s.status.zones[id].vol_f + s.status.zones[id].vol_f_overflow);
             let calculated_vol = Math.min(...vols) * 0.5 + Math.max(...vols) * 0.5;
             g.vol_f = calculated_vol;
         } else if (g.zones.length == 1) {

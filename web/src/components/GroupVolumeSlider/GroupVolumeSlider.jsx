@@ -22,10 +22,10 @@ const GroupVolumeSlider = ({ groupId, sourceId, groupsLeft }) => {
     const setGroupMute = useStatusStore(s => s.setGroupMute);
     const [slidersOpen, setSlidersOpen] = React.useState(false);
 
-    const getVolume = () => { // Make sure group sliders account for vol_f_buffer
+    const getVolume = () => { // Make sure group sliders account for vol_f_overflow
         let v = 0;
         for(let i = 0; i < group.zones.length; i++){
-            v += (zones[group.zones[i]].vol_f + zones[group.zones[i]].vol_f_buffer);
+            v += (zones[group.zones[i]].vol_f + zones[group.zones[i]].vol_f_overflow);
         }
 
         return v / group.zones.length;

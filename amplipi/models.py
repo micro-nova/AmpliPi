@@ -111,8 +111,8 @@ class fields_w_default(SimpleNamespace):
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F,
                   description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
-  VolumeFBuffer = Field(default=0.0, ge=(MIN_VOL_F - MAX_VOL_F), le=(MAX_VOL_F - MIN_VOL_F),
-                        description='Output volume as a floating-point scalar that has a range equal to MIN_VOL_F - MAX_VOL_F in both directions from zero, and is used to keep track of the relative distance between two or more zone volumes when they would otherwise have to exceed their VOL_F range')
+  VolumeFOverflow = Field(default=0.0, ge=(MIN_VOL_F - MAX_VOL_F), le=(MAX_VOL_F - MIN_VOL_F),
+                          description='Output volume as a floating-point scalar that has a range equal to MIN_VOL_F - MAX_VOL_F in both directions from zero, and is used to keep track of the relative distance between two or more zone volumes when they would otherwise have to exceed their VOL_F range')
   VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Min output volume in dB')
   VolumeMax = Field(default=MAX_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
@@ -323,7 +323,7 @@ class Zone(Base):
   mute: bool = fields_w_default.Mute
   vol: int = fields_w_default.Volume
   vol_f: float = fields_w_default.VolumeF
-  vol_f_buffer: float = fields_w_default.VolumeFBuffer
+  vol_f_overflow: float = fields_w_default.VolumeFOverflow
   vol_min: int = fields_w_default.VolumeMin
   vol_max: int = fields_w_default.VolumeMax
   disabled: bool = fields_w_default.Disabled
