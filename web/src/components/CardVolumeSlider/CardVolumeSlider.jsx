@@ -11,7 +11,7 @@ const getPlayerVol = (sourceId, zones) => {
     let n = 0;
     for (const i of getSourceZones(sourceId, zones)) {
         n += 1;
-        vol += i.vol_f + i.vol_f_buffer; // Add buffer to retain proper relative space when doing an action that would un-overload the slider
+        vol += i.vol_f + i.vol_f_overflow; // Add buffer to retain proper relative space when doing an action that would un-overload the slider
     }
 
     const avg = vol / n;
