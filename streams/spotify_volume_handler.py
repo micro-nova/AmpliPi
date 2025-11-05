@@ -1,12 +1,14 @@
 """Script for synchronizing AmpliPi and Spotify volumes"""
 import argparse
 from time import sleep
-import requests
 import json
 import asyncio
 import threading
-import websockets
 import queue
+
+import websockets
+import requests
+
 from spot_connect_meta import Event
 
 
@@ -23,12 +25,15 @@ class SpotifyData:
     threading.Thread(target=self.run_async_watch, daemon=True).start()
 
   def run_async_watch(self):
+    """Middleman function for creating an asyncio run inside of a new thread"""
     asyncio.run(self.watch_vol())
 
   async def watch_vol(self):
+    """Watch the go-librespot websocket endpoint for volume change events and update local volume info accordingly"""
     try:
       # Connect to the websocket and listen for state changes
-      # E1101: ignore websockets.connect does not exist
+      # pylint: disable=E1101
+      # E1101: Module 'websockets' has no 'connect' member (no-member)
       async with websockets.connect(f"ws://localhost:{self.api_port}/events", open_timeout=5) as websocket:
         while True:
           try:
@@ -61,6 +66,7 @@ class AmpliPiData:
     threading.Thread(target=self.get_status, daemon=True).start()
 
   def get_status(self):
+    """Call up the amplipi API and send the output to self.consume_status"""
     while True:
       last_vol = float(self.volume) if self.volume is not None else None
 
@@ -70,15 +76,18 @@ class AmpliPiData:
         self.callback("amplipi_volume_changed")
 
   def consume_status(self, status):
+    """Consume an API response into the local object"""
     self.status = status
 
     self.connected_zones = [zone for zone in self.status["zones"] if zone["source_id"] == self.source_id]
     self.volume = self.get_volume()
 
   def get_volume(self):
+    """Calculate the average vol_f from all connected zones. If no zones are connected, or if the api has yet to be hit up, return 0."""
     if self.connected_zones:
       total_vol_f = sum([zone["vol_f"] for zone in self.connected_zones])  # Note that accounting for the vol_f overflow variables here would make it impossible to use those overflows while also using this volume bar
       return round(total_vol_f / len(self.connected_zones), 2)  # Round down to 2 decimals to assist with float accuracy
+    return 0
 
 
 class SpotifyVolumeHandler:
@@ -94,6 +103,7 @@ class SpotifyVolumeHandler:
     self.tolerance = 0.005  # Reduces jitters from floating point inaccuracy from either side
 
   def on_child_event(self, event_type):
+    """When an event occurs in a child, that child can use this callback function to schedule the response to said event in the event queue"""
     self.event_queue.put(event_type)
 
   def update_amplipi_volume(self):
