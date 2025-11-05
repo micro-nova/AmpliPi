@@ -61,7 +61,7 @@ class AmpliPiData:
       self.get_status()
 
     if self.connected_zones:
-      total_vol_f = sum([zone["vol_f"] for zone in self.connected_zones])
+      total_vol_f = sum([zone["vol_f"] for zone in self.connected_zones])  # Note that accounting for the vol_f overflow variables here would make it impossible to use those overflows while also using this volume bar
       return round(total_vol_f / len(self.connected_zones), 3)  # Round down to 2 decimals
 
 
@@ -130,6 +130,6 @@ if __name__ == "__main__":
       print("Exiting...")
       break
     except Exception as e:
-      print(f"Error 139: {e}")
+      print(f"Error: {e}")
       sleep(5)
       continue
