@@ -5,11 +5,19 @@ import json
 import asyncio
 import threading
 import queue
+import logging
+import sys
 
 import websockets
 import requests
 
 from spot_connect_meta import Event
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler(sys.stdout)
+logger.addHandler(sh)
 
 
 class SpotifyData:
@@ -44,10 +52,10 @@ class SpotifyData:
               self.callback("spotify_volume_changed")
 
           except Exception as e:
-            print(f"Error: {e}")
+            logger.exception(f"Error: {e}")
             return
     except Exception as e:
-      print(f"Error: {e}")
+      logger.exception(f"Error: {e}")
       return
 
 
@@ -69,6 +77,9 @@ class AmpliPiData:
     """Call up the amplipi API and send the output to self.consume_status"""
     while True:
       last_vol = float(self.volume) if self.volume is not None else None
+
+      # with open("/home/pi/.config/amplipi/house.json", "r", encoding="utf-8") as f:
+      #   self.consume_status(json.loads(f))
 
       self.consume_status(requests.get("http://localhost/api", timeout=5).json())
 
@@ -93,9 +104,9 @@ class AmpliPiData:
 class SpotifyVolumeHandler:
   """Volume synchronizer for Spotify and AmpliPi volume sliders"""
 
-  def __init__(self, port, debug=False):
+  def __init__(self, port, source, debug=False):
     self.event_queue = queue.Queue()
-    self.amplipi = AmpliPiData(port - 3679, self.on_child_event, debug)
+    self.amplipi = AmpliPiData(source, self.on_child_event, debug)
     self.spotify = SpotifyData(port, self.on_child_event, debug)
     self.debug: bool = debug
 
@@ -114,7 +125,7 @@ class SpotifyVolumeHandler:
 
     if abs(spotify_volume - self.shared_volume) <= self.tolerance:
       if self.debug:
-        print("Ignored minor Spotify -> AmpliPi change")
+        logger.debug("Ignored minor Spotify -> AmpliPi change")
       return
 
     delta = float(spotify_volume - self.shared_volume)
@@ -136,7 +147,7 @@ class SpotifyVolumeHandler:
 
     if abs(amplipi_volume - self.shared_volume) <= self.tolerance:
       if self.debug:
-        print("Ignored minor AmpliPi -> Spotify change")
+        logger.debug("Ignored minor AmpliPi -> Spotify change")
       return
 
     url = f"http://localhost:{self.spotify.api_port}"
@@ -150,11 +161,12 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Read metadata from a given URL and write it to a file.")
 
   parser.add_argument("port", help="The port that go-librespot is running on", type=int)
+  parser.add_argument("source", help="The source that the spotify stream is playing to", type=int)
   parser.add_argument("--debug", action="store_true", help="Enable debug output")
 
   args = parser.parse_args()
 
-  handler = SpotifyVolumeHandler(args.port, args.debug)
+  handler = SpotifyVolumeHandler(args.port, args.source, args.debug)
   while True:
     try:
       event = handler.event_queue.get(timeout=2)
@@ -165,10 +177,10 @@ if __name__ == "__main__":
     except queue.Empty:
       continue
     except (KeyboardInterrupt, SystemExit):
-      print("Exiting...")
+      logger.exception("Exiting...")
       break
     except Exception as e:
-      print(f"Error: {e}")
+      logger.exception(f"Error: {e}")
       sleep(5)
       continue
   sleep(2)

@@ -33,6 +33,7 @@ class SpotifyConnect(PersistentStream):
     self._log_file: Optional[io.TextIOBase] = None
     self._api_port: int
     self.proc2: Optional[subprocess.Popen] = None
+    self.proc3: Optional[subprocess.Popen] = None
     self.meta_file: str = ''
     self.max_volume: int = 100  # default configuration from 'volume_steps'
     self.last_volume: float = 0
@@ -98,6 +99,11 @@ class SpotifyConnect(PersistentStream):
     meta_args = [sys.executable, meta_reader, url, self.meta_file, '--debug']  # TODO: remove --debug for production
     logger.info(f'{self.name}: starting metadata reader: {meta_args}')
     self.proc2 = subprocess.Popen(args=meta_args, stdout=self._log_file, stderr=self._log_file)
+
+    vol_sync = f"{utils.get_folder('streams')}/spotify_volume_handler.py"
+    vol_args = [sys.executable, vol_sync, str(self._api_port), src_config_folder[-1], "--debug"]
+    logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
+    self.proc3 = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
 
   def _deactivate(self):
     if self._is_running():
