@@ -7,6 +7,9 @@ import shutil
 import time
 import os
 import io
+import sys
+import threading
+import json
 
 
 def write_sp_config_file(filename, config):
@@ -42,6 +45,29 @@ class AirPlay(PersistentStream):
     self._connect_time = 0.0
     self._coverart_dir = ''
     self._log_file: Optional[io.TextIOBase] = None
+    self.src_config_folder: Optional[str] = None
+    self.volume_watcher_process: Optional[threading.Thread] = None  # Populates the fifo that the vol sync script depends on
+    self.volume_sync_process: Optional[subprocess.Popen] = None
+    self._volume_fifo: Optional[str] = None
+
+  def watch_vol(self):
+    """Creates and supplies a FIFO with volume data for volume sync"""
+    while True:
+      try:
+        if self.src is not None:
+          if self._volume_fifo is None and self.src_config_folder is not None:
+            fifo_path = f"{self.src_config_folder}/vol"
+            if not os.path.isfile(fifo_path):
+              os.mkfifo(fifo_path)
+            self._volume_fifo = os.open(fifo_path, os.O_WRONLY, os.O_NONBLOCK)
+          data = json.dumps({
+            'zones': self.connected_zones,
+            'volume': self.volume,
+          })
+          os.write(self._volume_fifo, bytearray(f"{data}\r\n", encoding="utf8"))
+      except Exception as e:
+        logger.error(f"{self.name} volume thread ran into exception: {e}")
+      time.sleep(0.1)
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -71,9 +97,9 @@ class AirPlay(PersistentStream):
         logger.info(f'Another Airplay 2 stream is already in use, unable to start {self.name}, mocking connection')
         return
 
-    src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
+    self.src_config_folder = f'{utils.get_folder("config")}/srcs/v{vsrc}'
     try:
-      os.remove(f'{src_config_folder}/currentSong')
+      os.remove(f'{self.src_config_folder}/currentSong')
     except FileNotFoundError:
       pass
     self._connect_time = time.time()
@@ -86,9 +112,9 @@ class AirPlay(PersistentStream):
         'name': self.name,
         'port': 5100 + 100 * vsrc,  # Listen for service requests on this port
         'udp_port_base': 6101 + 100 * vsrc,  # start allocating UDP ports from this port number when needed
-        'drift': 2000,  # allow this number of frames of drift away from exact synchronisation before attempting to correct it
-        'resync_threshold': 0,  # a synchronisation error greater than this will cause resynchronisation; 0 disables it
-        'log_verbosity': 0,  # "0" means no debug verbosity, "3" is most verbose.
+        'drift_in_seconds': 2,  # allow this number of frames of drift away from exact synchronisation before attempting to correct it
+        'resync_threshold_in_seconds': 0,  # a synchronisation error greater than this will cause resynchronisation; 0 disables it
+        'log_verbosity': "diagnostics",  # "none" means no debug verbosity, "diagnostics" is most verbose.
         'mpris_service_bus': 'Session',
       },
       'metadata': {
@@ -99,7 +125,7 @@ class AirPlay(PersistentStream):
       'alsa': {
         'output_device': utils.virtual_output_device(vsrc),  # alsa output device
         # If set too small, buffer underflow occurs on low-powered machines. Too long and the response times with software mixer become annoying.
-        'audio_backend_buffer_desired_length': 11025
+        'audio_backend_buffer_desired_length': 11025,
       },
     }
 
@@ -109,10 +135,10 @@ class AirPlay(PersistentStream):
     except FileNotFoundError:
       pass
     os.makedirs(self._coverart_dir, exist_ok=True)
-    os.makedirs(src_config_folder, exist_ok=True)
-    config_file = f'{src_config_folder}/shairport.conf'
+    os.makedirs(self.src_config_folder, exist_ok=True)
+    config_file = f'{self.src_config_folder}/shairport.conf'
     write_sp_config_file(config_file, config)
-    self._log_file = open(f'{src_config_folder}/log', mode='w')
+    self._log_file = open(f'{self.src_config_folder}/log', mode='w')
     shairport_args = f"{utils.get_folder('streams')}/shairport-sync{'-ap2' if self.ap2 else ''} -c {config_file}".split(' ')
     logger.info(f'shairport_args: {shairport_args}')
 
@@ -125,7 +151,15 @@ class AirPlay(PersistentStream):
       # shairport sync only adds the pid to the mpris name if it cannot use the default name
       if len(os.popen("pgrep shairport-sync").read().strip().splitlines()) > 1:
         mpris_name += f".i{self.proc.pid}"
-      self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
+      self.mpris = MPRIS(mpris_name, f'{self.src_config_folder}/metadata.txt')
+
+      vol_sync = f"{utils.get_folder('streams')}/shairport_volume_handler.py"
+      vol_args = [sys.executable, vol_sync, mpris_name, f"{utils.get_folder('config')}/srcs/v{self.vsrc}"]
+
+      logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
+      self.volume_watcher_process = threading.Thread(target=self.watch_vol, daemon=True)
+      self.volume_watcher_process.start()
+      self.volume_sync_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
     except Exception as exc:
       logger.exception(f'Error starting airplay MPRIS reader: {exc}')
 
@@ -135,12 +169,22 @@ class AirPlay(PersistentStream):
     self.mpris = None
     if self._is_running():
       self.proc.stdin.close()
+
       logger.info('stopping shairport-sync')
       self.proc.terminate()
+      if self.volume_sync_process is not None:
+        self.volume_sync_process.terminate()
+
       if self.proc.wait(1) != 0:
         logger.info('killing shairport-sync')
         self.proc.kill()
       self.proc.communicate()
+
+      if self.volume_sync_process is not None:
+        if self.volume_sync_process.wait(1) != 0:
+          logger.info('killing shairport vol sync')
+          self.volume_sync_process.kill()
+
     if '_log_file' in self.__dir__() and self._log_file:
       self._log_file.close()
     if self.src:
@@ -149,7 +193,11 @@ class AirPlay(PersistentStream):
       except Exception as e:
         logger.exception(f'Error removing airplay config files: {e}')
     self._disconnect()
+
     self.proc = None
+    self.volume_sync_process = None
+    self.volume_watcher_process = None
+    self._volume_fifo = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(

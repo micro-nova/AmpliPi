@@ -22,13 +22,13 @@ class SpotifyWatcher(StreamWatcher):
 
   def __init__(self, api_port: int):
     super().__init__()
-
     self.api_port: int = api_port
     """What port is go-librespot running on? Typically set to 3678 + vsrc."""
 
   async def watch_vol(self):
     """Watch the go-librespot websocket endpoint for volume change events and update AmpliPi volume info accordingly"""
     try:
+      # Connect to the websocket and listen for state changes
       # pylint: disable=E1101
       # E1101: Module 'websockets' has no 'connect' member (no-member)
       async with websockets.connect(f"ws://localhost:{self.api_port}/events", open_timeout=5) as websocket:
