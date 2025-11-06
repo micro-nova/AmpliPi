@@ -17,6 +17,7 @@ from websockets.sync.client import connect
 @dataclass
 class Track:
   """Track metadata"""
+  context_uri: str = ''  # Where is this event coming from?
   uri: str = ''  # Track URI
   name: str = ''  # Track name
   artist_names: List[str] = field(default_factory=list)  # List of track artist names
@@ -60,6 +61,7 @@ class Status:
 @dataclass
 class OriginChange:
   """Origin change event"""
+  context_uri: str = ''  # Where is this event coming from?
   play_origin: str = ''  # Who started the playback
 
 
