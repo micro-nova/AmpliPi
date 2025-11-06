@@ -67,6 +67,7 @@ class AmpliPiData:
     self.callback = callback
     self.debug = debug
     self.status: dict = None
+    self.last_volume: float = None
     self.volume: float = None
 
     self.connected_zones: list = []
@@ -76,15 +77,14 @@ class AmpliPiData:
   def get_status(self):
     """Call up the amplipi API and send the output to self.consume_status"""
     while True:
-      last_vol = float(self.volume) if self.volume is not None else None
-
-      # with open("/home/pi/.config/amplipi/house.json", "r", encoding="utf-8") as f:
-      #   self.consume_status(json.loads(f))
-
       self.consume_status(requests.get("http://localhost/api", timeout=5).json())
 
-      if last_vol != self.volume:
+      print(f"last: {self.last_volume}, vol: {self.volume}")
+
+      if self.last_volume != self.volume:
         self.callback("amplipi_volume_changed")
+      self.last_volume = float(self.volume)
+      sleep(2)
 
   def consume_status(self, status):
     """Consume an API response into the local object"""
@@ -98,6 +98,8 @@ class AmpliPiData:
     if self.connected_zones:
       total_vol_f = sum([zone["vol_f"] for zone in self.connected_zones])  # Note that accounting for the vol_f overflow variables here would make it impossible to use those overflows while also using this volume bar
       return round(total_vol_f / len(self.connected_zones), 2)  # Round down to 2 decimals to assist with float accuracy
+    else:
+      logger.warning("Could not find any associated zones")
     return 0
 
 
@@ -169,6 +171,8 @@ if __name__ == "__main__":
   handler = SpotifyVolumeHandler(args.port, args.source, args.debug)
   while True:
     try:
+      if handler.spotify.volume is None:
+        handler.update_spotify_volume()
       event = handler.event_queue.get(timeout=2)
       if event in "spotify_volume_changed":
         handler.update_amplipi_volume()

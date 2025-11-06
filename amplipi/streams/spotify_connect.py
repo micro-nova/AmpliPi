@@ -101,7 +101,7 @@ class SpotifyConnect(PersistentStream):
     self.proc2 = subprocess.Popen(args=meta_args, stdout=self._log_file, stderr=self._log_file)
 
     vol_sync = f"{utils.get_folder('streams')}/spotify_volume_handler.py"
-    vol_args = [sys.executable, vol_sync, str(self._api_port), src_config_folder[-1], "--debug"]
+    vol_args = [sys.executable, vol_sync, str(self._api_port), str(self.vsrc), "--debug"]
     logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
     self.proc3 = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
 
@@ -111,14 +111,19 @@ class SpotifyConnect(PersistentStream):
       logger.info(f'{self.name}: stopping player')
       self.proc.terminate()
       self.proc2.terminate()
+      self.proc3.terminate()
       if self.proc.wait(1) != 0:
         logger.info(f'{self.name}: killing player')
         self.proc.kill()
       if self.proc2.wait(1) != 0:
         logger.info(f'{self.name}: killing metadata reader')
         self.proc2.kill()
+      if self.proc3.wait(1) != 0:
+        logger.info(f'{self.name}: killing volume synchronizer')
+        self.proc3.kill()
       self.proc.communicate()
       self.proc2.communicate()
+      self.proc3.communicate()
     if self.proc and self._log_file:  # prevent checking _log_file when it may not exist, thanks validation!
       self._log_file.close()
     if self.src:
@@ -129,6 +134,7 @@ class SpotifyConnect(PersistentStream):
     self._disconnect()
     self.proc = None
     self.proc2 = None
+    self.proc3 = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(
