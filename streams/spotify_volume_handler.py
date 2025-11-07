@@ -121,41 +121,47 @@ class SpotifyVolumeHandler:
 
   def update_amplipi_volume(self):
     """Update AmpliPi's volume via the Spotify client volume slider"""
-    spotify_volume = self.spotify.volume
-    if spotify_volume is None:
-      return
+    try:
+      spotify_volume = self.spotify.volume
+      if spotify_volume is None:
+        return
 
-    if abs(spotify_volume - self.shared_volume) <= self.tolerance:
-      if self.debug:
-        logger.debug("Ignored minor Spotify -> AmpliPi change")
-      return
+      if abs(spotify_volume - self.shared_volume) <= self.tolerance:
+        if self.debug:
+          logger.debug("Ignored minor Spotify -> AmpliPi change")
+        return
 
-    delta = float(spotify_volume - self.shared_volume)
-    self.amplipi.consume_status(requests.patch(
-      "http://localhost/api/zones",
-      json={
-        "zones": [zone["id"] for zone in self.amplipi.connected_zones],
-        "update": {"vol_delta_f": delta, "mute": False},
-      },
-      timeout=5,
-    ).json())
-    self.shared_volume = spotify_volume
+      delta = float(spotify_volume - self.shared_volume)
+      self.amplipi.consume_status(requests.patch(
+        "http://localhost/api/zones",
+        json={
+          "zones": [zone["id"] for zone in self.amplipi.connected_zones],
+          "update": {"vol_delta_f": delta, "mute": False},
+        },
+        timeout=5,
+      ).json())
+      self.shared_volume = spotify_volume
+    except Exception as e:
+      logger.exception(f"Exception: {e}")
 
   def update_spotify_volume(self):
     """Update Spotify's volume slider to match AmpliPi"""
-    amplipi_volume = self.amplipi.volume
-    if amplipi_volume is None:
-      return
+    try:
+      amplipi_volume = self.amplipi.volume
+      if amplipi_volume is None:
+        return
 
-    if abs(amplipi_volume - self.shared_volume) <= self.tolerance:
-      if self.debug:
-        logger.debug("Ignored minor AmpliPi -> Spotify change")
-      return
+      if abs(amplipi_volume - self.shared_volume) <= self.tolerance:
+        if self.debug:
+          logger.debug("Ignored minor AmpliPi -> Spotify change")
+        return
 
-    url = f"http://localhost:{self.spotify.api_port}"
-    new_vol = int(amplipi_volume * 100)
-    requests.post(url + '/player/volume', json={"volume": new_vol}, timeout=5)
-    self.shared_volume = amplipi_volume
+      url = f"http://localhost:{self.spotify.api_port}"
+      new_vol = int(amplipi_volume * 100)
+      requests.post(url + '/player/volume', json={"volume": new_vol}, timeout=5)
+      self.shared_volume = amplipi_volume
+    except Exception as e:
+      logger.exception(f"Exception: {e}")
 
 
 if __name__ == "__main__":
@@ -184,7 +190,7 @@ if __name__ == "__main__":
       logger.exception("Exiting...")
       break
     except Exception as e:
-      logger.exception(f"Error: {e}")
+      logger.exception(f"Exception: {e}")
       sleep(5)
       continue
   sleep(2)
