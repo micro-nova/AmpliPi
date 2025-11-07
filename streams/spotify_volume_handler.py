@@ -174,9 +174,9 @@ if __name__ == "__main__":
       if handler.spotify.volume is None:
         handler.update_spotify_volume()
       event = handler.event_queue.get(timeout=2)
-      if event in "spotify_volume_changed":
+      if event == "spotify_volume_changed":
         handler.update_amplipi_volume()
-      elif event in "amplipi_volume_changed":
+      elif event == "amplipi_volume_changed":
         handler.update_spotify_volume()
     except queue.Empty:
       continue
