@@ -1,6 +1,6 @@
 # AmpliPi Software Releases
 
-# Future Release
+# 0.4.9
 
 * System
   * Update our spotify provider `go-librespot` to `0.5.2` to accomodate spotify's API update
