@@ -875,7 +875,7 @@ class Api:
           else:
             raise Exception('unable to update zone volume')
 
-          zone.vol_f_overflow = 0 if models.MIN_VOL_F < vol_f_new and vol_f_new < models.MAX_VOL_F else zone.vol_f_overflow
+          zone.vol_f_overflow = 0 if vol_f_new != models.MIN_VOL_F or vol_f_new != models.MAX_VOL_F else zone.vol_f_overflow
 
         # To avoid potential unwanted loud output:
         # If muting, mute before setting volumes
