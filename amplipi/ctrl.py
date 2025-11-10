@@ -847,18 +847,17 @@ class Api:
 
         def set_vol():
           """ Update the zone's volume. Could be triggered by a change in
-              vol, vol_f, vol_min, or vol_max.
+              vol, vol_f, vol_f_delta, vol_min, or vol_max.
           """
           # Field precedence: vol (db) > vol_delta > vol (float)
-          # NOTE: checks happen in reverse precedence to cover default case of unchanged volume
+          # vol (db) is last in the stack to cover the default case of a None volume change, but when it does have a value it takes overrides the others
           if update.vol_delta_f is not None and update.vol is None:
             true_vol_f = zone.vol_f + zone.vol_f_overflow
-            totaled_delta = update.vol_delta_f + true_vol_f
-            applied_delta = utils.clamp(totaled_delta, 0, 1)
+            expected_vol_total = update.vol_delta_f + true_vol_f
+            vol_f_new = utils.clamp(expected_vol_total, models.MIN_VOL_F, models.MAX_VOL_F)
 
-            vol_db = utils.vol_float_to_db(applied_delta, zone.vol_min, zone.vol_max)
-            vol_f_new = applied_delta
-            zone.vol_f_overflow = 0 if models.MIN_VOL_F < totaled_delta and totaled_delta < models.MAX_VOL_F else utils.clamp((totaled_delta - applied_delta), -1.0, 1.0)
+            vol_db = utils.vol_float_to_db(vol_f_new, zone.vol_min, zone.vol_max)
+            zone.vol_f_overflow = 0 if models.MIN_VOL_F < expected_vol_total and expected_vol_total < models.MAX_VOL_F else utils.clamp((expected_vol_total - vol_f_new), models.MIN_VOL_F_OVERFLOW, models.MAX_VOL_F_OVERFLOW)  # Clamp the remaining delta to be between -1 and 1
 
           elif update.vol_f is not None and update.vol is None:
             clamp_vol_f = utils.clamp(vol_f, 0, 1)
@@ -875,6 +874,8 @@ class Api:
           else:
             raise Exception('unable to update zone volume')
 
+          # If the change made vol f be between the min and max, delete the overflow
+          # This is useful so that you can click wherever you want on the volume bar and expect it to end up there without rubberbanding back to whatever vol_f + vol_f_overflow value you'd otherwise be at
           zone.vol_f_overflow = 0 if vol_f_new != models.MIN_VOL_F or vol_f_new != models.MAX_VOL_F else zone.vol_f_overflow
 
         # To avoid potential unwanted loud output:

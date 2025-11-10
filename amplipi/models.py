@@ -38,6 +38,12 @@ MIN_VOL_F = 0.0
 MAX_VOL_F = 1.0
 """ Max volume for slider bar. Will be mapped to dB. """
 
+MIN_VOL_F_OVERFLOW = MIN_VOL_F - MAX_VOL_F
+"""Min overflow for volume sliders, set to be the full range of vol_f below zero"""
+
+MAX_VOL_F_OVERFLOW = MAX_VOL_F - MIN_VOL_F
+"""Max overflow for volume sliders, set to be the full range of vol_f above zero"""
+
 MIN_VOL_DB = -80
 """ Min volume in dB. -80 is special and is actually -90 dB (mute). """
 
@@ -111,7 +117,7 @@ class fields_w_default(SimpleNamespace):
   Volume = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
   VolumeF = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F,
                   description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
-  VolumeFOverflow = Field(default=0.0, ge=(MIN_VOL_F - MAX_VOL_F), le=(MAX_VOL_F - MIN_VOL_F),
+  VolumeFOverflow = Field(default=0.0, ge=MIN_VOL_F_OVERFLOW, le=MAX_VOL_F_OVERFLOW,
                           description='Output volume as a floating-point scalar that has a range equal to MIN_VOL_F - MAX_VOL_F in both directions from zero, and is used to keep track of the relative distance between two or more zone volumes when they would otherwise have to exceed their VOL_F range')
   VolumeMin = Field(default=MIN_VOL_DB, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                     description='Min output volume in dB')
