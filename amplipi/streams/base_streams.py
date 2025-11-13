@@ -49,7 +49,9 @@ class Browsable:
 class BaseStream:
   """ BaseStream class containing methods that all other streams inherit """
 
-  def __init__(self, stype: str, name: str, only_src=None, disabled: bool = False, mock: bool = False, validate: bool = True, **kwargs):
+  def __init__(self, stype: str, name: str, stream_id: int, only_src=None, disabled: bool = False, mock: bool = False, validate: bool = True, **kwargs):
+
+    self.id = stream_id
     self.name = name
     self.disabled = disabled
     self.proc: Optional[subprocess.Popen] = None
@@ -192,8 +194,8 @@ vsources = VirtualSources(12)
 class PersistentStream(BaseStream):
   """ Base class for streams that are able to persist without a direct connection to an output """
 
-  def __init__(self, stype: str, name: str, disabled: bool = False, mock: bool = False, validate: bool = True, **kwargs):
-    super().__init__(stype, name, None, disabled, mock, validate, **kwargs)
+  def __init__(self, stype: str, name: str, stream_id: int, disabled: bool = False, mock: bool = False, validate: bool = True, **kwargs):
+    super().__init__(stype, name, stream_id, None, disabled, mock, validate, **kwargs)
     self.vsrc: Optional[int] = None
     self._cproc: Optional[subprocess.Popen] = None
     self.device: Optional[str] = None

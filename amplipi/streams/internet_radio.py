@@ -17,8 +17,8 @@ class InternetRadio(BaseStream):
 
   stream_type: ClassVar[str] = 'internetradio'
 
-  def __init__(self, name: str, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False, validate: bool = True):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate, url=url, logo=logo)
+  def __init__(self, name: str, stream_id: int, url: str, logo: Optional[str], disabled: bool = False, mock: bool = False, validate: bool = True):
+    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock, validate=validate, url=url, logo=logo)
     self.url = url
     self.logo = logo
     self.supported_cmds = ['play', 'stop']
