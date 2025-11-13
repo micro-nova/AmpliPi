@@ -50,6 +50,8 @@ class SpotifyData:
             if event.event_type == "volume":
               self.volume = event.data.value / 100  # AmpliPi volume is between 0 and 1, Spotify is between 0 and 100. Dividing by 100 is more accurate than multiplying by 100 due to floating point errors.
               self.callback("spotify_volume_changed")
+            elif event.event_type == "will_play" and self.volume is None:
+              self.callback("amplipi_volume_changed")  # Intercept the event that occurs when a song starts playing and use that as a trigger for the initial state sync
 
           except Exception as e:
             logger.exception(f"Error: {e}")
@@ -79,7 +81,7 @@ class AmpliPiData:
     while True:
       self.consume_status(requests.get("http://localhost/api", timeout=5).json())
 
-      print(f"last: {self.last_volume}, vol: {self.volume}")
+      logger.debug(f"last: {self.last_volume}, vol: {self.volume}")
 
       if self.last_volume != self.volume:
         self.callback("amplipi_volume_changed")
@@ -94,11 +96,7 @@ class AmpliPiData:
       if source["input"] == f"stream={self.stream_id}":
         source_id = source["id"]
 
-    logger.error(self.status['sources'][source_id])
-    logger.error(self.status['zones'])
-
     self.connected_zones = [zone for zone in self.status["zones"] if zone["source_id"] == source_id]
-    logger.error(self.connected_zones)
     self.volume = self.get_volume()
 
   def get_volume(self):
@@ -159,14 +157,15 @@ class SpotifyVolumeHandler:
       if amplipi_volume is None:
         return
 
-      if abs(amplipi_volume - self.shared_volume) <= self.tolerance:
+      if abs(amplipi_volume - self.shared_volume) <= self.tolerance and self.spotify.volume is not None:
         if self.debug:
           logger.debug("Ignored minor AmpliPi -> Spotify change")
         return
 
-      url = f"http://localhost:{self.spotify.api_port}"
+      url = f"http://localhost:{self.spotify.api_port}/player/volume"
       new_vol = int(amplipi_volume * 100)
-      requests.post(url + '/player/volume', json={"volume": new_vol}, timeout=5)
+      logger.error(f"Setting spotify volume to {new_vol}")
+      requests.post(url, json={"volume": new_vol}, timeout=5)
       self.shared_volume = amplipi_volume
     except Exception as e:
       logger.exception(f"Exception: {e}")
@@ -185,8 +184,6 @@ if __name__ == "__main__":
   handler = SpotifyVolumeHandler(args.port, args.stream_id, args.debug)
   while True:
     try:
-      if handler.spotify.volume is None:
-        handler.update_spotify_volume()
       event = handler.event_queue.get(timeout=2)
       if event == "spotify_volume_changed":
         handler.update_amplipi_volume()
