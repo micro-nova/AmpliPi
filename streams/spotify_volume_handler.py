@@ -62,8 +62,8 @@ class SpotifyData:
 class AmpliPiData:
   """A class to record amplipi's api output and calculate the volume of a given source"""
 
-  def __init__(self, source_id: int, callback, debug: bool = False):
-    self.source_id = source_id
+  def __init__(self, stream_id: int, callback, debug: bool = False):
+    self.stream_id = stream_id
     self.callback = callback
     self.debug = debug
     self.status: dict = None
@@ -89,8 +89,16 @@ class AmpliPiData:
   def consume_status(self, status):
     """Consume an API response into the local object"""
     self.status = status
+    source_id = None
+    for source in self.status["sources"]:
+      if source["input"] == f"stream={self.stream_id}":
+        source_id = source["id"]
 
-    self.connected_zones = [zone for zone in self.status["zones"] if zone["source_id"] == self.source_id]
+    logger.error(self.status['sources'][source_id])
+    logger.error(self.status['zones'])
+
+    self.connected_zones = [zone for zone in self.status["zones"] if zone["source_id"] == source_id]
+    logger.error(self.connected_zones)
     self.volume = self.get_volume()
 
   def get_volume(self):
@@ -106,9 +114,9 @@ class AmpliPiData:
 class SpotifyVolumeHandler:
   """Volume synchronizer for Spotify and AmpliPi volume sliders"""
 
-  def __init__(self, port, source, debug=False):
+  def __init__(self, port, stream_id, debug=False):
     self.event_queue = queue.Queue()
-    self.amplipi = AmpliPiData(source, self.on_child_event, debug)
+    self.amplipi = AmpliPiData(stream_id, self.on_child_event, debug)
     self.spotify = SpotifyData(port, self.on_child_event, debug)
     self.debug: bool = debug
 
@@ -169,12 +177,12 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Read metadata from a given URL and write it to a file.")
 
   parser.add_argument("port", help="The port that go-librespot is running on", type=int)
-  parser.add_argument("source", help="The source that the spotify stream is playing to", type=int)
+  parser.add_argument("stream_id", help="The AmpliPi ID of the Spotify Stream being listened to for volume changes", type=int)
   parser.add_argument("--debug", action="store_true", help="Enable debug output")
 
   args = parser.parse_args()
 
-  handler = SpotifyVolumeHandler(args.port, args.source, args.debug)
+  handler = SpotifyVolumeHandler(args.port, args.stream_id, args.debug)
   while True:
     try:
       if handler.spotify.volume is None:

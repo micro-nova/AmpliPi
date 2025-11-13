@@ -18,8 +18,8 @@ class MediaDevice(PersistentStream, Browsable):
 
   stream_type: ClassVar[str] = 'mediadevice'
 
-  def __init__(self, name: str, url: Optional[str], disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+  def __init__(self, name: str, stream_id: int, url: Optional[str], disabled: bool = False, mock: bool = False):
+    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock)
     self.url = url
     self.directory = '/media'
     self.local_directory = '/media'

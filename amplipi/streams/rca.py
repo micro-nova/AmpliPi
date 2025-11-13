@@ -8,8 +8,8 @@ class RCA(BaseStream):
 
   stream_type: ClassVar[str] = 'rca'
 
-  def __init__(self, name: str, index: int, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, only_src=index, disabled=disabled, mock=mock)
+  def __init__(self, name: str, stream_id: int, index: int, disabled: bool = False, mock: bool = False):
+    super().__init__(self.stream_type, name, stream_id, only_src=index, disabled=disabled, mock=mock)
     # for serialiation the stream model's field needs to map to a stream's fields
     # index is needed for serialization
     self.index = index

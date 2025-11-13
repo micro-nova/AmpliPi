@@ -14,8 +14,8 @@ class Bluetooth(BaseStream):
 
   stream_type: ClassVar[str] = 'bluetooth'
 
-  def __init__(self, name, disabled=False, mock=False):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+  def __init__(self, name, stream_id: int, disabled=False, mock=False):
+    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock)
     self.logo = "static/imgs/bluetooth.png"
     self.bt_proc = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev', 'stop']

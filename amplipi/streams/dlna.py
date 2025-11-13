@@ -14,8 +14,8 @@ class DLNA(BaseStream):  # TODO: make DLNA a persistent stream to fix the uuid i
 
   stream_type: ClassVar[str] = 'dlna'
 
-  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
-    super().__init__('dlna', name, disabled=disabled, mock=mock)
+  def __init__(self, name: str, stream_id: int, disabled: bool = False, mock: bool = False):
+    super().__init__('dlna', name, stream_id, disabled=disabled, mock=mock)
     self.supported_cmds = ['play', 'pause']
     self._metadata_proc = None
     self._uuid = 0

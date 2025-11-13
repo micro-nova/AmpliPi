@@ -338,7 +338,7 @@ class Api:
       assert stream.id is not None
       if stream.id:
         try:
-          self.streams[stream.id] = amplipi.streams.build_stream(stream, self._mock_streams, validate=False)
+          self.streams[stream.id] = amplipi.streams.build_stream(stream, stream.id, self._mock_streams, validate=False)
           # If we're in LMS mode, we need to start these clients on each boot, not when they get assigned to a
           # particular source; the client+server connection bootstrapping takes a while, which is a less than ideal
           # user experience.
@@ -1059,8 +1059,8 @@ class Api:
         raise Exception(
           f'Unable to create protected RCA stream, the RCA streams for each RCA input {defaults.RCAs} already exist')
       # Make a new stream and add it to streams
-      stream = amplipi.streams.build_stream(data, mock=self._mock_streams)
       sid = self._new_stream_id()
+      stream = amplipi.streams.build_stream(data, sid, mock=self._mock_streams)
       self.streams[sid] = stream
       self.sync_stream_info()
       # Use get state to populate the contents of the newly created stream and find it in the stream list

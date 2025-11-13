@@ -15,8 +15,8 @@ class FMRadio(BaseStream):
 
   stream_type: ClassVar[str] = 'fmradio'
 
-  def __init__(self, name: str, freq, logo: Optional[str] = None, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
+  def __init__(self, name: str, stream_id: int, freq, logo: Optional[str] = None, disabled: bool = False, mock: bool = False):
+    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock)
     self.freq = freq
     self.logo = logo
 
