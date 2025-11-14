@@ -99,10 +99,9 @@ class SpotifyConnect(PersistentStream):
     self.proc2 = subprocess.Popen(args=meta_args, stdout=self._log_file, stderr=self._log_file)
 
     vol_sync = f"{utils.get_folder('streams')}/spotify_volume_handler.py"
-    vol_args = [sys.executable, vol_sync, str(self._api_port), str(self.id), "--debug"]
+    vol_args = [sys.executable, vol_sync, str(self._api_port), str(self.id)]
     logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
-    self.proc3 = subprocess.Popen(args=vol_args, stdout=sys.stdout, stderr=sys.stderr)
-    # self.proc3 = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
+    self.proc3 = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
 
   def _deactivate(self):
     if self._is_running():
