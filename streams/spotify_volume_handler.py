@@ -81,4 +81,5 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  handler = VolumeSynchronizer(SpotifyData, {"api_port": args.port}, args.stream_id, args.debug).watcher_loop()
+  handler = VolumeSynchronizer(SpotifyData, {"api_port": args.port}, args.stream_id, args.debug)
+  handler.watcher_loop()
