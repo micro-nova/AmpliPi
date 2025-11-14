@@ -250,13 +250,6 @@ def enabled_zones(status: models.Status, zones: Set[int]) -> Set[int]:
   return zones.difference(z_disabled)
 
 
-def get_next_stream_id(status: models.Status) -> int:
-  """Get the next sequential stream ID"""
-  logger.error(len(status.streams))
-  status.streams[len(status.streams) - 1].id + 1
-  return status.streams[len(status.streams) - 1].id + 1
-
-
 @functools.lru_cache(maxsize=8)
 def get_folder(relative_folder, mock=False):
   """ Get a directory
