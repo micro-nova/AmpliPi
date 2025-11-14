@@ -1,0 +1,152 @@
+"""Script for synchronizing AmpliPi and Spotify volumes"""
+from time import sleep
+import asyncio
+import threading
+import queue
+import logging
+import sys
+from typing import Callable
+
+import requests
+
+
+class StreamData:
+  """A class that is used as a blueprint for other classes volume watcher"""
+
+  def __init__(self):
+    self.callback: Callable
+
+    self.volume: float = None
+    self.logger: logging.Logger
+
+    self.thread: threading.Thread = threading.Thread(target=self.run_async_watch, daemon=True).start()
+
+  def run_async_watch(self):
+    """Middleman function for creating an asyncio run inside of a new threading.Thread"""
+    asyncio.run(self.watch_vol())
+
+  async def watch_vol(self):
+    """A function to be implemented by child classes that must contain a while True loop and do self.callback('stream_vol_changed') when new_vol != old_vol"""
+    raise NotImplementedError("Function must be implemented by child classes")
+
+  def set_vol(self, new_vol: float, shared_vol: float) -> float:
+    """A function to be implemented by child classes to update the stream's volume and returns the new shared volume"""
+    raise NotImplementedError("Function must be implemented by child classes")
+
+
+class AmpliPiData:
+  """A class to record amplipi's api output and calculate the volume of a given source"""
+
+  def __init__(self, stream_id: int, callback: Callable, logger: logging.Logger):
+    self.stream_id: int = stream_id
+    self.callback: Callable = callback
+    self.logger: logging.Logger = logger
+    self.status: dict = None
+    self.last_volume: float = None
+    self.volume: float = None
+
+    self.connected_zones: list = []
+
+    threading.Thread(target=self.get_status, daemon=True).start()
+
+  def get_status(self):
+    """Call up the amplipi API and send the output to self.consume_status"""
+    while True:
+      self.consume_status(requests.get("http://localhost/api", timeout=5).json())
+
+      if self.last_volume != self.volume:
+        self.logger.debug(f"AmpliPi volume changed from {self.last_volume} to {self.volume}")
+        if self.last_volume is not None:
+          self.callback("amplipi_volume_changed")
+      self.last_volume = float(self.volume)
+      sleep(2)
+
+  def consume_status(self, status):
+    """Consume an API response into the local object"""
+    self.status = status
+    source_id = None
+    for source in self.status["sources"]:
+      if source["input"] == f"stream={self.stream_id}":
+        source_id = source["id"]
+
+    self.connected_zones = [zone for zone in self.status["zones"] if zone["source_id"] == source_id]
+    self.volume = self.get_vol()
+
+  def get_vol(self):
+    """Calculate the average vol_f from all connected zones. If no zones are connected, or if the api has yet to be hit up, return 0."""
+    if self.connected_zones:
+      total_vol_f = sum([zone["vol_f"] for zone in self.connected_zones])  # Note that accounting for the vol_f overflow variables here would make it impossible to use those overflows while also using this volume bar
+      return round(total_vol_f / len(self.connected_zones), 2)  # Round down to 2 decimals to assist with float accuracy
+    else:
+      self.logger.warning("Could not find any associated zones")
+    return 0
+
+  def set_vol(self, stream_volume: float, shared_volume: float):
+    """Update AmpliPi's volume to match the stream volume"""
+    try:
+      if stream_volume is None:
+        return shared_volume
+
+      if abs(stream_volume - shared_volume) <= 0.005:
+        self.logger.debug("Ignored minor Stream -> AmpliPi change")
+        return shared_volume
+
+      delta = float(stream_volume - shared_volume)
+      expected_volume = self.volume + delta
+      self.logger.debug(f"Setting AmpliPi volume to {expected_volume} from {self.volume}")
+      self.consume_status(requests.patch(
+        "http://localhost/api/zones",
+        json={
+          "zones": [zone["id"] for zone in self.connected_zones],
+          "update": {"vol_delta_f": delta, "mute": False},
+        },
+        timeout=5,
+      ).json())
+      return expected_volume
+    except Exception as e:
+      self.logger.exception(f"Exception: {e}")
+
+
+class VolumeSynchronizer:
+  """Volume synchronizer for AmpliPi and another volume-providing stream"""
+
+  def __init__(self, stream: StreamData, stream_kwargs: dict, stream_id: int, debug=False):
+
+    self.logger = logging.getLogger(__name__)
+    self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
+    sh = logging.StreamHandler(sys.stdout)
+    self.logger.addHandler(sh)
+
+    self.event_queue = queue.Queue()
+    self.amplipi = AmpliPiData(stream_id, self.on_child_event, self.logger)
+
+    self.stream: StreamData = stream(**stream_kwargs)
+
+    # Set these directly so children don't need to add them to their constructors
+    self.stream.logger = self.logger
+    self.stream.callback = self.on_child_event
+
+    self.shared_volume = self.amplipi.get_vol()
+
+  def on_child_event(self, event_type):
+    """When an event occurs in a child, that child can use this callback function to schedule the response to said event in the event queue"""
+    self.event_queue.put(event_type)
+
+  def watcher_loop(self):
+    while True:
+      try:
+        event = self.event_queue.get(timeout=2)
+        if event == "stream_volume_changed":
+          self.shared_volume = self.amplipi.set_vol(self.stream.volume, self.shared_volume)
+        elif event == "amplipi_volume_changed":
+          self.shared_volume = self.stream.set_vol(self.amplipi.volume, self.shared_volume)
+      except queue.Empty:
+        continue
+      except (KeyboardInterrupt, SystemExit):
+        self.logger.exception("Exiting...")
+        break
+      except Exception as e:
+        self.logger.exception(f"Exception: {e}")
+        sleep(5)
+        continue
+      sleep(2)
