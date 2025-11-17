@@ -876,7 +876,7 @@ class Api:
 
           # If the change made vol f be between the min and max, delete the overflow
           # This is useful so that you can click wherever you want on the volume bar and expect it to end up there without rubberbanding back to whatever vol_f + vol_f_overflow value you'd otherwise be at
-          zone.vol_f_overflow = 0 if vol_f_new != models.MIN_VOL_F or vol_f_new != models.MAX_VOL_F else zone.vol_f_overflow
+          zone.vol_f_overflow = 0 if vol_f_new != models.MIN_VOL_F and vol_f_new != models.MAX_VOL_F else zone.vol_f_overflow
 
         # To avoid potential unwanted loud output:
         # If muting, mute before setting volumes
