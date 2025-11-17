@@ -341,7 +341,7 @@ def set_source(update: models.SourceUpdate, ctrl: Api = Depends(get_ctrl), sid: 
     logging.warning(f'correcting deprecated use of RCA inputs from {update} to {valid_update}')
   if update.input == 'None':
     # Disconnect zones from inactive sources
-    zones = get_zones(ctrl=ctrl)
+    zones = ctrl.get_state().zones
     connected_zones = [zone.id for zone in zones["zones"] if zone.source_id == sid and zone.id is not None]  # zone.id should never actually be none, but the linter worries about it
     if connected_zones:
       ctrl.set_zones(models.MultiZoneUpdate(zones=connected_zones, update=models.ZoneUpdate(source_id=-1)))
