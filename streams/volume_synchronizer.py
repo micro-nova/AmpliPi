@@ -147,6 +147,5 @@ class VolumeSynchronizer:
         break
       except Exception as e:
         self.logger.exception(f"Exception: {e}")
-        sleep(5)
         continue
-      sleep(2)
+      sleep(1)
