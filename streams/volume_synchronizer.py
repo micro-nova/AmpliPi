@@ -81,17 +81,17 @@ class AmpliPiData:
       self.logger.warning("Could not find any associated zones")
     return 0
 
-  def set_vol(self, stream_volume: float, shared_volume: float):
+  def set_vol(self, stream_volume: float, vol_set_point: float):
     """Update AmpliPi's volume to match the stream volume"""
     try:
       if stream_volume is None:
-        return shared_volume
+        return vol_set_point
 
-      if abs(stream_volume - shared_volume) <= 0.005:
+      if abs(stream_volume - vol_set_point) <= 0.005:
         self.logger.debug("Ignored minor Stream -> AmpliPi change")
-        return shared_volume
+        return vol_set_point
 
-      delta = float(stream_volume - shared_volume)
+      delta = float(stream_volume - vol_set_point)
       expected_volume = self.volume + delta
       self.logger.debug(f"Setting AmpliPi volume to {expected_volume} from {self.volume}")
       self.consume_status(requests.patch(
@@ -126,7 +126,7 @@ class VolumeSynchronizer:
     self.stream.logger = self.logger
     self.stream.callback = self.on_child_event
 
-    self.shared_volume = self.amplipi.get_vol()
+    self.vol_set_point = self.amplipi.get_vol()
 
   def on_child_event(self, event_type):
     """When an event occurs in a child, that child can use this callback function to schedule the response to said event in the event queue"""
@@ -137,9 +137,9 @@ class VolumeSynchronizer:
       try:
         event = self.event_queue.get(timeout=2)
         if event == "stream_volume_changed":
-          self.shared_volume = self.amplipi.set_vol(self.stream.volume, self.shared_volume)
+          self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)
         elif event == "amplipi_volume_changed":
-          self.shared_volume = self.stream.set_vol(self.amplipi.volume, self.shared_volume)
+          self.vol_set_point = self.stream.set_vol(self.amplipi.volume, self.vol_set_point)
       except queue.Empty:
         continue
       except (KeyboardInterrupt, SystemExit):
