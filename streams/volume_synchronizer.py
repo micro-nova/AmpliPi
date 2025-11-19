@@ -5,7 +5,7 @@ import threading
 import queue
 import logging
 import sys
-from typing import Callable
+from typing import Callable, Optional
 
 import requests
 
@@ -17,6 +17,7 @@ class StreamData:
     self.callback: Callable
 
     self.volume: float = None
+    self.delta: Optional[float] = None
     self.logger: logging.Logger
 
     self.thread: threading.Thread = threading.Thread(target=self.run_async_watch, daemon=True).start()
@@ -92,6 +93,13 @@ class AmpliPiData:
         return vol_set_point
 
       delta = float(stream_volume - vol_set_point)
+      return self.set_vol_delta(delta)
+    except Exception as e:
+      self.logger.exception(f"Exception: {e}")
+
+  def set_vol_delta(self, delta: float):
+    """Update AmpliPi's volume to match the stream volume"""
+    try:
       expected_volume = self.volume + delta
       self.logger.debug(f"Setting AmpliPi volume to {expected_volume} from {self.volume}")
       self.consume_status(requests.patch(
@@ -137,7 +145,13 @@ class VolumeSynchronizer:
       try:
         event = self.event_queue.get()
         if event == "stream_volume_changed":
-          self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)
+          if self.stream.delta is not None:
+            # Reduce race condition potential by decoupling the value from the variable
+            delta = float(self.stream.delta)
+            self.vol_set_point = self.amplipi.set_vol_delta(delta)
+            self.stream.delta -= delta
+          else:
+            self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)
         elif event == "amplipi_volume_changed":
           self.vol_set_point = self.stream.set_vol(self.amplipi.volume, self.vol_set_point)
       except queue.Empty:

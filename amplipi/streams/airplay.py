@@ -43,7 +43,7 @@ class AirPlay(PersistentStream):
     self._connect_time = 0.0
     self._coverart_dir = ''
     self._log_file: Optional[io.TextIOBase] = None
-    self.volume_process = None
+    self.volume_process: Optional[subprocess.Popen] = None
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -132,8 +132,7 @@ class AirPlay(PersistentStream):
       vol_sync = f"{utils.get_folder('streams')}/shairport_volume_handler.py"
       vol_args = [sys.executable, vol_sync, mpris_name, str(self.id), "--debug"]
       logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
-      self.volume_process = subprocess.Popen(args=vol_args, stdout=sys.stdout, stderr=sys.stdout)
-      # self.volume_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
+      self.volume_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
     except Exception as exc:
       logger.exception(f'Error starting airplay MPRIS reader: {exc}')
 
@@ -152,8 +151,8 @@ class AirPlay(PersistentStream):
 
     self.volume_process.terminate()
     if self.volume_process.wait(1) != 0:
-        logger.info('killing shairport vol sync')
-        self.volume_process.kill()
+      logger.info('killing shairport vol sync')
+      self.volume_process.kill()
     if '_log_file' in self.__dir__() and self._log_file:
       self._log_file.close()
     if self.src:
