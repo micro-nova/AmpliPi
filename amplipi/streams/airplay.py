@@ -149,10 +149,11 @@ class AirPlay(PersistentStream):
         self.proc.kill()
       self.proc.communicate()
 
-    self.volume_process.terminate()
-    if self.volume_process.wait(1) != 0:
-      logger.info('killing shairport vol sync')
-      self.volume_process.kill()
+    if self.volume_process is not None:
+      self.volume_process.terminate()
+      if self.volume_process.wait(1) != 0:
+        logger.info('killing shairport vol sync')
+        self.volume_process.kill()
     if '_log_file' in self.__dir__() and self._log_file:
       self._log_file.close()
     if self.src:
