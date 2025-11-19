@@ -7,6 +7,7 @@ import shutil
 import time
 import os
 import io
+import sys
 
 
 def write_sp_config_file(filename, config):
@@ -42,6 +43,7 @@ class AirPlay(PersistentStream):
     self._connect_time = 0.0
     self._coverart_dir = ''
     self._log_file: Optional[io.TextIOBase] = None
+    self.volume_process = None
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -86,9 +88,9 @@ class AirPlay(PersistentStream):
         'name': self.name,
         'port': 5100 + 100 * vsrc,  # Listen for service requests on this port
         'udp_port_base': 6101 + 100 * vsrc,  # start allocating UDP ports from this port number when needed
-        'drift': 2000,  # allow this number of frames of drift away from exact synchronisation before attempting to correct it
-        'resync_threshold': 0,  # a synchronisation error greater than this will cause resynchronisation; 0 disables it
-        'log_verbosity': 0,  # "0" means no debug verbosity, "3" is most verbose.
+        'drift_in_seconds': 2,  # allow this number of frames of drift away from exact synchronisation before attempting to correct it
+        'resync_threshold_in_seconds': 0,  # a synchronisation error greater than this will cause resynchronisation; 0 disables it
+        'log_verbosity': "diagnostics",  # "none" means no debug verbosity, "diagnostics" is most verbose.
         'mpris_service_bus': 'Session',
       },
       'metadata': {
@@ -126,6 +128,12 @@ class AirPlay(PersistentStream):
       if len(os.popen("pgrep shairport-sync").read().strip().splitlines()) > 1:
         mpris_name += f".i{self.proc.pid}"
       self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
+
+      vol_sync = f"{utils.get_folder('streams')}/shairport_volume_handler.py"
+      vol_args = [sys.executable, vol_sync, mpris_name, str(self.id), "--debug"]
+      logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
+      self.volume_process = subprocess.Popen(args=vol_args, stdout=sys.stdout, stderr=sys.stdout)
+      # self.volume_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
     except Exception as exc:
       logger.exception(f'Error starting airplay MPRIS reader: {exc}')
 
@@ -141,6 +149,11 @@ class AirPlay(PersistentStream):
         logger.info('killing shairport-sync')
         self.proc.kill()
       self.proc.communicate()
+
+    self.volume_process.terminate()
+    if self.volume_process.wait(1) != 0:
+        logger.info('killing shairport vol sync')
+        self.volume_process.kill()
     if '_log_file' in self.__dir__() and self._log_file:
       self._log_file.close()
     if self.src:
@@ -150,6 +163,7 @@ class AirPlay(PersistentStream):
         logger.exception(f'Error removing airplay config files: {e}')
     self._disconnect()
     self.proc = None
+    self.volume_process = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(
