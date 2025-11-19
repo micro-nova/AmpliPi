@@ -135,7 +135,7 @@ class VolumeSynchronizer:
   def watcher_loop(self):
     while True:
       try:
-        event = self.event_queue.get(timeout=2)
+        event = self.event_queue.get()
         if event == "stream_volume_changed":
           self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)
         elif event == "amplipi_volume_changed":
@@ -148,4 +148,3 @@ class VolumeSynchronizer:
       except Exception as e:
         self.logger.exception(f"Exception: {e}")
         continue
-      sleep(1)
