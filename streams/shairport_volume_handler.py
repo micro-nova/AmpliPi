@@ -56,6 +56,9 @@ class ShairportData(StreamData):
         # vol_set_point: if vol_set_point is retained as the set point, any changes to amplipi will reflect for 1-2 seconds at most and then
         # bounce back to where it had been, resulting in a glitchy front end interface
 
+      # In any future MPRIS based volume synchronisers, you can check if self.mpris.CanControl is true and then potentially directly set self.mpris.Volume
+      # Apple just disallows externally sourced volume changes due to their walled garden
+
       return amplipi_volume
     except Exception as e:
       self.logger.exception(f"Exception: {e}")

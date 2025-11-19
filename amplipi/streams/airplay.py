@@ -88,9 +88,9 @@ class AirPlay(PersistentStream):
         'name': self.name,
         'port': 5100 + 100 * vsrc,  # Listen for service requests on this port
         'udp_port_base': 6101 + 100 * vsrc,  # start allocating UDP ports from this port number when needed
-        'drift_in_seconds': 2,  # allow this number of frames of drift away from exact synchronisation before attempting to correct it
-        'resync_threshold_in_seconds': 0,  # a synchronisation error greater than this will cause resynchronisation; 0 disables it
-        'log_verbosity': "diagnostics",  # "none" means no debug verbosity, "diagnostics" is most verbose.
+        'drift': 2000,  # allow this number of frames of drift away from exact synchronisation before attempting to correct it
+        'resync_threshold': 0,  # a synchronisation error greater than this will cause resynchronisation; 0 disables it
+        'log_verbosity': 0,  # "0" means no debug verbosity, "3" is most verbose.
         'mpris_service_bus': 'Session',
       },
       'metadata': {
