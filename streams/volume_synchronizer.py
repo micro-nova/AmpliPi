@@ -17,7 +17,6 @@ class StreamData:
     self.callback: Callable
 
     self.volume: float = None
-    self.delta: Optional[float] = None
     self.logger: logging.Logger
 
     self.thread: threading.Thread = threading.Thread(target=self.run_async_watch, daemon=True).start()
@@ -88,11 +87,11 @@ class AmpliPiData:
       if stream_volume is None:
         return vol_set_point
 
-      if abs(stream_volume - vol_set_point) <= 0.005:
+      if abs(stream_volume - self.volume) <= 0.005:
         self.logger.debug("Ignored minor Stream -> AmpliPi change")
         return vol_set_point
 
-      delta = float(stream_volume - vol_set_point)
+      delta = float(stream_volume - self.volume)
       return self.set_vol_delta(delta)
     except Exception as e:
       self.logger.exception(f"Exception: {e}")
@@ -145,13 +144,7 @@ class VolumeSynchronizer:
       try:
         event = self.event_queue.get()
         if event == "stream_volume_changed":
-          if self.stream.delta is not None:
-            # Reduce race condition potential by decoupling the value from the variable
-            delta = float(self.stream.delta)
-            self.vol_set_point = self.amplipi.set_vol_delta(delta)
-            self.stream.delta -= delta
-          else:
-            self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)
+          self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)
         elif event == "amplipi_volume_changed":
           self.vol_set_point = self.stream.set_vol(self.amplipi.volume, self.vol_set_point)
       except queue.Empty:

@@ -25,7 +25,6 @@ class ShairportData(StreamData):
       interface_name="org.mpris.MediaPlayer2.Player"
     )
     super().__init__()
-    self.delta = 0.0
 
   async def watch_vol(self):
     """Watch the shairport mpris stream for volume changes and update amplipi volume info accordingly"""
@@ -33,21 +32,20 @@ class ShairportData(StreamData):
       try:
         if self.volume is not None and self.volume != self.mpris.Volume:
           self.logger.debug(f"Airplay volume changed from {self.volume} to {self.mpris.Volume}")
-          self.delta += self.mpris.Volume - self.volume
           self.callback("stream_volume_changed")
         self.volume = float(self.mpris.Volume)
 
       except Exception as e:
         self.logger.exception(f"Error: {e}")
         return
-      sleep(1)
+      sleep(0.1)
 
   def set_vol(self, amplipi_volume: float, vol_set_point: float) -> float:  # This has unused variable vol_set_point to keep up with the underlying StreamData.set_vol function schema
     """Update Airplay's volume slider to match AmpliPi"""
     try:
       # Airplay does not allow external devices to set the volume of a users system
 
-      # Airplay no longer relies on the set point vol, but if we ever get rid of the self.delta path of the stream_volume_changed event this will be relevant again:
+      # Airplay is a fully authoritative volume source, meaning it forces amplipi volume to equal its volume now. If that ever changes, this will be relevant:
         # There are two values this could realistically be returned and become the new vol_set_point, and they each have their own drawbacks:
 
         # amplipi_volume: If amplipi_volume is the new set point, any changes to airplay volume will send the volume to an odd

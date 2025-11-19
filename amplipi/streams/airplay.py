@@ -130,7 +130,7 @@ class AirPlay(PersistentStream):
       self.mpris = MPRIS(mpris_name, f'{src_config_folder}/metadata.txt')
 
       vol_sync = f"{utils.get_folder('streams')}/shairport_volume_handler.py"
-      vol_args = [sys.executable, vol_sync, mpris_name, str(self.id), "--debug"]
+      vol_args = [sys.executable, vol_sync, mpris_name, str(self.id)]
       logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
       self.volume_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
     except Exception as exc:
