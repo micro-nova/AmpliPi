@@ -25,7 +25,7 @@ class SpotifyData(StreamData):
     super().__init__()
 
   async def watch_vol(self):
-    """Watch the go-librespot websocket endpoint for volume change events and update local volume info accordingly"""
+    """Watch the go-librespot websocket endpoint for volume change events and update AmpliPi volume info accordingly"""
     try:
       # Connect to the websocket and listen for state changes
       # pylint: disable=E1101
@@ -81,5 +81,5 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  handler = VolumeSynchronizer(SpotifyData, {"api_port": args.port}, args.stream_id, args.debug)
+  handler = VolumeSynchronizer(SpotifyData(api_port=args.port), args.stream_id, args.debug)
   handler.watcher_loop()

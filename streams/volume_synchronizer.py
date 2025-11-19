@@ -110,7 +110,7 @@ class AmpliPiData:
 class VolumeSynchronizer:
   """Volume synchronizer for AmpliPi and another volume-providing stream"""
 
-  def __init__(self, stream: StreamData, stream_kwargs: dict, stream_id: int, debug=False):
+  def __init__(self, stream: StreamData, stream_id: int, debug=False):
 
     self.logger = logging.getLogger(__name__)
     self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
@@ -120,7 +120,7 @@ class VolumeSynchronizer:
     self.event_queue = queue.Queue()
     self.amplipi = AmpliPiData(stream_id, self.on_child_event, self.logger)
 
-    self.stream: StreamData = stream(**stream_kwargs)
+    self.stream: StreamData = stream
 
     # Set these directly so children don't need to add them to their constructors
     self.stream.logger = self.logger
