@@ -9,6 +9,7 @@ let sendingRequestCount = 0;
 
 // Volume slider for individual zone in volume drawer
 const ZoneVolumeSlider = ({ zoneId, alone }) => {
+    const setSystemState = useStatusStore((s) => s.setSystemState);
     const zoneName = useStatusStore((s) => s.status.zones[zoneId].name);
     const volume = useStatusStore((s) => s.status.zones[zoneId].vol_f);
     const mute = useStatusStore((s) => s.status.zones[zoneId].mute);
@@ -42,6 +43,8 @@ const ZoneVolumeSlider = ({ zoneId, alone }) => {
                 "Content-type": "application/json",
             },
             body: JSON.stringify({ mute: mute }),
+        }).then(res => {
+            if(res.ok){res.json().then(s => setSystemState(s));}
         });
     };
 
