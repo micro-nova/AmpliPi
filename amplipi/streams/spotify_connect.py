@@ -21,8 +21,8 @@ class SpotifyConnect(PersistentStream):
 
   stream_type: ClassVar[str] = 'spotify'
 
-  def __init__(self, name: str, disabled: bool = False, mock: bool = False, validate: bool = True):
-    super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate)
+  def __init__(self, name: str, stream_id: int, disabled: bool = False, mock: bool = False, validate: bool = True):
+    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock, validate=validate)
     self.supported_cmds = [
       'play',
       'pause',
@@ -33,9 +33,8 @@ class SpotifyConnect(PersistentStream):
     self._log_file: Optional[io.TextIOBase] = None
     self._api_port: int
     self.proc2: Optional[subprocess.Popen] = None
+    self.proc3: Optional[subprocess.Popen] = None
     self.meta_file: str = ''
-    self.max_volume: int = 100  # default configuration from 'volume_steps'
-    self.last_volume: float = 0
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
@@ -99,20 +98,36 @@ class SpotifyConnect(PersistentStream):
     logger.info(f'{self.name}: starting metadata reader: {meta_args}')
     self.proc2 = subprocess.Popen(args=meta_args, stdout=self._log_file, stderr=self._log_file)
 
+    vol_sync = f"{utils.get_folder('streams')}/spotify_volume_handler.py"
+    vol_args = [sys.executable, vol_sync, str(self._api_port), str(self.id)]
+    logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
+    self.proc3 = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
+
   def _deactivate(self):
     if self._is_running():
       self.proc.stdin.close()
       logger.info(f'{self.name}: stopping player')
+
       self.proc.terminate()
-      self.proc2.terminate()
       if self.proc.wait(1) != 0:
         logger.info(f'{self.name}: killing player')
         self.proc.kill()
+      self.proc.communicate()
+
+      self.proc2.terminate()
       if self.proc2.wait(1) != 0:
         logger.info(f'{self.name}: killing metadata reader')
         self.proc2.kill()
-      self.proc.communicate()
       self.proc2.communicate()
+
+      if self.proc3:
+        self.proc3.terminate()
+        if self.proc3.wait(1) != 0:
+          logger.info(f'{self.name}: killing volume synchronizer')
+          self.proc3.kill()
+        self.proc3.communicate()
+      self.proc3 = None
+
     if self.proc and self._log_file:  # prevent checking _log_file when it may not exist, thanks validation!
       self._log_file.close()
     if self.src:
@@ -190,10 +205,3 @@ class SpotifyConnect(PersistentStream):
     NAME = r"[a-zA-Z0-9][A-Za-z0-9\- ]*[a-zA-Z0-9]"
     if 'name' in kwargs and not re.fullmatch(NAME, kwargs['name']):
       raise InvalidStreamField("name", "Invalid stream name")
-
-  def sync_volume(self, volume: float) -> None:
-    """ Set the volume of amplipi to the Spotify Connect stream"""
-    if volume != self.last_volume:
-      url = f"http://localhost:{self._api_port}/"
-      self.last_volume = volume  # update last_volume for future syncs
-      tasks.post.delay(url + 'volume', data={'volume': int(volume * self.max_volume)})
