@@ -31,7 +31,7 @@ export const applyPlayerVol = (vol, zones, sourceId, apply) => {
     }
 };
 
-// cumulativeDelta reflects the amount of movement that the
+// cumulativeDelta reflects the amount of movement that the volume bar has had that has gone unreflected in the backend
 let cumulativeDelta = 0.0;
 let sendingPacketCount = 0;
 
