@@ -5,7 +5,7 @@ import threading
 import queue
 import logging
 import sys
-from typing import Callable
+from typing import Callable, Optional
 
 import requests
 
@@ -87,11 +87,18 @@ class AmpliPiData:
       if stream_volume is None:
         return vol_set_point
 
-      if abs(stream_volume - vol_set_point) <= 0.005:
+      if abs(stream_volume - self.volume) <= 0.005:
         self.logger.debug("Ignored minor Stream -> AmpliPi change")
         return vol_set_point
 
-      delta = float(stream_volume - vol_set_point)
+      delta = float(stream_volume - self.volume)
+      return self.set_vol_delta(delta)
+    except Exception as e:
+      self.logger.exception(f"Exception: {e}")
+
+  def set_vol_delta(self, delta: float):
+    """Update AmpliPi's volume to match the stream volume"""
+    try:
       expected_volume = self.volume + delta
       self.logger.debug(f"Setting AmpliPi volume to {expected_volume} from {self.volume}")
       self.consume_status(requests.patch(
