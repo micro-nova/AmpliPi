@@ -6,7 +6,7 @@ import threading
 import queue
 import logging
 import sys
-from typing import Callable
+from typing import Callable, List
 
 import requests
 
@@ -48,7 +48,7 @@ class AmpliPiData:
 
     self.status_file: str = ""
 
-    self.connected_zones: list[int] = []
+    self.connected_zones: List[int] = []
 
     threading.Thread(target=self.get_vol, daemon=True).start()
 
