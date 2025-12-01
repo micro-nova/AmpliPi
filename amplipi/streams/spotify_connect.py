@@ -42,8 +42,8 @@ class SpotifyConnect(PersistentStream):
     self._api_port: int
     self.proc2: Optional[subprocess.Popen] = None
     self.volume_process: Optional[subprocess.Popen] = None
-    self.volume_process2: Optional[threading.Thread] = threading.Thread(target=self.watch_vol, daemon=True)
-    self.src_config_folder: str = None
+    self.volume_process2: threading.Thread = threading.Thread(target=self.watch_vol, daemon=True)
+    self.src_config_folder: Optional[str] = None
     self.meta_file: str = ''
     self._fifo = None
 
