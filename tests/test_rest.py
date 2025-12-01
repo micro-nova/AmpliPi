@@ -1462,18 +1462,18 @@ def test_api_doc_has_examples(client):
       if method in ['post', 'put', 'patch']:
         try:
           req_spec = m['requestBody']['content']['application/json']
-          assert 'example' in req_spec or 'examples' in req_spec, f'{path_desc}: At least one exmaple request required'
-          if 'exmaples' in req_spec:
-            assert len(req_spec['examples']) > 0, f'{path_desc}: At least one exmaple request required'
+          assert 'example' in req_spec or 'examples' in req_spec, f'{path_desc}: At least one example request required'
+          if 'examples' in req_spec:
+            assert len(req_spec['examples']) > 0, f'{path_desc}: At least one example request required'
         except KeyError:
           pass  # request could be different type or non-existent
       try:
         resp_spec = m['responses']['200']['content']['application/json']
-        assert 'example' in resp_spec or 'examples' in resp_spec, f'{path_desc}: At least one exmaple response required'
-        if 'exmaples' in resp_spec:
-          assert len(resp_spec['examples']) > 0, f'{path_desc}: At least one exmaple response required'
+        assert 'example' in resp_spec or 'examples' in resp_spec, f'{path_desc}: At least one example response required'
+        if 'examples' in resp_spec:
+          assert len(resp_spec['examples']) > 0, f'{path_desc}: At least one example response required'
       except KeyError:
-        pass  # reposnse could not be json
+        pass  # reponse could not be json
 
 # TODO: this test will fail until we come up with a good scheme for specifying folder locations in a global config
 # The test below fails since the test and the app are run in different directories
