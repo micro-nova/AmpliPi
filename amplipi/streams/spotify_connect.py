@@ -129,7 +129,7 @@ class SpotifyConnect(PersistentStream):
     self.proc2 = subprocess.Popen(args=meta_args, stdout=self._log_file, stderr=self._log_file)
 
     vol_sync = f"{utils.get_folder('streams')}/spotify_volume_handler.py"
-    vol_args = [sys.executable, vol_sync, str(self._api_port), str(self.id), self.src_config_folder, "--debug"]
+    vol_args = [sys.executable, vol_sync, str(self._api_port), self.src_config_folder, "--debug"]
     logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
     self.volume_sync_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
 
