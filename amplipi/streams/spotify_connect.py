@@ -160,9 +160,7 @@ class SpotifyConnect(PersistentStream):
         self.volume_process.communicate()
       self.volume_process = None
 
-      if self._fifo is not None:
-        self._fifo.close()
-        self._fifo = None
+      self._fifo = None
 
     if self.proc and self._log_file:  # prevent checking _log_file when it may not exist, thanks validation!
       self._log_file.close()
