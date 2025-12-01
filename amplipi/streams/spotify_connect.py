@@ -52,7 +52,7 @@ class SpotifyConnect(PersistentStream):
     while True:
       try:
         if self.src is not None:
-          if not self._fifo is not None and self.src_config_folder is not None:
+          if self._fifo is None and self.src_config_folder is not None:
             fifo_path = f"{self.src_config_folder}/vol"
             if not os.path.isfile(fifo_path):
               os.mkfifo(fifo_path)
