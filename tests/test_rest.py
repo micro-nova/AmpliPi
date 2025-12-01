@@ -607,7 +607,7 @@ def test_patch_zones_vol_delta(client):
     if z['id'] in range(6):
       assert z['vol_f'] - (zones[z['id']]['vol_f'] + 0.1) < 0.0001 and z["vol_f_overflow"] == 0
 
-  # test oversized deltas
+  # test overflowing deltas
   rv = client.patch('/api/zones', json={'zones': [z['id'] for z in zones], 'update': {'vol_delta_f': -1.0}})
   assert rv.status_code == HTTPStatus.OK
   jrv = rv.json()
@@ -617,6 +617,17 @@ def test_patch_zones_vol_delta(client):
     if z['id'] in range(6):
       assert z['vol_f'] == amplipi.models.MIN_VOL_F
       assert z["vol_f_overflow"] == zones[z['id']]['vol_f'] + 0.1 - 1
+
+  # test oversized overflowing deltas
+  rv = client.patch('/api/zones', json={'zones': [z['id'] for z in zones], 'update': {'vol_delta_f': 10.0}})
+  assert rv.status_code == HTTPStatus.OK
+  jrv = rv.json()
+  assert len(jrv['zones']) >= 6
+  # check that each update worked as expected
+  for z in jrv['zones']:
+    if z['id'] in range(6):
+      assert z['vol_f'] == amplipi.models.MAX_VOL_F
+      assert z["vol_f_overflow"] == amplipi.models.MAX_VOL_F_OVERFLOW
 
   # test overflow reset
   mid_vol_f = (amplipi.models.MIN_VOL_F + amplipi.models.MAX_VOL_F) / 2
