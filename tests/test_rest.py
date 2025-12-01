@@ -618,7 +618,7 @@ def test_patch_zones_vol_delta(client):
       assert z['vol_f'] == amplipi.models.MIN_VOL_F
       assert z["vol_f_overflow"] == zones[z['id']]['vol_f'] + 0.1 - 1
 
-  # test oveflow reset
+  # test overflow reset
   mid_vol_f = (amplipi.models.MIN_VOL_F + amplipi.models.MAX_VOL_F) / 2
   rv = client.patch('/api/zones', json={'zones': [z['id'] for z in zones], 'update': {'vol_f': mid_vol_f}})
   assert rv.status_code == HTTPStatus.OK
