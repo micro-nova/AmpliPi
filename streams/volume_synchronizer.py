@@ -1,5 +1,6 @@
 """Script for synchronizing AmpliPi and Spotify volumes"""
 from time import sleep
+import json
 import asyncio
 import threading
 import queue
@@ -37,49 +38,29 @@ class StreamData:
 class AmpliPiData:
   """A class to record amplipi's api output and calculate the volume of a given source"""
 
-  def __init__(self, stream_id: int, callback: Callable, logger: logging.Logger):
+  def __init__(self, stream_id: int, config_dir: str, callback: Callable, logger: logging.Logger):
     self.stream_id: int = stream_id
     self.callback: Callable = callback
     self.logger: logging.Logger = logger
     self.status: dict = None
-    self.last_volume: float = None
     self.volume: float = None
+    self.config_dir = config_dir
 
-    self.connected_zones: list = []
+    self.status_file: str = ""
 
-    threading.Thread(target=self.get_status, daemon=True).start()
+    self.connected_zones: list[int] = []
 
-  def get_status(self):
-    """Call up the amplipi API and send the output to self.consume_status"""
-    while True:
-      self.consume_status(requests.get("http://localhost/api", timeout=5).json())
-
-      if self.last_volume != self.volume:
-        self.logger.debug(f"AmpliPi volume changed from {self.last_volume} to {self.volume}")
-        if self.last_volume is not None:
-          self.callback("amplipi_volume_changed")
-      self.last_volume = float(self.volume)
-      sleep(2)
-
-  def consume_status(self, status):
-    """Consume an API response into the local object"""
-    self.status = status
-    source_id = None
-    for source in self.status["sources"]:
-      if source["input"] == f"stream={self.stream_id}":
-        source_id = source["id"]
-
-    self.connected_zones = [zone for zone in self.status["zones"] if zone["source_id"] == source_id]
-    self.volume = self.get_vol()
+    threading.Thread(target=self.get_vol, daemon=True).start()
 
   def get_vol(self):
     """Calculate the average vol_f from all connected zones. If no zones are connected, or if the api has yet to be hit up, return 0."""
-    if self.connected_zones:
-      total_vol_f = sum([zone["vol_f"] for zone in self.connected_zones])  # Note that accounting for the vol_f overflow variables here would make it impossible to use those overflows while also using this volume bar
-      return round(total_vol_f / len(self.connected_zones), 2)  # Round down to 2 decimals to assist with float accuracy
-    else:
-      self.logger.warning("Could not find any associated zones")
-    return 0
+    with open(f'{self.config_dir}/vol', 'r') as fifo:
+      while True:
+        data = json.loads(fifo.readline().strip())
+        if self.volume != data["volume"]:
+          self.callback("amplipi_volume_changed")
+          self.volume = data["volume"]
+        self.connected_zones = data["zones"]
 
   def set_vol(self, stream_volume: float, vol_set_point: float):
     """Update AmpliPi's volume to match the stream volume"""
@@ -94,14 +75,14 @@ class AmpliPiData:
       delta = float(stream_volume - vol_set_point)
       expected_volume = self.volume + delta
       self.logger.debug(f"Setting AmpliPi volume to {expected_volume} from {self.volume}")
-      self.consume_status(requests.patch(
+      requests.patch(
         "http://localhost/api/zones",
         json={
-          "zones": [zone["id"] for zone in self.connected_zones],
+          "zones": self.connected_zones,
           "update": {"vol_delta_f": delta, "mute": False},
         },
         timeout=5,
-      ).json())
+      )
       return expected_volume
     except Exception as e:
       self.logger.exception(f"Exception: {e}")
@@ -110,7 +91,7 @@ class AmpliPiData:
 class VolumeSynchronizer:
   """Volume synchronizer for AmpliPi and another volume-providing stream"""
 
-  def __init__(self, stream: StreamData, stream_id: int, debug=False):
+  def __init__(self, stream: StreamData, stream_id: int, config_dir: str, debug=False):
 
     self.logger = logging.getLogger(__name__)
     self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
@@ -118,7 +99,7 @@ class VolumeSynchronizer:
     self.logger.addHandler(sh)
 
     self.event_queue = queue.Queue()
-    self.amplipi = AmpliPiData(stream_id, self.on_child_event, self.logger)
+    self.amplipi = AmpliPiData(stream_id, config_dir, self.on_child_event, self.logger)
 
     self.stream: StreamData = stream
 
@@ -126,7 +107,7 @@ class VolumeSynchronizer:
     self.stream.logger = self.logger
     self.stream.callback = self.on_child_event
 
-    self.vol_set_point = self.amplipi.get_vol()
+    self.vol_set_point = self.amplipi.volume
 
   def on_child_event(self, event_type):
     """When an event occurs in a child, that child can use this callback function to schedule the response to said event in the event queue"""
@@ -135,6 +116,9 @@ class VolumeSynchronizer:
   def watcher_loop(self):
     while True:
       try:
+        if self.vol_set_point is None:
+          self.vol_set_point = self.amplipi.volume
+
         event = self.event_queue.get()
         if event == "stream_volume_changed":
           self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)

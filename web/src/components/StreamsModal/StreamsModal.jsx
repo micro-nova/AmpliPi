@@ -27,7 +27,7 @@ export const executeApplyAction = async (customSourceId) => {
         let ret = undefined;
         while(ret == undefined){
             ret = await temp(customSourceId);
-        };
+        }
         let sliced = parseInt(String(ret.url).slice(-1));
         setSelectedSource(sliced);
         setAutoselectSource(false);

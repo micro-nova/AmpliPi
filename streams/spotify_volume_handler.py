@@ -77,9 +77,10 @@ if __name__ == "__main__":
 
   parser.add_argument("port", help="port that go-librespot is running on", type=int)
   parser.add_argument("stream_id", help="The stream's amplipi side stream_id", type=int)
+  parser.add_argument("config_dir", help="The directory of the vsrc config", type=str)
   parser.add_argument("--debug", action="store_true", help="Change log level from WARNING to DEBUG")
 
   args = parser.parse_args()
 
-  handler = VolumeSynchronizer(SpotifyData(api_port=args.port), args.stream_id, args.debug)
+  handler = VolumeSynchronizer(SpotifyData(api_port=args.port), args.stream_id, args.config_dir, args.debug)
   handler.watcher_loop()
