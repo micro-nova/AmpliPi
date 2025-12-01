@@ -1,4 +1,4 @@
-# AmpliPi Home Audio
+# AmpliPi Home Audioself.src_config_folder
 # Copyright (C) 2022 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
@@ -72,31 +72,31 @@ def build_stream(stream: models.Stream, stream_id: int, mock: bool = False, vali
   name: str = args.pop('name')
   disabled = args.pop('disabled', False)
   if stream.type == 'rca':
-    return RCA(name, stream_id, args['index'], disabled=disabled, mock=mock)
+    return RCA(name, args['index'], disabled=disabled, mock=mock)
   if stream.type == 'pandora':
-    return Pandora(name, stream_id, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock, validate=validate)
+    return Pandora(name, args['user'], args['password'], station=args.get('station', None), disabled=disabled, mock=mock, validate=validate)
   if stream.type in ['shairport', 'airplay']:  # handle older configs
-    return AirPlay(name, stream_id, args.get('ap2', False), disabled=disabled, mock=mock, validate=validate)
+    return AirPlay(name, args.get('ap2', False), disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'spotify':
-    return SpotifyConnect(name, stream_id, disabled=disabled, mock=mock, validate=validate)
+    return SpotifyConnect(name, disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'dlna':
-    return DLNA(name, stream_id, disabled=disabled, mock=mock)
+    return DLNA(name, disabled=disabled, mock=mock)
   if stream.type == 'internetradio':
-    return InternetRadio(name, stream_id, args['url'], args.get('logo'), disabled=disabled, mock=mock, validate=validate)
+    return InternetRadio(name, args['url'], args.get('logo'), disabled=disabled, mock=mock, validate=validate)
   if stream.type == 'plexamp':
-    return Plexamp(name, stream_id, args['client_id'], args['token'], disabled=disabled, mock=mock)
+    return Plexamp(name, args['client_id'], args['token'], disabled=disabled, mock=mock)
   if stream.type == 'aux':
-    return Aux(name, stream_id, disabled=disabled, mock=mock)
+    return Aux(name, disabled=disabled, mock=mock)
   if stream.type == 'fileplayer':
-    return FilePlayer(name, stream_id, args.get('url', None), args.get('temporary', None), args.get('timeout', None), args.get('has_pause', True), disabled=disabled, mock=mock)
+    return FilePlayer(name, args.get('url', None), args.get('temporary', None), args.get('timeout', None), args.get('has_pause', True), disabled=disabled, mock=mock)
   if stream.type == 'fmradio':
-    return FMRadio(name, stream_id, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
+    return FMRadio(name, args['freq'], args.get('logo'), disabled=disabled, mock=mock)
   if stream.type == 'lms':
-    return LMS(name, stream_id, args.get('server'), args.get("port"), disabled=disabled, mock=mock)
+    return LMS(name, args.get('server'), args.get("port"), disabled=disabled, mock=mock)
   elif stream.type == 'bluetooth':
-    return Bluetooth(name, stream_id, disabled=disabled, mock=mock)
+    return Bluetooth(name, disabled=disabled, mock=mock)
   elif stream.type == 'mediadevice':
-    return MediaDevice(name, stream_id, args.get('url'), disabled=disabled, mock=mock)
+    return MediaDevice(name, args.get('url'), disabled=disabled, mock=mock)
   raise NotImplementedError(stream.type)
 
 

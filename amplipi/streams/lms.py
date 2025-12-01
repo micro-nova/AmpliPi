@@ -15,8 +15,8 @@ class LMS(PersistentStream):
 
   stream_type: ClassVar[str] = 'lms'
 
-  def __init__(self, name: str, stream_id: int, server: Optional[str] = None, port: Optional[int] = 9000, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock)
+  def __init__(self, name: str, server: Optional[str] = None, port: Optional[int] = 9000, disabled: bool = False, mock: bool = False):
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.server: Optional[str] = server
     self.port: Optional[int] = port
     self.meta_proc: Optional[subprocess.Popen] = None

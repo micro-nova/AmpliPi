@@ -16,7 +16,7 @@ class Pandora(PersistentStream, Browsable):
 
   stream_type: ClassVar[str] = 'pandora'
 
-  def __init__(self, name: str, stream_id: int, user, password: str, station: str, disabled: bool = False, mock: bool = False, validate: bool = True):
+  def __init__(self, name: str, user, password: str, station: str, disabled: bool = False, mock: bool = False, validate: bool = True):
     # pandora api client, the values in here come from the pandora android app
     # We set this up here because it permits early account validation during the parent's constructor
     self.pyd_client = SettingsDictBuilder({
@@ -27,7 +27,7 @@ class Pandora(PersistentStream, Browsable):
       "DEVICE": "android-generic",
     }).build()
 
-    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock, validate=validate, user=user, password=password)
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate, user=user, password=password)
 
     self.user = user
     self.password = password

@@ -29,8 +29,8 @@ class SpotifyConnect(PersistentStream):
 
   stream_type: ClassVar[str] = 'spotify'
 
-  def __init__(self, name: str, stream_id: int, disabled: bool = False, mock: bool = False, validate: bool = True):
-    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock, validate=validate)
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False, validate: bool = True):
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock, validate=validate)
     self.supported_cmds = [
       'play',
       'pause',
@@ -41,27 +41,27 @@ class SpotifyConnect(PersistentStream):
     self._log_file: Optional[io.TextIOBase] = None
     self._api_port: int
     self.proc2: Optional[subprocess.Popen] = None
-    self.volume_process: Optional[subprocess.Popen] = None
-    self.volume_process2: threading.Thread = threading.Thread(target=self.watch_vol, daemon=True)
+    self.volume_sync_process: Optional[subprocess.Popen] = None
+    self.volume_watcher_process: threading.Thread = threading.Thread(target=self.watch_vol, daemon=True)
     self.src_config_folder: Optional[str] = None
     self.meta_file: str = ''
-    self._fifo = None
+    self._volume_fifo = None
 
   def watch_vol(self):
     """Creates and supplies a FIFO with volume data for volume sync"""
     while True:
       try:
         if self.src is not None:
-          if self._fifo is None and self.src_config_folder is not None:
+          if self._volume_fifo is None and self.src_config_folder is not None:
             fifo_path = f"{self.src_config_folder}/vol"
             if not os.path.isfile(fifo_path):
               os.mkfifo(fifo_path)
-            self._fifo = os.open(fifo_path, os.O_WRONLY, os.O_NONBLOCK)
+            self._volume_fifo = os.open(fifo_path, os.O_WRONLY, os.O_NONBLOCK)
           data = json.dumps({
             'zones': self.connected_zones,
             'volume': self.volume,
           })
-          os.write(self._fifo, bytearray(f"{data}\r\n", encoding="utf8"))
+          os.write(self._volume_fifo, bytearray(f"{data}\r\n", encoding="utf8"))
       except Exception as e:
         logger.error(f"{self.name} volume thread ran into exception: {e}")
       time.sleep(0.1)
@@ -131,9 +131,9 @@ class SpotifyConnect(PersistentStream):
     vol_sync = f"{utils.get_folder('streams')}/spotify_volume_handler.py"
     vol_args = [sys.executable, vol_sync, str(self._api_port), str(self.id), self.src_config_folder, "--debug"]
     logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
-    self.volume_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
+    self.volume_sync_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
 
-    self.volume_process2.start()
+    self.volume_watcher_process.start()
 
   def _deactivate(self):
     if self._is_running():
@@ -152,15 +152,15 @@ class SpotifyConnect(PersistentStream):
         self.proc2.kill()
       self.proc2.communicate()
 
-      if self.volume_process:
-        self.volume_process.terminate()
-        if self.volume_process.wait(1) != 0:
+      if self.volume_sync_process:
+        self.volume_sync_process.terminate()
+        if self.volume_sync_process.wait(1) != 0:
           logger.info(f'{self.name}: killing volume synchronizer')
-          self.volume_process.kill()
-        self.volume_process.communicate()
-      self.volume_process = None
+          self.volume_sync_process.kill()
+        self.volume_sync_process.communicate()
+      self.volume_sync_process = None
 
-      self._fifo = None
+      self._volume_fifo = None
 
     if self.proc and self._log_file:  # prevent checking _log_file when it may not exist, thanks validation!
       self._log_file.close()

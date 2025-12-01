@@ -9,8 +9,8 @@ class Aux(BaseStream):
 
   stream_type: ClassVar[str] = 'aux'
 
-  def __init__(self, name: str, stream_id: int, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock)
+  def __init__(self, name: str, disabled: bool = False, mock: bool = False):
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
 
   def reconfig(self, **kwargs):
     if 'disabled' in kwargs:

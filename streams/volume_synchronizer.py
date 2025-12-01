@@ -12,7 +12,7 @@ import requests
 
 
 class StreamData:
-  """A class that is used as a blueprint for other classes volume watcher"""
+  """A class that is used as a blueprint for stream volume watchers"""
 
   def __init__(self):
     self.callback: Callable
@@ -38,8 +38,7 @@ class StreamData:
 class AmpliPiData:
   """A class to record amplipi's api output and calculate the volume of a given source"""
 
-  def __init__(self, stream_id: int, config_dir: str, callback: Callable, logger: logging.Logger):
-    self.stream_id: int = stream_id
+  def __init__(self, config_dir: str, callback: Callable, logger: logging.Logger):
     self.callback: Callable = callback
     self.logger: logging.Logger = logger
     self.status: dict = None
@@ -91,7 +90,7 @@ class AmpliPiData:
 class VolumeSynchronizer:
   """Volume synchronizer for AmpliPi and another volume-providing stream"""
 
-  def __init__(self, stream: StreamData, stream_id: int, config_dir: str, debug=False):
+  def __init__(self, stream: StreamData, config_dir: str, debug=False):
 
     self.logger = logging.getLogger(__name__)
     self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
@@ -99,7 +98,7 @@ class VolumeSynchronizer:
     self.logger.addHandler(sh)
 
     self.event_queue = queue.Queue()
-    self.amplipi = AmpliPiData(stream_id, config_dir, self.on_child_event, self.logger)
+    self.amplipi = AmpliPiData(config_dir, self.on_child_event, self.logger)
 
     self.stream: StreamData = stream
 

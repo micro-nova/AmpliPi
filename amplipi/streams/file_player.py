@@ -14,8 +14,8 @@ class FilePlayer(BaseStream):
 
   stream_type: ClassVar[str] = 'fileplayer'
 
-  def __init__(self, name: str, stream_id: int, url: str, temporary: bool = False, timeout: Optional[int] = None, has_pause: bool = True, disabled: bool = False, mock: bool = False):
-    super().__init__(self.stream_type, name, stream_id, disabled=disabled, mock=mock)
+  def __init__(self, name: str, url: str, temporary: bool = False, timeout: Optional[int] = None, has_pause: bool = True, disabled: bool = False, mock: bool = False):
+    super().__init__(self.stream_type, name, disabled=disabled, mock=mock)
     self.url = url
     self.bkg_thread = None
     if has_pause:
