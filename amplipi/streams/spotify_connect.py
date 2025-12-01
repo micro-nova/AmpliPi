@@ -64,7 +64,7 @@ class SpotifyConnect(PersistentStream):
           os.write(self._fifo, bytearray(f"{data}\r\n", encoding="utf8"))
       except Exception as e:
         logger.error(f"{self.name} volume thread ran into exception: {e}")
-      time.sleep(1)
+      time.sleep(0.1)
 
   def reconfig(self, **kwargs):
     self.validate_stream(**kwargs)
