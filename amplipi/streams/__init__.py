@@ -1,4 +1,4 @@
-# AmpliPi Home Audioself.src_config_folder
+# AmpliPi Home Audio
 # Copyright (C) 2022 MicroNova LLC
 #
 # This program is free software: you can redistribute it and/or modify
@@ -62,7 +62,7 @@ AnyStream = Union[RCA, AirPlay, SpotifyConnect, InternetRadio, DLNA, Pandora, Pl
                   Aux, FilePlayer, FMRadio, LMS, Bluetooth, MediaDevice]
 
 
-def build_stream(stream: models.Stream, stream_id: int, mock: bool = False, validate: bool = True) -> AnyStream:
+def build_stream(stream: models.Stream, mock: bool = False, validate: bool = True) -> AnyStream:
   """ Build a stream from the generic arguments given in stream, discriminated by stream.type
 
   we are waiting on Pydantic's implementation of discriminators to fully integrate streams into our model definitions
