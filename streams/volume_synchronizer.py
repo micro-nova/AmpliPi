@@ -5,7 +5,7 @@ import threading
 import queue
 import logging
 import sys
-from typing import Callable, List, Annotated
+from typing import Callable, List, Optional
 from enum import Enum
 import requests
 
@@ -29,13 +29,24 @@ class StreamData:
     self.schedule_event: Callable[[VolEvents]]
     """Event scheduler function provided by VolumeSynchronizer, has limited valid inputs that can be seen in the VolEvents enum"""
 
-    self.volume: Annotated[float | None, "float 0 <= value <= 1 or None"] = None
+    self._volume: float = None
     """Value between 0 and 1, or None if not yet initialized by the upstream"""
 
     self.logger: logging.Logger
     """logging.Logger instance provided by VolumeSynchronizer,"""
 
     self.thread: threading.Thread = threading.Thread(target=self.run_async_watch, daemon=True).start()
+
+  @property
+  def volume(self) -> Optional[float]:
+    """Value between 0 and 1, or None if not yet initialized by the upstream"""
+    return self._volume
+
+  @volume.setter
+  def volume(self, value: float) -> None:
+    if 0 > value or value > 1:
+      raise ValueError("Volume must be between 0 and 1")
+    self._volume = value
 
   def run_async_watch(self):
     """Middleman function for creating an asyncio run inside of a new threading.Thread"""
