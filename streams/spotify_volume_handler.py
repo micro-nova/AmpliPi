@@ -7,7 +7,7 @@ import sys
 import websockets
 import requests
 
-from volume_synchronizer import VolumeSynchronizer, StreamData
+from volume_synchronizer import VolumeSynchronizer, StreamData, VolEvents
 from spot_connect_meta import Event
 
 
@@ -21,13 +21,14 @@ class SpotifyData(StreamData):
   """A class that watches and tracks changes to spotify-side volume"""
 
   def __init__(self, api_port: int):
-    self.api_port: int = api_port
     super().__init__()
+
+    self.api_port: int = api_port
+    """What port is go-librespot running on? Typically set to 3678 + vsrc."""
 
   async def watch_vol(self):
     """Watch the go-librespot websocket endpoint for volume change events and update AmpliPi volume info accordingly"""
     try:
-      # Connect to the websocket and listen for state changes
       # pylint: disable=E1101
       # E1101: Module 'websockets' has no 'connect' member (no-member)
       async with websockets.connect(f"ws://localhost:{self.api_port}/events", open_timeout=5) as websocket:
@@ -37,13 +38,13 @@ class SpotifyData(StreamData):
             event = Event.from_json(json.loads(msg))
             if event.event_type == "volume":
               last_volume = float(self.volume) if self.volume is not None else None
-              self.volume = event.data.value / 100  # AmpliPi volume is between 0 and 1, Spotify is between 0 and 100. Dividing by 100 is more accurate than multiplying by 100 due to floating point errors.
+              self.volume = event.data.value / 100  # Translate spotify volume (0 - 100) to amplipi volume (0 - 1)
 
               self.logger.debug(f"Spotify volume changed from {last_volume} to {self.volume}")
               if last_volume is not None and self.volume != last_volume:
-                self.callback("stream_volume_changed")
+                self.schedule_event(VolEvents.CHANGE_AMPLIPI)
             elif event.event_type == "will_play" and self.volume is None:
-              self.callback("amplipi_volume_changed")  # Intercept the event that occurs when a song starts playing and use that as a trigger for the initial state sync
+              self.schedule_event(VolEvents.CHANGE_STREAM)  # Intercept the event that occurs when a song starts playing and use that as a trigger for the initial state sync
 
           except Exception as e:
             self.logger.exception(f"Error: {e}")
