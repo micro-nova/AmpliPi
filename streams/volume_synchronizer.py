@@ -1,4 +1,4 @@
-"""Script for synchronizing AmpliPi and Spotify volumes"""
+"""Classes for synchronizing AmpliPi volume with the internal volume of a given stream"""
 import json
 import asyncio
 import threading
