@@ -7,7 +7,7 @@ import sys
 import websockets
 import requests
 
-from volume_synchronizer import VolumeSynchronizer, StreamData, VolEvents
+from volume_synchronizer import VolSyncDispatcher, StreamWatcher, VolEvents
 from spot_connect_meta import Event
 
 
@@ -17,7 +17,7 @@ sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 
 
-class SpotifyData(StreamData):
+class SpotifyWatcher(StreamWatcher):
   """A class that watches and tracks changes to spotify-side volume"""
 
   def __init__(self, api_port: int):
@@ -53,21 +53,21 @@ class SpotifyData(StreamData):
       self.logger.exception(f"Error: {e}")
       return
 
-  def set_vol(self, amplipi_volume: float, shared_volume: float) -> float:
-    """Update Spotify's volume slider to match AmpliPi"""
+  def set_vol(self, new_vol: float, vol_set_point: float) -> float:
+    """Update Spotify's volume slider"""
     try:
-      if amplipi_volume is None:
-        return shared_volume
+      if new_vol is None:
+        return vol_set_point
 
-      if abs(amplipi_volume - shared_volume) <= 0.005 and self.volume is not None:
+      if abs(new_vol - vol_set_point) <= 0.005 and self.volume is not None:
         self.logger.debug("Ignored minor AmpliPi -> Spotify change")
-        return shared_volume
+        return vol_set_point
 
       url = f"http://localhost:{self.api_port}/player/volume"
-      new_vol = int(amplipi_volume * 100)
-      self.logger.debug(f"Setting Spotify volume to {new_vol / 100} from {self.volume}")
-      requests.post(url, json={"volume": new_vol}, timeout=5)
-      return amplipi_volume
+      spot_vol = int(new_vol * 100)
+      self.logger.debug(f"Setting Spotify volume to {new_vol} from {self.volume}")
+      requests.post(url, json={"volume": spot_vol}, timeout=5)
+      return new_vol
     except Exception as e:
       self.logger.exception(f"Exception: {e}")
 
@@ -82,5 +82,4 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  handler = VolumeSynchronizer(SpotifyData(api_port=args.port), args.config_dir, args.debug)
-  handler.watcher_loop()
+  handler = VolSyncDispatcher(SpotifyWatcher(api_port=args.port), args.config_dir, args.debug)

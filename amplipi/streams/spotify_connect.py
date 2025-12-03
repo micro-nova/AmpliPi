@@ -41,8 +41,8 @@ class SpotifyConnect(PersistentStream):
     self._log_file: Optional[io.TextIOBase] = None
     self._api_port: int
     self.proc2: Optional[subprocess.Popen] = None
-    self.volume_sync_process: Optional[subprocess.Popen] = None
-    self.volume_watcher_process: threading.Thread = threading.Thread(target=self.watch_vol, daemon=True)
+    self.volume_sync_process: Optional[subprocess.Popen] = None  # Runs the actual vol sync script
+    self.volume_watcher_process: Optional[threading.Thread] = None  # Populates the fifo that the vol sync script depends on
     self.src_config_folder: Optional[str] = None
     self.meta_file: str = ''
     self._volume_fifo = None
@@ -133,6 +133,7 @@ class SpotifyConnect(PersistentStream):
     logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
     self.volume_sync_process = subprocess.Popen(args=vol_args, stdout=self._log_file, stderr=self._log_file)
 
+    self.volume_watcher_process = threading.Thread(target=self.watch_vol, daemon=True)
     self.volume_watcher_process.start()
 
   def _deactivate(self):
@@ -140,27 +141,31 @@ class SpotifyConnect(PersistentStream):
       self.proc.stdin.close()
       logger.info(f'{self.name}: stopping player')
 
+      # Call terminate on all processes
       self.proc.terminate()
+      self.proc2.terminate()
+      if self.volume_sync_process:
+        self.volume_sync_process.terminate()
+
+      # Ensure the processes have closed, by force if necessary
       if self.proc.wait(1) != 0:
         logger.info(f'{self.name}: killing player')
         self.proc.kill()
-      self.proc.communicate()
 
-      self.proc2.terminate()
       if self.proc2.wait(1) != 0:
         logger.info(f'{self.name}: killing metadata reader')
         self.proc2.kill()
-      self.proc2.communicate()
 
       if self.volume_sync_process:
-        self.volume_sync_process.terminate()
         if self.volume_sync_process.wait(1) != 0:
           logger.info(f'{self.name}: killing volume synchronizer')
           self.volume_sync_process.kill()
-        self.volume_sync_process.communicate()
-      self.volume_sync_process = None
 
-      self._volume_fifo = None
+      # Validate on the way out
+      self.proc.communicate()
+      self.proc2.communicate()
+      if self.volume_sync_process:
+        self.volume_sync_process.communicate()
 
     if self.proc and self._log_file:  # prevent checking _log_file when it may not exist, thanks validation!
       self._log_file.close()
@@ -170,8 +175,12 @@ class SpotifyConnect(PersistentStream):
       except Exception as e:
         logger.exception(f'{self.name}: Error removing config files: {e}')
     self._disconnect()
+
     self.proc = None
     self.proc2 = None
+    self.volume_sync_process = None
+    self.volume_watcher_process = None
+    self._volume_fifo = None
 
   def info(self) -> models.SourceInfo:
     source = models.SourceInfo(

@@ -15,10 +15,10 @@ class VolEvents(Enum):
   CHANGE_AMPLIPI = "change_amplipi"
 
 
-class StreamData:
+class StreamWatcher:
   """
     A class that is used as a blueprint for stream volume watchers
-    Child classes must provide the following functions. Both of these functions are automatically used by the VolumeSynchronizer, so there's no need to do anything with them:
+    Child classes must provide the following functions. Both of these functions are automatically used by the VolSyncDispatcher, so there's no need to do anything with them:
 
     watch_vol: a function that contains a while True loop that collects the remote volume, sets self.volume, and calls self.schedule_event(VolEvents.CHANGE_AMPLIPI) when the volume changes
 
@@ -27,15 +27,16 @@ class StreamData:
 
   def __init__(self):
     self.schedule_event: Callable[[VolEvents]]
-    """Event scheduler function provided by VolumeSynchronizer, has limited valid inputs that can be seen in the VolEvents enum"""
+    """Event scheduler function provided by VolSyncDispatcher, has limited valid inputs that can be seen in the VolEvents enum"""
 
     self._volume: float = None
     """Value between 0 and 1, or None if not yet initialized by the upstream"""
 
     self.logger: logging.Logger
-    """logging.Logger instance provided by VolumeSynchronizer,"""
+    """logging.Logger instance provided by VolSyncDispatcher"""
 
-    self.thread: threading.Thread = threading.Thread(target=self.run_async_watch, daemon=True).start()
+    self.thread: threading.Thread = threading.Thread(target=self.run_async_watch, daemon=True)
+    self.thread.start()
 
   @property
   def volume(self) -> Optional[float]:
@@ -56,28 +57,30 @@ class StreamData:
     """A function to be implemented by child classes that must contain a while True loop and do self.schedule_event(VolEvents.CHANGE_AMPLIPI) when new_vol != old_vol"""
     raise NotImplementedError("Function must be implemented by child classes")
 
-  def set_vol(self, new_vol: float, shared_vol: float) -> float:
+  def set_vol(self, new_vol: float, vol_set_point: float) -> float:
     """A function to be implemented by child classes to update the stream's volume and returns the new set point volume"""
     raise NotImplementedError("Function must be implemented by child classes")
 
 
-class AmpliPiData:
+class AmpliPiWatcher:
   """
     A class to watch changes to a streams vol fifo and change the volume of connected zones
-    Already fully handled by volumeSynchronizer and should not be used by itself
+    Already fully handled by VolSyncDispatcher and should not be used by itself
   """
 
   def __init__(self, config_dir: str, schedule_event: Callable, logger: logging.Logger):
     self.schedule_event: Callable[[VolEvents]] = schedule_event
-    """Event scheduler function provided by VolumeSynchronizer, has limited valid inputs that can be seen in the VolEvents enum"""
+    """Event scheduler function provided by VolSyncDispatcher, has limited valid inputs that can be seen in the VolEvents enum"""
 
     self.logger: logging.Logger = logger
     self.volume: float = None
     self.config_dir: str = config_dir
 
-    self.connected_zones: List[int] = []  # List of zone ids, used to send volume change requests to these connected zones
+    self.connected_zones: List[int] = []
+    """List of zone ids, used to send volume change requests to these connected zones"""
 
-    threading.Thread(target=self.get_vol, daemon=True).start()
+    self.thread = threading.Thread(target=self.get_vol, daemon=True)
+    self.thread.start()
 
   def get_vol(self):
     """
@@ -98,11 +101,11 @@ class AmpliPiData:
       if stream_volume is None:
         return vol_set_point
 
-      if abs(stream_volume - vol_set_point) <= 0.005:
+      if abs(stream_volume - self.volume) <= 0.005:
         self.logger.debug("Ignored minor Stream -> AmpliPi change")
         return vol_set_point
 
-      delta = float(stream_volume - vol_set_point)
+      delta = float(stream_volume - self.volume)
       expected_volume = self.volume + delta
       self.logger.debug(f"Setting AmpliPi volume to {expected_volume} from {self.volume}")
       requests.patch(
@@ -118,43 +121,39 @@ class AmpliPiData:
       self.logger.exception(f"Exception: {e}")
 
 
-class VolumeSynchronizer:
+class VolSyncDispatcher:
   """
-    Volume synchronizer for AmpliPi and another volume-providing stream
+    Volume synchronizer for AmpliPi and another volume-providing stream.
 
-    Takes a few args:
-
-    stream: A fully constructed instance of a class that extends StreamData
+    stream: A fully constructed instance of a class that extends StreamWatcher
 
     config_dir: the path to the .config/amplipi/srcs/v{vsrc} folder for this persistent stream
 
     debug: bool that decides whether log level is DEBUG (if True) or WARNING (if False). False by default.
 
-
     Example Usage:
 
-      class SomeStream(StreamData):
+      class SomeStreamWatcher(StreamWatcher):
         __init__(**kwargs):
           super().__init__()
           ...
 
-        def get_vol(self):
+        async def get_vol(self) -> None:
           ...
+          self.volume = new_volume
 
-        def set_vol(self, new_vol: float, vol_set_point: float):
+        def set_vol(self, new_vol: float, vol_set_point: float) -> float:
           ...
+          return new_vol if change_successful else vol_set_point
 
-        {
-          build argsparser here
-        }
+      {build standard argparse flow here, containing args for your constructor as well as config_dir and --debug}
 
-        handler = VolumeSynchronizer(SomeStream(**kwargs), args.config_dir, args.debug)
-        handler.watcher_loop()
+        handler = VolSyncDispatcher(SomeStreamWatcher(**kwargs), args.config_dir, args.debug)
   """
 
-  # All you need to do to use this class is build a StreamData extension and then follow the above example with a simple argsparse flow, everything else is handled automatically
+  # All you need to do to use this class is build a StreamWatcher extension and then follow the above example with a simple argsparse flow, everything else is handled automatically
 
-  def __init__(self, stream: StreamData, config_dir: str, debug=False):
+  def __init__(self, stream: StreamWatcher, config_dir: str, debug=False):
 
     self.logger = logging.getLogger(__name__)
     self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
@@ -162,21 +161,22 @@ class VolumeSynchronizer:
     self.logger.addHandler(sh)
 
     self.event_queue = queue.Queue()
-    self.amplipi = AmpliPiData(config_dir, self.schedule_event, self.logger)
+    self.amplipi = AmpliPiWatcher(config_dir, self.schedule_event, self.logger)
 
-    self.stream: StreamData = stream
+    self.stream: StreamWatcher = stream
 
     # Set these directly so children don't need to add them to their constructors
     self.stream.logger = self.logger
     self.stream.schedule_event = self.schedule_event
 
     self.vol_set_point = self.amplipi.volume
+    self.event_loop()
 
   def schedule_event(self, event_type: VolEvents):
     """When an event occurs in a child, that child can use this callback function to schedule the response to said event in the event queue"""
     self.event_queue.put(event_type)
 
-  def watcher_loop(self):
+  def event_loop(self):
     """Watch for events coming from amplipi and the stream to then change the volume of the other"""
     while True:
       try:
