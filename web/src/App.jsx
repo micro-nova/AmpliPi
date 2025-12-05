@@ -50,11 +50,12 @@ export const useStatusStore = create((set, get) => ({
                 applyPlayerVol(vol, zones, sourceId, (zone_id, new_vol) => {
                     for (const i in s.status.zones) {
                         if (s.status.zones[i].id === zone_id) {
-                            let true_vol = Math.round((new_vol + s.status.zones[i].vol_f_overflow) * 100) / 100;
-                            let clamped = Math.min(Math.max(true_vol, 0), 1);
+                            // Calculate out future vol_f and vol_f_overflow to match expected future API polled state
+                            let combined_vol = new_vol + s.status.zones[i].vol_f_overflow;
+                            let new_vol_f = Math.min(Math.max(combined_vol, 0), 1);
 
-                            s.status.zones[i].vol_f = clamped;
-                            s.status.zones[i].vol_f_overflow = true_vol - clamped;
+                            s.status.zones[i].vol_f = new_vol_f;
+                            s.status.zones[i].vol_f_overflow = combined_vol - new_vol_f;
                         }
                     }
                 });
@@ -72,7 +73,7 @@ export const useStatusStore = create((set, get) => ({
                     }
                 }
 
-                // Also update groups that consist entirely of affected zones
+                // Mute groups if they are now completely muted
                 for (const g of s.status.groups) {
                     if (g.zones.every(zid => affectedZones.includes(zid))) {
                         g.mute = mute;
@@ -174,7 +175,9 @@ export const useStatusStore = create((set, get) => ({
                 const g = s.status.groups.filter((g) => g.id === groupId)[0];
                 for (const i of g.zones) {
                     s.skipUpdate = true;
-                    s.status.zones[i].vol_f = new_vol + s.status.zones[i].vol_f_overflow;
+                    // vol_f_overflow is set to 0 whenever vol_f is between 0 and 1, groups authoritatively set the volume so we reflect that here too
+                    s.status.zones[i].vol_f_overflow = 0;
+                    s.status.zones[i].vol_f = new_vol;
                 }
 
                 updateGroupVols(s);
@@ -208,6 +211,7 @@ export const useStatusStore = create((set, get) => ({
 const updateGroupVols = (s) => {
     s.status.groups.forEach((g) => {
         if (g.zones.length > 1) {
+            // Combine vol_f with vol_f_overflow to ensure the group volume slider moves at the same relative speed even when a zone overflows
             const vols = g.zones.map((id) => s.status.zones[id].vol_f + s.status.zones[id].vol_f_overflow);
             let calculated_vol = Math.min(...vols) * 0.5 + Math.max(...vols) * 0.5;
             g.vol_f = calculated_vol;
