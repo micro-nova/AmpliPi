@@ -32,6 +32,7 @@ class StreamWatcher:
     self._volume: float = None
     """Value between 0 and 1, or None if not yet initialized by the upstream"""
 
+    self.delta: Optional[float] = None
     self.logger: logging.Logger
     """logging.Logger instance provided by VolSyncDispatcher"""
 
@@ -73,7 +74,7 @@ class AmpliPiWatcher:
     """Event scheduler function provided by VolSyncDispatcher, has limited valid inputs that can be seen in the VolEvents enum"""
 
     self.logger: logging.Logger = logger
-    self.volume: float = None
+    self.volume: Optional[float] = None
     self.config_dir: str = config_dir
 
     self.connected_zones: List[int] = []
@@ -87,13 +88,16 @@ class AmpliPiWatcher:
       Read the volume FIFO from .config/amplipi/srcs/v{vsrc}/vol to load the currently connected zones and the averaged volume of them
       If the read volume is different than the previous volume, send a volume change event to the stream
     """
-    with open(f'{self.config_dir}/vol', 'r') as fifo:
-      while True:
-        data = json.loads(fifo.readline().strip())
-        if self.volume != data["volume"]:
-          self.volume = data["volume"]
-          self.schedule_event(VolEvents.CHANGE_STREAM)
-        self.connected_zones = data["zones"]
+    try:
+      with open(f'{self.config_dir}/vol', 'r') as fifo:
+        while True:
+          data = json.loads(fifo.readline().strip())
+          if self.volume != data["volume"]:
+            self.volume = data["volume"]
+            self.schedule_event(VolEvents.CHANGE_STREAM)
+          self.connected_zones = data["zones"]
+    except Exception as e:
+      self.logger.exception(f"Error while getting writing to {self.config_dir}/vol fifo: {e}")
 
   def set_vol(self, stream_volume: float, vol_set_point: float):
     """Update AmpliPi's volume to match the stream volume"""
@@ -106,6 +110,13 @@ class AmpliPiWatcher:
         return vol_set_point
 
       delta = float(stream_volume - self.volume)
+      return self.set_vol_delta(delta)
+    except Exception as e:
+      self.logger.exception(f"Exception: {e}")
+
+  def set_vol_delta(self, delta: float):
+    """Update AmpliPi's volume by delta"""
+    try:
       expected_volume = self.volume + delta
       self.logger.debug(f"Setting AmpliPi volume to {expected_volume} from {self.volume}")
       requests.patch(
@@ -185,7 +196,13 @@ class VolSyncDispatcher:
 
         event = self.event_queue.get()
         if event == VolEvents.CHANGE_AMPLIPI:
-          self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)
+          if self.stream.delta is not None:
+            # Reduce race condition potential by decoupling the value from the variable
+            delta = float(self.stream.delta)
+            self.vol_set_point = self.amplipi.set_vol_delta(delta)
+            self.stream.delta -= delta
+          else:
+            self.vol_set_point = self.amplipi.set_vol(self.stream.volume, self.vol_set_point)
         elif event == VolEvents.CHANGE_STREAM:
           self.vol_set_point = self.stream.set_vol(self.amplipi.volume, self.vol_set_point)
       except queue.Empty:
