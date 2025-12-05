@@ -71,31 +71,31 @@ const VolumeSlider = ({ vol, mute, setVol, setMute, disabled }) => {
                 >
                     <VolIcon vol={vol} mute={mute} />
                 </div>
-                    <Slider
-                        disabled={disabled}
-                        className="volume-slider"
-                        min={0}
-                        step={0.01}
-                        max={1}
-                        value={vol}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        // https://github.com/mui/material-ui/issues/32737#issuecomment-2060439608
-                        // ios does some weird emulation of mouse events from touch events, ignore those
-                        onChange={(e, val) => {
-                            if (isIOS() && e.type === "mousedown") {
-                                return;
-                            }
-                            handleVolChange(val);
-                        }}
-                        onChangeCommitted={(e, val) => {
-                            if (isIOS() && e.type === "mouseup") {
-                                return;
-                            }
-                            handleVolChange(val, true);
-                        }}
-                    />
-                </div>
+                <Slider
+                    disabled={disabled}
+                    className="volume-slider"
+                    min={0}
+                    step={0.01}
+                    max={1}
+                    value={vol}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    // https://github.com/mui/material-ui/issues/32737#issuecomment-2060439608
+                    // ios does some weird emulation of mouse events from touch events, ignore those
+                    onChange={(e, val) => {
+                        if (isIOS() && e.type === "mousedown") {
+                            return;
+                        }
+                        handleVolChange(val);
+                    }}
+                    onChangeCommitted={(e, val) => {
+                        if (isIOS() && e.type === "mouseup") {
+                            return;
+                        }
+                        handleVolChange(val, true);
+                    }}
+                />
+            </div>
         </StopProp>
     );
 };
