@@ -262,7 +262,7 @@ class PersistentStream(BaseStream):
       raise Exception(f'Failed to deactivate {self.name}: {e}') from e
     finally:
       self.state = "disconnected"  # make this look like a normal stream for now
-      if 'vsrc' in self.__dir__() and self.vsrc:
+      if 'vsrc' in self.__dir__() and self.vsrc is not None:
         vsrc = self.vsrc
         self.vsrc = None
         vsources.free(vsrc)
