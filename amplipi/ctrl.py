@@ -858,7 +858,7 @@ class Api:
 
             vol_db = utils.vol_float_to_db(vol_f_new, zone.vol_min, zone.vol_max)
             zone.vol_f_overflow = 0 if models.MIN_VOL_F < expected_vol_total and expected_vol_total < models.MAX_VOL_F \
-                else utils.clamp((expected_vol_total - vol_f_new), models.MIN_VOL_F_OVERFLOW, models.MAX_VOL_F_OVERFLOW)
+              else utils.clamp((expected_vol_total - vol_f_new), models.MIN_VOL_F_OVERFLOW, models.MAX_VOL_F_OVERFLOW)
             # Clamp the remaining delta to be between -1 and 1
 
           elif update.vol_f is not None and update.vol is None:
