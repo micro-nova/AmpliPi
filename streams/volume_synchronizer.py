@@ -4,7 +4,7 @@ import asyncio
 import threading
 import queue
 import logging
-import sys
+import os
 from typing import Callable, List, Optional
 from enum import Enum
 import requests
@@ -154,10 +154,14 @@ class VolSyncDispatcher:
   # All you need to do to use this class is build a StreamWatcher extension and then follow the above example with a simple argsparse flow, everything else is handled automatically
 
   def __init__(self, stream: StreamWatcher, config_dir: str, debug=False):
+    logfile = f"{config_dir}/vol_log"
+    if not os.path.exists(logfile):
+      with open(logfile, "w", encoding="utf-8") as f:
+        f.write()
 
     self.logger = logging.getLogger(__name__)
     self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
-    sh = logging.StreamHandler(sys.stdout)
+    sh = logging.StreamHandler(logfile)
     self.logger.addHandler(sh)
 
     self.event_queue = queue.Queue()

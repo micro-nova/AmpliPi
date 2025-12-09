@@ -11,12 +11,6 @@ from volume_synchronizer import VolSyncDispatcher, StreamWatcher, VolEvents
 from spot_connect_meta import Event
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
-
-
 class SpotifyWatcher(StreamWatcher):
   """A class that watches and tracks changes to spotify-side volume"""
 
@@ -56,6 +50,7 @@ class SpotifyWatcher(StreamWatcher):
   def set_vol(self, new_vol: float, vol_set_point: float) -> float:
     """Update Spotify's volume slider"""
     try:
+      raise Exception("Fake exception that is used to test logging abilities")
       if new_vol is None:
         return vol_set_point
 
