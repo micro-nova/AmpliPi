@@ -459,11 +459,21 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     progress(tasks)
     return tasks
   tasks = []
+
+  # Comment out deb http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free rpi from /etc/apt/sources.list to avoid hitting up a now empty apt source
+  tasks += print_progress([Task('Deactivate apt updates for outdated OS',
+                                args='file=/etc/apt/sources.list; '
+                                'if grep -q "buster" "$file" && [ "$(head -c 1 "$file")" != "#" ]; then '  # If file is for rasbian buster and the first line isn't already commented out, comment out the first line
+                                '  sudo sed -i "s@^deb http://raspbian.raspberrypi.org/raspbian/ buster@#deb http://raspbian.raspberrypi.org/raspbian/ buster@g" "$file"; '
+                                'fi',
+                                shell=True
+                                ).run()])
+
   # TODO: add extra apt repos
   # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
   # Repository 'http://raspbian.raspberrypi.org/raspbian buster InRelease' changed its 'Suite' value from 'stable' to 'oldstable'
   tasks += print_progress([Task('get latest debian packages',
-                          'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
+                                'sudo apt-get update --allow-releaseinfo-change'.split()).run()])
 
   # Upgrade current packages
   print_progress(
@@ -1199,6 +1209,15 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
         # __str__() on Task renders with an "Error"ed suffix
         print(str(task))
         return True
+    return False
+
+  # Find the version number line, break off the version= portion, then split on the decimals to separate major, middle, and minor revisions
+  version = re.search(r'version=(\d+\.\d+\.\d+)', str(_check_version('http://0.0.0.0/api').output)).group(1).split(".")
+  # Example output:
+  # using: http://0.0.0.0/api
+  # version=0.3.1
+  if int(version[0]) == 0 and int(version[1]) < 4:  # Is the version less than version 0.4.0?
+    print("Your version is too old to update automatically, please update manually using this guide: https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md")
     return False
 
   env = _check_and_setup_platform(development, ci_mode)
