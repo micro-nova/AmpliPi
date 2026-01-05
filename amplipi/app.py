@@ -647,7 +647,7 @@ def get_info(ctrl: Api = Depends(get_ctrl)) -> models.Info:
 @app.get('/debug', tags=['status'])
 def debug() -> models.DebugResponse:
   """ Returns debug status and configuration. """
-  debug_file = pathlib.Path.home().joinpath(".config/amplipi/debug.json")
+  debug_file = pathlib.Path("/data/.config/amplipi/debug.json")
   if not debug_file.exists():
     return models.DebugResponse()
   try:

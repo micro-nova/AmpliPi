@@ -186,7 +186,7 @@ fi
 
 # Check for Raspberry Pi device path
 disk_base_path=/dev/disk/by-id/usb-RPi-MSD
-diskpath=$(ls $disk_base_path* 2>/dev/null | head -n1)
+diskpath="/dev/disk/by-id/usb-RPi-MSD-_0001_ed08bbdc-0:0"
 if [ ! -z $diskpath ]; then
   echo "Raspberry Pi device found at $diskpath"
 else

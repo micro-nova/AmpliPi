@@ -7,7 +7,7 @@
 
 ## Optional Step: Preserve your config
   Assuming you're not reflashing due to a corrupted config, you can make sure to save your configuration file for later upload to save yourself the manual setup post-flash. You can get your configuration file by going to Settings -> Configuration -> Download Config. If you can't reach the app, you can also access it by SSHing in using the credentials on the screen on the front of your unit (username: pi@{IP} ; password: {4 word string on front display}) or through the USB connection that will be achieved in steps 1 , 2, and 4 and then mounting the connected drive.
-  Once you're in, the config file is at **/home/pi/.config/amplipi/house.json**
+  Once you're in, the config file is at **/data/.config/amplipi/house.json**
 
 ## 1. Get the Latest AmpliPi Image
   Download the latest AmpliPi image from [here](https://storage.googleapis.com/amplipi-img/amplipi_0.4.8.img.xz) ([md5sum](https://storage.googleapis.com/amplipi-img/CHECKSUMS), [.sig](https://storage.googleapis.com/amplipi-img/CHECKSUMS.sig)) and save it to your computer.

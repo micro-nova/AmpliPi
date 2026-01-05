@@ -64,7 +64,7 @@ fi
 
 echo -e "reverting amplipi back to stock configuration"
 ssh $user_host "systemctl --user stop amplipi"
-ssh $user_host "find ~/.config/amplipi -maxdepth 1 -type f -delete"  # intentionally avoids deleting folders used as mountpoints
+ssh $user_host "find /data/.config/amplipi -maxdepth 1 -type f -delete"  # intentionally avoids deleting folders used as mountpoints
 ssh $user_host "systemctl --user start amplipi"
 
 echo -e "removing deployments"

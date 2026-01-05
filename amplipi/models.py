@@ -1400,7 +1400,7 @@ class AppSettings(BaseSettings):
   """ Controller settings """
   mock_ctrl: bool = True
   mock_streams: bool = True
-  config_file: str = str(Path.home() / '.config' / 'amplipi' / 'house.json')
+  config_file: str = '/data/.config/amplipi/house.json'
   delay_saves: bool = True
 
 

@@ -256,9 +256,9 @@ def get_folder(relative_folder, mock=False):
   Abstracts the directory structure. TODO: This does not find the correct directory when testing.
   """
   if relative_folder == "config":
-    folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+    folder = os.path.join('/data', '.config', 'amplipi')
   elif relative_folder == "web":
-    folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'web')
+    folder = os.path.join('/data', '.config', 'amplipi', 'web')
   else:
     folder = os.path.join(os.path.expanduser('~'), 'amplipi-dev', relative_folder)
 
@@ -379,7 +379,7 @@ def vol_db_to_float(vol: int, db_min: int = models.MIN_VOL_DB, db_max: int = mod
 
 def debug_enabled() -> bool:
   """ Returns true or false if debug is enabled """
-  return pathlib.Path.home().joinpath(".config/amplipi/debug.json").exists()
+  return pathlib.Path("/data/.config/amplipi/debug.json").exists()
 
 
 def get_identity() -> dict:
@@ -490,7 +490,7 @@ def clear_custom_configs():
     logger.exception(f"failed to delete user {user.pw_name}: {e}")
 
   # Remove these paths whole-cloth. They do not need special permissions.
-  for path in ["/var/lib/support_tunnel/device.db", "/home/pi/.config/amplipi/users.json"]:
+  for path in ["/var/lib/support_tunnel/device.db", "/data/.config/amplipi/users.json"]:
     try:
       os.remove(path)
     except Exception as e:

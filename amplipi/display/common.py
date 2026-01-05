@@ -75,7 +75,7 @@ class DefaultPass:
      the stored default AmpliPi password."""
 
   # Password config location
-  PASS_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  PASS_DIR = os.path.join('/data', '.config', 'amplipi')
   PASS_FILE = os.path.join(PASS_DIR, 'default_password.txt')
   DEFAULT_PI_PASSWORD = 'raspberry'
 
@@ -177,9 +177,9 @@ def get_zone_status(zone, sources) -> STATUS:
         else:
           return STATUS.PLAYING
       elif source_for_zone.state == 'stopped':
-          return STATUS.STOPPED
+        return STATUS.STOPPED
       elif source_for_zone.state == 'paused':
-          return STATUS.PAUSED
+        return STATUS.PAUSED
     return STATUS.IGNORE
   return STATUS.IGNORE
 
@@ -222,7 +222,7 @@ def get_emoji_status(url: str, max_length: int = 16) -> Union[str, int]:
 
   result = ''
   if status_counts[STATUS.PLAYING] > 0:
-      result += f'▶x{status_counts[STATUS.PLAYING]} '
+    result += f'▶x{status_counts[STATUS.PLAYING]} '
   if status_counts[STATUS.PAUSED] > 0:
     result += f'⏸x{status_counts[STATUS.PAUSED]} '
   if status_counts[STATUS.STOPPED] > 0:

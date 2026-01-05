@@ -255,8 +255,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
             '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
             '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
-            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
-            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
+            '  if [ ! -e /data/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
+            '  if [ ! -e /data/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
             'fi',
             'wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb -O /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
             'sudo dpkg -i /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
@@ -364,7 +364,7 @@ def _check_and_setup_platform(development, ci_mode):
       'platform_supported': False,
       'script_dir': script_dir,
       'base_dir': script_dir.rsplit('/', 1)[0],
-      'config_dir': os.path.join(os.path.expanduser('~'), '.config', 'amplipi'),
+      'config_dir': '/data/.config/amplipi',
       'is_amplipi': False,
       'is_streamer': False,
       'arch': 'unknown',
@@ -704,7 +704,7 @@ def _audiodetector_service(base_dir: str, config_dir: str):
   return f"""\
 [Unit]
 Description=Amplipi RCA Input Audio Detector
-ConditionPathExists=!/home/pi/.config/amplipi/is_streamer
+ConditionPathExists=!/data/.config/amplipi/is_streamer
 
 [Service]
 Type=simple
@@ -750,7 +750,7 @@ def _stop_service(name: str, system: bool = False) -> List[Task]:
 
 def _remove_service(name: str) -> List[Task]:
   filename = f'{name}.service'
-  directory = pathlib.Path.home().joinpath('.config/systemd/user')
+  directory = pathlib.Path('/data/.config/systemd/user')
   tasks = [Task(f'Remove {filename}')]
   try:
     # Delete the service file
@@ -841,7 +841,7 @@ def _create_dir(directory: str) -> List[Task]:
 
 def _create_service(name: str, config: str, env: dict) -> List[Task]:
   filename = f'{name}.service'
-  directory = pathlib.Path.home().joinpath('.config/systemd/user')
+  directory = pathlib.Path('/data/.config/systemd/user')
   tasks = []
 
   # create the systemd directory if it doesn't already exist
@@ -900,7 +900,7 @@ def _enable_linger(user: str, env) -> List[Task]:
 
 def _api_key() -> Optional[str]:
   """ Get a singular API key for use with the updater """
-  user_file_path = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'users.json')
+  user_file_path = os.path.join('/data', '.config', 'amplipi', 'users.json')
   try:
     with open(user_file_path, encoding='utf-8') as user_file:
       users = json.load(user_file)
@@ -1198,7 +1198,7 @@ def add_tests(env, progress) -> List[Task]:
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
             display=True, audiodetector=True, firmware=True, password=True,
-            progress=print_task_results, development=False, ci_mode=False) -> bool:
+            progress=print_task_results, development=True, ci_mode=False, no_swap=False) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -1212,20 +1212,20 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     return False
 
   # Find the version number line, break off the version= portion, then split on the decimals to separate major, middle, and minor revisions
-  version = re.search(r'version=(\d+\.\d+\.\d+)', str(_check_version('http://0.0.0.0/api').output)).group(1).split(".")
-  # Example output:
-  # using: http://0.0.0.0/api
-  # version=0.3.1
-  if int(version[0]) == 0 and int(version[1]) < 4:  # Is the version less than version 0.4.0?
-    print("Your version is too old to update automatically, please update manually using this guide: https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md")
-    return False
+  # version = re.search(r'version=(\d+\.\d+\.\d+)', str(_check_version('http://0.0.0.0/api').output)).group(1).split(".")
+  # # Example output:
+  # # using: http://0.0.0.0/api
+  # # version=0.3.1
+  # if int(version[0]) == 0 and int(version[1]) < 4:  # Is the version less than version 0.4.0?
+  #   print("Your version is too old to update automatically, please update manually using this guide: https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md")
+  #   return False
 
   env = _check_and_setup_platform(development, ci_mode)
-  if not env['platform_supported'] and not development:
-    tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
-  else:
-    tasks[0].output = str(env)
-    tasks[0].success = True
+  # if not env['platform_supported'] and not development:
+  #   tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
+  # else:
+  tasks[0].output = str(env)
+  tasks[0].success = True
   progress(tasks)
   if failed():
     return False
@@ -1288,6 +1288,14 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if restart_updater:
     # Reboot OS to finish potential kernel upgrade, also restarting the updater
     progress([Task('Reboot os', success=True)])
+
+    if not no_swap:
+      # swap boot partition from 2 -> 3 and vice-versa
+      tasks += [Task('Swap to new partition',
+                     args="sudo sed -i -e 's/boot_partition=2/boot_partition=__TMP__/g' -e 's/boot_partition=3/boot_partition=2/g' -e 's/boot_partition=__TMP__/boot_partition=3/g' /autoboot/autoboot.txt",
+                     shell=True
+                     ).run()]
+
     subprocess.run('sudo reboot now', shell=True, check=False)
     # updater will not return from here
   if web and not restart_updater:
@@ -1325,6 +1333,8 @@ if __name__ == '__main__':
                       help="Enable development mode.")
   parser.add_argument('--ci-mode', action='store_true', default=False,
                       help="Enable CI mode, for automated builds. This mode doesn't attempt to start or check services.")
+  parser.add_argument('--no-swap', action='store_true', default=False,
+                      help="Do not swap partitions post update")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
   has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
@@ -1336,6 +1346,6 @@ if __name__ == '__main__':
                    display=flags.display, audiodetector=flags.audiodetector,
                    firmware=flags.firmware, password=flags.password,
                    restart_updater=flags.restart_updater, development=flags.development,
-                   ci_mode=flags.ci_mode)
+                   ci_mode=flags.ci_mode, no_swap=flags.no_swap)
   if not result:
     sys.exit(1)
