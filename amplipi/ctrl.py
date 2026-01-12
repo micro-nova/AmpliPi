@@ -236,7 +236,7 @@ class Api:
       if len(errors) > 0:
         logger.error(errors[0])
       default_config = defaults.default_config(is_streamer=self.is_streamer, lms_mode=self.lms_mode)
-      self.status = models.Status.parse_obj(default_config)
+      self.status = models.Status.model_validate(default_config)
       self.save()
 
     # populate system info
@@ -285,7 +285,7 @@ class Api:
       _, zone = utils.find(self.status.zones, zid)
       if zone is None and self._rt.exists(zid):
         added_zone = True
-        self.status.zones.append(models.Zone(id=zid, name=f'Zone {zid+1}'))
+        self.status.zones.append(models.Zone(id=zid, name=f'Zone {zid + 1}'))
     # save new config if zones were added
     if added_zone:
       self.save()
@@ -385,11 +385,11 @@ class Api:
       self.status.sources[:] = self.status.sources[0:models.MAX_SOURCES]
     except Exception as exc:
       logger.exception('Error configuring sources: using all defaults')
-      self.status.sources[:] = [models.Source(id=i, name=f'Input {i+1}') for i in range(models.MAX_SOURCES)]
+      self.status.sources[:] = [models.Source(id=i, name=f'Input {i + 1}') for i in range(models.MAX_SOURCES)]
     # populate any missing sources, to match the underlying system's capabilities
     for sid in range(len(self.status.sources), models.MAX_SOURCES):
       logger.warning(f'Error: missing source {sid}, inserting default source')
-      self.status.sources.insert(sid, models.Source(id=sid, name=f'Input {sid+1}'))
+      self.status.sources.insert(sid, models.Source(id=sid, name=f'Input {sid + 1}'))
     # sequentially number sources if necessary
     for sid, src in enumerate(self.status.sources):
       if src.id != sid:
@@ -912,7 +912,7 @@ class Api:
         zupdate = multi_update.update.copy()  # we potentially need to make changes to the underlying update
         if zupdate.name:
           # ensure all zones don't get named the same
-          zupdate.name = f'{zupdate.name} {zid+1}'
+          zupdate.name = f'{zupdate.name} {zid + 1}'
         self.set_zone(zid, zupdate, force_update=force_update, internal=True)
       if not internal:
         # update the group stats (individual zone volumes, sources, and mute configuration can effect a group)

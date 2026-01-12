@@ -34,8 +34,6 @@ import pwd
 from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 from fastapi import HTTPException, status, Depends
 
-import pkg_resources  # version
-
 from amplipi import models
 from amplipi.defaults import USER_CONFIG_DIR
 
@@ -291,7 +289,7 @@ def detect_version() -> str:
     pass
   if version == 'unknown':
     try:
-      version = pkg_resources.get_distribution('amplipi').version
+      version = "0.4.11"  # TODO: Add a real version check here
     except:
       pass
   return version

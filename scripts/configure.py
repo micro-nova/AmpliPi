@@ -81,7 +81,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'base': {
         'apt': ['python3-pip', 'python3-venv', 'curl', 'authbind',
                 'python3-pil', 'libopenjp2-7',  # Pillow dependencies
-                'libatlas-base-dev',           # numpy dependencies
+                'libopenblas-dev',             # numpy dependencies. was libatlas-base-dev, is no longer thanks to https://github.com/numpy/numpy/issues/29108#issuecomment-3371130468
                 'stm32flash',                  # Programming Preamp Board
                 'xkcdpass',                    # Random passphrase generation
                 'systemd-journal-remote',      # Remote/web based log access
@@ -248,30 +248,30 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'fi',
         ]
     },
-    'lms': {
-        'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0'],
-        'copy': [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
-        'script': [
-            'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
-            '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
-            '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
-            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
-            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
-            'fi',
-            'wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb -O /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
-            'sudo dpkg -i /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
-            'sudo systemctl stop squeezelite',
-            'sudo systemctl disable squeezelite',
+    # 'lms': {
+    #     'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0'],
+    #     'copy': [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
+    #     'script': [
+    #         'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
+    #         '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
+    #         '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
+    #         '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
+    #         '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
+    #         'fi',
+    #         'wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb -O /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
+    #         'sudo dpkg -i /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
+    #         'sudo systemctl stop squeezelite',
+    #         'sudo systemctl disable squeezelite',
 
-            'sudo chmod 755 /media/pi',
-            'sudo chmod 755 /media/pi/*',
-            'sudo cp scripts/udisks2-listener.sh /usr/local/bin',
-            'sudo cp scripts/edit_media_directories.py /usr/local/bin',
-            'sudo cp scripts/udisks2-listener.service /etc/systemd/system',
-            'sudo chmod 444 /etc/systemd/system/udisks2-listener.service',
-            'sudo systemctl enable udisks2-listener.service',
-        ]
-    },
+    #         'sudo chmod 755 /media/pi',
+    #         'sudo chmod 755 /media/pi/*',
+    #         'sudo cp scripts/udisks2-listener.sh /usr/local/bin',
+    #         'sudo cp scripts/edit_media_directories.py /usr/local/bin',
+    #         'sudo cp scripts/udisks2-listener.service /etc/systemd/system',
+    #         'sudo chmod 444 /etc/systemd/system/udisks2-listener.service',
+    #         'sudo systemctl enable udisks2-listener.service',
+    #     ]
+    # },
     'dlna': {
         'apt': ['uuid-runtime', 'build-essential', 'autoconf', 'automake', 'libtool', 'pkg-config',
                 'libupnp-dev', 'libgstreamer1.0-dev', 'gstreamer1.0-plugins-base',
@@ -299,12 +299,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         # from https://github.com/devgianlu/go-librespot's release page
         'copy': [{'from': 'bin/ARCH/go-librespot', 'to': 'streams/go-librespot'}],
     },
-    'pandora': {
-        'apt': [
-            'libao4', 'libavcodec58', 'libavfilter7', 'libavformat58', 'libavutil56', 'libc6', 'libcurl3-gnutls', 'libgcrypt20', 'libjson-c3'
-        ],
-        'copy': [{'from': 'bin/ARCH/pianobar', 'to': 'streams/pianobar'}],
-    },
+    # 'pandora': {
+    #     'apt': [
+    #         'libao4', 'libavcodec58', 'libavfilter7', 'libavformat58', 'libavutil56', 'libc6', 'libcurl3-gnutls', 'libgcrypt20', 'libjson-c3'
+    #     ],
+    #     'copy': [{'from': 'bin/ARCH/pianobar', 'to': 'streams/pianobar'}],
+    # },
     'bluetooth': {
         'amplipi_only': True,
         'apt': ['libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
@@ -382,10 +382,12 @@ def _check_and_setup_platform(development, ci_mode):
     if apt:
       env['has_apt'] = True
 
-    if 'x86_64' in lplatform:
-      env['arch'] = 'x64'
-    elif 'armv7l' in lplatform:
-      env['arch'] = 'arm'
+    # if 'x86_64' in lplatform:
+    #   env['arch'] = 'x64'
+    #   print("\n\nARCH!!!\n\n")
+    # elif 'armv7l' in lplatform:
+    env['arch'] = 'arm'
+    print("\n\nARM!!!\n\n")
 
     env['is_amplipi'] = 'amplipi' in platform.node()  # checks hostname
 
@@ -1024,10 +1026,10 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
       tasks += print_progress(_remove_service('amplipi-updater-test'))
 
   # bring up amplipi-tasks
-  tasks += print_progress(_create_service('amplipi-tasks', _tasks_service(env['base_dir']), env))
-  tasks += print_progress(_enable_service('amplipi-tasks'))
-  if not env['is_ci']:
-    tasks += print_progress(_restart_service('amplipi-tasks'))
+  # tasks += print_progress(_create_service('amplipi-tasks', _tasks_service(env['base_dir']), env))
+  # tasks += print_progress(_enable_service('amplipi-tasks'))
+  # if not env['is_ci']:
+  #   tasks += print_progress(_restart_service('amplipi-tasks'))
 
   if env['is_amplipi'] or env['is_ci']:
     # start the user manager at boot, instead of after first login
@@ -1211,17 +1213,17 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
         return True
     return False
 
-  # Find the version number line, break off the version= portion, then split on the decimals to separate major, middle, and minor revisions
-  version = re.search(r'version=(\d+\.\d+\.\d+)', str(_check_version('http://0.0.0.0/api').output)).group(1).split(".")
-  # Example output:
-  # using: http://0.0.0.0/api
-  # version=0.3.1
-  if int(version[0]) == 0 and int(version[1]) < 4:  # Is the version less than version 0.4.0?
-    print("Your version is too old to update automatically, please update manually using this guide: https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md")
-    return False
+  # # Find the version number line, break off the version= portion, then split on the decimals to separate major, middle, and minor revisions
+  # version = re.search(r'version=(\d+\.\d+\.\d+)', str(_check_version('http://0.0.0.0/api').output)).group(1).split(".")
+  # # Example output:
+  # # using: http://0.0.0.0/api
+  # # version=0.3.1
+  # if int(version[0]) == 0 and int(version[1]) < 4:  # Is the version less than version 0.4.0?
+  #   print("Your version is too old to update automatically, please update manually using this guide: https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md")
+  #   return False
 
-  env = _check_and_setup_platform(development, ci_mode)
-  if not env['platform_supported'] and not development:
+  env = _check_and_setup_platform(True, ci_mode)
+  if not env['platform_supported'] and not True:
     tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
   else:
     tasks[0].output = str(env)

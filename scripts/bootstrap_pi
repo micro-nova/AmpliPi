@@ -9,8 +9,8 @@ Bootstrap a Raspberry Pi Compute Module for first-time AmpliPi setup.
   --hostname NAME: The hostname to set on the pi, so once this script
                    successfully completes connect via {hostname}.local.
                    Default is amplipi
-  --cli-only:      Use the lite version of Raspberry Pi OS which does not have
-                   a desktop environment
+  --desktop:       Use the standard version of Raspberry Pi OS instead of the default lite version
+                   which does not have a desktop environment
   --img FILE.img:  Specify a .img file to write to the Pi. This option will not
                    modify the image contents, so ignores the --cli-only option
   --no-instr:      Skip printing manual instructions. Pi must already be in
@@ -28,7 +28,7 @@ write_speed_mb=6    # MB/s write speed to the Pi's EMMC over USB
 
 hostname='amplipi'  # Hostname to set on the Pi
 debug=false         # Enable/disable debugging
-lite=false          # Use non-desktop Pi image...
+desktop=false          # Use desktop-containing Pi image...
 img_file=''         # ...or use this image file explicitly
 instructions=true   # Skip manual instruction step
 hostname_only=false # Configure only hostname in root partition
@@ -53,7 +53,7 @@ while [[ "$#" -gt 0 ]]; do
           exit 1
         fi
       ;;
-    --cli-only) lite=true ;;
+    --desktop) desktop=true ;;
     --no-instr) instructions=false ;;
     --debug) debug=true ;;
     -h|--help) printf "$helptext"; exit 0 ;;
@@ -161,32 +161,46 @@ if ! $connected; then
 fi
 
 if [[ -z $img_file ]]; then
-  if $lite; then
-    release=2020-08-20-raspios-buster-armhf-lite
-    url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+  if $desktop; then
+    # 32 bit
+    # release=2025-12-04-raspios-trixie-armhf
+    # url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_armhf-2025-12-04/$release.zip
+
+
+    # 64 bit
+    release=2025-12-04-raspios-trixie-arm64-full
+    url=http://downloads.raspberrypi.org/raspios_full_arm64/images/raspios_full_arm64-2025-12-04/$release.img.xz
   else
-    release=2020-08-20-raspios-buster-armhf
-    url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2020-08-24/$release.zip
+    # 32 bit
+    # release=2025-12-04-raspios-trixie-armhf-lite
+    # url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2025-12-04/$release.zip
+
+
+    # 64 bit
+    release=2025-12-04-raspios-trixie-arm64-lite
+    url=http://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04/$release.img.xz
   fi
-  zip_file=$HOME/Downloads/$release.zip
-  if [[ ! -f $zip_file ]]; then
+  compressed_image=$HOME/Downloads/$release.img.xz
+  img_file=$HOME/Downloads/$release.img
+  if [[ ! -f $compressed_image ]]; then
     echo "Downloading Raspberry Pi OS"
-    wget $url -O $zip_file # save for later
+    wget $url -O $compressed_image # save for later
   fi
   mkdir $release
   pushd $release
   echo "Extracting Raspberry Pi OS"
-  unzip $zip_file
+  if [[ ! -f $img_file ]]; then
+    unxz $compressed_image
+  fi
   popd # $release
-  img_file=$release/$release.img
-else
-  # Delay to ensure Pi disk device has been loaded
-  sleep 1
 fi
+
+echo "waiting for 5 seconds to load the pi's filesystem"
+sleep 5
 
 # Check for Raspberry Pi device path
 disk_base_path=/dev/disk/by-id/usb-RPi-MSD
-diskpath=$(ls $disk_base_path* 2>/dev/null | head -n1)
+diskpath=$(ls $disk_base_path* | head -n1)
 if [ ! -z $diskpath ]; then
   echo "Raspberry Pi device found at $diskpath"
 else
@@ -200,6 +214,7 @@ echo "Copying the image to the AmpliPi. This takes about $est_time minutes."
 echo "Go get a coffee or something :)"
 echo "Started at: $(date)"
 sudo dd if=$img_file of=$diskpath bs=4MiB status=progress
+sudo sync # The image is so small that it's done practically instantly but it's mostly just loaded in the ram buffer rather than being fully flushed to the EMMC
 echo "Finished at: $(date)"
 
 # First arg is partition path to mount
@@ -210,6 +225,11 @@ config_boot () {
 
   echo "Enabling SSH access"
   sudo touch ssh
+
+  # Adds default pi user with password raspberry as this is no longer a default in modern raspbian
+  # This would be seen as a security vulnerability if we didn't reset the password with our cleanup script
+  echo "Adding default pi user with password 'raspberry'"
+  echo pi:$6$p1c80DC32OHpYn0W$G26kjOgiFZoQ3N64X7/8dQgdOWUD.1hLE/dLEXkCpg0EUrifOUSy.23VE3sC3Jmdgz7r5GjlUPWEI2PqYigUe. > userconf
 
   # extra config to make sure the USB serial tty is disabled
   # (we use this to communicate with the AmpliPi preamp)
@@ -297,5 +317,6 @@ Bootstrapping successful. Please complete the following steps:
   2. Unplug the AmpliPi unit.
   3. Plug it back in to power it on.
   4. Run the deploy script to install the latest AmpliPi version.
+  5. (Optional) Run the cleanup script to make the system "factory fresh" with a randomgen ssh password and empty logs
 "
 cleanup "success"

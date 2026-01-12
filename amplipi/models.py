@@ -21,13 +21,14 @@ Encourages reuse of datastructures across AmpliPi
 
 # type handling, fastapi leverages type checking for performance and easy docs
 from functools import lru_cache
-from typing import List, Dict, Optional, Union, Set
+from typing import List, Dict, Optional, Set
 from types import SimpleNamespace
 from enum import Enum
 from pathlib import Path
 
 # pylint: disable=no-name-in-module
-from pydantic import BaseSettings, BaseModel, Field
+from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=missing-class-docstring
@@ -73,30 +74,30 @@ def pcnt2Vol(pcnt: float) -> int:
 
 class fields(SimpleNamespace):
   """ AmpliPi's field types """
-  ID = Field(description='Unique identifier')
-  Name = Field(description='Friendly name')
-  SourceId = Field(ge=ZONE_OFF, le=MAX_SOURCES - 1,
-                   description='id of the connected source, or -1 for no connection, or -2 for reflecting STATE_OFF in third party interfaces such as home assistant')
-  ZoneId = Field(ge=0, le=35)
-  Mute = Field(description='Set to true if output is muted')
-  Volume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB')
-  VolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F,
-                  description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB')
-  VolumeDeltaF = Field(description='Adjustment to output volume as a floating-point scalar representing the distance between the current and goal volume. Can be anything, but is coerced to never exceed |MAX_VOL_F * 2|')
-  VolumeMin = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB')
-  VolumeMax = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB')
-  GroupMute = Field(description='Set to true if output is all zones muted')
-  GroupVolume = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Average output volume')
-  GroupVolumeF = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number')
-  Disabled = Field(description='Set to true if not connected to a speaker')
-  Zones = Field(description='Set of zone ids belonging to a group')
-  Groups = Field(description='List of group ids')
-  AudioInput = Field('', description="""Connected audio source
+  ID: int = Field(description='Unique identifier')
+  Name: str = Field(description='Friendly name', default="unknown")
+  SourceId: int = Field(ge=ZONE_OFF, le=MAX_SOURCES - 1,
+                        description='id of the connected source, or -1 for no connection, or -2 for reflecting STATE_OFF in third party interfaces such as home assistant', default=-1)
+  ZoneId: int = Field(ge=0, le=35)
+  Mute: bool = Field(description='Set to true if output is muted')
+  Volume: int = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Output volume in dB', default=MIN_VOL_DB)
+  VolumeF: float = Field(ge=MIN_VOL_F, le=MAX_VOL_F,
+                         description='Output volume as a floating-point scalar from 0.0 to 1.0 representing MIN_VOL_DB to MAX_VOL_DB', default=MIN_VOL_F)
+  VolumeDeltaF: float = Field(description='Adjustment to output volume as a floating-point scalar representing the distance between the current and goal volume. Can be anything, but is coerced to never exceed |MAX_VOL_F * 2|', default=0.0)
+  VolumeMin: int = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Min output volume in dB', default=MIN_VOL_DB)
+  VolumeMax: int = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Max output volume in dB', default=MAX_VOL_DB)
+  GroupMute: bool = Field(description='Set to true if output is all zones muted', default=False)
+  GroupVolume: int = Field(ge=MIN_VOL_DB, le=MAX_VOL_DB, description='Average output volume', default=MIN_VOL_DB)
+  GroupVolumeF: float = Field(ge=MIN_VOL_F, le=MAX_VOL_F, description='Average output volume as a floating-point number', default=MIN_VOL_F)
+  Disabled: bool = Field(description='Set to true if not connected to a speaker', default=False)
+  Zones: list[int] = Field(description='Set of zone ids belonging to a group', default=[])
+  Groups: list[int] = Field(description='List of group ids', default=[])
+  AudioInput: str = Field('', description="""Connected audio source
 
   * Digital or Analog Stream ('stream=SID') where SID is the ID of the connected stream (rca inputs are now just the RCA stream type)
   * Nothing ('') behind the scenes this is muxed to a digital output
   """)
-  Port = Field(description='Port used by LMS server for metadata collection', default=9000)
+  Port: int = Field(description='Port used by LMS server for metadata collection', default=9000)
 
 
 class fields_w_default(SimpleNamespace):
@@ -156,22 +157,22 @@ class PandoraRating(Enum):
 class SourceInfo(BaseModel):
   name: str
   state: str  # paused, playing, stopped, unknown, loading ???
-  type: Optional[str]
-  artist: Optional[str]
-  track: Optional[str]
-  album: Optional[str]
-  station: Optional[str]  # name of radio station
-  img_url: Optional[str]
+  type: Optional[str] = None
+  artist: Optional[str] = None
+  track: Optional[str] = None
+  album: Optional[str] = None
+  station: Optional[str] = None  # name of radio station
+  img_url: Optional[str] = None
   supported_cmds: List[str] = []
-  rating: Optional[PandoraRating]  # Only used for pandora
-  temporary: Optional[str]  # Only used for file players
+  rating: Optional[PandoraRating] = PandoraRating.DEFAULT  # Only used for pandora
+  temporary: Optional[str] = None  # Only used for file players
 
 
 class Source(Base):
   """ An audio source """
   input: str = fields.AudioInput
   info: Optional[SourceInfo] = Field(
-    description='Additional info about the current audio playing from the stream (generated during playback)')
+    description='Additional info about the current audio playing from the stream (generated during playback)', default=None)
 
   def get_stream(self) -> Optional[int]:
     """ Get a source's connected stream if any """
@@ -187,10 +188,10 @@ class Source(Base):
     """ Convert to SourceUpdate """
     update = self.dict()
     update.pop('id')
-    return SourceUpdate.parse_obj(update)
+    return SourceUpdate.model_validate(update)
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'stream connected': {
           'value': {
@@ -240,7 +241,7 @@ class SourceUpdate(BaseUpdate):
   input: Optional[str] = fields.AudioInput
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Update Input to RCA Input 2': {
           'value': {'input': 'stream=997'}
@@ -261,14 +262,14 @@ class BrowsableItem(BaseModel):
   name: str                       # name of the item
   playable: bool                  # can this item be played
   parent: bool                    # is this item a parent item, e.g. can it's children be browsed
-  img: Optional[str] = None   # url to an image for this item
+  img: Optional[str] = None       # url to an image for this item
 
 
 class BrowsableItemResponse(BaseModel):
   items: List[BrowsableItem]
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Pandora stream': {
           'value': {
@@ -312,7 +313,7 @@ class SourceUpdateWithId(SourceUpdate):
     """ Convert to SourceUpdate """
     update = self.dict()
     update.pop('id')
-    return SourceUpdate.parse_obj(update)
+    return SourceUpdate.model_validate(update)
 
 
 class Zone(Base):
@@ -329,10 +330,10 @@ class Zone(Base):
     """ Convert to ZoneUpdate """
     update = self.dict()
     update.pop('id')
-    return ZoneUpdate.parse_obj(update)
+    return ZoneUpdate.model_validate(update)
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Living Room': {
           'value': {
@@ -374,7 +375,7 @@ class ZoneUpdate(BaseUpdate):
   disabled: Optional[bool] = fields.Disabled
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Change name': {
           'value': {
@@ -427,9 +428,9 @@ class ZoneUpdateWithId(ZoneUpdate):
 
   def as_update(self) -> ZoneUpdate:
     """ Convert to ZoneUpdate """
-    update = self.dict()
+    update = self.model_dump()
     update.pop('id')
-    return ZoneUpdate.parse_obj(update)
+    return ZoneUpdate.model_validate(update)
 
 
 class MultiZoneUpdate(BaseModel):
@@ -440,7 +441,7 @@ class MultiZoneUpdate(BaseModel):
   update: ZoneUpdate
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Connect all zones to source 1': {
           'value': {
@@ -484,10 +485,10 @@ class Group(Base):
     """ Convert to GroupUpdate """
     update = self.dict()
     update.pop('id')
-    return GroupUpdate.parse_obj(update)
+    return GroupUpdate.model_validate(update)
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'creation_examples': {
         'Upstairs Group': {
           'value': {
@@ -534,7 +535,7 @@ class GroupUpdate(BaseUpdate):
   vol_f: Optional[float] = fields.GroupVolumeF
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Rezone group': {
           'value': {
@@ -579,7 +580,7 @@ class GroupUpdateWithId(GroupUpdate):
     """ Convert to GroupUpdate """
     update = self.dict()
     update.pop('id')
-    return GroupUpdate.parse_obj(update)
+    return GroupUpdate.model_validate(update)
 
 
 class Stream(Base):
@@ -600,27 +601,27 @@ class Stream(Base):
   * rca
   """)
   # TODO: how to support different stream types
-  user: Optional[str] = Field(description='User login')
-  password: Optional[str] = Field(description='Password')
-  station: Optional[str] = Field(description='Radio station identifier')
-  url: Optional[str] = Field(description='Stream url, used for internetradio and file')
-  logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio')
-  freq: Optional[str] = Field(description='FM Frequency (MHz), used for fmradio')
-  client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json')
-  token: Optional[str] = Field(description='Plexamp token for server.json')
-  server: Optional[str] = Field(description='Server url')
-  index: Optional[int] = Field(description='RCA index')
+  user: Optional[str] = Field(description='User login', default=None)
+  password: Optional[str] = Field(description='Password', default=None)
+  station: Optional[str] = Field(description='Radio station identifier', default=None)
+  url: Optional[str] = Field(description='Stream url, used for internetradio and file', default=None)
+  logo: Optional[str] = Field(description='Icon/Logo url, used for internetradio', default=None)
+  freq: Optional[str] = Field(description='FM Frequency (MHz), used for fmradio', default=None)
+  client_id: Optional[str] = Field(description='Plexamp client_id, becomes "identifier" in server.json', default=None)
+  token: Optional[str] = Field(description='Plexamp token for server.json', default=None)
+  server: Optional[str] = Field(description='Server url', default=None)
+  index: Optional[int] = Field(description='RCA index', default=None)
   disabled: Optional[bool] = Field(
-    description="Soft disable use of this stream. It won't be shown as a selectable option")
-  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
-  port: Optional[int] = Field(description='Port used by LMS server for metadata listening')
-  browsable: Optional[bool] = Field(description='Can this stream be browsed?')
-  temporary: Optional[bool] = Field(description='Will this stream be removed once it is fully disconnected from all sources?')
-  has_pause: Optional[bool] = Field(description='This stream can be paused, only used on FilePlayers')
+    description="Soft disable use of this stream. It won't be shown as a selectable option", default=False)
+  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?', default=False)
+  port: Optional[int] = Field(description='Port used by LMS server for metadata listening', default=None)
+  browsable: Optional[bool] = Field(description='Can this stream be browsed?', default=False)
+  temporary: Optional[bool] = Field(description='Will this stream be removed once it is fully disconnected from all sources?', default=False)
+  has_pause: Optional[bool] = Field(description='This stream can be paused, only used on FilePlayers', default=False)
   # add examples for each type of stream
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'creation_examples': {
         'Add Beatles Internet Radio Station': {
           'value': {
@@ -788,23 +789,23 @@ def optional_stream_fields() -> Set:
 class StreamUpdate(BaseUpdate):
   """ Reconfiguration of a Stream """
   # TODO: how to support different stream types
-  user: Optional[str]
-  password: Optional[str]
-  station: Optional[str]
-  url: Optional[str]
-  logo: Optional[str]
-  freq: Optional[str]
-  server: Optional[str]
-  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?')
+  user: Optional[str] = None
+  password: Optional[str] = None
+  station: Optional[str] = None
+  url: Optional[str] = None
+  logo: Optional[str] = None
+  freq: Optional[str] = None
+  server: Optional[str] = None
+  ap2: Optional[bool] = Field(description='Is Airplay stream AirPlay2?', default=False)
   disabled: Optional[bool] = Field(
-    description="Soft disable use of this stream. It won't be shown as a selectable option")
-  port: Optional[int] = Field(description='Port used by LMS server for metadata listening')
-  temporary: Optional[bool]
-  timeout: Optional[str]
-  has_pause: Optional[bool]
+    description="Soft disable use of this stream. It won't be shown as a selectable option", default=False)
+  port: Optional[int] = Field(description='Port used by LMS server for metadata listening', default=None)
+  temporary: Optional[bool] = False
+  timeout: Optional[str] = None
+  has_pause: Optional[bool] = None
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Change account info': {
           'value': {
@@ -847,9 +848,9 @@ class StreamCommand(str, Enum):
 
 class PresetState(BaseModel):
   """ A set of partial configuration changes to make to sources, zones, and groups """
-  sources: Optional[List[SourceUpdateWithId]]
-  zones: Optional[List[ZoneUpdateWithId]]
-  groups: Optional[List[GroupUpdateWithId]]
+  sources: Optional[List[SourceUpdateWithId]] = []
+  zones: Optional[List[ZoneUpdateWithId]] = []
+  groups: Optional[List[GroupUpdateWithId]] = []
 
 
 class Command(BaseModel):
@@ -862,12 +863,12 @@ class Preset(Base):
   """ A partial controller configuration the can be loaded on demand.
   In addition to most of the configuration found in Status, this can contain commands as well that configure the state of different streaming services.
   """
-  state: Optional[PresetState]
-  commands: Optional[List[Command]]
-  last_used: Union[int, None] = None
+  state: Optional[PresetState] = None
+  commands: Optional[List[Command]] = None
+  last_used: Optional[int] = None
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'creation_examples': {
         'Add Mute All': {
           'value': {
@@ -916,7 +917,7 @@ class PresetUpdate(BaseUpdate):
   commands: Optional[List[Command]]
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Only mute some': {
           'value': {
@@ -939,7 +940,7 @@ class BrowserSelection(BaseModel):
   item: str = Field(description="Identifier of piece of media in browser to play")
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Select the Music Directory': {
           'value': {
@@ -963,7 +964,7 @@ class Announcement(BaseModel):
   groups: Optional[List[int]] = fields.Groups
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Make NASA Announcement': {
           'value': {
@@ -981,11 +982,11 @@ class PlayMedia(BaseModel):
   media: str = Field(description="URL to media to play")
   vol: Optional[int] = Field(default=None, ge=MIN_VOL_DB, le=MAX_VOL_DB,
                              description='Output volume in dB, overrides vol_f')
-  vol_f: float = Field(default=None, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
-  source_id: int = Field(default=None, ge=0, le=MAX_SOURCES - 1, description='Source to play media with')
+  vol_f: float = Field(default=MIN_VOL_F, ge=MIN_VOL_F, le=MAX_VOL_F, description="Output Volume (float)")
+  source_id: int = Field(ge=0, le=MAX_SOURCES - 1, description='Source to play media with')
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         'Play The Entertainer by Scott Joplin, Arranged by Kevin MacLeod': {
           'value': {
@@ -1016,7 +1017,7 @@ class Info(BaseModel):
   latest_release: str = Field(default='unknown', description='Latest software release available from GitHub')
   access_key: str = Field(default='', description='session token/API key used for authentication')
   lms_mode: bool = Field(default=False, description='Are we running in LMS mode?')
-  serial: str = Field(default=False, description='Serial Number of this AmpliPi')
+  serial: str = Field(default="unknown", description='Serial Number of this AmpliPi')
   expanders: List[str] = Field(default=[], description='Serial Numbers of any expanders connected to this AmpliPi')
   fw: List[FirmwareInfo] = Field(
     default=[], description='firmware information for each connected controller or expansion unit')
@@ -1026,7 +1027,7 @@ class Info(BaseModel):
   connected_drives: List[str] = Field(default=[], description='A list of all external drives connected')
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         "System info": {
           'value': {
@@ -1065,10 +1066,10 @@ class Status(BaseModel):
   streams: List[Stream] = [Stream(id=995 + i, name=f'Input {i}' if i != 0 else 'Aux',
                                   type='rca' if i != 0 else 'aux', index=i - 1) for i in range(MAX_SOURCES + 1)]
   presets: List[Preset] = []
-  info: Optional[Info]
+  info: Optional[Info] = None
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': {
         "Status of Jason's AmpliPi": {
           'value': {
@@ -1412,7 +1413,7 @@ class DebugResponse(BaseModel):
   environment: Optional[str]
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': [
         {
           "debug": "true",
@@ -1431,11 +1432,11 @@ class DebugResponse(BaseModel):
 
 
 class PlayItemResponse(BaseModel):
-  directory: Optional[str]  # Directory that the browser is in
+  directory: Optional[str] = None  # Directory that the browser is in
   status: Status
 
   class Config:
-    schema_extra = {
+    json_schema_extra = {
       'examples': [
         {
           "directory": "/media/7FA5-ECB4",

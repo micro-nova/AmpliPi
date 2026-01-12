@@ -8,8 +8,8 @@ import sys
 import logging
 from typing import List
 import subprocess
-from dasbus.connection import SessionMessageBus
-from dasbus.client.proxy import disconnect_proxy
+# from dasbus.connection import SessionMessageBus
+# from dasbus.client.proxy import disconnect_proxy
 from amplipi import utils
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,11 @@ class MPRIS:
   """A class for interfacing with an MPRIS MediaPlayer2 over dbus."""
 
   def __init__(self, service_suffix, metadata_path) -> None:
-    self.mpris = SessionMessageBus().get_proxy(
-      service_name=f"org.mpris.MediaPlayer2.{service_suffix}",
-      object_path="/org/mpris/MediaPlayer2",
-      interface_name="org.mpris.MediaPlayer2.Player"
-    )
+    # self.mpris = SessionMessageBus().get_proxy(
+    #   service_name=f"org.mpris.MediaPlayer2.{service_suffix}",
+    #   object_path="/org/mpris/MediaPlayer2",
+    #   interface_name="org.mpris.MediaPlayer2.Player"
+    # )
 
     self.capabilities: List[CommandTypes] = []
 
@@ -155,7 +155,7 @@ class MPRIS:
 
     if self.mpris:
       logger.info('disconnecting proxy')
-      disconnect_proxy(self.mpris)
+      # disconnect_proxy(self.mpris)
     self.mpris = None
     logger.info("mpris closed")
 

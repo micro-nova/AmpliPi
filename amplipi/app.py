@@ -714,7 +714,7 @@ def add_response_examples(openapi_schema, route: APIRoute) -> None:
   if route.path in ['/api/zones', '/api/groups', '/api/sources', '/api/streams', '/api/presets']:
     if 'get' in openapi_schema['paths'][route.path]:
       piece = route.path.replace('/api/', '')
-      example_status = list(models.Status.Config.schema_extra['examples'].values())[0]['value']
+      example_status = list(models.Status.Config.json_schema_extra['examples'].values())[0]['value']
       openapi_schema['paths'][route.path]['get']['responses']['200'][
         'content']['application/json']['example'] = {piece: example_status[piece]}
 
@@ -808,7 +808,7 @@ def generate_openapi_spec(add_test_docs=True):
     'url': 'https://github.com/micro-nova/AmpliPi/blob/main/COPYING',
   }
 
-  # Manually add examples present in pydancticModel.schema_extra into openAPI schema
+  # Manually add examples present in pydancticModel.json_schema_extra into openAPI schema
   for route in app.routes:
     if isinstance(route, APIRoute):
       add_creation_examples(openapi_schema, route)
