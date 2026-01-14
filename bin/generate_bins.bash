@@ -120,7 +120,7 @@ if [[ ! -d '/home/pi' ]] ; then
       echo "failed to build binaries, try running this script directly on the pi to debug"
       exit -1
     fi
-    scp $RPI_IP_ADDRESS:$x/* arm/
+    scp $RPI_IP_ADDRESS:$x/* arm64/
   fi
   # build files locally
   build
