@@ -81,7 +81,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'base': {
         'apt': ['python3-pip', 'python3-venv', 'curl', 'authbind',
                 'python3-pil', 'libopenjp2-7',  # Pillow dependencies
-                'libatlas-base-dev',           # numpy dependencies
+                'libopenblas-dev',             # numpy dependencies. was libatlas-base-dev, is no longer thanks to https://github.com/numpy/numpy/issues/29108#issuecomment-3371130468
                 'stm32flash',                  # Programming Preamp Board
                 'xkcdpass',                    # Random passphrase generation
                 'systemd-journal-remote',      # Remote/web based log access
@@ -207,6 +207,9 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'popd',
         ]
     },
+    'poetry': {
+      'script': ['curl -sSL https://install.python-poetry.org | python3 -']
+    },
     # streams
     # TODO: can stream dependencies be aggregated from the streams themselves?
     'airplay': {
@@ -301,7 +304,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     },
     'pandora': {
         'apt': [
-            'libao4', 'libavcodec58', 'libavfilter7', 'libavformat58', 'libavutil56', 'libc6', 'libcurl3-gnutls', 'libgcrypt20', 'libjson-c3'
+          'libavfilter-dev', 'libcurl4-openssl-dev', 'libjson-c-dev', 'libao-dev'
         ],
         'copy': [{'from': 'bin/ARCH/pianobar', 'to': 'streams/pianobar'}],
     },
@@ -386,6 +389,8 @@ def _check_and_setup_platform(development, ci_mode):
       env['arch'] = 'x64'
     elif 'armv7l' in lplatform:
       env['arch'] = 'arm'
+    elif 'aarch64' in lplatform:
+      env['arch'] = 'arm64'
 
     env['is_amplipi'] = 'amplipi' in platform.node()  # checks hostname
 
@@ -395,6 +400,10 @@ def _check_and_setup_platform(development, ci_mode):
 
     if env['arch'] == 'arm' and 'debian' in lplatform:
       # possibly a Rasperry Pi running Raspbian
+      env['platform_supported'] = True
+
+    if env['arch'] == 'arm64':
+      # 64 bit raspbian OS
       env['platform_supported'] = True
 
   if development:
