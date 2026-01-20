@@ -241,6 +241,7 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
+$alsa && opts="$opts --with-alsa"
 $deps && opts="$opts --os-deps --python-deps --custom-deps"
 $dev && opts="$opts --development"
 if [[ ${#dep_filter[@]} -gt 0 ]]; then
