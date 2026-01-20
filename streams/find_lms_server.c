@@ -10,6 +10,7 @@
  *
  */
 
+/* from https://github.com/ralph-irving/squeezelite/blob/master/tools/find_servers.c */
 #include <assert.h>
 #include <ctype.h>
 #include <signal.h>
@@ -60,7 +61,7 @@
 #define packC(ptr, off, v) \
   { ptr[off] = v & 0xFF; }
 #define packA4(ptr, off, v) \
-  { strncpy((char *)(&ptr[off]), v, 4); }
+  { strncpy((char*)(&ptr[off]), v, 4); }
 
 #define unpackN4(ptr, off) \
   ((ptr[off] << 24) | (ptr[off + 1] << 16) | (ptr[off + 2] << 8) | ptr[off + 3])
@@ -74,18 +75,18 @@
 #define DISCOVERY_PKTSIZE   1516
 #define SLIMPROTO_DISCOVERY "eNAME\0JSON\0"
 
-int slimproto_discover(char *server_addr, int server_addr_len, int port,
-                       unsigned int *jsonport, bool scan) {
+int slimproto_discover(char* server_addr, int server_addr_len, int port, unsigned int* jsonport,
+                       bool scan) {
   int                sockfd;
   int                try;
-  char              *packet;
+  char*              packet;
   int                pktlen;
   int                pktidx;
-  char              *t;
+  char*              t;
   unsigned int       l;
-  char              *v;
-  char              *server_name;
-  char              *server_json;
+  char*              v;
+  char*              server_name;
+  char*              server_json;
   struct pollfd      pollfd;
   struct sockaddr_in sendaddr;
   struct sockaddr_in recvaddr;
@@ -117,8 +118,8 @@ int slimproto_discover(char *server_addr, int server_addr_len, int port,
   pollfd.fd     = sockfd;
   pollfd.events = POLLIN;
 
-  if ((setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, (const void *)&broadcast,
-                  sizeof broadcast)) == -1) {
+  if ((setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, (const void*)&broadcast, sizeof broadcast)) ==
+      -1) {
     perror("setsockopt - SO_BROADCAST");
     return -1;
   }
@@ -128,7 +129,7 @@ int slimproto_discover(char *server_addr, int server_addr_len, int port,
   sendaddr.sin_addr.s_addr = INADDR_ANY;
   memset(sendaddr.sin_zero, '\0', sizeof sendaddr.sin_zero);
 
-  if (bind(sockfd, (struct sockaddr *)&sendaddr, sizeof sendaddr) == -1) {
+  if (bind(sockfd, (struct sockaddr*)&sendaddr, sizeof sendaddr) == -1) {
     perror("bind");
     return -1;
   }
@@ -152,7 +153,7 @@ int slimproto_discover(char *server_addr, int server_addr_len, int port,
 
   for (try = 0; try < 5; try++) {
     if (sendto(sockfd, SLIMPROTO_DISCOVERY, sizeof(SLIMPROTO_DISCOVERY), 0,
-               (struct sockaddr *)&recvaddr, sizeof(recvaddr)) == -1) {
+               (struct sockaddr*)&recvaddr, sizeof(recvaddr)) == -1) {
       CLOSESOCKET(sockfd);
       perror("sendto");
       return -1;
@@ -165,7 +166,7 @@ int slimproto_discover(char *server_addr, int server_addr_len, int port,
       memset(packet, 0, sizeof(packet));
 
       pktlen = recvfrom(sockfd, packet, DISCOVERY_PKTSIZE, MSG_DONTWAIT,
-                        (struct sockaddr *)&sendaddr, &sockaddr_len);
+                        (struct sockaddr*)&sendaddr, &sockaddr_len);
 
       if (pktlen == -1)
         continue;
@@ -198,17 +199,14 @@ int slimproto_discover(char *server_addr, int server_addr_len, int port,
           server_json[l] = '\0';
         }
 
-        VDEBUGF("slimproto_discover: key: %s len: %d value: %s pktidx: %d\n", t,
-                l, v, pktidx);
+        VDEBUGF("slimproto_discover: key: %s len: %d value: %s pktidx: %d\n", t, l, v, pktidx);
       }
 
-      inet_ntop(AF_INET, &sendaddr.sin_addr.s_addr, server_addr,
-                server_addr_len);
+      inet_ntop(AF_INET, &sendaddr.sin_addr.s_addr, server_addr, server_addr_len);
 
       *jsonport = (unsigned int)strtoul(server_json, NULL, 10);
 
-      DEBUGF("slimproto_discover: discovered %s:%u (%s)\n", server_name,
-             *jsonport, server_addr);
+      DEBUGF("slimproto_discover: discovered %s:%u (%s)\n", server_name, *jsonport, server_addr);
 
       serveraddr_len = strlen(server_addr);
 
@@ -271,7 +269,7 @@ static void license(void) {
       "https://github.com/ralph-irving/squeezelite\n");
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   char         slimserver_address[256] = "127.0.0.1";
   int          port                    = 3483;
   unsigned int json;
@@ -283,11 +281,10 @@ int main(int argc, char **argv) {
   }
 
   /* Scan */
-  len = slimproto_discover(slimserver_address, sizeof(slimserver_address), port,
-                           &json, true);
+  len = slimproto_discover(slimserver_address, sizeof(slimserver_address), port, &json, true);
 
-  VDEBUGF("main: slimproto_discover_scan: address:%s len:%d json:%u\n",
-          slimserver_address, len, json);
+  VDEBUGF("main: slimproto_discover_scan: address:%s len:%d json:%u\n", slimserver_address, len,
+          json);
 
   return 0;
 }

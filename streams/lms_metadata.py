@@ -50,7 +50,7 @@ class MetadataHolder:
 
 
 class LMSMetadataReader:
-  """A class for getting metadata from a Logitech Media Server."""
+  """A class for getting metadata from a Lyrion Music Server."""
 
   # meta_ref is probably an unneccessary variable to pass as an arg since it's obscured from the user, but we can eventually make it an optional setting for the user
   def __init__(self, name: str, vsrc: int, server: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2):
@@ -162,20 +162,23 @@ class LMSMetadataReader:
           machine = platform.machine()
           self.logger.debug(f"platform.machine() output: {machine}")
 
-          find_lms_server = None
-          if machine == "x86_64":
-            find_lms_server = "bin/x64/find_lms_server"
-          elif machine == "armv7l":
-            find_lms_server = "bin/arm/find_lms_server"
-          else:
-            self.meta.artist = "Unsupported CPU architecture for LMS MetaData"
-            self.meta.album = "Please set 'server' in LMS config to an IP"
-            self.meta.track = "or contact AmpliPi Support:support@micro-nova.com"
-            self.logger.warning("LMS metadata reader has detected an unsupported chipset")
-            self.logger.warning("Aborting LMS metadata search")
-            break
+          # find_lms_server = None
+          # if machine == "x86_64":
+          #   find_lms_server = "bin/x64/find_lms_server"
+          # elif machine == "armv7l":
+          #   find_lms_server = "bin/arm/find_lms_server"
+          # elif machine == "aarch64":
+          #   find_lms_server = "bin/arm64/find_lms_server"
+          # else:
+          #   self.meta.artist = "Unsupported CPU architecture for LMS MetaData"
+          #   self.meta.album = "Please set 'server' in LMS config to an IP"
+          #   self.meta.track = "or contact AmpliPi Support:support@micro-nova.com"
+          #   self.logger.warning("LMS metadata reader has detected an unsupported chipset")
+          #   self.logger.warning("Aborting LMS metadata search")
+          #   break
+          find_lms_server = "bin/arm64/find_lms_server"
 
-          # Much faster method of connecting to the metadata server using code from: https://github.com/ralph-irving/squeezelite/blob/master/tools/find_server.c
+          # Much faster method of connecting to the metadata server using code from: https://github.com/ralph-irving/squeezelite/blob/master/tools/find_servers.c
           # faster relative to the original method, using NMAP to go door to door (ip to ip) and ask if self.name is home
           ip_find = subprocess.run([find_lms_server], check=True, capture_output=True, text=True)
           ip_output = ip_find.stdout.splitlines()

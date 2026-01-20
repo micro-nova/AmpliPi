@@ -252,17 +252,15 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         ]
     },
     'lms': {
-        'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0'],
+        'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0', 'squeezelite'],
         'copy': [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
         'script': [
-            'if [ ! $(dpkg-query --show --showformat=\'${Status}\' logitechmediaserver | grep -q installed) ]; then '
-            '  wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/l/logitechmediaserver/logitechmediaserver_8.5.2_all.deb -O /tmp/logitechmediaserver_8.5.2.deb',
-            '  sudo dpkg -i /tmp/logitechmediaserver_8.5.2.deb',
-            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable logitechmediaserver; fi',
-            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop logitechmediaserver; fi',
+            'if [ ! $(dpkg-query --show --showformat=\'${Status}\' lyrionmusicserver | grep -q installed) ]; then '
+            '  wget -nv https://downloads.lms-community.org/LyrionMusicServer_v9.0.3/lyrionmusicserver_9.0.3_arm.deb -O /tmp/lyrionmusicserver_9.0.3.deb',
+            '  sudo dpkg -i /tmp/lyrionmusicserver_9.0.3.deb',
+            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable lyrionmusicserver; fi',
+            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop lyrionmusicserver; fi',
             'fi',
-            'wget -nv https://storage.googleapis.com/amplipi-deb/pool/main/s/squeezelite/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb -O /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
-            'sudo dpkg -i /tmp/squeezelite_2.0.0-1488+git20240509.0e85ddf-1.1_armhf.deb',
             'sudo systemctl stop squeezelite',
             'sudo systemctl disable squeezelite',
 
@@ -463,7 +461,7 @@ def _setup_loopbacks(base_dir) -> List[Task]:
   ]).run()]
 
 
-def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
+def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys()) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
     return tasks
@@ -519,7 +517,7 @@ def _install_os_deps(env, progress, deps=_os_deps.keys()) -> List[Task]:
     if _sudo or not _parent_dir.exists():
       tasks += print_progress([Task(f"creating parent dir(s) for {_from}", f"{_sudo}mkdir -p {_parent_dir}".split()).run()])
     tasks += print_progress([Task(f"copy -f {_from} to {_to}", f"{_sudo}cp -f {_from} {_to}".split()).run()])  # shairport needs the -f if it is running
-  if env['is_amplipi'] or env['is_ci']:
+  if with_alsa or env['is_amplipi'] or env['is_ci']:
     # copy alsa configuration file
     _from = f"{env['base_dir']}/config/asound.conf"
     _to = "/etc/asound.conf"
@@ -1207,7 +1205,7 @@ def add_tests(env, progress) -> List[Task]:
 
 def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
             display=True, audiodetector=True, firmware=True, password=True,
-            progress=print_task_results, development=False, ci_mode=False) -> bool:
+            progress=print_task_results, development=False, ci_mode=False, with_alsa=False) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -1248,7 +1246,7 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
   if failed():
     return False
   if os_deps:
-    tasks += _install_os_deps(env, progress, _os_deps)
+    tasks += _install_os_deps(env, progress, with_alsa, _os_deps)
     if failed():
       print('OS dependency install step failed, exiting...')
       return False
@@ -1334,6 +1332,8 @@ if __name__ == '__main__':
                       help="Enable development mode.")
   parser.add_argument('--ci-mode', action='store_true', default=False,
                       help="Enable CI mode, for automated builds. This mode doesn't attempt to start or check services.")
+  parser.add_argument('--with-alsa', action='store_true', default=False,
+                      help="Configure alsa config. Automatically set to True if the device being configured has hostname 'amplipi'")
   flags = parser.parse_args()
   print('Configuring AmpliPi installation')
   has_args = flags.python_deps or flags.os_deps or flags.web or flags.restart_updater or flags.display or flags.firmware
@@ -1345,6 +1345,6 @@ if __name__ == '__main__':
                    display=flags.display, audiodetector=flags.audiodetector,
                    firmware=flags.firmware, password=flags.password,
                    restart_updater=flags.restart_updater, development=flags.development,
-                   ci_mode=flags.ci_mode)
+                   ci_mode=flags.ci_mode, with_alsa=flags.with_alsa)
   if not result:
     sys.exit(1)

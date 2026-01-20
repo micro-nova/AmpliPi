@@ -115,7 +115,7 @@ class DefaultPass:
   def check_pw(pw: str) -> bool:
     """ Check if the given password is the pi user's current password. """
     try:
-      subprocess.run(f'sudo python3 amplipi/display/check_pass {pw}', shell=True, check=True)
+      subprocess.run(f'sudo ./amplipi/display/check_pass {pw}', shell=True, check=True)
       return True
     except subprocess.CalledProcessError:
       return False
@@ -177,9 +177,9 @@ def get_zone_status(zone, sources) -> STATUS:
         else:
           return STATUS.PLAYING
       elif source_for_zone.state == 'stopped':
-          return STATUS.STOPPED
+        return STATUS.STOPPED
       elif source_for_zone.state == 'paused':
-          return STATUS.PAUSED
+        return STATUS.PAUSED
     return STATUS.IGNORE
   return STATUS.IGNORE
 
@@ -222,7 +222,7 @@ def get_emoji_status(url: str, max_length: int = 16) -> Union[str, int]:
 
   result = ''
   if status_counts[STATUS.PLAYING] > 0:
-      result += f'▶x{status_counts[STATUS.PLAYING]} '
+    result += f'▶x{status_counts[STATUS.PLAYING]} '
   if status_counts[STATUS.PAUSED] > 0:
     result += f'⏸x{status_counts[STATUS.PAUSED]} '
   if status_counts[STATUS.STOPPED] > 0:

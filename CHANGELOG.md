@@ -1,6 +1,9 @@
 # AmpliPi Software Releases
 
 # Future Release
+* System
+  * Upgrade from 32 bit raspbian Bookworm Desktop to 64 bit raspbian Trixie Lite
+  * Upgrade from Logitech Media Server 8.5.2 to Lyrion Music Server 9.0.3
 
 
 ## 0.4.10
