@@ -2,6 +2,7 @@
 
 # Future Release
 * System
+  * Upgrade from 32 bit raspbian Bookworm Desktop to 64 bit raspbian Trixie Lite
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
   * Update our spotify provider `go-librespot` to `0.7.3`
   * Upgrade from Logitech Media Server 8.5.2 to Lyrion Music Server 9.0.3

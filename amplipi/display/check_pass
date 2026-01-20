@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/pi/.local/share/uv/python/cpython-3.8.20-linux-aarch64-gnu/bin/python3.8
 # This is a separate script as it must be run with root privileges
 # Example: sudo python check_pass 'raspberry'
 
@@ -9,5 +9,7 @@ import sys
 default_password = sys.argv[1]
 current_password = spwd.getspnam('pi').sp_pwd
 if crypt.crypt(default_password, current_password) == current_password:
+  print("Correct Password")
   sys.exit(0)
+print("Incorrect Password")
 sys.exit(1)
