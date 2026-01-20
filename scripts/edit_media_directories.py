@@ -11,11 +11,11 @@ from urllib3.util.retry import Retry
 
 
 def check_lms_mode():
-    try:
-        status_output = subprocess.check_output('systemctl is-active logitechmediaserver', shell=True).decode().strip()
-        return status_output == 'active'
-    except subprocess.CalledProcessError:
-        return False
+  try:
+    status_output = subprocess.check_output('systemctl is-active lyrionmusicserver', shell=True).decode().strip()
+    return status_output == 'active'
+  except subprocess.CalledProcessError:
+    return False
 
 
 def get_usb_drives(logger: logging.Logger):
