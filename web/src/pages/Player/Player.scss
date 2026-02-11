@@ -87,7 +87,7 @@
   }
 }
 
-.scrollable{
+.scrollable{ // Was part of .player-volume-body until it started adding scrollbars when only the [  +  ] was in that div
   @media (general.$is-portrait) {
     overflow-y: auto;
   }
