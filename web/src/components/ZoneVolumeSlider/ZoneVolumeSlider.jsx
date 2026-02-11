@@ -8,7 +8,7 @@ import PropTypes from "prop-types";
 let sendingRequestCount = 0;
 
 // Volume slider for individual zone in volume drawer
-const ZoneVolumeSlider = ({ zoneId, alone }) => {
+const ZoneVolumeSlider = ({ zoneId }) => {
     const setSystemState = useStatusStore((s) => s.setSystemState);
     const zoneName = useStatusStore((s) => s.status.zones[zoneId].name);
     const volume = useStatusStore((s) => s.status.zones[zoneId].vol_f);
@@ -49,7 +49,7 @@ const ZoneVolumeSlider = ({ zoneId, alone }) => {
     };
 
     return (
-        <div className={`zone-volume-container ${alone ? "alone" : "grouped"}`}>
+        <div className="zone-volume-container grouped">
             {zoneName}
             <VolumeSlider
                 mute={mute}
@@ -62,10 +62,6 @@ const ZoneVolumeSlider = ({ zoneId, alone }) => {
 };
 ZoneVolumeSlider.propTypes = {
     zoneId: PropTypes.number.isRequired,
-    alone: PropTypes.bool,
 };
-ZoneVolumeSlider.defaultProps = {
-    alone: false,
-}
 
 export default ZoneVolumeSlider;

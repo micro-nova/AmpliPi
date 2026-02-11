@@ -11,7 +11,7 @@ export default function RectangularButton({onClick, large, label}){
         >
             {label}
         </div>
-    )
+    );
 }
 RectangularButton.propTypes = {
     onClick: PropTypes.func.isRequired,
@@ -20,4 +20,4 @@ RectangularButton.propTypes = {
 };
 RectangularButton.defaultProps = {
     large: false,
-}
+};
