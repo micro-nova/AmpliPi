@@ -15,7 +15,7 @@ import StreamsModal from "@/components/StreamsModal/StreamsModal";
 import ZonesModal from "@/components/ZonesModal/ZonesModal";
 import { getSourceInputType } from "@/utils/getSourceInputType";
 import Chip from "@/components/Chip/Chip";
-import Grid from "@mui/material/Grid/Grid"
+import Grid from "@mui/material/Grid/Grid";
 import selectActiveSource from "@/utils/selectActiveSource";
 import Box from "@mui/material/Box/Box";
 
@@ -96,10 +96,10 @@ const Player = () => {
                 />
             )}
             <Grid
-              container
-              direction="column"
-              justifyContent="center"
-              alignItems="center"
+                container
+                direction="column"
+                justifyContent="center"
+                alignItems="center"
             >
                 <Grid item xs={2} sm={4} md={4}>
                     <div className="stream-title" >
@@ -112,9 +112,9 @@ const Player = () => {
                     <Box
                         className="album-art-container"
                         sx={{
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
                         }}
                     >
                         <img src={img_url} className="player-album-art" />
