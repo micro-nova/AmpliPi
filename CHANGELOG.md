@@ -1,6 +1,8 @@
 # AmpliPi Software Releases
 
 # Future Release
+* Web App
+  * Added [  +  ] button to player page to allow selection of zones and groups from player page
 
 
 ## 0.4.10
