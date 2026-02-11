@@ -7,13 +7,12 @@ import RectangularButton from "@/components/RectangularButton/RectangularButton"
 
 import PropTypes from "prop-types";
 
-const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, setZonesModalOpen, alone }) => {
+const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, setZonesModalOpen }) => {
     const groupVolumeSliders = [];
     for (const group of groups) {
         groupVolumeSliders.push(
-            <Card secondary={!alone} className={`group-vol-card ${!alone ? "vol-margin" : ""}`} key={group.id}>
+            <Card secondary className="group-vol-card vol-margin" key={group.id}>
                 <GroupVolumeSlider
-                    alone={alone}
                     groupId={group.id}
                     sourceId={sourceId}
                     groupsLeft={groupsLeft}
@@ -25,8 +24,8 @@ const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, setZonesModalO
     const zoneVolumeSliders = [];
     zones.forEach((zone) => {
         zoneVolumeSliders.push(
-            <Card secondary={!alone} className={`zone-vol-card ${!alone ? "vol-margin" : ""}`} key={zone.id}>
-                <ZoneVolumeSlider alone={alone} zoneId={zone.id} />
+            <Card secondary className="zone-vol-card vol-margin" key={zone.id}>
+                <ZoneVolumeSlider zoneId={zone.id} />
             </Card>
         );
     });
@@ -56,10 +55,6 @@ VolumeZones.propTypes = {
     groups: PropTypes.array.isRequired,
     groupsLeft: PropTypes.array.isRequired,
     setZonesModalOpen: PropTypes.func.isRequired,
-    alone: PropTypes.bool,
-};
-VolumeZones.defaultProps = {
-    alone: false,
 };
 
 export default VolumeZones;
