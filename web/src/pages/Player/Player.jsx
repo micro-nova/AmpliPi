@@ -64,6 +64,12 @@ const Player = () => {
     // This is a bootleg XOR statement, only works if there is exactly one zone or exactly one group, no more than that and not both
     const alone = ((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length > 0) && (zonesLeft.length > 0));
 
+    React.useEffect(() => {
+        if(zonesLeft.length == 0 && usedGroups.length == 0){
+            setExpanded(false);
+        }
+    }, [zonesLeft.length, usedGroups.length]); // Automatically unexpand when no zones or groups are connected
+
     selectActiveSource();
 
     function DropdownArrow() {
@@ -136,7 +142,7 @@ const Player = () => {
                             </IconButton>
                         </div>
                     )}
-                    <div className={`player-volume-body ${(expanded) && "expanded-volume-body pill-scrollbar"}`}>
+                    <div className={`player-volume-body ${(expanded) && "expanded-volume-body pill-scrollbar scrollable"}`}>
                         <VolumeZones setZonesModalOpen={setZonesModalOpen} open={(expanded)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
                     </div>
                 </Card>

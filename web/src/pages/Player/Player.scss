@@ -84,6 +84,11 @@
   flex-direction: column;
   @media (general.$is-portrait) {
     max-height: calc(85vh - 120px);
+  }
+}
+
+.scrollable{
+  @media (general.$is-portrait) {
     overflow-y: auto;
   }
 }

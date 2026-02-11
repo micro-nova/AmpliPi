@@ -34,7 +34,7 @@ const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, setZonesModalO
 
     if (open) {
         return (
-            <div className={`volume-sliders-container ${(open && !noZones) && "add-padding"}`}>
+            <div className={`volume-sliders-container ${(!noZones) && "add-padding"}`}>
                 {groupVolumeSliders}
                 {zoneVolumeSliders}
                 <RectangularButton large label="+" onClick={() => {setZonesModalOpen(true);}} />
