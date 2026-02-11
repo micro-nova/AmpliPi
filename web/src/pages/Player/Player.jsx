@@ -12,6 +12,7 @@ import { useState } from "react";
 import VolumeZones from "@/components/VolumeZones/VolumeZones";
 import Card from "@/components/Card/Card";
 import StreamsModal from "@/components/StreamsModal/StreamsModal";
+import ZonesModal from "@/components/ZonesModal/ZonesModal";
 import { getSourceInputType } from "@/utils/getSourceInputType";
 import Chip from "@/components/Chip/Chip";
 import Grid from "@mui/material/Grid/Grid"
@@ -24,8 +25,9 @@ import { getFittestRep } from "@/utils/GroupZoneFiltering";
 
 const Player = () => {
     const [streamsModalOpen, setStreamsModalOpen] = React.useState(false);
+    const [zonesModalOpen, setZonesModalOpen] = React.useState(false);
     const selectedSourceId = usePersistentStore((s) => s.selectedSource);
-    // TODO: dont index into sources. id isn't guarenteed to line up with order
+    // TODO: Don't index into sources. id isn't guaranteed to line up with order
     const img_url = useStatusStore(
         (s) => s.status.sources[selectedSourceId].info.img_url
     );
@@ -85,6 +87,14 @@ const Player = () => {
                     onClose={() => setStreamsModalOpen(false)}
                 />
             )}
+
+            {zonesModalOpen && (
+                <ZonesModal
+                    sourceId={selectedSourceId}
+                    setZoneModalOpen={setZonesModalOpen}
+                    onClose={() => setZonesModalOpen(false)}
+                />
+            )}
             <Grid
               container
               direction="column"
@@ -116,26 +126,21 @@ const Player = () => {
             <div className={alone ? "solo-media-controls" : "grouped-media-controls" } >
                 <MediaControl selectedSource={selectedSourceId} />
             </div>
-            { (!is_streamer && zones.length > 0) ? (
-                (alone) ? (
-                    <div className="player-volume-container" >
-                        <VolumeZones alone open sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
-                    </div>
-                ) : (
-                    <Card className="player-volume-container">
+            { !is_streamer && (
+                <Card className="player-volume-container">
+                    { (zones.length > 0) && (
                         <div className="player-volume-header">
                             <CardVolumeSlider sourceId={selectedSourceId} />
                             <IconButton onClick={() => setExpanded(!expanded)}>
                                 <DropdownArrow />
                             </IconButton>
                         </div>
-
-                        <div className={`player-volume-body pill-scrollbar ${expanded ? "expanded-volume-body" : ""}`}>
-                            <VolumeZones open={(expanded)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
-                        </div>
-                    </Card>
-                )
-            ) : null }
+                    )}
+                    <div className={`player-volume-body ${(expanded) && "expanded-volume-body pill-scrollbar"}`}>
+                        <VolumeZones setZonesModalOpen={setZonesModalOpen} open={(expanded)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
+                    </div>
+                </Card>
+            ) }
         </div>
     );
 };
