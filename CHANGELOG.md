@@ -2,6 +2,9 @@
 
 # Future Release
 
+* Web App
+  * Changed caching rules to ensure that users don't get stuck with old versions of the webapp post update
+
 
 ## 0.4.10
 

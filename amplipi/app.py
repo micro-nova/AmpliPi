@@ -940,8 +940,33 @@ def doc():
   return FileResponse(f'{TEMPLATE_DIR}/rest-api-doc.html')
 
 
+class CachelessFiles(StaticFiles):
+  """Filters what files should or shouldn't be cached by a user's browser"""
+
+  async def get_response(self, path, scope):
+    response = await super().get_response(path, scope)
+
+    content_type = response.headers.get("content-type", "")
+
+    # Vite wraps all javascript and CSS files into bundles called index_[hash].js index_[hash].css
+    # That causes this check to only let images into the cache
+
+    # The fact that those files are hashed _should_ make it so that old files are replaced with new files with new hashes post-update
+    # but the endpoint that provides the files has a cached response that contains the old files
+    if content_type.startswith("text/html") or "index" in path:
+      # index.html (root + SPA fallback)
+      response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+      response.headers["Pragma"] = "no-cache"
+      response.headers["Expires"] = "0"
+    else:
+      # all versioned/static assets
+      response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+
+    return response
+
+
 # Website
-app.mount('/', StaticFiles(directory=WEB_DIR, html=True), name='web')
+app.mount('/', CachelessFiles(directory=WEB_DIR, html=True), name='web')
 
 
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings: models.AppSettings = models.AppSettings()) -> FastAPI:
