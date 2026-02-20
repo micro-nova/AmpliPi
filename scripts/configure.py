@@ -1218,14 +1218,15 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
         return True
     return False
 
-  # Find the version number line, break off the version= portion, then split on the decimals to separate major, middle, and minor revisions
-  version = re.search(r'version=(\d+\.\d+\.\d+)', str(_check_version('http://0.0.0.0/api').output)).group(1).split(".")
-  # Example output:
-  # using: http://0.0.0.0/api
-  # version=0.3.1
-  if int(version[0]) == 0 and int(version[1]) < 4:  # Is the version less than version 0.4.0?
-    print("Your version is too old to update automatically, please update manually using this guide: https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md")
-    return False
+  if not development:
+    # Find the version number line, break off the version= portion, then split on the decimals to separate major, middle, and minor revisions
+    version = re.search(r'version=(\d+\.\d+\.\d+)', str(_check_version('http://0.0.0.0/api').output)).group(1).split(".")
+    # Example output:
+    # using: http://0.0.0.0/api
+    # version=0.3.1
+    if int(version[0]) == 0 and int(version[1]) < 4:  # Is the version less than version 0.4.0?
+      print("Your version is too old to update automatically, please update manually using this guide: https://github.com/micro-nova/AmpliPi/blob/main/docs/imaging_etcher.md")
+      return False
 
   env = _check_and_setup_platform(development, ci_mode)
   if not env['platform_supported'] and not development:
