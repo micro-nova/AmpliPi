@@ -11,6 +11,7 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
 
   --fw:      program the latest preamp firmware
   --pw:      generate and set a new random password
+  --dev:      run with development flag
   --alsa:    configure alsa settings
   --no-deps: skip installing os-deps and python-deps on AmpliPi"
 
@@ -18,6 +19,7 @@ user_host='pi@amplipi.local'
 user_host_set=false
 fw=false
 pw=false
+dev=false
 alsa=false
 deps=true
 while [[ "$#" -gt 0 ]]; do
@@ -25,6 +27,7 @@ while [[ "$#" -gt 0 ]]; do
     --fw) fw=true ;;
     --pw) pw=true ;;
     --alsa) pw=true ;;
+    --dev) dev=true ;;
     --no-deps) deps=false ;;
     -h|--help) echo -e "$HELP"; exit 0 ;;
     *) if ! $user_host_set; then
@@ -204,8 +207,8 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
-$alsa && opts="$opts --with-alsa"
 $deps && opts="$opts --os-deps --python-deps"
+$dev && opts="$opts --development"
 ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" || echo ""
 
 printf "Waiting for AmpliPi to restart"
