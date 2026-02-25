@@ -5,6 +5,10 @@
   color: general.$controls-color;
 }
 
+.add-padding {
+  padding-bottom: 1rem;
+}
+
 .zone-vol-card {
   @media (max-width: general.$small-mobile){
     padding: 0.5rem;

@@ -3,16 +3,16 @@ import "./VolumesZones.scss";
 import ZoneVolumeSlider from "../ZoneVolumeSlider/ZoneVolumeSlider";
 import GroupVolumeSlider from "../GroupVolumeSlider/GroupVolumeSlider";
 import Card from "../Card/Card";
+import RectangularButton from "@/components/RectangularButton/RectangularButton";
 
 import PropTypes from "prop-types";
 
-const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, alone }) => {
+const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, setZonesModalOpen }) => {
     const groupVolumeSliders = [];
     for (const group of groups) {
         groupVolumeSliders.push(
-            <Card secondary={!alone} className={`group-vol-card ${!alone ? "vol-margin" : ""}`} key={group.id}>
+            <Card secondary className="group-vol-card vol-margin" key={group.id}>
                 <GroupVolumeSlider
-                    alone={alone}
                     groupId={group.id}
                     sourceId={sourceId}
                     groupsLeft={groupsLeft}
@@ -24,19 +24,28 @@ const VolumeZones = ({ sourceId, open, zones, groups, groupsLeft, alone }) => {
     const zoneVolumeSliders = [];
     zones.forEach((zone) => {
         zoneVolumeSliders.push(
-            <Card secondary={!alone} className={`zone-vol-card ${!alone ? "vol-margin" : ""}`} key={zone.id}>
-                <ZoneVolumeSlider alone={alone} zoneId={zone.id} />
+            <Card secondary className="zone-vol-card vol-margin" key={zone.id}>
+                <ZoneVolumeSlider zoneId={zone.id} />
             </Card>
         );
     });
 
-    if(open){
-      return (
-          <div className="volume-sliders-container">
-              {groupVolumeSliders}
-              {zoneVolumeSliders}
-          </div>
-      );
+    const noZones = zoneVolumeSliders.length == 0 && groupVolumeSliders.length == 0;
+
+    if (open) {
+        return (
+            <div className={`volume-sliders-container ${(!noZones) && "add-padding"}`}>
+                {groupVolumeSliders}
+                {zoneVolumeSliders}
+                <RectangularButton large label="+" onClick={() => {setZonesModalOpen(true);}} />
+            </div>
+        );
+    } else if (noZones){
+        return(
+            <div className="volume-sliders-container">
+                <RectangularButton large label="+" onClick={() => {setZonesModalOpen(true);}} />
+            </div>
+        );
     }
 };
 VolumeZones.propTypes = {
@@ -45,10 +54,7 @@ VolumeZones.propTypes = {
     zones: PropTypes.array.isRequired,
     groups: PropTypes.array.isRequired,
     groupsLeft: PropTypes.array.isRequired,
-    alone: PropTypes.bool,
+    setZonesModalOpen: PropTypes.func.isRequired,
 };
-VolumeZones.defaultProps = {
-    alone: false,
-}
 
 export default VolumeZones;

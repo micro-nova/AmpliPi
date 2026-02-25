@@ -1,6 +1,8 @@
 # AmpliPi Software Releases
 
 # Future Release
+* Web App
+  * Added [  +  ] button to player page to allow selection of zones and groups from player page
 
 * Web App
   * Changed caching rules to ensure that users don't get stuck with old versions of the webapp post update
