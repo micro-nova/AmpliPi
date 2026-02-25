@@ -657,6 +657,12 @@ def debug() -> models.DebugResponse:
     logging.exception("couldn't load debug file: {e}")
     return models.DebugResponse()
 
+
+@api.patch("/api/info/alerts/hide", response_model=List[models.Alert])
+def hide_alert(alert: models.Alert):
+  """Hide an Alert based on the Alert's message"""
+  return utils.hide_alert(message=alert.message)
+
 # include all routes above
 
 

@@ -157,6 +157,22 @@ export const useStatusStore = create((set, get) => ({
                             if(s.info.version != import.meta.env.VITE_BACKEND_VERSION){
                                 set({alert: {"open": true, "text": "Your webapp is out of date, closing this message will refresh the page. If this message persists post-refresh, clear your browser cache and try again.", "onClose": () => {window.location.reload();}}});
                             }
+
+                            for(let i = 0; i < s.info.global_alerts.length; i++){
+                                if(!s.info.global_alerts[i].hidden){
+                                    let current_alert = s.info.global_alerts[i];
+                                    set({alert: {"open": true, "text": current_alert.message, "severity": current_alert.severity, "onClose": () => {
+                                        fetch("/api/info/alerts/hide", {
+                                            method: "PATCH",
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                            },
+                                            body: JSON.stringify({"message": current_alert.message}),
+                                        });
+                                    } }});
+                                    i = s.info.global_alerts.length;
+                                }
+                            }
                         }
                     });
                 } else if (res.status == 401) {
@@ -258,7 +274,7 @@ const App = ({ selectedPage }) => {
             <DisconnectedIcon />
             <div className="background-gradient">{/* Used to make sure the background doesn't stretch or stop prematurely on scrollable pages */}</div>
             <div className="alert">
-                <AlertBar open={alert["open"]} text={alert["text"]} onClose={() => {alert["open"] == false; alert["onClose"]();}}/>
+                <AlertBar open={alert["open"]} text={alert["text"]} onClose={() => {alert["open"] == false; alert["onClose"]();}} severity={alert["severity"]} />
             </div>
             <div className="app-body">
                 <Page selectedPage={selectedPage} />
