@@ -7,7 +7,7 @@ import Alert from "@mui/material/Alert";
 export default function AlertBar(props) {
     const {
         open,
-        status,
+        success,
         text,
         onClose,
         renderAnimationState,
@@ -19,34 +19,37 @@ export default function AlertBar(props) {
         if(alertRef.current != null){
             const alertComp = alertRef.current;
             alertComp.classList.remove("error");
-            if(status == false){
+            if(!success){
                 alertComp.offsetWidth;
                 alertComp.classList.add("error");
             }
         }
-    }, [status, renderAnimationState]);
+    }, [success, renderAnimationState]);
 
-    if(open){
+    const [closedText, setClosedText] = React.useState(""); // If a user has closed a given message, don't show it again until another message tries to appear
+
+    if(open && text != closedText){
         return(
             <Alert
                 ref={alertRef}
-                onClose={onClose}
-                severity={status ? "success" : "error"}
+                onClose={() => {onClose(); setClosedText(text);}}
+                severity={success ? "success" : "error"}
                 variant="filled"
                 style={{width: "100%",}}
             >
                 {text}
             </Alert>
-        )
+        );
     }
-};
+}
 AlertBar.propTypes = {
     open: PropTypes.bool.isRequired,
-    status: PropTypes.bool.isRequired,
+    success: PropTypes.bool,
     text: PropTypes.string.isRequired,
     onClose: PropTypes.func.isRequired,
     renderAnimationState: PropTypes.number,
 };
 AlertBar.defaultProps = {
+    success: false,
     renderAnimationState: 1,
-}
+};

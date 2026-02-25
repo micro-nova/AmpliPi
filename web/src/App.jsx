@@ -13,6 +13,7 @@ import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon";
 import Browse from "@/pages/Browse/Browse";
 
 import PropTypes from "prop-types";
+import AlertBar from "./components/StatusBars/AlertBar";
 
 // holds onto the selectedSource state so that it persists between refreshes
 export const usePersistentStore = create(
@@ -40,6 +41,7 @@ export const useStatusStore = create((set, get) => ({
     skipUpdate: false,
     loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
     disconnected: true,
+    alert: {"open": false, "text": ""},
     skipNextUpdate: () => {
         set({ skipUpdate: true });
     },
@@ -122,6 +124,9 @@ export const useStatusStore = create((set, get) => ({
             }
         });
     },
+    setAlert: (text) => {
+        set({alert: {"open": true, "text": text}});
+    },
 
     getSystemState: () => {
         fetch("/api")
@@ -133,6 +138,9 @@ export const useStatusStore = create((set, get) => ({
                             set({ skipUpdate: false });
                         } else {
                             set({ status: s, loaded: true, disconnected: false });
+                            if(s.info.version != import.meta.env.VITE_BACKEND_VERSION){
+                                set({alert: {"open": true, "text": "Frontend/backend version mismatch, please restart your app or refresh your browser cache or face potentially unpredictable consequences"}});
+                            }
                         }
                     });
                 } else if (res.status == 401) {
@@ -225,15 +233,19 @@ Page.propTypes = {
 };
 
 const App = ({ selectedPage }) => {
+    const alert = useStatusStore((s) => s.alert);
     return (
-            <div className="app">
-            <DisconnectedIcon />
-            <div className="background-gradient"></div>  {/* Used to make sure the background doesn't stretch or stop prematurely on scrollable pages */}
-                <div className="app-body">
-                    <Page selectedPage={selectedPage} />
-                </div>
-                <MenuBar pageNumber={selectedPage} />
+        <div className="app">
+            <div className="alert">
+                <AlertBar open={alert["open"]} text={alert["text"]} onClose={() => {alert["open"] == false;}}/>
             </div>
+            <DisconnectedIcon />
+            <div className="background-gradient">{/* Used to make sure the background doesn't stretch or stop prematurely on scrollable pages */}</div>
+            <div className="app-body">
+                <Page selectedPage={selectedPage} />
+            </div>
+            <MenuBar pageNumber={selectedPage} />
+        </div>
     );
 };
 App.propTypes = {

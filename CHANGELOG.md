@@ -4,7 +4,7 @@
 
 * Web App
   * Changed caching rules to ensure that users don't get stuck with old versions of the webapp post update
-
+  * Add warning for older versions of the webapp running on newer backends
 
 ## 0.4.10
 
