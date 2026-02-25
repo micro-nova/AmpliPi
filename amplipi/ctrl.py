@@ -252,7 +252,8 @@ class Api:
       version=utils.detect_version(),
       stream_types_available=amplipi.streams.stream_types_available(),
       extra_fields=utils.load_extra_fields(),
-      serial=str(self._serial)
+      serial=str(self._serial),
+      global_alerts=utils.load_alerts()
     )
     for major, minor, ghash, dirty in self._rt.read_versions():
       fw_info = models.FirmwareInfo(version=f'{major}.{minor}', git_hash=f'{ghash:x}', git_dirty=dirty)
@@ -553,6 +554,7 @@ class Api:
     self.status.info.connected_drives = self._connected_drives_cache.get(throttled)
     self.status.info.latest_release = self._latest_release_cache.get(throttled)
     self.status.info.access_key = auth.get_access_key("admin") if auth.user_access_key_set("admin") else ""
+    self.status.info.global_alerts = utils.load_alerts()
 
   def sync_stream_info(self) -> None:
     """Synchronize the stream list to the stream status"""

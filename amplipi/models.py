@@ -25,6 +25,7 @@ from typing import List, Dict, Optional, Union, Set
 from types import SimpleNamespace
 from enum import Enum
 from pathlib import Path
+import datetime
 
 # pylint: disable=no-name-in-module
 from pydantic import BaseSettings, BaseModel, Field
@@ -1013,6 +1014,43 @@ class FirmwareInfo(BaseModel):
   git_dirty: bool = Field(default=False, description="True if local changes were made. Used for development.")
 
 
+class AlertLevel(Enum):
+  """What color should the alert be as per the Mui style guide: https://mui.com/material-ui/react-alert/#severity"""
+  WARNING = "warning"
+  ERROR = "error"
+  INFO = "info"
+  SUCCESS = "success"
+
+
+class Alert(BaseModel):
+  message: str
+  severity: AlertLevel = AlertLevel.ERROR
+  """What color should the alert be as per the Mui style guide: https://mui.com/material-ui/react-alert/#severity"""
+  hidden: bool = False
+  """Has this Alert been hidden by the user?"""
+  timestamp: datetime.datetime = Field(
+    default_factory=lambda: datetime.datetime.now(datetime.timezone.utc)
+  )
+
+  @property
+  def expired(self) -> bool:  # Used to limit alerts to have only a single instance per week. If the state that caused the alert is still valid after a week, the same alert will be made.
+    return (datetime.datetime.now(datetime.timezone.utc) - self.timestamp) > datetime.timedelta(weeks=1)
+
+  class Config:
+    schema_extra = {
+      'examples': {
+        'Example Alert': {
+          'value': {
+            "message": "Writing data to the I2C bus has failed multiple times, please contact AmpliPi Support at mailto:support@micro-nova.com",
+            "severity": "error",
+            "hidden": False,
+            "timestamp": "2026-05-26T19:28:57.907099+00:00"
+          }
+        },
+      }
+    }
+
+
 class Info(BaseModel):
   """ AmpliPi System information """
   version: str = Field(description="software version")
@@ -1033,6 +1071,7 @@ class Info(BaseModel):
     default=[], description='The stream types available on this particular appliance')
   extra_fields: Optional[Dict] = Field(default=None, description='Optional fields for customization')
   connected_drives: List[str] = Field(default=[], description='A list of all external drives connected')
+  global_alerts: List[Alert] = Field(default=[], description='A list of alerts to be shown to all users via the frontend global alert bar')
 
   class Config:
     schema_extra = {

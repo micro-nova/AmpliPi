@@ -495,3 +495,88 @@ def clear_custom_configs():
       os.remove(path)
     except Exception as e:
       logger.exception(f"failed to clear device configuration: {e}")
+
+
+# Every alert(s) function was in ctrl.py, but due to many files needing access to the add_alert flow they had to be here in utils
+
+
+def load_alerts() -> List[models.Alert]:
+  """Load the contents of the alerts file into memory as a dict. Automatically hides expired alerts before serving the list."""
+  alert_file = f"{get_folder('config')}/alerts.json"
+  try:
+    with open(alert_file, 'r', encoding='utf-8') as file:
+      data = json.load(file)
+
+    alerts: List[models.Alert] = [models.Alert(**item) for item in data]
+    for alert in alerts:
+      if alert.expired:
+        alert.hidden = True  # Frontend can't see expired property, so autohide any expired alerts as to not have to close the same alert twice
+    return alerts
+
+  except (FileNotFoundError, json.JSONDecodeError):
+    return []
+
+  except Exception as e:
+    logger.exception(e)
+    return []
+
+
+def select_alert(message: str, alerts: Optional[List[models.Alert]] = None) -> Optional[models.Alert]:
+  """
+  Selects the most recent non-expired instance of a specific alert message. Takes two arguments:
+    message: the string that makes up the Alert's message
+
+    alerts: An optional list of alerts, for use when you want the returned alert to be a pointer to the same alert in that instance of the list.
+      Generally useful when mutating an alert before saving the full list.
+  """
+  if alerts is None:
+    alerts = load_alerts()
+  return next(
+    (
+      item for item in alerts
+      if item.message == message and not item.expired
+    ),
+    None
+  )
+
+
+def add_alert(message: str, severity: models.AlertLevel = models.AlertLevel.ERROR) -> List[models.Alert]:
+  """
+    Add an alert to the alerts file
+    If an existing alert has the same message as the new one, the new one will only be added if the previous same alert has expired
+    See amplipi.models.Alert for expiration flow
+  """
+  alerts = load_alerts()
+  search = select_alert(message)
+  if search is None:
+    alert = models.Alert(message=message, severity=severity)
+    alerts.append(alert)
+    save_alerts(alerts)
+  return alerts  # Only returns anything to make the unit test for the hide endpoint easier
+
+
+def hide_alert(message: str) -> List[models.Alert]:
+  """Set the hidden bool of a given alert to True. Hidden alerts are not shown on the frontend."""
+  alerts = load_alerts()
+  selected_alert = select_alert(message, alerts)
+  if selected_alert is not None:
+    selected_alert.hidden = True
+    save_alerts(alerts)
+  else:
+    add_alert("Alert not found, could not be hidden!")
+    logger.exception("Alert not found, could not be hidden!")
+  return alerts
+
+
+def save_alerts(alerts: List[models.Alert]):
+  """Saves the given list of alerts to the alerts file at .config/amplipi/alerts.json"""
+  alert_file = f"{get_folder('config')}/alerts.json"
+  try:
+    with open(alert_file, 'w', encoding='utf-8') as file:
+      json.dump(
+        [json.loads(alert.json()) for alert in alerts],
+        file,
+        indent=2
+      )
+  except Exception as e:
+    logger.exception(e)
