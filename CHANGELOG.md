@@ -5,13 +5,14 @@
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
   * Update our spotify provider `go-librespot` to `0.7.3`
   * Upgrade from Logitech Media Server 8.5.2 to Lyrion Music Server 9.0.3
+* Web App
+  * Add warning for older versions of the webapp running on newer backends
 
 # 0.4.11
 * System
   * Update our spotify provider `go-librespot` to `0.7.1`
 * Web App
   * Changed caching rules to ensure that users don't get stuck with old versions of the webapp post update
-
 
 ## 0.4.10
 * Web App
