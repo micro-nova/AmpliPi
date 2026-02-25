@@ -2785,18 +2785,18 @@ paths:
         name: sid
         in: path
         examples:
-          Input 1:
+          Output 1:
             value: 0
-            summary: Input 1
-          Input 2:
+            summary: Output 1
+          Output 2:
             value: 1
-            summary: Input 2
-          Input 3:
+            summary: Output 2
+          Output 3:
             value: 2
-            summary: Input 3
-          Input 4:
+            summary: Output 3
+          Output 4:
             value: 3
-            summary: Input 4
+            summary: Output 4
       responses:
         '200':
           description: Successful Response
@@ -2862,18 +2862,18 @@ paths:
         name: sid
         in: path
         examples:
-          Input 1:
+          Output 1:
             value: 0
-            summary: Input 1
-          Input 2:
+            summary: Output 1
+          Output 2:
             value: 1
-            summary: Input 2
-          Input 3:
+            summary: Output 2
+          Output 3:
             value: 2
-            summary: Input 3
-          Input 4:
+            summary: Output 3
+          Output 4:
             value: 3
-            summary: Input 4
+            summary: Output 4
       requestBody:
         content:
           application/json:
@@ -3335,18 +3335,18 @@ paths:
         name: sid
         in: path
         examples:
-          Input 1:
+          Output 1:
             value: 0
-            summary: Input 1
-          Input 2:
+            summary: Output 1
+          Output 2:
             value: 1
-            summary: Input 2
-          Input 3:
+            summary: Output 2
+          Output 3:
             value: 2
-            summary: Input 3
-          Input 4:
+            summary: Output 3
+          Output 4:
             value: 3
-            summary: Input 4
+            summary: Output 4
       - description: Image Height in pixels
         required: true
         schema:
@@ -7486,7 +7486,7 @@ paths:
             value: 999
             summary: Input 4 - rca
           Groove Salad:
-            value: 1000
+            value: 1003
             summary: Groove Salad - internetradio
       - description: ID of the browsable item to browse
         required: true
@@ -7567,7 +7567,7 @@ paths:
             value: 999
             summary: Input 4 - rca
           Groove Salad:
-            value: 1000
+            value: 1003
             summary: Groove Salad - internetradio
       requestBody:
         content:
@@ -7648,7 +7648,7 @@ paths:
             value: 999
             summary: Input 4 - rca
           Groove Salad:
-            value: 1000
+            value: 1003
             summary: Groove Salad - internetradio
       requestBody:
         content:
@@ -10432,6 +10432,31 @@ paths:
       security:
       - APIKeyCookie: []
       - APIKeyQuery: []
+  /api/alert/hide:
+    patch:
+      summary: Hide Alert
+      operationId: hide_alert_api_alert_hide_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alert'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyCookie: []
+      - APIKeyQuery: []
   /api/info:
     get:
       tags:
@@ -10515,6 +10540,35 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    Alert:
+      title: Alert
+      required:
+      - message
+      type: object
+      properties:
+        message:
+          title: Message
+          type: string
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/AlertLevel'
+          default: error
+        hidden:
+          title: Hidden
+          type: boolean
+          default: false
+        timestamp:
+          title: Timestamp
+          type: string
+          format: date-time
+    AlertLevel:
+      title: AlertLevel
+      enum:
+      - warning
+      - error
+      - info
+      - success
+      description: 'What color should the alert be as per the Mui style guide: https://mui.com/material-ui/react-alert/#severity'
     Announcement:
       title: Announcement
       required:
@@ -10740,9 +10794,10 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: -1.0
+          minimum: -2.0
           type: integer
-          description: id of the connected source, or -1 for no connection
+          description: id of the connected source, or -1 for no connection, or -2
+            for reflecting STATE_OFF in third party interfaces such as home assistant
         zones:
           title: Zones
           type: array
@@ -10770,6 +10825,24 @@ components:
 
 
         Volume, mute, and source_id fields are aggregates of the member zones.'
+      creation_examples:
+        Upstairs Group:
+          value:
+            name: Upstairs
+            zones:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+        Downstairs Group:
+          value:
+            name: Downstairs
+            zones:
+            - 6
+            - 7
+            - 8
+            - 9
       examples:
         Upstairs Group:
           value:
@@ -10794,24 +10867,6 @@ components:
             - 9
             vol_delta: -30
             vol_f: 0.63
-      creation_examples:
-        Upstairs Group:
-          value:
-            name: Upstairs
-            zones:
-            - 1
-            - 2
-            - 3
-            - 4
-            - 5
-        Downstairs Group:
-          value:
-            name: Downstairs
-            zones:
-            - 6
-            - 7
-            - 8
-            - 9
     GroupUpdate:
       title: GroupUpdate
       type: object
@@ -10823,9 +10878,10 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: -1.0
+          minimum: -2.0
           type: integer
-          description: id of the connected source, or -1 for no connection
+          description: id of the connected source, or -1 for no connection, or -2
+            for reflecting STATE_OFF in third party interfaces such as home assistant
         zones:
           title: Zones
           type: array
@@ -10885,9 +10941,10 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: -1.0
+          minimum: -2.0
           type: integer
-          description: id of the connected source, or -1 for no connection
+          description: id of the connected source, or -1 for no connection, or -2
+            for reflecting STATE_OFF in third party interfaces such as home assistant
         zones:
           title: Zones
           type: array
@@ -11034,6 +11091,14 @@ components:
           items:
             type: string
           description: A list of all external drives connected
+          default: []
+        global_alerts:
+          title: Global Alerts
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+          description: A list of alerts to be shown to all users via the frontend
+            global alert bar
           default: []
       description: 'AmpliPi System information '
       examples:
@@ -11509,10 +11574,9 @@ components:
 
         In addition to most of the configuration found in Status, this can contain
         commands as well that configure the state of different streaming services.'
-      examples:
-        Mute All:
+      creation_examples:
+        Add Mute All:
           value:
-            id: 10000
             name: Mute All
             state:
               zones:
@@ -11528,9 +11592,10 @@ components:
                 mute: true
               - id: 5
                 mute: true
-      creation_examples:
-        Add Mute All:
+      examples:
+        Mute All:
           value:
+            id: 10000
             name: Mute All
             state:
               zones:
@@ -12386,47 +12451,6 @@ components:
           type: boolean
           description: This stream can be paused, only used on FilePlayers
       description: 'Digital stream such as Pandora, AirPlay or Spotify '
-      examples:
-        Regina Spektor Radio:
-          value:
-            id: 90890
-            name: Regina Spektor Radio
-            password: ''
-            station: '4473713754798410236'
-            status: connected
-            type: pandora
-            user: example1@micro-nova.com
-            browsable: true
-        Matt and Kim Radio (disconnected):
-          value:
-            id: 90891
-            info:
-              details: No info available
-            name: Matt and Kim Radio
-            password: ''
-            station: '4610303469018478727'
-            status: disconnected
-            type: pandora
-            user: example2@micro-nova.com
-            browsable: true
-        AirPlay (connected):
-          value:
-            id: 44590
-            info:
-              details: No info available
-            name: Jason's iPhone
-            status: connected
-            type: airplay
-            browsable: false
-        AirPlay (disconnected):
-          value:
-            id: 4894
-            info:
-              details: No info available
-            name: Rnay
-            status: disconnected
-            type: airplay
-            browsable: false
       creation_examples:
         Add Beatles Internet Radio Station:
           value:
@@ -12504,6 +12528,47 @@ components:
             type: lms
             server: mylmsserver
             port: 9000
+      examples:
+        Regina Spektor Radio:
+          value:
+            id: 90890
+            name: Regina Spektor Radio
+            password: ''
+            station: '4473713754798410236'
+            status: connected
+            type: pandora
+            user: example1@micro-nova.com
+            browsable: true
+        Matt and Kim Radio (disconnected):
+          value:
+            id: 90891
+            info:
+              details: No info available
+            name: Matt and Kim Radio
+            password: ''
+            station: '4610303469018478727'
+            status: disconnected
+            type: pandora
+            user: example2@micro-nova.com
+            browsable: true
+        AirPlay (connected):
+          value:
+            id: 44590
+            info:
+              details: No info available
+            name: Jason's iPhone
+            status: connected
+            type: airplay
+            browsable: false
+        AirPlay (disconnected):
+          value:
+            id: 4894
+            info:
+              details: No info available
+            name: Rnay
+            status: disconnected
+            type: airplay
+            browsable: false
     StreamCommand:
       title: StreamCommand
       enum:
@@ -12624,9 +12689,10 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: -1.0
+          minimum: -2.0
           type: integer
-          description: id of the connected source, or -1 for no connection
+          description: id of the connected source, or -1 for no connection, or -2
+            for reflecting STATE_OFF in third party interfaces such as home assistant
           default: 0
         mute:
           title: Mute
@@ -12701,9 +12767,10 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: -1.0
+          minimum: -2.0
           type: integer
-          description: id of the connected source, or -1 for no connection
+          description: id of the connected source, or -1 for no connection, or -2
+            for reflecting STATE_OFF in third party interfaces such as home assistant
         mute:
           title: Mute
           type: boolean
@@ -12782,9 +12849,10 @@ components:
         source_id:
           title: Source Id
           maximum: 3.0
-          minimum: -1.0
+          minimum: -2.0
           type: integer
-          description: id of the connected source, or -1 for no connection
+          description: id of the connected source, or -1 for no connection, or -2
+            for reflecting STATE_OFF in third party interfaces such as home assistant
         mute:
           title: Mute
           type: boolean

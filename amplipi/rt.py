@@ -30,7 +30,7 @@ from typing import Dict, List, Tuple, Union, Optional
 
 from smbus2 import SMBus
 from serial import Serial
-from amplipi import models  # TODO: importing this takes ~0.5s, reduce
+from amplipi import models, utils  # TODO: importing this takes ~0.5s, reduce
 
 # TODO: move constants like this to their own file
 DEBUG_PREAMPS = False  # print out preamp state after register write
@@ -242,6 +242,8 @@ class _Preamps:
       0x4F,
     ]
 
+  write_byte_data_failures: int = 0
+
   def write_byte_data(self, preamp_addr, reg, data):
     assert preamp_addr in _DEV_ADDRS
     assert type(preamp_addr) == int
@@ -262,8 +264,13 @@ class _Preamps:
       try:
         time.sleep(0.001)  # space out sequential calls to avoid bus errors
         self.bus.write_byte_data(preamp_addr, reg, data)
-      except Exception:
+      except Exception as e:
+        logger.exception(f"Writing preamp failed: {e}")
         time.sleep(0.001)
+        self.bus.close()
+        self.write_byte_data_failures += 1
+        if self.write_byte_data_failures >= 3:
+          utils.add_alert("Writing data to the I2C bus has failed multiple times, please go to Settings -> Config -> Hardware Reset.\nIf you see this message again in a short time period, contact AmpliPi Support at support@micro-nova.com")
         self.bus = SMBus(1)
         self.bus.write_byte_data(preamp_addr, reg, data)
 

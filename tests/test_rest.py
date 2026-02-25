@@ -1486,18 +1486,18 @@ def test_api_doc_has_examples(client):
       if method in ['post', 'put', 'patch']:
         try:
           req_spec = m['requestBody']['content']['application/json']
-          assert 'example' in req_spec or 'examples' in req_spec, f'{path_desc}: At least one exmaple request required'
-          if 'exmaples' in req_spec:
-            assert len(req_spec['examples']) > 0, f'{path_desc}: At least one exmaple request required'
+          assert 'example' in req_spec or 'examples' in req_spec, f'{path_desc}: At least one example request required'
+          if 'examples' in req_spec:
+            assert len(req_spec['examples']) > 0, f'{path_desc}: At least one example request required'
         except KeyError:
           pass  # request could be different type or non-existent
       try:
         resp_spec = m['responses']['200']['content']['application/json']
-        assert 'example' in resp_spec or 'examples' in resp_spec, f'{path_desc}: At least one exmaple response required'
-        if 'exmaples' in resp_spec:
-          assert len(resp_spec['examples']) > 0, f'{path_desc}: At least one exmaple response required'
+        assert 'example' in resp_spec or 'examples' in resp_spec, f'{path_desc}: At least one example response required'
+        if 'examples' in resp_spec:
+          assert len(resp_spec['examples']) > 0, f'{path_desc}: At least one example response required'
       except KeyError:
-        pass  # reposnse could not be json
+        pass  # response could not be json
 
 # TODO: this test will fail until we come up with a good scheme for specifying folder locations in a global config
 # The test below fails since the test and the app are run in different directories
@@ -1771,3 +1771,19 @@ def test_set_group_vol(client, gid):
       if num_zones == 2:
         expected_vol = (zone0_vol + zone1_vol) / 2
       assert find(jrv['groups'], gid)['vol_f'] == expected_vol
+
+
+def test_alerts(client):
+  """Check if making and hiding global alerts works """
+  message = "test message"
+
+  alerts = amplipi.utils.add_alert(message=message)
+  alert = amplipi.utils.select_alert(message=message, alerts=alerts)
+  assert alert is not None
+
+  rv = client.patch(f"/api/info/alerts/hide", json={'message': message})
+  assert rv.status_code == HTTPStatus.OK
+  rvj: List[amplipi.models.Alert] = [amplipi.models.Alert(**item) for item in rv.json()]
+  hidden = amplipi.utils.select_alert(message=message, alerts=rvj)
+  assert hidden is not None
+  assert hidden.hidden == True
