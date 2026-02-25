@@ -251,7 +251,6 @@ const StreamModal = ({ stream, onClose, apply, del }) => {
                     renderAnimationState={renderAlertAnimation}
                     open={hasError}
                     onClose={() => {setHasError(false);}}
-                    status={false}
                     text={errorMessage}
                 />
             }

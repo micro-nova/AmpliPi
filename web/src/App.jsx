@@ -13,6 +13,7 @@ import DisconnectedIcon from "./components/DisconnectedIcon/DisconnectedIcon";
 import Browse from "@/pages/Browse/Browse";
 
 import PropTypes from "prop-types";
+import AlertBar from "./components/StatusBars/AlertBar";
 
 // holds onto the selectedSource state so that it persists between refreshes
 export const usePersistentStore = create(
@@ -40,6 +41,12 @@ export const useStatusStore = create((set, get) => ({
     skipUpdate: false,
     loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
     disconnected: true,
+    alert: {
+        "open": false,
+        "text": "",
+        "onClose": () => {},
+        "severity": "",
+    },
     skipNextUpdate: () => {
         set({ skipUpdate: true });
     },
@@ -133,6 +140,9 @@ export const useStatusStore = create((set, get) => ({
             }
         });
     },
+    setAlert: (text, onClose) => {
+        set({alert: {"open": true, "text": text, "onClose": onClose}});
+    },
 
     getSystemState: () => {
         fetch("/api")
@@ -144,6 +154,9 @@ export const useStatusStore = create((set, get) => ({
                             set({ skipUpdate: false });
                         } else {
                             set({ status: s, loaded: true, disconnected: false });
+                            if(s.info.version != import.meta.env.VITE_BACKEND_VERSION){
+                                set({alert: {"open": true, "text": "Your webapp is out of date, closing this message will refresh the page. If this message persists post-refresh, clear your browser cache and try again.", "onClose": () => {window.location.reload();}}});
+                            }
                         }
                     });
                 } else if (res.status == 401) {
@@ -239,10 +252,14 @@ Page.propTypes = {
 };
 
 const App = ({ selectedPage }) => {
+    const alert = useStatusStore((s) => s.alert);
     return (
         <div className="app">
             <DisconnectedIcon />
-            <div className="background-gradient"></div>  {/* Used to make sure the background doesn't stretch or stop prematurely on scrollable pages */}
+            <div className="background-gradient">{/* Used to make sure the background doesn't stretch or stop prematurely on scrollable pages */}</div>
+            <div className="alert">
+                <AlertBar open={alert["open"]} text={alert["text"]} onClose={() => {alert["open"] == false; alert["onClose"]();}}/>
+            </div>
             <div className="app-body">
                 <Page selectedPage={selectedPage} />
             </div>
