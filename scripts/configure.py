@@ -207,6 +207,20 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'popd',
         ]
     },
+    'stat-collector': {
+        "copy": [
+          {
+            'from': 'config/stat_collector_crontab',
+            'to': '/etc/cron.d/statcollector',
+            'sudo': 'true',
+          },
+          {
+            'from': 'scripts/collect_stats.sh',
+            'to': '/usr/local/bin/collect_stats.sh',
+            'sudo': 'true',
+          },
+        ],
+    },
     # streams
     # TODO: can stream dependencies be aggregated from the streams themselves?
     'airplay': {

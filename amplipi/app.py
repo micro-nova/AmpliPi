@@ -60,6 +60,7 @@ from sse_starlette.sse import EventSourceResponse
 import amplipi.utils as utils
 import amplipi.models as models
 import amplipi.defaults as defaults
+import amplipi.statcollector as statcollector
 from amplipi.ctrl import Api, ApiResponse, ApiCode  # we don't import ctrl here to avoid naming ambiguity with a ctrl variable
 from amplipi.auth import CookieOrParamAPIKey, router as auth_router, NotAuthenticatedException, not_authenticated_exception_handler
 
@@ -161,6 +162,22 @@ class params(SimpleNamespace):
 
 
 api = SimplifyingRouter(dependencies=[Depends(CookieOrParamAPIKey)])
+
+
+@api.get('/collected_stats')
+@api.get('/collected_stats/')
+def get_collected_stats():
+  """Get the current contents of statcollector output file after filtering out any empty stream data"""
+  survey = dict(statcollector.UsageSurveySchema.load_from_disk())
+  return {header: data for header, data in survey.items() if data != statcollector.StreamUsageSchema()}
+
+
+@api.post('/collected_stats')
+@api.post('/collected_stats/')
+def post_collected_stats():
+  """Send the contents of the statcollector output file to AmpliPi devs"""
+  survey = statcollector.UsageSurveySchema.load_from_disk()
+  survey.phone_home()
 
 
 @api.get('/api', tags=['status'])
