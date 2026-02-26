@@ -966,7 +966,7 @@ class CachelessFiles(StaticFiles):
 
 
 # Website
-app.mount('/', CachelessFiles(directory=WEB_DIR, html=True), name='web')
+app.mount('/', StaticFiles(directory=WEB_DIR, html=True), name='web')
 
 
 def create_app(mock_ctrl=None, mock_streams=None, config_file=None, delay_saves=None, settings: models.AppSettings = models.AppSettings()) -> FastAPI:

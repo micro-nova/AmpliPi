@@ -1,20 +1,20 @@
 # AmpliPi Software Releases
 
-# Future Release
+## Future Release
+* System
+  * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
 
 * Web App
   * Changed caching rules to ensure that users don't get stuck with old versions of the webapp post update
 
 
 ## 0.4.10
-
 * Web App
   * Fixed internet radio search functionality
 * System
   * Changed apt source from `http://raspbian.raspberrypi.org/raspbian/` to `http://archive.raspberrypi.org/raspbian/`
 
-## 0.4.9
-
+# 0.4.9
 * System
   * Update our spotify provider `go-librespot` to `0.5.2` to accomodate spotify's API update
 
