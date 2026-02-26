@@ -113,7 +113,6 @@ const Browse = () => {
             </List>
             <StatusBar
                 open={errorOpen}
-                status={false}
                 text={errorText.current}
                 onClose={()=>{setErrorOpen(false);}}
             />

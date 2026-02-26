@@ -31,7 +31,8 @@ This project follows [Semantic Versioning](https://semver.org/). Here are some e
 - [ ] Update the API by running `scripts/create_spec` script.
 - [ ] Create & merge a branch/PR off `main` to bump the version in the CHANGELOG and also using `poetry version ${VERSION}`
 - [ ] Checkout main & create a detached HEAD: `git checkout main; git pull; git checkout --detach`
-- [ ] Build the webapp in `web` with `npm run build` and force add the changes with `git add -f web/dist; git commit -m "Build web app for release"`
+- [ ] CD into `web`, Run `echo "VITE_BACKEND_VERSION=$(poetry version -s)" > .env`
+- [ ] Still in `web`, build the webapp with `npm run build` and force add the changes with `git add -f web/dist; git commit -m "Build web app for release"`
 - [ ] Tag the changes so we can make a release on GitHub: `git tag -as ${VERSION} -m '' && git push origin ${VERSION}`
 - [ ] Make a release using the GitHub interface
 - [ ] Use the AmpliPi updater to update to the release

@@ -20,6 +20,14 @@
 }
 
 // unused
+.alert{
+  z-index: 2;
+  position: fixed;
+  // bottom: 5vh;
+  top: 0;
+  left: 0;
+}
+
 .app-container {
   display: flex;
   width: 100%;
