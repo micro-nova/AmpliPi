@@ -1,7 +1,8 @@
 # AmpliPi Software Releases
 
 # Future Release
-
+* System
+  * Update our spotify provider `go-librespot` to `0.7.1`
 * Web App
   * Changed caching rules to ensure that users don't get stuck with old versions of the webapp post update
 
