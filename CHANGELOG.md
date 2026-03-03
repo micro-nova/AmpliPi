@@ -4,6 +4,7 @@
 * System
   * Update our spotify provider `go-librespot` to `0.7.1`
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
+  * Added volume matching between AmpliPi and Spotify and vice-versa
 * Web App
   * Changed caching rules to ensure that users don't get stuck with old versions of the webapp post update
 
