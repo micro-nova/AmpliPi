@@ -138,7 +138,7 @@ export const useStatusStore = create((set, get) => ({
                             set({ skipUpdate: false });
                         } else {
                             set({ status: s, loaded: true, disconnected: false });
-                            if(s.info.version != "0.4.2"){
+                            if(s.info.version != import.meta.enc.VITE_BACKEND_VERSION){
                                 set({alert: {"open": true, "text": "Your webapp is out of date, closing this message will refresh the page. If this message persists post-refresh, clear your browser cache and try again.", "onClose": () => {window.location.reload();}}});
                             }
                         }
