@@ -41,7 +41,7 @@ export const useStatusStore = create((set, get) => ({
     skipUpdate: false,
     loaded: false, // using this instead of (status === null) because it fixes the re-rendering issue
     disconnected: true,
-    alert: {"open": false, "text": ""},
+    alert: {"open": false, "text": "", "onClose": () => {}},
     skipNextUpdate: () => {
         set({ skipUpdate: true });
     },
@@ -124,8 +124,8 @@ export const useStatusStore = create((set, get) => ({
             }
         });
     },
-    setAlert: (text) => {
-        set({alert: {"open": true, "text": text}});
+    setAlert: (text, onClose) => {
+        set({alert: {"open": true, "text": text, "onClose": onClose()}});
     },
 
     getSystemState: () => {
@@ -138,8 +138,8 @@ export const useStatusStore = create((set, get) => ({
                             set({ skipUpdate: false });
                         } else {
                             set({ status: s, loaded: true, disconnected: false });
-                            if(s.info.version != import.meta.env.VITE_BACKEND_VERSION){
-                                set({alert: {"open": true, "text": "Frontend/backend version mismatch, please restart your app or refresh your browser cache or face potentially unpredictable consequences"}});
+                            if(s.info.version != "0.4.2"){
+                                set({alert: {"open": true, "text": "Your webapp is out of date, closing this message will refresh the page. If this message persists post-refresh, clear your browser cache and try again.", "onClose": () => {window.location.reload();}}});
                             }
                         }
                     });
@@ -236,11 +236,11 @@ const App = ({ selectedPage }) => {
     const alert = useStatusStore((s) => s.alert);
     return (
         <div className="app">
-            <div className="alert">
-                <AlertBar open={alert["open"]} text={alert["text"]} onClose={() => {alert["open"] == false;}}/>
-            </div>
             <DisconnectedIcon />
             <div className="background-gradient">{/* Used to make sure the background doesn't stretch or stop prematurely on scrollable pages */}</div>
+            <div className="alert">
+                <AlertBar open={alert["open"]} text={alert["text"]} onClose={() => {alert["open"] == false; alert["onClose"]();}}/>
+            </div>
             <div className="app-body">
                 <Page selectedPage={selectedPage} />
             </div>

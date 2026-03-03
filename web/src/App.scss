@@ -20,13 +20,6 @@
 }
 
 // unused
-.alert{
-  z-index: 2;
-  position: fixed;
-  // bottom: 5vh;
-  top: 0;
-  left: 0;
-}
 
 .app-container {
   display: flex;
@@ -39,9 +32,24 @@
   padding-bottom: general.$navbar-height;
 }
 
+
+.alert{
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 2;
+}
+
 @media (general.$is-landscape){
-  // Themed scrollbar is overridden by 90% of mobile apps and browsers, but only partially overridden by one (andorid app)
+  // Themed scrollbar is overridden by 90% of mobile apps and browsers, but only partially overridden by one (android app)
   // This still looks better on desktop, so gate it to only being on desktop without running the risk for the weird android app situation
+
+  .alert{
+    left: 25vw;
+    right: 25vw;
+    top: 10px;
+  }
 
   .pill-scrollbar {
     max-height: inherit;
