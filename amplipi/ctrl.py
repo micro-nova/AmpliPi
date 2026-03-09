@@ -852,7 +852,7 @@ class Api:
               vol, vol_f, vol_f_delta, vol_min, or vol_max.
           """
           # Field precedence: vol (db) > vol_delta > vol (float)
-          # vol (db) is first in precedence yet last in the stack to cover the default case of no volume change
+          # vol (db) is first in precedence yet last in the stack to cover the default case of a None volume change, but when it does have a value it overrides the other options
           if update.vol_delta_f is not None and update.vol is None:
             true_vol_f = zone.vol_f + zone.vol_f_overflow
             expected_vol_total = update.vol_delta_f + true_vol_f
@@ -860,7 +860,7 @@ class Api:
 
             vol_db = utils.vol_float_to_db(vol_f_new, zone.vol_min, zone.vol_max)
             zone.vol_f_overflow = 0 if models.MIN_VOL_F < expected_vol_total and expected_vol_total < models.MAX_VOL_F \
-              else utils.clamp((expected_vol_total - vol_f_new), models.MIN_VOL_F_OVERFLOW, models.MAX_VOL_F_OVERFLOW)
+                else utils.clamp((expected_vol_total - vol_f_new), models.MIN_VOL_F_OVERFLOW, models.MAX_VOL_F_OVERFLOW)
             # Clamp the remaining delta to be between -1 and 1
 
           elif update.vol_f is not None and update.vol is None:
