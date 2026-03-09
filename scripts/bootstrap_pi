@@ -162,13 +162,13 @@ fi
 
 if [[ -z $img_file ]]; then
   if $lite; then
-    release=2020-08-20-raspios-buster-armhf-lite
-    url=http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/$release.zip
+    release=2025-12-04-raspios-trixie-arm64-lite.img
+    url=https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04/$release.xz
   else
-    release=2020-08-20-raspios-buster-armhf
-    url=http://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2020-08-24/$release.zip
+    release=2025-12-04-raspios-trixie-armhf-full.img
+    url=https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2025-12-04/$release.xz
   fi
-  zip_file=$HOME/Downloads/$release.zip
+  zip_file=$HOME/Downloads/$release.xz
   if [[ ! -f $zip_file ]]; then
     echo "Downloading Raspberry Pi OS"
     wget $url -O $zip_file # save for later
@@ -176,9 +176,9 @@ if [[ -z $img_file ]]; then
   mkdir $release
   pushd $release
   echo "Extracting Raspberry Pi OS"
-  unzip $zip_file
+  unxz -f $zip_file
   popd # $release
-  img_file=$release/$release.img
+  img_file=~/Downloads/$release
 else
   # Delay to ensure Pi disk device has been loaded
   sleep 1
