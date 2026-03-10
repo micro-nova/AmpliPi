@@ -201,6 +201,7 @@ echo "Go get a coffee or something :)"
 echo "Started at: $(date)"
 sudo dd if=$img_file of=$diskpath bs=4MiB status=progress
 echo "Finished at: $(date)"
+sudo sync
 
 # First arg is partition path to mount
 config_boot () {
