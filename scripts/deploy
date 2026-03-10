@@ -159,6 +159,7 @@ poetry version ${git_info}
 echo "Building web app"
 pushd ../web            # Change to web directory
 npm install             # Install nodejs dependencies
+echo "VITE_BACKEND_VERSION=$(poetry version -s)" > .env # Collect the version number and bake it into the frontend
 npm run build           # Build the web app
 popd
 

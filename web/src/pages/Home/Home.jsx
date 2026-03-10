@@ -70,7 +70,7 @@ const Home = () => {
 
     const [showStatus, setShowStatus] = React.useState(false);
     const statusText = React.useRef("");
-    const status = React.useRef(true);
+    const success = React.useRef(true);
 
     let nextAvailableSource = null;
     let cards = [];
@@ -145,10 +145,10 @@ const Home = () => {
             )}
             {presetsModalOpen && (
                 <PresetsModal
-                    onApply={(state, text) => {status.current = state; statusText.current = text; setShowStatus(true);}}
+                    onApply={(state, text) => {success.current = state; statusText.current = text; setShowStatus(true);}}
                     onClose={() => setPresetsModalOpen(false)} />
             )}
-            <StatusBar open={showStatus} status={status.current} text={statusText.current} onClose={() => {setShowStatus(false);}} />
+            <StatusBar open={showStatus} success={success.current} text={statusText.current} onClose={() => {setShowStatus(false);}} />
         </div>
     );
 };
