@@ -9,10 +9,10 @@ Bootstrap a Raspberry Pi Compute Module for first-time AmpliPi setup.
   --hostname NAME: The hostname to set on the pi, so once this script
                    successfully completes connect via {hostname}.local.
                    Default is amplipi
-  --cli-only:      Use the lite version of Raspberry Pi OS which does not have
+  --desktop:      Use the full version of Raspberry Pi OS which has
                    a desktop environment
   --img FILE.img:  Specify a .img file to write to the Pi. This option will not
-                   modify the image contents, so ignores the --cli-only option
+                   modify the image contents, so ignores the --desktop option
   --no-instr:      Skip printing manual instructions. Pi must already be in
                    bootloader mode before running this script.
   --debug:         Prints all commands to be run and disables cleanup on exit
@@ -28,7 +28,7 @@ write_speed_mb=6    # MB/s write speed to the Pi's EMMC over USB
 
 hostname='amplipi'  # Hostname to set on the Pi
 debug=false         # Enable/disable debugging
-lite=false          # Use non-desktop Pi image...
+desktop=false          # Use desktop containing Pi image...
 img_file=''         # ...or use this image file explicitly
 instructions=true   # Skip manual instruction step
 hostname_only=false # Configure only hostname in root partition
@@ -53,7 +53,7 @@ while [[ "$#" -gt 0 ]]; do
           exit 1
         fi
       ;;
-    --cli-only) lite=true ;;
+    --desktop) desktop=true ;;
     --no-instr) instructions=false ;;
     --debug) debug=true ;;
     -h|--help) printf "$helptext"; exit 0 ;;
@@ -64,6 +64,12 @@ while [[ "$#" -gt 0 ]]; do
   esac
   shift
 done
+
+echo "
+  Please note that the bootstrap_pi script is no longer able to make a fully functional AmpliPi from point zero and now requires some manual working
+
+  If you'd prefer a less laborious solution, please see the imaging instructions at /docs/imaging_etcher.md
+"
 
 $debug && set -x
 
@@ -161,32 +167,31 @@ if ! $connected; then
 fi
 
 if [[ -z $img_file ]]; then
-  if $lite; then
-    release=2025-12-04-raspios-trixie-arm64-lite.img
-    url=https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04/$release.xz
-  else
+  if $desktop; then
     release=2025-12-04-raspios-trixie-armhf-full.img
     url=https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2025-12-04/$release.xz
+  else
+    release=2025-12-04-raspios-trixie-arm64-lite.img
+    url=https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04/$release.xz
   fi
-  zip_file=$HOME/Downloads/$release.xz
-  if [[ ! -f $zip_file ]]; then
+  compressed_image=$HOME/Downloads/$release.xz
+  if [[ ! -f $compressed_image ]]; then
     echo "Downloading Raspberry Pi OS"
-    wget $url -O $zip_file # save for later
+    wget $url -O $compressed_image # save for later
   fi
   mkdir $release
   pushd $release
   echo "Extracting Raspberry Pi OS"
-  unxz -f $zip_file
+  unxz -f $compressed_image # -f to forcefully unpack compressed image in case of repeated uses of this script
   popd # $release
-  img_file=~/Downloads/$release
-else
-  # Delay to ensure Pi disk device has been loaded
-  sleep 1
 fi
+
+echo "waiting for 5 seconds to load the pi's filesystem"
+sleep 5
 
 # Check for Raspberry Pi device path
 disk_base_path=/dev/disk/by-id/usb-RPi-MSD
-diskpath=$(ls $disk_base_path* 2>/dev/null | head -n1)
+diskpath=$(ls $disk_base_path* | head -n1)
 if [ ! -z $diskpath ]; then
   echo "Raspberry Pi device found at $diskpath"
 else
@@ -200,8 +205,8 @@ echo "Copying the image to the AmpliPi. This takes about $est_time minutes."
 echo "Go get a coffee or something :)"
 echo "Started at: $(date)"
 sudo dd if=$img_file of=$diskpath bs=4MiB status=progress
+sudo sync # Validate that everything is flushed from memory and into disk before announcing success
 echo "Finished at: $(date)"
-sudo sync
 
 # First arg is partition path to mount
 config_boot () {
@@ -211,6 +216,11 @@ config_boot () {
 
   echo "Enabling SSH access"
   sudo touch ssh
+
+  # Adds default pi user with password raspberry as this is no longer a default in modern raspbian
+  # This would be seen as a security vulnerability if we didn't reset the password with our cleanup script
+  echo "Adding default pi user with password 'raspberry'"
+  echo pi:$6$p1c80DC32OHpYn0W$G26kjOgiFZoQ3N64X7/8dQgdOWUD.1hLE/dLEXkCpg0EUrifOUSy.23VE3sC3Jmdgz7r5GjlUPWEI2PqYigUe. > userconf
 
   # extra config to make sure the USB serial tty is disabled
   # (we use this to communicate with the AmpliPi preamp)
@@ -298,5 +308,32 @@ Bootstrapping successful. Please complete the following steps:
   2. Unplug the AmpliPi unit.
   3. Plug it back in to power it on.
   4. Run the deploy script to install the latest AmpliPi version.
+  5. (Optional) Run the cleanup script to make the system 'factory fresh' with a randomgen ssh password and empty logs
+"
+
+
+echo "
+NOTE: a modern AmpliPi setup is more complicated than simple bash scripting will allow, to match what a normal Pi would contain please follow the above directions, and then:
+  1. use `sudo dd if=/dev/sdx1 of=amplipi-boot.img status=progress bs=4MiB` to make an image of your boot directory, changing sdx into whatever sd your device mounted to
+  2. use `sudo dd if=/dev/sdx2 of=amplipi-root.img status=progress bs=4MiB` to make an image of your root directory, changing sdx into whatever sd your device mounted to
+  3. use parted or gparted to wipe all partitions and make the following partitions:
+
+    p1: FAT32, 516 MB, flash with amplipi-boot.img
+    p2: FAT32, 516 MB, flash with amplipi-boot.img
+    p3: FAT32, 516 MB, flash with amplipi-boot.img
+    p4: Extended partition containing p5-7 containing remainder of disk
+    p5: EXT4, 10939 MB, flash with amplipi-root.img
+    p6: EXT4, 10939 MB, flash with amplipi-root.img
+    p7: EXT4, sized to fill the remaining space
+
+  4. Edit the contents of the partitions as so:
+
+    p1: add autoboot.txt as seen in /config/autoboot.txt
+    p2: adjust cmdline.txt to point to partition 5
+    p3: adjust cmdline.txt to point to partition 6
+
+    p5: Add p7 to fstab as /data
+    p6: Add p7 to fstab as /data
+    p7: create a .config folder
 "
 cleanup "success"
