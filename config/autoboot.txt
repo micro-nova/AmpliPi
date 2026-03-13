@@ -1,0 +1,13 @@
+[all]
+tryboot_a_b=1
+boot_partition=2
+
+[tryboot]
+boot_partition=3
+
+if exist mmc 0:1 /boot_partition.txt then
+  load mmc 0:1 ${loadaddr} /boot_partition.txt
+  env import -t ${loadaddr} ${filesize}
+fi
+
+boot mmc 0:${boot_partition}
