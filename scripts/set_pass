@@ -21,7 +21,7 @@
 # https://www.raspberrypi.com/documentation/computers/configuration.html#using-key-based-authentication
 
 set -e
-confdir="$HOME/.config/amplipi"
+confdir="/data/.config/amplipi"
 
 # First verify the current user is 'pi'
 #if [[ $USER != pi ]]; then

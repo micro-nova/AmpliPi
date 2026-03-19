@@ -13,7 +13,7 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
   --pw:      generate and set a new random password
   --dev:      run with development flag
   --alsa:    configure alsa settings
-  --no-deps: skip installing os-deps and python-deps on AmpliPi"
+  --no-deps: skip installing os-deps, python-deps, and custom-deps on AmpliPi"
 
 user_host='pi@amplipi.local'
 user_host_set=false
@@ -207,7 +207,7 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
-$deps && opts="$opts --os-deps --python-deps"
+$deps && opts="$opts --os-deps --python-deps --custom-deps"
 $dev && opts="$opts --development"
 ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" || echo ""
 
