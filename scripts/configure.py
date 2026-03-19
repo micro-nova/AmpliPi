@@ -258,8 +258,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'if [ ! $(dpkg-query --show --showformat=\'${Status}\' lyrionmusicserver | grep -q installed) ]; then '
             '  wget -nv https://downloads.lms-community.org/LyrionMusicServer_v9.0.3/lyrionmusicserver_9.0.3_arm.deb -O /tmp/lyrionmusicserver_9.0.3.deb',
             '  sudo dpkg -i /tmp/lyrionmusicserver_9.0.3.deb',
-            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl disable lyrionmusicserver; fi',
-            '  if [ ! -e /home/pi/.config/amplipi/lms_mode ] ; then sudo systemctl stop lyrionmusicserver; fi',
+            '  if [ ! -e /data/.config/amplipi/lms_mode ] ; then sudo systemctl disable lyrionmusicserver; fi',
+            '  if [ ! -e /data/.config/amplipi/lms_mode ] ; then sudo systemctl stop lyrionmusicserver; fi',
             'fi',
             'sudo systemctl stop squeezelite',
             'sudo systemctl disable squeezelite',
@@ -600,6 +600,22 @@ def _install_python_deps(env: dict, deps: List[str]):
   return tasks
 
 
+def _install_custom_deps():
+  tasks = []
+  dir = "/data/update_scripts"
+  deps = os.listdir(dir)
+  for dep in deps:
+    _, extension = os.path.splitext(dep)
+    if os.path.isfile(f"{dir}/{dep}") and extension.lower() == ".sh":
+      tasks += [Task(f'install custom settings from {dep}',
+                     f'bash {dir}/{dep}'.split()).run()]
+
+  if len(deps) > 0:
+    tasks += [Task('install python packages',
+                   'bash install_python_deps.bash'.split()).run()]
+  return tasks
+
+
 def _add_desktop_icon(env, directory: pathlib.Path, name, command) -> Task:
   """ Add a desktop icon to the pi """
   entry = f"""[Desktop Entry]
@@ -711,7 +727,7 @@ def _audiodetector_service(base_dir: str, config_dir: str):
   return f"""\
 [Unit]
 Description=Amplipi RCA Input Audio Detector
-ConditionPathExists=!/home/pi/.config/amplipi/is_streamer
+ConditionPathExists=!/data/.config/amplipi/is_streamer
 
 [Service]
 Type=simple
@@ -1203,7 +1219,7 @@ def add_tests(env, progress) -> List[Task]:
   return tasks
 
 
-def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
+def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_updater=False,
             display=True, audiodetector=True, firmware=True, password=True,
             progress=print_task_results, development=False, ci_mode=False, with_alsa=False) -> bool:
   """ Install and configure AmpliPi's dependencies """
@@ -1261,6 +1277,14 @@ def install(os_deps=True, python_deps=True, web=True, restart_updater=False,
     if failed():
       print('Python dependency install step failed, exiting...')
       return False
+  if custom_deps:
+    with open(os.path.join(env['base_dir'], 'requirements.txt'), encoding='utf-8') as req:
+      custom_tasks = _install_custom_deps()
+      progress(custom_tasks)
+      tasks += custom_tasks
+    if failed():
+      print('Python dependency install step failed, exiting...')
+      return False
   if web:
     tasks += _update_web(env, restart_updater, progress)
     if failed():
@@ -1314,6 +1338,8 @@ if __name__ == '__main__':
                       help='Install python dependencies (using venv)')
   parser.add_argument('--os-deps', action='store_true', default=False,
                       help='Install os dependencies using apt')
+  parser.add_argument('--custom-deps', action='store_true', default=False,
+                      help='Install custom dependencies from /data/update_scripts')
   parser.add_argument('--web', '--webserver', action='store_true', default=False,
                       help="Install and configure webserver")
   parser.add_argument('--restart-updater', '--reboot', action='store_true', default=False,
@@ -1342,8 +1368,8 @@ if __name__ == '__main__':
     print('  WARNING: expected some arguments, check --help for more information')
   if sys.version_info.major < 3 or sys.version_info.minor < 7:
     print('  WARNING: minimum python version is 3.7')
-  result = install(os_deps=flags.os_deps, python_deps=flags.python_deps, web=flags.web,
-                   display=flags.display, audiodetector=flags.audiodetector,
+  result = install(os_deps=flags.os_deps, python_deps=flags.python_deps, custom_deps=flags.custom_deps,
+                   web=flags.web, display=flags.display, audiodetector=flags.audiodetector,
                    firmware=flags.firmware, password=flags.password,
                    restart_updater=flags.restart_updater, development=flags.development,
                    ci_mode=flags.ci_mode, with_alsa=flags.with_alsa)

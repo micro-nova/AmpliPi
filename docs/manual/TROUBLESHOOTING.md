@@ -45,7 +45,7 @@ Manual backups are taken by navigating to ⚙ -> Config -> Download Config. This
 
 Automated backups are also taken nightly at 2AM and stored for 90 days, and also whenever you upgrade to a newer version of software. These are raw system backups, accessible only by an advanced user via the backend. These backups help either support, or a technical user, to restore prior system configuration from a particular point in time. If the below instructions do not make sense to you, you should feel free to email [support@micro-nova.com](mailto:support@micro-nova.com) and we can help restore a backup from your appliance.
 
-These backups are dated tarballs stored at `/home/pi/backups`. This tarball contains the entire `/home/pi/.config/amplipi` directory. To restore this backup:
+These backups are dated tarballs stored at `/home/pi/backups`. This tarball contains the entire `/data/.config/amplipi` directory. To restore this backup:
 1. Stop the AmpliPi service (`systemctl stop --user amplipi` as the `pi` user).
 1. Unpack a backup tarball and overwrite the contents of `.config/amplipi` (something like `tar --force-local -xvzf backups/config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz -C /`).  Here we use `config_2024-08-22T12:42:31-04:00_pre-fw-upgrade.tgz` as an example backup file.
 1. Start AmpliPi again (`systemctl start --user amplipi`).`
