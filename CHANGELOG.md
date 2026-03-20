@@ -2,6 +2,7 @@
 
 # Future Release
 * System
+  * Upgrade from Logitech Media Server 8.5.2 to Lyrion Music Server 9.0.3
   * Update our spotify provider `go-librespot` to `0.7.1`
 * Web App
   * Changed caching rules to ensure that users don't get stuck with old versions of the webapp post update

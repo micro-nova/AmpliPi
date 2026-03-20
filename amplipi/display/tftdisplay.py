@@ -1,3 +1,6 @@
+# Pylint forgot that board.whatever are all real
+# pylint: disable=no-member
+
 import cProfile
 import json
 import os
