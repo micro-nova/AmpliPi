@@ -308,7 +308,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     },
     'bluetooth': {
         'amplipi_only': True,
-        'apt': ['libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python-dbus',
+        'apt': ['libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'python3-dbus',
                 'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4'],
         'script': [
             # referencing arm here is okay because bluetooth is marked as 'amplipi_only'
@@ -316,7 +316,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
             'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
             # TODO: investigate where to put these services
-            'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
+            # 'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
             'sudo cp streams/bluetooth_agent /usr/local/bin/',
             'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
 
