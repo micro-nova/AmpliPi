@@ -308,7 +308,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     },
     'bluetooth': {
         'amplipi_only': True,
-        'apt': ['libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'python3-dbus',
+        'apt': ['libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python3-dbus',
                 'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4'],
         'script': [
             # referencing arm here is okay because bluetooth is marked as 'amplipi_only'
@@ -316,7 +316,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
             'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
             # TODO: investigate where to put these services
-            # 'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
+            'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
             'sudo cp streams/bluetooth_agent /usr/local/bin/',
             'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
 
@@ -600,19 +600,12 @@ def _install_python_deps(env: dict, deps: List[str]):
   return tasks
 
 
-def _install_custom_deps():
+def _install_custom_deps(dep):
   tasks = []
-  dir = "/data/update_scripts"
-  deps = os.listdir(dir)
-  for dep in deps:
-    _, extension = os.path.splitext(dep)
-    if os.path.isfile(f"{dir}/{dep}") and extension.lower() == ".sh":
-      tasks += [Task(f'install custom settings from {dep}',
-                     f'bash {dir}/{dep}'.split()).run()]
-
-  if len(deps) > 0:
-    tasks += [Task('install python packages',
-                   'bash install_python_deps.bash'.split()).run()]
+  _, extension = os.path.splitext(dep)
+  if os.path.isfile(f"/data/update_scripts/{dep}") and extension.lower() == ".sh":
+    tasks += [Task(f'install custom settings from {dep}',
+                   f'bash /data/update_scripts"{dep}'.split()).run()]
   return tasks
 
 
@@ -909,16 +902,17 @@ def _configure_authbind() -> List[Task]:
 
 
 # Enable linger so that user manager is started at boot
-def _enable_linger(user: str, env) -> List[Task]:
-  if env['is_ci']:
-    # https://unix.stackexchange.com/a/721463
-    margs = [
-        'sudo mkdir -p /var/lib/systemd/linger'.split(),
-        f'sudo touch /var/lib/systemd/linger/{user}'.split()
-    ]
-  else:
-    margs = [f'sudo loginctl enable-linger {user}'.split()]
-  return [Task(f'Enable linger for {user} user', multiargs=margs).run()]
+def _enable_linger(user: str, env) -> Optional[List[Task]]:
+  if not os.path.exists(f"/var/lib/systemd/linger/{user}"):
+    if env['is_ci']:
+      # https://unix.stackexchange.com/a/721463
+      margs = [
+          'sudo mkdir -p /var/lib/systemd/linger'.split(),
+          f'sudo touch /var/lib/systemd/linger/{user}'.split()
+      ]
+      return [Task(f'Enable linger for {user} user', multiargs=margs).run()]
+    else:
+      return [Task(f'Enable linger for {user} user', f'sudo loginctl enable-linger {user}'.split()).run()]
 
 
 def _api_key() -> Optional[str]:
@@ -1055,7 +1049,9 @@ def _update_web(env: dict, restart_updater: bool, progress) -> List[Task]:
   if env['is_amplipi'] or env['is_ci']:
     # start the user manager at boot, instead of after first login
     # this is needed so the user systemd services start at boot
-    tasks += print_progress(_enable_linger(env['user'], env))
+    task = _enable_linger(env['user'], env)
+    if task is not None:
+      tasks += print_progress(task)
   return tasks
 
 
@@ -1071,7 +1067,9 @@ def _update_display(env: dict, progress) -> List[Task]:
   if env['is_amplipi']:
     # start the user manager at boot, instead of after first login
     # this is needed so the user systemd services start at boot
-    tasks += print_progress(_enable_linger(env['user'], env))
+    task = _enable_linger(env['user'], env)
+    if task is not None:
+      tasks += print_progress(task)
   return tasks
 
 
@@ -1090,7 +1088,9 @@ def _update_audiodetector(env: dict, progress) -> List[Task]:
     tasks += print_progress(_restart_service('amplipi-audiodetector'))
   # start the user manager at boot, instead of after first login
   # this is needed so the user systemd services start at boot
-  tasks += print_progress(_enable_linger(env['user'], env))
+  task = _enable_linger(env['user'], env)
+  if task is not None:
+    tasks += print_progress(task)
   return tasks
 
 
@@ -1278,13 +1278,15 @@ def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_
       print('Python dependency install step failed, exiting...')
       return False
   if custom_deps:
-    with open(os.path.join(env['base_dir'], 'requirements.txt'), encoding='utf-8') as req:
-      custom_tasks = _install_custom_deps()
-      progress(custom_tasks)
-      tasks += custom_tasks
-    if failed():
-      print('Python dependency install step failed, exiting...')
-      return False
+    custom_deps_dir = "/data/update_scripts"
+    custom_deps = os.listdir(custom_deps_dir)
+    for dep in custom_deps:
+      if dep != "README.md":
+        custom_tasks = _install_custom_deps(dep)
+        progress(custom_tasks)
+        tasks += custom_tasks
+        if failed():
+          print(f'Custom dependency {dep} failed to install')
   if web:
     tasks += _update_web(env, restart_updater, progress)
     if failed():

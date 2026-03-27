@@ -13,7 +13,8 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
   --pw:      generate and set a new random password
   --dev:      run with development flag
   --alsa:    configure alsa settings
-  --no-deps: skip installing os-deps, python-deps, and custom-deps on AmpliPi"
+  --no-deps: skip installing os-deps, python-deps, and custom-deps on AmpliPi
+  --no-web: Skip compiling the web directory. May result in failures or odd behavior if you haven't compiled recently, but saves a lot of time if you have compiled recently."
 
 user_host='pi@amplipi.local'
 user_host_set=false
@@ -22,6 +23,7 @@ pw=false
 dev=false
 alsa=false
 deps=true
+web=true
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --fw) fw=true ;;
@@ -29,6 +31,7 @@ while [[ "$#" -gt 0 ]]; do
     --alsa) pw=true ;;
     --dev) dev=true ;;
     --no-deps) deps=false ;;
+    --no-web) web=false ;;
     -h|--help) echo -e "$HELP"; exit 0 ;;
     *) if ! $user_host_set; then
           user_host=$1
@@ -181,11 +184,13 @@ else
 fi
 poetry version ${git_info}
 
-echo "Building web app"
-pushd ../web            # Change to web directory
-npm install             # Install nodejs dependencies
-npm run build           # Build the web app
-popd
+if $web; then
+  echo "Building web app"
+  pushd ../web            # Change to web directory
+  npm install             # Install nodejs dependencies
+  npm run build           # Build the web app
+  popd
+fi
 
 # pull in the latest binaries
 git lfs checkout
