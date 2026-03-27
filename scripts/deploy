@@ -121,7 +121,7 @@ if ! which git-lfs; then
   echo "git-lfs needs to be installed to use this script"
 fi
 
-if ! command -v uv >/dev/null 2>&1; then
+if ! command uv --version >/dev/null 2>&1; then
   echo ""
   echo "uv not found, installing..."
 
@@ -129,8 +129,6 @@ if ! command -v uv >/dev/null 2>&1; then
 
   export PATH="$HOME/.local/bin:$PATH"
 fi
-
-sleep 50
 
 if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate && ! -e ../venv/Scripts/activate ]]; then
   echo ""
