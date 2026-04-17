@@ -23,14 +23,23 @@ pw=false
 dev=false
 alsa=false
 deps=true
+dep_filter=()
 web=true
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --fw) fw=true ;;
     --pw) pw=true ;;
-    --alsa) pw=true ;;
+    --alsa) alsa=true ;;
     --dev) dev=true ;;
     --no-deps) deps=false ;;
+    --dep-filter)
+    if [[ -z "$2" || "$2" =~ ^-- ]]; then
+      echo "Error: --dep-filter requires a value"
+      exit 1
+    fi
+    dep_filter+=("$2")
+    shift
+    ;;
     --no-web) web=false ;;
     -h|--help) echo -e "$HELP"; exit 0 ;;
     *) if ! $user_host_set; then
@@ -233,6 +242,9 @@ $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
 $deps && opts="$opts --os-deps --python-deps --custom-deps"
 $dev && opts="$opts --development"
+if [[ ${#dep_filter[@]} -gt 0 ]]; then
+  opts="$opts ${dep_filter[@]/#/--dep-filter }"
+fi
 ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" || echo ""
 
 printf "Waiting for AmpliPi to restart"
