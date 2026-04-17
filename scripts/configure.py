@@ -308,9 +308,21 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     },
     'bluetooth': {
         'amplipi_only': True,
-        'apt': ['libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'bluealsa', 'python3-dbus',
-                'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4'],
+        'apt': ['libsndfile1', 'libsndfile1-dev', 'libbluetooth-dev', 'python3-dbus',
+                'libasound2-dev', 'git', 'autotools-dev', 'automake', 'libtool', 'm4',
+                'build-essential', 'pkg-config', 'python3-docutils', 'libdbus-1-dev',
+                'libglib2.0-dev', 'libsbc-dev'],
         'script': [
+
+            # Install bluealsa from git
+            'echo installing bluealsa from source',
+            'git clone https://github.com/arkq/bluez-alsa',
+            'cd bluez-alsa',
+            'autoreconf --install --force',
+            './configure --disable-aac --disable-ldac --disable-aptx --disable-opus',
+            'sudo make -j$(nproc)',
+            'sudo make install',
+
             # referencing arm here is okay because bluetooth is marked as 'amplipi_only'
             'sudo cp bin/arm/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
             'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
@@ -348,6 +360,15 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         ]
     }
 }
+
+
+def filter_deps(dep: str, dep_filter: List[str]) -> bool:
+  ret = len(dep_filter) > 0 and dep not in dep_filter
+  if ret:
+    print(f"\n{dep} not in {dep_filter}, skipping...\n")
+    time.sleep(1)
+
+  return ret
 
 
 def _check_and_update_streamer(env):
@@ -461,7 +482,7 @@ def _setup_loopbacks(base_dir) -> List[Task]:
   ]).run()]
 
 
-def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys()) -> List[Task]:
+def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter: List[str] = []) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
     return tasks
@@ -493,6 +514,9 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys()) -> List[Tas
   files = []
   scripts: Dict[str, List[str]] = {}
   for dep in deps:
+    if filter_deps(dep, dep_filter):
+      continue
+
     install_steps = _os_deps[dep]
     if install_steps.get('amplipi_only', False) and not env['is_amplipi']:
       continue
@@ -567,6 +591,9 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys()) -> List[Tas
 
   # Run scripts
   for dep, script in scripts.items():
+    print(f"\ndep: {dep} \nscript: {script}\n")
+    if filter_deps(dep, dep_filter):
+      continue
     sh_loc = f'{env["base_dir"]}/install_{dep}.sh'
     with open(sh_loc, 'a') as sh:
       for scrap in script:
@@ -1221,7 +1248,8 @@ def add_tests(env, progress) -> List[Task]:
 
 def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_updater=False,
             display=True, audiodetector=True, firmware=True, password=True,
-            progress=print_task_results, development=False, ci_mode=False, with_alsa=False) -> bool:
+            progress=print_task_results, development=False, ci_mode=False, with_alsa=False,
+            dep_filter: List[str] = []) -> bool:
   """ Install and configure AmpliPi's dependencies """
   # pylint: disable=too-many-return-statements
   tasks = [Task('setup')]
@@ -1263,7 +1291,7 @@ def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_
   if failed():
     return False
   if os_deps:
-    tasks += _install_os_deps(env, progress, with_alsa, _os_deps)
+    tasks += _install_os_deps(env, progress, with_alsa, _os_deps, dep_filter)
     if failed():
       print('OS dependency install step failed, exiting...')
       return False
@@ -1340,6 +1368,8 @@ if __name__ == '__main__':
                       help='Install python dependencies (using venv)')
   parser.add_argument('--os-deps', action='store_true', default=False,
                       help='Install os dependencies using apt')
+  parser.add_argument('--dep-filter', action='append', default=[],
+                      help='Define what OS deps to install (useful for testing new install flows efficiently)')
   parser.add_argument('--custom-deps', action='store_true', default=False,
                       help='Install custom dependencies from /data/update_scripts')
   parser.add_argument('--web', '--webserver', action='store_true', default=False,
@@ -1348,7 +1378,7 @@ if __name__ == '__main__':
                       help="""Restart AmpliPis OS, rebooting all of Ampli's services \
       Only do this if you are running this from the command line. \
       When this is set False system will need to be restarted to complete an update""")
-  # --restart-updater is needed by the web updater and hasn't been changed to --reboot to simplify updgrade/downgrade logic
+  # --restart-updater is needed by the web updater and hasn't been changed to --reboot to simplify upgrade/downgrade logic
   parser.add_argument('--display', action='store_true', default=False,
                       help="Install and run the front-panel display service")
   parser.add_argument('--audiodetector', action='store_true', default=False,
@@ -1374,6 +1404,6 @@ if __name__ == '__main__':
                    web=flags.web, display=flags.display, audiodetector=flags.audiodetector,
                    firmware=flags.firmware, password=flags.password,
                    restart_updater=flags.restart_updater, development=flags.development,
-                   ci_mode=flags.ci_mode, with_alsa=flags.with_alsa)
+                   ci_mode=flags.ci_mode, with_alsa=flags.with_alsa, dep_filter=flags.dep_filter)
   if not result:
     sys.exit(1)
