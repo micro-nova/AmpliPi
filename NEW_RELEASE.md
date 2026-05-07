@@ -36,3 +36,4 @@ This project follows [Semantic Versioning](https://semver.org/). Here are some e
 - [ ] Make a release using the GitHub interface
 - [ ] Use the AmpliPi updater to update to the release
 - [ ] Test it again! If it needs changes, pull request your bugfixes against `main` and stamp a new release 😎
+- [ ] Inform Production of the new software so they keep backstock units updated prior to shipment
