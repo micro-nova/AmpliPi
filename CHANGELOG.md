@@ -1,6 +1,9 @@
 # AmpliPi Software Releases
 
 # Future Release
+
+
+# 0.4.11
 * System
   * Upgrade from 32 bit raspbian Bookworm Desktop to 64 bit raspbian Trixie Lite
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
