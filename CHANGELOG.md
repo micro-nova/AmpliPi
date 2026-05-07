@@ -1,6 +1,9 @@
 # AmpliPi Software Releases
 
 # Future Release
+
+
+# 0.4.11
 * System
   * Update our spotify provider `go-librespot` to `0.7.1`
 * Web App
