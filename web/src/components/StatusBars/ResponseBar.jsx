@@ -41,7 +41,7 @@ export default function ResponseBar(props) {
     return(
         <StatusBar
             open={open}
-            status={success}
+            success={success}
             text={text.current}
             onClose={() => {setOpen(false);}}
         />
