@@ -12,9 +12,10 @@ import { useState } from "react";
 import VolumeZones from "@/components/VolumeZones/VolumeZones";
 import Card from "@/components/Card/Card";
 import StreamsModal from "@/components/StreamsModal/StreamsModal";
+import ZonesModal from "@/components/ZonesModal/ZonesModal";
 import { getSourceInputType } from "@/utils/getSourceInputType";
 import Chip from "@/components/Chip/Chip";
-import Grid from "@mui/material/Grid/Grid"
+import Grid from "@mui/material/Grid/Grid";
 import selectActiveSource from "@/utils/selectActiveSource";
 import Box from "@mui/material/Box/Box";
 
@@ -24,8 +25,9 @@ import { getFittestRep } from "@/utils/GroupZoneFiltering";
 
 const Player = () => {
     const [streamsModalOpen, setStreamsModalOpen] = React.useState(false);
+    const [zonesModalOpen, setZonesModalOpen] = React.useState(false);
     const selectedSourceId = usePersistentStore((s) => s.selectedSource);
-    // TODO: dont index into sources. id isn't guarenteed to line up with order
+    // TODO: Don't index into sources. id isn't guaranteed to line up with order
     const img_url = useStatusStore(
         (s) => s.status.sources[selectedSourceId].info.img_url
     );
@@ -62,6 +64,12 @@ const Player = () => {
     // This is a bootleg XOR statement, only works if there is exactly one zone or exactly one group, no more than that and not both
     const alone = ((usedGroups.length == 1) || (zonesLeft.length == 1)) && !((usedGroups.length > 0) && (zonesLeft.length > 0));
 
+    React.useEffect(() => {
+        if(zonesLeft.length == 0 && usedGroups.length == 0){
+            setExpanded(false);
+        }
+    }, [zonesLeft.length, usedGroups.length]); // Automatically unexpand when no zones or groups are connected
+
     selectActiveSource();
 
     function DropdownArrow() {
@@ -85,11 +93,19 @@ const Player = () => {
                     onClose={() => setStreamsModalOpen(false)}
                 />
             )}
+
+            {zonesModalOpen && (
+                <ZonesModal
+                    sourceId={selectedSourceId}
+                    setZoneModalOpen={setZonesModalOpen}
+                    onClose={() => setZonesModalOpen(false)}
+                />
+            )}
             <Grid
-              container
-              direction="column"
-              justifyContent="center"
-              alignItems="center"
+                container
+                direction="column"
+                justifyContent="center"
+                alignItems="center"
             >
                 <Grid item xs={2} sm={4} md={4}>
                     <div className="stream-title" >
@@ -102,9 +118,9 @@ const Player = () => {
                     <Box
                         className="album-art-container"
                         sx={{
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
                         }}
                     >
                         <img src={img_url} className="player-album-art" />
@@ -116,26 +132,21 @@ const Player = () => {
             <div className={alone ? "solo-media-controls" : "grouped-media-controls" } >
                 <MediaControl selectedSource={selectedSourceId} />
             </div>
-            { (!is_streamer && zones.length > 0) ? (
-                (alone) ? (
-                    <div className="player-volume-container" >
-                        <VolumeZones alone open sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
-                    </div>
-                ) : (
-                    <Card className="player-volume-container">
+            { !is_streamer && (
+                <Card className="player-volume-container">
+                    { (zones.length > 0) && (
                         <div className="player-volume-header">
                             <CardVolumeSlider sourceId={selectedSourceId} />
                             <IconButton onClick={() => setExpanded(!expanded)}>
                                 <DropdownArrow />
                             </IconButton>
                         </div>
-
-                        <div className={`player-volume-body pill-scrollbar ${expanded ? "expanded-volume-body" : ""}`}>
-                            <VolumeZones open={(expanded)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
-                        </div>
-                    </Card>
-                )
-            ) : null }
+                    )}
+                    <div className={`player-volume-body ${(expanded) && "expanded-volume-body pill-scrollbar scrollable"}`}>
+                        <VolumeZones setZonesModalOpen={setZonesModalOpen} open={(expanded)} sourceId={selectedSourceId} zones={zonesLeft} groups={usedGroups} groupsLeft={groupsLeft} />
+                    </div>
+                </Card>
+            ) }
         </div>
     );
 };

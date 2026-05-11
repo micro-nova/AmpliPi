@@ -84,6 +84,11 @@
   flex-direction: column;
   @media (general.$is-portrait) {
     max-height: calc(85vh - 120px);
+  }
+}
+
+.scrollable{ // Was part of .player-volume-body until it started adding scrollbars when only the [  +  ] was in that div
+  @media (general.$is-portrait) {
     overflow-y: auto;
   }
 }
