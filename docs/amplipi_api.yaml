@@ -2680,7 +2680,7 @@ paths:
       tags:
       - config
       summary: Lms Mode
-      description: Toggles Logitech Media Server mode on or off.
+      description: Toggles Lyrion Music Server mode on or off.
       operationId: lms_mode_api_lms_mode_post
       responses:
         '200':

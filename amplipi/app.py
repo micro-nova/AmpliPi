@@ -238,7 +238,7 @@ def shutdown():
   }
 )
 def lms_mode(ctrl: Api = Depends(get_ctrl)):
-  """ Toggles Logitech Media Server mode on or off. """
+  """ Toggles Lyrion Music Server mode on or off. """
   new_config: models.Status
   if ctrl.lms_mode:
     logging.info("turning LMS mode off...")
@@ -246,14 +246,14 @@ def lms_mode(ctrl: Api = Depends(get_ctrl)):
       os.remove(pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode"))
     except FileNotFoundError:
       pass
-    Popen('sudo systemctl stop logitechmediaserver', shell=True)
-    Popen('sudo systemctl disable logitechmediaserver', shell=True)
+    Popen('sudo systemctl stop lyrionmusicserver', shell=True)
+    Popen('sudo systemctl disable lyrionmusicserver', shell=True)
     new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=False))
   else:
     logging.info("turning LMS mode on...")
     pathlib.Path(defaults.USER_CONFIG_DIR, "lms_mode").touch()
-    Popen('sudo systemctl start logitechmediaserver', shell=True)
-    Popen('sudo systemctl enable logitechmediaserver', shell=True)
+    Popen('sudo systemctl start lyrionmusicserver', shell=True)
+    Popen('sudo systemctl enable lyrionmusicserver', shell=True)
     new_config = models.Status(**defaults.default_config(is_streamer=ctrl.is_streamer, lms_mode=True))
   load_config(new_config, ctrl)
 
