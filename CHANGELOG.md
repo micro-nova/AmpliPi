@@ -3,7 +3,7 @@
 # Future Release
 * System
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
-
+  * Update our spotify provider `go-librespot` to `0.7.3`
 
 # 0.4.11
 * System
