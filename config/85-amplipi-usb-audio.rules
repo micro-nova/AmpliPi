@@ -1,1 +1,4 @@
 ACTION=="add", SUBSYSTEM=="sound", DEVPATH=="/devices/platform/soc/3f980000.usb/usb1/1-1/1-1.3/1-1.3\:1.0/sound/card?", ATTR{id}="cmedia8chint"
+
+# Disable USB autosuspend for CM6206 audio codec to prevent mid-stream suspend hang
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0d8c", ATTR{power/control}="on"
