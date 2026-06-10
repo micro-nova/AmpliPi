@@ -3,9 +3,12 @@
 import sys
 import subprocess
 import signal
+import time
 
 args = sys.argv[1:]
 print(f'Starting process monitor for process: {args}')
+
+_START_TIME_THRESHOLD = 10  # seconds — consider a run "successful" if it lasted this long
 
 
 def signal_handler(sig, frame):
@@ -29,7 +32,10 @@ for sig in range(1, signal.NSIG):
   except:
     pass
 
+consecutive_failures = 0
+
 while True:
+  start_time = time.monotonic()
   proc = subprocess.Popen(args)
 
   try:
@@ -52,3 +58,15 @@ while True:
   # If the subprocess exits with a non-zero code, restart it
   print(
       f"Subprocess exited with non-zero code: {proc.returncode}. Restarting...", flush=True)
+
+  # Track consecutive failures for exponential backoff.
+  # Reset if the process ran long enough to be considered a successful start.
+  elapsed = time.monotonic() - start_time
+  if elapsed >= _START_TIME_THRESHOLD:
+    consecutive_failures = 0
+  else:
+    consecutive_failures += 1
+
+  backoff = min(2 ** consecutive_failures, 30)
+  print(f"Waiting {backoff}s before restart (consecutive_failures={consecutive_failures})...", flush=True)
+  time.sleep(backoff)
