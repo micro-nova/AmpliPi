@@ -5,6 +5,7 @@
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
   * Update our spotify provider `go-librespot` to `0.7.3`
   * Upgrade from Logitech Media Server 8.5.2 to Lyrion Music Server 9.0.3
+  * Added in-place preamp recovery when I2C writes fail persistently
 * Web App
   * Add warning for older versions of the webapp running on newer backends
 
