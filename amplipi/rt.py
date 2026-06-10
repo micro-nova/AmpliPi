@@ -145,6 +145,11 @@ class _Preamps:
 
   preamps: Dict[int, List[int]]  # Key: i2c address, Val: register values
 
+  # In-place preamp recovery — rate-limited so a benign I2C glitch
+  # never resets audio. See _recover_preamps() / write_byte_data().
+  _RECOVERY_COOLDOWN_S = 20.0
+  _last_recovery = 0.0
+
   def __init__(self, reset: bool = True, set_addr: bool = True, bootloader: bool = False, debug=True):
     self.preamps = dict()
     if not is_amplipi():
@@ -242,6 +247,41 @@ class _Preamps:
       0x4F,
     ]
 
+  def _recover_preamps(self) -> bool:
+    """ Recover a wedged/hung preamp IN-PLACE.
+
+        The bare bus.write_byte_data retry in write_byte_data only reopens the
+        Linux SMBus handle — that recovers a transient bus glitch but NOT a hung
+        preamp microcontroller (which stops ACKing -> OSError 121 / EREMOTEIO).
+        The only thing that revives a hung preamp is pulsing its reset line,
+        which is exactly what a full reboot does. This does the same WITHOUT
+        rebooting: reset the preamp(s), re-assign I2C addresses, reopen the bus,
+        and re-flush every cached register so zone state (mute/source/vol)
+        survives the reset (self.preamps is the code's source of truth, updated
+        on every write).
+
+        Rate-limited so a benign one-off glitch never resets audio. Returns True
+        if a recovery was performed (caller may retry the write).
+    """
+    now = time.time()
+    if now - self._last_recovery < self._RECOVERY_COOLDOWN_S:
+      return False
+    self._last_recovery = now
+    logger.warning('Preamp I2C wedged (EREMOTEIO) - attempting in-place recovery (reset + re-flush)')
+    try:
+      self.reset_preamps()
+      self.set_i2c_addr()
+      self.bus = SMBus(1)
+      for addr, regs in list(self.preamps.items()):
+        for reg, val in enumerate(regs):
+          time.sleep(0.001)
+          self.bus.write_byte_data(addr, reg, val)
+      logger.info('Preamp in-place recovery complete')
+      return True
+    except Exception as exc:
+      logger.error(f'Preamp in-place recovery failed: {exc}')
+      return False
+
   def write_byte_data(self, preamp_addr, reg, data):
     assert preamp_addr in _DEV_ADDRS
     assert type(preamp_addr) == int
@@ -263,9 +303,19 @@ class _Preamps:
         time.sleep(0.001)  # space out sequential calls to avoid bus errors
         self.bus.write_byte_data(preamp_addr, reg, data)
       except Exception:
-        time.sleep(0.001)
-        self.bus = SMBus(1)
-        self.bus.write_byte_data(preamp_addr, reg, data)
+        # Fallback 1: reopen the bus handle and retry (transient bus glitch).
+        try:
+          time.sleep(0.001)
+          self.bus = SMBus(1)
+          self.bus.write_byte_data(preamp_addr, reg, data)
+        except Exception:
+          # Fallback 2: a reopened fd can't revive a hung preamp MCU.
+          # Escalate to an in-place preamp reset + re-flush, then retry once more.
+          if self._recover_preamps():
+            time.sleep(0.001)
+            self.bus.write_byte_data(preamp_addr, reg, data)
+          else:
+            raise
 
   def probe_preamp(self, addr: int):
     # Scan for preamps, and set source registers to be completely digital
