@@ -82,6 +82,13 @@ _DEV_ADDRS = [0x08, 0x10, 0x18, 0x20, 0x28, 0x30]
 
 MAX_ZONES = 6 * len(_DEV_ADDRS)
 
+_I2C_ALERT_MSG = (
+  "Writing data to the I2C bus has failed and automatic recovery was unsuccessful. "
+  "Please go to Settings -> Config -> Hardware Reset.\n"
+  "If you see this message again in a short time period, "
+  "contact AmpliPi Support at support@micro-nova.com"
+)
+
 
 class FanCtrl(Enum):
   MAX6644 = 0
@@ -250,22 +257,27 @@ class _Preamps:
   def _recover_preamps(self) -> bool:
     """ Recover a wedged/hung preamp IN-PLACE.
 
-        The bare bus.write_byte_data retry in write_byte_data only reopens the
-        Linux SMBus handle — that recovers a transient bus glitch but NOT a hung
-        preamp microcontroller (which stops ACKing -> OSError 121 / EREMOTEIO).
-        The only thing that revives a hung preamp is pulsing its reset line,
-        which is exactly what a full reboot does. This does the same WITHOUT
-        rebooting: reset the preamp(s), re-assign I2C addresses, reopen the bus,
-        and re-flush every cached register so zone state (mute/source/vol)
-        survives the reset (self.preamps is the code's source of truth, updated
-        on every write).
+    The bare bus.write_byte_data retry in write_byte_data only reopens the
+    Linux SMBus handle — that recovers a transient bus glitch but NOT a hung
+    preamp microcontroller (which stops ACKing -> OSError 121 / EREMOTEIO).
+    The only thing that revives a hung preamp is pulsing its reset line,
+    which is exactly what a full reboot does. This does the same WITHOUT
+    rebooting: reset the preamp(s), re-assign I2C addresses, reopen the bus,
+    and re-flush every cached register so zone state (mute/source/vol)
+    survives the reset (self.preamps is the code's source of truth, updated
+    on every write).
 
-        Rate-limited so a benign one-off glitch never resets audio. Returns True
-        if a recovery was performed (caller may retry the write).
+    Rate-limited to once per _RECOVERY_COOLDOWN_S so a benign one-off glitch
+    never resets audio. Returns True if a recovery was performed (caller may
+    retry the write), False if on cooldown or if the recovery itself failed —
+    in both cases an alert is surfaced to the user.
     """
     now = time.time()
     if now - self._last_recovery < self._RECOVERY_COOLDOWN_S:
+      logger.warning('Preamp I2C write failed and recovery is still on cooldown — surfacing alert')
+      utils.add_alert(_I2C_ALERT_MSG)
       return False
+
     self._last_recovery = now
     logger.warning('Preamp I2C wedged (EREMOTEIO) - attempting in-place recovery (reset + re-flush)')
     try:
@@ -280,6 +292,7 @@ class _Preamps:
       return True
     except Exception as exc:
       logger.error(f'Preamp in-place recovery failed: {exc}')
+      utils.add_alert(_I2C_ALERT_MSG)
       return False
 
   def write_byte_data(self, preamp_addr, reg, data):
@@ -310,7 +323,9 @@ class _Preamps:
           self.bus.write_byte_data(preamp_addr, reg, data)
         except Exception:
           # Fallback 2: a reopened fd can't revive a hung preamp MCU.
-          # Escalate to an in-place preamp reset + re-flush, then retry once more.
+          # Escalate to an in-place preamp reset + re-flush, then retry once
+          # more. If recovery is on cooldown or itself fails, an alert is
+          # surfaced to the user inside _recover_preamps().
           if self._recover_preamps():
             time.sleep(0.001)
             self.bus.write_byte_data(preamp_addr, reg, data)
