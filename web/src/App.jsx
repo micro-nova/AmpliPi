@@ -140,8 +140,8 @@ export const useStatusStore = create((set, get) => ({
             }
         });
     },
-    setAlert: (text, onClose) => {
-        set({alert: {"open": true, "text": text, "onClose": onClose}});
+    setAlert: (text, onClose, severity = "error") => {
+        set({alert: {"open": true, "text": text, "severity": severity, "onClose": onClose}});
     },
 
     getSystemState: () => {
@@ -155,7 +155,7 @@ export const useStatusStore = create((set, get) => ({
                         } else {
                             set({ status: s, loaded: true, disconnected: false });
                             if(s.info.version != import.meta.env.VITE_BACKEND_VERSION){
-                                set({alert: {"open": true, "text": "Your webapp is out of date, closing this message will refresh the page. If this message persists post-refresh, clear your browser cache and try again.", "onClose": () => {window.location.reload();}}});
+                                set({alert: {"open": true, "text": "Your webapp is out of date, closing this message will refresh the page. If this message persists post-refresh, clear your browser cache and try again.", "onClose": () => {window.location.reload();}, "severity": "warning"}});
                             }
 
                             for(let i = 0; i < s.info.global_alerts.length; i++){
