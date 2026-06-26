@@ -175,15 +175,13 @@ if [[ -z $img_file ]]; then
     url=https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04/$release.xz
   fi
   compressed_image=$HOME/Downloads/$release.xz
+  img_file=$HOME/Downloads/$release
   if [[ ! -f $compressed_image ]]; then
     echo "Downloading Raspberry Pi OS"
     wget $url -O $compressed_image # save for later
   fi
-  mkdir $release
-  pushd $release
   echo "Extracting Raspberry Pi OS"
-  unxz -f $compressed_image # -f to forcefully unpack compressed image in case of repeated uses of this script
-  popd # $release
+  unxz -fk $compressed_image # -f to overwrite existing, -k to keep the .xz for later reuse
 fi
 
 echo "waiting for 5 seconds to load the pi's filesystem"

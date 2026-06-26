@@ -244,6 +244,7 @@ $pw && opts="$opts --password"
 $alsa && opts="$opts --with-alsa"
 $deps && opts="$opts --os-deps --python-deps --custom-deps"
 $dev && opts="$opts --development"
+$alsa && opts="$opts --with-alsa"
 if [[ ${#dep_filter[@]} -gt 0 ]]; then
   opts="$opts ${dep_filter[@]/#/--dep-filter }"
 fi
