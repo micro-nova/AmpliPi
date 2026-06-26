@@ -412,6 +412,8 @@ def _check_and_setup_platform(development, ci_mode):
       env['arch'] = 'arm64'
 
     env['is_amplipi'] = 'amplipi' in platform.node()  # checks hostname
+    if env['is_amplipi']:
+      env['config_dir'] = '/data/.config/amplipi'
 
     if env['arch'] == 'x64' and env['has_apt']:
       # possibly a development machine running a debian-based distro
@@ -632,7 +634,7 @@ def _install_custom_deps(dep):
   _, extension = os.path.splitext(dep)
   if os.path.isfile(f"/data/update_scripts/{dep}") and extension.lower() == ".sh":
     tasks += [Task(f'install custom settings from {dep}',
-                   f'bash /data/update_scripts"{dep}'.split()).run()]
+                   f'bash /data/update_scripts/{dep}'.split()).run()]
   return tasks
 
 
