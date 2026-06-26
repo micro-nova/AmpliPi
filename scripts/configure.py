@@ -255,8 +255,10 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         'apt': ['libcrypt-openssl-rsa-perl', 'libio-socket-ssl-perl', 'libopusfile0', 'squeezelite'],
         'copy': [{'from': 'bin/ARCH/find_lms_server', 'to': 'streams/find_lms_server'}],
         'script': [
+            # uname -m returns aarch64 on 64-bit (Trixie) and armv7l on 32-bit (Buster), this helps sort 64 or 32 bit LMS
+            'LMS_ARCH=$([ "$(uname -m)" = "aarch64" ] && echo arm64 || echo arm)',
             'if [ ! $(dpkg-query --show --showformat=\'${Status}\' lyrionmusicserver | grep -q installed) ]; then '
-            '  wget -nv https://downloads.lms-community.org/LyrionMusicServer_v9.0.3/lyrionmusicserver_9.0.3_arm.deb -O /tmp/lyrionmusicserver_9.0.3.deb',
+            '  wget -nv https://downloads.lms-community.org/LyrionMusicServer_v9.0.3/lyrionmusicserver_9.0.3_${LMS_ARCH}.deb -O /tmp/lyrionmusicserver_9.0.3.deb',
             '  sudo dpkg -i /tmp/lyrionmusicserver_9.0.3.deb',
             '  if [ ! -e /data/.config/amplipi/lms_mode ] ; then sudo systemctl disable lyrionmusicserver; fi',
             '  if [ ! -e /data/.config/amplipi/lms_mode ] ; then sudo systemctl stop lyrionmusicserver; fi',
@@ -551,7 +553,8 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
         [Task(f"copy {_from} to {_to}", f"sudo cp {_from} {_to}".split()).run()])
     # copy boot_config.txt RPi firmware configuration file
     _boot_config_from = f"{env['base_dir']}/config/boot_config.txt"
-    _boot_config_to = "/boot/config.txt"
+    # Bookworm/Trixie mounts the boot partition at /boot/firmware; older releases use /boot
+    _boot_config_to = "/boot/firmware/config.txt" if os.path.isdir("/boot/firmware") else "/boot/config.txt"
     tasks += print_progress([Task(f"copy {_boot_config_from} to {_boot_config_to}",
                             f"sudo cp {_boot_config_from} {_boot_config_to}".split()).run()])
     # fix usb soundcard name
