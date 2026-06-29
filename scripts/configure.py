@@ -330,7 +330,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
             'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
             # TODO: investigate where to put these services
-            'sudo cp config/bluetooth/bluealsa.service /lib/systemd/system/',
+            'sudo cp config/bluetooth/bluealsa.service /usr/lib/systemd/system/',
             'sudo cp streams/bluetooth_agent /usr/local/bin/',
             'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
 
@@ -486,7 +486,7 @@ def _setup_loopbacks(base_dir) -> List[Task]:
   ]).run()]
 
 
-def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter: List[str] = []) -> List[Task]:
+def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter: List[str] = [], development: bool = False) -> List[Task]:
   def print_progress(tasks):
     progress(tasks)
     return tasks
@@ -510,8 +510,14 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
   # Upgrade current packages
   print_progress(
       [Task("upgrading debian packages, this will take 10+ minutes", success=True)])
-  tasks += print_progress([Task('upgrade debian packages',
-                          'sudo apt-get dist-upgrade --assume-yes'.split()).run()])
+  if development:
+    # Show verbose printout of what debian packages are being installed if developing
+    # this helps find out what step of the upgrade process you get hung up on (or if it's just a really long install)
+    tasks += print_progress([Task('upgrade debian packages',
+                            'sudo apt-get update --allow-releaseinfo-change && sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --assume-yes'.split()).run()])
+  else:
+    tasks += print_progress([Task('upgrade debian packages',
+                            'sudo apt-get dist-upgrade --assume-yes'.split()).run()])
 
   # organize stuff to install
   packages = set()
@@ -1296,7 +1302,7 @@ def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_
   if failed():
     return False
   if os_deps:
-    tasks += _install_os_deps(env, progress, with_alsa, _os_deps, dep_filter)
+    tasks += _install_os_deps(env, progress, with_alsa, _os_deps, dep_filter, development)
     if failed():
       print('OS dependency install step failed, exiting...')
       return False
@@ -1312,6 +1318,7 @@ def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_
       return False
   if custom_deps:
     custom_deps_dir = "/data/update_scripts"
+    os.makedirs(custom_deps_dir, exist_ok=True)
     custom_deps = os.listdir(custom_deps_dir)
     for dep in custom_deps:
       if dep != "README.md":
