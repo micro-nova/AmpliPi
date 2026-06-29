@@ -3,21 +3,21 @@
 
 set -e
 cd "$( dirname "$0" )"/..
-if [[ ! -d /home/pi/amplipi-dev/venv ]] || [[ ! -e /home/pi/amplipi-dev/venv/bin/activate && ! -e /home/pi/amplipi-dev/venv/Scripts/activate ]]; then
+
+VENV=/home/pi/amplipi-dev/venv
+
+export PATH="$HOME/.local/bin:$PATH"
+
+if [[ ! -d $VENV ]] || [[ ! -e $VENV/bin/python ]]; then
   echo ""
   echo "Setting up virtual environment"
-
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  export PATH="$HOME/.local/bin:$PATH"
-
-  mkdir -p /home/pi/amplipi-dev/venv
-
-  uv venv /home/pi/amplipi-dev/venv --python 3.8
+  if ! command -v uv &>/dev/null; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+  fi
+  uv venv $VENV --python 3.8
 fi
 
-. venv/bin/activate
-pip3 install --upgrade pip wheel # Avoid errors about using legacy 'setup.py install'
-pip3 install -r requirements.txt
-deactivate
+# uv pip bypasses PEP 668 (Trixie blocks system pip) and doesn't require pip in the venv
+uv pip install --python $VENV/bin/python -r requirements.txt
 
 echo "install python deps complete!"
