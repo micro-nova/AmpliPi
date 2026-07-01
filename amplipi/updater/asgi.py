@@ -37,6 +37,7 @@ import shutil
 import asyncio
 
 import hashlib
+import lzma
 
 import configparser
 
@@ -528,27 +529,54 @@ class BootSlot(Enum):
   B = BootPair(boot=3, root=6)
 
 
-def get_checksum(path: str) -> str:
+class PartitionSize(Enum):
+  # The size of boot and root partitions, used to provide a progress bar for the reflashing step
+  BOOT = 268435456
+  ROOT = 11470372864
+
+
+def get_checksum(path: str, total_size: int, progress_cb: Optional[Callable] = None) -> str:
   h = hashlib.sha256()
+  hashed_size = 0
   with open(path, "rb") as f:
     while chunk := f.read(4 * 1024 * 1024):
       h.update(chunk)
+      hashed_size += len(chunk)
+      if progress_cb:
+        progress_cb(hashed_size, total_size)
     return h.hexdigest()
 
 
 @router.post('/update/flash')
 async def flash_partition():
-  def flash(image: str, partition: int):
-    decompress = subprocess.Popen(["xzcat", image], stdout=subprocess.PIPE)
-    subprocess.run(["sudo", "dd", f"of=/dev/mmcblk0p{partition}", "bs=4M", "conv=fsync"], stdin=decompress.stdout, stderr=subprocess.PIPE, check=True)
-    decompress.stdout.close()
-    decompress.wait()
+  def flash(image: str, partition: int, total: int, progress_cb: Optional[Callable] = None):
+    written = 0
+    dd = subprocess.Popen(
+      ['sudo', 'dd', f'of=/dev/mmcblk0p{partition}', 'bs=4M', 'conv=fsync'],
+      stdin=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    with lzma.open(image, 'rb') as src:
+      while chunk := src.read(4 * 1024 * 1024):
+        dd.stdin.write(chunk)
+        written += len(chunk)
+        if progress_cb:
+          progress_cb(written, total)
+    dd.stdin.close()
+    dd.wait()
+    if dd.returncode != 0:
+      raise RuntimeError(f'dd failed: {dd.stderr.read().decode()}')
 
   manifest_dir = "/data/update/manifest.json"
   root_dir = "/data/update/root.img.xz"
   boot_dir = "/data/update/boot.img.xz"
 
-  try:
+  q: asyncio.Queue = asyncio.Queue()
+  loop = asyncio.get_running_loop()
+
+  def progress(done, total, label):
+    loop.call_soon_threadsafe(q.put_nowait, {'type': 'info', 'message': f'{label}: {done/total:.0%}'})
+
+  def do_checks():
     manifest = None
     if os.path.exists(manifest_dir):
       with open(manifest_dir, "r", encoding="UTF-8") as f:
@@ -562,7 +590,7 @@ async def flash_partition():
     root_size = os.path.getsize(root_dir)
     if manifest.root.size != root_size:
       raise RuntimeError("Root image size does not match expected value")
-    if manifest.root.sha256 != get_checksum(root_dir):
+    if manifest.root.sha256 != get_checksum(root_dir, root_size, lambda done, total: progress(done, total, "Verifying root image")):
       raise RuntimeError("Root image checksum does not match expected value")
 
     if manifest.boot is not None:
@@ -571,26 +599,64 @@ async def flash_partition():
       boot_size = os.path.getsize(boot_dir)
       if manifest.boot.size != boot_size:
         raise RuntimeError("Boot image size does not match expected value")
-      if manifest.boot.sha256 != get_checksum(boot_dir):
+      if manifest.boot.sha256 != get_checksum(boot_dir, boot_size, lambda done, total: progress(done, total, "Verifying boot image")):
         raise RuntimeError("Boot image checksum does not match expected value")
 
-  except Exception as e:
-    raise HTTPException(f"Update failed pre-flash due to exception:\n{e}")
+    return manifest
 
-  # Congrats, everything is in place, you've survived this far, time to actually do anything at all
-  try:
-    boot_slot = os.environ.get("BOOT_SLOT")
-    flash_target = BootSlot.B if boot_slot == "A" else BootSlot.A if boot_slot == "B" else None
+  async def stream():
+    future = loop.run_in_executor(None, do_checks)
+    while not future.done():
+      await asyncio.sleep(0.1)
+      while not q.empty():
+        yield {'data': json.dumps(q.get_nowait())}
+    await asyncio.sleep(0)  # let any final call_soon_threadsafe callbacks land
+    while not q.empty():
+      yield {'data': json.dumps(q.get_nowait())}
+    try:
+      manifest = future.result()
+      yield {'data': json.dumps({'type': 'success', 'message': 'All checks successful!'})}
+    except Exception as e:
+      yield {'data': json.dumps({'type': 'error', 'message': str(e)})}
+      return
 
-    if flash_target is not None:
-      flash(root_dir, flash_target.value.root)
+    # Congrats, everything is in place, you've survived this far, time to actually do anything at all
+    try:
+      boot_slot = os.environ.get("BOOT_SLOT")
+      flash_target = BootSlot.B if boot_slot == "A" else BootSlot.A if boot_slot == "B" else None
+      if flash_target is None:
+        yield {'data': json.dumps({'type': 'error', 'message': f'BOOT_SLOT env var is "{boot_slot}", cannot determine flash target'})}
+        return
+      yield {'data': json.dumps({'type': 'info', 'message': f'Currently on slot {boot_slot}, will flash slot {flash_target.name} (root p{flash_target.value.root}, boot p{flash_target.value.boot})'})}
+
+      yield {'data': json.dumps({'type': 'info', 'message': 'Flashing root image...'})}
+      root_future = loop.run_in_executor(None, lambda: flash(root_dir, flash_target.value.root, PartitionSize.ROOT.value, lambda done, total: progress(done, total, 'Flashing root')))
+      while not root_future.done():
+        await asyncio.sleep(0.1)
+        while not q.empty():
+          yield {'data': json.dumps(q.get_nowait())}
+      await asyncio.sleep(0)
+      while not q.empty():
+        yield {'data': json.dumps(q.get_nowait())}
+      root_future.result()
+      yield {'data': json.dumps({'type': 'success', 'message': 'Root image flashed'})}
 
       if manifest.boot is not None:
-        flash(boot_dir, flash_target.value.boot)
-    else:
-      raise HTTPException("flash_target undefined")
-  except Exception as e:
-    raise HTTPException(f"Update failed mid-flash due to exception:\n{e}")
+        yield {'data': json.dumps({'type': 'info', 'message': 'Flashing boot image...'})}
+        boot_future = loop.run_in_executor(None, lambda: flash(boot_dir, flash_target.value.boot, PartitionSize.BOOT.value, lambda done, total: progress(done, total, 'Flashing boot')))
+        while not boot_future.done():
+          await asyncio.sleep(0.1)
+          while not q.empty():
+            yield {'data': json.dumps(q.get_nowait())}
+        await asyncio.sleep(0)
+        while not q.empty():
+          yield {'data': json.dumps(q.get_nowait())}
+        boot_future.result()
+        yield {'data': json.dumps({'type': 'success', 'message': 'Boot image flashed'})}
+    except Exception as e:
+      yield {'data': json.dumps({'type': 'error', 'message': f'Update failed mid-flash: {e}'})}
+
+  return EventSourceResponse(stream())
 
 
 app.include_router(auth_router)
