@@ -36,12 +36,15 @@ import pathlib
 import shutil
 import asyncio
 
+import hashlib
+
 import configparser
 
 # web framework
 import requests
 from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter, Response
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import HTTPException
 from sse_starlette.sse import EventSourceResponse
 from starlette.responses import FileResponse
 # web server
@@ -49,8 +52,10 @@ import uvicorn
 # models
 # pylint: disable=no-name-in-module
 from pydantic import BaseModel
+from typing import Optional, Callable
+from enum import Enum
 
-from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash,\
+from ..auth import CookieOrParamAPIKey, router as auth_router, set_password_hash, unset_password_hash, \
   NotAuthenticatedException, not_authenticated_exception_handler, create_access_key
 
 app = FastAPI()
@@ -496,6 +501,96 @@ def request_support():
     return Response(content=f"{out.stdout.decode('utf')}", media_type="text/html")
   except Exception as e:
     return Response(content=f"failed to request tunnel: {e}", media_type="text/html")
+
+
+class ImageMetadata(BaseModel):
+  filename: str
+  sha256: str
+  size: int
+
+
+class UpdateManifest(BaseModel):
+  version: str
+  boot: Optional[ImageMetadata] = None
+  root: ImageMetadata
+
+
+class BootPair(BaseModel):
+  # Partition mappings for the boot and root partitions of OS A and B
+  boot: int
+  root: int
+
+
+class BootSlot(Enum):
+  # RPi A:B tryboot has two boot slots: A and B
+  # This enum shows what partitions are doing which jobs for either boot slot
+  A = BootPair(boot=2, root=5)
+  B = BootPair(boot=3, root=6)
+
+
+def get_checksum(path: str) -> str:
+  h = hashlib.sha256()
+  with open(path, "rb") as f:
+    while chunk := f.read(4 * 1024 * 1024):
+      h.update(chunk)
+    return h.hexdigest()
+
+
+@router.post('/update/flash')
+async def flash_partition():
+  def flash(image: str, partition: int):
+    decompress = subprocess.Popen(["xzcat", image], stdout=subprocess.PIPE)
+    subprocess.run(["sudo", "dd", f"of=/dev/mmcblk0p{partition}", "bs=4M", "conv=fsync"], stdin=decompress.stdout, stderr=subprocess.PIPE, check=True)
+    decompress.stdout.close()
+    decompress.wait()
+
+  manifest_dir = "/data/update/manifest.json"
+  root_dir = "/data/update/root.img.xz"
+  boot_dir = "/data/update/boot.img.xz"
+
+  try:
+    manifest = None
+    if os.path.exists(manifest_dir):
+      with open(manifest_dir, "r", encoding="UTF-8") as f:
+        manifest = UpdateManifest(**json.load(f))
+
+    if manifest is None:
+      raise RuntimeError("Manifest unable to load due to error")
+    if not os.path.exists(root_dir):
+      raise RuntimeError("Root image not found")
+
+    root_size = os.path.getsize(root_dir)
+    if manifest.root.size != root_size:
+      raise RuntimeError("Root image size does not match expected value")
+    if manifest.root.sha256 != get_checksum(root_dir):
+      raise RuntimeError("Root image checksum does not match expected value")
+
+    if manifest.boot is not None:
+      if not os.path.exists(boot_dir):
+        raise RuntimeError("Boot image expected but not found")
+      boot_size = os.path.getsize(boot_dir)
+      if manifest.boot.size != boot_size:
+        raise RuntimeError("Boot image size does not match expected value")
+      if manifest.boot.sha256 != get_checksum(boot_dir):
+        raise RuntimeError("Boot image checksum does not match expected value")
+
+  except Exception as e:
+    raise HTTPException(f"Update failed pre-flash due to exception:\n{e}")
+
+  # Congrats, everything is in place, you've survived this far, time to actually do anything at all
+  try:
+    boot_slot = os.environ.get("BOOT_SLOT")
+    flash_target = BootSlot.B if boot_slot == "A" else BootSlot.A if boot_slot == "B" else None
+
+    if flash_target is not None:
+      flash(root_dir, flash_target.value.root)
+
+      if manifest.boot is not None:
+        flash(boot_dir, flash_target.value.boot)
+    else:
+      raise HTTPException("flash_target undefined")
+  except Exception as e:
+    raise HTTPException(f"Update failed mid-flash due to exception:\n{e}")
 
 
 app.include_router(auth_router)
