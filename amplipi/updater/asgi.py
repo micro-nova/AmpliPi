@@ -567,8 +567,13 @@ async def flash_partition():
       raise RuntimeError(f'dd failed: {dd.stderr.read().decode()}')
 
   manifest_dir = "/data/update/manifest.json"
-  root_dir = "/data/update/root.img.xz"
-  boot_dir = "/data/update/boot.img.xz"
+  root_img = "/data/update/root.img.xz"
+  boot_img = "/data/update/boot.img.xz"
+  if os.environ.get("BOOT_SLOT") != "A" and os.environ.get("BOOT_SLOT") != "B":
+    raise Exception("Boot slot could not be read")
+
+  active_slot = BootSlot.A if os.environ.get("BOOT_SLOT") == "A" else BootSlot.B
+  target_slot = BootSlot.B if os.environ.get("BOOT_SLOT") == "A" else BootSlot.A
 
   q: asyncio.Queue = asyncio.Queue()
   loop = asyncio.get_running_loop()
@@ -584,22 +589,22 @@ async def flash_partition():
 
     if manifest is None:
       raise RuntimeError("Manifest unable to load due to error")
-    if not os.path.exists(root_dir):
+    if not os.path.exists(root_img):
       raise RuntimeError("Root image not found")
 
-    root_size = os.path.getsize(root_dir)
+    root_size = os.path.getsize(root_img)
     if manifest.root.size != root_size:
       raise RuntimeError("Root image size does not match expected value")
-    if manifest.root.sha256 != get_checksum(root_dir, root_size, lambda done, total: progress(done, total, "Verifying root image")):
+    if manifest.root.sha256 != get_checksum(root_img, root_size, lambda done, total: progress(done, total, "Verifying root image")):
       raise RuntimeError("Root image checksum does not match expected value")
 
     if manifest.boot is not None:
-      if not os.path.exists(boot_dir):
+      if not os.path.exists(boot_img):
         raise RuntimeError("Boot image expected but not found")
-      boot_size = os.path.getsize(boot_dir)
+      boot_size = os.path.getsize(boot_img)
       if manifest.boot.size != boot_size:
         raise RuntimeError("Boot image size does not match expected value")
-      if manifest.boot.sha256 != get_checksum(boot_dir, boot_size, lambda done, total: progress(done, total, "Verifying boot image")):
+      if manifest.boot.sha256 != get_checksum(boot_img, boot_size, lambda done, total: progress(done, total, "Verifying boot image")):
         raise RuntimeError("Boot image checksum does not match expected value")
 
     return manifest
@@ -622,15 +627,10 @@ async def flash_partition():
 
     # Congrats, everything is in place, you've survived this far, time to actually do anything at all
     try:
-      boot_slot = os.environ.get("BOOT_SLOT")
-      flash_target = BootSlot.B if boot_slot == "A" else BootSlot.A if boot_slot == "B" else None
-      if flash_target is None:
-        yield {'data': json.dumps({'type': 'error', 'message': f'BOOT_SLOT env var is "{boot_slot}", cannot determine flash target'})}
-        return
-      yield {'data': json.dumps({'type': 'info', 'message': f'Currently on slot {boot_slot}, will flash slot {flash_target.name} (root p{flash_target.value.root}, boot p{flash_target.value.boot})'})}
+      yield {'data': json.dumps({'type': 'info', 'message': f'Currently on slot {active_slot.name}, will flash slot {target_slot.name} (root p{target_slot.value.root}, boot p{target_slot.value.boot})'})}
 
       yield {'data': json.dumps({'type': 'info', 'message': 'Flashing root image...'})}
-      root_future = loop.run_in_executor(None, lambda: flash(root_dir, flash_target.value.root, PartitionSize.ROOT.value, lambda done, total: progress(done, total, 'Flashing root')))
+      root_future = loop.run_in_executor(None, lambda: flash(root_img, target_slot.value.root, PartitionSize.ROOT.value, lambda done, total: progress(done, total, 'Flashing root')))
       while not root_future.done():
         await asyncio.sleep(0.1)
         while not q.empty():
@@ -643,7 +643,7 @@ async def flash_partition():
 
       if manifest.boot is not None:
         yield {'data': json.dumps({'type': 'info', 'message': 'Flashing boot image...'})}
-        boot_future = loop.run_in_executor(None, lambda: flash(boot_dir, flash_target.value.boot, PartitionSize.BOOT.value, lambda done, total: progress(done, total, 'Flashing boot')))
+        boot_future = loop.run_in_executor(None, lambda: flash(boot_img, target_slot.value.boot, PartitionSize.BOOT.value, lambda done, total: progress(done, total, 'Flashing boot')))
         while not boot_future.done():
           await asyncio.sleep(0.1)
           while not q.empty():
@@ -655,6 +655,32 @@ async def flash_partition():
         yield {'data': json.dumps({'type': 'success', 'message': 'Boot image flashed'})}
     except Exception as e:
       yield {'data': json.dumps({'type': 'error', 'message': f'Update failed mid-flash: {e}'})}
+      return
+
+    try:
+      yield {'data': json.dumps({'type': 'info', 'message': 'Patching boot partition...'})}
+      if not os.path.exists("/data/tmpmnt"):
+        os.mkdir("/data/tmpmnt")
+      subprocess.run("sudo", "umount", "/data/tmpmnt")  # In case the user put something there
+      subprocess.run("sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt")
+
+      with open("/data/tmpmnt/cmdline.txt", "w", encoding="UTF-8") as f:
+        content = f.read()
+        content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
+        content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
+
+      yield {'data': json.dumps({'type': 'info', 'message': 'Patching root partition...'})}
+      subprocess.run("sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}")
+
+      with open("/data/tmpmnt/update-pending", "w", encoding="UTF-8") as f:
+        f.write(str(target_slot.value.boot))
+      subprocess.run("sudo", "umount", "/data/tmpmnt")
+
+      yield {'data': json.dumps({'type': 'success', 'message': 'Imaging successful!'})}
+
+    except Exception as e:
+      yield {'data': json.dumps({'type': 'error', 'message': f'Update failed post-flash: {e}'})}
+      return
 
   return EventSourceResponse(stream())
 
