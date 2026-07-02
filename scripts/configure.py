@@ -91,6 +91,32 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 'libgirepository1.0-dev', 'libcairo2-dev',
                 ],
     },
+    'updates': {
+      'copy': [
+        {
+          'from': 'scripts/amplipi-tryboot-verify.sh',
+          'to': '/usr/local/bin/amplipi-tryboot-verify.sh',
+          'sudo': 'true',
+        },
+        {
+          'from': 'scripts/update_autoboot.py',
+          'to': '/usr/local/bin/update_autoboot.py',
+          'sudo': 'true',
+        },
+        {
+          'from': 'scripts/amplipi-tryboot-verify.service',
+          'to': '/etc/systemd/system/amplipi-tryboot-verify.service',
+          'sudo': 'true',
+        },
+      ],
+      'script': [
+        'sudo chmod +x /usr/local/bin/amplipi-tryboot-verify.sh',
+        'sudo chmod +x /usr/local/bin/update_autoboot.py',
+
+        'sudo chmod 444 /etc/systemd/system/amplipi-tryboot-verify.service',
+        'sudo systemctl enable amplipi-tryboot-verify.service'
+      ],
+    },
     'usb': {
         'apt': [
                 'udisks2', 'udiskie',           # Required to mount filesystem without desktop installed
@@ -329,8 +355,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo cp bin/arm/rtl8761b_fw /lib/firmware/rtl_bt/rtl8761b_fw.bin',
             'sudo cp bin/arm/rtl8761b_config /lib/firmware/rtl_bt/rtl8761b_config.bin',
             'sudo cp config/bluetooth/main.conf /etc/bluetooth/main.conf',
-            # TODO: investigate where to put these services
-            'sudo cp config/bluetooth/bluealsa.service /usr/lib/systemd/system/',
+            'sudo cp config/bluetooth/bluealsa.service /etc/systemd/system/',
+            'sudo rm -f /usr/lib/systemd/system/bluealsa.service',
             'sudo cp streams/bluetooth_agent /usr/local/bin/',
             'sudo cp config/bluetooth/bluetooth_agent.service /etc/systemd/system/',
 
@@ -514,7 +540,7 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
     # Show verbose printout of what debian packages are being installed if developing
     # this helps find out what step of the upgrade process you get hung up on (or if it's just a really long install)
     tasks += print_progress([Task('upgrade debian packages',
-                            'sudo apt-get update --allow-releaseinfo-change && sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --assume-yes'.split()).run()])
+                            'sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --assume-yes'.split()).run()])
   else:
     tasks += print_progress([Task('upgrade debian packages',
                             'sudo apt-get dist-upgrade --assume-yes'.split()).run()])
