@@ -662,28 +662,22 @@ async def flash_partition():
       if not os.path.exists("/data/tmpmnt"):
         os.mkdir("/data/tmpmnt")
       subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
-      subprocess.run(["sudo", "mount", "-o", f"uid={os.getuid()},gid={os.getgid()}", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"])
+      subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
 
-      content: str = None
-      config_dir = "/data/tmpmnt/cmdline.txt"
-      with open(config_dir, "r+") as f:
-        yield {'data': json.dumps({'type': 'info', 'message': 'Patching cmdline.txt'})}
-        content = f.read()
-        content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
-        content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
+      # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
+      # All of those operations require sudo privs due to touching a boot partition that doesn't belong to the root that's doing it
 
-      if content is None:
-        raise Exception("cmdline.txt could not be read")
-
-      with open(config_dir, "w") as f:
-        f.write(content)
+      yield {'data': json.dumps({'type': 'info', 'message': 'Patching cmdline.txt'})}
+      content = subprocess.run(['sudo', 'cat', '/data/tmpmnt/cmdline.txt'], capture_output=True, text=True, check=True).stdout
+      content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
+      content = content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
+      subprocess.run(['sudo', 'tee', '/data/tmpmnt/cmdline.txt'], input=content, text=True, check=True)
 
       yield {'data': json.dumps({'type': 'info', 'message': 'Patching root partition...'})}
-      subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"])
+      subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"], check=True)
 
-      with open("/data/tmpmnt/update-pending", "w", encoding="UTF-8") as f:
-        f.write(str(target_slot.value.boot))
-      subprocess.run(["sudo", "umount", "/data/tmpmnt"])
+      subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
+      subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
       yield {'data': json.dumps({'type': 'success', 'message': 'Imaging successful!'})}
 
