@@ -661,20 +661,29 @@ async def flash_partition():
       yield {'data': json.dumps({'type': 'info', 'message': 'Patching boot partition...'})}
       if not os.path.exists("/data/tmpmnt"):
         os.mkdir("/data/tmpmnt")
-      subprocess.run("sudo", "umount", "/data/tmpmnt")  # In case the user put something there
-      subprocess.run("sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt")
+      subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
+      subprocess.run(["sudo", "mount", "-o", f"uid={os.getuid()},gid={os.getgid()}", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"])
 
-      with open("/data/tmpmnt/cmdline.txt", "w", encoding="UTF-8") as f:
+      content: str = None
+      config_dir = "/data/tmpmnt/cmdline.txt"
+      with open(config_dir, "r+") as f:
+        yield {'data': json.dumps({'type': 'info', 'message': 'Patching cmdline.txt'})}
         content = f.read()
         content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
         content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
 
+      if content is None:
+        raise Exception("cmdline.txt could not be read")
+
+      with open(config_dir, "w") as f:
+        f.write(content)
+
       yield {'data': json.dumps({'type': 'info', 'message': 'Patching root partition...'})}
-      subprocess.run("sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}")
+      subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"])
 
       with open("/data/tmpmnt/update-pending", "w", encoding="UTF-8") as f:
         f.write(str(target_slot.value.boot))
-      subprocess.run("sudo", "umount", "/data/tmpmnt")
+      subprocess.run(["sudo", "umount", "/data/tmpmnt"])
 
       yield {'data': json.dumps({'type': 'success', 'message': 'Imaging successful!'})}
 
