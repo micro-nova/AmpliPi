@@ -83,6 +83,16 @@ ssh $user_host "rm -f ~/Desktop/*.desktop"
 echo -e "\ncleaning up amplipi logs:"
 ssh $user_host "sudo journalctl --rotate && sleep 1 && sudo journalctl --vacuum-time=1s"
 
+echo -e "\nremoving A/B update artifacts"
+# Remove update state from both boot partitions (p2=boot-A, p3=boot-B)
+ssh $user_host "sudo mkdir -p /mnt/bootp && sudo mount /dev/mmcblk0p2 /mnt/bootp && sudo rm -f /mnt/bootp/update-pending && sudo umount /mnt/bootp && sudo mount /dev/mmcblk0p3 /mnt/bootp && sudo rm -f /mnt/bootp/update-pending && sudo umount /mnt/bootp && sudo rmdir /mnt/bootp"
+# Remove update package and log from shared data partition
+ssh $user_host "sudo rm -rf /data/update/ && sudo rm -f /data/update-log.txt"
+
+echo -e "\nregenerating SSH host keys (fresh identity per unit)"
+# Wipe old keys then regenerate via symlinks into /data/ssh/
+ssh $user_host "sudo rm -f /data/ssh/* && sudo ssh-keygen -A"
+
 echo -e "\nchanging hostname to amplipi"
 ssh $user_host "sudo sed -i 's/127\.0\.1\.1.*/127.0.1.1\tamplipi/' /etc/hosts"
 ssh $user_host "sudo sed -i 's/.*/amplipi/' /etc/hostname"
@@ -93,7 +103,10 @@ ssh $user_host "amplipi-dev/scripts/set_pass"
 #echo -e "removing ssh key and erasing tracks"
 #ssh $user_host "rm -f ~/.ssh/*"
 # || true used to ignore the error ssh returns due to being cut off
-echo -e "erasing tracks"
+echo -e "erasing tracks (both slots)"
+# Clear inactive slot's bash history
+inactive_root=$(ssh $user_host "grep -q 'BOOT_SLOT=A' /proc/cmdline && echo /dev/mmcblk0p6 || echo /dev/mmcblk0p5")
+ssh $user_host "sudo mkdir -p /mnt/inactive && sudo mount $inactive_root /mnt/inactive && sudo rm -f /mnt/inactive/home/pi/.bash_history && sudo umount /mnt/inactive && sudo rmdir /mnt/inactive"
 ssh $user_host "cat /dev/null > ~/.bash_history && history -c && sudo systemctl reboot" || true
 
 # verify amplipi.local get request is successful
