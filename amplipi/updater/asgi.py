@@ -658,25 +658,40 @@ async def flash_partition():
       return
 
     try:
-      yield {'data': json.dumps({'type': 'info', 'message': 'Patching boot partition...'})}
-      if not os.path.exists("/data/tmpmnt"):
-        os.mkdir("/data/tmpmnt")
-      subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
-      subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
+      if manifest.boot is not None:
+        yield {'data': json.dumps({'type': 'info', 'message': 'Patching boot partition...'})}
+        if not os.path.exists("/data/tmpmnt"):
+          os.mkdir("/data/tmpmnt")
+        subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
+        subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
 
-      # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
-      # All of those operations require sudo privs due to touching a boot partition that doesn't belong to the root that's doing it
+        # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
+        # All of those operations require sudo privs due to touching a boot partition that doesn't belong to the root that's doing it
 
-      yield {'data': json.dumps({'type': 'info', 'message': 'Patching cmdline.txt'})}
-      content = subprocess.run(['sudo', 'cat', '/data/tmpmnt/cmdline.txt'], capture_output=True, text=True, check=True).stdout
-      content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
-      content = content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
-      subprocess.run(['sudo', 'tee', '/data/tmpmnt/cmdline.txt'], input=content, text=True, check=True)
+        yield {'data': json.dumps({'type': 'info', 'message': 'Patching cmdline.txt'})}
+        content = subprocess.run(['sudo', 'cat', '/data/tmpmnt/cmdline.txt'], capture_output=True, text=True, check=True).stdout
+        content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
+        content = content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
+        subprocess.run(['sudo', 'tee', '/data/tmpmnt/cmdline.txt'], input=content, text=True, check=True)
 
       yield {'data': json.dumps({'type': 'info', 'message': 'Patching root partition...'})}
+      fsck = subprocess.run(["sudo", "e2fsck", "-p", f"/dev/mmcblk0p{target_slot.value.root}"])
+      if fsck.returncode not in (0, 1):
+        raise RuntimeError(f"e2fsck exited with code {fsck.returncode} on /dev/mmcblk0p{target_slot.value.root}")
       subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"], check=True)
 
       subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
+      subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
+
+      yield {'data': json.dumps({'type': 'info', 'message': 'Patching root fstab...'})}
+      subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", "/data/tmpmnt"], check=True)
+      fstab = subprocess.run(['sudo', 'cat', '/data/tmpmnt/etc/fstab'], capture_output=True, text=True, check=True).stdout
+      fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.boot}\b', rf'\g<1>{target_slot.value.boot}', fstab)
+      fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', fstab)
+      if "/boot/autoboot" not in fstab:
+        partuuid_prefix = re.search(r'PARTUUID=([0-9a-f]+-)', fstab).group(1)
+        fstab = fstab.rstrip('\n') + f'\nPARTUUID={partuuid_prefix}01  /boot/autoboot  vfat  ro,defaults  0  2\n'
+      subprocess.run(['sudo', 'tee', '/data/tmpmnt/etc/fstab'], input=fstab, text=True, check=True)
       subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
       yield {'data': json.dumps({'type': 'success', 'message': 'Imaging successful!'})}
