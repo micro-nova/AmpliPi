@@ -2,8 +2,9 @@
 set -euo pipefail
 
 BOOT_MOUNT="/boot/firmware"
+AUTOBOOT_MOUNT="/boot/autoboot"
 PENDING_FILE="${BOOT_MOUNT}/update-pending"
-AUTOBOOT_FILE="${BOOT_MOUNT}/autoboot.txt"
+AUTOBOOT_FILE="${AUTOBOOT_MOUNT}/autoboot.txt"
 UPDATE_LOG="/data/update-log.txt"
 
 log() {
@@ -30,11 +31,11 @@ commit() { # Swap which boot slot is considered primary and secondary p1's autob
 
   log "Committing: p${current_part} becomes default, p${old_part} becomes tryboot"
 
-  mount -o remount,rw "${BOOT_MOUNT}"
-
-  # Update boot_partition in [all] and [tryboot] sections
+  mount -o remount,rw "${AUTOBOOT_MOUNT}"
   python3 /usr/local/bin/update_autoboot.py "${AUTOBOOT_FILE}" "${current_part}" "${old_part}"
+  mount -o remount,ro "${AUTOBOOT_MOUNT}"
 
+  mount -o remount,rw "${BOOT_MOUNT}"
   rm -f "${PENDING_FILE}"
   mount -o remount,ro "${BOOT_MOUNT}"
 
