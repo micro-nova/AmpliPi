@@ -51,7 +51,7 @@ templates = Jinja2Templates(directory=template_dir)
 # This is duplicated from amplipi.config intentionally. This file is pulled in
 # via the updater and we'd like to avoid as many external Amplipi dependencies in the updater
 # as possible.
-USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+USER_CONFIG_DIR = os.path.join('/data', '.config', 'amplipi')
 
 USERS_FILE = os.path.join(USER_CONFIG_DIR, 'users.json')
 
