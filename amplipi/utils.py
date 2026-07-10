@@ -258,7 +258,7 @@ def get_folder(relative_folder, mock=False):
   if relative_folder == "config":
     folder = os.path.join("/data", '.config', 'amplipi')
   elif relative_folder == "web":
-    folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'web')
+    folder = os.path.join('/data', '.config', 'amplipi', 'web')
   else:
     folder = os.path.join(os.path.expanduser('~'), 'amplipi-dev', relative_folder)
 

@@ -75,7 +75,7 @@ class DefaultPass:
      the stored default AmpliPi password."""
 
   # Password config location
-  PASS_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  PASS_DIR = os.path.join('/data', '.config', 'amplipi')
   PASS_FILE = os.path.join(PASS_DIR, 'default_password.txt')
   DEFAULT_PI_PASSWORD = 'raspberry'
 

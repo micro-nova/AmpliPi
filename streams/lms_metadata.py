@@ -56,7 +56,7 @@ class LMSMetadataReader:
   def __init__(self, name: str, vsrc: int, server: Optional[str] = None, port: Optional[int] = 9000, meta_ref: Optional[int] = 2):
     self.player_name = name
     self.folder = os.path.join(
-      os.path.expanduser('~'), '.config', 'amplipi', 'srcs', f'v{vsrc}'
+      '/data', '.config', 'amplipi', 'srcs', f'v{vsrc}'
     )
     self.server = server
     self.port = port

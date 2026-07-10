@@ -149,7 +149,7 @@ dir_path = os.path.dirname(real_path)
 app.mount("/static", StaticFiles(directory=f"{dir_path}/static"), name="static")
 
 INSTALL_DIR = os.getenv('INSTALL_DIR', os.getcwd())
-USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+USER_CONFIG_DIR = os.path.join('/data', '.config', 'amplipi')
 
 # if we have a broken configuration, the updater should still function
 # as a failsafe. This structure & some code was copied from
