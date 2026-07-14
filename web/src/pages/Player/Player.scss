@@ -42,19 +42,20 @@
   max-height: 22rem;
   object-fit: contain;
   border-radius: 2.5%;
-  @media (general.$is-portrait) {
-    max-width: 98vw;
-    max-height: 98vw;
-  }
 }
 
-@media (general.$is-portrait) {
+@media (general.$is-portrait) and (max-width: general.$medium-mobile) {
   .player-metadata-container {
     width: 98vw;
   }
 
   .album-art-container {
     min-height: 98vw;
+  }
+
+  .player-album-art {
+    max-width: 98vw;
+    max-height: 98vw;
   }
 }
 
