@@ -26,15 +26,35 @@
   padding-right: 2.5vw;
 }
 
+.player-metadata-container {
+  width: 22rem;
+  max-width: 98vw;
+}
+
+.album-art-container {
+  width: 100%;
+  min-height: 22rem;
+}
+
 .player-album-art {
   align-self: center;
+  max-width: 100%;
   max-height: 22rem;
+  object-fit: contain;
   border-radius: 2.5%;
   @media (general.$is-portrait) {
-    max-width: 85vw;
+    max-width: 98vw;
+    max-height: 98vw;
   }
-  @media (max-width: general.$small-mobile) {
-    max-width: 50vw;
+}
+
+@media (general.$is-portrait) {
+  .player-metadata-container {
+    width: 98vw;
+  }
+
+  .album-art-container {
+    min-height: 98vw;
   }
 }
 
