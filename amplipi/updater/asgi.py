@@ -508,37 +508,48 @@ def request_support():
 
 
 class ImageMetadata(BaseModel):
+  """ Expected checksum/size of a single image file (root or boot) from the update manifest """
   filename: str
   sha256: str
   size: int
 
 
 class UpdateManifest(BaseModel):
+  """ Schema for manifest.json, contains size and checksum info for the image(s). Root is required, boot is optional """
   version: str
   boot: Optional[ImageMetadata] = None
   root: ImageMetadata
 
 
 class BootPair(BaseModel):
-  # Partition mappings for the boot and root partitions of OS A and B
+  """
+    Partition mappings for the boot and root partitions of OS A and B
+    Given that there's only two slots, this is just a schema for hardcoding the mappings for the BootSlot Enum
+  """
   boot: int
   root: int
 
 
 class BootSlot(Enum):
-  # RPi A:B tryboot has two boot slots: A and B
-  # This enum shows what partitions are doing which jobs for either boot slot
+  """
+    RPi A:B tryboot has two boot slots: A and B
+    This enum contains the partition mappings for both slots
+  """
   A = BootPair(boot=2, root=5)
   B = BootPair(boot=3, root=6)
 
 
 class PartitionSize(Enum):
-  # The size of boot and root partitions, used to provide a progress bar for the reflashing step
+  """
+    The size of boot and root partitions, used to provide a progress bar for the reflashing step
+    Hardcoded using the byte size of the uncompressed images
+  """
   BOOT = 268435456
   ROOT = 11470372864
 
 
 def get_checksum(path: str, total_size: int, progress_cb: Optional[Callable] = None) -> str:
+  """ sha256 checksum of a file (path) in 4MB chunks, reporting progress via progress_cb(done, total) callback as it goes """
   h = hashlib.sha256()
   hashed_size = 0
   with open(path, "rb") as f:
@@ -552,12 +563,22 @@ def get_checksum(path: str, total_size: int, progress_cb: Optional[Callable] = N
 
 @router.post('/update/flash')
 async def flash_partition():
+  """
+    Validate the update package downloaded to /data/update and then flash the inactive boot slot
+    see the BootSlot enum for slot mapping details
+  """
+
   def flash(image: str, partition: int, total: int, progress_cb: Optional[Callable] = None):
+    """ Decompress an image and stream it straight into /dev/mmcblk0p{partition} via dd, reporting
+    progress via the progress_cb(written, total) callback as it goes """
     written = 0
     dd = subprocess.Popen(
+      # conv=fsync forces dd to flush all writes to disk before it exits, so a successful return
+      # here means the image is actually durable on the card, not just sitting in a write cache
       ['sudo', 'dd', f'of=/dev/mmcblk0p{partition}', 'bs=4M', 'conv=fsync'],
       stdin=subprocess.PIPE, stderr=subprocess.PIPE
     )
+    # This is chunked both to prevent loading a massive (potentially too large) file into memory all at once and to provide chunk-by-chunk feedback to the user for how the update is going
     with lzma.open(image, 'rb') as src:
       while chunk := src.read(4 * 1024 * 1024):
         dd.stdin.write(chunk)
@@ -572,6 +593,7 @@ async def flash_partition():
   manifest_dir = "/data/update/manifest.json"
   root_img = "/data/update/root.img.xz"
   boot_img = "/data/update/boot.img.xz"
+  # BOOT_SLOT is an env_var set by the active boot partition's commandline.txt
   if os.environ.get("BOOT_SLOT") != "A" and os.environ.get("BOOT_SLOT") != "B":
     raise Exception("Boot slot could not be read")
 
@@ -585,6 +607,10 @@ async def flash_partition():
     loop.call_soon_threadsafe(q.put_nowait, {'type': 'info', 'message': f'{label}: {done/total:.0%}'})
 
   def do_checks():
+    """
+      Load manifest.json and verify the downloaded root (and boot, if present) images actually
+      match the size/checksum it declares, before anything is allowed to touch a partition
+    """
     manifest = None
     if os.path.exists(manifest_dir):
       with open(manifest_dir, "r", encoding="UTF-8") as f:
@@ -613,12 +639,21 @@ async def flash_partition():
     return manifest
 
   async def stream():
+    """ SSE generator driving the whole flash: checks, then flash root (+boot), then patch the
+    target slot so it's bootable, yielding progress/status messages to the client throughout.
+
+    The actual work (do_checks/flash) is blocking IO, so it's run in a thread pool executor
+    (loop.run_in_executor) instead of directly in this coroutine, to avoid blocking the event
+    loop for the whole operation. A background thread can't `yield` into this async generator
+    directly, so `progress()` instead pushes messages onto `q` via call_soon_threadsafe, and this
+    generator polls the executor future's `.done()` state, draining `q` each time it wakes up.
+    This same drain-while-polling shape repeats below for the root and boot flash steps. """
     future = loop.run_in_executor(None, do_checks)
     while not future.done():
       await asyncio.sleep(0.1)
       while not q.empty():
         yield {'data': json.dumps(q.get_nowait())}
-    await asyncio.sleep(0)  # let any final call_soon_threadsafe callbacks land
+    await asyncio.sleep(0)  # let any final call_soon_threadsafe callbacks land before the last drain
     while not q.empty():
       yield {'data': json.dumps(q.get_nowait())}
     try:
@@ -661,16 +696,16 @@ async def flash_partition():
       return
 
     try:
-      if manifest.boot is not None:
-        yield {'data': json.dumps({'type': 'info', 'message': 'Patching boot partition...'})}
-        if not os.path.exists("/data/tmpmnt"):
-          os.mkdir("/data/tmpmnt")
-        subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
-        subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
+      # /data/tmpmnt is the mountpoint used for whichever partition is being operated on at the time, either the inactive boot or root
+      # Necessary for making sure individual files have the proper details such as making sure the boot points to the correct root partition
+      yield {'data': json.dumps({'type': 'info', 'message': 'Patching boot partition...'})}
+      if not os.path.exists("/data/tmpmnt"):
+        os.mkdir("/data/tmpmnt")
+      subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
+      subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
 
-        # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
-        # All of those operations require sudo privs due to touching a boot partition that doesn't belong to the root that's doing it
-
+      # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
+      # That is no longer the case as all of these operations require higher privs to touch a boot partition that doesn't belong to the user doing the changes
       if manifest.boot is not None:
         yield {'data': json.dumps({'type': 'info', 'message': 'Patching cmdline.txt'})}
         content = subprocess.run(['sudo', 'cat', '/data/tmpmnt/cmdline.txt'], capture_output=True, text=True, check=True).stdout
@@ -679,22 +714,26 @@ async def flash_partition():
         subprocess.run(['sudo', 'tee', '/data/tmpmnt/cmdline.txt'], input=content, text=True, check=True)
 
       yield {'data': json.dumps({'type': 'info', 'message': 'Patching root partition...'})}
+      # All systems originate from the same ancestor image. The following tools cleanse the root partition of identifiable info
+      # so that A and B don't have a case of mistaken identity by sharing these identifiers
       fsck = subprocess.run(["sudo", "e2fsck", "-p", f"/dev/mmcblk0p{target_slot.value.root}"])
       if fsck.returncode not in (0, 1):
         raise RuntimeError(f"e2fsck exited with code {fsck.returncode} on /dev/mmcblk0p{target_slot.value.root}")
       subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"], check=True)
 
+      # Create the update-pending file that the update validation service will use to detect an update happened post-reboot
       subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
       subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
       yield {'data': json.dumps({'type': 'info', 'message': 'Patching root fstab...'})}
       subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", "/data/tmpmnt"], check=True)
       fstab = subprocess.run(['sudo', 'cat', '/data/tmpmnt/etc/fstab'], capture_output=True, text=True, check=True).stdout
+      # The root image was captured from whichever slot was active on the machine that built it,
+      # so its baked-in fstab still has that slot's boot/root partition numbers. Since this image
+      # always lands on the slot opposite whatever's active on *this* device, remap both digits so
+      # /boot/firmware and / mount from the partitions this slot actually occupies here.
       fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.boot}\b', rf'\g<1>{target_slot.value.boot}', fstab)
       fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', fstab)
-      if "/boot/autoboot" not in fstab:
-        partuuid_prefix = re.search(r'PARTUUID=([0-9a-f]+-)', fstab).group(1)
-        fstab = fstab.rstrip('\n') + f'\nPARTUUID={partuuid_prefix}01  /boot/autoboot  vfat  ro,defaults  0  2\n'
       subprocess.run(['sudo', 'tee', '/data/tmpmnt/etc/fstab'], input=fstab, text=True, check=True)
       subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
