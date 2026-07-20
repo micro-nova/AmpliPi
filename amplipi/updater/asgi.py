@@ -294,11 +294,14 @@ async def start_upload(file: UploadFile = File(...)):
 
 def download(url, file_name):
   """ Download a binary file from @url to @file_name """
+  # (connect timeout, read timeout) - read timeout is the max gap between
+  # received chunks, not a cap on total download time
+  response = requests.get(url, stream=True, timeout=(10, 30))
+  response.raise_for_status()
   with open(file_name, "wb") as file:
-    # get request
-    response = requests.get(url)
-    # write to file
-    file.write(response.content)
+    for chunk in response.iter_content(chunk_size=4 * 1024 * 1024):
+      if chunk:
+        file.write(chunk)
     # TODO: verify file has amplipi version
 
 
@@ -668,6 +671,7 @@ async def flash_partition():
         # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
         # All of those operations require sudo privs due to touching a boot partition that doesn't belong to the root that's doing it
 
+      if manifest.boot is not None:
         yield {'data': json.dumps({'type': 'info', 'message': 'Patching cmdline.txt'})}
         content = subprocess.run(['sudo', 'cat', '/data/tmpmnt/cmdline.txt'], capture_output=True, text=True, check=True).stdout
         content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)

@@ -70,9 +70,8 @@ log "Running health checks"
 
 failed_checks=()
 
-# TODO: switch to system services once services are moved off p7
-retry 12 5 systemctl --user -M pi@ is-active amplipi       || failed_checks+=("amplipi service")
-retry 12 5 systemctl --user -M pi@ is-active amplipi-tasks || failed_checks+=("amplipi-tasks service")
+retry 12 5 systemctl is-active amplipi       || failed_checks+=("amplipi service")
+retry 12 5 systemctl is-active amplipi-tasks || failed_checks+=("amplipi-tasks service")
 retry 6  5 systemctl is-active redis-server                || failed_checks+=("redis-server service")
 retry 12 5 curl -sf --max-time 5 http://localhost/api      || failed_checks+=("API health check")
 

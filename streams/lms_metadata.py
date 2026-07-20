@@ -229,7 +229,10 @@ class LMSMetadataReader:
           self.meta.track = track_data.get('title') or ""
 
         if song_data.get('artwork_url'):
-          self.meta.image_url = song_data.get('artwork_url')
+          artwork_url = song_data.get('artwork_url')
+          if artwork_url.startswith('/'):
+            artwork_url = f"http://{self.server}:{self.port}{artwork_url}"
+          self.meta.image_url = artwork_url
         elif song_data.get('coverid'):
           self.meta.image_url = f"http://{self.server}:{self.port}/music/{song_data['coverid']}/cover.jpg?id={song_data['coverid']}"
         else:
