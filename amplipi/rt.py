@@ -283,6 +283,10 @@ class _Preamps:
     try:
       self.reset_preamps()
       self.set_i2c_addr()
+      try:
+        self.bus.close()
+      except Exception:
+        pass
       self.bus = SMBus(1)
       for addr, regs in list(self.preamps.items()):
         for reg, val in enumerate(regs):
@@ -319,6 +323,10 @@ class _Preamps:
         # Fallback 1: reopen the bus handle and retry (transient bus glitch).
         try:
           time.sleep(0.001)
+          try:
+            self.bus.close()
+          except Exception:
+            pass
           self.bus = SMBus(1)
           self.bus.write_byte_data(preamp_addr, reg, data)
         except Exception:

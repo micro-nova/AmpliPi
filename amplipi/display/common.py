@@ -248,7 +248,7 @@ def get_status(url: str, no_serial_ok: bool = False, emoji: bool = True, max_len
     result_status = st
 
   # Check if API is running
-  api_on = subprocess.run("systemctl --user is-active amplipi.service".split(), stdout=subprocess.DEVNULL)
+  api_on = subprocess.run("systemctl is-active amplipi.service".split(), stdout=subprocess.DEVNULL)
   if api_on.returncode != 0:
     return DisplayError.NO_AMPLIPI_SERVICE, None, 0
 
