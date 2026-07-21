@@ -11,7 +11,7 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
 
   --fw:      program the latest preamp firmware
   --pw:      generate and set a new random password
-  --dev:      run with development flag
+  --dev:     skip a few version checks and increase verbosity
   --alsa:    configure alsa settings
   --no-deps: skip installing os-deps, python-deps, and custom-deps on AmpliPi
   --no-web: Skip compiling the web directory. May result in failures or odd behavior if you haven't compiled recently, but saves a lot of time if you have compiled recently."
