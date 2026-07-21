@@ -727,6 +727,10 @@ async def flash_partition():
 
       yield {'data': json.dumps({'type': 'info', 'message': 'Patching root fstab...'})}
       subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", "/data/tmpmnt"], check=True)
+
+      # Mark the root with the slot letter so you know which partition you're in by simply running `ls`
+      subprocess.run(["sudo", "touch", f"/data/tmpmnt/home/pi/SLOT_{target_slot.name}"], check=True)
+      subprocess.run(["sudo", "chown", "pi:pi", f"/data/tmpmnt/home/pi/SLOT_{target_slot.name}"], check=True)
       fstab = subprocess.run(['sudo', 'cat', '/data/tmpmnt/etc/fstab'], capture_output=True, text=True, check=True).stdout
       # The root image was captured from whichever slot was active on the machine that built it,
       # so its baked-in fstab still has that slot's boot/root partition numbers. Since this image
