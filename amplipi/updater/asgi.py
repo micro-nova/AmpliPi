@@ -562,9 +562,11 @@ def get_checksum(path: str, total_size: int, progress_cb: Optional[Callable] = N
 
 
 @router.post('/update/flash')
-async def flash_partition():
+async def flash_partition(tryboot: bool = False):
   """
     Validate the update package downloaded to /data/update and then flash the inactive boot slot
+    tryboot arg is used to toggle whether or not "sudo reboot '0 tryboot'" is run at the end of flashing to actually change slots
+    tryboot is false by default to simplify manual invocation during development
     see the BootSlot enum for slot mapping details
   """
 
@@ -704,6 +706,12 @@ async def flash_partition():
       subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
       subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
 
+      # The captured boot image carries whatever label its source partition had when it was built,
+      # which isn't necessarily this slot's - relabel to match the slot actually being written here,
+      # so blkid/lsblk aren't misleading about which slot is which. Safe to run against a mounted
+      # vfat filesystem.
+      subprocess.run(["sudo", "fatlabel", f"/dev/mmcblk0p{target_slot.value.boot}", f"BOOT-{target_slot.name}"], check=True)
+
       # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
       # That is no longer the case as all of these operations require higher privs to touch a boot partition that doesn't belong to the user doing the changes
       if manifest.boot is not None:
@@ -720,6 +728,8 @@ async def flash_partition():
       if fsck.returncode not in (0, 1):
         raise RuntimeError(f"e2fsck exited with code {fsck.returncode} on /dev/mmcblk0p{target_slot.value.root}")
       subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"], check=True)
+      # Same identification concern as is handled by the fatlabel subprocess above
+      subprocess.run(["sudo", "e2label", f"/dev/mmcblk0p{target_slot.value.root}", f"ROOT-{target_slot.name}"], check=True)
 
       # Create the update-pending file that the update validation service will use to detect an update happened post-reboot
       subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
@@ -746,6 +756,10 @@ async def flash_partition():
     except Exception as e:
       yield {'data': json.dumps({'type': 'error', 'message': f'Update failed post-flash: {e}'})}
       return
+
+    if tryboot:
+      yield {'data': json.dumps({'type': 'info', 'message': 'Triggering tryboot...'})}
+      subprocess.Popen(['sudo', 'reboot', '0 tryboot'])
 
   return EventSourceResponse(stream())
 
