@@ -1,14 +1,24 @@
-#!/home/pi/.local/share/uv/python/cpython-3.8.20-linux-aarch64-gnu/bin/python3.8
+#!/usr/bin/env python3
 # This is a separate script as it must be run with root privileges
 # Example: sudo python check_pass 'raspberry'
+#
+# crypt/spwd were removed from the stdlib in Python 3.13 (PEP 594), so this uses their
+# underlying primitives instead: /etc/shadow is just a colon-separated file, and crypt() is a
+# regular libc function reachable via ctypes.
 
-import crypt
-import spwd
+import ctypes
+import ctypes.util
 import sys
 
 default_password = sys.argv[1]
-current_password = spwd.getspnam('pi').sp_pwd
-if crypt.crypt(default_password, current_password) == current_password:
+
+with open('/etc/shadow', encoding='utf-8') as f:
+  current_password = next(line.split(':')[1] for line in f if line.split(':')[0] == 'pi')
+
+libcrypt = ctypes.CDLL(ctypes.util.find_library('crypt'))
+libcrypt.crypt.restype = ctypes.c_char_p
+
+if libcrypt.crypt(default_password.encode(), current_password.encode()) == current_password.encode():
   print("Correct Password")
   sys.exit(0)
 print("Incorrect Password")
