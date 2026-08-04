@@ -38,6 +38,7 @@ import asyncio
 
 import hashlib
 import lzma
+import io
 
 import configparser
 
@@ -101,11 +102,47 @@ def validate_logging_ini():
   subprocess.run(['sudo', 'mv', tmp, ini], check=True)
 
 
+def journald_configparser() -> configparser.ConfigParser:
+  """ ConfigParser for journald.conf. systemd's keys are case-sensitive (Storage=, not
+  storage=), unlike ConfigParser's default of lowercasing every option name, so this preserves
+  case - otherwise every key we write gets silently ignored by journald as unrecognized. """
+  conf = configparser.ConfigParser(strict=False, allow_no_value=True)
+  conf.optionxform = str
+  return conf
+
+
+# Raspberry Pi OS ships with /usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf,
+# which unconditionally sets Storage=volatile. Files in journald.conf.d/ take precedence over the
+# main /etc/systemd/journald.conf file regardless of directory, so setting Storage there (as this
+# code used to) doesn't matter. The only way to set this to what we want is by editing that file instead.
+JOURNALD_RASPI_CONF = '/etc/systemd/journald.conf.d/80-raspi-config-journal-storage.conf'
+
+
+def _read_journald_storage_persistence() -> Optional[str]:
+  """ Returns the Storage= value from our storage drop-in, or None if it doesn't exist/can't be read """
+  if not os.path.exists(JOURNALD_RASPI_CONF):
+    return None
+  conf = journald_configparser()
+  conf.read(JOURNALD_RASPI_CONF)
+  return conf.get('Journal', 'Storage', fallback=None)
+
+
+def _write_journald_storage_persistence(storage: str):
+  """ Write our journald settings file with the expected log persistence state, then restart journald """
+  os.makedirs(os.path.dirname(JOURNALD_RASPI_CONF), exist_ok=True)
+  tmp = '/tmp/journald-settings.tmp'
+  with open(tmp, 'w', encoding='utf-8') as f:
+    f.write(f'# Created/managed by AmpliPi (also used by raspi-config)\n\n[Journal]\nStorage={storage}\n')
+  subprocess.run(['sudo', 'mv', tmp, JOURNALD_RASPI_CONF], check=True)
+  subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journald'], check=True)
+  subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journal-flush.service'], check=True)
+
+
 def validate_journald_conf():
   """Fallback in case the config file or any individual header doesn't exist, set to default settings"""
   tmp = '/tmp/journald.conf.tmp'
   conf = '/etc/systemd/journald.conf'
-  confparse = configparser.ConfigParser(strict=False, allow_no_value=True)
+  confparse = journald_configparser()
 
   with open(tmp, "+w", encoding="utf-8") as file:
     if os.path.exists(conf):
@@ -115,11 +152,6 @@ def validate_journald_conf():
 
     if not confparse.has_section("Journal"):
       confparse.add_section("Journal")
-
-    if not confparse.has_option("Journal", "Storage") or confparse.get("Journal", "Storage") not in ("volatile", "persistent"):
-      # While volatile is the system's default, having that value either not exist or be invalid points to there being a system error that caused it to get that way
-      # Set to persistent just in case
-      confparse.set("Journal", "Storage", "persistent")
 
     # Set everything else to default while preserving user settings
     if not confparse.has_option("Journal", "SyncIntervalSec"):
@@ -135,6 +167,9 @@ def validate_journald_conf():
 
     confparse.write(file)
   subprocess.run(['sudo', 'mv', tmp, conf], check=True)
+
+  if _read_journald_storage_persistence() not in ('volatile', 'persistent'):
+    _write_journald_storage_persistence('persistent')
 
 
 class ReleaseInfo(BaseModel):
@@ -179,12 +214,11 @@ class Persist_Logs(BaseModel):
 @router.get("/settings/persist_logs")
 def get_log_persist_state():
   """
-  Checks /etc/systemd/journald.conf to find if the current storage setting is persistent and returns a bool
-  Note that returning false doesn't necessarily mean that logs are set to volatile, and could just mean that the config file is missing the line being read
+  Checks our journald.conf.d settings file to find if the current storage setting is persistent
+  and returns a bool. Note that returning false doesn't necessarily mean that logs are set to
+  volatile, and could just mean that the config file is missing the line being read
   """
   validate_journald_conf()
-  journalconf = configparser.ConfigParser(strict=False, allow_no_value=True)
-  journalconf.read('/etc/systemd/journald.conf')
 
   validate_logging_ini()
   logconf = configparser.ConfigParser(strict=False, allow_no_value=True)
@@ -192,7 +226,7 @@ def get_log_persist_state():
 
   # Fallback set is the default value of the Storage variable under the Journal header of the conf file
   # Used when the variable cannot be read but the file itself can (implying that the variable is missing, and should be set to a default)
-  ret = Persist_Logs(persist_logs=journalconf.get("Journal", "Storage", fallback="volatile") == "persistent", auto_off_delay=logconf.get("logging", "auto_off_delay", fallback="14"),)
+  ret = Persist_Logs(persist_logs=_read_journald_storage_persistence() == "persistent", auto_off_delay=logconf.get("logging", "auto_off_delay", fallback="14"),)
   return ret
 
 
@@ -207,22 +241,8 @@ def toggle_persist_logs(data: Persist_Logs):
     state = get_log_persist_state()
 
     if state.persist_logs != data.persist_logs:
-      journalconf = '/etc/systemd/journald.conf'
-      journaltmp = '/tmp/journald.conf.tmp'
-      journal = configparser.ConfigParser(strict=False, allow_no_value=True)
-      journal.read(journalconf)
-
-      if not journal.has_section("Journal"):
-        journal.add_section('Journal')
-
       # goal_value is true if you wish to turn persistent logging on and false if you wish to turn it off
-      journal.set('Journal', 'Storage', 'persistent' if data.persist_logs else 'volatile')
-
-      with open(journaltmp, 'w', encoding="utf-8") as conf_file:
-        journal.write(conf_file)
-
-      subprocess.run(['sudo', 'mv', journaltmp, journalconf], check=True)
-      subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journald'], check=True)
+      _write_journald_storage_persistence('persistent' if data.persist_logs else 'volatile')
       logger.info(f"persist_logs set to {data.persist_logs}")
     else:
       logger.info("persist_logs unchanged")
@@ -240,6 +260,11 @@ def toggle_persist_logs(data: Persist_Logs):
 
     else:
       logger.info("auto_off_delay unchanged")
+
+    # Add the persist state to /data so we set proper persistence on slot swap
+    os.makedirs(USER_CONFIG_DIR, exist_ok=True)
+    with open(os.path.join(USER_CONFIG_DIR, 'persist_logs.json'), 'w', encoding='utf-8') as f:
+      json.dump({'persist_logs': data.persist_logs, 'auto_off_delay': data.auto_off_delay}, f)
   except Exception as exc:
     logger.exception(str(exc))
     return 500
