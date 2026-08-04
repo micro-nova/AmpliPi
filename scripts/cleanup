@@ -74,6 +74,15 @@ echo -e "removing support tunnels"
 ssh $user_host "sudo rm -f /var/lib/support_tunnel/device.db"
 ssh $user_host "sudo rm -f /etc/wireguard/*"
 
+echo -e "wiping Lyrion Music Server state (library, playlists, plugins - shared across both slots via /data)"
+ssh $user_host "sudo systemctl stop lyrionmusicserver 2>/dev/null; sudo rm -rf /data/lms && sudo mkdir -p /data/lms && sudo chown squeezeboxserver:nogroup /data/lms"
+
+echo -e "removing bluetooth pairings (shared across both slots via /data)"
+ssh $user_host "sudo rm -rf /data/bluetooth/*"
+
+echo -e "removing old config backups"
+ssh $user_host "sudo rm -rf /data/backups/*"
+
 echo -e "removing any temporary firmware binaries"
 ssh $user_host "rm -f preamp_*.bin"
 
@@ -103,10 +112,20 @@ ssh $user_host "amplipi-dev/scripts/set_pass"
 #echo -e "removing ssh key and erasing tracks"
 #ssh $user_host "rm -f ~/.ssh/*"
 # || true used to ignore the error ssh returns due to being cut off
-echo -e "erasing tracks (both slots)"
-# Clear inactive slot's bash history
+echo -e "erasing tracks and reverting identity on both slots"
+# The support-tunnel db, wireguard configs, and hostname/hosts changes above only touched
+# whichever slot happens to be active - each slot has its own separate copy of these (unlike
+# /data, which is shared and already handled above). Mount the inactive slot's root once and
+# apply the same set of changes there too, so a later fallback to the other slot doesn't
+# resurrect a tester's identity or leftover history.
 inactive_root=$(ssh $user_host "grep -q 'BOOT_SLOT=A' /proc/cmdline && echo /dev/mmcblk0p6 || echo /dev/mmcblk0p5")
-ssh $user_host "sudo mkdir -p /mnt/inactive && sudo mount $inactive_root /mnt/inactive && sudo rm -f /mnt/inactive/home/pi/.bash_history && sudo umount /mnt/inactive && sudo rmdir /mnt/inactive"
+ssh $user_host "sudo mkdir -p /mnt/inactive && sudo mount $inactive_root /mnt/inactive && \
+  sudo rm -f /mnt/inactive/home/pi/.bash_history; \
+  sudo rm -f /mnt/inactive/var/lib/support_tunnel/device.db; \
+  sudo rm -f /mnt/inactive/etc/wireguard/*; \
+  sudo sed -i 's/127\.0\.1\.1.*/127.0.1.1\tamplipi/' /mnt/inactive/etc/hosts; \
+  sudo sed -i 's/.*/amplipi/' /mnt/inactive/etc/hostname; \
+  sudo umount /mnt/inactive && sudo rmdir /mnt/inactive"
 ssh $user_host "cat /dev/null > ~/.bash_history && history -c && sudo systemctl reboot" || true
 
 # verify amplipi.local get request is successful

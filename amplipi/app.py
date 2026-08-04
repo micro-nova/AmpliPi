@@ -74,11 +74,15 @@ app = FastAPI(openapi_url=None, redoc_url=None,)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# This will get generated as a tmpfs on AmpliPi,
-# but won't exist if testing on another machine.
-os.makedirs(GENERATED_DIR, exist_ok=True)
+# This will get generated as a tmpfs on AmpliPi, but won't exist if testing on another machine
+# (e.g. /data isn't a real mount there) - don't let that block importing this module at all.
+try:
+  os.makedirs(GENERATED_DIR, exist_ok=True)
+except OSError:
+  pass
 # TODO: make this register as a dynamic folder???
-app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated")
+if os.path.isdir(GENERATED_DIR):
+  app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated")
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 

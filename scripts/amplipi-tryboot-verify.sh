@@ -39,6 +39,14 @@ commit() { # Swap which boot slot is considered primary and secondary p1's autob
   rm -f "${PENDING_FILE}"
   mount -o remount,ro "${BOOT_MOUNT}"
 
+  # The update this commit just finalized is now what's actually running - the multi-GB images
+  # that got us here have served their purpose. Removing them now (rather than letting them sit on
+  # /data indefinitely, or waiting for scripts/cleanup to catch them manually) reclaims that space
+  # right when it's safe to: do_checks() and the flash itself may still need them right up until
+  # this point, but nothing after commit does.
+  log "Cleaning up /data/update/ (images for the now-committed update)"
+  rm -f /data/update/root.img.xz /data/update/boot.img.xz /data/update/manifest.json
+
   log "Commit complete. Default: p${current_part} | Tryboot: p${old_part}"
 }
 
