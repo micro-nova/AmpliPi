@@ -1,62 +1,52 @@
 #!/usr/bin/env python3
 """A program that ticks a counter down until deactivating log_persistence"""
 
-import logging
-import sys
 import json
-import re
-
-import configparser
-import requests
+import logging
 import subprocess
+import sys
+import time
+
+import requests
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 
-state_persist: bool
-state_delay: int
+PERSIST_LOGS_URL = 'http://localhost:5001/settings/persist_logs'
 
-api_read_failure = False
+
+def restart_updater_and_wait():
+  """ If the updater API isn't responding, the most likely cause is that the amplipi-updater
+  service itself is down (crashed, mid-restart, etc.), not something specific to persist_logs.
+  Restarting it and retrying once is simpler - and far less likely to drift out of sync - than
+  reimplementing asgi.py's journald/logging.ini handling a second time here (see GitHub #971,
+  where the previous copy of that logic had done exactly that and gone stale/buggy). """
+  logger.warning("Updater API call failed, restarting amplipi-updater and retrying once...")
+  subprocess.run(['sudo', 'systemctl', 'restart', 'amplipi-updater'], check=False)
+  time.sleep(5)
+
+
+def get_persist_state() -> dict:
+  try:
+    response = requests.get(PERSIST_LOGS_URL, timeout=10)
+    response.raise_for_status()
+    return response.json()
+  except Exception:
+    restart_updater_and_wait()
+    response = requests.get(PERSIST_LOGS_URL, timeout=10)
+    response.raise_for_status()
+    return response.json()
+
+
 try:
-  response = requests.get('http://localhost:5001/settings/persist_logs', timeout=10)
-  state = response.json()
-
+  state = get_persist_state()
   state_persist = state["persist_logs"]
   state_delay = state["auto_off_delay"]
-except KeyError as exc:
-  logger.exception("Unable to read log persistence state through the api, attempting to read directly...")
-  api_read_failure = True
 except Exception as exc:
-  logger.exception(f"increment_auto_off.py has failed with the following exception:\n{exc}")
-  api_read_failure = True
-
-
-if api_read_failure:
-  try:
-    # If the api is inaccessible, assume it is down for whatever reason and extrapolate that there is no race condition to reading it directly
-    # This section is a copy of the /settings/persist_logs GET in asgi.py
-    journalconf = configparser.ConfigParser(strict=False, allow_no_value=True)
-    journalconf.read('/etc/systemd/journald.conf')
-
-    logconf = configparser.ConfigParser(strict=False, allow_no_value=True)
-    logconf.read('/var/log/logging.ini')
-
-    persist = journalconf.get("Journal", "Storage", fallback="volatile")
-    state_persist = True if persist not in ("volatile", "persistent") else persist == "persistent"  # If value is somehow invalid, assume it's True just in case
-
-    if not logconf.has_option("logging", "auto_off_delay"):
-      state_delay = 14
-    auto_off = logconf.get("logging", "auto_off_delay", fallback="14")
-    if not auto_off.isdigit() and bool(re.fullmatch(r'\d*\.\d+', auto_off)):
-      # regex to check decimal state, this would lead to "123.45" and ".45" being true but not "123."
-      # Exclude anything that isdigit() as to not overwrite valid user settings
-      state_delay = round(float(auto_off)) if round(float(auto_off)) > 0 else 1  # Avoid instances where it could be zero as to not set the "do not deactivate" setting
-    else:
-      state_delay = int(auto_off) if auto_off.isdigit() else 14
-  except Exception as exc:
-    logger.exception(f"increment_auto_off.py has failed with the following exception:\n{exc}")
+  logger.exception(f"increment_auto_off.py could not read persist_logs state, skipping this run:\n{exc}")
+  sys.exit(1)
 
 
 if state_persist and state_delay is not None:
@@ -67,60 +57,26 @@ if state_persist and state_delay is not None:
     "auto_off_delay": delay if future_persist_state else 14,  # If no longer persisting, set to default
   }
 
-  api_write_failure = False
-  try:
-    json_data = json.dumps(body)
-    response = requests.post(
-      url='http://localhost:5001/settings/persist_logs',
+  def post_persist_state():
+    return requests.post(
+      url=PERSIST_LOGS_URL,
       headers={'Content-Type': 'application/json'},
-      data=json_data,
+      data=json.dumps(body),
       timeout=10,
     )
+
+  try:
+    response = post_persist_state()
+    if not response.ok:
+      restart_updater_and_wait()
+      response = post_persist_state()
+
     if response.ok:
       if future_persist_state:
-        logging.info(f"Persist logs will be automatically turned off in {delay} day(s)")
+        logger.info(f"Persist logs will be automatically turned off in {delay} day(s)")
       else:
-        logging.info("Persist logs has been turned off automatically")
+        logger.info("Persist logs has been turned off automatically")
     else:
-      logging.exception("Unable to update persist_logs state via api, attempting to write directly...")
-      api_write_failure = True
+      logger.error(f"Unable to update persist_logs state via api: {response.status_code} {response.text}")
   except Exception as exc:
-    logger.exception(f"increment_auto_off.py has failed with the following exception:\n{exc}")
-    api_write_failure = True
-
-  if api_write_failure:
-    # This section is a copy of the /settings/persist_logs POST in asgi.py
-    try:
-      conf = '/etc/systemd/journald.conf'
-      tmp = '/tmp/journald.conf.tmp'
-      journal = configparser.ConfigParser(strict=False, allow_no_value=True)
-      journal.read(conf)
-
-      if not journal.has_section("Journal"):
-        journal.add_section('Journal')
-
-      # goal_value is true if you wish to turn persistent logging on and false if you wish to turn it off
-      if body["persist_logs"]:  # Set persist
-        journal.set('Journal', 'Storage', 'persistent')
-      else:  # Reset config to default as seen in configure.py
-        journal.set('Journal', 'Storage', 'volatile')
-
-      with open(tmp, 'w', encoding="utf-8") as conf_file:
-        journal.write(conf_file)
-
-      subprocess.run(['sudo', 'mv', tmp, conf], check=True)
-      subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-journald'], check=True)
-
-      if state_delay != body["auto_off_delay"]:
-        logini = '/var/log/logging.ini'
-        logtmp = '/tmp/logging.ini.tmp'
-        log = configparser.ConfigParser(strict=False, allow_no_value=True)
-        log.read(logini)
-        log.set('logging', 'auto_off_delay', f"{body['auto_off_delay']}")  # Accept auto_off_delay as an int for type checking, parse to str for configParser validity
-        with open(logtmp, 'w', encoding='utf-8') as file:
-          log.write(file)
-        subprocess.run(['sudo', 'mv', logtmp, logini], check=True)
-        logging.info(f"Persist logs will be automatically turned off in {body['auto_off_delay']} day(s)")
-
-    except Exception as exc:
-      logger.exception(f"increment_auto_off.py has failed with the following exception:\n{exc}")
+    logger.exception(f"increment_auto_off.py failed to update persist_logs state:\n{exc}")
