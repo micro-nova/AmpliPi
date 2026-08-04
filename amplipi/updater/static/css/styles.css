@@ -56,8 +56,8 @@ hr {
 }
 #debug {
   overflow-y: scroll !important;
-  min-height: 100px;
   min-height: 500px;
+  max-height: 500px;
 }
 
 .dm-uploader {
