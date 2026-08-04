@@ -133,13 +133,17 @@ if ! which git-lfs; then
   echo "git-lfs needs to be installed to use this script"
 fi
 
+# astral.sh's installer puts uv here, but this directory only ends up on PATH via ~/.profile,
+# which login shells source and non-login/non-interactive ones (most terminals, and any script
+# invocation like this one) do not - so a uv installed by a previous run of this exact script was
+# still invisible to the check below, and got silently reinstalled on every single run.
+export PATH="$HOME/.local/bin:$PATH"
+
 if ! command uv --version >/dev/null 2>&1; then
   echo ""
   echo "uv not found, installing..."
 
   curl -LsSf https://astral.sh/uv/install.sh | sh
-
-  export PATH="$HOME/.local/bin:$PATH"
 fi
 
 if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate && ! -e ../venv/Scripts/activate ]]; then
@@ -164,8 +168,7 @@ else
   source ../venv/bin/activate
 fi
 
-$python -m pip install --upgrade pip
-$python -m pip install poetry
+uv pip install poetry
 echo -e "Finished checking dependencies\n"
 
 # use a new version for the build but hide it from git since it isn't a real release
