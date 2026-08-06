@@ -58,8 +58,8 @@
               <div id='latest-update-name'>...</div>
               <div id='latest-update-desc' class="text-left"></div>
               <a id="submit-latest-update" role="button" class="btn btn-lg btn-primary text-center mt-3 d-none"
-                onclick="ui_start_software_update($('#latest-update').attr('data-url'), $('#latest-update').attr('data-version'));">
-                Start Update</a>
+                onclick="ui_start_latest_release_update();">
+                Begin Flash</a>
             </div>
 
             <div class="tab-pane fade" id="older-update" role="tabpanel" aria-labelledby="older-update-tab">
@@ -69,8 +69,8 @@
               </select>
               <div id='older-update-desc' class="text-left mt-2"></div>
               <a id="submit-older-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled"
-                 onclick="ui_start_software_update($('#older-update-sel').val(), $('#older-update-sel').find(':selected').data('version'));">
-                Start Update</a>
+                 onclick="ui_start_selected_release_update();">
+                Begin Flash</a>
             </div>
 
             <div class="tab-pane fade" id="manual-update" role="tabpanel" aria-labelledby="manual-update-tab">
@@ -275,6 +275,23 @@
            <div id="update-log" class="card">
             <div class="card-header">
               Update Log
+            </div>
+
+            <!--
+              Progress bar, dynamically sized depending on if the update needs to be downloaded first as well as if the boot image is present
+              this translates to there being a minimum of two segments if the update is already downloaded and is only for root, or 5 if it isn't downloaded and contains boot
+            -->
+            <div class="p-3 pb-0">
+              <div class="progress" style="position: relative;">
+                <div id="update-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+              </div>
+              <div class="d-flex text-center mt-1">
+                <small class="update-progress-label d-none" data-label="Downloading root image" style="width: 0%;">Download</small>
+                <small class="update-progress-label d-none" data-label="Verifying root image" style="width: 0%;">Verify Root</small>
+                <small class="update-progress-label d-none" data-label="Verifying boot image" style="width: 0%;">Verify Boot</small>
+                <small class="update-progress-label d-none" data-label="Flashing root" style="width: 0%;">Flash Root</small>
+                <small class="update-progress-label d-none" data-label="Flashing boot" style="width: 0%;">Flash Boot</small>
+              </div>
             </div>
 
             <ul class="list-group list-group-flush" id="debug">
