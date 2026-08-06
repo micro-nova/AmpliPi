@@ -115,8 +115,67 @@ function ui_redirect_to_amplipi() {
   window.location = window.location.toString().replace(":5001/update", ":80")
 }
 
+// Translate the backend messages into consumable percentages for the progress bar
+const UPDATE_PROGRESS_RE = /^(.+): (\d+(?:\.\d+)?)%$/;
+
+// Phases shown on the progress bar, 2-5 depending on whether this run is downloading (Latest
+// Release/Other Releases add one; an already-staged flash doesn't) and whether the update
+// includes a boot image.
+const DOWNLOAD_PHASE = 'Downloading root image';
+const FLASH_PHASES_WITH_BOOT = ['Verifying root image', 'Verifying boot image', 'Flashing root', 'Flashing boot'];
+const FLASH_PHASES_ROOT_ONLY = ['Verifying root image', 'Flashing root'];
+let flashPhases = FLASH_PHASES_ROOT_ONLY;
+// Cached by ui_configure_progress_phases() so ui_update_progress_bar() doesn't recompute per message.
+let flashSegment = 100 / flashPhases.length;
+let boldLabelEl = null;
+
+function ui_update_progress_bar(message) {
+  let match = message.match(UPDATE_PROGRESS_RE);
+  if (!match) return;
+  let label = match[1];
+  let pct = parseFloat(match[2]);
+  let idx = flashPhases.indexOf(label);
+  if (idx === -1) return;
+  let overall = idx * flashSegment + (pct / 100) * flashSegment;
+  let bar = $('#update-progress-bar');
+  bar.css('width', overall + '%').attr('aria-valuenow', overall).text(Math.round(overall) + '%');
+  bar.toggleClass('bg-info', label.indexOf('Verifying') === 0 || label.indexOf('Downloading') === 0);
+  bar.toggleClass('bg-primary', label.indexOf('Flashing') === 0);
+  if (boldLabelEl === null || boldLabelEl.data('bound-label') !== label) {
+    if (boldLabelEl) boldLabelEl.removeClass('font-weight-bold');
+    boldLabelEl = $('.update-progress-label[data-label="' + label + '"]').addClass('font-weight-bold');
+    boldLabelEl.data('bound-label', label);
+  }
+}
+
+// Sets up the progress bar for the given phases (2-5, see FLASH_PHASES_* above).
+function ui_configure_progress_phases(phases) {
+  flashPhases = phases;
+  flashSegment = 100 / flashPhases.length;
+  boldLabelEl = null;
+  $('#update-progress-bar').css('width', '0%').attr('aria-valuenow', 0).text('0%')
+    .removeClass('bg-primary').addClass('bg-info');
+  $('.update-progress-label').removeClass('font-weight-bold').addClass('d-none').css('width', '0%');
+  flashPhases.forEach(function(label) {
+    $('.update-progress-label[data-label="' + label + '"]').removeClass('d-none').css('width', flashSegment + '%');
+  });
+
+  // Tick marks between each pair of phases.
+  $('.update-progress-tick').remove();
+  for (let i = 1; i < flashPhases.length; i++) {
+    $('<div class="update-progress-tick"></div>')
+      .css({position: 'absolute', top: 0, bottom: 0, width: '2px', background: 'rgba(255,255,255,0.75)', left: (i * flashSegment) + '%'})
+      .appendTo($('#update-progress-bar').parent());
+  }
+}
+
+function ui_reset_progress_bars() {
+  ui_configure_progress_phases(FLASH_PHASES_ROOT_ONLY);
+}
+
 function ui_show_update_progress(status) {
   // assumes status {'message': str, 'type': 'info'|'warning'|'error'|'success'|'failed'}
+  ui_update_progress_bar(status.message);
   let color = (status.type == 'error' || status.type == 'failed') ? 'danger' : status.type;
   if (status.message.trim().length > 0) {
     ui_add_log(status.message, color);
@@ -168,7 +227,9 @@ let md = new remarkable.Remarkable();
 
 function ui_select_release(sel) {
   selected = $(sel).find(':selected');
-  if (selected.data('version') !== undefined) {
+  // data-name presence (not a separate data-version) distinguishes a real release option from
+  // the "Choose..." placeholder.
+  if (selected.data('name') !== undefined) {
     $('#submit-older-update').removeClass('disabled');
     $('#older-update-desc').empty().append(md.render(selected.data('desc')));
   } else {
@@ -176,26 +237,126 @@ function ui_select_release(sel) {
   }
 }
 
-function ui_start_software_update(url, version) {
+// Watches an SSE progress channel until a terminal event - onSuccess() on 'success',
+// ui_show_failure() on 'error'. Shared by ui_begin_flash_watch() and ui_download_then_flash().
+function ui_watch_sse(url, onSuccess) {
+  var source = new EventSource(url);
+  source.onmessage = function(event) {
+    var data = JSON.parse(event.data);
+    ui_show_update_progress(data);
+    if (data.type == 'success' || data.type == 'error') {
+      source.close();
+      if (data.type == 'success') {
+        onSuccess();
+      } else {
+        ui_show_failure();
+      }
+    }
+  };
+}
+
+// Kicks off /update/flash and watches its progress. Shared by "Begin Flash" and the
+// download-then-flash flows - callers set up their own button/log/progress-bar state first.
+// reconfigureBoot=false skips re-shaping the bar (used after a download, which already set it
+// up - redoing it here would wipe the download segment's progress).
+function ui_begin_flash_watch(reconfigureBoot) {
+  reconfigureBoot = (typeof reconfigureBoot === 'undefined' ? true : reconfigureBoot);
+  // Starts in the background and returns immediately - a dropped connection just reconnects to
+  // the watcher instead of losing track. Safe to call even if a flash is already running (backend
+  // refuses a second one, but there's still something to watch).
+  fetch('/update/flash?tryboot=true', {
+    method: 'POST',
+  }).then((response) => response.json()).then((data) => {
+    if (reconfigureBoot) {
+      // has_boot is known upfront from the manifest, no need to wait for a boot-labeled message.
+      ui_configure_progress_phases(data.has_boot ? FLASH_PHASES_WITH_BOOT : FLASH_PHASES_ROOT_ONLY);
+    }
+    ui_watch_sse('update/flash/progress', function() {
+      // tryboot=true means the backend already triggered the reboot - safe to go straight to
+      // waiting for the new slot.
+      ui_add_log('Waiting for the unit to reboot into the new slot', 'info');
+      setTimeout(ui_check_after_reboot, 5000, 2 * 60 / 5 - 1);
+    });
+  }).catch((e) => {
+    ui_add_log('Failed to start flash: ' + e, 'danger');
+    ui_show_failure();
+  });
+}
+
+// Shared by all download-then-flash flows. urls: {manifest_url, root_url, boot_url}.
+// expectedVersion (optional) makes the backend refuse to proceed to the big downloads if the
+// manifest it fetches doesn't match. Callers handle their own button/log/progress-bar setup
+// first, same as ui_begin_flash_watch().
+function ui_download_then_flash(urls, expectedVersion) {
+  fetch('/update/download/images', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      manifest_url: urls.manifest_url,
+      root_url: urls.root_url,
+      boot_url: urls.boot_url || null,
+      expected_version: expectedVersion || null,
+    }),
+  }).then((response) => response.json()).then((data) => {
+    // Watch regardless of whether this started a fresh download or one was already running.
+    ui_watch_sse('update/download/images/progress', function() {
+      ui_add_log('Download complete, starting flash', 'info');
+      ui_begin_flash_watch(false);
+    });
+  }).catch((e) => {
+    ui_add_log('Failed to start download: ' + e, 'danger');
+    ui_show_failure();
+  });
+}
+
+// Shared by both release buttons. skipIfStaged checks GET /update/staged first and flashes
+// directly if that version's already there (Latest Release only - Other Releases always
+// redownloads since the picked release may not match what's staged).
+function ui_start_release_download(release, skipIfStaged) {
   ui_disable_buttons();
   $('#update-log').show();
-  req = {"url" : url, "version" : version};
-  try {
-    fetch('/update/download', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json;charset=utf-8'
-      },
-      body: JSON.stringify(req)
-    }).then((response) => {
-      ui_add_log('updates typically take 10-15 minutes, please be patient', 'info');
-      ui_add_log(`downloaded "${version}" release`, 'info');
-      ui_begin_update();
-    });
-  } catch(e) {
-    ui_add_log('Failed to download release: '+ e, 'danger');
-    ui_show_failure();
+
+  function download() {
+    let urls = extract_image_urls(release);
+    if (!urls) {
+      ui_add_log('This release has no manifest.json/root.img.xz assets attached', 'danger');
+      ui_show_failure();
+      return;
+    }
+    ui_configure_progress_phases([DOWNLOAD_PHASE].concat(urls.boot_url ? FLASH_PHASES_WITH_BOOT : FLASH_PHASES_ROOT_ONLY));
+    ui_add_log('Downloading ' + release.tag_name, 'info');
+    ui_download_then_flash(urls, release.tag_name);
   }
+
+  if (skipIfStaged) {
+    fetch('/update/staged').then((r) => r.json()).then((staged) => {
+      if (staged.staged && staged.version === release.tag_name) {
+        ui_add_log('Already downloaded, flashing directly', 'info');
+        ui_reset_progress_bars();
+        ui_begin_flash_watch();
+      } else {
+        download();
+      }
+    }).catch((e) => {
+      ui_add_log('Failed to check staged update: ' + e, 'danger');
+      ui_show_failure();
+    });
+  } else {
+    download();
+  }
+}
+
+// "Begin Flash" on the Latest Release tab - skips redownloading if the right version's already staged.
+function ui_start_latest_release_update() {
+  if (!latestRelease) return;
+  ui_start_release_download(latestRelease, true);
+}
+
+// "Start Update" on the Other Releases tab.
+function ui_start_selected_release_update() {
+  let release = availableReleases[$('#older-update-sel').val()];
+  if (!release) return;
+  ui_start_release_download(release, false);
 }
 
 function ui_show_offline_message() {
@@ -215,32 +376,52 @@ fetch('/update/version').then((resp) => {
   });
 });
 
+// Set by show_latest_release(), read by ui_start_latest_release_update(). Holds the full GH
+// release object (not just tarball_url) since the flash flow needs real asset URLs out of it.
+let latestRelease = null;
+
 function show_latest_release(latest_release) {
   if (latest_release.tag_name == version) {
     console.log('already up to date');
     $('#latest-update-name').empty().append('Your system is up to date  <i class="fas fa-check-circle text-success"></i>')
   } else {
+    latestRelease = latest_release;
     // show the release info with its markdown from GH
     $('#submit-latest-update').removeClass('d-none');
     $('#latest-update-name').text(latest_release.name);
     $('#latest-update-desc').append(md.render(latest_release.body));
-    // embedd the url and version so it can be passed on click
-    $('#latest-update').attr('data-url', latest_release.tarball_url);
-    $('#latest-update').attr('data-version', latest_release.tag_name);
   }
 }
+
+// Same idea as latestRelease, but keyed by tag_name since Other Releases can point at any of several.
+let availableReleases = {};
 
 function populate_available_releases(releases) {
   // TODO: indicate difference between pre-releases and full-releases
   for (const release of releases) {
-    console.log(`found "${release.name}" - ${release.tarball_url}`);
-    $('#older-update-sel').append(`<option value="${release.tarball_url}"
-                                           data-version="${release.tag_name}"
+    console.log(`found "${release.name}" - ${release.tag_name}`);
+    availableReleases[release.tag_name] = release;
+    $('#older-update-sel').append(`<option value="${release.tag_name}"
                                            data-name="${release.name}"
                                            data-desc="${release.body}">
                                            ${release.name}
                                    </option>`);
   }
+}
+
+// Pulls manifest.json/root.img.xz/boot.img.xz URLs from a GH release's assets (not tarball_url,
+// GitHub's source archive). Returns null if they're missing - true for every real release right
+// now since CI doesn't attach them yet.
+function extract_image_urls(release) {
+  let assets = release.assets || [];
+  let find_url = (filename) => {
+    let asset = assets.find((a) => a.name === filename);
+    return asset ? asset.browser_download_url : null;
+  };
+  let manifest_url = find_url('manifest.json');
+  let root_url = find_url('root.img.xz');
+  if (!manifest_url || !root_url) return null;
+  return {manifest_url: manifest_url, root_url: root_url, boot_url: find_url('boot.img.xz')};
 }
 
 async function requestSupportTunnel() {

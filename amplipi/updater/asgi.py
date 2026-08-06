@@ -72,6 +72,87 @@ app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception
 sse_messages: queue.Queue = queue.Queue()
 
 
+class SSEChannel:
+  """ Bundles the queue/in-progress-flag/latest-status trio a long-running background job reports
+  its progress through, plus the polling generator that serves it as SSE to a native EventSource.
+  /update/flash and /update/download/images each run their own long job in a background thread
+  (flash_partition_thread/download_images_thread), separate from sse_messages/install, so a
+  dropped/reconnecting browser can't interrupt or duplicate the actual work - watched via a paired
+  GET .../progress endpoint rather than tying the work to any one HTTP connection's lifetime. This
+  used to be two separate copies of identical plumbing (globals, message-formatting helpers, and
+  the SSE generator itself) differing only in which globals they closed over; this class replaces
+  both, instantiated once per job below. """
+
+  def __init__(self, idle_message: str):
+    self.messages: queue.Queue = queue.Queue()
+    self.in_progress = threading.Event()
+    """A guard against multiple runs of the same process (ie, no double flashing the inactive slot)"""
+
+    self.latest_status: dict = {}
+    """
+      The most recent message from self.messages,
+      stored here so that late subscribers can see where the process is
+      without waiting for the next printed event message
+    """
+
+    self.idle_message = idle_message
+    """Message shown when there is nothing in progress"""
+
+  def _message(self, t: str, msg: str):
+    msg = msg.replace('\n', '<br>')
+    sse_msg = {'data': json.dumps({'message': msg, 'type': t})}
+    self.latest_status['data'] = sse_msg['data']
+    self.messages.put(sse_msg)
+
+  def info(self, msg: str):
+    self._message('info', msg)
+
+  def error(self, msg: str):
+    self._message('error', msg)
+
+  def done(self, msg: str):
+    self._message('success', msg)
+
+  def start(self, target: Callable, args: tuple = ()) -> bool:
+    if self.in_progress.is_set():
+      return False
+    self.in_progress.set()
+    while not self.messages.empty():
+      self.messages.get()
+    self.latest_status.clear()
+    threading.Thread(target=target, args=args).start()
+    return True
+
+  async def stream(self, req: Request):
+    """ Async generator for an EventSourceResponse - catches a late subscriber up on current
+    status immediately, then polls for new messages every 0.2s until the client disconnects. """
+    if 'data' in self.latest_status:
+      yield {'data': self.latest_status['data']}
+      if not self.in_progress.is_set():
+        # That cached message was the terminal result of a run that's already done - nothing else
+        # is ever coming, so close now instead of polling forever for a late subscriber.
+        return
+    elif not self.in_progress.is_set():
+      yield {'data': json.dumps({'message': self.idle_message, 'type': 'info'})}
+      return
+    try:
+      while True:
+        if await req.is_disconnected():
+          logger.info('disconnected')
+          break
+        if not self.messages.empty():
+          yield self.messages.get()
+        await asyncio.sleep(0.2)
+      logger.info(f"Disconnected from client {req.client}")
+    except asyncio.CancelledError as e:
+      logger.exception(f"Disconnected from client (via refresh/close) {req.client}")
+      raise e
+
+
+flash_channel = SSEChannel(idle_message='No flash in progress')
+download_channel = SSEChannel(idle_message='No download in progress')
+
+
 def validate_logging_ini():
   """Fallback in case the ini file or any individual header  doesn't exist, set to default settings. Only really comes up during tests."""
   tmp = '/tmp/logging.ini.tmp'
@@ -170,12 +251,6 @@ def validate_journald_conf():
 
   if _read_journald_storage_persistence() not in ('volatile', 'persistent'):
     _write_journald_storage_persistence('persistent')
-
-
-class ReleaseInfo(BaseModel):
-  """ Software Release Information """
-  url: str
-  version: str
 
 
 # host all of the static files the client will look for
@@ -317,33 +392,6 @@ async def start_upload(file: UploadFile = File(...)):
     return 500
 
 
-def download(url, file_name):
-  """ Download a binary file from @url to @file_name """
-  # (connect timeout, read timeout) - read timeout is the max gap between
-  # received chunks, not a cap on total download time
-  response = requests.get(url, stream=True, timeout=(10, 30))
-  response.raise_for_status()
-  with open(file_name, "wb") as file:
-    for chunk in response.iter_content(chunk_size=4 * 1024 * 1024):
-      if chunk:
-        file.write(chunk)
-    # TODO: verify file has amplipi version
-
-
-@router.post("/update/download")
-async def download_update(info: ReleaseInfo):
-  """ Download the update """
-  logger.info(f'downloading update from: {info.url}')
-  try:
-    persist_logs_during_update()
-    os.makedirs('web/uploads', exist_ok=True)
-    download(info.url, 'web/uploads/update.tar.gz')
-    return 200
-  except Exception as e:
-    logger.exception(e)
-    return 500
-
-
 @router.get('/update/restart')  # an old version accidentally used get instead of post
 @router.post('/update/restart')
 def restart():
@@ -427,6 +475,15 @@ async def progress(req: Request):
       # Do any other cleanup, if any
       raise e
   return EventSourceResponse(stream())
+
+
+@router.route('/update/flash/progress')
+async def flash_progress(req: Request):
+  """ SSE Progress server for /update/flash - same shape as /update/install/progress. Being a
+  plain GET consumed via EventSource (rather than the POST-with-inline-SSE-response the actual
+  flash used to be) means the browser can freely reconnect here on any dropped connection without
+  affecting flash_partition_thread(), which keeps running regardless in its own thread. """
+  return EventSourceResponse(flash_channel.stream(req))
 
 
 def extract_to_home(home):
@@ -546,6 +603,17 @@ class UpdateManifest(BaseModel):
   root: ImageMetadata
 
 
+def _load_manifest(path: str) -> Optional[UpdateManifest]:
+  """ Loads an update's manifest.json as an UpdateManifest object for easy reading """
+  if not os.path.exists(path):
+    return None
+  try:
+    with open(path, encoding="UTF-8") as f:
+      return UpdateManifest(**json.load(f))
+  except Exception:
+    return None
+
+
 class BootPair(BaseModel):
   """
     Partition mappings for the boot and root partitions of OS A and B
@@ -586,14 +654,187 @@ def get_checksum(path: str, total_size: int, progress_cb: Optional[Callable] = N
     return h.hexdigest()
 
 
-@router.post('/update/flash')
-async def flash_partition(tryboot: bool = False):
+class ImageDownloadInfo(BaseModel):
+  """ Release asset URLs to populate /data/update/ from, matching what /update/flash later
+  expects to find there. `boot_url` is optional, mirroring UpdateManifest.boot - a root-only
+  update doesn't need a new boot image. Getting these URLs (e.g. by polling the GitHub releases
+  API) is not this endpoint's job - see the "Backend GitHub polling" gap in
+  docs/ab_update_design.md. `expected_version`, if given, is checked against the downloaded
+  manifest's own `version` field before the (large) root/boot images are downloaded - protects
+  against a caller's idea of "the release I'm downloading" silently drifting from what's actually
+  behind these URLs (stale cache, wrong asset, etc.) without wasting bandwidth on gigabytes that
+  would just get rejected anyway. Optional since callers without a specific release in mind (e.g.
+  pointing at an arbitrary test URL) have nothing meaningful to compare against. """
+  manifest_url: str
+  root_url: str
+  boot_url: Optional[str] = None
+  expected_version: Optional[str] = None
+
+
+def download_images_thread(info: ImageDownloadInfo):
+  try:
+    _download_images_body(info)
+  finally:
+    download_channel.in_progress.clear()
+
+
+def _download_images_body(info: ImageDownloadInfo):
   """
-    Validate the update package downloaded to /data/update and then flash the inactive boot slot
+    Download manifest.json, root.img.xz, and (optionally) boot.img.xz from the given URLs into
+    /data/update/
+  """
+  dest_dir = "/data/update"
+
+  # Set up the SSE event loop with a throttle of 0.5 messages per second (1 message every two seconds)
+  progress_state: dict = {}
+  progress_lock = threading.Lock()
+  stop_heartbeat = threading.Event()
+
+  def progress(done, total, label):
+    with progress_lock:
+      progress_state[label] = (done, total)
+
+  def progress_done(label):
+    # Explicitly report 100% here rather than relying on the heartbeat to have caught it - a small
+    # asset (e.g. manifest.json vs. root's several GB) can finish faster than the heartbeat's 2s
+    # sampling interval, meaning the heartbeat would never once have observed it.
+    download_channel.info(f'{label}: {1.0:.1%}')
+    with progress_lock:
+      progress_state.pop(label, None)
+
+  def heartbeat():
+    while not stop_heartbeat.wait(2.0):
+      with progress_lock:
+        items = list(progress_state.items())
+      for label, (done, total) in items:
+        download_channel.info(f'{label}: {done / total:.1%}')
+
+  def download_asset(url: str, dest: str, label: str):
+    response = requests.get(url, stream=True, timeout=(10, 30))
+    response.raise_for_status()
+    total = int(response.headers.get('content-length', 0))
+    written = 0
+    with open(dest, "wb") as f:
+      for chunk in response.iter_content(chunk_size=4 * 1024 * 1024):
+        if chunk:
+          f.write(chunk)
+          written += len(chunk)
+          # content-length isn't guaranteed to be present (e.g. a chunked transfer-encoding
+          # response omits it) - only report a percentage when we actually know the total
+          if total:
+            progress(written, total, label)
+    if total:
+      progress_done(label)
+
+  def clear_if_stale(manifest_path: str):
+    """
+      Compare /data/update/manifest.json's version with info.expected_version.
+      If those versions aren't the same, delete the contents of /data/update,
+      if they are the same then keep the current update package and skip the download
+    """
+    existing = _load_manifest(manifest_path)  # None (unreadable/corrupt/missing) is treated as stale regardless
+    if existing is None:
+      if not os.path.exists(manifest_path):
+        return  # nothing staged at all - nothing to clear
+    elif info.expected_version is not None and existing.version == info.expected_version:
+      return
+    for filename in ("manifest.json", "root.img.xz", "boot.img.xz"):
+      path = os.path.join(dest_dir, filename)
+      if os.path.exists(path):
+        os.remove(path)
+
+  heartbeat_thread = threading.Thread(target=heartbeat, daemon=True)
+  heartbeat_thread.start()
+  try:
+    os.makedirs(dest_dir, exist_ok=True)
+    manifest_path = os.path.join(dest_dir, "manifest.json")
+    clear_if_stale(manifest_path)
+    download_asset(info.manifest_url, manifest_path, "Downloading manifest")
+
+    manifest = _load_manifest(manifest_path)
+    if manifest is None:
+      raise RuntimeError("Downloaded manifest could not be parsed")
+
+    if info.expected_version is not None and manifest.version != info.expected_version:
+      raise RuntimeError(
+        f"Downloaded manifest is for version {manifest.version}, expected {info.expected_version} - refusing to download root/boot images for the wrong release")
+
+    # Check for available space before downloading
+    # Due to the update commit service deleting staged updates, this is only able to be tripped by a user overfilling their /data directory
+    needed = manifest.root.size + (manifest.boot.size if manifest.boot is not None else 0)
+    available = shutil.disk_usage(dest_dir).free
+    if available < needed:
+      raise RuntimeError(
+        f"Not enough free space on /data to download this update "
+        f"(need {needed / 1024**3:.2f} GB, have {available / 1024**3:.2f} GB free) - "
+        f"free up space on /data and try again")
+
+    download_asset(info.root_url, os.path.join(dest_dir, "root.img.xz"), "Downloading root image")
+    if info.boot_url is not None:
+      download_asset(info.boot_url, os.path.join(dest_dir, "boot.img.xz"), "Downloading boot image")
+
+    download_channel.done('Download complete!')
+  except Exception as e:
+    download_channel.error(str(e))
+  finally:
+    stop_heartbeat.set()
+    heartbeat_thread.join(timeout=3)
+
+
+@router.post('/update/download/images')
+def start_download_images(info: ImageDownloadInfo):
+  """
+    Start downloading manifest.json, root.img.xz, and (optionally) boot.img.xz into /data/update/ in
+    the background and return immediately; watch progress via
+    GET /update/download/images/progress
+
+    Refuses to start a second download while one's already running - concurrent writes to the same
+    /data/update/ files would corrupt each other.
+  """
+  # This endpoint uses the same pattern as /update/flash
+  if not download_channel.start(target=download_images_thread, args=(info,)):
+    return {'started': False, 'reason': 'a download is already in progress'}
+  return {'started': True}
+
+
+@router.route('/update/download/images/progress')
+async def download_images_progress(req: Request):
+  """ SSE Progress server for /update/download/images """
+  return EventSourceResponse(download_channel.stream(req))
+
+
+@router.get('/update/staged')
+def staged_update():
+  """
+    Reports whether /data/update/manifest.json already exists and, if so, what version it
+    declares
+  """
+  manifest = _load_manifest("/data/update/manifest.json")
+  if manifest is None:
+    return {'staged': False, 'version': None}
+  return {'staged': True, 'version': manifest.version}
+
+
+def flash_partition_thread(tryboot: bool):
+  """
+    Validate the update package downloaded to /data/update and then flash the inactive boot slot.
+    Runs in its own background thread (like install_thread()), started by POST /update/flash and
+    watched via GET /update/flash/progress so that a dropped connection doesn't lead to a failed or duplicated update.
     tryboot arg is used to toggle whether or not "sudo reboot '0 tryboot'" is run at the end of flashing to actually change slots
     tryboot is false by default to simplify manual invocation during development
     see the BootSlot enum for slot mapping details
   """
+  try:
+    _flash_partition_body(tryboot)
+  finally:
+    flash_channel.in_progress.clear()
+
+
+def _flash_partition_body(tryboot: bool):
+  try:
+    persist_logs_during_update()
+  except Exception as e:
+    logger.exception(f'Failed to enable persist_logs before flashing: {e}')
 
   def flash(image: str, partition: int, total: int, progress_cb: Optional[Callable] = None):
     """ Decompress an image and stream it straight into /dev/mmcblk0p{partition} via dd, reporting
@@ -617,21 +858,73 @@ async def flash_partition(tryboot: bool = False):
     if dd.returncode != 0:
       raise RuntimeError(f'dd failed: {dd.stderr.read().decode()}')
 
+  def set_persist_logs():
+    """ persist logs after an update, set auto_off_delay to 14 unless the user's own delay is larger or 0 (no auto_off) """
+    persist_logs = False
+    auto_off_delay = 14
+    state_file = os.path.join(USER_CONFIG_DIR, 'persist_logs.json')
+    if os.path.exists(state_file):
+      with open(state_file, encoding='utf-8') as f:
+        state = json.load(f)
+      persist_logs = state.get('persist_logs', False)
+      auto_off_delay = state.get('auto_off_delay', 14)
+
+    dropin_path = '/data/tmpmnt' + JOURNALD_RASPI_CONF
+    subprocess.run(['sudo', 'mkdir', '-p', os.path.dirname(dropin_path)], check=True)
+    journald_config_content = (
+      '# Created/managed by AmpliPi (also used by raspi-config)\n\n'
+      f"[Journal]\nStorage={'persistent' if persist_logs else 'volatile'}\n"
+    )
+    subprocess.run(['sudo', 'tee', dropin_path], input=journald_config_content, text=True, check=True)
+
+    log_path = '/data/tmpmnt/var/log/logging.ini'
+    existing_log = subprocess.run(['sudo', 'cat', log_path], capture_output=True, text=True).stdout
+    logconf = configparser.ConfigParser(strict=False, allow_no_value=True)
+    logconf.read_string(existing_log)
+    if not logconf.has_section('logging'):
+      logconf.add_section('logging')
+    logconf.set('logging', 'auto_off_delay', str(auto_off_delay))
+
+    log_buf = io.StringIO()
+    logconf.write(log_buf)
+    subprocess.run(['sudo', 'tee', log_path], input=log_buf.getvalue(), text=True, check=True)
+
   manifest_dir = "/data/update/manifest.json"
   root_img = "/data/update/root.img.xz"
   boot_img = "/data/update/boot.img.xz"
   # BOOT_SLOT is an env_var set by the active boot partition's commandline.txt
   if os.environ.get("BOOT_SLOT") != "A" and os.environ.get("BOOT_SLOT") != "B":
-    raise Exception("Boot slot could not be read")
+    flash_channel.error("Boot slot could not be read")
+    return
 
   active_slot = BootSlot.A if os.environ.get("BOOT_SLOT") == "A" else BootSlot.B
   target_slot = BootSlot.B if os.environ.get("BOOT_SLOT") == "A" else BootSlot.A
 
-  q: asyncio.Queue = asyncio.Queue()
-  loop = asyncio.get_running_loop()
+  # Some chunks of decompression move faster than others, make sure that the frontend gets a message every
+  # 2 seconds as long as the process is ongoing to avoid the illusion of a hang or failed update
+  progress_state: dict = {}
+  progress_lock = threading.Lock()
+  stop_heartbeat = threading.Event()
 
   def progress(done, total, label):
-    loop.call_soon_threadsafe(q.put_nowait, {'type': 'info', 'message': f'{label}: {done/total:.0%}'})
+    with progress_lock:
+      progress_state[label] = (done, total)
+
+  def progress_done(label):
+    # Explicitly report 100% here rather than relying on the heartbeat to have caught it
+    # Boot is VERY small relative to root and thus easy to miss in the event loop
+    flash_channel.info(f'{label}: {1.0:.1%}')
+    # Forcibly send the 100% complete message for a given job and then end the job
+    # Without this, every future process will also print "{process} 100%" during every heartbeat
+    with progress_lock:
+      progress_state.pop(label, None)
+
+  def heartbeat():
+    while not stop_heartbeat.wait(2.0):
+      with progress_lock:
+        items = list(progress_state.items())
+      for label, (done, total) in items:
+        flash_channel.info(f'{label}: {done / total:.1%}')
 
   def do_checks():
     """
@@ -653,6 +946,7 @@ async def flash_partition(tryboot: bool = False):
       raise RuntimeError("Root image size does not match expected value")
     if manifest.root.sha256 != get_checksum(root_img, root_size, lambda done, total: progress(done, total, "Verifying root image")):
       raise RuntimeError("Root image checksum does not match expected value")
+    progress_done("Verifying root image")
 
     if manifest.boot is not None:
       if not os.path.exists(boot_img):
@@ -662,131 +956,130 @@ async def flash_partition(tryboot: bool = False):
         raise RuntimeError("Boot image size does not match expected value")
       if manifest.boot.sha256 != get_checksum(boot_img, boot_size, lambda done, total: progress(done, total, "Verifying boot image")):
         raise RuntimeError("Boot image checksum does not match expected value")
+      progress_done("Verifying boot image")
 
     return manifest
 
-  async def stream():
-    """ SSE generator driving the whole flash: checks, then flash root (+boot), then patch the
-    target slot so it's bootable, yielding progress/status messages to the client throughout.
-
-    The actual work (do_checks/flash) is blocking IO, so it's run in a thread pool executor
-    (loop.run_in_executor) instead of directly in this coroutine, to avoid blocking the event
-    loop for the whole operation. A background thread can't `yield` into this async generator
-    directly, so `progress()` instead pushes messages onto `q` via call_soon_threadsafe, and this
-    generator polls the executor future's `.done()` state, draining `q` each time it wakes up.
-    This same drain-while-polling shape repeats below for the root and boot flash steps. """
-    future = loop.run_in_executor(None, do_checks)
-    while not future.done():
-      await asyncio.sleep(0.1)
-      while not q.empty():
-        yield {'data': json.dumps(q.get_nowait())}
-    await asyncio.sleep(0)  # let any final call_soon_threadsafe callbacks land before the last drain
-    while not q.empty():
-      yield {'data': json.dumps(q.get_nowait())}
+  heartbeat_thread = threading.Thread(target=heartbeat, daemon=True)
+  heartbeat_thread.start()
+  try:
     try:
-      manifest = future.result()
-      yield {'data': json.dumps({'type': 'success', 'message': 'All checks successful!'})}
+      manifest = do_checks()
+      flash_channel.info('All checks successful!')
     except Exception as e:
-      yield {'data': json.dumps({'type': 'error', 'message': str(e)})}
+      flash_channel.error(str(e))
       return
 
     # Congrats, everything is in place, you've survived this far, time to actually do anything at all
     try:
-      yield {'data': json.dumps({'type': 'info', 'message': f'Currently on slot {active_slot.name}, will flash slot {target_slot.name} (root p{target_slot.value.root}, boot p{target_slot.value.boot})'})}
+      flash_channel.info(f'Currently on slot {active_slot.name}, will flash slot {target_slot.name} (root p{target_slot.value.root}, boot p{target_slot.value.boot})')
 
-      yield {'data': json.dumps({'type': 'info', 'message': 'Flashing root image...'})}
-      root_future = loop.run_in_executor(None, lambda: flash(root_img, target_slot.value.root, PartitionSize.ROOT.value, lambda done, total: progress(done, total, 'Flashing root')))
-      while not root_future.done():
-        await asyncio.sleep(0.1)
-        while not q.empty():
-          yield {'data': json.dumps(q.get_nowait())}
-      await asyncio.sleep(0)
-      while not q.empty():
-        yield {'data': json.dumps(q.get_nowait())}
-      root_future.result()
-      yield {'data': json.dumps({'type': 'success', 'message': 'Root image flashed'})}
+      flash_channel.info('Flashing root image...')
+      flash(root_img, target_slot.value.root, PartitionSize.ROOT.value, lambda done, total: progress(done, total, 'Flashing root'))
+      progress_done('Flashing root')
+      flash_channel.info('Root image flashed')
 
       if manifest.boot is not None:
-        yield {'data': json.dumps({'type': 'info', 'message': 'Flashing boot image...'})}
-        boot_future = loop.run_in_executor(None, lambda: flash(boot_img, target_slot.value.boot, PartitionSize.BOOT.value, lambda done, total: progress(done, total, 'Flashing boot')))
-        while not boot_future.done():
-          await asyncio.sleep(0.1)
-          while not q.empty():
-            yield {'data': json.dumps(q.get_nowait())}
-        await asyncio.sleep(0)
-        while not q.empty():
-          yield {'data': json.dumps(q.get_nowait())}
-        boot_future.result()
-        yield {'data': json.dumps({'type': 'success', 'message': 'Boot image flashed'})}
+        flash_channel.info('Flashing boot image...')
+        flash(boot_img, target_slot.value.boot, PartitionSize.BOOT.value, lambda done, total: progress(done, total, 'Flashing boot'))
+        progress_done('Flashing boot')
+        flash_channel.info('Boot image flashed')
     except Exception as e:
-      yield {'data': json.dumps({'type': 'error', 'message': f'Update failed mid-flash: {e}'})}
+      flash_channel.error(f'Update failed mid-flash: {e}')
       return
+  finally:
+    # No more percentage-based progress after this point (patching is discrete step messages,
+    # not a byte counter), so the heartbeat's job is done regardless of which path got here.
+    stop_heartbeat.set()
+    heartbeat_thread.join(timeout=3)
 
-    try:
-      # /data/tmpmnt is the mountpoint used for whichever partition is being operated on at the time, either the inactive boot or root
-      # Necessary for making sure individual files have the proper details such as making sure the boot points to the correct root partition
-      yield {'data': json.dumps({'type': 'info', 'message': 'Patching boot partition...'})}
-      if not os.path.exists("/data/tmpmnt"):
-        os.mkdir("/data/tmpmnt")
-      subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
-      subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
+  try:
+    # /data/tmpmnt is the mountpoint used for whichever partition is being operated on at the time, either the inactive boot or root
+    # Necessary for making sure individual files have the proper details such as making sure the boot points to the correct root partition
+    flash_channel.info('Patching boot partition...')
+    if not os.path.exists("/data/tmpmnt"):
+      os.mkdir("/data/tmpmnt")
+    subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
+    subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
 
-      # The captured boot image carries whatever label its source partition had when it was built,
-      # which isn't necessarily this slot's - relabel to match the slot actually being written here,
-      # so blkid/lsblk aren't misleading about which slot is which. Safe to run against a mounted
-      # vfat filesystem.
-      subprocess.run(["sudo", "fatlabel", f"/dev/mmcblk0p{target_slot.value.boot}", f"BOOT-{target_slot.name}"], check=True)
+    # The captured boot image carries whatever label its source partition had when it was built,
+    # which isn't necessarily this slot's - relabel to match the slot actually being written here,
+    # so blkid/lsblk aren't misleading about which slot is which. Safe to run against a mounted
+    # vfat filesystem.
+    subprocess.run(["sudo", "fatlabel", f"/dev/mmcblk0p{target_slot.value.boot}", f"BOOT-{target_slot.name}"], check=True)
 
-      # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
-      # That is no longer the case as all of these operations require higher privs to touch a boot partition that doesn't belong to the user doing the changes
-      if manifest.boot is not None:
-        yield {'data': json.dumps({'type': 'info', 'message': 'Patching cmdline.txt'})}
-        content = subprocess.run(['sudo', 'cat', '/data/tmpmnt/cmdline.txt'], capture_output=True, text=True, check=True).stdout
-        content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
-        content = content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
-        subprocess.run(['sudo', 'tee', '/data/tmpmnt/cmdline.txt'], input=content, text=True, check=True)
+    # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
+    # That is no longer the case as all of these operations require higher privs to touch a boot partition that doesn't belong to the user doing the changes
+    if manifest.boot is not None:
+      flash_channel.info('Patching cmdline.txt')
+      content = subprocess.run(['sudo', 'cat', '/data/tmpmnt/cmdline.txt'], capture_output=True, text=True, check=True).stdout
+      content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
+      content = content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
+      subprocess.run(['sudo', 'tee', '/data/tmpmnt/cmdline.txt'], input=content, text=True, check=True)
 
-      yield {'data': json.dumps({'type': 'info', 'message': 'Patching root partition...'})}
-      # All systems originate from the same ancestor image. The following tools cleanse the root partition of identifiable info
-      # so that A and B don't have a case of mistaken identity by sharing these identifiers
-      fsck = subprocess.run(["sudo", "e2fsck", "-p", f"/dev/mmcblk0p{target_slot.value.root}"])
-      if fsck.returncode not in (0, 1):
-        raise RuntimeError(f"e2fsck exited with code {fsck.returncode} on /dev/mmcblk0p{target_slot.value.root}")
-      subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"], check=True)
-      # Same identification concern as is handled by the fatlabel subprocess above
-      subprocess.run(["sudo", "e2label", f"/dev/mmcblk0p{target_slot.value.root}", f"ROOT-{target_slot.name}"], check=True)
+    flash_channel.info('Patching root partition...')
+    # All systems originate from the same ancestor image. The following tools cleanse the root partition of identifiable info
+    # so that A and B don't have a case of mistaken identity by sharing these identifiers
+    fsck = subprocess.run(["sudo", "e2fsck", "-p", f"/dev/mmcblk0p{target_slot.value.root}"])
+    if fsck.returncode not in (0, 1):
+      raise RuntimeError(f"e2fsck exited with code {fsck.returncode} on /dev/mmcblk0p{target_slot.value.root}")
+    subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"], check=True)
+    # Same identification concern as is handled by the fatlabel subprocess above
+    subprocess.run(["sudo", "e2label", f"/dev/mmcblk0p{target_slot.value.root}", f"ROOT-{target_slot.name}"], check=True)
 
-      # Create the update-pending file that the update validation service will use to detect an update happened post-reboot
-      subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
-      subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
+    # Create the update-pending file that the update validation service will use to detect an update happened post-reboot
+    subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
+    subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
-      yield {'data': json.dumps({'type': 'info', 'message': 'Patching root fstab...'})}
-      subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", "/data/tmpmnt"], check=True)
+    flash_channel.info('Patching root fstab...')
+    subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", "/data/tmpmnt"], check=True)
 
-      # Mark the root with the slot letter so you know which partition you're in by simply running `ls`
-      subprocess.run(["sudo", "touch", f"/data/tmpmnt/home/pi/SLOT_{target_slot.name}"], check=True)
-      subprocess.run(["sudo", "chown", "pi:pi", f"/data/tmpmnt/home/pi/SLOT_{target_slot.name}"], check=True)
-      fstab = subprocess.run(['sudo', 'cat', '/data/tmpmnt/etc/fstab'], capture_output=True, text=True, check=True).stdout
-      # The root image was captured from whichever slot was active on the machine that built it,
-      # so its baked-in fstab still has that slot's boot/root partition numbers. Since this image
-      # always lands on the slot opposite whatever's active on *this* device, remap both digits so
-      # /boot/firmware and / mount from the partitions this slot actually occupies here.
-      fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.boot}\b', rf'\g<1>{target_slot.value.boot}', fstab)
-      fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', fstab)
-      subprocess.run(['sudo', 'tee', '/data/tmpmnt/etc/fstab'], input=fstab, text=True, check=True)
-      subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
+    # Mark the root with the slot letter so you know which partition you're in by simply running `ls`
+    subprocess.run(["sudo", "touch", f"/data/tmpmnt/home/pi/SLOT_{target_slot.name}"], check=True)
+    subprocess.run(["sudo", "chown", "pi:pi", f"/data/tmpmnt/home/pi/SLOT_{target_slot.name}"], check=True)
+    fstab = subprocess.run(['sudo', 'cat', '/data/tmpmnt/etc/fstab'], capture_output=True, text=True, check=True).stdout
+    # The root image was captured from whichever slot was active on the machine that built it,
+    # so its baked-in fstab still has that slot's boot/root partition numbers. Since this image
+    # always lands on the slot opposite whatever's active on *this* device, remap both digits so
+    # /boot/firmware and / mount from the partitions this slot actually occupies here.
+    fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.boot}\b', rf'\g<1>{target_slot.value.boot}', fstab)
+    fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', fstab)
+    subprocess.run(['sudo', 'tee', '/data/tmpmnt/etc/fstab'], input=fstab, text=True, check=True)
 
-      yield {'data': json.dumps({'type': 'success', 'message': 'Imaging successful!'})}
+    flash_channel.info('Applying persist-logs preference...')
+    set_persist_logs()
 
-    except Exception as e:
-      yield {'data': json.dumps({'type': 'error', 'message': f'Update failed post-flash: {e}'})}
-      return
+    subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
-    if tryboot:
-      yield {'data': json.dumps({'type': 'info', 'message': 'Triggering tryboot...'})}
-      subprocess.Popen(['sudo', 'reboot', '0 tryboot'])
+  except Exception as e:
+    flash_channel.error(f'Update failed post-flash: {e}')
+    return
 
-  return EventSourceResponse(stream())
+  if tryboot:
+    flash_channel.info('Triggering tryboot...')
+  flash_channel.done('Imaging successful!')
+  if tryboot:
+    time.sleep(2)
+    subprocess.Popen(['sudo', 'reboot', '0 tryboot'])
+
+
+@router.post('/update/flash')
+def start_flash(tryboot: bool = False):
+  """
+    Validate the image(s) against manifest.json, determine the inactive slot, and flash to the inactive slot.
+    The tryboot flag causes the system to reboot to the freshly flashed slot on completion, which is then healthchecked
+    and set to be the new default boot slot if it's successful
+  """
+  # Read synchronously here (not just inside the thread's do_checks()) so the caller finds out
+  # upfront whether this update includes a boot image - e.g. to show the right progress bars
+  # immediately, rather than waiting for a boot-labeled message to show up mid-flash (or never,
+  # if it's a root-only update).
+  staged_manifest = _load_manifest("/data/update/manifest.json")
+  has_boot = staged_manifest is not None and staged_manifest.boot is not None
+
+  if not flash_channel.start(target=flash_partition_thread, args=(tryboot,)):
+    return {'started': False, 'reason': 'a flash is already in progress', 'has_boot': has_boot}
+  return {'started': True, 'has_boot': has_boot}
 
 
 app.include_router(auth_router)
