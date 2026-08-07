@@ -10,6 +10,7 @@
   * Disabled USB autosuspend for the CM6206 USB audio device
 * Web App
   * Add warning for older versions of the webapp running on newer backends
+  * Solve bug relating to single-zone groups
 
 # 0.4.11
 * System
