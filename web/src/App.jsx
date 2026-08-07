@@ -245,8 +245,7 @@ const updateGroupVols = (s) => {
             let calculated_vol = Math.min(...vols) * 0.5 + Math.max(...vols) * 0.5;
             g.vol_f = calculated_vol;
         } else if (g.zones.length == 1) {
-            // ID is not defined, needs fixed
-            g.vol_f = s.status.zones[id].vol_f;
+            g.vol_f = s.status.zones[g.zones[0]].vol_f;
         }
     });
 };
