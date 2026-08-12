@@ -6,4 +6,10 @@ After=bluetooth.service
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/bin/bluealsa -p a2dp-source -p a2dp-sink
+# Sleep to avoid a race: After=bluetooth.service only guarantees org.bluez is on the bus, not that
+# hci0's adapter paths are registered yet, and there's no unit to order against for that instead.
+ExecStartPre=/bin/sleep 2
+ExecStart=/usr/bin/bluealsad -p a2dp-source -p a2dp-sink
+
+[Install]
+WantedBy=multi-user.target
