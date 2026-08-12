@@ -8,6 +8,7 @@
   * Added in-place preamp recovery when I2C writes fail persistently
   * Fixed all loopback dmix devices sharing one ipc_key in asound.conf, which made loopback playback devices intermittently fail to open with EINVAL (#957)
   * Disabled USB autosuspend for the CM6206 USB audio device
+  * Hardened stream process restarts: exponential backoff and an ALSA device readiness gate (#957)
 * Web App
   * Add warning for older versions of the webapp running on newer backends
   * Solve bug relating to single-zone groups
