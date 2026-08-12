@@ -75,19 +75,18 @@ class LMS(PersistentStream):
         '-f', f'{src_config_folder}/lms_log.txt',
         '-i', f'{src_config_folder}/lms_remote',  # specify this to avoid collisions, even if unused
       ]
-      if self.server:
-        # specify the server to connect to (if unspecified squeezelite starts in discovery mode)
-        server = self.server
-        # some versions of amplipi have an LMS server embedded, using localhost avoids hardcoding the hostname
-        if 'localhost' == server:
-          # squeezelite does not support localhost and requires the actual hostname
-          server.replace('localhost', socket.gethostname())
 
+      server = self.server
+      if server == 'localhost':
+        server = f'{socket.gethostname()}.local'
+
+      if server:
+        # specify the server to connect to (if unspecified squeezelite starts in discovery mode)
         lms_args += ['-s', server]
 
       meta_args = ['python3', 'streams/lms_metadata.py', "--name", f"{self.name}", "--vsrc", f"{self.vsrc}"]
-      if self.server is not None:
-        meta_args.extend(["--server", f"{self.server}"])
+      if server is not None:
+        meta_args.extend(["--server", f"{server}"])
       if self.port is not None:
         meta_args.extend(["--port", f"{self.port}"])
       self.meta_proc = subprocess.Popen(args=meta_args, stdout=sys.stdout, stderr=sys.stderr)

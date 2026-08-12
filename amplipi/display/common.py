@@ -75,7 +75,7 @@ class DefaultPass:
      the stored default AmpliPi password."""
 
   # Password config location
-  PASS_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+  PASS_DIR = os.path.join('/data', '.config', 'amplipi')
   PASS_FILE = os.path.join(PASS_DIR, 'default_password.txt')
   DEFAULT_PI_PASSWORD = 'raspberry'
 
@@ -115,7 +115,7 @@ class DefaultPass:
   def check_pw(pw: str) -> bool:
     """ Check if the given password is the pi user's current password. """
     try:
-      subprocess.run(f'sudo python3 amplipi/display/check_pass {pw}', shell=True, check=True)
+      subprocess.run(f'sudo ./amplipi/display/check_pass {pw}', shell=True, check=True)
       return True
     except subprocess.CalledProcessError:
       return False
@@ -177,9 +177,9 @@ def get_zone_status(zone, sources) -> STATUS:
         else:
           return STATUS.PLAYING
       elif source_for_zone.state == 'stopped':
-          return STATUS.STOPPED
+        return STATUS.STOPPED
       elif source_for_zone.state == 'paused':
-          return STATUS.PAUSED
+        return STATUS.PAUSED
     return STATUS.IGNORE
   return STATUS.IGNORE
 
@@ -222,7 +222,7 @@ def get_emoji_status(url: str, max_length: int = 16) -> Union[str, int]:
 
   result = ''
   if status_counts[STATUS.PLAYING] > 0:
-      result += f'▶x{status_counts[STATUS.PLAYING]} '
+    result += f'▶x{status_counts[STATUS.PLAYING]} '
   if status_counts[STATUS.PAUSED] > 0:
     result += f'⏸x{status_counts[STATUS.PAUSED]} '
   if status_counts[STATUS.STOPPED] > 0:
@@ -248,7 +248,7 @@ def get_status(url: str, no_serial_ok: bool = False, emoji: bool = True, max_len
     result_status = st
 
   # Check if API is running
-  api_on = subprocess.run("systemctl --user is-active amplipi.service".split(), stdout=subprocess.DEVNULL)
+  api_on = subprocess.run("systemctl is-active amplipi.service".split(), stdout=subprocess.DEVNULL)
   if api_on.returncode != 0:
     return DisplayError.NO_AMPLIPI_SERVICE, None, 0
 

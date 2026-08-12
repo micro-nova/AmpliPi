@@ -1,0 +1,13 @@
+[Unit]
+Description=AmpliPi post-flash setup (package install and custom scripts)
+After=network-online.target
+Before=amplipi.service amplipi-tasks.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/amplipi-postflash.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

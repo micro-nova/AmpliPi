@@ -2,7 +2,7 @@
 # Update the offline/online state
 set -e
 
-USER_CONFIG_DIR="${HOME}/.config/amplipi"
+USER_CONFIG_DIR="/data/.config/amplipi"
 ONLINE_FILE="${USER_CONFIG_DIR}/online"
 
 # add file if needed

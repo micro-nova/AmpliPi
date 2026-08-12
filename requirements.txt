@@ -30,6 +30,7 @@ PyYAML==6.0
 redis==5.0.8
 requests==2.31.0
 RPi.GPIO==0.7.1
+setuptools
 smbus2==0.4.2
 spidev
 sse-starlette==0.10.3

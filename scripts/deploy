@@ -11,18 +11,36 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
 
   --fw:      program the latest preamp firmware
   --pw:      generate and set a new random password
-  --no-deps: skip installing os-deps and python-deps on AmpliPi"
+  --dev:     skip a few version checks and increase verbosity
+  --alsa:    configure alsa settings
+  --no-deps: skip installing os-deps, python-deps, and custom-deps on AmpliPi
+  --no-web: Skip compiling the web directory. May result in failures or odd behavior if you haven't compiled recently, but saves a lot of time if you have compiled recently."
 
 user_host='pi@amplipi.local'
 user_host_set=false
 fw=false
 pw=false
+dev=false
+alsa=false
 deps=true
+dep_filter=()
+web=true
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --fw) fw=true ;;
     --pw) pw=true ;;
+    --alsa) alsa=true ;;
+    --dev) dev=true ;;
     --no-deps) deps=false ;;
+    --dep-filter)
+    if [[ -z "$2" || "$2" =~ ^-- ]]; then
+      echo "Error: --dep-filter requires a value"
+      exit 1
+    fi
+    dep_filter+=("$2")
+    shift
+    ;;
+    --no-web) web=false ;;
     -h|--help) echo -e "$HELP"; exit 0 ;;
     *) if ! $user_host_set; then
           user_host=$1
@@ -115,20 +133,42 @@ if ! which git-lfs; then
   echo "git-lfs needs to be installed to use this script"
 fi
 
-# create a virtual environment and install pip dependencies
-if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate ]]; then
-  echo  ""
-  echo "Setting up virtual environment"
-  mkdir -p ../venv
-  $python -m venv ../venv
+# astral.sh's installer puts uv here, but this directory only ends up on PATH via ~/.profile,
+# which login shells source and non-login/non-interactive ones (most terminals, and any script
+# invocation like this one) do not - so a uv installed by a previous run of this exact script was
+# still invisible to the check below, and got silently reinstalled on every single run.
+export PATH="$HOME/.local/bin:$PATH"
+
+if ! command uv --version >/dev/null 2>&1; then
+  echo ""
+  echo "uv not found, installing..."
+
+  curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
+
+if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate && ! -e ../venv/Scripts/activate ]]; then
+  echo ""
+  echo "Setting up virtual environment"
+
+  mkdir -p ../venv
+
+  if command -v uv >/dev/null 2>&1; then
+    echo "Using uv to create Python 3.8 venv"
+    uv venv venv --python 3.8
+  else
+    echo "Falling back to python venv"
+    $python -m venv ../venv
+  fi
+fi
+
+# activate venv (cross-platform)
 if [[ -e ../venv/Scripts/activate ]]; then
   source ../venv/Scripts/activate
 else
   source ../venv/bin/activate
 fi
-$python -m pip install --upgrade pip
-$python -m pip install poetry
+
+uv pip install poetry
 echo -e "Finished checking dependencies\n"
 
 # use a new version for the build but hide it from git since it isn't a real release
@@ -156,12 +196,14 @@ else
 fi
 poetry version ${git_info}
 
-echo "Building web app"
-pushd ../web            # Change to web directory
-npm install             # Install nodejs dependencies
-echo "VITE_BACKEND_VERSION=$(poetry version -s)" > .env # Collect the version number and bake it into the frontend
-npm run build           # Build the web app
-popd
+if $web; then
+  echo "Building web app"
+  pushd ../web            # Change to web directory
+  npm install             # Install nodejs dependencies
+  echo "VITE_BACKEND_VERSION=$(poetry version -s)" > .env # Collect the version number and bake it into the frontend
+  npm run build           # Build the web app
+  popd
+fi
 
 # pull in the latest binaries
 git lfs checkout
@@ -202,7 +244,12 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
-$deps && opts="$opts --os-deps --python-deps"
+$alsa && opts="$opts --with-alsa"
+$deps && opts="$opts --os-deps --python-deps --custom-deps"
+$dev && opts="$opts --development"
+if [[ ${#dep_filter[@]} -gt 0 ]]; then
+  opts="$opts ${dep_filter[@]/#/--dep-filter }"
+fi
 ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" || echo ""
 
 printf "Waiting for AmpliPi to restart"

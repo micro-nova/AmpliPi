@@ -47,9 +47,14 @@ class Bluetooth(BaseStream):
       return
 
     # Power on Bluetooth and enable discoverability
-    subprocess.run(args='bluetoothctl power on'.split(), preexec_fn=os.setpgrp)
-    subprocess.run(args='bluetoothctl discoverable on'.split(), preexec_fn=os.setpgrp)
-    subprocess.run(args='sudo btmgmt fast-conn on'.split(), preexec_fn=os.setpgrp)
+    # timeout=10: these have been observed to hang indefinitely against some adapters/states
+    # (e.g. a still-settling USB Bluetooth radio), which would otherwise take the whole service
+    # down with them since this runs synchronously on the startup path.
+    for cmd in ('bluetoothctl power on', 'bluetoothctl discoverable on', 'sudo btmgmt fast-conn on'):
+      try:
+        subprocess.run(args=cmd.split(), preexec_fn=os.setpgrp, timeout=10, check=False)
+      except subprocess.TimeoutExpired:
+        logger.error(f'{self.name}: "{cmd}" timed out, continuing anyway')
 
     # Start metadata watcher
     src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"

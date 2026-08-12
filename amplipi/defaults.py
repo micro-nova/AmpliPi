@@ -14,7 +14,7 @@ AUX_STREAM_ID = 995
 RCAs = [996, 997, 998, 999]
 LMS_DEFAULTS = [1000, 1001, 1002, 1003]
 
-USER_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+USER_CONFIG_DIR = os.path.join('/data', '.config', 'amplipi')
 
 DEFAULT_CONFIG = {  # This is the system state response that will come back from the amplipi box
   "version": 1,
