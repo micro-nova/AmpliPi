@@ -90,9 +90,9 @@ class LMS(PersistentStream):
         meta_args.extend(["--server", f"{self.server}"])
       if self.port is not None:
         meta_args.extend(["--port", f"{self.port}"])
-      self.meta_proc = subprocess.Popen(args=meta_args, stdout=sys.stdout, stderr=sys.stderr)
+      self.meta_proc = subprocess.Popen(args=meta_args, stdout=sys.stdout, stderr=sys.stderr, preexec_fn=os.setpgrp)
 
-      self.proc = subprocess.Popen(args=lms_args)
+      self.proc = subprocess.Popen(args=lms_args, preexec_fn=os.setpgrp)
     except Exception as exc:
       logger.exception(f'error starting lms: {exc}')
 
@@ -106,7 +106,10 @@ class LMS(PersistentStream):
       except Exception as e:
         logger.exception(f"failed to gracefully terminate LMS stream {self.name}: {e}")
         logger.warning(f"forcefully killing LMS stream {self.name}")
-        os.killpg(self.proc.pid, signal.SIGKILL)
+        try:
+          os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+          pass
         self.proc.communicate(timeout=3)
 
     if self.meta_proc is not None:
@@ -116,7 +119,10 @@ class LMS(PersistentStream):
       except Exception as e:
         logger.exception(f"failed to gracefully terminate LMS meta proc for {self.name}: {e}")
         logger.warning(f"forcefully killing LMS meta proc for {self.name}")
-        os.killpg(self.meta_proc.pid, signal.SIGKILL)
+        try:
+          os.killpg(os.getpgid(self.meta_proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+          pass
         self.meta_proc.communicate(timeout=3)
 
     self.proc = None
