@@ -26,16 +26,24 @@
   padding-right: 2.5vw;
 }
 
+.player-metadata-container {
+  width: 22rem;
+  max-width: 98vw;
+}
+
+.album-art-container {
+  width: 22rem;
+  height: 22rem;
+  max-width: 98vw;
+  max-height: 98vw;
+}
+
 .player-album-art {
   align-self: center;
-  max-height: 22rem;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   border-radius: 2.5%;
-  @media (general.$is-portrait) {
-    max-width: 85vw;
-  }
-  @media (max-width: general.$small-mobile) {
-    max-width: 50vw;
-  }
 }
 
 // Solo vs Grouped media controls are different because solo volumes have titles, making them tall enough to need further adjustment
