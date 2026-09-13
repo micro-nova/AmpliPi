@@ -98,7 +98,7 @@ const Player = () => {
                         </Chip>
                     </div>
                 </Grid>
-                <Grid item xs={2} sm={4} md={4} style={{maxWidth: "22rem"}}>
+                <Grid item xs={2} sm={4} md={4} className="player-metadata-container">
                     <Box
                         className="album-art-container"
                         sx={{
