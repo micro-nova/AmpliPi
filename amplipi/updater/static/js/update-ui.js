@@ -88,9 +88,9 @@ function ui_check_after_reboot(retry_check_ct) {
     response.json().then(function(json) {
       ui_add_log(json.version, 'info');
       ui_add_log('Done restarting updater', 'info');
-      ui_add_log('Redirecting back to AmpliPi server', 'info');
+      // No longer forcibly sends user back to amplipi home screen due to multi step
+      // (full -> delta) updates seeming like a device issue when the second half completed
       ui_show_done();
-      setTimeout(ui_redirect_to_amplipi, 5000);
     }).catch( err => {
       if (retry_check_ct > 0) {
         setTimeout(ui_check_after_reboot, 5000, retry_check_ct - 1); // don't continue to retry forever
@@ -109,10 +109,6 @@ function ui_check_after_reboot(retry_check_ct) {
       ui_show_failure();
     }
   });
-}
-
-function ui_redirect_to_amplipi() {
-  window.location = window.location.toString().replace(":5001/update", ":80")
 }
 
 // Translate the backend messages into consumable percentages for the progress bar
