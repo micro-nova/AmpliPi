@@ -53,7 +53,8 @@ from starlette.responses import FileResponse
 import uvicorn
 # models
 # pylint: disable=no-name-in-module
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
+from packaging.version import parse as parse_version
 from typing import Optional, Callable
 from enum import Enum
 
@@ -75,13 +76,9 @@ sse_messages: queue.Queue = queue.Queue()
 class SSEChannel:
   """ Bundles the queue/in-progress-flag/latest-status trio a long-running background job reports
   its progress through, plus the polling generator that serves it as SSE to a native EventSource.
-  /update/flash and /update/download/images each run their own long job in a background thread
-  (flash_partition_thread/download_images_thread), separate from sse_messages/install, so a
-  dropped/reconnecting browser can't interrupt or duplicate the actual work - watched via a paired
-  GET .../progress endpoint rather than tying the work to any one HTTP connection's lifetime. This
-  used to be two separate copies of identical plumbing (globals, message-formatting helpers, and
-  the SSE generator itself) differing only in which globals they closed over; this class replaces
-  both, instantiated once per job below. """
+  /update/flash and /update/download/images each run their own job in a background thread,
+  separate from the SSE connection itself, so a dropped/reconnecting browser can't interrupt or
+  duplicate the actual work - progress is watched via a paired GET .../progress endpoint instead. """
 
   def __init__(self, idle_message: str):
     self.messages: queue.Queue = queue.Queue()
@@ -407,9 +404,35 @@ def restart():
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
 
 
+def _read_inactive_slot_version() -> Optional[str]:
+  """ Temporarily mount the inactive slot to read that slot's reported poetry version """
+  if os.environ.get("BOOT_SLOT") not in ("A", "B"):
+    return None
+  active_slot = BootSlot.A if os.environ.get("BOOT_SLOT") == "A" else BootSlot.B
+  inactive_slot = BootSlot.B if active_slot == BootSlot.A else BootSlot.A
+
+  mnt = "/data/tmpmnt"
+  try:
+    os.makedirs(mnt, exist_ok=True)
+    subprocess.run(["sudo", "umount", mnt], check=False)  # in case something's already there
+    subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{inactive_slot.value.root}", mnt], check=True)
+    toml_content = subprocess.run(
+      ['sudo', 'cat', os.path.join(mnt, "home/pi/amplipi-dev/pyproject.toml")],
+      capture_output=True, text=True, check=True).stdout
+    match = TOML_VERSION_STR.search(toml_content)
+    return match.group(1) if match else None
+  except Exception:
+    return None
+  finally:
+    subprocess.run(["sudo", "umount", mnt], check=False)
+
+
 @router.get('/update/version')
 def get_version():
-  """ Get the AmpliPi software version from the project TOML file """
+  """ Get the AmpliPi software version from the project TOML file, for both the active slot
+  (read directly off disk - the slot this code is actually running from) and the inactive slot
+  (mounted briefly - see _read_inactive_slot_version). inactive_version is general status info,
+  not currently consumed by the UI - see _read_inactive_slot_version's docstring for why. """
   # Assume the application is running in its base directory and check the pyproject.toml file
   # to determine the version. This is needed for a straight github checkout
   # (the common developement paradigm at MicroNova)
@@ -424,7 +447,7 @@ def get_version():
             version = match.group(1)
   except:
     pass
-  return {'version': version}
+  return {'version': version, 'inactive_version': _read_inactive_slot_version()}
 
 
 def _sse_message(t, msg):
@@ -479,10 +502,9 @@ async def progress(req: Request):
 
 @router.route('/update/flash/progress')
 async def flash_progress(req: Request):
-  """ SSE Progress server for /update/flash - same shape as /update/install/progress. Being a
-  plain GET consumed via EventSource (rather than the POST-with-inline-SSE-response the actual
-  flash used to be) means the browser can freely reconnect here on any dropped connection without
-  affecting flash_partition_thread(), which keeps running regardless in its own thread. """
+  """ SSE progress server for /update/flash - same shape as /update/install/progress. A plain GET
+  consumed via EventSource means the browser can freely reconnect on any dropped connection
+  without affecting flash_partition_thread(), which keeps running regardless in its own thread. """
   return EventSourceResponse(flash_channel.stream(req))
 
 
@@ -590,17 +612,48 @@ def request_support():
 
 
 class ImageMetadata(BaseModel):
-  """ Expected checksum/size of a single image file (root or boot) from the update manifest """
-  filename: str
+  """ Checksum/size/location of a single image file (root or boot) from the update manifest.
+  url points at our own fileserver, not GitHub - only manifest.json itself lives on the release. """
   sha256: str
   size: int
+  url: str
+
+
+class UpdateType(Enum):
+  """
+    manifest.json's declared update mechanism
+
+    FULL describes a full image release
+    DELTA describes a github tarball release that is rsynced to the inactive slot
+  """
+  FULL = "full"  # Full image release
+  DELTA = "delta"  # Tarball + rsync release
 
 
 class UpdateManifest(BaseModel):
-  """ Schema for manifest.json, contains size and checksum info for the image(s). Root is required, boot is optional """
+  """
+    Schema for manifest.json.
+
+    type FULL (the default, for back-compat with manifests written before delta releases existed):
+    a full root (+ optional boot) image release. `root` is required, `boot` is optional.
+
+    type DELTA: an AmpliPi-code-only release applied via rsync against `version`'s own GitHub source
+    tarball (see scripts/apply_delta_update), instead of a full image. `min_base_version` is
+    required; `root`/`boot` are unused.
+
+    `min_base_version` is a floor, not an exact match; it's always the most recent full image
+    update prior to the given delta changes
+  """
   version: str
+  type: UpdateType = UpdateType.FULL
   boot: Optional[ImageMetadata] = None
-  root: ImageMetadata
+  root: Optional[ImageMetadata] = None
+  min_base_version: Optional[str] = None
+
+  @validator('type', pre=True)
+  def _sanitize_type(cls, v):
+    """ Accept any case (e.g. a hand-edited manifest with "Full") by lowercasing before enum matching """
+    return v.lower() if isinstance(v, str) else v
 
 
 def _load_manifest(path: str) -> Optional[UpdateManifest]:
@@ -654,34 +707,49 @@ def get_checksum(path: str, total_size: int, progress_cb: Optional[Callable] = N
     return h.hexdigest()
 
 
-class ImageDownloadInfo(BaseModel):
-  """ Release asset URLs to populate /data/update/ from, matching what /update/flash later
-  expects to find there. `boot_url` is optional, mirroring UpdateManifest.boot - a root-only
-  update doesn't need a new boot image. Getting these URLs (e.g. by polling the GitHub releases
-  API) is not this endpoint's job - see the "Backend GitHub polling" gap in
-  docs/ab_update_design.md. `expected_version`, if given, is checked against the downloaded
-  manifest's own `version` field before the (large) root/boot images are downloaded - protects
-  against a caller's idea of "the release I'm downloading" silently drifting from what's actually
-  behind these URLs (stale cache, wrong asset, etc.) without wasting bandwidth on gigabytes that
-  would just get rejected anyway. Optional since callers without a specific release in mind (e.g.
-  pointing at an arbitrary test URL) have nothing meaningful to compare against. """
+GITHUB_REPO = 'micro-nova/amplipi'  # matches scripts/apply_delta_update's own convention
+GITHUB_RELEASE_ASSET_RE = re.compile(rf'^https://github\.com/{re.escape(GITHUB_REPO)}/releases/download/[^/]+/[^/]+$')
+
+
+def _release_asset_url(tag: str, filename: str) -> str:
+  """ Direct GitHub release-asset download URL for a known tag/filename - no API call needed.
+  Only ever used for manifest.json; image urls come from ImageMetadata instead. """
+  return f'https://github.com/{GITHUB_REPO}/releases/download/{tag}/{filename}'
+
+
+class UpdateInfo(BaseModel):
+  """
+    manifest_url is the only download location needed - a FULL manifest declares its own root/boot
+    urls, a DELTA manifest needs none. expected_version, if given, must match the downloaded
+    manifest's version or the update is refused. tryboot controls whether a DELTA update reboots
+    into the inactive slot once applied (unused for FULL, which reboots via /update/flash instead).
+  """
   manifest_url: str
-  root_url: str
-  boot_url: Optional[str] = None
   expected_version: Optional[str] = None
+  tryboot: bool = False
+
+  @validator('manifest_url')
+  def _validate_manifest_url(cls, v):
+    """ Restricted to our own GitHub release assets - this endpoint has no auth once a unit has
+    no admin password set, so an unrestricted caller-supplied URL would let any LAN client point
+    the device at an attacker-controlled manifest. """
+    if not GITHUB_RELEASE_ASSET_RE.match(v):
+      raise ValueError('manifest_url must be a github.com release-asset download URL')
+    return v
 
 
-def download_images_thread(info: ImageDownloadInfo):
+def update_thread(info: UpdateInfo):
   try:
-    _download_images_body(info)
+    _update_body(info)
   finally:
     download_channel.in_progress.clear()
 
 
-def _download_images_body(info: ImageDownloadInfo):
+def _update_body(info: UpdateInfo):
   """
-    Download manifest.json, root.img.xz, and (optionally) boot.img.xz from the given URLs into
-    /data/update/
+    Download manifest.json into /data/update/, then dispatch on its declared type:
+    FULL calls do_image_update (download root.img.xz and optionally boot.img.xz
+    DELTA calls do_minimal_update (apply an AmpliPi-code-only change to the inactive slot)
   """
   dest_dir = "/data/update"
 
@@ -743,6 +811,137 @@ def _download_images_body(info: ImageDownloadInfo):
       if os.path.exists(path):
         os.remove(path)
 
+  def do_image_update(manifest: UpdateManifest):
+    """ type FULL: download the root (+ optional boot) image(s) from the urls the manifest itself
+    declares. Reused as-is by do_minimal_update's floor-check fallback for a base-image flash. """
+    if manifest.root is None:
+      raise RuntimeError("Manifest declares type full but has no root image entry")
+
+    # Check for available space before downloading
+    # Due to the update commit service deleting staged updates, this is only able to be tripped by a user overfilling their /data directory
+    needed = manifest.root.size + (manifest.boot.size if manifest.boot is not None else 0)
+    available = shutil.disk_usage(dest_dir).free
+    if available < needed:
+      raise RuntimeError(
+        f"Not enough free space on /data to download this update "
+        f"(need {needed / 1024**3:.2f} GB, have {available / 1024**3:.2f} GB free) - "
+        f"free up space on /data and try again")
+
+    download_asset(manifest.root.url, os.path.join(dest_dir, "root.img.xz"), "Downloading root image")
+    if manifest.boot is not None:
+      download_asset(manifest.boot.url, os.path.join(dest_dir, "boot.img.xz"), "Downloading boot image")
+
+  def do_minimal_update(manifest: UpdateManifest):
+    """
+      Download and rsync github release tarball against remote system
+
+      Check manifest's min_base_version against remote slot's version. If version is too low, call
+      for a full image update prior to the tarball rsync flow
+    """
+    if os.environ.get("BOOT_SLOT") not in ("A", "B"):
+      raise RuntimeError("Boot slot could not be read")
+    active_slot = BootSlot.A if os.environ.get("BOOT_SLOT") == "A" else BootSlot.B
+    target_slot = BootSlot.B if active_slot == BootSlot.A else BootSlot.A
+
+    mnt = "/data/tmpmnt"
+    app_dir = os.path.join(mnt, "home/pi/amplipi-dev")
+
+    def read_target_version() -> Optional[str]:
+      """
+        Mount target_slot's root just long enough to read its pyproject.toml version, then
+        unmount again.
+
+        Returns None if the slot has no pyproject.toml at all (e.g. a progenitor image's slot B
+        before its first-ever OTA). Treated as unconditionally below any min_base_version floor.
+      """
+      if not os.path.exists(mnt):
+        os.mkdir(mnt)
+      subprocess.run(["sudo", "umount", mnt])  # in case something's already there
+      subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", mnt], check=True)
+      try:
+        toml_path = os.path.join(app_dir, "pyproject.toml")
+        if subprocess.run(['sudo', 'test', '-e', toml_path], check=False).returncode != 0:
+          return None
+        toml_content = subprocess.run(
+          ['sudo', 'cat', toml_path], capture_output=True, text=True, check=True).stdout
+        match = TOML_VERSION_STR.search(toml_content)
+        if not match:
+          raise RuntimeError(f"Could not read a version from pyproject.toml on slot {target_slot.name}")
+        return match.group(1)
+      finally:
+        subprocess.run(["sudo", "umount", mnt], check=True)
+
+    current_version = read_target_version()
+    needs_base_flash = manifest.min_base_version is not None and (
+      current_version is None or parse_version(current_version) < parse_version(manifest.min_base_version))
+
+    if needs_base_flash:
+      base_tag = manifest.min_base_version
+      # "flashing that version as a base first" is matched verbatim by update-ui.js's
+      # ui_check_delta_phase_transition - it's what switches the frontend's progress bar over to
+      # FLASH_PHASES_WITH_BOOT for this sub-stage. Keep that substring intact if this message
+      # changes, or update the frontend match alongside it.
+      download_channel.info(
+        f"Slot {target_slot.name} is on {current_version or 'no image yet'}, below this delta's "
+        f"required {base_tag} - flashing that version as a base first...")
+
+      base_manifest_path = os.path.join(dest_dir, "manifest.json")
+      download_asset(_release_asset_url(base_tag, "manifest.json"), base_manifest_path, "Downloading base manifest")
+      base_manifest = _load_manifest(base_manifest_path)
+      if base_manifest is None:
+        raise RuntimeError(f"Could not load the manifest for required base version {base_tag}")
+      if base_manifest.type != UpdateType.FULL:
+        # min_base_version is a release-process guarantee, not something enforced elsewhere in
+        # code - if it's ever violated, fail loudly here rather than silently doing something
+        # unexpected with whatever this manifest actually turned out to be.
+        raise RuntimeError(f"Base version {base_tag} is not a full-image release - can't use it to bootstrap this delta")
+
+      do_image_update(base_manifest)  # base_manifest.root/.boot already carry their own real urls
+      _flash_partition_body(tryboot=False, channel=download_channel)
+      # "continuing with delta to" is matched verbatim by update-ui.js's
+      # ui_check_delta_phase_transition too - the paired signal that switches the bar back to
+      # DELTA_PHASES. Same caveat as above if this message's wording changes.
+      download_channel.info(f"Base version {base_tag} flashed, continuing with delta to {manifest.version}...")
+
+      current_version = read_target_version()
+      # Should be unreachable if min_base_version really does name a full-image release, as
+      # guaranteed - but this is cheap to check and a much clearer failure than proceeding to
+      # apply a delta onto a base that still doesn't qualify (or, if the flash itself silently
+      # left pyproject.toml unreadable, None - just as disqualifying as an old version).
+      if current_version is None or parse_version(current_version) < parse_version(manifest.min_base_version):
+        raise RuntimeError(
+          f"Flashed base version {base_tag}, but slot {target_slot.name} now reports "
+          f"{current_version or 'no image'} - still below {manifest.min_base_version}, refusing to continue")
+
+    subprocess.run(["sudo", "umount", mnt])  # in case something's already there
+    subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", mnt], check=True)
+    try:
+      download_channel.info(f'Slot {target_slot.name} is on {current_version}, applying delta to {manifest.version}...')
+      script = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'scripts', 'apply_delta_update')
+      # sudo: app_dir belongs to slot B's pi user, not necessarily writable by whoever this
+      # process runs as when acting on the currently-inactive slot from the active one.
+      # -u: stdout is fully buffered (not line-buffered) once it's a pipe instead of a terminal,
+      # so without this the script's own progress prints would all arrive in one burst at exit
+      # instead of streaming live - looks exactly like a long hang followed by a dump of output.
+      proc = subprocess.Popen(
+        ['sudo', sys.executable, '-u', script, manifest.version, '--target-dir', app_dir],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+      for line in proc.stdout:
+        line = line.rstrip()
+        if line:
+          download_channel.info(line)
+      proc.wait()
+      if proc.returncode != 0:
+        raise RuntimeError(f"apply_delta_update exited with code {proc.returncode}")
+    finally:
+      subprocess.run(["sudo", "umount", mnt], check=True)
+
+    download_channel.info('Marking update pending...')
+    subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", mnt], check=True)
+    subprocess.run(['sudo', 'tee', os.path.join(mnt, "update-pending")], input=str(target_slot.value.boot), text=True, check=True)
+    subprocess.run(["sudo", "umount", mnt], check=True)
+    # tryboot itself is triggered by the caller, after it reports success, not here.
+
   heartbeat_thread = threading.Thread(target=heartbeat, daemon=True)
   heartbeat_thread.start()
   try:
@@ -757,23 +956,21 @@ def _download_images_body(info: ImageDownloadInfo):
 
     if info.expected_version is not None and manifest.version != info.expected_version:
       raise RuntimeError(
-        f"Downloaded manifest is for version {manifest.version}, expected {info.expected_version} - refusing to download root/boot images for the wrong release")
+        f"Downloaded manifest is for version {manifest.version}, expected {info.expected_version} - refusing to proceed with the wrong release")
 
-    # Check for available space before downloading
-    # Due to the update commit service deleting staged updates, this is only able to be tripped by a user overfilling their /data directory
-    needed = manifest.root.size + (manifest.boot.size if manifest.boot is not None else 0)
-    available = shutil.disk_usage(dest_dir).free
-    if available < needed:
-      raise RuntimeError(
-        f"Not enough free space on /data to download this update "
-        f"(need {needed / 1024**3:.2f} GB, have {available / 1024**3:.2f} GB free) - "
-        f"free up space on /data and try again")
+    if manifest.type == UpdateType.FULL:
+      do_image_update(manifest)
+    else:
+      do_minimal_update(manifest)
 
-    download_asset(info.root_url, os.path.join(dest_dir, "root.img.xz"), "Downloading root image")
-    if info.boot_url is not None:
-      download_asset(info.boot_url, os.path.join(dest_dir, "boot.img.xz"), "Downloading boot image")
+    download_channel.done('Update complete!')
 
-    download_channel.done('Download complete!')
+    # Deliberately after done(), not before - only start something that could kill the connection
+    # once the completion message has actually been sent.
+    if manifest.type != UpdateType.FULL and info.tryboot:
+      download_channel.info('Triggering tryboot...')
+      time.sleep(2)
+      subprocess.Popen(['sudo', 'reboot', '0 tryboot'])
   except Exception as e:
     download_channel.error(str(e))
   finally:
@@ -782,23 +979,26 @@ def _download_images_body(info: ImageDownloadInfo):
 
 
 @router.post('/update/download/images')
-def start_download_images(info: ImageDownloadInfo):
+def start_update(info: UpdateInfo):
   """
-    Start downloading manifest.json, root.img.xz, and (optionally) boot.img.xz into /data/update/ in
-    the background and return immediately; watch progress via
+    Start an update in the background and return immediately; watch progress via
     GET /update/download/images/progress
 
-    Refuses to start a second download while one's already running - concurrent writes to the same
-    /data/update/ files would corrupt each other.
+    Downloads manifest.json first and dispatches on its declared type: FULL downloads
+    root.img.xz (and optionally boot.img.xz) into /data/update/, same as always; DELTA applies
+    an AmpliPi-code-only change directly to the inactive slot - see do_minimal_update.
+
+    Refuses to start a second update while one's already running - concurrent writes to the same
+    /data/update/ files (or inactive slot, for a delta) would corrupt each other.
   """
   # This endpoint uses the same pattern as /update/flash
-  if not download_channel.start(target=download_images_thread, args=(info,)):
-    return {'started': False, 'reason': 'a download is already in progress'}
+  if not download_channel.start(target=update_thread, args=(info,)):
+    return {'started': False, 'reason': 'an update is already in progress'}
   return {'started': True}
 
 
 @router.route('/update/download/images/progress')
-async def download_images_progress(req: Request):
+async def update_progress(req: Request):
   """ SSE Progress server for /update/download/images """
   return EventSourceResponse(download_channel.stream(req))
 
@@ -806,13 +1006,13 @@ async def download_images_progress(req: Request):
 @router.get('/update/staged')
 def staged_update():
   """
-    Reports whether /data/update/manifest.json already exists and, if so, what version it
-    declares
+    Reports whether /data/update/manifest.json already exists and, if so, what version and type
+    it declares
   """
   manifest = _load_manifest("/data/update/manifest.json")
   if manifest is None:
-    return {'staged': False, 'version': None}
-  return {'staged': True, 'version': manifest.version}
+    return {'staged': False, 'version': None, 'type': None}
+  return {'staged': True, 'version': manifest.version, 'type': manifest.type.value}
 
 
 def flash_partition_thread(tryboot: bool):
@@ -830,7 +1030,12 @@ def flash_partition_thread(tryboot: bool):
     flash_channel.in_progress.clear()
 
 
-def _flash_partition_body(tryboot: bool):
+def _flash_partition_body(tryboot: bool, channel: SSEChannel = flash_channel):
+  """ channel defaults to flash_channel (the normal /update/flash case - the frontend watches
+  that stream) but can be overridden - do_minimal_update's floor-check fallback passes
+  download_channel instead, since that's the stream the frontend is actually watching during a
+  /update/download/images-initiated delta update, and this function's progress would otherwise
+  silently go to a channel nobody's listening to for that flow. """
   try:
     persist_logs_during_update()
   except Exception as e:
@@ -894,7 +1099,7 @@ def _flash_partition_body(tryboot: bool):
   boot_img = "/data/update/boot.img.xz"
   # BOOT_SLOT is an env_var set by the active boot partition's commandline.txt
   if os.environ.get("BOOT_SLOT") != "A" and os.environ.get("BOOT_SLOT") != "B":
-    flash_channel.error("Boot slot could not be read")
+    channel.error("Boot slot could not be read")
     return
 
   active_slot = BootSlot.A if os.environ.get("BOOT_SLOT") == "A" else BootSlot.B
@@ -913,7 +1118,7 @@ def _flash_partition_body(tryboot: bool):
   def progress_done(label):
     # Explicitly report 100% here rather than relying on the heartbeat to have caught it
     # Boot is VERY small relative to root and thus easy to miss in the event loop
-    flash_channel.info(f'{label}: {1.0:.1%}')
+    channel.info(f'{label}: {1.0:.1%}')
     # Forcibly send the 100% complete message for a given job and then end the job
     # Without this, every future process will also print "{process} 100%" during every heartbeat
     with progress_lock:
@@ -924,7 +1129,7 @@ def _flash_partition_body(tryboot: bool):
       with progress_lock:
         items = list(progress_state.items())
       for label, (done, total) in items:
-        flash_channel.info(f'{label}: {done / total:.1%}')
+        channel.info(f'{label}: {done / total:.1%}')
 
   def do_checks():
     """
@@ -965,27 +1170,27 @@ def _flash_partition_body(tryboot: bool):
   try:
     try:
       manifest = do_checks()
-      flash_channel.info('All checks successful!')
+      channel.info('All checks successful!')
     except Exception as e:
-      flash_channel.error(str(e))
+      channel.error(str(e))
       return
 
     # Congrats, everything is in place, you've survived this far, time to actually do anything at all
     try:
-      flash_channel.info(f'Currently on slot {active_slot.name}, will flash slot {target_slot.name} (root p{target_slot.value.root}, boot p{target_slot.value.boot})')
+      channel.info(f'Currently on slot {active_slot.name}, will flash slot {target_slot.name} (root p{target_slot.value.root}, boot p{target_slot.value.boot})')
 
-      flash_channel.info('Flashing root image...')
+      channel.info('Flashing root image...')
       flash(root_img, target_slot.value.root, PartitionSize.ROOT.value, lambda done, total: progress(done, total, 'Flashing root'))
       progress_done('Flashing root')
-      flash_channel.info('Root image flashed')
+      channel.info('Root image flashed')
 
       if manifest.boot is not None:
-        flash_channel.info('Flashing boot image...')
+        channel.info('Flashing boot image...')
         flash(boot_img, target_slot.value.boot, PartitionSize.BOOT.value, lambda done, total: progress(done, total, 'Flashing boot'))
         progress_done('Flashing boot')
-        flash_channel.info('Boot image flashed')
+        channel.info('Boot image flashed')
     except Exception as e:
-      flash_channel.error(f'Update failed mid-flash: {e}')
+      channel.error(f'Update failed mid-flash: {e}')
       return
   finally:
     # No more percentage-based progress after this point (patching is discrete step messages,
@@ -996,7 +1201,7 @@ def _flash_partition_body(tryboot: bool):
   try:
     # /data/tmpmnt is the mountpoint used for whichever partition is being operated on at the time, either the inactive boot or root
     # Necessary for making sure individual files have the proper details such as making sure the boot points to the correct root partition
-    flash_channel.info('Patching boot partition...')
+    channel.info('Patching boot partition...')
     if not os.path.exists("/data/tmpmnt"):
       os.mkdir("/data/tmpmnt")
     subprocess.run(["sudo", "umount", "/data/tmpmnt"])  # In case the user put something there
@@ -1008,56 +1213,57 @@ def _flash_partition_body(tryboot: bool):
     # vfat filesystem.
     subprocess.run(["sudo", "fatlabel", f"/dev/mmcblk0p{target_slot.value.boot}", f"BOOT-{target_slot.name}"], check=True)
 
-    # The section below used to be more pythonic by using with open(...) as f:, reading, and writing to the file
-    # That is no longer the case as all of these operations require higher privs to touch a boot partition that doesn't belong to the user doing the changes
+    # Uses subprocess + sudo cat/tee rather than open(...) as f: - these operations need higher
+    # privileges to touch a boot partition that doesn't belong to the user running this.
     if manifest.boot is not None:
-      flash_channel.info('Patching cmdline.txt')
+      channel.info('Patching cmdline.txt')
       content = subprocess.run(['sudo', 'cat', '/data/tmpmnt/cmdline.txt'], capture_output=True, text=True, check=True).stdout
-      content = re.sub(rf'(root=PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', content)
-      content = content.replace(f"BOOT_SLOT={active_slot.name}", f"BOOT_SLOT={target_slot.name}")
+      # The image was collected from a system in our office, and it could've been slot A or slot B
+      # Make sure that the mappings are set correctly so there isn't a doubling of slots
+      content = re.sub(r'root=\S+', f'root=/dev/mmcblk0p{target_slot.value.root}', content)
+      content = re.sub(r'BOOT_SLOT=\S+', f'BOOT_SLOT={target_slot.name}', content)
       subprocess.run(['sudo', 'tee', '/data/tmpmnt/cmdline.txt'], input=content, text=True, check=True)
 
-    flash_channel.info('Patching root partition...')
+    channel.info('Patching root partition...')
     # All systems originate from the same ancestor image. The following tools cleanse the root partition of identifiable info
     # so that A and B don't have a case of mistaken identity by sharing these identifiers
     fsck = subprocess.run(["sudo", "e2fsck", "-p", f"/dev/mmcblk0p{target_slot.value.root}"])
     if fsck.returncode not in (0, 1):
       raise RuntimeError(f"e2fsck exited with code {fsck.returncode} on /dev/mmcblk0p{target_slot.value.root}")
     subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"], check=True)
-    # Same identification concern as is handled by the fatlabel subprocess above
+    # Relabel to match the slot actually being written, same as the boot partition above
     subprocess.run(["sudo", "e2label", f"/dev/mmcblk0p{target_slot.value.root}", f"ROOT-{target_slot.name}"], check=True)
 
     # Create the update-pending file that the update validation service will use to detect an update happened post-reboot
     subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
     subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
-    flash_channel.info('Patching root fstab...')
+    channel.info('Patching root fstab...')
     subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", "/data/tmpmnt"], check=True)
 
     # Mark the root with the slot letter so you know which partition you're in by simply running `ls`
     subprocess.run(["sudo", "touch", f"/data/tmpmnt/home/pi/SLOT_{target_slot.name}"], check=True)
     subprocess.run(["sudo", "chown", "pi:pi", f"/data/tmpmnt/home/pi/SLOT_{target_slot.name}"], check=True)
     fstab = subprocess.run(['sudo', 'cat', '/data/tmpmnt/etc/fstab'], capture_output=True, text=True, check=True).stdout
-    # The root image was captured from whichever slot was active on the machine that built it,
-    # so its baked-in fstab still has that slot's boot/root partition numbers. Since this image
-    # always lands on the slot opposite whatever's active on *this* device, remap both digits so
-    # /boot/firmware and / mount from the partitions this slot actually occupies here.
-    fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.boot}\b', rf'\g<1>{target_slot.value.boot}', fstab)
-    fstab = re.sub(rf'(PARTUUID=[0-9a-f]+-0){active_slot.value.root}\b', rf'\g<1>{target_slot.value.root}', fstab)
+    # The captured root image's fstab still has whatever device fields the source slot had at
+    # build time, unrelated to this slot - rewrite the /boot/firmware and / entries' device
+    # fields by mountpoint, unconditionally, to this slot's own device paths.
+    fstab = re.sub(r'^\S+(\s+/boot/firmware\s)', rf'/dev/mmcblk0p{target_slot.value.boot}\1', fstab, flags=re.MULTILINE)
+    fstab = re.sub(r'^\S+(\s+/\s)', rf'/dev/mmcblk0p{target_slot.value.root}\1', fstab, flags=re.MULTILINE)
     subprocess.run(['sudo', 'tee', '/data/tmpmnt/etc/fstab'], input=fstab, text=True, check=True)
 
-    flash_channel.info('Applying persist-logs preference...')
+    channel.info('Applying persist-logs preference...')
     set_persist_logs()
 
     subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
   except Exception as e:
-    flash_channel.error(f'Update failed post-flash: {e}')
+    channel.error(f'Update failed post-flash: {e}')
     return
 
   if tryboot:
-    flash_channel.info('Triggering tryboot...')
-  flash_channel.done('Imaging successful!')
+    channel.info('Triggering tryboot...')
+  channel.done('Imaging successful!')
   if tryboot:
     time.sleep(2)
     subprocess.Popen(['sudo', 'reboot', '0 tryboot'])
