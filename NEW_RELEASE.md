@@ -39,7 +39,7 @@ This project follows [Semantic Versioning](https://semver.org/). Here are some e
     - [ ] Run the golden script and deploy to the fresh partitions, then create an image of this fresh boot partition (and boot, if you changed things there)
     - [ ] Host image(s) at (OUR FILESERVER'S BASE URL)/${VERSION}/, copy each image's real download link into manifest.json's matching `root`/`boot` `url` field by hand
   - Delta Release (Smaller, only touches AmpliPi code rather than wider system state):
-    - [ ] Run `scripts/make_delta_manifest ${VERSION} ${MIN_BASE_VERSION}` to generate manifest.json (git_ref always matches `${VERSION}`) - no images, so no fileserver upload needed
+    - [ ] Run `scripts/imaging/make_delta_manifest ${VERSION} ${MIN_BASE_VERSION}` to generate manifest.json (git_ref always matches `${VERSION}`) - no images, so no fileserver upload needed
 - [ ] Make a release using the GitHub interface, attach manifest.json
 - [ ] Use the AmpliPi updater to update to the release
 - [ ] Test it again! If it needs changes, pull request your bugfixes against `main` and stamp a new release 😎

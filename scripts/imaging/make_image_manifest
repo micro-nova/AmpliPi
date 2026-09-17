@@ -107,7 +107,7 @@ def main():
     boot = move_into_package(boot, 'boot.img.xz')
 
   script_dir = os.path.dirname(os.path.realpath(__file__))
-  toml_path = os.path.join(script_dir, '..', 'pyproject.toml')
+  toml_path = os.path.join(script_dir, '..', '..', 'pyproject.toml')
   version = get_version(toml_path)
   output = args.output or os.path.join(package_dir, 'manifest.json')
 

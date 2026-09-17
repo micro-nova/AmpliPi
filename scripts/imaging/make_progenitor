@@ -268,7 +268,7 @@ fi
 if ((start_stage <= 5)); then
   echo ""
   echo "=== Stage 5/7: Deploying AmpliPi onto slot $new_slot ==="
-  "$script_dir/deploy" --alsa --clean "$target"
+  "$script_dir/../deploy" --alsa --clean "$target"
 else
   echo "Skipping Stage 5 (--start-stage $start_stage)."
 fi

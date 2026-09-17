@@ -163,7 +163,7 @@ for attempt in 1 2; do
   # CHANGED" refusal instead of a clean retry. Clearing proactively before each attempt (not just
   # the first) covers that without deploy needing to know anything about it.
   clear_stale_host_key
-  if "$scripts_dir/deploy" "$target" --alsa --clean </dev/null; then
+  if "$scripts_dir/../deploy" "$target" --alsa --clean </dev/null; then
     deploy_ok=true
     break
   fi

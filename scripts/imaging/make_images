@@ -150,7 +150,7 @@ def main():
     capture_partition(boot, os.path.join(out_dir, 'boot.img.xz'), via=args.via)
 
   print(f'\nImages written to {out_dir}/')
-  print(f'Run ./scripts/make_image_manifest to generate a manifest and optionally push to a Pi.')
+  print(f'Run ./scripts/imaging/make_image_manifest to generate a manifest and optionally push to a Pi.')
 
 
 if __name__ == '__main__':

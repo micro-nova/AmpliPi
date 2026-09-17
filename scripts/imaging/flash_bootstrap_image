@@ -3,7 +3,7 @@
 # a USB rpiboot mass-storage connection - manual partitioning would work too, but a known-good
 # base image to dd already covers our needs just fine.
 #
-# Used as the first stage of scripts/make_progenitor (bootstrapping a target unit into a known-
+# Used as the first stage of scripts/imaging/make_progenitor (bootstrapping a target unit into a known-
 # good, already-correctly-partitioned state from an existing progenitor image), but is a
 # standalone tool in its own right - useful any time you need to write a known-good image onto a
 # unit's eMMC directly, not just as part of that pipeline.

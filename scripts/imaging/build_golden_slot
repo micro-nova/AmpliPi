@@ -57,7 +57,7 @@ done
 $debug && set -x
 
 current_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-amplipi_config_dir="$(realpath "$current_dir/../config")"
+amplipi_config_dir="$(realpath "$current_dir/../../config")"
 
 command -v ssh >/dev/null || { echo "missing dependency: ssh"; exit 1; }
 
@@ -118,7 +118,7 @@ if [[ -n "$img_file" ]] && ! $format_only; then
 fi
 
 boot_config_b64=$(base64 -w0 "$amplipi_config_dir/boot_config.txt")
-ssh_seed_service_b64=$(base64 -w0 "$current_dir/services/amplipi-seed-ssh-host-keys.service")
+ssh_seed_service_b64=$(base64 -w0 "$current_dir/../services/amplipi-seed-ssh-host-keys.service")
 
 if $format_only; then
   echo "Formatting boot-$inactive_slot/root-$inactive_slot on $remote_target (leaving them empty)..."

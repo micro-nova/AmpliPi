@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Capture a Pi's entire eMMC (partition table + all 7 partitions) as a single compressed,
-# flashable .img.xz - the final step of scripts/make_progenitor. Whether the result is a normal
+# flashable .img.xz - the final step of scripts/imaging/make_progenitor. Whether the result is a normal
 # dual-slot golden image or a single-slot progenitor image (fills in its second slot on the unit's
 # first OTA update) depends only on whether slot B is populated when this runs - same code path.
 #
 # Run this only against a Pi that's already partitioned, has at least one slot built + deployed,
 # and has had scripts/cleanup run right before shipping - it captures whatever's physically on the
-# disk with no awareness of AmpliPi state. See scripts/make_progenitor for the full pipeline.
+# disk with no awareness of AmpliPi state. See scripts/imaging/make_progenitor for the full pipeline.
 # Needs a USB-to-service-port connection (rpiboot mass-storage mode) - unlike make_images, this
 # captures the *active* slot too, so the disk must be powered off to avoid a corrupt capture.
 
@@ -147,7 +147,7 @@ sha256=$(sha256sum "$out_file" | cut -d' ' -f1)
 size=$(stat -c%s "$out_file")
 
 script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-version=$(grep -m1 -oP '(?<=version = ")[^"]+' "$script_dir/../pyproject.toml" || echo unknown)
+version=$(grep -m1 -oP '(?<=version = ")[^"]+' "$script_dir/../../pyproject.toml" || echo unknown)
 
 manifest_file="$out_dir/progenitor-manifest.json"
 # Remove any pre-existing manifest before writing (rather than truncating it via `>` directly):
