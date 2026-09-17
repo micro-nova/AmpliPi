@@ -1,0 +1,14 @@
+[Unit]
+Description=Arm a hard deadline for trial-boot convergence, independent of amplipi-tryboot-verify's own dependency chain
+DefaultDependencies=no
+After=boot-firmware.mount
+Requires=boot-firmware.mount
+Before=basic.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/amplipi-boot-deadline.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

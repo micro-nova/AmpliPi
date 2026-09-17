@@ -114,29 +114,51 @@ function ui_check_after_reboot(retry_check_ct) {
 // Translate the backend messages into consumable percentages for the progress bar
 const UPDATE_PROGRESS_RE = /^(.+): (\d+(?:\.\d+)?)%$/;
 
-// Phases shown on the progress bar, 2-5 depending on whether this run is downloading (Latest
-// Release/Other Releases add one; an already-staged flash doesn't) and whether the update
-// includes a boot image.
-const DOWNLOAD_PHASE = 'Downloading root image';
+// Phases shown on the progress bar - varies with whether this run needs a download first
+// (see DOWNLOAD_THEN_FLASH_PHASES_* below) and whether the update includes a boot image.
 const FLASH_PHASES_WITH_BOOT = ['Verifying root image', 'Verifying boot image', 'Flashing root', 'Flashing boot'];
 const FLASH_PHASES_ROOT_ONLY = ['Verifying root image', 'Flashing root'];
+// Same as FLASH_PHASES_WITH_BOOT/ROOT_ONLY, with download segments prepended - without them the
+// bar sits still for however long the download takes before flashing even starts.
+const DOWNLOAD_THEN_FLASH_PHASES_WITH_BOOT = ['Downloading root image', 'Downloading boot image'].concat(FLASH_PHASES_WITH_BOOT);
+const DOWNLOAD_THEN_FLASH_PHASES_ROOT_ONLY = ['Downloading root image'].concat(FLASH_PHASES_ROOT_ONLY);
+// The three percentage-bearing steps of a delta update (no images involved at all). Weighted,
+// not equal thirds - the manifest is a few hundred bytes and takes no perceptible time next to
+// the other two, so an equal share would make the bar sit idle through most of that segment.
+const DELTA_PHASES = [
+  {label: 'Downloading manifest', weight: 1},
+  {label: 'Downloading release', weight: 4},
+  {label: 'Applying update', weight: 3},
+];
 let flashPhases = FLASH_PHASES_ROOT_ONLY;
-// Cached by ui_configure_progress_phases() so ui_update_progress_bar() doesn't recompute per message.
-let flashSegment = 100 / flashPhases.length;
 let boldLabelEl = null;
+
+// Accepts a plain label string (equal weight) or {label, weight} (e.g. DELTA_PHASES) - assigns
+// each phase its [start, start+segment) range along the bar, cached so per-message lookups are cheap.
+function normalize_phases(phases) {
+  let withWeights = phases.map((p) => typeof p === 'string' ? {label: p, weight: 1} : p);
+  let totalWeight = withWeights.reduce((sum, p) => sum + p.weight, 0);
+  let offset = 0;
+  return withWeights.map((p) => {
+    let segment = (p.weight / totalWeight) * 100;
+    let withRange = {label: p.label, segment: segment, start: offset};
+    offset += segment;
+    return withRange;
+  });
+}
 
 function ui_update_progress_bar(message) {
   let match = message.match(UPDATE_PROGRESS_RE);
   if (!match) return;
   let label = match[1];
   let pct = parseFloat(match[2]);
-  let idx = flashPhases.indexOf(label);
-  if (idx === -1) return;
-  let overall = idx * flashSegment + (pct / 100) * flashSegment;
+  let phase = flashPhases.find((p) => p.label === label);
+  if (!phase) return;
+  let overall = phase.start + (pct / 100) * phase.segment;
   let bar = $('#update-progress-bar');
   bar.css('width', overall + '%').attr('aria-valuenow', overall).text(Math.round(overall) + '%');
   bar.toggleClass('bg-info', label.indexOf('Verifying') === 0 || label.indexOf('Downloading') === 0);
-  bar.toggleClass('bg-primary', label.indexOf('Flashing') === 0);
+  bar.toggleClass('bg-primary', label.indexOf('Flashing') === 0 || label.indexOf('Applying') === 0);
   if (boldLabelEl === null || boldLabelEl.data('bound-label') !== label) {
     if (boldLabelEl) boldLabelEl.removeClass('font-weight-bold');
     boldLabelEl = $('.update-progress-label[data-label="' + label + '"]').addClass('font-weight-bold');
@@ -144,23 +166,22 @@ function ui_update_progress_bar(message) {
   }
 }
 
-// Sets up the progress bar for the given phases (2-5, see FLASH_PHASES_* above).
+// Sets up the progress bar for the given phases (2-5, see FLASH_PHASES_*/DELTA_PHASES above).
 function ui_configure_progress_phases(phases) {
-  flashPhases = phases;
-  flashSegment = 100 / flashPhases.length;
+  flashPhases = normalize_phases(phases);
   boldLabelEl = null;
   $('#update-progress-bar').css('width', '0%').attr('aria-valuenow', 0).text('0%')
     .removeClass('bg-primary').addClass('bg-info');
   $('.update-progress-label').removeClass('font-weight-bold').addClass('d-none').css('width', '0%');
-  flashPhases.forEach(function(label) {
-    $('.update-progress-label[data-label="' + label + '"]').removeClass('d-none').css('width', flashSegment + '%');
+  flashPhases.forEach(function(p) {
+    $('.update-progress-label[data-label="' + p.label + '"]').removeClass('d-none').css('width', p.segment + '%');
   });
 
   // Tick marks between each pair of phases.
   $('.update-progress-tick').remove();
   for (let i = 1; i < flashPhases.length; i++) {
     $('<div class="update-progress-tick"></div>')
-      .css({position: 'absolute', top: 0, bottom: 0, width: '2px', background: 'rgba(255,255,255,0.75)', left: (i * flashSegment) + '%'})
+      .css({position: 'absolute', top: 0, bottom: 0, width: '2px', background: 'rgba(255,255,255,0.75)', left: flashPhases[i].start + '%'})
       .appendTo($('#update-progress-bar').parent());
   }
 }
@@ -169,8 +190,23 @@ function ui_reset_progress_bars() {
   ui_configure_progress_phases(FLASH_PHASES_ROOT_ONLY);
 }
 
+// A delta whose target slot doesn't meet min_base_version gets a base image flashed first, then
+// the delta - two stages, reusing the same bar (reset between them, not reconfigured mid-fill,
+// which would visibly shrink an already-filled segment). Most deltas never hit this.
+//
+// Detected by matching substrings of do_minimal_update's log lines - if those phrases change,
+// this silently stops detecting the transition.
+function ui_check_delta_phase_transition(message) {
+  if (message.includes('flashing that version as a base first')) {
+    ui_configure_progress_phases(DOWNLOAD_THEN_FLASH_PHASES_WITH_BOOT);
+  } else if (message.includes('continuing with delta to')) {
+    ui_configure_progress_phases(DELTA_PHASES);
+  }
+}
+
 function ui_show_update_progress(status) {
   // assumes status {'message': str, 'type': 'info'|'warning'|'error'|'success'|'failed'}
+  ui_check_delta_phase_transition(status.message);
   ui_update_progress_bar(status.message);
   let color = (status.type == 'error' || status.type == 'failed') ? 'danger' : status.type;
   if (status.message.trim().length > 0) {
@@ -207,6 +243,7 @@ function ui_disable_buttons() {
 }
 
 function ui_show_done() {
+  $('#back-to-app').removeClass('disabled');
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').removeClass('btn-primary').addClass('btn-success');
   $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Done!');
 }
@@ -226,15 +263,15 @@ function ui_select_release(sel) {
   // data-name presence (not a separate data-version) distinguishes a real release option from
   // the "Choose..." placeholder.
   if (selected.data('name') !== undefined) {
-    $('#submit-older-update').removeClass('disabled');
     $('#older-update-desc').empty().append(md.render(selected.data('desc')));
+    apply_update_label('#submit-older-update', releaseManifestInfo[sel.value]); // greys out itself if not yet known
   } else {
     $('#submit-older-update').addClass('disabled');
   }
 }
 
 // Watches an SSE progress channel until a terminal event - onSuccess() on 'success',
-// ui_show_failure() on 'error'. Shared by ui_begin_flash_watch() and ui_download_then_flash().
+// ui_show_failure() on 'error'. Shared by ui_begin_flash_watch() and ui_download_then_finish().
 function ui_watch_sse(url, onSuccess) {
   var source = new EventSource(url);
   source.onmessage = function(event) {
@@ -279,25 +316,37 @@ function ui_begin_flash_watch(reconfigureBoot) {
   });
 }
 
-// Shared by all download-then-flash flows. urls: {manifest_url, root_url, boot_url}.
-// expectedVersion (optional) makes the backend refuse to proceed to the big downloads if the
-// manifest it fetches doesn't match. Callers handle their own button/log/progress-bar setup
-// first, same as ui_begin_flash_watch().
-function ui_download_then_flash(urls, expectedVersion) {
+// Shared by all download-then-finish flows. manifestUrl is the only download location needed -
+// image urls live inside the manifest itself, read directly by the backend. expectedVersion
+// (optional) rejects a manifest that doesn't match. type must already be known by the caller
+// (every caller already fetched it once to label its own button) - looking it up again after
+// calling would race do_minimal_update's own reboot. Callers set up their own button/log/progress
+// state first, same as ui_begin_flash_watch().
+//
+// Named "finish", not "flash": a full manifest still needs a follow-up /update/flash call, but a
+// delta manifest is already fully applied (including its own reboot) by the time this reports
+// success - calling /update/flash after a delta would be wrong.
+function ui_download_then_finish(manifestUrl, expectedVersion, type) {
   fetch('/update/download/images', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
-      manifest_url: urls.manifest_url,
-      root_url: urls.root_url,
-      boot_url: urls.boot_url || null,
+      manifest_url: manifestUrl,
       expected_version: expectedVersion || null,
+      tryboot: true,
     }),
   }).then((response) => response.json()).then((data) => {
     // Watch regardless of whether this started a fresh download or one was already running.
     ui_watch_sse('update/download/images/progress', function() {
-      ui_add_log('Download complete, starting flash', 'info');
-      ui_begin_flash_watch(false);
+      if (type === 'delta') {
+        // do_minimal_update already applied the change and triggered tryboot - nothing left to
+        // call, just wait for the reboot the same way the full-image path does after /update/flash.
+        ui_add_log('Delta update applied, waiting for the unit to reboot into the new slot', 'info');
+        setTimeout(ui_check_after_reboot, 5000, 2 * 60 / 5 - 1);
+      } else {
+        ui_add_log('Download complete, starting flash', 'info');
+        ui_begin_flash_watch(false);
+      }
     });
   }).catch((e) => {
     ui_add_log('Failed to start download: ' + e, 'danger');
@@ -313,20 +362,29 @@ function ui_start_release_download(release, skipIfStaged) {
   $('#update-log').show();
 
   function download() {
-    let urls = extract_image_urls(release);
-    if (!urls) {
-      ui_add_log('This release has no manifest.json/root.img.xz assets attached', 'danger');
+    let manifest_url = find_manifest_url(release);
+    if (!manifest_url) {
+      ui_add_log('This release has no manifest.json asset attached', 'danger');
       ui_show_failure();
       return;
     }
-    ui_configure_progress_phases([DOWNLOAD_PHASE].concat(urls.boot_url ? FLASH_PHASES_WITH_BOOT : FLASH_PHASES_ROOT_ONLY));
+    let info = releaseManifestInfo[release.tag_name];
+    if (info && info.type === 'delta') {
+      ui_configure_progress_phases(DELTA_PHASES);
+    } else {
+      ui_configure_progress_phases(info && info.hasBoot ? DOWNLOAD_THEN_FLASH_PHASES_WITH_BOOT : DOWNLOAD_THEN_FLASH_PHASES_ROOT_ONLY);
+    }
     ui_add_log('Downloading ' + release.tag_name, 'info');
-    ui_download_then_flash(urls, release.tag_name);
+    ui_download_then_finish(manifest_url, release.tag_name, info ? info.type : null);
   }
 
   if (skipIfStaged) {
     fetch('/update/staged').then((r) => r.json()).then((staged) => {
-      if (staged.staged && staged.version === release.tag_name) {
+      // type check matters: this shortcut skips a redundant multi-GB re-download, which only
+      // applies to type full - a staged delta has no images to skip re-downloading, so treating
+      // it the same way would send the flow to /update/flash looking for a root.img.xz that was
+      // never there.
+      if (staged.staged && staged.type === 'full' && staged.version === release.tag_name) {
         ui_add_log('Already downloaded, flashing directly', 'info');
         ui_reset_progress_bars();
         ui_begin_flash_watch();
@@ -366,19 +424,31 @@ function ui_show_offline_message() {
 
 // get the current AmpliPi version
 let version = 'unknown';
+// undefined = not yet loaded (stay pending); null/'' = a real but unreadable inactive slot,
+// treated as definitely below any delta's min_base_version floor. See compute_label_type.
+let inactiveVersion;
 fetch('/update/version').then((resp) => {
   resp.json().then((info) => {
     version = info.version;
+    inactiveVersion = info.inactive_version;
+    // A release's label may have already been computed (and skipped, since inactiveVersion was
+    // still undefined) before this resolved - redo it now for whatever's currently on screen.
+    if (latestRelease) apply_update_label('#submit-latest-update', releaseManifestInfo[latestRelease.tag_name]);
+    let selectedTag = $('#older-update-sel').val();
+    if (availableReleases[selectedTag]) apply_update_label('#submit-older-update', releaseManifestInfo[selectedTag]);
   });
 });
 
 // Set by show_latest_release(), read by ui_start_latest_release_update(). Holds the full GH
-// release object (not just tarball_url) since the flash flow needs real asset URLs out of it.
+// release object (not just tarball_url) since the flash flow needs its manifest.json asset URL
+// and tag_name out of it.
 let latestRelease = null;
 
 function show_latest_release(latest_release) {
-  if (latest_release.tag_name == version) {
-    console.log('already up to date');
+  // Pre-A/B releases (< MIN_SUPPORTED_VERSION) have no manifest.json and don't fit this update
+  // flow - treated the same as already being up to date, matching populate_available_releases.
+  if (latest_release.tag_name == version || !version_at_least(latest_release.tag_name, MIN_SUPPORTED_VERSION)) {
+    console.log('no A/B-compatible update available');
     $('#latest-update-name').empty().append('Your system is up to date  <i class="fas fa-check-circle text-success"></i>')
   } else {
     latestRelease = latest_release;
@@ -386,38 +456,132 @@ function show_latest_release(latest_release) {
     $('#submit-latest-update').removeClass('d-none');
     $('#latest-update-name').text(latest_release.name);
     $('#latest-update-desc').append(md.render(latest_release.body));
+    apply_update_label('#submit-latest-update', undefined); // grey out until the manifest resolves below
+
+    let manifest_url = find_manifest_url(latest_release);
+    if (manifest_url) {
+      fetch_manifest(manifest_url).then((manifest) => {
+        releaseManifestInfo[latest_release.tag_name] = manifest;
+        apply_update_label('#submit-latest-update', manifest);
+      });
+    } else {
+      releaseManifestInfo[latest_release.tag_name] = MANIFEST_UNAVAILABLE;
+      apply_update_label('#submit-latest-update', MANIFEST_UNAVAILABLE);
+    }
   }
+}
+
+// TODO: update once the actual first A/B-scheme release version is decided - everything before
+// it predates the partition scheme these manifests/delta updates assume, and isn't offered here.
+const MIN_SUPPORTED_VERSION = '0.5.0';
+
+// Simple major.minor.patch comparison, not full semver - fine here since this is only a UI-side
+// preview (real enforcement is asgi.py's do_minimal_update, with real semver parsing). Returns
+// true if `v` >= `floor`.
+function version_at_least(v, floor) {
+  let vp = v.split('.').map(Number);
+  let fp = floor.split('.').map(Number);
+  for (let i = 0; i < Math.max(vp.length, fp.length); i++) {
+    let a = vp[i] || 0, b = fp[i] || 0;
+    if (a !== b) return a > b;
+  }
+  return true;
 }
 
 // Same idea as latestRelease, but keyed by tag_name since Other Releases can point at any of several.
 let availableReleases = {};
+// tag_name -> {type, min_base_version, hasBoot}, populated as each release's manifest resolves
+// in the background. Read here instead of re-fetching on every dropdown/button interaction - by
+// the time a release is clickable, its manifest fetch has near-certainly already finished.
+let releaseManifestInfo = {};
 
 function populate_available_releases(releases) {
   // TODO: indicate difference between pre-releases and full-releases
   for (const release of releases) {
+    if (!version_at_least(release.tag_name, MIN_SUPPORTED_VERSION)) continue;
+
     console.log(`found "${release.name}" - ${release.tag_name}`);
     availableReleases[release.tag_name] = release;
-    $('#older-update-sel').append(`<option value="${release.tag_name}"
-                                           data-name="${release.name}"
-                                           data-desc="${release.body}">
-                                           ${release.name}
-                                   </option>`);
+    let option = $(`<option value="${release.tag_name}"
+                            data-name="${release.name}"
+                            data-desc="${release.body}">
+                            ${release.name}
+                    </option>`);
+    $('#older-update-sel').append(option);
+
+    let manifest_url = find_manifest_url(release);
+    if (manifest_url) {
+      // No min_base_version-vs-inactive-slot check here: do_minimal_update's floor-check fallback
+      // (asgi.py) handles that automatically server-side, flashing min_base_version as a base
+      // image before applying the delta. Every post-cutoff release stays selectable here.
+      fetch_manifest(manifest_url).then((manifest) => {
+        // Stored even on failure (null): distinguishes "fetch failed" from "not fetched yet" for
+        // apply_update_label/compute_label_type, which key their pending-vs-fail-open state off that.
+        releaseManifestInfo[release.tag_name] = manifest;
+      });
+    } else {
+      releaseManifestInfo[release.tag_name] = MANIFEST_UNAVAILABLE;
+    }
   }
 }
 
-// Pulls manifest.json/root.img.xz/boot.img.xz URLs from a GH release's assets (not tarball_url,
-// GitHub's source archive). Returns null if they're missing - true for every real release right
-// now since CI doesn't attach them yet.
-function extract_image_urls(release) {
+// Pulls manifest.json's URL from a GH release's assets (not tarball_url). Image urls aren't
+// resolved here - they live inside the manifest itself, read directly by the backend. Returns
+// null if manifest.json is missing from the release's assets - shouldn't happen for any release
+// that passed the MIN_SUPPORTED_VERSION filter above, so callers treat it as a real anomaly.
+function find_manifest_url(release) {
   let assets = release.assets || [];
-  let find_url = (filename) => {
-    let asset = assets.find((a) => a.name === filename);
-    return asset ? asset.browser_download_url : null;
-  };
-  let manifest_url = find_url('manifest.json');
-  let root_url = find_url('root.img.xz');
-  if (!manifest_url || !root_url) return null;
-  return {manifest_url: manifest_url, root_url: root_url, boot_url: find_url('boot.img.xz')};
+  let asset = assets.find((a) => a.name === 'manifest.json');
+  return asset ? asset.browser_download_url : null;
+}
+
+// Label shown on an update button once its manifest's type is known. Falls back to the type full
+// label if the manifest can't be fetched/parsed at all (offline, CORS, ...) - the label is a
+// convenience, not load-bearing, so failing open here just means it doesn't update.
+const UPDATE_TYPE_LABELS = {full: 'Begin Flash', delta: 'Update now'};
+// Shown (button greyed out via the 'disabled' class) while a button's real label is still unknown.
+const CHECKING_LABEL = 'Checking update...';
+// Sentinel stored in releaseManifestInfo/passed to apply_update_label when a release has no
+// manifest.json asset at all - distinct from a fetch failure (null), since it's a genuine data
+// problem rather than a transient one. Button stays disabled since there's nothing to flash.
+const MANIFEST_UNAVAILABLE = 'unavailable';
+const MANIFEST_UNAVAILABLE_LABEL = 'Update package unavailable';
+
+// Resolves manifestUrl to {type, min_base_version, hasBoot}, or null on failure. type defaults
+// to 'full' if omitted. hasBoot decides which progress-bar phases to show before download starts.
+function fetch_manifest(manifestUrl) {
+  return fetch(manifestUrl).then((r) => r.json())
+    .then((m) => ({type: m.type || 'full', min_base_version: m.min_base_version || null, hasBoot: m.boot != null}))
+    .catch(() => null);
+}
+
+// A DELTA manifest alone doesn't say whether clicking it triggers a flash - do_minimal_update
+// flashes a base image first if the inactive slot doesn't meet min_base_version. version_at_least
+// isn't hardened for dirty version strings on purpose: a non-numeric segment parses to NaN, and
+// NaN comparisons are always false, so an unparseable version already fails the floor check safely.
+function compute_label_type(manifest) {
+  if (manifest === MANIFEST_UNAVAILABLE) return MANIFEST_UNAVAILABLE; // no manifest.json asset exists
+  if (manifest === undefined) return null; // not fetched yet - stay pending
+  if (manifest === null) return 'full'; // fetch failed - fail open to the safe default
+  if (manifest.type !== 'delta') return manifest.type; // 'full' as today
+  if (inactiveVersion === undefined) return null; // /update/version hasn't resolved yet - don't guess
+  if (!inactiveVersion || !version_at_least(inactiveVersion, manifest.min_base_version)) {
+    return 'full'; // will flash a base image first - same label, same mechanics as a real full release
+  }
+  return 'delta';
+}
+
+// Greys the button out with a neutral label until compute_label_type has a real answer, rather
+// than showing (and enabling) a default label that might have to change moments later.
+function apply_update_label(buttonSelector, manifest) {
+  let t = compute_label_type(manifest);
+  if (t === MANIFEST_UNAVAILABLE) {
+    $(buttonSelector).text(MANIFEST_UNAVAILABLE_LABEL).addClass('disabled');
+  } else if (t && UPDATE_TYPE_LABELS[t]) {
+    $(buttonSelector).text(UPDATE_TYPE_LABELS[t]).removeClass('disabled');
+  } else {
+    $(buttonSelector).text(CHECKING_LABEL).addClass('disabled');
+  }
 }
 
 async function requestSupportTunnel() {

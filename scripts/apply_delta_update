@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""Apply a single AmpliPi release's source tree onto a target directory, without git.
+
+Downloads a release/tag's source archive straight from GitHub (a plain HTTP tarball - no git
+client or existing checkout required on this device at all) and rsyncs the app-code paths it
+contains onto --target-dir, deleting anything under those same paths that the release no longer
+has. Everything else in --target-dir (a venv, /data-backed config, logs, ...) is left untouched,
+since only an explicit allowlist of paths is touched.
+
+Frontend source (web/) is included - the release process builds it and force-commits web/dist
+onto the tagged commit before release, so the tarball this script downloads already has a real
+built copy, no on-device build step needed.
+"""
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tarfile
+import urllib.request
+from tempfile import mkdtemp
+
+# Paths relative to the repo root that a delta update is allowed to touch. Deliberately an
+# allowlist, not "everything except a venv exclusion list" - safer against some future runtime
+# directory living alongside these getting deleted just because it wasn't on a blocklist yet.
+RELEASE_OWNED_PATHS = ['amplipi', 'scripts', 'streams', 'config', 'fw', 'pyproject.toml', 'requirements.txt', 'web']
+
+# Synced without --filter=':- .gitignore', unlike everything in RELEASE_OWNED_PATHS above:
+# web/dist is Vite's build output, gitignored in the repo itself, but a release commit
+# force-adds a freshly-built copy before tagging. Respecting web/.gitignore's own "dist" rule
+# here, the same way the paths above do, would make rsync treat it as excluded and leave
+# whatever's already on the device untouched forever - stale build chunks and all.
+FORCE_SYNC_PATHS = ['web/dist']
+
+
+def download_archive(repo: str, ref: str, dest: str):
+  url = f'https://github.com/{repo}/archive/refs/tags/{ref}.tar.gz'
+  print(f'Downloading {url}')
+  # Streamed with periodic "<label>: <pct>%" progress lines (same format the caller's other
+  # download step already emits) rather than urlretrieve's silent block-until-done - small as
+  # this archive is, a caller watching the log has no other sign anything is happening otherwise.
+  with urllib.request.urlopen(url) as resp, open(dest, 'wb') as f:
+    total = int(resp.headers.get('Content-Length', 0))
+    written = 0
+    last_pct = -1
+    while chunk := resp.read(64 * 1024):
+      f.write(chunk)
+      written += len(chunk)
+      if total:
+        pct = int(written / total * 100)
+        if pct != last_pct:
+          print(f'Downloading release: {pct}%')
+          last_pct = pct
+    if not total:
+      print('Downloading release: 100%')
+
+
+def extract_archive(archive_path: str, dest_dir: str) -> str:
+  """Extract archive_path into dest_dir and return the path to the single top-level directory
+  GitHub's archive always contains (named after the repo + ref, but that naming isn't stable
+  enough to rely on directly)."""
+  with tarfile.open(archive_path) as tf:
+    tf.extractall(dest_dir)
+  entries = os.listdir(dest_dir)
+  if len(entries) != 1:
+    raise RuntimeError(f'Expected exactly one top-level directory in the archive, found {entries}')
+  return os.path.join(dest_dir, entries[0])
+
+
+def apply_paths(src_root: str, target_dir: str):
+  # Preserve whatever ownership target_dir already had (normally pi:pi) instead of leaving
+  # whatever ran this script as the new owner - when invoked via sudo (do_minimal_update does,
+  # since it needs to write into a slot it may not otherwise have access to), rsync would
+  # otherwise leave every touched file root-owned, locking a later non-root deploy out of them.
+  owner_uid, owner_gid = os.stat(target_dir).st_uid, os.stat(target_dir).st_gid
+
+  # "Applying update: <pct>%" matches the caller's other download steps' progress format, so a
+  # caller watching the log/progress bar sees this phase actually move instead of the bar sitting
+  # at 100% (done downloading) while extraction/sync/chown still silently happen.
+  print('Applying update: 0%')
+  total = len(RELEASE_OWNED_PATHS) + len(FORCE_SYNC_PATHS)
+  step = 0
+
+  def sync(path: str, dest_parent: str, use_gitignore_filter: bool):
+    nonlocal step
+    src = os.path.join(src_root, path)
+    if not os.path.exists(src):
+      print(f'  skipping {path} (not present in this release)')
+    else:
+      dest = os.path.join(target_dir, path)
+      print(f'  syncing {path}')
+      # trailing-slash-free src: for a directory this makes rsync place the directory itself
+      # under dest_parent, so --delete only ever prunes within that one subtree, never touching
+      # target_dir's other contents (venv, /data-backed config, logs, ...).
+      #
+      # --filter=':- .gitignore': without this, --delete removes anything under a synced path
+      # that the release tarball doesn't track - including locally-built, gitignored artifacts
+      # like the compiled amplipi/audiodetector/audiodetector binary (only its source and Makefile
+      # are tracked), crash-looping that service if deleted. The tarball already ships every
+      # .gitignore in the tree; this tells rsync to read and respect them the same way git itself
+      # would, per-directory. FORCE_SYNC_PATHS entries skip this on purpose - see their own
+      # comment above.
+      #
+      # --delete-after, not plain --delete: rsync's default (--delete-during) deletes each
+      # directory's contents *before* that same directory's own per-directory filter file has
+      # been loaded, so a .gitignore has no chance to protect anything in its own directory - this
+      # is documented rsync behavior, not a fluke (confirmed empirically: plain --delete deleted
+      # the gitignored file anyway). --delete-after runs the delete pass once the whole transfer,
+      # filters included, is already in place.
+      cmd = ['rsync', '-a', '--delete-after']
+      if use_gitignore_filter:
+        cmd.append('--filter=:- .gitignore')
+      subprocess.run(cmd + [src, dest_parent + '/'], check=True)
+      # only meaningful (and only guaranteed to succeed) when actually running elevated - a
+      # non-root run already wrote these files as the current user, matching target_dir already.
+      if os.geteuid() == 0:
+        subprocess.run(['chown', '-R', f'{owner_uid}:{owner_gid}', dest], check=True)
+    step += 1
+    print(f'Applying update: {step / total * 100:.0f}%')
+
+  for path in RELEASE_OWNED_PATHS:
+    sync(path, target_dir, use_gitignore_filter=True)
+  for path in FORCE_SYNC_PATHS:
+    sync(path, os.path.join(target_dir, os.path.dirname(path)), use_gitignore_filter=False)
+
+
+def main():
+  parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+  parser.add_argument('ref', help='git tag/ref of the release to apply (e.g. 0.4.11)')
+  parser.add_argument('--target-dir', required=True, help='directory to apply the release onto')
+  parser.add_argument('--repo', default='micro-nova/amplipi', help='GitHub org/repo to fetch from')
+  args = parser.parse_args()
+
+  if not os.path.isdir(args.target_dir):
+    print(f'--target-dir {args.target_dir} does not exist', file=sys.stderr)
+    sys.exit(1)
+
+  work_dir = mkdtemp()
+  try:
+    archive_path = os.path.join(work_dir, 'release.tar.gz')
+    download_archive(args.repo, args.ref, archive_path)
+
+    print('Extracting...')
+    extract_dir = os.path.join(work_dir, 'extracted')
+    os.mkdir(extract_dir)
+    src_root = extract_archive(archive_path, extract_dir)
+
+    print(f'Applying to {args.target_dir}...')
+    apply_paths(src_root, args.target_dir)
+
+    print('Done.')
+  finally:
+    shutil.rmtree(work_dir, ignore_errors=True)
+
+
+if __name__ == '__main__':
+  main()
