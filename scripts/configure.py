@@ -94,6 +94,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 ],
     },
     'updates': {
+      # rsync is what scripts/apply_delta_update actually applies a delta update with. It's been
+      # present on every device so far anyway (part of the base Raspberry Pi OS image), which is
+      # exactly the kind of implicit dependency worth pinning explicitly rather than trusting to
+      # keep being true - see requirements.txt's explicit 'packaging' pin for the same reasoning.
+      'apt': ['rsync'],
       'copy': [
         {
           'from': 'scripts/services/amplipi-tryboot-verify.sh',
@@ -120,26 +125,42 @@ _os_deps: Dict[str, Dict[str, Any]] = {
           'to': '/etc/systemd/system/amplipi-postflash.service',
           'sudo': 'true',
         },
+        {
+          'from': 'scripts/services/amplipi-boot-deadline.sh',
+          'to': '/usr/local/bin/amplipi-boot-deadline.sh',
+          'sudo': 'true',
+        },
+        {
+          'from': 'scripts/services/amplipi-boot-deadline-fire.sh',
+          'to': '/usr/local/bin/amplipi-boot-deadline-fire.sh',
+          'sudo': 'true',
+        },
+        {
+          'from': 'scripts/services/amplipi-boot-deadline.service',
+          'to': '/etc/systemd/system/amplipi-boot-deadline.service',
+          'sudo': 'true',
+        },
       ],
       'script': [
         'sudo chmod +x /usr/local/bin/amplipi-tryboot-verify.sh',
         'sudo chmod +x /usr/local/bin/update_autoboot.py',
         'sudo chmod +x /usr/local/bin/amplipi-postflash.sh',
+        'sudo chmod +x /usr/local/bin/amplipi-boot-deadline.sh',
+        'sudo chmod +x /usr/local/bin/amplipi-boot-deadline-fire.sh',
 
         'sudo chmod 444 /etc/systemd/system/amplipi-tryboot-verify.service',
         'sudo systemctl enable amplipi-tryboot-verify.service',
 
-        # amplipi-tryboot-verify.service used to be named amplipi-update-commit.service. A unit
-        # renamed without ever being explicitly disabled under its old name leaves a dangling
-        # enablement symlink behind (found live on an older slot:
-        # multi-user.target.wants/amplipi-update-commit.service, pointing at a unit file that no
-        # longer exists - harmless to systemd but untracked cruft). Clean it up unconditionally;
-        # both commands are no-ops once it's already gone.
+        # Clean up the old amplipi-update-commit.service name in case a dangling enablement
+        # symlink is left over from before the rename; no-op if already gone.
         'sudo systemctl disable amplipi-update-commit.service 2>/dev/null || true',
         'sudo rm -f /etc/systemd/system/amplipi-update-commit.service',
 
         'sudo chmod 444 /etc/systemd/system/amplipi-postflash.service',
         'sudo systemctl enable amplipi-postflash.service',
+
+        'sudo chmod 444 /etc/systemd/system/amplipi-boot-deadline.service',
+        'sudo systemctl enable amplipi-boot-deadline.service',
       ],
     },
     'usb': {
@@ -237,9 +258,39 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             # disabled outright - still slows a sustained brute-force attempt from another device
             # on the same network, just caps the worst case at 30s instead of 10 minutes.
             'echo "PerSourcePenalties authfail:1 max:30 min:5" | sudo tee /etc/ssh/sshd_config.d/ssh_penalties.conf',
+            # Belt-and-suspenders against openssh-server's postinst having failed earlier in this
+            # same run (dist-upgrade, tolerated above if isolated to openssh-server/ssh): if its
+            # key generation aborted partway through (observed: RSA fails, and because that
+            # postinst runs under `set -e`, ECDSA/ED25519 are never even attempted afterward),
+            # `systemctl reload ssh` below finds no usable host keys and kills the service
+            # outright ("sshd: no hostkeys available -- exiting"). ssh-keygen -A only creates
+            # whatever key types are actually missing and is a no-op against ones that already
+            # exist (including through the /data symlinks build_golden_slot sets up), so this is
+            # safe to run unconditionally rather than trying to detect whether it's needed.
+            'sudo ssh-keygen -A',
             'sudo sshd -t',
             'sudo systemctl reload ssh',
         ]
+    },
+    'default_password': {
+        'amplipi_only': True,
+        'copy': [
+          {
+            'from': 'scripts/services/amplipi-firstboot-password.sh',
+            'to': '/usr/local/bin/amplipi-firstboot-password.sh',
+            'sudo': 'true',
+          },
+          {
+            'from': 'scripts/services/amplipi-firstboot-password.service',
+            'to': '/etc/systemd/system/amplipi-firstboot-password.service',
+            'sudo': 'true',
+          },
+        ],
+        'script': [
+            'sudo chmod +x /usr/local/bin/amplipi-firstboot-password.sh',
+            'sudo chmod 444 /etc/systemd/system/amplipi-firstboot-password.service',
+            'sudo systemctl enable amplipi-firstboot-password.service',
+        ],
     },
     'support_tunnel': {
         'apt': [
@@ -371,15 +422,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             '  sudo ln -s /data/lms /var/lib/squeezeboxserver',
             '  [ "$LMS_WAS_ACTIVE" = "active" ] && sudo systemctl start lyrionmusicserver',
             'fi',
-            # squeezeboxserver is a system user created by this .deb's postinst (adduser --system)
-            # on every install, and gets whatever UID happens to be free at the time - not a fixed
-            # number the way the pi user's UID is. /data/lms's ownership is stamped with whatever
-            # UID that was on the slot that migrated it, so a *different* slot (or a future
-            # reinstall) can easily get a different UID for the same username, silently leaving
-            # /data/lms owned by an unrelated user and making lyrionmusicserver fail to write its
-            # own logs/cache - it exits quickly with no error output, which looks like nothing
-            # happened rather than a permissions failure. Re-asserting ownership by name (not
-            # relying on the stored numeric UID staying correct) every deploy self-heals this.
+            # squeezeboxserver's UID isn't fixed the way the pi user's is - adduser --system
+            # assigns whatever's free at install time, so a different slot or reinstall can end up
+            # with a different UID than /data/lms's ownership was stamped with, silently leaving it
+            # owned by an unrelated user (lyrionmusicserver then fails to write logs/cache with no
+            # error output). Re-asserting ownership by name every deploy self-heals this.
             'sudo chown -R squeezeboxserver:nogroup /data/lms',
             'sudo systemctl stop squeezelite',
             'sudo systemctl disable squeezelite',
@@ -399,9 +446,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 'gstreamer1.0-plugins-good', 'gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly',
                 'gstreamer1.0-libav', 'gstreamer1.0-alsa', 'git'],
         'script': [
-            # Same unguarded-rebuild issue as bluealsa above: this used to re-run autogen/configure/
-            # make on every single deploy regardless of whether anything had changed, even when the
-            # repo already existed - skip the whole thing once gmediarender is actually installed.
+            # Skip the build once gmediarender is already installed, to avoid rebuilding from
+            # source on every deploy.
             'if [ ! -e /usr/local/bin/gmediarender ]; then',
             'if [ ! -d "gmrender-resurrect" ] ; then',
             '  git clone https://github.com/hzeller/gmrender-resurrect.git gmrender-resurrect',
@@ -441,9 +487,8 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 'libglib2.0-dev', 'libsbc-dev'],
         'script': [
 
-            # Install bluealsa from git - unlike the SBC/nqptp builds below, this had no guard at
-            # all, so every deploy that touched 'bluetooth' re-cloned and rebuilt the whole
-            # project from scratch (autoreconf + full C build) even when nothing had changed.
+            # Skip the bluealsa build once already installed, to avoid a full re-clone/rebuild on
+            # every deploy.
             'if [ ! -e /usr/bin/bluealsad ]; then',
             'echo installing bluealsa from source',
             'git clone https://github.com/arkq/bluez-alsa',
@@ -492,21 +537,16 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo systemctl enable bluealsa',
             'sudo systemctl enable bluetooth_agent',
 
-            # BlueZ stores paired-device link keys under /var/lib/bluetooth/<adapter-mac>/<device-mac>/info
-            # on the OS root partition, so - like LMS's prefs/cache and the SSH host keys above - none
-            # of it would survive an OTA slot swap. bluetooth_agent auto-pairs any device that connects
-            # (NoInputNoOutput, no user confirmation), so losing this on every update means every
-            # previously-connected phone/speaker silently fails to reconnect and has to be forgotten and
-            # re-paired by the user.
+            # BlueZ stores paired-device link keys under /var/lib/bluetooth on the OS root
+            # partition, so none of it survives an OTA slot swap - losing it means every
+            # previously-connected device (bluetooth_agent auto-pairs with no confirmation) has to
+            # be forgotten and re-paired.
             #
-            # Unlike LMS/SSH, a plain symlink doesn't work here: bluetooth.service ships with
-            # ProtectSystem=strict + StateDirectory=bluetooth, systemd's own sandboxed-state mechanism -
-            # it expects /var/lib/bluetooth to be a real directory it manages itself, and fails outright
-            # ("Failed to set up special execution directory... No such file or directory") if it finds a
-            # symlink there instead (confirmed live - this used to be a plain symlink here and broke
-            # bluetooth.service on every boot). BindPaths= is systemd's own mechanism for punching a hole
-            # through ProtectSystem=strict for exactly this case, so a drop-in that clears StateDirectory
-            # and bind-mounts /data/bluetooth over /var/lib/bluetooth is used instead.
+            # A plain symlink doesn't work here: bluetooth.service's ProtectSystem=strict expects
+            # /var/lib/bluetooth to be a real directory it manages itself via StateDirectory=, and
+            # fails outright if it finds a symlink there instead. BindPaths= is systemd's own
+            # mechanism for punching a hole through ProtectSystem=strict, so a drop-in that clears
+            # StateDirectory and bind-mounts /data/bluetooth over /var/lib/bluetooth is used instead.
             'BT_WAS_ACTIVE=$(systemctl is-active bluetooth 2>/dev/null || true)',
             'sudo systemctl stop bluetooth 2>/dev/null',
             # migrate any real pairing data (e.g. the very first install) before it's covered by the
@@ -515,7 +555,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             '  sudo mkdir -p /data/bluetooth',
             '  sudo cp -a /var/lib/bluetooth/. /data/bluetooth/ 2>/dev/null || true',
             'fi',
-            # undo an earlier (broken) version of this fix that symlinked this path directly
+            # Remove /var/lib/bluetooth if it's a leftover symlink - BindPaths= below needs a real directory there
             'if [ -L /var/lib/bluetooth ]; then sudo rm -f /var/lib/bluetooth; fi',
             'sudo mkdir -p /var/lib/bluetooth /data/bluetooth',
             'sudo mkdir -p /etc/systemd/system/bluetooth.service.d',
@@ -525,6 +565,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             # since this is the last line - use an if so a fresh install (nothing was active
             # before) doesn't get reported as a failed os_dep install
             'if [ "$BT_WAS_ACTIVE" = "active" ]; then sudo systemctl start bluetooth; fi',
+            # bluealsa Requires=bluetooth.service, so the stop above cascaded into stopping it too,
+            # but systemd doesn't cascade the restart back - bluetooth_agent self-recovers via its
+            # own Restart=always, but bluealsa has no restart policy and would otherwise sit dead
+            # (no Bluetooth audio at all) until the next reboot or a manual `systemctl start bluealsa`.
+            'if [ "$BT_WAS_ACTIVE" = "active" ]; then sudo systemctl start bluealsa; fi',
         ]
     }
 }
@@ -655,10 +700,22 @@ class Task:
 
 def _setup_loopbacks(base_dir) -> List[Task]:
   """ Configure ALSA loopbacks using snd_aloop kernel module """
-  return [Task('copy loopback module configuration', multiargs=[
+  tasks = [Task('copy loopback module configuration', multiargs=[
       f'sudo cp {base_dir}/config/modules.conf /etc/modules'.split(),
       f'sudo cp {base_dir}/config/sound.conf /etc/modprobe.d/sound.conf'.split(),
   ]).run()]
+
+  # /etc/modules is only read by systemd-modules-load.service once, early in boot, so writing it
+  # here has no effect on the currently running kernel - on a box where snd_aloop wasn't already
+  # loaded (e.g. a freshly flashed golden slot), amplipi.service starts immediately after and its
+  # alsaloop subprocesses crash-loop trying to open loopback devices that don't exist yet, until
+  # the next reboot. Reload the module now so this run's config takes effect immediately instead.
+  # The rmmod is expected to fail (and is harmless) when the module isn't loaded yet or is already
+  # loaded with unchanged params; either way the following modprobe leaves it loaded correctly.
+  tasks += [Task('load snd_aloop module',
+                  args='sudo rmmod snd_aloop 2>/dev/null; sudo modprobe snd_aloop',
+                  shell=True).run()]
+  return tasks
 
 
 def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter: List[str] = []) -> List[Task]:
@@ -686,33 +743,26 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
                           ['sudo', 'sed', '-i', 's/^MODULES=.*/MODULES=most/', '/etc/initramfs-tools/initramfs.conf']).run()])
 
   if env['is_amplipi']:
-    # SSH host keys live on /data (survive OS updates, give each unit a stable identity across
-    # A/B slot swaps) with /etc/ssh/ssh_host_* symlinked to them - same real-content-on-/data
-    # pattern as the LMS data migration below. This used to only live in build_golden_slot's own
-    # bash logic, which meant a plain deploy (like this one) never set it up on its own - doing it
-    # here too closes that gap. Guarded on -L so repeat runs are a no-op once already symlinked.
-    # If real keys already exist locally (e.g. this box's first time running this step) they're
-    # moved to /data rather than discarded, so existing known_hosts entries for it stay valid.
-    tasks += print_progress([Task("set up SSH host key symlinks to /data",
-                            args='sudo mkdir -p /data/ssh; '
-                            'if [ ! -L /etc/ssh/ssh_host_ecdsa_key ]; then '
-                            '  for key in ssh_host_ecdsa_key ssh_host_ecdsa_key.pub ssh_host_ed25519_key ssh_host_ed25519_key.pub ssh_host_rsa_key ssh_host_rsa_key.pub; do '
-                            '    if [ -e "/etc/ssh/$key" ] && [ ! -e "/data/ssh/$key" ]; then sudo mv "/etc/ssh/$key" "/data/ssh/$key"; else sudo rm -f "/etc/ssh/$key"; fi; '
-                            '    sudo ln -s "/data/ssh/$key" "/etc/ssh/$key"; '
-                            '  done; '
-                            'fi',
-                            shell=True).run()])
-
     # Raspberry Pi OS's first-boot key regen (regenerate_ssh_host_keys.service) deletes whatever's
     # at /etc/ssh/ssh_host_* and calls ssh-keygen -A directly on the root the moment a genuinely
-    # fresh slot boots for the first time - unlinking the symlinks above before they ever take
-    # effect and bypassing /data entirely. build_golden_slot masks this before a fresh root ever
-    # boots (the real fix, since by the time this deploy step runs that first boot has already
-    # happened); masking it again here is just defensive for any box provisioned some other way.
-    # We already give each real shipped unit a unique identity deliberately via scripts/cleanup,
-    # so this service is redundant with, and fights, that.
+    # fresh slot boots for the first time - unlinking the /data symlinks set up later in this
+    # function before they ever take effect and bypassing /data entirely. This fights the per-unit
+    # identity scripts/cleanup gives each shipped unit, so it needs to be disabled.
+    #
+    # Masking alone isn't enough: raspberrypi-sys-mods's own postinst unconditionally unmasks and
+    # restarts this service on every upgrade, which happens during dist-upgrade below and races
+    # openssh-server's own postinst, also generating host keys in the same transaction - both
+    # deleting/writing the same files concurrently, which can fail openssh-server's config step. A
+    # drop-in override survives being unmasked/re-enabled (only the mask/enablement symlinks are
+    # touched, not drop-in content) by replacing what the service runs with a no-op.
     tasks += print_progress([Task("mask regenerate_ssh_host_keys.service",
                             ['sudo', 'systemctl', 'mask', 'regenerate_ssh_host_keys']).run()])
+    tasks += print_progress([Task("neuter regenerate_ssh_host_keys.service via override",
+                            args='sudo mkdir -p /etc/systemd/system/regenerate_ssh_host_keys.service.d; '
+                            "printf '[Service]\\nExecStartPre=\\nExecStart=\\nExecStart=/bin/true\\n' "
+                            '| sudo tee /etc/systemd/system/regenerate_ssh_host_keys.service.d/override.conf >/dev/null; '
+                            'sudo systemctl daemon-reload',
+                            shell=True).run()])
 
   # Comment out deb http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free rpi from /etc/apt/sources.list to avoid hitting up a now empty apt source
   tasks += print_progress([Task('Deactivate apt updates for outdated OS',
@@ -722,6 +772,18 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
                                 'fi',
                                 shell=True
                                 ).run()])
+
+  # apt-daily(-upgrade).timer can grab the dpkg lock mid-deploy; stop the timers (not the
+  # services, so one already mid-transaction can still finish safely) and wait out any in-flight
+  # transaction (5 min cap) before proceeding.
+  tasks += print_progress([Task('wait for any concurrent apt/dpkg activity to clear',
+                                args='sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true; '
+                                'for i in $(seq 1 60); do '
+                                '  sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break; '
+                                '  echo "dpkg lock held by another process, waiting... ($i/60)"; '
+                                '  sleep 5; '
+                                'done',
+                                shell=True).run()])
 
   # TODO: add extra apt repos
   # find latest apt packages. --allow-releaseinfo-change automatically allows the following change:
@@ -738,9 +800,28 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
   # on a TTY nobody's watching, with zero output to suggest it was even still doing anything.
   # stream=True on top of that so this step's output shows up live instead of being fully
   # buffered until it finishes - a slow-but-working run should be distinguishable from a hung one.
+  #
+  # openssh-server's postinst can fail to finish configuring during dist-upgrade on a freshly-built
+  # slot without actually breaking the already-running sshd (a dpkg bookkeeping problem, not a loss
+  # of SSH access) - rebooting to retry is unsafe here, so tolerate this if dpkg reports ONLY
+  # openssh-server/ssh left broken; anything else is a real failure.
   tasks += print_progress([Task('upgrade debian packages',
-                          'sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --assume-yes'.split(),
-                          stream=True).run()])
+                          'sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --assume-yes; rc=$?; '
+                          'if [ $rc -ne 0 ]; then '
+                          '  broken=$(dpkg -l | awk \'$1 ~ /F$/ {print $2}\' | sed "s/:.*//" | sort -u); '
+                          '  other_broken=$(echo "$broken" | grep -vE "^(openssh-server|ssh)$" || true); '
+                          '  if [ -n "$broken" ] && [ -z "$other_broken" ]; then '
+                          '    echo "dist-upgrade failed, but only openssh-server/ssh are left unconfigured - the"; '
+                          '    echo "already-running sshd keeps working regardless (confirmed: we are running this"; '
+                          '    echo "very command over it). Treating this as tolerable and continuing rather than"; '
+                          '    echo "aborting the whole deploy over a known, isolated dpkg bookkeeping issue."; '
+                          '    exit 0; '
+                          '  fi; '
+                          '  echo "dist-upgrade failed with packages other than openssh-server/ssh also broken -"; '
+                          '  echo "treating this as a real failure: $broken"; '
+                          '  exit $rc; '
+                          'fi',
+                          shell=True, stream=True).run()])
 
   # organize stuff to install
   packages = set()
@@ -839,8 +920,14 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
                           shell=True).run()])
 
   # install debian packages
+  # DEBIAN_FRONTEND=noninteractive for the same reason the dist-upgrade step above needs it - a
+  # package's postinst/preinst debconf prompt (--assume-yes only covers apt's own confirmations,
+  # not those) would otherwise hang indefinitely waiting on a TTY nobody's watching, with zero
+  # output to suggest it's still doing anything. More likely to actually bite here than on an
+  # incremental update, too - a from-scratch install (e.g. via build_golden_slot) is installing
+  # every package's postinst for the first time, not mostly no-op-ing against what's already there.
   tasks += print_progress([Task('install debian packages',
-                          'sudo apt-get install -y'.split() + list(packages)).run()])
+                          'sudo DEBIAN_FRONTEND=noninteractive apt-get install -y'.split() + list(packages)).run()])
 
   # Run scripts
   for dep, script in scripts.items():
@@ -858,6 +945,26 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
     tasks += print_progress(
         [Task(f'remove {dep} temporary script', args=clean, wd=env['base_dir']).run()])
 
+  if env['is_amplipi']:
+    # SSH host keys live on /data (survive OS updates, give each unit a stable identity across
+    # A/B slot swaps) with /etc/ssh/ssh_host_* symlinked to them. Guarded on -L so repeat runs are
+    # a no-op once already symlinked; real keys already on disk are moved to /data rather than
+    # discarded, so existing known_hosts entries stay valid.
+    #
+    # Placed after all apt/dpkg activity, not before: openssh-server's postinst regenerates host
+    # keys during dist-upgrade, and writing through the /data symlink while /data is transiently
+    # unavailable (a different package's postinst earlier in the same transaction can leave it so)
+    # aborts the whole dpkg transaction instead of failing quietly.
+    tasks += print_progress([Task("set up SSH host key symlinks to /data",
+                            args='sudo mkdir -p /data/ssh; '
+                            'if [ ! -L /etc/ssh/ssh_host_ecdsa_key ]; then '
+                            '  for key in ssh_host_ecdsa_key ssh_host_ecdsa_key.pub ssh_host_ed25519_key ssh_host_ed25519_key.pub ssh_host_rsa_key ssh_host_rsa_key.pub; do '
+                            '    if [ -e "/etc/ssh/$key" ] && [ ! -e "/data/ssh/$key" ]; then sudo mv "/etc/ssh/$key" "/data/ssh/$key"; else sudo rm -f "/etc/ssh/$key"; fi; '
+                            '    sudo ln -s "/data/ssh/$key" "/etc/ssh/$key"; '
+                            '  done; '
+                            'fi',
+                            shell=True).run()])
+
   # cleanup
   sp_check_tasks, sp_active = _service_status('shairport-sync', system=True)
   tasks += sp_check_tasks
@@ -868,6 +975,14 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
 
   tasks += print_progress([Task(f"remount {_boot_firmware} ro",
                           ['sudo', 'mount', '-o', 'remount,ro', _boot_firmware]).run()])
+
+  # Restore the timers stopped above (wait for any concurrent apt/dpkg activity to clear) - a
+  # runtime-only stop, not persisted, so this normally isn't even needed (a reboot brings them
+  # back on its own, and install() always ends in one) but this function doesn't control whether
+  # its caller actually reboots afterward, so restart explicitly rather than assume.
+  tasks += print_progress([Task('restore apt-daily timers',
+                          args='sudo systemctl start apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true',
+                          shell=True).run()])
 
   return tasks
 
@@ -916,17 +1031,48 @@ def _setup_tmpfs(config_dir, env):
   """ Adds tmpfs entries used by AmpliPi to /etc/fstab """
   # Warning: these hide the existing filesystem,
   # if anything is already present at the path created.
-  tmpfs_opts = 'defaults,noatime,uid=pi,gid=pi,size=100M'
+  # nofail: these paths live under /data. Without nofail, a delayed or failed /data mount would
+  # take this mount down with it, and the whole boot into emergency mode (no networking).
+  tmpfs_opts = 'defaults,noatime,uid=pi,gid=pi,size=100M,nofail'
   conf_entry = f'amplipi/config {config_dir}/srcs tmpfs {tmpfs_opts} 0 0'
   web_entry = f'amplipi/web {config_dir}/web/generated tmpfs {tmpfs_opts} 0 0'
   args = [
       'sudo sed -i "/^amplipi/d" /etc/fstab',
       f'echo {conf_entry} | sudo tee -a /etc/fstab',
       f'echo {web_entry} | sudo tee -a /etc/fstab',
+      # /data can go unmounted right around here on a freshly-built slot (most likely a udev event
+      # backlog flushing during dist-upgrade's kernel/udev changes). A plain mount can still fail
+      # afterward: the PARTUUID symlink for this partition, or even the device node itself, can be
+      # transiently gone. Re-trigger udev, wait for the device node, then mount by raw device path
+      # (p7 on this A/B scheme) rather than relying on PARTUUID resolution.
+      'if ! mountpoint -q /data; then '
+      '  echo "recover /data 1: udevadm trigger"; sudo udevadm trigger --settle /dev/mmcblk0 2>&1 || true; '
+      '  echo "recover /data 2: waiting for device node"; '
+      '  for i in $(seq 1 20); do test -b /dev/mmcblk0p7 && break; sleep 0.5; done; '
+      '  ls -la /dev/mmcblk0p7 2>&1; '
+      '  echo "recover /data 3: mount /dev/mmcblk0p7 /data"; sudo mount /dev/mmcblk0p7 /data 2>&1; '
+      '  mountpoint -q /data && echo "recover /data 3: worked" || echo "recover /data 3: failed"; '
+      '  if ! mountpoint -q /data; then '
+      '    echo "recover /data 4: mount -a"; sudo mount -a 2>&1; '
+      '    mountpoint -q /data && echo "recover /data 4: worked" || echo "recover /data 4: failed"; '
+      '  fi; '
+      'fi; true',
       f'mkdir -p {config_dir}/srcs {config_dir}/web/generated',
   ]
   if not env['is_ci']:
-    args.append(f'sudo mount -a')
+    # Not `|| true` alone: `mount -a` can report "can't find PARTUUID=..." for /data's own fstab
+    # entry even when /data is already mounted by device path, unrelated to whether the two tmpfs
+    # sub-mounts below it actually need mounting. Check those directly instead of trusting
+    # mount -a's overall exit code (non-fatal either way if they didn't mount: config/web writes
+    # just land on the real partition instead of RAM-backed scratch space).
+    args.append(
+        'sudo mount -a 2>&1; '
+        f'if mountpoint -q {config_dir}/srcs && mountpoint -q {config_dir}/web/generated; then '
+        '  echo "tmpfs sub-mounts OK"; '
+        'else '
+        '  echo "tmpfs sub-mounts not active (non-fatal - config/web writes will land on /data directly)"; '
+        'fi; true'
+    )
 
   tasks = [Task('Add tmpfs entries to fstab.', multiargs=args, shell=True).run()]
   return tasks
@@ -1107,11 +1253,13 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
     tasks += task_check
     if test_url and running:
       task = None
-      for _ in range(60):  # retry for 30 seconds, giving the server time to start
+      # 120s: a freshly-built slot's first launch of a service (cold venv, no bytecode cache,
+      # first-time hardware/zone discovery for 'amplipi' specifically) can genuinely take this long.
+      for _ in range(60):  # retry for 120 seconds, giving the server time to start
         task = _check_url(test_url)
         if task.success:
           break
-        time.sleep(0.5)
+        time.sleep(2)
       tasks.append(task)
     elif name == 'amplipi':
       tasks[-1].output += "\ntry checking this service failure using 'scripts/run_debug_webserver' on the system"
@@ -1404,39 +1552,15 @@ def _check_password(env: dict, progress) -> List[Task]:
   return [task]
 
 
-def _fw_ver_from_filename(name: str) -> int:
-  """ Input: .bin filename, with the pattern 'preamp_X.Y.bin'.
-      X = major version, Y = minor version.
-      The result is a single integer 256*X + Y
-  """
-  fw_match = re.search(r'preamp_(\d+)\.(\d+)', name)
-  if fw_match is not None and len(fw_match.groups()) >= 2:
-    major = int(fw_match[1])
-    minor = int(fw_match[2])
-    return (major << 8) + minor
-  # by default return 0 so non-standard file names won't be considered
-  return 0
-
-
 def _update_firmware(env: dict, progress) -> List[Task]:
-  """ If on AmpliPi with preamp hardware, update to the latest firmware """
+  """ If on AmpliPi with preamp hardware, update to the latest firmware. The same
+  scripts/flash_latest_firmware also runs automatically after every OTA update - kept here as one
+  shared definition of "latest" so the manual and automatic paths can't disagree. """
   task = Task('Flash latest preamp firmware')
   if env['is_amplipi'] and not env['is_streamer']:
-    latest_ver = 0
-    latest_file = ''
-    for f in glob.glob(f"{env['base_dir']}/fw/bin/*.bin"):
-      ver = _fw_ver_from_filename(f)
-      if ver > latest_ver:
-        latest_ver = ver
-        latest_file = f
-    if latest_ver > 0:
-      os.chdir(env['base_dir'])
-      task.margs = [
-          f'bash scripts/program_firmware {latest_file}'.split()]
-      task.run()
-    else:
-      task.output = f"Couldn't find any firmware in {env['base_dir']}/fw/bin"
-      task.success = False
+    os.chdir(env['base_dir'])
+    task.margs = [['bash', 'scripts/flash_latest_firmware']]
+    task.run()
   else:
     task.output = 'Not on AmpliPi with Preamp - No firmware update necessary'
     task.success = True
@@ -1536,6 +1660,14 @@ def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_
   env = _check_and_setup_platform(development, ci_mode)
   if not env['platform_supported'] and not development:
     tasks[0].output = f'untested platform: {platform.platform()}. Please fix this script and make a PR to github.com/micro-nova/AmpliPi'
+  elif env['is_ci'] and env['is_amplipi']:
+    tasks[0].output = (
+        '--ci-mode was passed on what looks like real AmpliPi hardware (hostname contains "amplipi"). '
+        'CI mode installs systemd units to ~/.config/systemd/user instead of /etc/systemd/system, which '
+        'silently duplicates every service alongside any existing system-level install - both copies then '
+        'fight over port 80 and the I2C bus forever. --ci-mode is meant for rootless CI containers only; '
+        'if this really is a CI environment, rename the host so it does not contain "amplipi".'
+    )
   else:
     tasks[0].output = str(env)
     tasks[0].success = True
@@ -1545,6 +1677,33 @@ def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_
   tasks += fix_file_props(env, progress)
   if failed():
     return False
+  if env['is_amplipi'] and not env['is_ci']:
+    # /data can go unmounted mid-deploy (most likely from a udev event backlog during
+    # dist-upgrade's kernel/udev package changes) and not remount itself for the rest of that boot
+    # session. A plain remount can still fail afterward: the PARTUUID symlink for this partition,
+    # or even the device node itself, can be transiently gone. Re-trigger udev, wait for the
+    # device node to reappear, then mount by raw device path (p7 on this A/B partition scheme)
+    # rather than relying on PARTUUID resolution. Placed before the first thing in this function
+    # that touches /data, since by this point in a retry it may already be broken.
+    ensure_data = Task("ensure /data is mounted",
+                        args='if mountpoint -q /data; then '
+                        '  echo "/data already mounted"; '
+                        'else '
+                        '  echo "recover /data 1: udevadm trigger"; sudo udevadm trigger --settle /dev/mmcblk0 2>&1 || true; '
+                        '  echo "recover /data 2: waiting for device node"; '
+                        '  for i in $(seq 1 20); do test -b /dev/mmcblk0p7 && break; sleep 0.5; done; '
+                        '  ls -la /dev/mmcblk0p7 2>&1; '
+                        '  echo "recover /data 3: mount /dev/mmcblk0p7 /data"; sudo mount /dev/mmcblk0p7 /data 2>&1; '
+                        '  mountpoint -q /data && echo "recover /data 3: worked" || echo "recover /data 3: failed"; '
+                        '  if ! mountpoint -q /data; then '
+                        '    echo "recover /data 4: mount -a"; sudo mount -a 2>&1; '
+                        '    mountpoint -q /data && echo "recover /data 4: worked" || echo "recover /data 4: failed"; '
+                        '  fi; '
+                        'fi; '
+                        'mountpoint -q /data',
+                        shell=True).run()
+    progress([ensure_data])
+    tasks.append(ensure_data)
   if not env['is_ci']:
     pre_backup = _create_backup(env, "_pre-fw-upgrade")
     progress(pre_backup)
@@ -1627,6 +1786,10 @@ def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_
   if restart_updater:
     # Reboot OS to finish potential kernel upgrade, also restarting the updater
     progress([Task('Reboot os', success=True)])
+    # Only reachable once every prior step above has actually succeeded. deploy greps its captured
+    # output for this exact string to tell a genuine "install() finished, about to reboot" from a
+    # partial failure that returned early without ever reaching this point.
+    print('AMPLIPI_INSTALL_COMPLETE_REBOOTING')
     subprocess.run('sudo reboot now', shell=True, check=False)
     # updater will not return from here
   if web and not restart_updater:
