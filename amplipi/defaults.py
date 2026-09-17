@@ -133,7 +133,8 @@ DEFAULT_LMS_CONFIG = {  # This is the system state response that will come back 
   "groups": [
   ],
   "presets": [{
-    # NOTE: additional zones are added automatically to this preset"id": MUTE_ALL_ID,
+    # NOTE: additional zones are added automatically to this preset
+    "id": MUTE_ALL_ID,
     "name": "Mute All",
     "state": {
       "zones": [
