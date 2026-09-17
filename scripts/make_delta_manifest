@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Generate an AmpliPi OTA delta-release manifest.
+
+For a release that only changes AmpliPi's own code - never packages, services, OS config, or the
+frontend, all of which still require a full image (see make_image_manifest). Much smaller than
+that counterpart: there's no image to capture or checksum, just a manifest naming a compatibility
+floor (min_base_version)."""
+
+import argparse
+import json
+import sys
+
+from packaging.version import parse as parse_version, InvalidVersion
+
+
+def main():
+  parser = argparse.ArgumentParser(description='Generate an AmpliPi OTA delta-release manifest')
+  parser.add_argument('version', help="this release's own version (e.g. 0.4.12) - must match its git tag")
+  parser.add_argument('min_base_version',
+                       help='oldest version this delta is known to still be compatible with. NOT simply '
+                            '"the previous release" - it\'s a floor on the *system-level* (package/service/OS) '
+                            'state the delta\'s code assumes, since the delta itself never touches any of that. '
+                            'For most deltas this is just the last full-image release, since nothing at that '
+                            'level has changed since. A device below this floor is refused by the updater and '
+                            'falls back to a full image instead - so setting it too low risks applying this '
+                            'delta somewhere it doesn\'t belong, and too high needlessly excludes devices that '
+                            'would have been fine.')
+  parser.add_argument('--output', '-o', default='manifest.json', help='Output path (default: manifest.json)')
+  args = parser.parse_args()
+
+  for label, value in (('version', args.version), ('min_base_version', args.min_base_version)):
+    try:
+      parse_version(value)
+    except InvalidVersion:
+      print(f'Error: {label} {value!r} is not a valid version string', file=sys.stderr)
+      sys.exit(1)
+  if parse_version(args.min_base_version) > parse_version(args.version):
+    print(f'Error: min_base_version ({args.min_base_version}) is newer than version ({args.version}) '
+          '- no device could ever satisfy that floor', file=sys.stderr)
+    sys.exit(1)
+
+  manifest = {
+    'version': args.version,
+    'type': 'delta',
+    'min_base_version': args.min_base_version,
+  }
+
+  with open(args.output, 'w') as f:
+    json.dump(manifest, f, indent=2)
+    f.write('\n')
+
+  print(f'Wrote {args.output}')
+  print(f'Remember: attach {args.output} to the GitHub release for tag {args.version} - no image assets needed for a delta release.')
+
+
+if __name__ == '__main__':
+  main()

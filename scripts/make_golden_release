@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+# End-to-end full-image release pipeline, driven entirely over SSH (build_golden_slot --remote
+# mode - no USB/rpiboot involved): rebuild an already-running unit's inactive slot from a clean
+# stock image, deploy AmpliPi onto it, capture it as OTA images, and generate its manifest.
+#
+# Why this reboots the target TWICE, not once: make_images/make_update always capture the
+# *inactive*, unmounted slot - imaging a live, mounted, currently-booted root filesystem risks a
+# corrupt capture, so the slot has to be inactive again at capture time. But deploy/configure.py
+# can only install onto whatever's currently *active* (they run against the live, booted OS, not
+# an offline mount) - so the freshly-built slot has to be made active first just to deploy onto
+# it, then switched back off before it can be safely imaged.
+#
+# Slot switches here are direct autoboot.txt edits + a plain reboot - deliberately NOT the normal
+# tryboot/update-pending path, since that triggers amplipi-tryboot-verify.sh's health check, which
+# would fail (and revert) against a freshly-built slot with no AmpliPi installed on it yet. This
+# is a controlled build process, not a field update - there's no health/rollback concern here that
+# the operator running this script isn't already accountable for directly.
+#
+# What this does NOT do: attach the result to a GitHub release (see NEW_RELEASE.md, still a manual
+# step). The target ends back on its original slot, not the freshly built one - capturing requires
+# the new slot to be inactive again first (see above), and switching to it a third time afterward
+# would just be an extra reboot for no safety benefit; the original slot was already known-good,
+# unlike the brand new one, which hasn't run outside this script yet.
+
+set -euo pipefail
+
+helptext="Usage: make_golden_release [OPTION]... USER@HOST
+Rebuild USER@HOST's inactive slot from a clean stock image, deploy AmpliPi onto it, capture it,
+and generate its OTA manifest - build_golden_slot + deploy + make_images + make_image_manifest,
+tied together.
+
+  --hostname NAME:    Passed through to build_golden_slot (default: amplipi)
+  --img FILE.img:     Passed through to build_golden_slot (use this stock image instead of downloading one)
+  --output-dir, -o:   Where to write the captured images + manifest (default: current directory)
+  --no-boot:          Skip imaging the boot partition (passed through to make_images)
+  --interactive:      Ask for confirmation before rebuilding the slot, like build_golden_slot
+                       --remote does by default on its own. This script's whole point is running
+                       unattended, so the default here is the inverse of build_golden_slot's own -
+                       assume yes unless you specifically ask to be asked.
+  --debug:            Print all commands
+  -h, --help:         Print this help text
+"
+
+hostname='amplipi'
+img_file=''
+out_dir='.'
+no_boot=false
+assume_yes=true
+debug=false
+target=''
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --hostname) if (($# > 1)); then hostname=$2; shift; else echo "--hostname requires a value"; exit 1; fi ;;
+    --img) if (($# > 1)); then img_file=$2; shift; else echo "--img requires a value"; exit 1; fi ;;
+    --output-dir|-o) if (($# > 1)); then out_dir=$2; shift; else echo "--output-dir requires a value"; exit 1; fi ;;
+    --no-boot) no_boot=true ;;
+    --interactive) assume_yes=false ;;
+    --yes) : ;;  # kept as a harmless no-op - already the default, but accepted so old habits don't break
+    --debug) debug=true ;;
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *)
+      if [[ -z "$target" ]]; then target=$1; else printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1; fi
+      ;;
+  esac
+  shift
+done
+
+[[ -n "$target" ]] || { printf "Missing USER@HOST\n\n%s" "$helptext"; exit 1; }
+
+$debug && set -x
+
+scripts_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+out_dir="$(realpath -m "$out_dir")"
+mkdir -p "$out_dir"
+
+# shellcheck source=modules/slot_switch.sh
+source "$scripts_dir/modules/slot_switch.sh"
+# shellcheck source=modules/ssh_password_shim.sh
+source "$scripts_dir/modules/ssh_password_shim.sh"
+
+# Shimming ssh/scp on PATH like this (rather than threading sshpass/-o flags through every
+# individual call) matters here specifically because build_golden_slot, deploy, and
+# make_images/make_image_manifest (the latter two Python, invoking ssh/rsync via subprocess,
+# which would never see a bash function override) all make their own separate ssh/scp/rsync-over-
+# ssh calls - none of them need to change to pick this up, they just see an ssh/scp earlier on
+# PATH than the real ones. Sets $_ssh_shim_dir - removed in on_exit below (see
+# modules/ssh_password_shim.sh for why this doesn't set its own EXIT trap).
+setup_ssh_password_shim "$target"
+
+# Set once slot detection below determines old_slot/new_slot, and true only for the window
+# between switching the target onto new_slot and successfully switching it back. See on_exit
+# below for why this matters.
+switched_to_new=false
+
+# root_part/boot_part/other_slot/clear_stale_host_key/wait_for_reboot/switch_active_slot all come
+# from modules/slot_switch.sh (sourced above) - shared with make_progenitor, which needs the
+# identical logic. They all operate against the $target global, already set by argument parsing above.
+
+# A failure between switching onto new_slot (step 2/5) and switching back (step 4/5) would
+# otherwise, under set -e, strand the target active on new_slot: freshly rebuilt but not fully
+# deployed. This script has no memory of which slot was actually known-good, so a naive retry
+# would treat new_slot as safe and rebuild the real old_slot from scratch, destroying it too.
+# Auto-reverting on any failure keeps every retry starting from the same known-good slot.
+on_exit() {
+  local exit_code=$?
+  if $switched_to_new; then
+    echo ""
+    echo "=== Failure detected - switching $target back to slot $old_slot (its original, known-good slot) so it isn't left stranded on incomplete slot $new_slot ==="
+    switch_active_slot "$(boot_part "$old_slot")" "$(boot_part "$new_slot")" \
+      || echo "Warning: auto-revert itself failed - $target may still be active on slot $new_slot. Check manually before retrying."
+  fi
+  rm -rf "$_ssh_shim_dir"
+  exit "$exit_code"
+}
+trap on_exit EXIT
+
+echo "=== Determining current active/inactive slot on $target ==="
+active_line=$(ssh "$target" "cat /proc/cmdline") || {
+  echo "Error: couldn't reach $target - check the host is up and the password entered above is correct."; exit 1; }
+if [[ "$active_line" =~ BOOT_SLOT=([AB]) ]]; then
+  old_slot="${BASH_REMATCH[1]}"
+else
+  echo "Error: couldn't determine active slot from $target's /proc/cmdline"; exit 1
+fi
+new_slot="$(other_slot "$old_slot")"
+echo "$target is on slot $old_slot. Slot $new_slot will be rebuilt, deployed onto, and captured."
+
+echo "=== 1/5: build_golden_slot --remote (rebuilding slot $new_slot from a clean stock image) ==="
+build_args=(--remote "$target" --hostname "$hostname")
+[[ -n "$img_file" ]] && build_args+=(--img "$img_file")
+$assume_yes && build_args+=(--yes)
+$debug && build_args+=(--debug)
+"$scripts_dir/build_golden_slot" "${build_args[@]}"
+
+echo "=== 2/5: Switching $target onto freshly-built slot $new_slot to deploy onto it ==="
+switch_active_slot "$(boot_part "$new_slot")" "$(boot_part "$old_slot")"
+switched_to_new=true
+
+echo "=== 3/5: Deploying AmpliPi onto slot $new_slot (now active) ==="
+# Not --batch: deploy's own key-auth check will fail (key trust isn't what we're relying on here)
+# and fall into its interactive ssh-copy-id prompt - but that prompt's own ssh/scp calls go
+# through the same password shim, so it's satisfied transparently, and as a side effect leaves
+# $target with real key trust installed for next time.
+#
+# </dev/null: this script is normally run from an actual, still-attached terminal (type the
+# password once, then walk away) - so deploy's own stdin would still look like a live TTY even
+# though nobody's watching it, and its "press any key to continue" prompt would block forever.
+# Detaching stdin here makes deploy's own [[ -t 0 ]] guard see it as non-interactive and skip it.
+#
+# One retry: deploy does a lot on a fresh slot (os-dep upgrades, building bluez-alsa from source,
+# etc.) over an unattended multi-hour run, and a transient blip in any one step (apt mirror
+# hiccup, a lock briefly held by something else) shouldn't sink the whole pipeline and force a
+# full rebuild-from-scratch retry when just re-running deploy against the same slot would do.
+deploy_ok=false
+for attempt in 1 2; do
+  # deploy has no stale-host-key handling of its own (it's a plain ssh/scp user, unlike this
+  # script). An os-deps upgrade pulling in kernel/initramfs packages can trigger an unattended
+  # unattended-upgrades reboot mid-deploy, independent of anything this script does - if that
+  # happens, the target's host key rotates (its own key hasn't been persisted to /data yet, since
+  # that's a later configure.py step this failure means it never reached) and every subsequent
+  # ssh/scp call, including the next deploy attempt, hits a hard "REMOTE HOST IDENTIFICATION HAS
+  # CHANGED" refusal instead of a clean retry. Clearing proactively before each attempt (not just
+  # the first) covers that without deploy needing to know anything about it.
+  clear_stale_host_key
+  if "$scripts_dir/deploy" "$target" --alsa --clean </dev/null; then
+    deploy_ok=true
+    break
+  fi
+  echo "deploy attempt $attempt/2 failed."
+  if ((attempt < 2)); then
+    # Deliberately NOT rebooting to retry: a reboot mid-aborted-dist-upgrade risks leaving the
+    # kernel/initramfs in a state that isn't safe to reboot against, and can leave the target
+    # unreachable entirely. Waiting and retrying deploy in place is the safe fallback.
+    echo "Waiting 30s before retrying deploy once..."
+    sleep 30
+  fi
+done
+$deploy_ok || { echo "Error: deploy failed twice in a row - not retrying further."; exit 1; }
+
+echo "=== 4/5: Switching back to slot $old_slot so slot $new_slot is safely inactive to capture ==="
+switch_active_slot "$(boot_part "$old_slot")" "$(boot_part "$new_slot")"
+switched_to_new=false
+
+echo "=== 5/5: Capturing slot $new_slot and generating its manifest ==="
+images_args=(--via "$target" -o "$out_dir")
+$no_boot && images_args+=(--no-boot)
+"$scripts_dir/make_images" "${images_args[@]}" "/dev/mmcblk0p$(root_part "$new_slot")" "/dev/mmcblk0p$(boot_part "$new_slot")"
+"$scripts_dir/make_image_manifest" -d "$out_dir"
+
+echo "
+Done. Captured slot $new_slot from $target into $out_dir/update/, manifest included.
+$target is back on slot $old_slot (its original slot) - slot $new_slot is the freshly built and
+deployed one, now sitting inactive with everything just captured from it.
+
+Next: attach $out_dir/update/*.img.xz and manifest.json to a GitHub release - see NEW_RELEASE.md.
+"

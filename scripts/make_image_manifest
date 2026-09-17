@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""Generate an AmpliPi OTA update manifest from root (and optionally boot) images.
+
+For a full-image release. See make_delta_manifest for the much smaller AmpliPi-code-only
+counterpart - this script is only for a release that ships new root/boot partition images.
+
+Doesn't know anything about hosting: root.img.xz/boot.img.xz get uploaded to our fileserver by
+hand, and each image entry's `url` field gets filled in by hand afterward too (see NEW_RELEASE.md)
+- ImageMetadata.url is a required field on the backend, but nothing here computes it, on purpose."""
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+CHUNK = 4 * 1024 * 1024
+
+
+def sha256_with_progress(path: str) -> str:
+  size = os.path.getsize(path)
+  h = hashlib.sha256()
+  done = 0
+  with open(path, 'rb') as f:
+    while chunk := f.read(CHUNK):
+      h.update(chunk)
+      done += len(chunk)
+      print(f'\r  {done / size * 100:.1f}%', end='', flush=True)
+  print()
+  return h.hexdigest()
+
+
+def get_version(toml_path: str) -> str:
+  pattern = re.compile(r'version\s*=\s*"(.*)"')
+  with open(toml_path) as f:
+    for line in f:
+      m = pattern.match(line)
+      if m:
+        return m.group(1)
+  return 'unknown'
+
+
+def image_entry(path: str) -> dict:
+  print(os.path.basename(path))
+  return {
+    'sha256': sha256_with_progress(path),
+    'size': os.path.getsize(path),
+    'url': 'FIXME - fill in after uploading to the fileserver, see NEW_RELEASE.md',
+  }
+
+
+def main():
+  parser = argparse.ArgumentParser(description='Generate AmpliPi OTA update manifest')
+  parser.add_argument('root', nargs='?',
+                       help='Path to root partition image. If omitted, defaults to <dir>/root.img.xz '
+                            '(i.e. make_images\' own default output), so the two can be chained with no args.')
+  parser.add_argument('boot', nargs='?', help='Path to boot partition image (optional)')
+  parser.add_argument('--dir', '-d', default='.',
+                       help='Directory to find default root/boot images in, when root is omitted (default: current directory)')
+  parser.add_argument('--output', '-o', help='Output path (default: manifest.json next to root image)')
+  parser.add_argument('--target', '-t', help='Send images and manifest to USER@HOST:/data/update/ after generation')
+  args = parser.parse_args()
+
+  def default_image_path(filename):
+    # A fresh loose file in <dir> (just written by make_images, e.g. via make_update chaining
+    # the two together) always takes priority over anything already sitting in <dir>/update/ -
+    # otherwise a stale previously-packaged image silently shadows a brand new capture instead of
+    # being replaced by it. Only fall back to the already-packaged copy (e.g. re-running
+    # make_image_manifest standalone after a prior run already moved everything into update/, so
+    # no loose file remains) when no loose file exists.
+    loose = os.path.join(args.dir, filename)
+    return loose if os.path.exists(loose) else os.path.join(args.dir, 'update', filename)
+
+  root = args.root or default_image_path('root.img.xz')
+  boot = args.boot
+  if boot is None and not args.root:
+    default_boot = default_image_path('boot.img.xz')
+    if os.path.exists(default_boot):
+      boot = default_boot
+
+  for label, path in [('root', root), ('boot', boot)]:
+    if path and not os.path.exists(path):
+      print(f'Error: {label} image not found: {path}', file=sys.stderr)
+      sys.exit(1)
+
+  # Package everything into a single update/ folder (mirroring /data/update on the target) rather
+  # than leaving images loose wherever they were passed in from - root_dir's basename is checked
+  # first so re-running against an already-packaged folder doesn't nest update/update/.
+  root_dir = os.path.dirname(os.path.abspath(root))
+  package_dir = root_dir if os.path.basename(root_dir) == 'update' else os.path.join(root_dir, 'update')
+  os.makedirs(package_dir, exist_ok=True)
+
+  def move_into_package(path, filename):
+    dest = os.path.join(package_dir, filename)
+    if os.path.abspath(path) == os.path.abspath(dest):
+      return dest
+    if os.path.exists(dest):
+      os.remove(dest)
+    shutil.move(path, dest)
+    return dest
+
+  root = move_into_package(root, 'root.img.xz')
+  if boot:
+    boot = move_into_package(boot, 'boot.img.xz')
+
+  script_dir = os.path.dirname(os.path.realpath(__file__))
+  toml_path = os.path.join(script_dir, '..', 'pyproject.toml')
+  version = get_version(toml_path)
+  output = args.output or os.path.join(package_dir, 'manifest.json')
+
+  manifest = {'version': version, 'type': 'full', 'root': image_entry(root)}
+  if boot:
+    manifest['boot'] = image_entry(boot)
+
+  with open(output, 'w') as f:
+    json.dump(manifest, f, indent=2)
+    f.write('\n')
+
+  print(f'\nWrote {output}')
+
+  if args.target:
+    transfers = [
+      (root,  'root.img.xz'),
+      (output,     'manifest.json'),
+    ]
+    if boot:
+      transfers.append((boot, 'boot.img.xz'))
+
+    # Keep our own copy of exactly what's being pushed, named by version so repeated pushes don't
+    # clobber each other - the working dir (-d/-o) gets reused/overwritten across runs, so without
+    # this the only copy of a given package would be whatever's on the target.
+    keep_dir = os.path.join(os.path.dirname(os.path.abspath(output)), f'kept-{version}')
+    os.makedirs(keep_dir, exist_ok=True)
+    print(f'\nKeeping a local copy in {keep_dir}/')
+    for src, dest in transfers:
+      dest_path = os.path.join(keep_dir, dest)
+      if os.path.abspath(src) == os.path.abspath(dest_path):
+        continue
+      if os.path.exists(dest_path):
+        os.remove(dest_path)
+      try:
+        os.link(src, dest_path)  # same filesystem - free, instant
+      except OSError:
+        shutil.copy2(src, dest_path)  # different filesystem - fall back to a real copy
+
+    print(f'\nReplacing {args.target}:/data/update/')
+    # Same deterministic, host-derived control path make_images uses for --via - when make_update
+    # chains the two together against the same host, this reuses that already-authenticated
+    # connection instead of prompting for a password again.
+    socket = f"/tmp/amplipi-ssh-ctl-{args.target.replace('@', '_at_').replace('.', '_')}"
+    ssh_opts = ['-o', f'ControlPath={socket}', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=60']
+    rsync_e = f'ssh -o ControlPath={socket} -o ControlMaster=auto -o ControlPersist=60'
+    # Wipe whatever's already in /data/update rather than overlaying onto it - otherwise a stale
+    # file from a previous package (e.g. a boot.img.xz left over from a with-boot build, when this
+    # one is --no-boot) would silently stick around alongside the new package.
+    subprocess.run(['ssh', *ssh_opts, args.target,
+                    'sudo rm -rf /data/update && sudo mkdir -p /data/update && sudo chown pi:pi /data/update'], check=True)
+
+    needed = sum(os.path.getsize(src) for src, _ in transfers)
+    avail_out = subprocess.run(['ssh', *ssh_opts, args.target, 'df -B1 --output=avail /data | tail -1'],
+                               capture_output=True, text=True, check=True).stdout.strip()
+    available = int(avail_out)
+    if available < needed:
+      print(f'Error: not enough space on /data — need {needed // 1024**2}MB, have {available // 1024**2}MB available', file=sys.stderr)
+      print('Clear /data/update/ on the target and retry.', file=sys.stderr)
+      sys.exit(1)
+
+    for src, dest in transfers:
+      subprocess.run(['rsync', '-ah', '--progress',
+                      '-e', rsync_e, src, f'{args.target}:/data/update/{dest}'], check=True)
+    subprocess.run(['ssh', '-O', 'exit', *ssh_opts, args.target], capture_output=True)
+
+
+if __name__ == '__main__':
+  main()

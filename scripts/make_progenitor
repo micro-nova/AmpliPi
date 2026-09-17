@@ -1,0 +1,382 @@
+#!/usr/bin/env bash
+# Build a pristine progenitor image - the starting point for every future unit, not a snapshot of
+# whatever's on some dev/test Pi's disk.
+#
+# Starts from an existing, already-correctly-partitioned known-good image (--bootstrap-img) rather
+# than repartitioning a blank disk from scratch - manual partitioning would work too, but a known-
+# good base image to dd already covers our needs just fine. dd a known-good baseline
+# (flash_bootstrap_image), migrate a fresh OS onto the inactive slot over SSH (build_golden_slot
+# --remote), activate it, deploy AmpliPi, wipe the old slot, and capture the result.
+#
+# Seven stages. Stages 1 and 6 need a physical USB/rpiboot reconnect; the rest talk over the
+# network. Each stage runs unattended once connected.
+#   1. rpiboot connect -> flash_bootstrap_image (dd the known-good baseline onto the target)
+#   2. power on normally -> wait for network -> pre-flight checks on the baseline unit
+#   3. build_golden_slot --remote (migrates a fresh Trixie rootfs onto the inactive slot, over SSH)
+#   4. Activate the fresh slot (direct autoboot.txt edit + plain reboot) so deploy can install onto it
+#   5. deploy --alsa --clean (installs AmpliPi onto the now-active fresh slot)
+#   6. Tryboot dress-rehearsal (exercises the real update-pending/verify/commit path on the fresh
+#      slot's own just-deployed services) + cleanup of anything that rehearsal leaves behind
+#   7. build_golden_slot --remote --format-only (wipes the now-stale old slot) -> rpiboot reconnect
+#      -> capture_disk_image (scrub, e2fsck, image, manifest)
+#
+# Every stage below calls a standalone script (flash_bootstrap_image, build_golden_slot, deploy,
+# capture_disk_image) that works perfectly well on its own outside this pipeline - this script
+# only exists to sequence them for the one specific "build a progenitor from scratch" case.
+
+set -euo pipefail
+
+helptext="Usage: make_progenitor [OPTION]...
+Build a pristine progenitor image: bootstrap from a known-good baseline, migrate a fresh slot,
+deploy AmpliPi, wipe the old slot, capture the disk.
+
+  --bootstrap-img FILE.img.xz: Known-good, already-correctly-partitioned baseline image to write
+                               onto the target via a single dd (e.g. the current field progenitor
+                               image). Defaults to \$HOME/progenitor.img.xz if that file exists;
+                               required otherwise.
+  --hostname NAME:             Hostname for the fresh slot, forwarded to build_golden_slot
+                                (default: amplipi)
+  --trixie-img FILE.img:       Use this stock Trixie image instead of downloading one, forwarded
+                                to build_golden_slot's --img for the migrate stage. Distinct from
+                                --bootstrap-img above.
+  --output-dir, -o DIR:        Output directory for the captured image, forwarded to
+                                capture_disk_image (default: current directory)
+  --start-stage N:             Skip ahead to stage N (1-7, default: 1) instead of starting from
+                                the beginning - for resuming after a hiccup that isn't this
+                                pipeline's fault (e.g. an mDNS collision, a network blip) without
+                                redoing already-completed stages. Slot detection always re-runs
+                                fresh regardless of N, so it's safe to resume any time after Stage
+                                1's bootstrap has actually completed and the target is reachable.
+  -h, --help:                  Print this help text
+"
+
+bootstrap_img=''
+hostname='amplipi'
+trixie_img=''
+out_dir='.'
+start_stage=1
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --bootstrap-img)
+      if (($# > 1)); then bootstrap_img=$2; shift; else echo "--bootstrap-img requires a value"; exit 1; fi
+      ;;
+    --hostname)
+      if (($# > 1)); then hostname=$2; shift; else echo "--hostname requires a value"; exit 1; fi
+      ;;
+    --trixie-img)
+      if (($# > 1)); then trixie_img=$2; shift; else echo "--trixie-img requires a value"; exit 1; fi
+      ;;
+    --output-dir|-o)
+      if (($# > 1)); then out_dir=$2; shift; else echo "--output-dir requires a value"; exit 1; fi
+      ;;
+    --start-stage)
+      if (($# > 1)); then start_stage=$2; shift; else echo "--start-stage requires a value"; exit 1; fi
+      ;;
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *) printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1 ;;
+  esac
+  shift
+done
+
+[[ "$start_stage" =~ ^[1-7]$ ]] || { echo "Error: --start-stage must be an integer from 1 to 7"; exit 1; }
+
+# Only needed if Stage 1 (the dd bootstrap) is actually going to run - resuming from a later
+# stage via --start-stage shouldn't demand this at all, since it won't be used.
+if ((start_stage <= 1)); then
+  # Default to the current field progenitor image if one's sitting in the usual place on this
+  # machine, so the common case (rebuilding the progenitor on the same machine that already has
+  # it) needs no flags - only override with --bootstrap-img when using a different baseline, or
+  # on a machine where it lives somewhere else.
+  default_bootstrap_img="$HOME/progenitor.img.xz"
+  if [[ -z "$bootstrap_img" && -f "$default_bootstrap_img" ]]; then
+    bootstrap_img="$default_bootstrap_img"
+    echo "No --bootstrap-img given - defaulting to $bootstrap_img"
+  fi
+  [[ -n "$bootstrap_img" ]] || { printf "Error: --bootstrap-img FILE.img.xz is required (no image found at %s).\n\n%s" "$default_bootstrap_img" "$helptext"; exit 1; }
+fi
+
+script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+target="pi@${hostname}.local"
+
+# shellcheck source=modules/slot_switch.sh
+source "$script_dir/modules/slot_switch.sh"
+# Provides: root_part, boot_part, other_slot, clear_stale_host_key, wait_for_reboot,
+# switch_active_slot - all operating against the $target global set above.
+
+# shellcheck source=modules/ssh_password_shim.sh
+source "$script_dir/modules/ssh_password_shim.sh"
+# Without this, every phase below that talks to $target over SSH - this script's own direct calls
+# (Stage 2, Stage 6), plus the build_golden_slot and deploy subprocesses (Stages 3 and 5) - would
+# each open its own separate connection and prompt for the password independently, even though
+# they're all the same target in the same run. setup_ssh_password_shim is called once, either
+# below (Stage 1 case - the password is read directly off the freshly-bootstrapped disk instead of
+# prompted for, since it's genuinely unknown to anyone until the target's own first boot generates
+# it) or in the else branch (resuming case - prompted for normally, since no fresh bootstrap
+# happened in this invocation to read a password from).
+
+# One cleanup trap, set once, covers everything this script mounts/creates below - Stage 1's
+# seed_mnt_* directories (if start_stage <= 1) and _ssh_shim_dir (set by setup_ssh_password_shim,
+# in either branch). Set before anything is actually mounted, so a failure at ANY point - not just
+# after the happy path finishes - still cleans up rather than silently leaving a mount behind
+# (exactly what happened the first time this code shipped: a bug elsewhere caused an early exit
+# with p1 still mounted, unnoticed until the next command).
+seed_mnt_boot=""; seed_mnt_root=""; seed_mnt_data=""; _ssh_shim_dir=""
+_stage1_cleanup() {
+  [[ -n "$seed_mnt_boot" ]] && { sudo umount "$seed_mnt_boot" 2>/dev/null; rmdir "$seed_mnt_boot" 2>/dev/null; }
+  [[ -n "$seed_mnt_root" ]] && { sudo umount "$seed_mnt_root" 2>/dev/null; rmdir "$seed_mnt_root" 2>/dev/null; }
+  [[ -n "$seed_mnt_data" ]] && { sudo umount "$seed_mnt_data" 2>/dev/null; rmdir "$seed_mnt_data" 2>/dev/null; }
+  [[ -n "$_ssh_shim_dir" ]] && rm -rf "$_ssh_shim_dir"
+}
+trap _stage1_cleanup EXIT
+
+if ((start_stage <= 1)); then
+  echo ""
+  echo "=== Stage 1/7: Writing the known-good baseline image onto the target ==="
+  "$script_dir/flash_bootstrap_image" --img "$bootstrap_img" --yes
+  # Disk is still connected via rpiboot at this point - seed SSH host keys and a known password
+  # directly while mounted, rather than waiting for a first boot to generate them and reconnecting
+  # to read them back. This baseline image predates build_golden_slot's amplipi-seed-ssh-host-keys
+  # .service, so nothing would otherwise regenerate /data/ssh (emptied by capture_disk_image's
+  # identity-scrub) on first boot; doing it here also skips a fragile retry loop and a second
+  # power-cycle for the password.
+  echo ""
+  echo "Seeding SSH host keys and a known password directly onto the disk while it's still"
+  echo "connected, so the very first real boot has working SSH already, with no first-boot"
+  echo "service needing to generate anything - no reconnect needed for this."
+  disk_base_path=/dev/disk/by-id/usb-RPi-MSD
+  diskpath=$(ls ${disk_base_path}* 2>/dev/null | grep -v -- -part | head -n1)
+  [[ -n "$diskpath" ]] || { echo "Error: lost track of the Pi device - is it still connected via rpiboot?"; exit 1; }
+
+  seed_mnt_boot=$(mktemp -d)
+  seed_mnt_root=$(mktemp -d)
+  seed_mnt_data=$(mktemp -d)
+  sudo mount -o ro "${diskpath}-part1" "$seed_mnt_boot"
+  # -A2, not -A1: [all]'s boot_partition= is its second line (tryboot_a_b=1 comes first), unlike
+  # [tryboot] elsewhere in this script where boot_partition= is the very next line.
+  active_boot_part=$(grep -A2 '\[all\]' "$seed_mnt_boot/autoboot.txt" | grep -oP 'boot_partition=\K[0-9]+')
+  sudo umount "$seed_mnt_boot"
+  rmdir "$seed_mnt_boot"
+  seed_mnt_boot=""  # already cleaned up - don't let the EXIT trap try again
+  [[ "$active_boot_part" == "2" ]] && active_root_part=5 || active_root_part=6
+
+  sudo mount "${diskpath}-part${active_root_part}" "$seed_mnt_root"
+  sudo mount "${diskpath}-part7" "$seed_mnt_data"
+
+  sudo mkdir -p "$seed_mnt_data/ssh"
+  seed_keys=$(mktemp -d)
+  ssh-keygen -q -N "" -t rsa -b 3072 -f "$seed_keys/ssh_host_rsa_key"
+  ssh-keygen -q -N "" -t ecdsa -b 256 -f "$seed_keys/ssh_host_ecdsa_key"
+  ssh-keygen -q -N "" -t ed25519 -f "$seed_keys/ssh_host_ed25519_key"
+  sudo cp "$seed_keys"/ssh_host_* "$seed_mnt_data/ssh/"
+  sudo chown root:root "$seed_mnt_data"/ssh/ssh_host_*
+  sudo chmod 600 "$seed_mnt_data"/ssh/ssh_host_{rsa,ecdsa,ed25519}_key
+  sudo chmod 644 "$seed_mnt_data"/ssh/ssh_host_{rsa,ecdsa,ed25519}_key.pub
+  rm -rf "$seed_keys"
+
+  # Same generation approach as build_golden_slot's own password handling (48.5 bits, same params
+  # as scripts/set_pass) - write the hash into the root's own /etc/shadow (replacing whatever's
+  # there, locked or not) and the plaintext onto /data the same way set_pass/scripts/cleanup do,
+  # so the front-panel display (on hardware that has one) shows the same password this uses.
+  AMPLIPI_SSH_PASSWORD=$(xkcdpass -n 4 --min 3 --max 7 -d '' -C first)
+  password_hash=$(openssl passwd -6 -stdin <<< "$AMPLIPI_SSH_PASSWORD")
+  sudo sed -i "s#^pi:[^:]*:#pi:${password_hash}:#" "$seed_mnt_root/etc/shadow"
+  sudo mkdir -p "$seed_mnt_data/.config/amplipi"
+  echo "$AMPLIPI_SSH_PASSWORD" | sudo tee "$seed_mnt_data/.config/amplipi/default_password.txt" >/dev/null
+  pi_ids=$(sudo awk -F: '$1=="pi"{print $3":"$4}' "$seed_mnt_root/etc/passwd")
+  sudo chown -R "$pi_ids" "$seed_mnt_data/.config"
+
+  sudo umount "$seed_mnt_root" "$seed_mnt_data"
+  rmdir "$seed_mnt_root" "$seed_mnt_data"
+  seed_mnt_root=""; seed_mnt_data=""  # already cleaned up - don't let the EXIT trap try again
+  export AMPLIPI_SSH_PASSWORD
+  echo "Done - SSH host keys and password are on the disk now."
+
+  setup_ssh_password_shim "$target"
+
+  echo ""
+  echo "Unplug the USB service cable and power-cycle the Pi normally now (not rpiboot mass-storage"
+  echo "mode) so it boots for real - SSH should come up cleanly on this first boot."
+  read -rp "Press any key once you've power-cycled it" -n 1; echo
+  wait_for_reboot
+else
+  echo ""
+  echo "=== Skipping Stage 1 (--start-stage $start_stage) - assuming $target is already bootstrapped and reachable ==="
+  setup_ssh_password_shim "$target"
+fi
+
+# Slot detection always runs fresh here, regardless of --start-stage - it's cheap, idempotent,
+# and reflects whatever's actually reachable right now, rather than trusting stale state from a
+# previous partial run (e.g. after an mDNS collision or other network hiccup got sorted out).
+echo ""
+echo "Determining active/inactive slot on $target..."
+active_line=$(ssh "$target" "grep -o 'BOOT_SLOT=[AB]' /proc/cmdline") || {
+  echo "Error: couldn't determine active slot on $target"; exit 1; }
+old_slot="${active_line#BOOT_SLOT=}"
+new_slot="$(other_slot "$old_slot")"
+expected_tryboot_part="$(boot_part "$new_slot")"
+echo "$target is on slot $old_slot. Slot $new_slot will be migrated, activated, deployed onto, and captured."
+
+if ((start_stage <= 2)); then
+  echo ""
+  echo "=== Stage 2/7: Pre-flight checks on the baseline unit ==="
+  # The RPi firmware's own tryboot logic reads [tryboot]'s boot_partition directly from
+  # autoboot.txt - not anything AmpliPi's own update-pending file says - to decide which
+  # partition a `reboot "0 tryboot"` actually lands on. If this baseline image's autoboot.txt
+  # doesn't already name the correct inactive slot there (e.g. it's an older image whose slots
+  # have drifted, or was hand-edited at some point), Stage 6's tryboot dress-rehearsal would
+  # silently land somewhere unexpected. Check now and patch if needed, rather than assuming.
+  actual_tryboot_part=$(ssh "$target" "grep -A1 '\[tryboot\]' /boot/autoboot/autoboot.txt | grep -oP 'boot_partition=\K[0-9]+'") || actual_tryboot_part=""
+  if [[ "$actual_tryboot_part" != "$expected_tryboot_part" ]]; then
+    echo "Warning: $target's autoboot.txt [tryboot] names p$actual_tryboot_part, expected p$expected_tryboot_part (slot $new_slot) - patching it."
+    active_default_part="$(boot_part "$old_slot")"
+    ssh "$target" "
+      sudo mount -o remount,rw /boot/autoboot
+      sudo python3 /usr/local/bin/update_autoboot.py /boot/autoboot/autoboot.txt $active_default_part $expected_tryboot_part
+      sudo mount -o remount,ro /boot/autoboot
+    "
+  else
+    echo "autoboot.txt [tryboot] already correctly names slot $new_slot (p$expected_tryboot_part)."
+  fi
+
+  # Informational only - this is just the pipeline's manual fallback target if an operator aborts
+  # partway through, not a mechanical dependency of the stages below.
+  echo "Checking $target's current AmpliPi health (informational only)..."
+  ssh "$target" "systemctl is-active amplipi 2>/dev/null; curl -sf --max-time 5 http://localhost/api >/dev/null && echo 'API: healthy' || echo 'API: not responding (informational only, not a blocker)'" || true
+else
+  echo "Skipping Stage 2 (--start-stage $start_stage)."
+fi
+
+if ((start_stage <= 3)); then
+  echo ""
+  echo "=== Stage 3/7: Migrating slot $new_slot to a fresh Trixie install ==="
+  build_args=(--remote "$target" --hostname "$hostname" --yes)
+  [[ -n "$trixie_img" ]] && build_args+=(--img "$trixie_img")
+  "$script_dir/build_golden_slot" "${build_args[@]}"
+else
+  echo "Skipping Stage 3 (--start-stage $start_stage)."
+fi
+
+if ((start_stage <= 4)); then
+  echo ""
+  echo "=== Stage 4/7: Activating slot $new_slot so deploy can install onto it ==="
+  switch_active_slot "$(boot_part "$new_slot")" "$(boot_part "$old_slot")"
+else
+  echo "Skipping Stage 4 (--start-stage $start_stage)."
+fi
+
+if ((start_stage <= 5)); then
+  echo ""
+  echo "=== Stage 5/7: Deploying AmpliPi onto slot $new_slot ==="
+  "$script_dir/deploy" --alsa --clean "$target"
+else
+  echo "Skipping Stage 5 (--start-stage $start_stage)."
+fi
+
+if ((start_stage <= 6)); then
+  echo ""
+  echo "=== Stage 6/7: Tryboot dress-rehearsal on slot $new_slot ==="
+  # Exercises the real amplipi-tryboot-verify.sh/amplipi-boot-deadline commit path on the fresh
+  # slot's own just-deployed services, rather than trusting Stage 4's direct autoboot.txt edit
+  # alone. Since [tryboot] currently names old_slot (Stage 4 just set that), a plain
+  # `reboot "0 tryboot"` right now would land on old_slot, not new_slot - so [tryboot] is pointed
+  # at new_slot too first (a temporary, harmless [all]==[tryboot] state) so the trial actually
+  # re-boots new_slot itself and runs new_slot's own verify service against it.
+  new_boot_part="$(boot_part "$new_slot")"
+  ssh "$target" "
+    sudo mount -o remount,rw /boot/autoboot
+    sudo python3 /usr/local/bin/update_autoboot.py /boot/autoboot/autoboot.txt $new_boot_part $new_boot_part
+    sudo mount -o remount,ro /boot/autoboot
+    echo $new_boot_part | sudo tee /boot/firmware/update-pending >/dev/null
+    sudo reboot '0 tryboot'
+  " || true  # the reboot itself always drops the SSH connection non-zero; that's expected
+  sleep 5
+  wait_for_reboot
+
+  actual_line=$(ssh "$target" "cat /proc/cmdline") || actual_line=""
+
+  # amplipi-tryboot-verify.sh's own health-check retries can take a couple of minutes to finish -
+  # wait_for_reboot only confirms SSH + /data are up, not that the verify service has finished.
+  # Poll until update-pending is gone (removed by either commit() on success or revert() on
+  # failure - its absence alone doesn't tell us which, see below) or we time out waiting for
+  # either.
+  echo "Waiting for slot $new_slot's verify service to finish..."
+  pending_gone="unknown"
+  tries=0
+  while ((tries < 48)); do
+    pending_gone=$(ssh "$target" "test -f /boot/firmware/update-pending && echo present || echo gone") || pending_gone="unknown"
+    [[ "$pending_gone" == "gone" ]] && break
+    tries=$((tries + 1))
+    sleep 5
+  done
+
+  # update-pending's absence alone doesn't distinguish success from failure: revert() removes it
+  # too, on a plain (non-tryboot) reboot back to whatever [all] already was (new_slot, unchanged,
+  # since Stage 4 already made it the default) - so a failed rehearsal would still show up here
+  # running on the right slot with update-pending gone. The one thing revert() does NOT do that
+  # commit() does is rewrite [tryboot] - commit() sets it to name old_slot again; a failed/reverted
+  # rehearsal leaves it at new_slot (what this stage temporarily set it to, right above).
+  actual_tryboot_part=$(ssh "$target" "grep -A1 '\[tryboot\]' /boot/autoboot/autoboot.txt | grep -oP 'boot_partition=\K[0-9]+'") || actual_tryboot_part=""
+  expected_committed_tryboot_part="$(boot_part "$old_slot")"
+
+  if [[ ! "$actual_line" =~ BOOT_SLOT=$new_slot ]] || [[ "$pending_gone" != "gone" ]] || [[ "$actual_tryboot_part" != "$expected_committed_tryboot_part" ]]; then
+    echo "Error: tryboot dress-rehearsal on slot $new_slot didn't complete as expected"
+    echo "  /proc/cmdline: $actual_line"
+    echo "  update-pending: $pending_gone (expected: gone)"
+    echo "  autoboot.txt [tryboot]: p$actual_tryboot_part (expected: p$expected_committed_tryboot_part, meaning commit() ran - if this still shows p$new_boot_part, the health check failed and reverted instead)"
+    echo "Aborting rather than proceeding to wipe/capture on top of an unexplained result - check"
+    echo "$target by hand (journalctl -u amplipi-tryboot-verify, /data/update-log.txt) before retrying."
+    exit 1
+  fi
+  echo "Dress-rehearsal succeeded: slot $new_slot's own verify/commit path ran and passed."
+
+  # Clean up everything that rehearsal - and Stage 4's autoboot.txt edit - could have left
+  # behind, so none of it ends up in the captured image. capture_disk_image's own scrub step
+  # (password/authorized_keys/SSH host keys/default_password.txt) doesn't cover any of this.
+  echo "Cleaning up tryboot-rehearsal artifacts on slot $new_slot..."
+  ssh "$target" "sudo journalctl --rotate && sleep 1 && sudo journalctl --vacuum-time=1s"
+  ssh "$target" "sudo rm -f /data/update-log.txt"
+  ssh "$target" "sudo rm -rf /data/update/*"
+  old_boot_part="$(boot_part "$old_slot")"
+  ssh "$target" "
+    sudo mkdir -p /mnt/bootp
+    sudo mount /dev/mmcblk0p${old_boot_part} /mnt/bootp && sudo rm -f /mnt/bootp/update-pending && sudo umount /mnt/bootp
+    sudo rmdir /mnt/bootp
+  "
+
+  # /data/.config/amplipi/house.json lives on the shared p7 partition, not per-slot - a reference
+  # unit that's been through repeated dev/test cycles almost certainly still has whatever config
+  # was last live on it, not factory defaults, regardless of how many times the root slot itself
+  # has been rebuilt. factory_reset first guarantees a clean, correct-per-variant baseline
+  # (is_streamer/lms_mode are detected fresh from this unit's own hardware, so this is right for
+  # both Controller and Streamer units); the PATCHes after it reproduce the exact "Groove Salad on
+  # source 1/zone 1, Spotify + AirPlay 2 connected to sources with no zone assigned" state that
+  # scripts/cleanup has applied by hand before every prior shipment (see scripts/cleanup's own
+  # "Connecting Groove Salad, Spotify, Airplay sources" step) - done here so it's already baked
+  # into the image capture_disk_image is about to take, instead of a separate manual step per unit.
+  echo "Resetting to factory config and connecting default streams..."
+  # Streamer units ship with zero zones (STREAMER_CONFIG) - source 0-2 always exist on both
+  # variants, but the zones PATCH only applies, and only ever fetches whatever zone ids this
+  # specific unit's own factory_reset just produced, rather than assuming Controller's usual 0-5.
+  ssh "$target" "
+    curl -sf -X POST http://localhost/api/factory_reset >/dev/null
+    curl -sf -X PATCH http://localhost/api/sources/0 -H 'Content-Type: application/json' -d '{\"input\": \"stream=1000\"}' >/dev/null
+    curl -sf -X PATCH http://localhost/api/sources/1 -H 'Content-Type: application/json' -d '{\"input\": \"stream=1001\"}' >/dev/null
+    curl -sf -X PATCH http://localhost/api/sources/2 -H 'Content-Type: application/json' -d '{\"input\": \"stream=1004\"}' >/dev/null
+    zone_ids=\$(curl -sf http://localhost/api | jq -c '[.zones[].id]')
+    if [[ \"\$zone_ids\" != '[]' ]]; then
+      curl -sf -X PATCH http://localhost/api/zones -H 'Content-Type: application/json' -d \"{\\\"zones\\\": \$zone_ids, \\\"update\\\": {\\\"mute\\\": true, \\\"source_id\\\": 0}}\" >/dev/null
+    fi
+  "
+else
+  echo "Skipping Stage 6 (--start-stage $start_stage)."
+fi
+
+echo ""
+echo "=== Stage 7/7: Wiping the now-stale slot $old_slot, then capturing the disk ==="
+"$script_dir/build_golden_slot" --remote "$target" --format-only --yes
+
+echo "Power off the Pi and reconnect it via the USB service cable (rpiboot mass-storage mode) now."
+read -rp "Press any key once it's ready to reconnect" -n 1; echo
+
+"$script_dir/capture_disk_image" --output-dir "$out_dir"

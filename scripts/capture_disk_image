@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+# Capture a Pi's entire eMMC (partition table + all 7 partitions) as a single compressed,
+# flashable .img.xz - the final step of scripts/make_progenitor. Whether the result is a normal
+# dual-slot golden image or a single-slot progenitor image (fills in its second slot on the unit's
+# first OTA update) depends only on whether slot B is populated when this runs - same code path.
+#
+# Run this only against a Pi that's already partitioned, has at least one slot built + deployed,
+# and has had scripts/cleanup run right before shipping - it captures whatever's physically on the
+# disk with no awareness of AmpliPi state. See scripts/make_progenitor for the full pipeline.
+# Needs a USB-to-service-port connection (rpiboot mass-storage mode) - unlike make_images, this
+# captures the *active* slot too, so the disk must be powered off to avoid a corrupt capture.
+
+set -euo pipefail
+
+helptext="Usage: capture_disk_image [OPTION]...
+Capture a connected Pi's entire eMMC as a single compressed .img.xz, via rpiboot mass-storage mode.
+
+  --output-dir, -o DIR: Output directory (default: current directory)
+  --debug:              Print all commands, and don't unmount/cleanup on exit
+  -h, --help:           Print this help text
+"
+
+out_dir='.'
+debug=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --output-dir|-o)
+      if (($# > 1)); then out_dir=$2; shift; else echo "--output-dir requires a value"; exit 1; fi
+      ;;
+    --debug) debug=true ;;
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *) printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1 ;;
+  esac
+  shift
+done
+
+$debug && set -x
+
+out_dir="$(realpath -m "$out_dir")"
+mkdir -p "$out_dir"
+
+cleanup() {
+  set +e
+  [[ -n "${mnt:-}" ]] && sudo umount "$mnt" 2>/dev/null
+  if ! $debug; then
+    [[ -n "${mnt:-}" ]] && rmdir "$mnt" 2>/dev/null
+  fi
+}
+trap cleanup EXIT
+
+# ---- Step 1: get the Pi's eMMC exposed as a block device over USB ----
+# shellcheck source=modules/rpiboot_connect.sh
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/modules/rpiboot_connect.sh"
+rpiboot_connect
+# $diskpath is set by rpiboot_connect above.
+
+# ---- Step 2: sanity-check the partition table looks like a real 7-partition A/B layout, and
+# report whether slot B looks populated or empty (informational only - this tool captures
+# whatever's there either way; the caller decides which kind of image they meant to build by
+# whether they cloned slot A onto slot B before running this). ----
+for i in 1 2 3 5 6 7; do
+  [[ -e "${diskpath}-part${i}" ]] || { echo "Error: ${diskpath}-part${i} not found - this doesn't look like a 7-partition A/B disk"; exit 1; }
+done
+
+mnt=$(mktemp -d)
+sudo mount -o ro "${diskpath}-part6" "$mnt"
+# A freshly-formatted, never-populated ext4 partition contains only lost+found. Anything else
+# means slot B has real content on it (a normal, already-dual-populated golden image).
+root_b_entries=$(sudo ls -A "$mnt" | grep -vc '^lost+found$' || true)
+sudo umount "$mnt"
+if [[ "$root_b_entries" -eq 0 ]]; then
+  echo "Slot B (root-B/p6) looks empty - this will capture as a progenitor image (single-slot, fills in on first OTA update)."
+else
+  echo "Slot B (root-B/p6) looks populated - this will capture as a normal, already-dual-slot golden image."
+fi
+
+# ---- Step 2b: scrub per-unit credentials from every populated slot before capture - anything
+# left here gets baked into every unit flashed from this image.
+#   - pi account password: lock the /etc/shadow hash by prefixing it with '!' (same effect as
+#     `passwd -l`) rather than clearing it - chpasswd overwrites this field wholesale when the
+#     real first-boot password gets set, so this is only a lock until then, not a permanent one.
+#   - authorized_keys: removed outright - nothing regenerates or revokes this on a real first
+#     boot, so leaving it would mean permanent passwordless SSH access for whoever holds that key.
+scrub_slot_identity() {
+  local part="$1"
+  local mnt2
+  mnt2=$(mktemp -d)
+  sudo mount "$part" "$mnt2"
+  sudo sed -i 's/^pi:\([^!][^:]*\):/pi:!\1:/' "$mnt2/etc/shadow"
+  sudo rm -f "$mnt2/home/pi/.ssh/authorized_keys"
+  sudo umount "$mnt2"
+  rmdir "$mnt2"
+}
+echo "Locking pi account password and removing authorized_keys on root-A (p5)..."
+scrub_slot_identity "${diskpath}-part5"
+if [[ "$root_b_entries" -gt 0 ]]; then
+  echo "Locking pi account password and removing authorized_keys on root-B (p6)..."
+  scrub_slot_identity "${diskpath}-part6"
+fi
+
+# default_password.txt on p7 (shared, not per-slot) has to be cleared too, not just the password
+# hash locked above - amplipi-firstboot-password.service's guard is "does this file already
+# exist", and whatever build/dev password is currently recorded there (each build_golden_slot
+# rebuild writes one so the builder has something to log in with) would otherwise make that guard
+# true forever, silently skipping password generation on every unit's own real first boot.
+# configure.py's deploy-time _check_password has the identical guard for the same reason, for the same file -
+# this is the boot-time equivalent of resetting it.
+echo "Clearing default_password.txt on /data (p7) so first boot regenerates a fresh one..."
+sudo mount "${diskpath}-part7" "$mnt"
+sudo rm -f "$mnt/.config/amplipi/default_password.txt"
+
+# house.json on p7 is deliberately left untouched here - make_progenitor's Stage 6 already puts
+# it into the intended shipping state live, over the API, while the unit is still up and
+# networked, before this disk is ever powered down for capture. Whatever's on house.json at
+# capture time is meant to be captured as-is.
+
+# SSH host keys on p7 need the same treatment - if this disk has ever booted (e.g. for
+# verification before capture), sshd already generated real keys into /data/ssh/ once the masked
+# regenerate_ssh_host_keys.service left the symlink targets missing. Delete them here so each real
+# unit's own first boot regenerates a unique identity instead of every unit sharing this one.
+if sudo find "$mnt/ssh" -mindepth 1 2>/dev/null | grep -q .; then
+  echo "Clearing SSH host keys on /data (p7) so first boot generates a unique identity per unit..."
+  sudo rm -f "$mnt"/ssh/ssh_host_*
+fi
+
+sudo umount "$mnt"
+
+rmdir "$mnt"
+unset mnt
+
+# ---- Step 3: clean each ext4 filesystem before imaging - an unclean unmount produces a
+# needlessly larger/inconsistent compressed image. ----
+for part in 5 6 7; do
+  echo "Cleaning filesystem on ${diskpath}-part${part}..."
+  sudo e2fsck -p -f "${diskpath}-part${part}" || { rc=$?; [[ $rc -le 1 ]] || { echo "Error: e2fsck exited $rc on ${diskpath}-part${part}"; exit 1; }; }
+done
+
+# ---- Step 4: dd the whole disk (partition table + every partition, p7 already extends to the
+# physical end of the disk per build_golden_slot's own layout, so there's no unpartitioned tail
+# to worry about trimming) straight through xz. ----
+out_file="$out_dir/progenitor.img.xz"
+echo "Imaging $diskpath → $(basename "$out_file") (this takes a while)..."
+sudo dd if="$diskpath" bs=4M status=progress | xz -T0 > "$out_file"
+
+sha256=$(sha256sum "$out_file" | cut -d' ' -f1)
+size=$(stat -c%s "$out_file")
+
+script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+version=$(grep -m1 -oP '(?<=version = ")[^"]+' "$script_dir/../pyproject.toml" || echo unknown)
+
+manifest_file="$out_dir/progenitor-manifest.json"
+# Remove any pre-existing manifest before writing (rather than truncating it via `>` directly):
+# an old copy left behind by an accidental `sudo` invocation of this script would be root-owned,
+# and this script never runs as root itself, so overwriting its *content* would fail with
+# Permission denied even though this normal-user process can freely replace the file outright
+# (file deletion is governed by the containing directory's permissions, not the file's own).
+rm -f "$manifest_file"
+cat > "$manifest_file" <<EOF
+{
+  "version": "$version",
+  "type": "disk-image",
+  "filename": "$(basename "$out_file")",
+  "sha256": "$sha256",
+  "size": $size
+}
+EOF
+# Not consumed by the OTA /update endpoint (that machinery only ever handles single-partition
+# root/boot images, see make_image_manifest) - this manifest is just a record for whoever hosts
+# and distributes the flashable image, e.g. to verify a download before writing it with Etcher/dd.
+
+echo "
+Wrote $out_file ($((size / 1024 / 1024)) MB) and $manifest_file.
+
+This is a raw, flashable disk image (Balena Etcher or 'dd' straight onto a blank SD/eMMC) -
+NOT an OTA update package. For that, see make_images/make_image_manifest instead.
+"
