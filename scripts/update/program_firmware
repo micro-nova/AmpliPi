@@ -71,7 +71,7 @@ else
 fi
 
 # cd to amplipi root dir
-cd "$(dirname ${BASH_SOURCE[0]})/.."
+cd "$(dirname ${BASH_SOURCE[0]})/../.."
 
 # Build from source if specified. cmake and gcc-arm-none-eabi are required
 # sudo apt install cmake gcc-arm-none-eabi

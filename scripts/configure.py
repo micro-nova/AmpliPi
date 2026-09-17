@@ -94,7 +94,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 ],
     },
     'updates': {
-      # rsync is what scripts/apply_delta_update actually applies a delta update with. It's been
+      # rsync is what scripts/update/apply_delta_update actually applies a delta update with. It's been
       # present on every device so far anyway (part of the base Raspberry Pi OS image), which is
       # exactly the kind of implicit dependency worth pinning explicitly rather than trusting to
       # keep being true - see requirements.txt's explicit 'packaging' pin for the same reasoning.
@@ -1554,12 +1554,12 @@ def _check_password(env: dict, progress) -> List[Task]:
 
 def _update_firmware(env: dict, progress) -> List[Task]:
   """ If on AmpliPi with preamp hardware, update to the latest firmware. The same
-  scripts/flash_latest_firmware also runs automatically after every OTA update - kept here as one
-  shared definition of "latest" so the manual and automatic paths can't disagree. """
+  scripts/update/flash_latest_firmware also runs automatically after every OTA update - kept here
+  as one shared definition of "latest" so the manual and automatic paths can't disagree. """
   task = Task('Flash latest preamp firmware')
   if env['is_amplipi'] and not env['is_streamer']:
     os.chdir(env['base_dir'])
-    task.margs = [['bash', 'scripts/flash_latest_firmware']]
+    task.margs = [['bash', 'scripts/update/flash_latest_firmware']]
     task.run()
   else:
     task.output = 'Not on AmpliPi with Preamp - No firmware update necessary'

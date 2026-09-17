@@ -57,7 +57,7 @@ commit() { # Swap which boot slot is considered primary and secondary p1's autob
   # permanent - never against content that might still get reverted. Failure here doesn't undo
   # the commit above; a bad flash and an already-good OS update are independent concerns.
   log "Checking preamp firmware"
-  bash /home/pi/amplipi-dev/scripts/flash_latest_firmware 2>&1 | while read -r line; do log "$line"; done \
+  bash /home/pi/amplipi-dev/scripts/update/flash_latest_firmware 2>&1 | while read -r line; do log "$line"; done \
     || log "Warning: firmware flash failed - will retry on the next update"
 
   log "Commit complete. Default: p${current_part} | Tryboot: p${old_part}"

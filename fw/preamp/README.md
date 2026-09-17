@@ -44,11 +44,11 @@ sudo apt install stm32flash
 ```
 
 ## Quick Program (and Compile)
-The `program_firmware` script in the `scripts` directory of AmpliPi
+The `program_firmware` script in the `scripts/update` directory of AmpliPi
 includes the most common use-cases for compiling and programming the Preamp.
 Try
 ```
-scripts/program_firmware -h
+scripts/update/program_firmware -h
 ```
 to get all the options available.
 Alternatively see below for the full compile and program steps.

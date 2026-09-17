@@ -638,7 +638,7 @@ class UpdateManifest(BaseModel):
     a full root (+ optional boot) image release. `root` is required, `boot` is optional.
 
     type DELTA: an AmpliPi-code-only release applied via rsync against `version`'s own GitHub source
-    tarball (see scripts/apply_delta_update), instead of a full image. `min_base_version` is
+    tarball (see scripts/update/apply_delta_update), instead of a full image. `min_base_version` is
     required; `root`/`boot` are unused.
 
     `min_base_version` is a floor, not an exact match; it's always the most recent full image
@@ -707,7 +707,7 @@ def get_checksum(path: str, total_size: int, progress_cb: Optional[Callable] = N
     return h.hexdigest()
 
 
-GITHUB_REPO = 'micro-nova/amplipi'  # matches scripts/apply_delta_update's own convention
+GITHUB_REPO = 'micro-nova/amplipi'  # matches scripts/update/apply_delta_update's own convention
 GITHUB_RELEASE_ASSET_RE = re.compile(rf'^https://github\.com/{re.escape(GITHUB_REPO)}/releases/download/[^/]+/[^/]+$')
 
 
@@ -917,7 +917,7 @@ def _update_body(info: UpdateInfo):
     subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.root}", mnt], check=True)
     try:
       download_channel.info(f'Slot {target_slot.name} is on {current_version}, applying delta to {manifest.version}...')
-      script = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'scripts', 'apply_delta_update')
+      script = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'scripts', 'update', 'apply_delta_update')
       # sudo: app_dir belongs to slot B's pi user, not necessarily writable by whoever this
       # process runs as when acting on the currently-inactive slot from the active one.
       # -u: stdout is fully buffered (not line-buffered) once it's a pipe instead of a terminal,
