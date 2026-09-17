@@ -185,7 +185,7 @@ def journald_configparser() -> configparser.ConfigParser:
   storage=), unlike ConfigParser's default of lowercasing every option name, so this preserves
   case - otherwise every key we write gets silently ignored by journald as unrecognized. """
   conf = configparser.ConfigParser(strict=False, allow_no_value=True)
-  conf.optionxform = str
+  conf.optionxform = str  # type: ignore[assignment]  # typeshed types this as a bound method
   return conf
 
 
@@ -651,7 +651,7 @@ class UpdateManifest(BaseModel):
   min_base_version: Optional[str] = None
 
   @validator('type', pre=True)
-  def _sanitize_type(cls, v):
+  def _sanitize_type(cls, v):  # pylint: disable=no-self-argument
     """ Accept any case (e.g. a hand-edited manifest with "Full") by lowercasing before enum matching """
     return v.lower() if isinstance(v, str) else v
 
@@ -729,7 +729,7 @@ class UpdateInfo(BaseModel):
   tryboot: bool = False
 
   @validator('manifest_url')
-  def _validate_manifest_url(cls, v):
+  def _validate_manifest_url(cls, v):  # pylint: disable=no-self-argument
     """ Restricted to our own GitHub release assets - this endpoint has no auth once a unit has
     no admin password set, so an unrestricted caller-supplied URL would let any LAN client point
     the device at an attacker-controlled manifest. """
@@ -876,6 +876,7 @@ def _update_body(info: UpdateInfo):
       current_version is None or parse_version(current_version) < parse_version(manifest.min_base_version))
 
     if needs_base_flash:
+      assert manifest.min_base_version is not None  # implied by needs_base_flash, but not by its own type
       base_tag = manifest.min_base_version
       # "flashing that version as a base first" is matched verbatim by update-ui.js's
       # ui_check_delta_phase_transition - it's what switches the frontend's progress bar over to
@@ -926,6 +927,7 @@ def _update_body(info: UpdateInfo):
       proc = subprocess.Popen(
         ['sudo', sys.executable, '-u', script, manifest.version, '--target-dir', app_dir],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+      assert proc.stdout is not None  # guaranteed by stdout=PIPE above, not by Popen's own type
       for line in proc.stdout:
         line = line.rstrip()
         if line:
@@ -1051,6 +1053,7 @@ def _flash_partition_body(tryboot: bool, channel: SSEChannel = flash_channel):
       ['sudo', 'dd', f'of=/dev/mmcblk0p{partition}', 'bs=4M', 'conv=fsync'],
       stdin=subprocess.PIPE, stderr=subprocess.PIPE
     )
+    assert dd.stdin is not None and dd.stderr is not None  # guaranteed by PIPE above, not by Popen's own type
     # This is chunked both to prevent loading a massive (potentially too large) file into memory all at once and to provide chunk-by-chunk feedback to the user for how the update is going
     with lzma.open(image, 'rb') as src:
       while chunk := src.read(4 * 1024 * 1024):

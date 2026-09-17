@@ -16,6 +16,12 @@ jobs:
       run: |
         mkdir web/dist
         touch web/dist/index.html
+    - name: Make fake /data folder
+      run: |
+        # Real units have a 7 partition scheme where partition 7 is mounted as /data
+        # that's where .config is stored, so we have to mock it for tests to function
+        sudo mkdir -p /data
+        sudo chown "$USER":"$USER" /data
     - name: Set up Python 3.8
       uses: actions/setup-python@v4
       with:

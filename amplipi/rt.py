@@ -284,7 +284,8 @@ class _Preamps:
       self.reset_preamps()
       self.set_i2c_addr()
       try:
-        self.bus.close()
+        if self.bus is not None:
+          self.bus.close()
       except Exception:
         pass
       self.bus = SMBus(1)
