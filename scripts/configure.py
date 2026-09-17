@@ -713,8 +713,8 @@ def _setup_loopbacks(base_dir) -> List[Task]:
   # The rmmod is expected to fail (and is harmless) when the module isn't loaded yet or is already
   # loaded with unchanged params; either way the following modprobe leaves it loaded correctly.
   tasks += [Task('load snd_aloop module',
-                  args='sudo rmmod snd_aloop 2>/dev/null; sudo modprobe snd_aloop',
-                  shell=True).run()]
+                 args='sudo rmmod snd_aloop 2>/dev/null; sudo modprobe snd_aloop',
+                 shell=True).run()]
   return tasks
 
 
@@ -755,14 +755,16 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
     # deleting/writing the same files concurrently, which can fail openssh-server's config step. A
     # drop-in override survives being unmasked/re-enabled (only the mask/enablement symlinks are
     # touched, not drop-in content) by replacing what the service runs with a no-op.
-    tasks += print_progress([Task("mask regenerate_ssh_host_keys.service",
-                            ['sudo', 'systemctl', 'mask', 'regenerate_ssh_host_keys']).run()])
-    tasks += print_progress([Task("neuter regenerate_ssh_host_keys.service via override",
-                            args='sudo mkdir -p /etc/systemd/system/regenerate_ssh_host_keys.service.d; '
-                            "printf '[Service]\\nExecStartPre=\\nExecStart=\\nExecStart=/bin/true\\n' "
-                            '| sudo tee /etc/systemd/system/regenerate_ssh_host_keys.service.d/override.conf >/dev/null; '
-                            'sudo systemctl daemon-reload',
-                            shell=True).run()])
+    tasks += print_progress([Task(
+        "mask regenerate_ssh_host_keys.service",
+        ['sudo', 'systemctl', 'mask', 'regenerate_ssh_host_keys']).run()])
+    tasks += print_progress([Task(
+        "neuter regenerate_ssh_host_keys.service via override",
+        args='sudo mkdir -p /etc/systemd/system/regenerate_ssh_host_keys.service.d; '
+             "printf '[Service]\\nExecStartPre=\\nExecStart=\\nExecStart=/bin/true\\n' "
+             '| sudo tee /etc/systemd/system/regenerate_ssh_host_keys.service.d/override.conf >/dev/null; '
+             'sudo systemctl daemon-reload',
+        shell=True).run()])
 
   # Comment out deb http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free rpi from /etc/apt/sources.list to avoid hitting up a now empty apt source
   tasks += print_progress([Task('Deactivate apt updates for outdated OS',
@@ -805,23 +807,24 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
   # slot without actually breaking the already-running sshd (a dpkg bookkeeping problem, not a loss
   # of SSH access) - rebooting to retry is unsafe here, so tolerate this if dpkg reports ONLY
   # openssh-server/ssh left broken; anything else is a real failure.
-  tasks += print_progress([Task('upgrade debian packages',
-                          'sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --assume-yes; rc=$?; '
-                          'if [ $rc -ne 0 ]; then '
-                          '  broken=$(dpkg -l | awk \'$1 ~ /F$/ {print $2}\' | sed "s/:.*//" | sort -u); '
-                          '  other_broken=$(echo "$broken" | grep -vE "^(openssh-server|ssh)$" || true); '
-                          '  if [ -n "$broken" ] && [ -z "$other_broken" ]; then '
-                          '    echo "dist-upgrade failed, but only openssh-server/ssh are left unconfigured - the"; '
-                          '    echo "already-running sshd keeps working regardless (confirmed: we are running this"; '
-                          '    echo "very command over it). Treating this as tolerable and continuing rather than"; '
-                          '    echo "aborting the whole deploy over a known, isolated dpkg bookkeeping issue."; '
-                          '    exit 0; '
-                          '  fi; '
-                          '  echo "dist-upgrade failed with packages other than openssh-server/ssh also broken -"; '
-                          '  echo "treating this as a real failure: $broken"; '
-                          '  exit $rc; '
-                          'fi',
-                          shell=True, stream=True).run()])
+  tasks += print_progress([Task(
+      'upgrade debian packages',
+      'sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --assume-yes; rc=$?; '
+      'if [ $rc -ne 0 ]; then '
+      '  broken=$(dpkg -l | awk \'$1 ~ /F$/ {print $2}\' | sed "s/:.*//" | sort -u); '
+      '  other_broken=$(echo "$broken" | grep -vE "^(openssh-server|ssh)$" || true); '
+      '  if [ -n "$broken" ] && [ -z "$other_broken" ]; then '
+      '    echo "dist-upgrade failed, but only openssh-server/ssh are left unconfigured - the"; '
+      '    echo "already-running sshd keeps working regardless (confirmed: we are running this"; '
+      '    echo "very command over it). Treating this as tolerable and continuing rather than"; '
+      '    echo "aborting the whole deploy over a known, isolated dpkg bookkeeping issue."; '
+      '    exit 0; '
+      '  fi; '
+      '  echo "dist-upgrade failed with packages other than openssh-server/ssh also broken -"; '
+      '  echo "treating this as a real failure: $broken"; '
+      '  exit $rc; '
+      'fi',
+      shell=True, stream=True).run()])
 
   # organize stuff to install
   packages = set()
@@ -913,11 +916,12 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
   # for an existing user first and no-op if one's already there. Only applied if the user doesn't
   # already exist, so this only affects fresh installs (re-numbering an existing user's UID would
   # risk breaking whatever it already owns).
-  tasks += print_progress([Task("pre-create squeezeboxserver with a pinned UID",
-                          args='if ! id squeezeboxserver >/dev/null 2>&1; then '
-                          '  sudo useradd --system --uid 105 --gid nogroup --no-create-home --shell /usr/sbin/nologin squeezeboxserver; '
-                          'fi',
-                          shell=True).run()])
+  tasks += print_progress([Task(
+      "pre-create squeezeboxserver with a pinned UID",
+      args='if ! id squeezeboxserver >/dev/null 2>&1; then '
+           '  sudo useradd --system --uid 105 --gid nogroup --no-create-home --shell /usr/sbin/nologin squeezeboxserver; '
+           'fi',
+      shell=True).run()])
 
   # install debian packages
   # DEBIAN_FRONTEND=noninteractive for the same reason the dist-upgrade step above needs it - a
@@ -955,15 +959,16 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
     # keys during dist-upgrade, and writing through the /data symlink while /data is transiently
     # unavailable (a different package's postinst earlier in the same transaction can leave it so)
     # aborts the whole dpkg transaction instead of failing quietly.
-    tasks += print_progress([Task("set up SSH host key symlinks to /data",
-                            args='sudo mkdir -p /data/ssh; '
-                            'if [ ! -L /etc/ssh/ssh_host_ecdsa_key ]; then '
-                            '  for key in ssh_host_ecdsa_key ssh_host_ecdsa_key.pub ssh_host_ed25519_key ssh_host_ed25519_key.pub ssh_host_rsa_key ssh_host_rsa_key.pub; do '
-                            '    if [ -e "/etc/ssh/$key" ] && [ ! -e "/data/ssh/$key" ]; then sudo mv "/etc/ssh/$key" "/data/ssh/$key"; else sudo rm -f "/etc/ssh/$key"; fi; '
-                            '    sudo ln -s "/data/ssh/$key" "/etc/ssh/$key"; '
-                            '  done; '
-                            'fi',
-                            shell=True).run()])
+    tasks += print_progress([Task(
+        "set up SSH host key symlinks to /data",
+        args='sudo mkdir -p /data/ssh; '
+             'if [ ! -L /etc/ssh/ssh_host_ecdsa_key ]; then '
+             '  for key in ssh_host_ecdsa_key ssh_host_ecdsa_key.pub ssh_host_ed25519_key ssh_host_ed25519_key.pub ssh_host_rsa_key ssh_host_rsa_key.pub; do '
+             '    if [ -e "/etc/ssh/$key" ] && [ ! -e "/data/ssh/$key" ]; then sudo mv "/etc/ssh/$key" "/data/ssh/$key"; else sudo rm -f "/etc/ssh/$key"; fi; '
+             '    sudo ln -s "/data/ssh/$key" "/etc/ssh/$key"; '
+             '  done; '
+             'fi',
+        shell=True).run()])
 
   # cleanup
   sp_check_tasks, sp_active = _service_status('shairport-sync', system=True)
@@ -1359,7 +1364,6 @@ def _configure_authbind() -> List[Task]:
   return tasks
 
 
-
 def _api_key() -> Optional[str]:
   """ Get a singular API key for use with the updater """
   user_file_path = os.path.join('/data', '.config', 'amplipi', 'users.json')
@@ -1685,23 +1689,24 @@ def install(os_deps=True, python_deps=True, custom_deps=True, web=True, restart_
     # device node to reappear, then mount by raw device path (p7 on this A/B partition scheme)
     # rather than relying on PARTUUID resolution. Placed before the first thing in this function
     # that touches /data, since by this point in a retry it may already be broken.
-    ensure_data = Task("ensure /data is mounted",
-                        args='if mountpoint -q /data; then '
-                        '  echo "/data already mounted"; '
-                        'else '
-                        '  echo "recover /data 1: udevadm trigger"; sudo udevadm trigger --settle /dev/mmcblk0 2>&1 || true; '
-                        '  echo "recover /data 2: waiting for device node"; '
-                        '  for i in $(seq 1 20); do test -b /dev/mmcblk0p7 && break; sleep 0.5; done; '
-                        '  ls -la /dev/mmcblk0p7 2>&1; '
-                        '  echo "recover /data 3: mount /dev/mmcblk0p7 /data"; sudo mount /dev/mmcblk0p7 /data 2>&1; '
-                        '  mountpoint -q /data && echo "recover /data 3: worked" || echo "recover /data 3: failed"; '
-                        '  if ! mountpoint -q /data; then '
-                        '    echo "recover /data 4: mount -a"; sudo mount -a 2>&1; '
-                        '    mountpoint -q /data && echo "recover /data 4: worked" || echo "recover /data 4: failed"; '
-                        '  fi; '
-                        'fi; '
-                        'mountpoint -q /data',
-                        shell=True).run()
+    ensure_data = Task(
+        "ensure /data is mounted",
+        args='if mountpoint -q /data; then '
+             '  echo "/data already mounted"; '
+             'else '
+             '  echo "recover /data 1: udevadm trigger"; sudo udevadm trigger --settle /dev/mmcblk0 2>&1 || true; '
+             '  echo "recover /data 2: waiting for device node"; '
+             '  for i in $(seq 1 20); do test -b /dev/mmcblk0p7 && break; sleep 0.5; done; '
+             '  ls -la /dev/mmcblk0p7 2>&1; '
+             '  echo "recover /data 3: mount /dev/mmcblk0p7 /data"; sudo mount /dev/mmcblk0p7 /data 2>&1; '
+             '  mountpoint -q /data && echo "recover /data 3: worked" || echo "recover /data 3: failed"; '
+             '  if ! mountpoint -q /data; then '
+             '    echo "recover /data 4: mount -a"; sudo mount -a 2>&1; '
+             '    mountpoint -q /data && echo "recover /data 4: worked" || echo "recover /data 4: failed"; '
+             '  fi; '
+             'fi; '
+             'mountpoint -q /data',
+        shell=True).run()
     progress([ensure_data])
     tasks.append(ensure_data)
   if not env['is_ci']:
