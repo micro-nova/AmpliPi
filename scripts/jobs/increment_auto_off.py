@@ -18,11 +18,8 @@ PERSIST_LOGS_URL = 'http://localhost:5001/settings/persist_logs'
 
 
 def restart_updater_and_wait():
-  """ If the updater API isn't responding, the most likely cause is that the amplipi-updater
-  service itself is down (crashed, mid-restart, etc.), not something specific to persist_logs.
-  Restarting it and retrying once is simpler - and far less likely to drift out of sync - than
-  reimplementing asgi.py's journald/logging.ini handling a second time here (see GitHub #971,
-  where the previous copy of that logic had done exactly that and gone stale/buggy). """
+  """ Restart amplipi-updater and retry once - simpler and less drift-prone than reimplementing
+  its journald/logging.ini handling here. """
   logger.warning("Updater API call failed, restarting amplipi-updater and retrying once...")
   subprocess.run(['sudo', 'systemctl', 'restart', 'amplipi-updater'], check=False)
   time.sleep(5)

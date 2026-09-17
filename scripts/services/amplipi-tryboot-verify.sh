@@ -31,6 +31,11 @@ commit() { # Swap which boot slot is considered primary and secondary p1's autob
 
   log "Committing: p${current_part} becomes default, p${old_part} becomes tryboot"
 
+  # Not required for correctness (amplipi-boot-deadline-fire.sh no-ops once
+  # update-pending is gone), but avoids leaving a 15min transient timer
+  # ticking down to a no-op after every successful update.
+  systemctl stop amplipi-boot-deadline-fire.timer 2>/dev/null || true
+
   mount -o remount,rw "${AUTOBOOT_MOUNT}"
   python3 /usr/local/bin/update_autoboot.py "${AUTOBOOT_FILE}" "${current_part}" "${old_part}"
   mount -o remount,ro "${AUTOBOOT_MOUNT}"
@@ -46,6 +51,14 @@ commit() { # Swap which boot slot is considered primary and secondary p1's autob
   # this point, but nothing after commit does.
   log "Cleaning up /data/update/ (images for the now-committed update)"
   rm -f /data/update/root.img.xz /data/update/boot.img.xz /data/update/manifest.json
+
+  # Runs after commit, not before: firmware isn't part of the tryboot/revert contract, so this
+  # only ever touches the preamp once the OS-level update is already confirmed good and
+  # permanent - never against content that might still get reverted. Failure here doesn't undo
+  # the commit above; a bad flash and an already-good OS update are independent concerns.
+  log "Checking preamp firmware"
+  bash /home/pi/amplipi-dev/scripts/flash_latest_firmware 2>&1 | while read -r line; do log "$line"; done \
+    || log "Warning: firmware flash failed - will retry on the next update"
 
   log "Commit complete. Default: p${current_part} | Tryboot: p${old_part}"
 }
@@ -78,9 +91,16 @@ log "Running health checks"
 
 failed_checks=()
 
-retry 12 5 systemctl is-active amplipi       || failed_checks+=("amplipi service")
-retry 12 5 systemctl is-active amplipi-tasks || failed_checks+=("amplipi-tasks service")
-retry 6  5 systemctl is-active redis-server                || failed_checks+=("redis-server service")
+# timeout 10 on the systemctl calls: retry()'s own sleep only happens *between* attempts, not
+# around the command itself, so without this a single wedged systemctl/dbus call (rare, but a
+# real failure mode - stuck dbus, hung systemd manager) blocks here forever with no way out,
+# instead of correctly failing the check and reverting. 10s is generous relative to how fast a
+# healthy call actually returns (milliseconds), so this can't cause a spurious revert on a normal,
+# even slow, boot - it only ever fires when a call is genuinely stuck well past any legitimate
+# response time. curl already self-bounds via --max-time 5, so it doesn't need this.
+retry 12 5 timeout 10 systemctl is-active amplipi       || failed_checks+=("amplipi service")
+retry 12 5 timeout 10 systemctl is-active amplipi-tasks || failed_checks+=("amplipi-tasks service")
+retry 6  5 timeout 10 systemctl is-active redis-server                || failed_checks+=("redis-server service")
 retry 12 5 curl -sf --max-time 5 http://localhost/api      || failed_checks+=("API health check")
 
 if [ "${#failed_checks[@]}" -gt 0 ]; then

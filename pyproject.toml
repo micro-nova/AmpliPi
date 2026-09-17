@@ -35,7 +35,7 @@ include = [
   "fw/*.sh", # no need to add full source tree
   "fw/bin/*",
   "hw/**",
-  "scripts/*",
+  "scripts/**",
   "streams/**/*",
   "bin/**",
   "docs/**",

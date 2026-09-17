@@ -96,27 +96,27 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'updates': {
       'copy': [
         {
-          'from': 'scripts/amplipi-tryboot-verify.sh',
+          'from': 'scripts/services/amplipi-tryboot-verify.sh',
           'to': '/usr/local/bin/amplipi-tryboot-verify.sh',
           'sudo': 'true',
         },
         {
-          'from': 'scripts/update_autoboot.py',
+          'from': 'scripts/services/update_autoboot.py',
           'to': '/usr/local/bin/update_autoboot.py',
           'sudo': 'true',
         },
         {
-          'from': 'scripts/amplipi-tryboot-verify.service',
+          'from': 'scripts/services/amplipi-tryboot-verify.service',
           'to': '/etc/systemd/system/amplipi-tryboot-verify.service',
           'sudo': 'true',
         },
         {
-          'from': 'scripts/amplipi-postflash.sh',
+          'from': 'scripts/services/amplipi-postflash.sh',
           'to': '/usr/local/bin/amplipi-postflash.sh',
           'sudo': 'true',
         },
         {
-          'from': 'scripts/amplipi-postflash.service',
+          'from': 'scripts/services/amplipi-postflash.service',
           'to': '/etc/systemd/system/amplipi-postflash.service',
           'sudo': 'true',
         },
@@ -159,7 +159,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
           }
         ],
         'script': [
-            'sudo cp scripts/udiskie.service /etc/systemd/system',
+            'sudo cp scripts/services/udiskie.service /etc/systemd/system',
             'sudo chmod 444 /etc/systemd/system/udiskie.service',
             'sudo systemctl enable udiskie.service',
         ]
@@ -172,7 +172,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo': 'true',
           },
           {
-            'from': 'scripts/increment_auto_off.py',
+            'from': 'scripts/jobs/increment_auto_off.py',
             'to': '/usr/local/bin/increment_auto_off.py',
             'sudo': 'true',
           },
@@ -386,9 +386,9 @@ _os_deps: Dict[str, Dict[str, Any]] = {
 
             'sudo chmod 755 /media/pi',
             'sudo chmod 755 /media/pi/*',
-            'sudo cp scripts/udisks2-listener.sh /usr/local/bin',
-            'sudo cp scripts/edit_media_directories.py /usr/local/bin',
-            'sudo cp scripts/udisks2-listener.service /etc/systemd/system',
+            'sudo cp scripts/services/udisks2-listener.sh /usr/local/bin',
+            'sudo cp scripts/services/edit_media_directories.py /usr/local/bin',
+            'sudo cp scripts/services/udisks2-listener.service /etc/systemd/system',
             'sudo chmod 444 /etc/systemd/system/udisks2-listener.service',
             'sudo systemctl enable udisks2-listener.service',
         ]
@@ -815,7 +815,7 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
     # setup crontab - Replace the entire Pi user's crontab with AmpliPi's config/crontab
     # and point it to the AmpliPi install location's script directory.
     tasks += print_progress([Task("Setting up crontab", [
-                            f"cat {env['base_dir']}/config/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts@' | crontab -"], shell=True).run()])
+                            f"cat {env['base_dir']}/config/crontab | sed 's@SCRIPTS_DIR@{env['base_dir']}/scripts/jobs@' | crontab -"], shell=True).run()])
     # setup loopbacks
     tasks += print_progress(_setup_loopbacks(env['base_dir']))
   # squeezeboxserver (the system user the lyrionmusicserver package runs as) is normally created
@@ -1254,7 +1254,7 @@ def _copy_old_config(dest_dir: str) -> Task:
 
 
 def _create_backup(env, suffix: str = "") -> List[Task]:
-  task = Task('Take a configuration backup', f"{env['base_dir']}/scripts/backup_config.sh {suffix}".split())
+  task = Task('Take a configuration backup', f"{env['base_dir']}/scripts/jobs/backup_config.sh {suffix}".split())
   task.run()
   # Everything that consumes this wants a List, so let's give 'em a list.
   return [task]
@@ -1455,7 +1455,7 @@ def fix_file_props(env, progress) -> List[Task]:
   tasks = []
   lplatform = platform.platform().lower()
   if 'linux' in lplatform:
-    needs_exec = ['scripts/*', '*/*.bash', '*/*.sh']
+    needs_exec = ['scripts/*', 'scripts/*/*', '*/*.bash', '*/*.sh']
     make_exec = set()
     for exec_name in needs_exec:
       make_exec.update(glob.glob(f"{env['base_dir']}/{exec_name}"))
