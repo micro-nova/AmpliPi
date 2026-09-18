@@ -158,6 +158,10 @@ if ((start_stage <= 1)); then
   sudo umount "$seed_mnt_boot"
   rmdir "$seed_mnt_boot"
   seed_mnt_boot=""  # already cleaned up - don't let the EXIT trap try again
+  if [[ "$active_boot_part" != "2" ]] && [[ "$active_boot_part" != "3" ]]; then
+    echo "Error: couldn't determine the active slot from autoboot.txt (got '$active_boot_part')"
+    exit 1
+  fi
   [[ "$active_boot_part" == "2" ]] && active_root_part=5 || active_root_part=6
 
   sudo mount "${diskpath}-part${active_root_part}" "$seed_mnt_root"

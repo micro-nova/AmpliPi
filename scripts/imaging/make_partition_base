@@ -110,10 +110,14 @@ mnt=$(mktemp -d)
 sudo mount -o ro "${diskpath}-part1" "$mnt"
 active_boot_part=$(grep -A2 '\[all\]' "$mnt/autoboot.txt" | grep -oP 'boot_partition=\K[0-9]+') || true
 sudo umount "$mnt"
+if [[ "$active_boot_part" != "2" ]] && [[ "$active_boot_part" != "3" ]]; then
+  echo "Error: couldn't determine the active slot from autoboot.txt (got '$active_boot_part') - refusing to guess which slot is safe to wipe"
+  exit 1
+fi
 if [[ "$active_boot_part" == "2" ]]; then
   active_root_part=5; inactive_boot_part=3; inactive_root_part=6
 else
-  active_boot_part=3; active_root_part=6; inactive_boot_part=2; inactive_root_part=5
+  active_root_part=6; inactive_boot_part=2; inactive_root_part=5
 fi
 echo "Active slot is boot=p$active_boot_part/root=p$active_root_part - leaving it (and p1) bootable."
 
