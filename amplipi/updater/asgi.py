@@ -53,7 +53,7 @@ from starlette.responses import FileResponse
 import uvicorn
 # models
 # pylint: disable=no-name-in-module
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, root_validator
 from packaging.version import parse as parse_version
 from typing import Optional, Callable
 from enum import Enum
@@ -655,6 +655,16 @@ class UpdateManifest(BaseModel):
     """ Accept any case (e.g. a hand-edited manifest with "Full") by lowercasing before enum matching """
     return v.lower() if isinstance(v, str) else v
 
+  @root_validator
+  def _validate_type_specific_fields(cls, values):  # pylint: disable=no-self-argument
+    """ Enforce that fields marked as optional that required for a given update type exist for said update type """
+    manifest_type = values.get('type')
+    if manifest_type == UpdateType.DELTA and values.get('min_base_version') is None:
+      raise ValueError('type DELTA requires min_base_version')
+    if manifest_type == UpdateType.FULL and values.get('root') is None:
+      raise ValueError('type FULL requires root')
+    return values
+
 
 def _load_manifest(path: str) -> Optional[UpdateManifest]:
   """ Loads an update's manifest.json as an UpdateManifest object for easy reading """
@@ -1247,8 +1257,6 @@ def _flash_partition_body(tryboot: bool, channel: SSEChannel = flash_channel):
     # Relabel to match the slot actually being written, same as the boot partition above
     subprocess.run(["sudo", "e2label", f"/dev/mmcblk0p{target_slot.value.root}", f"ROOT-{target_slot.name}"], check=True)
 
-    # Create the update-pending file that the update validation service will use to detect an update happened post-reboot
-    subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
     subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
     channel.info('Patching root fstab...')
@@ -1268,6 +1276,14 @@ def _flash_partition_body(tryboot: bool, channel: SSEChannel = flash_channel):
     channel.info('Applying persist-logs preference...')
     set_persist_logs()
 
+    subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
+
+    # Always written last as this is what causes the amplipi-tryboot-verify.sh and amplipi-boot-deadline.sh
+    # services to validate the slot on next boot
+    # If this is written on an update that later fails, there could be odd behaviors on next reboot
+    channel.info('Marking update pending...')
+    subprocess.run(["sudo", "mount", f"/dev/mmcblk0p{target_slot.value.boot}", "/data/tmpmnt"], check=True)
+    subprocess.run(['sudo', 'tee', '/data/tmpmnt/update-pending'], input=str(target_slot.value.boot), text=True, check=True)
     subprocess.run(["sudo", "umount", "/data/tmpmnt"], check=True)
 
   except Exception as e:
