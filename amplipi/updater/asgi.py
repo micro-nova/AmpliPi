@@ -447,7 +447,7 @@ def get_version():
             version = match.group(1)
   except:
     pass
-  return {'version': version, 'inactive_version': _read_inactive_slot_version()}
+  return {'version': version, 'inactive_version': _read_inactive_slot_version(), 'min_secure_version': MIN_SECURE_VERSION}
 
 
 def _sse_message(t, msg):
@@ -710,6 +710,12 @@ def get_checksum(path: str, total_size: int, progress_cb: Optional[Callable] = N
 GITHUB_REPO = 'micro-nova/amplipi'  # matches scripts/update/apply_delta_update's own convention
 GITHUB_RELEASE_ASSET_RE = re.compile(rf'^https://github\.com/{re.escape(GITHUB_REPO)}/releases/download/[^/]+/[^/]+$')
 
+# This is currently unused, but exists as a preemptive solution to prevent users from downgrading their
+# units to a version with a known security flaw. If we ever get there, populate this with the version number of the
+# first known-good version after that flaw is discovered to prevent the downgrade
+# This is also sent to the frontend to prevent users from even seeing options under this version on the other releases tab
+MIN_SECURE_VERSION: Optional[str] = None
+
 
 def _release_asset_url(tag: str, filename: str) -> str:
   """ Direct GitHub release-asset download URL for a known tag/filename - no API call needed.
@@ -959,6 +965,10 @@ def _update_body(info: UpdateInfo):
     if info.expected_version is not None and manifest.version != info.expected_version:
       raise RuntimeError(
         f"Downloaded manifest is for version {manifest.version}, expected {info.expected_version} - refusing to proceed with the wrong release")
+
+    if MIN_SECURE_VERSION is not None and parse_version(manifest.version) < parse_version(MIN_SECURE_VERSION):
+      raise RuntimeError(
+        f"Version {manifest.version} is below the minimum secure version {MIN_SECURE_VERSION} - refusing to install it")
 
     if manifest.type == UpdateType.FULL:
       do_image_update(manifest)

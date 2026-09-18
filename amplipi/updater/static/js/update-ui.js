@@ -431,6 +431,7 @@ fetch('/update/version').then((resp) => {
   resp.json().then((info) => {
     version = info.version;
     inactiveVersion = info.inactive_version;
+    MIN_SECURE_VERSION = info.min_secure_version;
     // A release's label may have already been computed (and skipped, since inactiveVersion was
     // still undefined) before this resolved - redo it now for whatever's currently on screen.
     if (latestRelease) apply_update_label('#submit-latest-update', releaseManifestInfo[latestRelease.tag_name]);
@@ -447,7 +448,8 @@ let latestRelease = null;
 function show_latest_release(latest_release) {
   // Pre-A/B releases (< MIN_SUPPORTED_VERSION) have no manifest.json and don't fit this update
   // flow - treated the same as already being up to date, matching populate_available_releases.
-  if (latest_release.tag_name == version || !version_at_least(latest_release.tag_name, MIN_SUPPORTED_VERSION)) {
+  if (latest_release.tag_name == version || !version_at_least(latest_release.tag_name, MIN_SUPPORTED_VERSION)
+      || (MIN_SECURE_VERSION && !version_at_least(latest_release.tag_name, MIN_SECURE_VERSION))) {
     console.log('no A/B-compatible update available');
     $('#latest-update-name').empty().append('Your system is up to date  <i class="fas fa-check-circle text-success"></i>')
   } else {
@@ -474,6 +476,7 @@ function show_latest_release(latest_release) {
 // TODO: update once the actual first A/B-scheme release version is decided - everything before
 // it predates the partition scheme these manifests/delta updates assume, and isn't offered here.
 const MIN_SUPPORTED_VERSION = '0.5.0';
+let MIN_SECURE_VERSION = null; // Null until info fetch, gates what versions show in the other releases dropdown
 
 // Simple major.minor.patch comparison, not full semver - fine here since this is only a UI-side
 // preview (real enforcement is asgi.py's do_minimal_update, with real semver parsing). Returns
@@ -499,6 +502,7 @@ function populate_available_releases(releases) {
   // TODO: indicate difference between pre-releases and full-releases
   for (const release of releases) {
     if (!version_at_least(release.tag_name, MIN_SUPPORTED_VERSION)) continue;
+    if (MIN_SECURE_VERSION && !version_at_least(release.tag_name, MIN_SECURE_VERSION)) continue;
 
     console.log(`found "${release.name}" - ${release.tag_name}`);
     availableReleases[release.tag_name] = release;
