@@ -473,9 +473,8 @@ function show_latest_release(latest_release) {
   }
 }
 
-// TODO: update once the actual first A/B-scheme release version is decided - everything before
-// it predates the partition scheme these manifests/delta updates assume, and isn't offered here.
-const MIN_SUPPORTED_VERSION = '0.5.0';
+// TODO: update once the actual first A/B-scheme release version is decided
+const MIN_SUPPORTED_VERSION = '0.5.0'; // Used to prevent users from attempting to install a pre-A:B partition update
 let MIN_SECURE_VERSION = null; // Null until info fetch, gates what versions show in the other releases dropdown
 
 // Simple major.minor.patch comparison, not full semver - fine here since this is only a UI-side
