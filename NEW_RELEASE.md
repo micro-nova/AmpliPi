@@ -27,7 +27,8 @@ This project follows [Semantic Versioning](https://semver.org/). Here are some e
 * `0.3.0-alpha.0` is the first alpha release of the `0.3` feature release.
 
 ## Making a release
-- [ ] Decide what type of release you are making - Full or Delta
+
+- [ ] Decide what type of release you are making - Full or Delta. This should be decided for you in [CHANGELOG.md](CHANGELOG.md) based on the types of changes made.
 - [ ] Ensure the PR(s) with your features & fixes are merged into `main`.
 - [ ] Update the API by running `scripts/create_spec` script.
 - [ ] Create & merge a branch/PR off `main` to bump the version in the CHANGELOG and also using `poetry version ${VERSION}`
