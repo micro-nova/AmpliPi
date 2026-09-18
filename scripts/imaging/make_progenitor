@@ -379,4 +379,4 @@ echo "=== Stage 7/7: Wiping the now-stale slot $old_slot, then capturing the dis
 echo "Power off the Pi and reconnect it via the USB service cable (rpiboot mass-storage mode) now."
 read -rp "Press any key once it's ready to reconnect" -n 1; echo
 
-"$script_dir/capture_disk_image" --output-dir "$out_dir"
+"$script_dir/capture_disk_image" --output-dir "$out_dir" --yes

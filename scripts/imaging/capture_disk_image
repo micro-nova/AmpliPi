@@ -16,11 +16,13 @@ helptext="Usage: capture_disk_image [OPTION]...
 Capture a connected Pi's entire eMMC as a single compressed .img.xz, via rpiboot mass-storage mode.
 
   --output-dir, -o DIR: Output directory (default: current directory)
+  --yes:                Skip the 'Type yes to continue' confirmation. For scripted use.
   --debug:              Print all commands, and don't unmount/cleanup on exit
   -h, --help:           Print this help text
 "
 
 out_dir='.'
+assume_yes=false
 debug=false
 
 while [[ "$#" -gt 0 ]]; do
@@ -28,6 +30,7 @@ while [[ "$#" -gt 0 ]]; do
     --output-dir|-o)
       if (($# > 1)); then out_dir=$2; shift; else echo "--output-dir requires a value"; exit 1; fi
       ;;
+    --yes) assume_yes=true ;;
     --debug) debug=true ;;
     -h|--help) printf "%s" "$helptext"; exit 0 ;;
     *) printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1 ;;
@@ -73,6 +76,17 @@ if [[ "$root_b_entries" -eq 0 ]]; then
   echo "Slot B (root-B/p6) looks empty - this will capture as a progenitor image (single-slot, fills in on first OTA update)."
 else
   echo "Slot B (root-B/p6) looks populated - this will capture as a normal, already-dual-slot golden image."
+fi
+
+echo ""
+echo "This will lock the pi password and remove SSH host keys/authorized_keys from every populated"
+echo "slot on $diskpath, then image the result. Make sure this is a disposable/about-to-ship unit,"
+echo "not one you're still relying on for SSH access."
+if $assume_yes; then
+  echo "--yes given, skipping confirmation."
+else
+  read -rp "Type 'yes' to continue: " confirm
+  [[ "$confirm" == "yes" ]] || { echo "Aborted."; exit 1; }
 fi
 
 # ---- Step 2b: scrub per-unit credentials from every populated slot before capture - anything
