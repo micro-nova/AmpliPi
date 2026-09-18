@@ -111,6 +111,10 @@ fi
 #     real first-boot password gets set, so this is only a lock until then, not a permanent one.
 #   - authorized_keys: removed outright - nothing regenerates or revokes this on a real first
 #     boot, so leaving it would mean permanent passwordless SSH access for whoever holds that key.
+#   - support-tunnel device db + WireGuard configs: same idea as the older scripts/imaging/cleanup
+#     tool already did for one-off customer units - if a support tunnel was ever activated on this
+#     reference unit before capture, its real WireGuard private key and device registration would
+#     otherwise get baked in and shared by every unit ever flashed from this image.
 scrub_slot_identity() {
   local part="$1"
   local mnt2
@@ -118,6 +122,8 @@ scrub_slot_identity() {
   sudo mount "$part" "$mnt2"
   sudo sed -i 's/^pi:\([^!][^:]*\):/pi:!\1:/' "$mnt2/etc/shadow"
   sudo rm -f "$mnt2/home/pi/.ssh/authorized_keys"
+  sudo rm -f "$mnt2/var/lib/support_tunnel/device.db"
+  sudo rm -f "$mnt2"/etc/wireguard/*
   sudo umount "$mnt2"
   rmdir "$mnt2"
 }
