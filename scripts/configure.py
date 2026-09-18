@@ -355,6 +355,7 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         'copy': [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
                  {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
         'script': [
+            'set -e',
             'if which nqptp  > /dev/null; then exit 0; fi',
             'pushd $(mktemp --directory)',
             'git clone https://github.com/mikebrady/nqptp.git',
@@ -374,9 +375,11 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     'fmradio': {
         'apt': ['rtl-sdr', 'git', 'build-essential', 'libsndfile1-dev', 'libliquid-dev', 'meson'],
         'script': [
+            'set -e',
             'if ! which redsea  > /dev/null; then',  # TODO: check version
             '  echo "Installing redsea"',
             '  cd /tmp',
+            '  rm -rf redsea',
             '  git clone --depth 1 https://github.com/windytan/redsea.git',
             '  cd redsea',
             '  meson setup build',
@@ -486,11 +489,13 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 'build-essential', 'pkg-config', 'python3-docutils', 'libdbus-1-dev',
                 'libglib2.0-dev', 'libsbc-dev'],
         'script': [
+            'set -e',
 
             # Skip the bluealsa build once already installed, to avoid a full re-clone/rebuild on
             # every deploy.
             'if [ ! -e /usr/bin/bluealsad ]; then',
             'echo installing bluealsa from source',
+            'rm -rf bluez-alsa',
             'git clone https://github.com/arkq/bluez-alsa',
             'cd bluez-alsa',
             'autoreconf --install --force',
@@ -939,7 +944,7 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
     if filter_deps(dep, dep_filter):
       continue
     sh_loc = f'{env["base_dir"]}/install_{dep}.sh'
-    with open(sh_loc, 'a') as sh:
+    with open(sh_loc, 'w') as sh:
       for scrap in script:
         sh.write(scrap + '\n')
     shargs = f'bash {sh_loc}'.split()
