@@ -59,23 +59,38 @@ rpiboot_connect
 # $diskpath is set by rpiboot_connect above.
 
 # ---- Step 2: sanity-check the partition table looks like a real 7-partition A/B layout, and
-# report whether slot B looks populated or empty (informational only - this tool captures
-# whatever's there either way; the caller decides which kind of image they meant to build by
-# whether they cloned slot A onto slot B before running this). ----
+# report which slot(s) look populated (informational only - this tool captures whatever's there
+# either way). Checks both slots individually rather than assuming either one is always the
+# populated one - make_progenitor's own pipeline alternates which physical partition (p5 vs p6)
+# ends up populated from one run to the next, since it always migrates onto the *other* slot from
+# whichever was active going in. ----
 for i in 1 2 3 5 6 7; do
   [[ -e "${diskpath}-part${i}" ]] || { echo "Error: ${diskpath}-part${i} not found - this doesn't look like a 7-partition A/B disk"; exit 1; }
 done
 
 mnt=$(mktemp -d)
-sudo mount -o ro "${diskpath}-part6" "$mnt"
 # A freshly-formatted, never-populated ext4 partition contains only lost+found. Anything else
-# means slot B has real content on it (a normal, already-dual-populated golden image).
-root_b_entries=$(sudo ls -A "$mnt" | grep -vc '^lost+found$' || true)
-sudo umount "$mnt"
-if [[ "$root_b_entries" -eq 0 ]]; then
-  echo "Slot B (root-B/p6) looks empty - this will capture as a progenitor image (single-slot, fills in on first OTA update)."
+# means this slot has real content on it.
+slot_populated() {
+  sudo mount -o ro "$1" "$mnt"
+  local entries
+  entries=$(sudo ls -A "$mnt" | grep -vc '^lost+found$' || true)
+  sudo umount "$mnt"
+  [[ "$entries" -gt 0 ]]
+}
+root_a_populated=false
+root_b_populated=false
+slot_populated "${diskpath}-part5" && root_a_populated=true
+slot_populated "${diskpath}-part6" && root_b_populated=true
+
+if ! $root_a_populated && ! $root_b_populated; then
+  echo "Error: neither root-A (p5) nor root-B (p6) has any content - this doesn't look like a real built slot"
+  exit 1
+elif $root_a_populated && $root_b_populated; then
+  echo "Both root-A (p5) and root-B (p6) look populated - this will capture as a normal, already-dual-slot golden image."
 else
-  echo "Slot B (root-B/p6) looks populated - this will capture as a normal, already-dual-slot golden image."
+  if $root_a_populated; then empty_slot="B (root-B/p6)"; else empty_slot="A (root-A/p5)"; fi
+  echo "Slot $empty_slot looks empty - this will capture as a progenitor image (single-slot, fills in on first OTA update)."
 fi
 
 echo ""
@@ -106,9 +121,11 @@ scrub_slot_identity() {
   sudo umount "$mnt2"
   rmdir "$mnt2"
 }
-echo "Locking pi account password and removing authorized_keys on root-A (p5)..."
-scrub_slot_identity "${diskpath}-part5"
-if [[ "$root_b_entries" -gt 0 ]]; then
+if $root_a_populated; then
+  echo "Locking pi account password and removing authorized_keys on root-A (p5)..."
+  scrub_slot_identity "${diskpath}-part5"
+fi
+if $root_b_populated; then
   echo "Locking pi account password and removing authorized_keys on root-B (p6)..."
   scrub_slot_identity "${diskpath}-part6"
 fi
