@@ -8,7 +8,7 @@
 * [ ] If applicable, have you updated the documentation/manual?
 * [ ] If applicable, have you updated the CHANGELOG?
 * [ ] If this change touches packages, services, or wider OS state, have you marked the future release version as `Type: FULL` in the CHANGELOG?
-* [ ] Does your submission pass linting & tests? You can test on localhost using `./scripts/test`
+* [ ] Does your submission pass linting & tests? You can test on localhost using `./scripts/dev/test`
 * [ ] Have you written new tests for your core features/changes, as applicable?
 * [ ] If this is a UI change, have you tested it across multiple browser platforms on both desktop and mobile?
 

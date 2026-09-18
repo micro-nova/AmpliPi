@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # cd to the repo root
-cd "$( dirname "$0" )/.."
+cd "$( dirname "$0" )/../.."
 source venv/bin/activate
 
 # Run pylint twice here to identify any code issues:
@@ -9,9 +9,12 @@ source venv/bin/activate
 # - Second to show first failure if any.
 pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
 pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
+pylint -E streams
+pylint -E scripts/jobs/increment_auto_off.py
 
 # Lint with mypy, static type checker
 mypy amplipi --ignore-missing-imports
+mypy scripts/jobs/increment_auto_off.py --ignore-missing-imports
 
 mkdir -p web/dist
 touch web/dist/index.html

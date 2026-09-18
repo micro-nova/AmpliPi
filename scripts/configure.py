@@ -1272,11 +1272,11 @@ def _start_restart_service(name: str, restart: bool, test_url: Union[None, str] 
         time.sleep(2)
       tasks.append(task)
     elif name == 'amplipi':
-      tasks[-1].output += "\ntry checking this service failure using 'scripts/run_debug_webserver' on the system"
+      tasks[-1].output += "\ntry checking this service failure using 'scripts/dev/run_debug_webserver' on the system"
       tasks.append(Task(
           f'Check {service} Status', f'{systemctl_cmd(system)} status {service}'.split()).run())
     elif 'amplipi-updater' in name:
-      tasks[-1].output += "\ntry debugging this service failure using 'scripts/run_debug_updater' on the system"
+      tasks[-1].output += "\ntry debugging this service failure using 'scripts/dev/run_debug_updater' on the system"
       tasks.append(Task(
           f'Check {service} Status', f'{systemctl_cmd(system)} status {service}'.split()).run())
   return tasks

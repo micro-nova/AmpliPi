@@ -22,8 +22,9 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# stop the production server
-test 'active' = $(systemctl --user is-active amplipi.service) && systemctl --user stop amplipi.service
+# stop the production server - a system unit (/etc/systemd/system), not --user, since this
+# migration's A/B work moved all app services off the user session
+test 'active' = $(sudo systemctl is-active amplipi.service) && sudo systemctl stop amplipi.service
 
 # kill debug webserver
 kill -KILL $(ps ax | grep 'python' | grep 'uvicorn' | awk '{print $1}') > /dev/null
@@ -36,9 +37,9 @@ fi
 
 if [[ "$mock_streams" != "True" ]] ; then
   # kill streaming services TODO: uvicorn should close the amplipi app cleaner, why doesnt it? wsgi?
-  killall spotifyd > /dev/null
+  killall go-librespot > /dev/null  # spotifyd's replacement - spotifyd itself is gone from the codebase
   killall pianobar > /dev/null
-  killall shairport-sync > /dev/null
+  killall shairport-sync shairport-sync-ap2 > /dev/null
   kill -KILL $(ps ax | grep 'python' | grep 'sp_meta' | awk '{print $1}') > /dev/null
   kill -KILL $(ps ax | grep 'python' | grep 'runvlc' | awk '{print $1}') > /dev/null
 fi
@@ -46,7 +47,7 @@ fi
 # get directory that the script exists in
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # run the script from the base directory
-cd ${SCRIPT_DIR}/..
+cd ${SCRIPT_DIR}/../..
 # use our virtual environment
 source venv/bin/activate
 # pass environment variables

@@ -3,7 +3,7 @@
 
 set -e
 
-cd "$( dirname "$0" )/.."
+cd "$( dirname "$0" )/../.."
 
 HELP="Push amplipi/updater/ to a remote AmpliPi and restart amplipi-updater.service
   usage: deploy_updater [USER@HOST]
