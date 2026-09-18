@@ -129,6 +129,7 @@ const DELTA_PHASES = [
   {label: 'Downloading manifest', weight: 1},
   {label: 'Downloading release', weight: 4},
   {label: 'Applying update', weight: 3},
+  {label: 'Installing Python dependencies', weight: 1},
 ];
 let flashPhases = FLASH_PHASES_ROOT_ONLY;
 let boldLabelEl = null;

@@ -68,6 +68,35 @@ def extract_archive(archive_path: str, dest_dir: str) -> str:
   return os.path.join(dest_dir, entries[0])
 
 
+# This script is run by root, but uv lives in the pi user's directory
+# If root doesn't have uv, use the pi user's copy instead of reinstalling
+def _find_uv() -> str:
+  found = shutil.which('uv')
+  if found:
+    return found
+  pi_uv = '/home/pi/.local/bin/uv'
+  if os.path.exists(pi_uv):
+    return pi_uv
+  raise RuntimeError('uv not found on PATH or at /home/pi/.local/bin/uv - cannot install Python dependencies')
+
+
+def sync_python_deps(target_dir: str):
+  """ Re-installs target_dir/requirements.txt into target_dir/venv, in case this release bumped
+  or added a dependency - apply_paths only copies the file, it doesn't install anything.
+  Runs unconditionally rather than diffing the old/new file - `uv pip install` is a fast no-op
+  against an already-satisfied requirements.txt, and this avoids ever getting that diff wrong. """
+  venv_python = os.path.join(target_dir, 'venv', 'bin', 'python')
+  requirements_path = os.path.join(target_dir, 'requirements.txt')
+  if not os.path.exists(venv_python):
+    raise RuntimeError(f'No venv found at {venv_python} - target slot is not a real AmpliPi install')
+  if not os.path.exists(requirements_path):
+    raise RuntimeError(f'{requirements_path} missing after sync - release tarball should always carry one')
+
+  print('Installing Python dependencies: 0%')
+  subprocess.run([_find_uv(), 'pip', 'install', '--python', venv_python, '-r', requirements_path], check=True)
+  print('Installing Python dependencies: 100%')
+
+
 def apply_paths(src_root: str, target_dir: str):
   # Preserve whatever ownership target_dir already had (normally pi:pi) instead of leaving
   # whatever ran this script as the new owner - when invoked via sudo (do_minimal_update does,
@@ -148,6 +177,8 @@ def main():
 
     print(f'Applying to {args.target_dir}...')
     apply_paths(src_root, args.target_dir)
+
+    sync_python_deps(args.target_dir)
 
     print('Done.')
   finally:
