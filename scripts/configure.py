@@ -828,7 +828,7 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
       'upgrade debian packages',
       'sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade --assume-yes; rc=$?; '
       'if [ $rc -ne 0 ]; then '
-      '  broken=$(dpkg -l | awk \'$1 ~ /F$/ {print $2}\' | sed "s/:.*//" | sort -u); '
+      '  broken=$(dpkg -l | awk \'$1 ~ /[FHWt]$/ {print $2}\' | sed "s/:.*//" | sort -u); '
       '  other_broken=$(echo "$broken" | grep -vE "^(openssh-server|ssh)$" || true); '
       '  if [ -n "$broken" ] && [ -z "$other_broken" ]; then '
       '    echo "dist-upgrade failed, but only openssh-server/ssh are left unconfigured - the"; '
@@ -967,10 +967,10 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
         [Task(f'remove {dep} temporary script', args=clean, wd=env['base_dir']).run()])
 
   if env['is_amplipi']:
-    # SSH host keys live on /data (survive OS updates, give each unit a stable identity across
-    # A/B slot swaps) with /etc/ssh/ssh_host_* symlinked to them. Guarded on -L so repeat runs are
-    # a no-op once already symlinked; real keys already on disk are moved to /data rather than
-    # discarded, so existing known_hosts entries stay valid.
+    # SSH host keys live on /data (survives OS updates and A/B slot swaps), symlinked back from
+    # /etc/ssh/ssh_host_*. Each key is checked/migrated independently, not gated on one key
+    # standing in for all six, so an interrupted prior run resumes instead of permanently skipping
+    # whatever it hadn't reached yet. Existing keys are moved, not discarded, so known_hosts stays valid.
     #
     # Placed after all apt/dpkg activity, not before: openssh-server's postinst regenerates host
     # keys during dist-upgrade, and writing through the /data symlink while /data is transiently
@@ -979,12 +979,11 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
     tasks += print_progress([Task(
         "set up SSH host key symlinks to /data",
         args='sudo mkdir -p /data/ssh; '
-             'if [ ! -L /etc/ssh/ssh_host_ecdsa_key ]; then '
-             '  for key in ssh_host_ecdsa_key ssh_host_ecdsa_key.pub ssh_host_ed25519_key ssh_host_ed25519_key.pub ssh_host_rsa_key ssh_host_rsa_key.pub; do '
-             '    if [ -e "/etc/ssh/$key" ] && [ ! -e "/data/ssh/$key" ]; then sudo mv "/etc/ssh/$key" "/data/ssh/$key"; else sudo rm -f "/etc/ssh/$key"; fi; '
-             '    sudo ln -s "/data/ssh/$key" "/etc/ssh/$key"; '
-             '  done; '
-             'fi',
+             'for key in ssh_host_ecdsa_key ssh_host_ecdsa_key.pub ssh_host_ed25519_key ssh_host_ed25519_key.pub ssh_host_rsa_key ssh_host_rsa_key.pub; do '
+             '  if [ -L "/etc/ssh/$key" ]; then continue; fi; '
+             '  if [ -e "/etc/ssh/$key" ] && [ ! -e "/data/ssh/$key" ]; then sudo mv "/etc/ssh/$key" "/data/ssh/$key"; else sudo rm -f "/etc/ssh/$key"; fi; '
+             '  sudo ln -s "/data/ssh/$key" "/etc/ssh/$key"; '
+             'done',
         shell=True).run()])
 
   # cleanup
