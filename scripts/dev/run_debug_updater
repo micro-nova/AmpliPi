@@ -7,7 +7,7 @@ HELP="""Run AmpliPi's update webserver
 set -e
 
 # get directory that the script exists in
-cd "$( dirname "$0" )/.."
+cd "$( dirname "$0" )/../.."
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in

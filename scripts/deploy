@@ -11,18 +11,48 @@ HELP="Install/Update AmpliPi software on a remote system defined by USER@HOST (d
 
   --fw:      program the latest preamp firmware
   --pw:      generate and set a new random password
-  --no-deps: skip installing os-deps and python-deps on AmpliPi"
+  --dev:     skip a few version checks and increase verbosity
+  --alsa:    configure alsa settings
+  --no-deps: skip installing os-deps, python-deps, and custom-deps on AmpliPi
+  --no-web: Skip compiling the web directory. May result in failures or odd behavior if you haven't compiled recently, but saves a lot of time if you have compiled recently.
+  --batch:   Fail immediately with an error instead of falling back to the interactive
+             ssh-copy-id prompt when SSH key auth isn't already working. For unattended/scripted
+             use (e.g. make_golden_release) where nobody is watching to answer that prompt - the
+             normal interactive fallback stays the default for everyone running this by hand.
+  --clean:   Deploy the plain pyproject.toml version as-is, skipping the usual dev-info suffix
+             (+commit-branch[-dirty]) below. Used by anything meant to produce a real, deployable
+             image (make_golden_release, make_progenitor, which pass this by default) rather than
+             a dev-iteration build."
 
 user_host='pi@amplipi.local'
 user_host_set=false
 fw=false
 pw=false
+dev=false
+alsa=false
 deps=true
+dep_filter=()
+web=true
+batch=false
+clean=false
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --fw) fw=true ;;
     --pw) pw=true ;;
+    --alsa) alsa=true ;;
+    --dev) dev=true ;;
+    --batch) batch=true ;;
+    --clean) clean=true ;;
     --no-deps) deps=false ;;
+    --dep-filter)
+    if [[ -z "$2" || "$2" =~ ^-- ]]; then
+      echo "Error: --dep-filter requires a value"
+      exit 1
+    fi
+    dep_filter+=("$2")
+    shift
+    ;;
+    --no-web) web=false ;;
     -h|--help) echo -e "$HELP"; exit 0 ;;
     *) if ! $user_host_set; then
           user_host=$1
@@ -41,8 +71,13 @@ printf "Deploying amplipi project to $user_host.\n"
 printf "Preamp firmware will %sbe programmed.\n" "$($fw || printf "NOT ")"
 printf "A new password will %sbe generated.\n" "$($pw || printf "NOT ")"
 printf "os-deps and python-deps will %sbe installed on $user_host.\n" "$($deps || printf "NOT ")"
-read -p "Press any key to continue (Ctrl-C to quit)" -n 1
-printf "\n"
+# Skip when stdin isn't a terminal (e.g. driven non-interactively by make_golden_release) -
+# nobody's there to press a key, and with `set -e` above, read hitting EOF on a closed/redirected
+# stdin would otherwise abort the whole script right here instead of just skipping the prompt.
+if [[ -t 0 ]]; then
+  read -p "Press any key to continue (Ctrl-C to quit)" -n 1
+  printf "\n"
+fi
 # TODO: deploy amplipi as a python installed package with pip or something similar
 # NOTE: this probably doesnt make sense until we use a more advanced version of poetry or figure out how to not spam the global directory with our scripts and other files?
 # check if amplipi is found
@@ -115,53 +150,83 @@ if ! which git-lfs; then
   echo "git-lfs needs to be installed to use this script"
 fi
 
-# create a virtual environment and install pip dependencies
-if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate ]] && [[ ! -e ../venv/Scripts/activate ]]; then
-  echo  ""
-  echo "Setting up virtual environment"
-  mkdir -p ../venv
-  $python -m venv ../venv
+# astral.sh's installer puts uv here, but this directory only ends up on PATH via ~/.profile,
+# which login shells source and non-login/non-interactive ones (most terminals, and any script
+# invocation like this one) do not - so a uv installed by a previous run of this exact script was
+# still invisible to the check below, and got silently reinstalled on every single run.
+export PATH="$HOME/.local/bin:$PATH"
+
+if ! command uv --version >/dev/null 2>&1; then
+  echo ""
+  echo "uv not found, installing..."
+
+  curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
+
+if [[ ! -d ../venv ]] || [[ ! -e ../venv/bin/activate && ! -e ../venv/Scripts/activate ]]; then
+  echo ""
+  echo "Setting up virtual environment"
+
+  mkdir -p ../venv
+
+  if command -v uv >/dev/null 2>&1; then
+    echo "Using uv to create Python 3.8 venv"
+    uv venv venv --python 3.8
+  else
+    echo "Falling back to python venv"
+    $python -m venv ../venv
+  fi
+fi
+
+# activate venv (cross-platform)
 if [[ -e ../venv/Scripts/activate ]]; then
   source ../venv/Scripts/activate
 else
   source ../venv/bin/activate
 fi
-$python -m pip install --upgrade pip
-$python -m pip install poetry
+
+uv pip install poetry
 echo -e "Finished checking dependencies\n"
 
 # use a new version for the build but hide it from git since it isn't a real release
 old_version=$(poetry version -s)
 base_version=${old_version%+*} # trim +XXXXX to avoid generating a bad version below
-# parse the git info into: VERSION+GIT_HASH-BRANCH_NAME[-dirty]
-# 'git describe' searches the git commit tree for the latest version tag.
-# The only guaranteed output is the 7-character short commit hash of the current commit,
-# but typically git describe outputs VERSION-N-gHASH[-dirty].
-# --always means even if no tag was found still generate an output: HASH[-dirty]
-# --dirty appends -dirty if there are changes to tracked files or stashed changes
-# --long forces -N-gHASH to be printed even if tagged commit is checked out
-# --match '*.*.*' matches tags with *.*.* format (rules out fw/*)
-# || true effectively ignores the exit condition of git describe
-git_description=$(git describe --always --dirty --long --match '*.*.*' 2>/dev/null) || true
-if [[ -z $git_description ]]; then
-  # not a git repo, use poetry version and indicate unkown development state
-  git_info="$base_version+unknown"
-else
-  # the hash is by default 7 hex chars, but could be more if required to avoid collisions
-  git_hash=$(echo "$git_description" | sed -E 's/.*([0-9a-f]{7,}).*/\1/')
-  git_branch=$(git symbolic-ref --short HEAD 2>/dev/null) && git_branch="-$git_branch"
-  git_dirty=$(echo "$git_description" | sed -n 's/.*-dirty/-dirty/p')
-  git_info="$base_version+$git_hash$git_branch$git_dirty"
-fi
-poetry version ${git_info}
 
-echo "Building web app"
-pushd ../web            # Change to web directory
-npm install             # Install nodejs dependencies
-echo "VITE_BACKEND_VERSION=$(poetry version -s)" > .env # Collect the version number and bake it into the frontend
-npm run build           # Build the web app
-popd
+if $clean; then
+  # --clean: deploy exactly $old_version, no dev-info suffix - see --clean's --help text for why.
+  echo "Deploying clean version $old_version (--clean given, skipping dev-info suffix)"
+else
+  # parse the git info into: VERSION+GIT_HASH-BRANCH_NAME[-dirty]
+  # 'git describe' searches the git commit tree for the latest version tag.
+  # The only guaranteed output is the 7-character short commit hash of the current commit,
+  # but typically git describe outputs VERSION-N-gHASH[-dirty].
+  # --always means even if no tag was found still generate an output: HASH[-dirty]
+  # --dirty appends -dirty if there are changes to tracked files or stashed changes
+  # --long forces -N-gHASH to be printed even if tagged commit is checked out
+  # --match '*.*.*' matches tags with *.*.* format (rules out fw/*)
+  # || true effectively ignores the exit condition of git describe
+  git_description=$(git describe --always --dirty --long --match '*.*.*' 2>/dev/null) || true
+  if [[ -z $git_description ]]; then
+    # not a git repo, use poetry version and indicate unkown development state
+    git_info="$base_version+unknown"
+  else
+    # the hash is by default 7 hex chars, but could be more if required to avoid collisions
+    git_hash=$(echo "$git_description" | sed -E 's/.*([0-9a-f]{7,}).*/\1/')
+    git_branch=$(git symbolic-ref --short HEAD 2>/dev/null) && git_branch="-$git_branch"
+    git_dirty=$(echo "$git_description" | sed -n 's/.*-dirty/-dirty/p')
+    git_info="$base_version+$git_hash$git_branch$git_dirty"
+  fi
+  poetry version ${git_info}
+fi
+
+if $web; then
+  echo "Building web app"
+  pushd ../web            # Change to web directory
+  npm install             # Install nodejs dependencies
+  echo "VITE_BACKEND_VERSION=$(poetry version -s)" > .env # Collect the version number and bake it into the frontend
+  npm run build           # Build the web app
+  popd
+fi
 
 # pull in the latest binaries
 git lfs checkout
@@ -176,7 +241,13 @@ poetry version $old_version
 deactivate
 
 # setup ssh access if necessary
-if ! ssh -o PasswordAuthentication=no $user_host 'echo "AmpliPi has your SSH Key"'; then
+if ! ssh -o PasswordAuthentication=no -o BatchMode=yes $user_host 'echo "AmpliPi has your SSH Key"'; then
+  if $batch; then
+    echo "Error: --batch given and SSH key auth to $user_host isn't already working - refusing to" >&2
+    echo "fall back to the interactive ssh-copy-id prompt. Run deploy by hand once (without --batch)" >&2
+    echo "to establish key trust first, or check why an already-expected key wasn't carried over." >&2
+    exit 1
+  fi
   # By default ssh only searches the default keys, lets make sure one of them exist
   if [[ ! -f ~/.ssh/id_ed25519 ]] && [[ ! -f ~/.ssh/id_ecdsa ]] && [[ ! -f ~/.ssh/id_rsa ]]; then
     echo ""
@@ -202,8 +273,28 @@ ssh $user_host "chmod +x amplipi-dev/scripts/configure.py"
 opts=""
 $fw && opts="$opts --firmware"
 $pw && opts="$opts --password"
-$deps && opts="$opts --os-deps --python-deps"
-ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" || echo ""
+$alsa && opts="$opts --with-alsa"
+$deps && opts="$opts --os-deps --python-deps --custom-deps"
+$dev && opts="$opts --development"
+if [[ ${#dep_filter[@]} -gt 0 ]]; then
+  opts="$opts ${dep_filter[@]/#/--dep-filter }"
+fi
+# Captured rather than left to `set -e`: the polling below is useful signal even after a failed
+# configure.py run, so this shouldn't abort here - but swallowing the failure completely made
+# deploy report success no matter what happened remotely. configure_status is checked at the end,
+# after the diagnostics below have had their say, so deploy's own exit code finally means what it
+# says.
+#
+# Output is also captured (via tee) so it can be grepped below for configure.py's
+# AMPLIPI_INSTALL_COMPLETE_REBOOTING marker - a failed install() can exit cleanly before ever
+# rebooting, while the target's already-running, partially-installed services keep answering
+# ping/API checks regardless. Without the marker, deploy can't tell that apart from a genuine
+# reboot-and-recover.
+configure_log=$(mktemp)
+trap 'rm -f "$configure_log"' EXIT
+configure_status=0
+ssh $user_host -t "python3 amplipi-dev/scripts/configure.py --web --restart-updater --display --audiodetector$opts" 2>&1 | tee "$configure_log"
+configure_status=${PIPESTATUS[0]}
 
 printf "Waiting for AmpliPi to restart"
 restart_finished=false
@@ -222,7 +313,10 @@ echo
 if $restart_finished; then
   printf "Restart successful, waiting for amplipi service."
   amplipi_found=false
-  for i in {1..30}; do
+  # 60 tries (2 minutes), not the original 30 (1 minute): on a freshly-built slot's first-ever
+  # boot after a full install, amplipi.service genuinely needs more than a minute to become
+  # responsive (fresh venv, no bytecode cache, first-time hardware/zone discovery).
+  for i in {1..60}; do
     sleep 2
     printf "."
     if curl -sX GET "${host}/api" -H "Accept: application/json" >/dev/null; then
@@ -238,4 +332,35 @@ if $restart_finished; then
   ssh $user_host "rm ${release_name}.tar.gz"
 else
   echo "Restart failed."
+fi
+
+# Whether configure.py actually reached the reboot call - needed on top of
+# restart_finished/amplipi_found, since those two alone can't tell a genuine reboot-and-recover
+# apart from install() failing early and returning before ever rebooting: a failed install() exits
+# cleanly (no severed connection), and the target's already-running, partially-installed services
+# can still end up answering both checks anyway.
+install_completed=false
+grep -q 'AMPLIPI_INSTALL_COMPLETE_REBOOTING' "$configure_log" && install_completed=true
+
+if [[ $configure_status -ne 0 ]]; then
+  # A non-zero status here is expected, not just possible, on every successful run:
+  # --restart-updater makes configure.py's last action a reboot, which severs this ssh session
+  # mid-command rather than exiting cleanly - ssh reports that as a failure regardless of whether
+  # configure.py's own work succeeded. restart_finished/amplipi_found alone aren't enough: both can
+  # end up true from a target that was never rebooted at all (install() bailed early, its old
+  # already-running services just kept answering both checks) - install_completed is what catches
+  # that.
+  if $restart_finished && $amplipi_found && $install_completed; then
+    echo "Note: configure.py's ssh session reported a non-zero exit status ($configure_status), but"
+    echo "that's expected here - its own last action was to reboot the target (--restart-updater),"
+    echo "which always severs the connection before it can exit cleanly. The host came back up, the"
+    echo "API responded, and configure.py's own output confirms it actually reached that point -"
+    echo "treating this as a successful deploy."
+  else
+    echo "Error: configure.py exited with status $configure_status - deploy is incomplete even" >&2
+    echo "though the checks above may still show a service responding (possibly a previous install" >&2
+    echo "that was never actually replaced - install() did not confirm reaching its final reboot" >&2
+    echo "step)." >&2
+    exit $configure_status
+  fi
 fi

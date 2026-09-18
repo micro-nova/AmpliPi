@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Write a complete, pre-built disk image onto a Pi's eMMC via a single atomic streamed `dd`, over
+# a USB rpiboot mass-storage connection - manual partitioning would work too, but a known-good
+# base image to dd already covers our needs just fine.
+#
+# Used as the first stage of scripts/imaging/make_progenitor (bootstrapping a target unit into a known-
+# good, already-correctly-partitioned state from an existing progenitor image), but is a
+# standalone tool in its own right - useful any time you need to write a known-good image onto a
+# unit's eMMC directly, not just as part of that pipeline.
+
+set -euo pipefail
+
+helptext="Usage: flash_bootstrap_image --img FILE.img.xz
+Write a complete disk image onto a Pi's eMMC via rpiboot mass-storage mode + a single dd.
+
+  --img FILE.img.xz: Required. Path to a compressed (.img.xz) disk image to write verbatim.
+  --yes:             Skip the 'Type yes to continue' confirmation. For scripted use.
+  -h, --help:        Print this help text
+"
+
+img_file=''
+assume_yes=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --img)
+      if (($# > 1)); then img_file=$2; shift; else echo "--img requires a value"; exit 1; fi
+      ;;
+    --yes) assume_yes=true ;;
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *) printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1 ;;
+  esac
+  shift
+done
+
+[[ -n "$img_file" ]] || { printf "Error: --img FILE.img.xz is required.\n\n%s" "$helptext"; exit 1; }
+[[ -f "$img_file" ]] || { echo "Error: $img_file not found"; exit 1; }
+
+command -v xzcat >/dev/null || { echo "missing dependency: xzcat (part of xz-utils)"; exit 1; }
+
+current_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+# shellcheck source=modules/rpiboot_connect.sh
+source "$current_dir/modules/rpiboot_connect.sh"
+
+rpiboot_connect
+# $diskpath is set by rpiboot_connect above.
+
+echo ""
+echo "This will OVERWRITE THE ENTIRE DISK at $diskpath with $img_file."
+if $assume_yes; then
+  echo "--yes given, skipping confirmation."
+else
+  read -rp "Type 'yes' to continue: " confirm
+  [[ "$confirm" == "yes" ]] || { echo "Aborted."; exit 1; }
+fi
+
+# Don't casually change this sequence (dd conv=fsync, partprobe, explicit double sync + blockdev
+# --flushbufs) without re-validating against real hardware before telling the operator it's safe
+# to disconnect - small procedural variations here have caused write failures on this hardware.
+echo "Writing $img_file to $diskpath (this takes a while)..."
+xzcat "$img_file" | sudo dd of="$diskpath" bs=4M status=progress conv=fsync
+sudo partprobe "$diskpath"
+sleep 2
+
+echo "Flushing all writes to the device before it's safe to disconnect."
+sync
+sync
+sudo blockdev --flushbufs "$diskpath" 2>/dev/null || true
+sleep 5
+
+echo "
+Done. $diskpath now has $img_file written to it verbatim.
+Disconnect from rpiboot, power-cycle the unit normally, and wait for it to come up on the network.
+"

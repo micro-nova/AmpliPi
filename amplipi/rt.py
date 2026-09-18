@@ -283,6 +283,11 @@ class _Preamps:
     try:
       self.reset_preamps()
       self.set_i2c_addr()
+      try:
+        if self.bus is not None:
+          self.bus.close()
+      except Exception:
+        pass
       self.bus = SMBus(1)
       for addr, regs in list(self.preamps.items()):
         for reg, val in enumerate(regs):
@@ -297,9 +302,9 @@ class _Preamps:
 
   def write_byte_data(self, preamp_addr, reg, data):
     assert preamp_addr in _DEV_ADDRS
-    assert type(preamp_addr) == int
-    assert type(reg) == int
-    assert type(data) == int
+    assert isinstance(preamp_addr, int)
+    assert isinstance(reg, int)
+    assert isinstance(data, int)
     # dynamically update preamps (to support mock)
     if preamp_addr not in self.preamps:
       if self.bus is None:
@@ -319,6 +324,10 @@ class _Preamps:
         # Fallback 1: reopen the bus handle and retry (transient bus glitch).
         try:
           time.sleep(0.001)
+          try:
+            self.bus.close()
+          except Exception:
+            pass
           self.bus = SMBus(1)
           self.bus.write_byte_data(preamp_addr, reg, data)
         except Exception:
@@ -702,7 +711,7 @@ class Rpi:
     preamp = zone // 6
     mute_cfg = 0x00
     for z in range(6):
-      assert type(mutes[preamp * 6 + z]) == bool
+      assert isinstance(mutes[preamp * 6 + z], bool)
       if mutes[preamp * 6 + z]:
         mute_cfg = mute_cfg | (0x01 << z)
     self._bus.write_byte_data(_DEV_ADDRS[preamp], _REG_ADDRS['MUTE'], mute_cfg)
@@ -727,7 +736,7 @@ class Rpi:
     source_cfg456 = 0x00
     for z in range(6):
       src = sources[preamp * 6 + z]
-      assert type(src) == int or src is None
+      assert isinstance(src, int) or src is None
       if z < 3:
         source_cfg123 = source_cfg123 | (src << (z * 2))
       else:
@@ -779,7 +788,7 @@ class Rpi:
     # When digital is true, set the appropriate bit to 1
     assert len(digital) == 4
     for d in digital:
-      assert type(d) == bool
+      assert isinstance(d, bool)
 
     for i in range(4):
       if digital[i]:

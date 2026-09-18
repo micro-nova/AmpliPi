@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Capture AmpliPi partition images from a connected Pi's block devices to .img.xz files."""
+
+import argparse
+import os
+import re
+import shlex
+import subprocess
+import sys
+
+# root/boot partition numbers for each A/B slot - same mapping build_golden_slot and
+# scripts/configure.py rely on, used here to auto-detect the *inactive* slot when no device is
+# given explicitly, instead of making every caller work this out for itself.
+SLOT = {
+  'A': {'root': 5, 'boot': 2},
+  'B': {'root': 6, 'boot': 3},
+}
+
+def ssh_control_path(via: str) -> str:
+  return f"/tmp/amplipi-ssh-ctl-{via.replace('@', '_at_').replace('.', '_')}"
+
+
+def ssh_control_opts(via: str) -> list:
+  """Multiplexing options shared across every ssh call in a single --via run (and with
+  make_image_manifest's own --target push, since it derives the same path for the same host) - so
+  a whole make_update run only prompts for auth once instead of once per ssh/scp/rsync call."""
+  return ['-o', f'ControlPath={ssh_control_path(via)}', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=60']
+
+
+PREP_COMMANDS = [
+  # Remove orphaned packages and cached .deb downloads
+  (['sudo', 'apt-get', 'autoremove', '--purge', '-y'],                                                                        True),
+  (['sudo', 'apt-get', 'clean'],                                                                                              True),
+  # apt package index — stale in the image anyway; re-fetched on next apt-get update
+  (['sudo', 'rm', '-rf', '/var/lib/apt/lists/*'],                                                                             False),
+  # Journals
+  (['sudo', 'journalctl', '--rotate'],                                                                                        False),
+  (['sudo', 'journalctl', '--vacuum-size=1M'],                                                                                False),
+  # Rotated and archived log files outside journald
+  (['sudo', 'bash', '-c', 'find /var/log -type f \\( -name "*.log" -o -name "*.log.*" \\) -delete 2>/dev/null; true'],        False),
+  # Temp files and crash dumps
+  (['sudo', 'bash', '-c', 'rm -rf /tmp/* /var/tmp/*'],                                                                        False),
+  (['sudo', 'rm', '-rf', '/var/lib/systemd/coredump/*'],                                                                      False),
+  # Python bytecode — rebuilt on first import
+  (['sudo', 'bash', '-c', 'find /home/pi/amplipi-dev/venv -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null; true'],  False),
+  # User and root caches (pip downloads, thumbnails, etc.)
+  (['sudo', 'bash', '-c', 'rm -rf /home/pi/.cache/* /root/.cache/* 2>/dev/null; true'],                                       False),
+]
+
+
+def prep_device(via: str = None):
+  print('Preparing device for imaging...')
+  for cmd, check in PREP_COMMANDS:
+    if via:
+      subprocess.run(['ssh', *ssh_control_opts(via), via, shlex.join(cmd)], check=check)
+    else:
+      subprocess.run(cmd, check=check)
+
+
+def e2fsck_device(device: str, via: str = None):
+  print(f'Cleaning filesystem on {device}...')
+  cmd = ['sudo', 'e2fsck', '-p', device]
+  result = subprocess.run(['ssh', *ssh_control_opts(via), via, ' '.join(cmd)] if via else cmd)
+  if result.returncode not in (0, 1):
+    raise RuntimeError(f'e2fsck exited {result.returncode} on {device}')
+
+
+def capture_partition(device: str, output: str, via: str = None):
+  src = f'{via}:{device}' if via else device
+  print(f'Imaging {src} → {os.path.basename(output)}')
+  with open(output, 'wb') as out_f:
+    dd_cmd = f'sudo dd if={device} bs=4M status=progress'
+    dd = subprocess.Popen(
+      ['ssh', *ssh_control_opts(via), via, dd_cmd] if via else ['sudo', 'dd', f'if={device}', 'bs=4M', 'status=progress'],
+      stdout=subprocess.PIPE,
+    )
+    xz = subprocess.Popen(['xz', '-T0'], stdin=dd.stdout, stdout=out_f)
+    dd.stdout.close()
+    xz.wait()
+    dd.wait()
+  if dd.returncode != 0:
+    raise RuntimeError(f'dd failed with exit code {dd.returncode}')
+  if xz.returncode != 0:
+    raise RuntimeError(f'xz failed with exit code {xz.returncode}')
+
+
+def read_cmdline(via: str = None) -> str:
+  if via:
+    result = subprocess.run(['ssh', *ssh_control_opts(via), via, 'cat /proc/cmdline'], capture_output=True, text=True, check=True)
+    return result.stdout
+  with open('/proc/cmdline') as f:
+    return f.read()
+
+
+def inactive_slot_devices(via: str = None) -> tuple:
+  """Auto-detect the *inactive* A/B slot's root/boot partition devices via BOOT_SLOT, so
+  callers don't need to know or pass partition numbers for the common OTA-prep case."""
+  cmdline = read_cmdline(via)
+  m = re.search(r'BOOT_SLOT=(\w+)', cmdline)
+  if not m:
+    where = f' on {via}' if via else ''
+    print(f'Error: BOOT_SLOT not found in /proc/cmdline{where}', file=sys.stderr)
+    sys.exit(1)
+  current = m.group(1)
+  inactive = 'B' if current == 'A' else 'A'
+  parts = SLOT[inactive]
+  return f'/dev/mmcblk0p{parts["root"]}', f'/dev/mmcblk0p{parts["boot"]}'
+
+
+def main():
+  parser = argparse.ArgumentParser(description='Capture AmpliPi partition images from block devices')
+  parser.add_argument('root', nargs='?',
+                       help='Root partition device (e.g. /dev/sda5 or /dev/mmcblk0p5). '
+                            'If omitted, auto-detects and captures the inactive A/B slot instead '
+                            '(requires --via - see below).')
+  parser.add_argument('boot', nargs='?', help='Boot partition device (e.g. /dev/sda3 or /dev/mmcblk0p3)')
+  parser.add_argument('--output-dir', '-o', default='.', help='Output directory (default: current directory)')
+  parser.add_argument('--via', help='Capture from a remote Pi over SSH (e.g. pi@192.168.1.233). '
+                                     'These scripts are meant to be run from your laptop against a remote '
+                                     'Pi, not locally on the Pi itself - required whenever root is omitted.')
+  parser.add_argument('--no-boot', action='store_true',
+                       help="Don't image the boot partition when auto-detecting (ignored if root is given explicitly)")
+  args = parser.parse_args()
+
+  root, boot = args.root, args.boot
+  if not root:
+    if not args.via:
+      print("Error: no device given and no --via target. Auto-detecting the inactive slot only "
+            "makes sense against a remote Pi - pass --via USER@HOST, or give explicit device paths "
+            "to image a locally attached device instead.", file=sys.stderr)
+      sys.exit(1)
+    root, auto_boot = inactive_slot_devices(args.via)
+    boot = None if args.no_boot else auto_boot
+    detected = f'root={root}' + (f', boot={boot}' if boot else '')
+    print(f'No device given - auto-detected inactive slot on {args.via}: {detected}')
+
+  if not args.via:
+    for label, path in [('root', root), ('boot', boot)]:
+      if path and not os.path.exists(path):
+        print(f'Error: {label} device not found: {path}', file=sys.stderr)
+        sys.exit(1)
+
+  out_dir = os.path.abspath(args.output_dir)
+  os.makedirs(out_dir, exist_ok=True)
+
+  e2fsck_device(root, via=args.via)
+  capture_partition(root, os.path.join(out_dir, 'root.img.xz'), via=args.via)
+
+  if boot:
+    capture_partition(boot, os.path.join(out_dir, 'boot.img.xz'), via=args.via)
+
+  print(f'\nImages written to {out_dir}/')
+  print(f'Run ./scripts/imaging/make_image_manifest to generate a manifest and optionally push to a Pi.')
+
+
+if __name__ == '__main__':
+  main()

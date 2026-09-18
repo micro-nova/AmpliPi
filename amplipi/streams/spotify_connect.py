@@ -68,6 +68,7 @@ class SpotifyConnect(PersistentStream):
       'audio_device': utils.virtual_output_device(vsrc),
       'external_volume': True,  # False indicates volume user controllable, volume synchronization is needed for this to be enabled
       'mixer_device': '',  # where volume control is applied, for '' volume changes are not actually applied to output
+      'audio_period_count': 16,  # period_count=16 avoids an ALSA hw_params rejection on snd-aloop's plug-wrapped loopback devices at go-librespot's default buffer_time
       'credentials': {
         'type': 'zeroconf'
       },

@@ -1,0 +1,326 @@
+#!/usr/bin/env bash
+# Rebuild one A/B slot on an already-running, partitioned unit over SSH, from a stock Trixie Lite
+# image. Only ever formats+populates existing partitions on the inactive slot - never the
+# partition table, p1, or p7 (shared state: house.json, SSH host keys, LMS data). Does NOT install
+# AmpliPi (see deploy/configure.py) or scrub shipping identity (see scripts/imaging/cleanup) - see
+# make_golden_release, which wraps this + deploy + capture into one full usable image.
+
+set -euo pipefail
+
+helptext="Usage: build_golden_slot --remote USER@HOST [OPTION]...
+Rebuild the inactive boot+root slot on an already-running A/B unit, over the network, from a
+stock Trixie Lite image. Auto-detects which slot is inactive. Never touches p1 or p7.
+
+  --remote USER@HOST: Required. Target unit to rebuild the inactive slot on.
+  --hostname NAME:    Hostname to set on the new slot. Default is amplipi
+  --img FILE.img:     Use this local stock image instead of downloading one on-device (it's
+                       copied to the target over scp first). Ignored with --format-only.
+  --format-only:      Format the inactive slot's partitions but don't populate them (no
+                       download, no rsync, no identity re-seed) - just leaves them empty,
+                       formatted, and ready. Used to wipe a now-stale slot clean after migrating
+                       the unit onto its other slot, without wastefully re-downloading/re-rsyncing
+                       content nothing will boot before the unit's first real OTA update anyway.
+  --yes:               Skip the 'Type yes to continue' confirmation. For scripted/CI use.
+  --debug:             Print all commands, and don't unmount/cleanup on exit
+  -h, --help:          Print this help text
+"
+
+hostname='amplipi'
+img_file=''
+debug=false
+remote_target=''
+assume_yes=false
+format_only=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --hostname)
+      if (($# > 1)); then hostname=$2; shift; else echo "--hostname requires a value"; exit 1; fi
+      ;;
+    --img)
+      if (($# > 1)); then img_file=$2; shift; else echo "--img requires a value"; exit 1; fi
+      ;;
+    --remote)
+      if (($# > 1)); then remote_target=$2; shift; else echo "--remote requires a value"; exit 1; fi
+      ;;
+    --format-only) format_only=true ;;
+    --yes) assume_yes=true ;;
+    --debug) debug=true ;;
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *) printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1 ;;
+  esac
+  shift
+done
+
+[[ -n "$remote_target" ]] || { printf "Error: --remote USER@HOST is required.\n\n%s" "$helptext"; exit 1; }
+
+$debug && set -x
+
+current_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+amplipi_config_dir="$(realpath "$current_dir/../../config")"
+
+command -v ssh >/dev/null || { echo "missing dependency: ssh"; exit 1; }
+
+# Open one multiplexed connection up front and reuse it for every ssh/scp call below, so a
+# password-auth target only prompts once for the whole script instead of once per call.
+ctl_socket=$(mktemp -u /tmp/build-golden-slot-ssh-XXXXXX)
+close_ssh_master() { command ssh -O exit -o ControlPath="$ctl_socket" "$remote_target" 2>/dev/null; }
+trap close_ssh_master EXIT
+
+echo "Connecting to $remote_target"
+ssh -MNf -o ControlPath="$ctl_socket" -o ControlPersist=yes "$remote_target" \
+  || { echo "Error: couldn't establish SSH connection to $remote_target"; exit 1; }
+ssh() { command ssh -o ControlPath="$ctl_socket" "$@"; }
+scp() { command scp -o ControlPath="$ctl_socket" "$@"; }
+
+echo "Determining active slot on $remote_target"
+# Same BOOT_SLOT read as everywhere else - it's baked into the kernel cmdline at boot by the
+# firmware, not something this script or any app service sets, so it's always accurate.
+active_line=$(ssh "$remote_target" "grep -o 'BOOT_SLOT=[AB]' /proc/cmdline" || true)
+active_slot="${active_line#BOOT_SLOT=}"
+case "$active_slot" in
+  A) inactive_slot=B; inactive_boot=3; inactive_root=6 ;;
+  B) inactive_slot=A; inactive_boot=2; inactive_root=5 ;;
+  *) echo "Error: couldn't determine active slot from $remote_target (got '$active_line')"; exit 1 ;;
+esac
+
+if $format_only; then
+  echo "
+$remote_target is currently running slot $active_slot.
+This will ERASE boot-$inactive_slot (p$inactive_boot) and root-$inactive_slot (p$inactive_root),
+leaving them empty and formatted (no content). Slot $active_slot (currently running), p1
+(autoboot), and p7 (/data) will NOT be touched.
+"
+else
+  echo "
+$remote_target is currently running slot $active_slot.
+This will ERASE and rebuild boot-$inactive_slot (p$inactive_boot) and root-$inactive_slot (p$inactive_root)
+from a clean stock image. Slot $active_slot (currently running), p1 (autoboot), and p7 (/data -
+shared state: house.json, SSH host keys, LMS data) will NOT be touched.
+"
+fi
+if $assume_yes; then
+  echo "--yes given, skipping confirmation."
+else
+  read -rp "Type 'yes' to continue: " confirm
+  [[ "$confirm" == "yes" ]] || { echo "Aborted."; exit 1; }
+fi
+
+# If a local image was given (and we're actually going to use one), copy it to the target's /data
+# scratch space over scp up front, so the remote script below can skip its own on-device download
+# entirely - passed in as $6 (empty string if not used, meaning "download the default release").
+remote_img_path=''
+if [[ -n "$img_file" ]] && ! $format_only; then
+  [[ -f "$img_file" ]] || { echo "Error: $img_file not found"; exit 1; }
+  remote_img_path="/data/$(basename "$img_file")"
+  echo "Copying $img_file to $remote_target:$remote_img_path..."
+  scp "$img_file" "$remote_target:$remote_img_path"
+fi
+
+boot_config_b64=$(base64 -w0 "$amplipi_config_dir/boot_config.txt")
+ssh_seed_service_b64=$(base64 -w0 "$current_dir/../services/amplipi-seed-ssh-host-keys.service")
+
+if $format_only; then
+  echo "Formatting boot-$inactive_slot/root-$inactive_slot on $remote_target (leaving them empty)..."
+else
+  echo "Rebuilding boot-$inactive_slot/root-$inactive_slot on $remote_target (this takes a while)..."
+fi
+# ssh joins multiple trailing command-line arguments with a plain space and sends the result as
+# ONE string for the remote shell to word-split - it does NOT preserve the original argument
+# boundaries. An empty-string argument (remote_img_path, whenever --img isn't given) would
+# vanish entirely in that join, shifting every argument after it down by one position and
+# leaving the last one ($7, format_only) unset on the remote side. printf %q shell-quotes each
+# argument (an empty string becomes '') so the boundaries survive the round trip intact.
+remote_cmd=$(printf 'bash -s -- %q %q %q %q %q %q %q %q' \
+  "$inactive_boot" "$inactive_root" "$hostname" "$inactive_slot" "$boot_config_b64" "$remote_img_path" "$format_only" "$ssh_seed_service_b64")
+# shellcheck disable=SC2087
+ssh "$remote_target" "$remote_cmd" <<'REMOTE_SCRIPT'
+set -euo pipefail
+BOOT_PART="$1"; ROOT_PART="$2"; HOSTNAME_ARG="$3"; SLOT="$4"; BOOT_CONFIG_B64="$5"; IMG_PATH="$6"; FORMAT_ONLY="$7"; SSH_SEED_SERVICE_B64="$8"
+
+# ssh 'bash -s' is a non-login, non-interactive shell, which typically doesn't get /sbin or
+# /usr/sbin on PATH (unlike an interactive login session) - mkfs.*, losetup, etc. live
+# there, so without this the dependency check below fails even though the tools are present.
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
+for dep in mkfs.vfat mkfs.ext4 findmnt; do
+  command -v "$dep" >/dev/null || { echo "missing dependency on target: $dep"; exit 1; }
+done
+if [[ "$FORMAT_ONLY" != "true" ]]; then
+  for dep in rsync losetup wget unxz; do
+    command -v "$dep" >/dev/null || { echo "missing dependency on target: $dep"; exit 1; }
+  done
+fi
+
+# Sanity check: never let this touch whatever partition is currently mounted as / or
+# /boot/firmware, regardless of what the caller computed - a second, independent guard against
+# targeting the active slot by mistake.
+active_root_dev=$(findmnt -no SOURCE /)
+active_boot_dev=$(findmnt -no SOURCE /boot/firmware)
+for dev in "/dev/mmcblk0p${BOOT_PART}" "/dev/mmcblk0p${ROOT_PART}"; do
+  if [[ "$dev" == "$active_root_dev" || "$dev" == "$active_boot_dev" ]]; then
+    echo "Error: refusing to touch $dev - it's part of the currently active slot"
+    exit 1
+  fi
+done
+
+echo "Formatting boot-$SLOT (p$BOOT_PART) and root-$SLOT (p$ROOT_PART)"
+sudo mkfs.vfat -F 32 -n "BOOT-$SLOT" "/dev/mmcblk0p${BOOT_PART}"
+sudo mkfs.ext4 -F -L "ROOT-$SLOT" "/dev/mmcblk0p${ROOT_PART}"
+
+if [[ "$FORMAT_ONLY" == "true" ]]; then
+  echo "boot-$SLOT/root-$SLOT formatted and left empty (--format-only)."
+  exit 0
+fi
+
+# /tmp is commonly a small RAM-backed tmpfs on a Pi (a compressed image plus its multi-GB
+# extracted .img can easily exceed it, and fail with no useful error under set -e). /data
+# reliably has real disk space instead - this is scratch space only, cleaned up on exit, and
+# never goes near /data's actual persistent content (.config, ssh, update, update_scripts, lms).
+WORKDIR=$(mktemp -d -p /data)
+cleanup() {
+  set +e
+  sudo umount "$WORKDIR"/stock-boot "$WORKDIR"/stock-root "$WORKDIR"/target-boot "$WORKDIR"/target-root 2>/dev/null
+  [[ -n "${stock_loop:-}" ]] && sudo losetup -d "$stock_loop" 2>/dev/null
+  rm -rf "$WORKDIR"
+  [[ -n "$IMG_PATH" ]] && rm -f "$IMG_PATH"
+}
+trap cleanup EXIT
+
+if [[ -n "$IMG_PATH" ]]; then
+  echo "Using pre-copied image at $IMG_PATH"
+  img_file="$IMG_PATH"
+else
+  release=2025-12-04-raspios-trixie-arm64-lite.img
+  url=https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04/$release.xz
+  echo "Downloading stock image directly on-device..."
+  # -q was hiding wget's own error output on failure, making that failure look like a silent
+  # abort under set -e with no indication why - print progress instead, and fail loudly if it
+  # doesn't work rather than relying on set -e's bare non-zero exit alone.
+  if ! wget "$url" -O "$WORKDIR/$release.xz"; then
+    echo "Error: failed to download stock image from $url"
+    exit 1
+  fi
+  unxz "$WORKDIR/$release.xz"  # deletes the .xz on success by default, no separate cleanup needed
+  img_file="$WORKDIR/$release"
+fi
+
+mkdir -p "$WORKDIR"/stock-boot "$WORKDIR"/stock-root "$WORKDIR"/target-boot "$WORKDIR"/target-root
+stock_loop=$(sudo losetup --show -fP "$img_file")
+sudo mount "${stock_loop}p1" "$WORKDIR/stock-boot"
+sudo mount "${stock_loop}p2" "$WORKDIR/stock-root"
+sudo mount "/dev/mmcblk0p${BOOT_PART}" "$WORKDIR/target-boot"
+sudo mount "/dev/mmcblk0p${ROOT_PART}" "$WORKDIR/target-root"
+
+echo "Copying stock boot+root content"
+sudo rsync -aHAX "$WORKDIR/stock-boot/" "$WORKDIR/target-boot/"
+sudo rsync -aHAX "$WORKDIR/stock-root/" "$WORKDIR/target-root/"
+sudo umount "$WORKDIR/stock-boot" "$WORKDIR/stock-root"
+sudo losetup -d "$stock_loop"
+unset stock_loop
+
+echo "Configuring boot-$SLOT"
+sudo touch "$WORKDIR/target-boot/ssh"
+# Carry over the currently-active slot's real pi password hash instead of resetting to the
+# insecure stock default - this rebuilds one slot of an already-deployed, already-configured
+# unit, not a brand new system, so there's no reason to silently downgrade its password.
+current_pw_hash=$(sudo grep '^pi:' /etc/shadow | cut -d: -f2)
+echo "pi:${current_pw_hash}" | sudo tee "$WORKDIR/target-boot/userconf" >/dev/null
+echo "$BOOT_CONFIG_B64" | base64 -d | sudo tee "$WORKDIR/target-boot/config.txt" >/dev/null
+
+# Carries over the active slot's authorized_keys so the fresh slot's first SSH connection doesn't
+# fall back to password auth. Skipped if the active slot has none.
+if sudo test -s /home/pi/.ssh/authorized_keys; then
+  sudo mkdir -p "$WORKDIR/target-root/home/pi/.ssh"
+  sudo cp /home/pi/.ssh/authorized_keys "$WORKDIR/target-root/home/pi/.ssh/authorized_keys"
+  sudo chown -R 1000:1000 "$WORKDIR/target-root/home/pi/.ssh"
+  sudo chmod 700 "$WORKDIR/target-root/home/pi/.ssh"
+  sudo chmod 600 "$WORKDIR/target-root/home/pi/.ssh/authorized_keys"
+fi
+
+# Pre-seed looser sshd rate-limit tuning here - otherwise the fresh slot's first boot has stock
+# limits, and deploy's own SSH burst against it can trip them before deploy has a chance to apply
+# its own tuning.
+sudo mkdir -p "$WORKDIR/target-root/etc/ssh/sshd_config.d"
+echo "PerSourcePenalties authfail:1 max:30 min:5" | sudo tee "$WORKDIR/target-root/etc/ssh/sshd_config.d/ssh_penalties.conf" >/dev/null
+
+# root= uses a direct device path, not PARTUUID=: the /dev/disk/by-partuuid symlinks are
+# unreliable on this hardware and can slip between slots. This file is already slot-specific, so
+# a hardcoded /dev/mmcblk0pN carries exactly as much information as a PARTUUID would.
+echo "console=tty1 root=/dev/mmcblk0p${ROOT_PART} rootfstype=ext4 rootwait fsck.repair=yes systemd.setenv=BOOT_SLOT=${SLOT}" \
+  | sudo tee "$WORKDIR/target-boot/cmdline.txt" >/dev/null
+
+echo "Configuring root-$SLOT"
+printf "%s\n" "$HOSTNAME_ARG" | sudo tee "$WORKDIR/target-root/etc/hostname" >/dev/null
+sudo sed -i "s/raspberrypi/$HOSTNAME_ARG/" "$WORKDIR/target-root/etc/hosts"
+
+sudo sed -i -r -e 's/dialout:x:([0-9]+:.*)/dialout:x:\1,pi/' -e 's/:,pi/:pi/' -e 's/pi,pi/pi/' "$WORKDIR/target-root/etc/group"
+
+BLACKLIST="$WORKDIR/target-root/etc/modprobe.d/raspi-blacklist.conf"
+[[ -e "$BLACKLIST" ]] || sudo touch "$BLACKLIST"
+sudo sed -i -e "s/^\(blacklist[[:space:]]*i2c[-_]bcm2708\)/#\1/" "$BLACKLIST"
+sudo sed -i -e "s/^#[[:space:]]*\(i2c[-_]dev\)/\1/" "$WORKDIR/target-root/etc/modules"
+grep -q "^i2c[-_]dev" "$WORKDIR/target-root/etc/modules" || printf "i2c-dev\n" | sudo tee -a "$WORKDIR/target-root/etc/modules" >/dev/null
+
+sudo ln -sf usr/share/zoneinfo/Etc/UTC "$WORKDIR/target-root/etc/localtime"
+echo UTC | sudo tee "$WORKDIR/target-root/etc/timezone" >/dev/null
+
+# Using authoritative device paths, not PARTUUID=: the /dev/disk/by-partuuid symlinks are
+# unreliable on this hardware and can slip between slots. nofail on /data is defense-in-depth -
+# without it, a failed /data mount for any reason drops the whole boot into emergency mode
+# (no networking, no SSH) instead of just losing that one partition.
+cat <<EOF | sudo tee "$WORKDIR/target-root/etc/fstab" >/dev/null
+proc            /proc           proc    defaults          0       0
+/dev/mmcblk0p${BOOT_PART}  /boot/firmware  vfat    defaults          0       2
+/dev/mmcblk0p${ROOT_PART}  /               ext4    defaults,noatime  0       1
+/dev/mmcblk0p7  /data           ext4    defaults,noatime,nofail  0       2
+/dev/mmcblk0p1  /boot/autoboot  vfat  ro,defaults  0  2
+EOF
+
+# Same undocumented-elsewhere SSH host key symlink setup as the golden-slot build flow always
+# used - real keys stay on /data (untouched here), only the /etc/ssh/ symlinks on the fresh root
+# need creating.
+sudo rm -f "$WORKDIR"/target-root/etc/ssh/ssh_host_*
+for key in ssh_host_ecdsa_key ssh_host_ecdsa_key.pub ssh_host_ed25519_key ssh_host_ed25519_key.pub ssh_host_rsa_key ssh_host_rsa_key.pub; do
+  sudo ln -s "/data/ssh/$key" "$WORKDIR/target-root/etc/ssh/$key"
+done
+
+# Mask the stock first-boot key-regeneration service: it deletes our /etc/ssh symlinks above and
+# regenerates keys directly on root on first boot, bypassing /data/ssh entirely - fighting
+# scripts/imaging/cleanup's own per-unit identity step, which is what should own this instead.
+sudo mkdir -p "$WORKDIR/target-root/etc/systemd/system"
+sudo ln -sf /dev/null "$WORKDIR/target-root/etc/systemd/system/regenerate_ssh_host_keys.service"
+
+# /data/ssh starts empty on a genuinely fresh unit (capture_disk_image scrubs it), so with the
+# stock service masked, nothing generates host keys and sshd won't start. ssh-keygen -A fills in
+# only missing key types, so it's safe to run on every boot.
+echo "$SSH_SEED_SERVICE_B64" | base64 -d | sudo tee "$WORKDIR/target-root/etc/systemd/system/amplipi-seed-ssh-host-keys.service" >/dev/null
+sudo mkdir -p "$WORKDIR/target-root/etc/systemd/system/multi-user.target.wants"
+sudo ln -sf ../amplipi-seed-ssh-host-keys.service "$WORKDIR/target-root/etc/systemd/system/multi-user.target.wants/amplipi-seed-ssh-host-keys.service"
+
+# Bluetooth pairing keys persist via a systemd BindPaths= drop-in, not a plain symlink - see
+# scripts/configure.py's 'bluetooth' os_dep for why (bluetooth.service's ProtectSystem=strict +
+# StateDirectory=bluetooth needs a real directory at /var/lib/bluetooth, a symlink there makes
+# bluetoothd fail to start outright). p7/data is untouched by this script, so whatever's already
+# at /data/bluetooth is left as-is; this just keeps the fresh root structurally consistent with
+# the golden image from the start.
+sudo mkdir -p "$WORKDIR/target-root/var/lib/bluetooth"
+sudo mkdir -p "$WORKDIR/target-root/etc/systemd/system/bluetooth.service.d"
+cat <<'EOF' | sudo tee "$WORKDIR/target-root/etc/systemd/system/bluetooth.service.d/override.conf" >/dev/null
+[Service]
+StateDirectory=
+BindPaths=/data/bluetooth:/var/lib/bluetooth
+EOF
+
+sudo umount "$WORKDIR/target-boot" "$WORKDIR/target-root"
+echo "boot-$SLOT/root-$SLOT rebuilt from a clean stock image."
+REMOTE_SCRIPT
+
+echo "
+Slot $inactive_slot rebuilt on $remote_target from a clean stock image. p1, p7, and the currently
+active slot $active_slot were not touched.
+
+Next: reboot into slot $inactive_slot to verify it (e.g. stage an update-pending + tryboot the
+normal way, or however you'd like to switch to it), then run deploy/configure.py against it -
+same as before.
+"

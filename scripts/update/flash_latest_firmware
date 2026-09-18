@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Programs the preamp(s) with the newest firmware in fw/bin/ (preamp_X.Y.bin), unconditionally -
+# no check against what's currently installed. Safe to run after every update, full or delta:
+# reflashing identical firmware is harmless, and this is the only thing that ever gets a firmware
+# fix onto an already-shipped unit, since nothing else triggers a flash automatically.
+set -euo pipefail
+
+cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../.."
+
+latest=$(ls fw/bin/preamp_*.bin 2>/dev/null | sort -t_ -k2 -V | tail -1)
+if [ -z "$latest" ]; then
+  echo "No firmware found in fw/bin/ - nothing to flash"
+  exit 0
+fi
+
+echo "Flashing $latest"
+bash scripts/update/program_firmware "$latest"

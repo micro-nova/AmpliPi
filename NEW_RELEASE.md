@@ -27,13 +27,21 @@ This project follows [Semantic Versioning](https://semver.org/). Here are some e
 * `0.3.0-alpha.0` is the first alpha release of the `0.3` feature release.
 
 ## Making a release
+
+- [ ] Decide what type of release you are making - Full or Delta. This should be decided for you in [CHANGELOG.md](CHANGELOG.md) based on the types of changes made.
 - [ ] Ensure the PR(s) with your features & fixes are merged into `main`.
 - [ ] Update the API by running `scripts/create_spec` script.
 - [ ] Create & merge a branch/PR off `main` to bump the version in the CHANGELOG and also using `poetry version ${VERSION}`
 - [ ] Checkout main & create a detached HEAD: `git checkout main; git pull; git checkout --detach`
 - [ ] CD into `web`, Run `echo "VITE_BACKEND_VERSION=$(poetry version -s)" > .env; npm run build; git add -f web/dist; git commit -m "Build web app for release"`. This will encode the version number into the frontend, build it, and add the build to git for release.
 - [ ] Tag the changes so we can make a release on GitHub: `git tag -as ${VERSION} -m '' && git push origin ${VERSION}`
-- [ ] Make a release using the GitHub interface
+- Based on which release version you're making:
+  - Full Release (larger update with linux changes):
+    - [ ] Run the golden script and deploy to the fresh partitions, then create an image of this fresh boot partition (and boot, if you changed things there)
+    - [ ] Host image(s) at (OUR FILESERVER'S BASE URL)/${VERSION}/, copy each image's real download link into manifest.json's matching `root`/`boot` `url` field by hand
+  - Delta Release (Smaller, only touches AmpliPi code rather than wider system state):
+    - [ ] Run `scripts/imaging/make_delta_manifest ${VERSION} ${MIN_BASE_VERSION}` to generate manifest.json (git_ref always matches `${VERSION}`) - no images, so no fileserver upload needed
+- [ ] Make a release using the GitHub interface, attach manifest.json
 - [ ] Use the AmpliPi updater to update to the release
 - [ ] Test it again! If it needs changes, pull request your bugfixes against `main` and stamp a new release 😎
 - [ ] Inform Production of the new software so they keep backstock units updated prior to shipment
