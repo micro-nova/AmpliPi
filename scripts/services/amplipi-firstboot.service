@@ -1,0 +1,11 @@
+[Unit]
+Description=AmpliPi first-boot setup (default password, eink delivery message)
+RequiresMountsFor=/data
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/amplipi-firstboot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

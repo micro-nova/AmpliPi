@@ -276,20 +276,32 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         'amplipi_only': True,
         'copy': [
           {
-            'from': 'scripts/services/amplipi-firstboot-password.sh',
-            'to': '/usr/local/bin/amplipi-firstboot-password.sh',
+            'from': 'scripts/services/amplipi-firstboot.sh',
+            'to': '/usr/local/bin/amplipi-firstboot.sh',
             'sudo': 'true',
           },
           {
-            'from': 'scripts/services/amplipi-firstboot-password.service',
-            'to': '/etc/systemd/system/amplipi-firstboot-password.service',
+            'from': 'scripts/services/amplipi-firstboot-delivery-message.sh',
+            'to': '/usr/local/bin/amplipi-firstboot-delivery-message.sh',
+            'sudo': 'true',
+          },
+          {
+            'from': 'scripts/services/amplipi-delivery-message-revert.sh',
+            'to': '/usr/local/bin/amplipi-delivery-message-revert.sh',
+            'sudo': 'true',
+          },
+          {
+            'from': 'scripts/services/amplipi-firstboot.service',
+            'to': '/etc/systemd/system/amplipi-firstboot.service',
             'sudo': 'true',
           },
         ],
         'script': [
-            'sudo chmod +x /usr/local/bin/amplipi-firstboot-password.sh',
-            'sudo chmod 444 /etc/systemd/system/amplipi-firstboot-password.service',
-            'sudo systemctl enable amplipi-firstboot-password.service',
+            'sudo chmod +x /usr/local/bin/amplipi-firstboot.sh',
+            'sudo chmod +x /usr/local/bin/amplipi-firstboot-delivery-message.sh',
+            'sudo chmod +x /usr/local/bin/amplipi-delivery-message-revert.sh',
+            'sudo chmod 444 /etc/systemd/system/amplipi-firstboot.service',
+            'sudo systemctl enable amplipi-firstboot.service',
         ],
     },
     'support_tunnel': {

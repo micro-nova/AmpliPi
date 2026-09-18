@@ -46,7 +46,7 @@ commit() { # Swap which boot slot is considered primary and secondary p1's autob
 
   # The update this commit just finalized is now what's actually running - the multi-GB images
   # that got us here have served their purpose. Removing them now (rather than letting them sit on
-  # /data indefinitely, or waiting for scripts/cleanup to catch them manually) reclaims that space
+  # /data indefinitely, or waiting for scripts/imaging/cleanup to catch them manually) reclaims that space
   # right when it's safe to: do_checks() and the flash itself may still need them right up until
   # this point, but nothing after commit does.
   log "Cleaning up /data/update/ (images for the now-committed update)"

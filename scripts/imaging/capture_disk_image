@@ -137,7 +137,7 @@ if $root_b_populated; then
 fi
 
 # default_password.txt on p7 (shared, not per-slot) has to be cleared too, not just the password
-# hash locked above - amplipi-firstboot-password.service's guard is "does this file already
+# hash locked above - amplipi-firstboot.service's guard is "does this file already
 # exist", and whatever build/dev password is currently recorded there (each build_golden_slot
 # rebuild writes one so the builder has something to log in with) would otherwise make that guard
 # true forever, silently skipping password generation on every unit's own real first boot.
