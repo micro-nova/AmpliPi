@@ -107,7 +107,7 @@ ssh $user_host "sudo sed -i 's/127\.0\.1\.1.*/127.0.1.1\tamplipi/' /etc/hosts"
 ssh $user_host "sudo sed -i 's/.*/amplipi/' /etc/hostname"
 
 echo -e "generating a new default password"
-ssh $user_host "amplipi-dev/scripts/set_pass"
+ssh $user_host "amplipi-dev/scripts/services/set_pass"
 
 #echo -e "removing ssh key and erasing tracks"
 #ssh $user_host "rm -f ~/.ssh/*"
@@ -153,7 +153,7 @@ if $user_host_set; then
 fi
 
 echo -e "clearing & setting eink display to quickstart QR code"
-ssh $user_host "/home/pi/amplipi-dev/scripts/show-delivery-message"
+ssh $user_host "/home/pi/amplipi-dev/scripts/dev/show-delivery-message"
 
 # shutdown amplipi
 sleep 5

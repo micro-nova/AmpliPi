@@ -310,12 +310,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
                 'sudo': 'true'
             },
             {   # support tunnel scripts must be only be writable by root
-                'from': 'scripts/support_tunnel_post_up.sh',
+                'from': 'scripts/services/support_tunnel_post_up.sh',
                 'to': '/usr/local/bin/support_tunnel_post_up.sh',
                 'sudo': 'true'
             },
             {
-                'from': 'scripts/support_tunnel_post_down.sh',
+                'from': 'scripts/services/support_tunnel_post_down.sh',
                 'to': '/usr/local/bin/support_tunnel_post_down.sh',
                 'sudo': 'true'
             },
@@ -752,7 +752,7 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
     # at /etc/ssh/ssh_host_* and calls ssh-keygen -A directly on the root the moment a genuinely
     # fresh slot boots for the first time - unlinking the /data symlinks set up later in this
     # function before they ever take effect and bypassing /data entirely. This fights the per-unit
-    # identity scripts/cleanup gives each shipped unit, so it needs to be disabled.
+    # identity scripts/imaging/cleanup gives each shipped unit, so it needs to be disabled.
     #
     # Masking alone isn't enough: raspberrypi-sys-mods's own postinst unconditionally unmasks and
     # restarts this service on every upgrade, which happens during dist-upgrade below and races
@@ -1555,7 +1555,7 @@ def _check_password(env: dict, progress) -> List[Task]:
     task.run()
   else:
     # at this point the pi default password of 'raspberry' is still set
-    task.margs = [f"{env['base_dir']}/scripts/set_pass"]
+    task.margs = [f"{env['base_dir']}/scripts/services/set_pass"]
     task.run()
   progress([task])
   return [task]

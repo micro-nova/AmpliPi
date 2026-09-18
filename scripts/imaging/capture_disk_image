@@ -5,7 +5,7 @@
 # first OTA update) depends only on whether slot B is populated when this runs - same code path.
 #
 # Run this only against a Pi that's already partitioned, has at least one slot built + deployed,
-# and has had scripts/cleanup run right before shipping - it captures whatever's physically on the
+# and has had scripts/imaging/cleanup run right before shipping - it captures whatever's physically on the
 # disk with no awareness of AmpliPi state. See scripts/imaging/make_progenitor for the full pipeline.
 # Needs a USB-to-service-port connection (rpiboot mass-storage mode) - unlike make_images, this
 # captures the *active* slot too, so the disk must be powered off to avoid a corrupt capture.

@@ -1,0 +1,179 @@
+#!/usr/bin/env bash
+# Build a reusable make_progenitor --bootstrap-img seed: flash a known-good image onto a
+# connected Pi, wipe slot B and everything accumulated on p7 (plus scrub the active slot's
+# identity), then capture the result. Meant to break the circular dependency where
+# make_progenitor's --bootstrap-img default is just the previous progenitor build's own output,
+# quietly carrying forward whatever cruft accumulated on that specific unit generation over
+# generation.
+#
+# Deliberately does NOT touch p1 or the active slot's own boot+root partitions - make_progenitor's
+# own Stage 1 mounts and modifies both directly (reads autoboot.txt to find the active slot, writes
+# a fresh password hash into its /etc/shadow) while still connected over this same USB link, before
+# the unit is ever power-cycled. A whole-disk wipe would leave nothing for it to seed into and no
+# OS for the unit to ever boot from again - this script's whole point is being a drop-in
+# --bootstrap-img, not a from-scratch replacement for what that stage already does.
+
+set -euo pipefail
+
+helptext="Usage: make_partition_base --img FILE.img.xz [OPTION]...
+Flash a known-good image onto a connected Pi, reset it to a clean baseline (slot B wiped, p7
+cleared, active slot's identity scrubbed - p1 and the active slot's own OS untouched), and capture
+the result as partition_base.img.xz - a make_progenitor --bootstrap-img seed with no accumulated
+cruft from whatever unit the source image came from.
+
+  --img FILE.img.xz:    Image to flash first, to give the disk a correct partition table -
+                        typically an existing progenitor image. Defaults to
+                        \$HOME/progenitor.img.xz if that file exists; required otherwise.
+  --output-dir, -o DIR: Output directory for partition_base.img.xz (default: current directory)
+  --yes:                Skip the 'Type yes to continue' confirmation. For scripted use.
+  --debug:              Print all commands, and don't unmount/cleanup on exit
+  -h, --help:           Print this help text
+"
+
+img_file=''
+out_dir='.'
+assume_yes=false
+debug=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --img)
+      if (($# > 1)); then img_file=$2; shift; else echo "--img requires a value"; exit 1; fi
+      ;;
+    --output-dir|-o)
+      if (($# > 1)); then out_dir=$2; shift; else echo "--output-dir requires a value"; exit 1; fi
+      ;;
+    --yes) assume_yes=true ;;
+    --debug) debug=true ;;
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *) printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1 ;;
+  esac
+  shift
+done
+
+default_img="$HOME/progenitor.img.xz"
+if [[ -z "$img_file" && -f "$default_img" ]]; then
+  img_file="$default_img"
+  echo "No --img given - defaulting to $img_file"
+fi
+[[ -n "$img_file" ]] || { printf "Error: --img FILE.img.xz is required (no image found at %s).\n\n%s" "$default_img" "$helptext"; exit 1; }
+[[ -f "$img_file" ]] || { echo "Error: $img_file not found"; exit 1; }
+
+command -v xzcat >/dev/null || { echo "missing dependency: xzcat (part of xz-utils)"; exit 1; }
+
+$debug && set -x
+
+out_dir="$(realpath -m "$out_dir")"
+mkdir -p "$out_dir"
+
+cleanup() {
+  set +e
+  [[ -n "${mnt:-}" ]] && sudo umount "$mnt" 2>/dev/null
+  if ! $debug; then
+    [[ -n "${mnt:-}" ]] && rmdir "$mnt" 2>/dev/null
+  fi
+}
+trap cleanup EXIT
+
+current_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+# shellcheck source=modules/rpiboot_connect.sh
+source "$current_dir/modules/rpiboot_connect.sh"
+
+rpiboot_connect
+# $diskpath is set by rpiboot_connect above.
+
+echo ""
+echo "This will OVERWRITE THE ENTIRE DISK at $diskpath with $img_file, then wipe slot B, clear p7,"
+echo "scrub the active slot's identity, and capture the result. p1 and the active slot's own OS are"
+echo "left bootable."
+if $assume_yes; then
+  echo "--yes given, skipping confirmation."
+else
+  read -rp "Type 'yes' to continue: " confirm
+  [[ "$confirm" == "yes" ]] || { echo "Aborted."; exit 1; }
+fi
+
+# ---- Step 1: flash a known-good image so the disk has a correct partition table ----
+# Same dd/partprobe/sync sequence flash_bootstrap_image uses - don't casually change it, small
+# procedural variations here have caused write failures on this hardware.
+echo "Writing $img_file to $diskpath (this takes a while)..."
+xzcat "$img_file" | sudo dd of="$diskpath" bs=4M status=progress conv=fsync
+sudo partprobe "$diskpath"
+sleep 2
+sync
+sync
+sudo blockdev --flushbufs "$diskpath" 2>/dev/null || true
+
+# ---- Step 2: figure out which slot is active, same read make_progenitor's own Stage 1 does ----
+# p1 itself is never touched - only read here to know which slot to leave alone below.
+mnt=$(mktemp -d)
+sudo mount -o ro "${diskpath}-part1" "$mnt"
+active_boot_part=$(grep -A2 '\[all\]' "$mnt/autoboot.txt" | grep -oP 'boot_partition=\K[0-9]+') || true
+sudo umount "$mnt"
+if [[ "$active_boot_part" == "2" ]]; then
+  active_root_part=5; inactive_boot_part=3; inactive_root_part=6
+else
+  active_boot_part=3; active_root_part=6; inactive_boot_part=2; inactive_root_part=5
+fi
+echo "Active slot is boot=p$active_boot_part/root=p$active_root_part - leaving it (and p1) bootable."
+
+# ---- Step 3: wipe the inactive slot (boot+root) completely ----
+# It stays empty until the unit's own first real OTA update populates it - same as every
+# progenitor image already does; make_progenitor's later stages format it fresh regardless of
+# whatever state it's in beforehand.
+echo ""
+echo "Wiping the inactive slot (slow if this disk doesn't support TRIM over its USB bridge)..."
+for part in "${diskpath}-part${inactive_boot_part}" "${diskpath}-part${inactive_root_part}"; do
+  echo "Wiping $part..."
+  # blkdiscard (TRIM) is near-instant when the flash + USB bridge both support UNMAP passthrough,
+  # but many rpiboot mass-storage bridges don't - fall back to actually zeroing the partition when
+  # it fails. Slower, but always works and compresses just as well in the capture step below.
+  # "No space left on device" at the very end is dd's normal way of saying it hit the partition's
+  # boundary - expected, not a real failure.
+  if ! sudo blkdiscard "$part" 2>/dev/null; then
+    sudo dd if=/dev/zero of="$part" bs=4M status=progress conv=fsync 2>/dev/null || true
+  fi
+done
+
+# ---- Step 4: scrub the active slot's identity, same idiom capture_disk_image uses before
+# shipping any image ----
+# Locking (not clearing) the password hash is only a safety net for anyone who boots this image
+# directly without going through make_progenitor - that pipeline's own Stage 1 overwrites this
+# with a freshly generated one regardless. authorized_keys isn't re-seeded by anything downstream,
+# so it has to be removed here or it silently carries forward into every future generation.
+sudo mount "${diskpath}-part${active_root_part}" "$mnt"
+sudo sed -i 's/^pi:\([^!][^:]*\):/pi:!\1:/' "$mnt/etc/shadow"
+sudo rm -f "$mnt/home/pi/.ssh/authorized_keys"
+sudo umount "$mnt"
+
+# ---- Step 5: clear p7, but leave it formatted - make_progenitor's Stage 1 mounts and writes
+# fresh SSH host keys + a password file directly into it ----
+# Everything a real progenitor build's own dev/test lifecycle left behind (house.json, LMS library
+# data, old SSH host keys) is cleared so this base doesn't carry any of it forward.
+sudo mount "${diskpath}-part7" "$mnt"
+sudo find "$mnt" -mindepth 1 -delete
+sudo umount "$mnt"
+sync
+sync
+
+# ---- Step 6: clean the two ext4 filesystems left standing before imaging - same reasoning as
+# capture_disk_image's own e2fsck step, an unclean-feeling unmount produces a needlessly
+# larger/inconsistent compressed image ----
+for part in "${diskpath}-part${active_root_part}" "${diskpath}-part7"; do
+  echo "Cleaning filesystem on ${part}..."
+  sudo e2fsck -p -f "${part}" || { rc=$?; [[ $rc -le 1 ]] || { echo "Error: e2fsck exited $rc on ${part}"; exit 1; }; }
+done
+
+# ---- Step 7: capture the result ----
+out_file="$out_dir/partition_base.img.xz"
+echo ""
+echo "Imaging $diskpath → $(basename "$out_file") (this takes a while)..."
+sudo dd if="$diskpath" bs=4M status=progress | xz -T0 > "$out_file"
+
+echo "
+Wrote $out_file ($(du -h "$out_file" | cut -f1)).
+
+Slot B is empty, p7 is clean, and the active slot's identity is scrubbed - the active slot itself
+is still real and bootable. Use this directly as make_progenitor's --bootstrap-img: its own Stage 1
+seeds fresh SSH host keys and a password into exactly what's left here, the same way it always has.
+"

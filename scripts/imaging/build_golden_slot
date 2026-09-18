@@ -2,7 +2,7 @@
 # Rebuild one A/B slot on an already-running, partitioned unit over SSH, from a stock Trixie Lite
 # image. Only ever formats+populates existing partitions on the inactive slot - never the
 # partition table, p1, or p7 (shared state: house.json, SSH host keys, LMS data). Does NOT install
-# AmpliPi (see deploy/configure.py) or scrub shipping identity (see scripts/cleanup) - see
+# AmpliPi (see deploy/configure.py) or scrub shipping identity (see scripts/imaging/cleanup) - see
 # make_golden_release, which wraps this + deploy + capture into one full usable image.
 
 set -euo pipefail
@@ -287,7 +287,7 @@ done
 
 # Mask the stock first-boot key-regeneration service: it deletes our /etc/ssh symlinks above and
 # regenerates keys directly on root on first boot, bypassing /data/ssh entirely - fighting
-# scripts/cleanup's own per-unit identity step, which is what should own this instead.
+# scripts/imaging/cleanup's own per-unit identity step, which is what should own this instead.
 sudo mkdir -p "$WORKDIR/target-root/etc/systemd/system"
 sudo ln -sf /dev/null "$WORKDIR/target-root/etc/systemd/system/regenerate_ssh_host_keys.service"
 

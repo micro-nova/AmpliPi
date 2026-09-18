@@ -175,8 +175,8 @@ if ((start_stage <= 1)); then
   rm -rf "$seed_keys"
 
   # Same generation approach as build_golden_slot's own password handling (48.5 bits, same params
-  # as scripts/set_pass) - write the hash into the root's own /etc/shadow (replacing whatever's
-  # there, locked or not) and the plaintext onto /data the same way set_pass/scripts/cleanup do,
+  # as scripts/services/set_pass) - write the hash into the root's own /etc/shadow (replacing whatever's
+  # there, locked or not) and the plaintext onto /data the same way set_pass/scripts/imaging/cleanup do,
   # so the front-panel display (on hardware that has one) shows the same password this uses.
   AMPLIPI_SSH_PASSWORD=$(xkcdpass -n 4 --min 3 --max 7 -d '' -C first)
   password_hash=$(openssl passwd -6 -stdin <<< "$AMPLIPI_SSH_PASSWORD")
@@ -351,7 +351,7 @@ if ((start_stage <= 6)); then
   # (is_streamer/lms_mode are detected fresh from this unit's own hardware, so this is right for
   # both Controller and Streamer units); the PATCHes after it reproduce the exact "Groove Salad on
   # source 1/zone 1, Spotify + AirPlay 2 connected to sources with no zone assigned" state that
-  # scripts/cleanup has applied by hand before every prior shipment (see scripts/cleanup's own
+  # scripts/imaging/cleanup has applied by hand before every prior shipment (see scripts/imaging/cleanup's own
   # "Connecting Groove Salad, Spotify, Airplay sources" step) - done here so it's already baked
   # into the image capture_disk_image is about to take, instead of a separate manual step per unit.
   echo "Resetting to factory config and connecting default streams..."
