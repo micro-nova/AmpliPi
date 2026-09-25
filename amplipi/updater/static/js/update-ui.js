@@ -22,29 +22,6 @@ function ui_add_log(message, color)
   $('#debug').prepend(template);
 }
 
-// Updates a file progress, depending on the parameters it may animate it or change the color.
-function ui_multi_update_file_progress(id, percent, color, active)
-{
-  color = (typeof color === 'undefined' ? false : color);
-  active = (typeof active === 'undefined' ? true : active);
-
-  var bar = $('#uploaderFile' + id).find('div.progress-bar');
-
-  bar.width(percent + '%').attr('aria-valuenow', percent);
-  bar.toggleClass('progress-bar-striped progress-bar-animated', active);
-
-  if (percent === 0){
-    bar.html('');
-  } else {
-    bar.html(percent + '%');
-  }
-
-  if (color !== false){
-    bar.removeClass('bg-success bg-info bg-warning bg-danger');
-    bar.addClass('bg-' + color);
-  }
-}
-
 function ui_check_after_reboot(retry_check_ct) {
   // check reported version
   r = fetch("update/version").then(function (response) {

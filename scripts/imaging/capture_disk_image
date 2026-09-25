@@ -170,16 +170,8 @@ rmdir "$mnt"
 unset mnt
 
 # ---- Step 3: clean each ext4 filesystem before imaging - an unclean unmount produces a
-# needlessly larger/inconsistent compressed image. ----
-# e2fsck's own exit code 1 ("errors corrected") is a normal success outcome, not a failure to
-# retry on - e2fsck_tolerant folds that in before retry_on_partition ever sees the result, so only
-# a genuine device-access failure (e.g. this bridge's own transient part-node drop) triggers a retry.
-e2fsck_tolerant() {
-  local rc
-  sudo e2fsck -p -f "$1"
-  rc=$?
-  [[ $rc -le 1 ]]
-}
+# needlessly larger/inconsistent compressed image. e2fsck_tolerant (modules/rpiboot_connect.sh)
+# treats e2fsck's own exit code 1 as success before retry_on_partition ever sees the result. ----
 for part in 5 6 7; do
   echo "Cleaning filesystem on ${diskpath}-part${part}..."
   retry_on_partition e2fsck_tolerant "${diskpath}-part${part}" || { echo "Error: e2fsck failed on ${diskpath}-part${part} after retries"; exit 1; }

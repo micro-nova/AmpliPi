@@ -17,7 +17,6 @@
       onerror="this.onerror=null;this.href='static/css/libs/twitter-bootstrap/4.5.0/bootstrap.min.css';">
 
     <!-- Custom styles -->
-    <link href="static/css/jquery.dm-uploader.min.css" rel="stylesheet">
     <link href="static/css/styles.css" rel="stylesheet">
   </head>
 
@@ -330,25 +329,6 @@
     <script>window.remarkable || document.write('<script src="static/js/libs/remarkable/2.0.1/remarkable.min.js"><\/script>')</script>
 
     <script src="static/js/update-ui.js"></script>
-
-    <!-- File item template -->
-    <script type="text/html" id="files-template">
-      <li class="media">
-        <div class="media-body mb-1">
-          <p class="mb-2">
-            <strong>%%filename%%</strong> - Status: <span class="text-muted">Waiting</span>
-          </p>
-          <div class="progress mb-2">
-            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-              role="progressbar"
-              style="width: 0%"
-              aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-            </div>
-          </div>
-          <hr class="mt-1 mb-1" />
-        </div>
-      </li>
-    </script>
 
     <!-- Debug item template -->
     <script type="text/html" id="debug-template">

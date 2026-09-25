@@ -43,7 +43,6 @@ import configparser
 import requests
 from fastapi import FastAPI, Request, Depends, APIRouter, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.exceptions import HTTPException
 from sse_starlette.sse import EventSourceResponse
 from starlette.responses import FileResponse
 # web server

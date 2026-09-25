@@ -98,3 +98,13 @@ retry_on_partition() {
   echo "Error: command failed after 5 attempts: $*"
   return 1
 }
+
+# e2fsck exit code 1 ("errors corrected") is a normal success outcome, not something to retry on -
+# folds that in before retry_on_partition sees the result, so only a genuine device-access failure
+# triggers a retry.
+e2fsck_tolerant() {
+  local rc
+  sudo e2fsck -p -f "$1"
+  rc=$?
+  [[ $rc -le 1 ]]
+}

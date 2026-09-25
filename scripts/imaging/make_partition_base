@@ -197,15 +197,8 @@ fi
 if ((start_stage <= 6)); then
   # ---- Step 6: clean the two ext4 filesystems left standing before imaging - same reasoning as
   # capture_disk_image's own e2fsck step, an unclean-feeling unmount produces a needlessly
-  # larger/inconsistent compressed image ----
-  # e2fsck exit code 1 ("errors corrected") is a normal success outcome, not something to retry on -
-  # e2fsck_tolerant folds that in before retry_on_partition sees the result.
-  e2fsck_tolerant() {
-    local rc
-    sudo e2fsck -p -f "$1"
-    rc=$?
-    [[ $rc -le 1 ]]
-  }
+  # larger/inconsistent compressed image. e2fsck_tolerant (modules/rpiboot_connect.sh) treats
+  # e2fsck's own exit code 1 as success before retry_on_partition ever sees the result. ----
   for part in "${diskpath}-part${active_root_part}" "${diskpath}-part7"; do
     echo "Cleaning filesystem on ${part}..."
     retry_on_partition e2fsck_tolerant "${part}" || { echo "Error: e2fsck failed on ${part} after retries"; exit 1; }

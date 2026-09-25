@@ -60,15 +60,6 @@ hr {
   max-height: 500px;
 }
 
-.dm-uploader {
-  border: 0.25rem dashed #A5A5C7;
-  text-align: center;
-}
-.dm-uploader.active {
-  border-color: red;
-
-  border-style: solid;
-}
 .card {
   margin-bottom: 12px;
   -webkit-box-shadow: 6px 7px 19px 6px #000000;
