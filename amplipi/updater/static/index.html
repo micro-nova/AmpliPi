@@ -74,10 +74,14 @@
             </div>
 
             <div class="tab-pane fade" id="manual-update" role="tabpanel" aria-labelledby="manual-update-tab">
-              <div class="custom-file">
-                <input id="update-file-selector" type="file" accept=".gz" onchange="$('#submit-custom-update').removeClass('disabled');">
+              <div class="text-left">
+                <p>Direct custom updates are no longer supported through this interface.</p>
+                <p>If you need a custom or community-built image, AmpliPi's imaging tooling
+                  (see <code>scripts/imaging/</code> in the
+                  <a href="https://github.com/micro-nova/AmpliPi/tree/main/scripts/imaging" target="_blank" rel="noopener">GitHub repo</a>)
+                  can build a complete, flashable disk image - see the repository's documentation
+                  for building and flashing one yourself.</p>
               </div>
-              <a id="submit-custom-update" role="button" class="btn btn-lg btn-primary text-center mt-3 disabled" onclick="ui_upload_software_update();">Start Update</a>
             </div>
 
             <div class="tab-pane fade text-left" id="support-tunnel" role="tabpanel" aria-labelledby="support-tunnel-tab">

@@ -24,15 +24,12 @@ Simple web based software updates
 import logging
 import os
 import subprocess
-import glob
 import sys
-from tempfile import mkdtemp
 import re
 import json
 import threading
 import time
 import queue
-import pathlib
 import shutil
 import asyncio
 
@@ -44,7 +41,7 @@ import configparser
 
 # web framework
 import requests
-from fastapi import FastAPI, Request, File, UploadFile, Depends, APIRouter, Response
+from fastapi import FastAPI, Request, Depends, APIRouter, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import HTTPException
 from sse_starlette.sse import EventSourceResponse
@@ -69,8 +66,6 @@ sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
-
-sse_messages: queue.Queue = queue.Queue()
 
 
 class SSEChannel:
@@ -349,15 +344,6 @@ def get_index():
   return FileResponse(f'{dir_path}/static/index.html')
 
 
-def save_upload_file(upload_file: UploadFile, destination: pathlib.Path) -> None:
-  """ Save the update file """
-  try:
-    with destination.open("wb") as buffer:
-      shutil.copyfileobj(upload_file.file, buffer)
-  finally:
-    upload_file.file.close()
-
-
 def persist_logs_during_update():
   """Used during system updates to ensure persist logs is activated and has a minimum delay"""
   persist_data = get_log_persist_state()
@@ -371,34 +357,6 @@ def persist_logs_during_update():
     # Three days is an arbitrary number, picked to ensure the next few days of usage post-update are captured for support cases
     data = Persist_Logs(persist_logs=True, auto_off_delay=3)
     toggle_persist_logs(data=data)
-
-
-@router.post("/update/upload")
-async def start_upload(file: UploadFile = File(...)):
-  """ Start a upload based update """
-  logger.info(file.filename)
-  try:
-    persist_logs_during_update()
-    # TODO: use a temp directory and pass it the installation
-    os.makedirs('web/uploads', exist_ok=True)
-    save_upload_file(file, pathlib.Path('web/uploads/update.tar.gz'))
-    # TODO: verify file has amplipi version
-    return 200
-  except Exception as e:
-    logger.exception(e)
-    return 500
-
-
-@router.get('/update/restart')  # an old version accidentally used get instead of post
-@router.post('/update/restart')
-def restart():
-  """ Restart the OS and all of the AmpliPi services including the updater.
-
-  This is typically done at the end of an update
-  """
-  # start the restart, and return immediately (hopefully before the restart process begins)
-  subprocess.Popen(f'python3 {INSTALL_DIR}/scripts/configure.py --restart-updater'.split())
-  return 200
 
 
 TOML_VERSION_STR = re.compile(r'version\s*=\s*"(.*)"')
@@ -450,131 +408,12 @@ def get_version():
   return {'version': version, 'inactive_version': _read_inactive_slot_version(), 'min_secure_version': MIN_SECURE_VERSION}
 
 
-def _sse_message(t, msg):
-  """ Report an SSE message """
-  msg = msg.replace('\n', '<br>')
-  sse_msg = {'data': json.dumps({'message': msg, 'type': t})}
-  sse_messages.put(sse_msg)
-  # Give the SSE publisher time to handle the messages, is there a way to just yield?
-  time.sleep(0.1)
-
-
-def _sse_info(msg):
-  _sse_message('info', msg)
-
-
-def _sse_warning(msg):
-  _sse_message('warning', msg)
-
-
-def _sse_error(msg):
-  _sse_message('error', msg)
-
-
-def _sse_done(msg):
-  _sse_message('success', msg)
-
-
-def _sse_failed(msg):
-  _sse_message('failed', msg)
-
-
-@router.route('/update/install/progress')
-async def progress(req: Request):
-  """ SSE Progress server """
-  async def stream():
-    try:
-      while True:
-        if await req.is_disconnected():
-          logger.info('disconnected')
-          break
-        if not sse_messages.empty():
-          msg = sse_messages.get()
-          yield msg
-        await asyncio.sleep(0.2)
-      logger.info(f"Disconnected from client {req.client}")
-    except asyncio.CancelledError as e:
-      logger.exception(f"Disconnected from client (via refresh/close) {req.client}")
-      # Do any other cleanup, if any
-      raise e
-  return EventSourceResponse(stream())
-
-
 @router.route('/update/flash/progress')
 async def flash_progress(req: Request):
-  """ SSE progress server for /update/flash - same shape as /update/install/progress. A plain GET
-  consumed via EventSource means the browser can freely reconnect on any dropped connection
-  without affecting flash_partition_thread(), which keeps running regardless in its own thread. """
+  """ SSE progress server for /update/flash. A plain GET consumed via EventSource means the
+  browser can freely reconnect on any dropped connection without affecting
+  flash_partition_thread(), which keeps running regardless in its own thread. """
   return EventSourceResponse(flash_channel.stream(req))
-
-
-def extract_to_home(home):
-  """ The simple, pip-less install. Extract tarball and copy into users home directory """
-  temp_dir = mkdtemp()
-  _sse_info(f'Extracting software to temp directory {temp_dir}')
-  file_list = subprocess.getoutput('tar -tvf web/uploads/update.tar.gz')
-  # get the full name of the release
-  release = re.search(r'((micro-nova-)?amplipi-.*?)/', file_list, flags=re.IGNORECASE).group(1)
-  _sse_info(f'Got amplipi release: {release}')
-  subprocess.run('tar -xf web/uploads/update.tar.gz --directory={}'.format(temp_dir).split(),
-                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True)
-  _sse_info('copying software')
-  files_to_copy = ' '.join(glob.glob(f'{temp_dir}/{release}/*'))
-  subprocess.check_call(f'mkdir -p {home}'.split())
-  subprocess.check_call(f'cp -a {files_to_copy}  {home}/'.split())
-
-
-def indent(p: str):
-  """ indent paragraph p """
-  return '  ' + '  '.join(p.splitlines(keepends=True))
-
-
-def install_thread():
-  """ Basic tar.gz based installation """
-
-  _sse_info('starting installation')
-
-  try:
-    extract_to_home(INSTALL_DIR)
-    _sse_info('done copying software')
-  except Exception as e:
-    _sse_failed(f'installation failed, error extracting release: {e}')
-    return
-
-  try:
-    # use the configure script provided by the new install to configure the installation
-    time.sleep(1)  # update was just copied in, add a small delay to make sure we are accessing the new files
-    sys.path.insert(0, f'{INSTALL_DIR}/scripts')
-    import configure  # we want the new configure! # pylint: disable=import-error,import-outside-toplevel
-
-    def progress_sse(tasks):
-      for task in tasks:
-        _sse_info(task.name)
-        output = indent(task.output)
-        if task.success:
-          logger.info(f'info: {output}')
-          _sse_info(output)
-        else:
-          logger.warning(f'error: {output}')
-          _sse_error(output)
-    # reconfigure and restart everything but the updater
-    # (which is restarted later by update/restart)
-    success = configure.install(progress=progress_sse)
-    if success:
-      _sse_done('installation done')
-    else:
-      _sse_failed('installation failed')
-  except Exception as e:
-    _sse_failed(f'installation failed, error configuring update: {e}')
-    return
-
-
-@router.get('/update/install')
-def install():
-  """ Start the install after update is downloaded """
-  t = threading.Thread(target=install_thread)
-  t.start()
-  return {}
 
 
 class PasswordInput(BaseModel):
@@ -1040,8 +879,8 @@ def staged_update():
 def flash_partition_thread(tryboot: bool):
   """
     Validate the update package downloaded to /data/update and then flash the inactive boot slot.
-    Runs in its own background thread (like install_thread()), started by POST /update/flash and
-    watched via GET /update/flash/progress so that a dropped connection doesn't lead to a failed or duplicated update.
+    Runs in its own background thread, started by POST /update/flash and watched via
+    GET /update/flash/progress so that a dropped connection doesn't lead to a failed or duplicated update.
     tryboot arg is used to toggle whether or not "sudo reboot '0 tryboot'" is run at the end of flashing to actually change slots
     tryboot is false by default to simplify manual invocation during development
     see the BootSlot enum for slot mapping details

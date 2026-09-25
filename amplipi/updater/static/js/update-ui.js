@@ -45,43 +45,6 @@ function ui_multi_update_file_progress(id, percent, color, active)
   }
 }
 
-function ui_begin_update() {
-  // setup SSE events, for intermediate step info
-  var source = new EventSource("update/install/progress");
-  source.onmessage = function(event) {
-    var data = JSON.parse(event.data);
-    ui_show_update_progress(data);
-    if (data.type == 'success' || data.type == 'failed') {
-      source.close();
-      if (data.type == 'success') {
-        ui_reboot_app();
-      } else {
-        ui_show_failure();
-      }
-    }
-  };
-  fetch("update/install").catch( err => {
-    ui_add_log('Error starting installation: ' + err.message, 'danger');
-    ui_show_failure();
-  });
-}
-
-function ui_reboot_app() {
-  // initiate a reboot
-  fetch("update/restart").then(function (response) {
-    if (response.ok) {
-      ui_add_log('Restarting AmpliPi Update server to finish update', 'info');
-      setTimeout(ui_check_after_reboot, 5000, 2 * 60 / 5 - 1); // wait for 2 minutes just in case we ever have to restart the pi
-    } else {
-      ui_add_log('Error restarting update server: ' + response, 'danger');
-      ui_show_failure();
-    }
-  }).catch( err => {
-    ui_add_log('Error restarting update server: ' + err.message, 'danger');
-    ui_show_failure();
-  })
-}
-
 function ui_check_after_reboot(retry_check_ct) {
   // check reported version
   r = fetch("update/version").then(function (response) {
@@ -215,46 +178,25 @@ function ui_show_update_progress(status) {
   }
 }
 
-function ui_upload_software_update() {
-  ui_disable_buttons();
-  $('#update-log').show();
-  let data = new FormData();
-  let file = $('#update-file-selector')[0].files[0];
-  data.append('file', file);
-  try {
-    fetch('/update/upload', {
-      method: 'POST',
-      body: data,
-    }).then((response) => {
-      ui_add_log('updates typically take 10-15 minutes, please be patient', 'info');
-      ui_add_log('file uploaded', 'info');
-      ui_begin_update();
-    });
-  } catch(e) {
-    ui_add_log('Failed to upload file: ' + e, 'danger');
-    ui_show_failure();
-  }
-}
-
 function ui_disable_buttons() {
   $('#back-to-app').addClass('disabled');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').addClass('disabled');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Updating <i class="fas fa-circle-notch"></i>');
-  $('#older-update-sel, #update-file-selector').attr('disabled', '');
+  $('#submit-latest-update, #submit-older-update').addClass('disabled');
+  $('#submit-latest-update, #submit-older-update').empty().append('Updating <i class="fas fa-circle-notch"></i>');
+  $('#older-update-sel').attr('disabled', '');
 }
 
 function ui_show_done() {
   $('#back-to-app').removeClass('disabled');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').removeClass('btn-primary').addClass('btn-success');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Done!');
+  $('#submit-latest-update, #submit-older-update').removeClass('btn-primary').addClass('btn-success');
+  $('#submit-latest-update, #submit-older-update').empty().append('Done!');
 }
 
 function ui_show_failure() {
   $('#back-to-app').removeClass('disabled');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').removeClass('btn-primary').addClass('btn-danger');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').empty().append('Failed, Retry?');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').attr('onclick', 'window.location.reload(true)');
-  $('#submit-latest-update, #submit-older-update, #submit-custom-update').removeClass('disabled');
+  $('#submit-latest-update, #submit-older-update').removeClass('btn-primary').addClass('btn-danger');
+  $('#submit-latest-update, #submit-older-update').empty().append('Failed, Retry?');
+  $('#submit-latest-update, #submit-older-update').attr('onclick', 'window.location.reload(true)');
+  $('#submit-latest-update, #submit-older-update').removeClass('disabled');
 }
 
 let md = new remarkable.Remarkable();
@@ -417,9 +359,7 @@ function ui_start_selected_release_update() {
 function ui_show_offline_message() {
   $('#latest-update-name').empty().append('Unable to automatically check for latest release <i class="fas fa-times text-danger"></i>');
   OFFLINE_INFO = 'To update:\n\n\
-  1. Download the latest tar.gz release file from our \n\
-      [GitHub releases page](https://github.com/micro-nova/AmpliPi/releases).\n\
-  1. Use the the **Custom** update tab to upload the release.'
+  1. See the **Custom** update tab for how to build and flash an image manually.'
   $('#latest-update-desc').append(md.render(OFFLINE_INFO));
 }
 
