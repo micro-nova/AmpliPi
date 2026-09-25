@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# Capture a Pi's entire eMMC (partition table + all 7 partitions) as a single compressed,
-# flashable .img.xz - the final step of scripts/imaging/make_progenitor. Whether the result is a normal
-# dual-slot golden image or a single-slot progenitor image (fills in its second slot on the unit's
-# first OTA update) depends only on whether slot B is populated when this runs - same code path.
+# Capture a Pi's entire eMMC (partition table + all 7 partitions) as a single compressed
+# .img.xz - the final step of make_progenitor. Whether the result is a normal dual-slot golden
+# image or a single-slot progenitor image depends only on whether slot B is populated when this
+# runs - same code path either way.
 #
-# Run this only against a Pi that's already partitioned, has at least one slot built + deployed,
-# and has had scripts/imaging/cleanup run right before shipping - it captures whatever's physically on the
-# disk with no awareness of AmpliPi state. See scripts/imaging/make_progenitor for the full pipeline.
-# Needs a USB-to-service-port connection (rpiboot mass-storage mode) - unlike make_images, this
-# captures the *active* slot too, so the disk must be powered off to avoid a corrupt capture.
+# Run only against an already-partitioned, already-deployed Pi that's had cleanup run right
+# before shipping. Needs a USB-to-service-port connection (rpiboot mass-storage mode) - unlike
+# make_images, this also captures the *active* slot, so the disk must be powered off first.
 
 set -euo pipefail
 
@@ -58,12 +56,10 @@ source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/modules/rpiboot_connect.sh"
 rpiboot_connect
 # $diskpath is set by rpiboot_connect above.
 
-# ---- Step 2: sanity-check the partition table looks like a real 7-partition A/B layout, and
-# report which slot(s) look populated (informational only - this tool captures whatever's there
-# either way). Checks both slots individually rather than assuming either one is always the
-# populated one - make_progenitor's own pipeline alternates which physical partition (p5 vs p6)
-# ends up populated from one run to the next, since it always migrates onto the *other* slot from
-# whichever was active going in. ----
+# ---- Step 2: sanity-check the 7-partition layout, and report which slot(s) look populated
+# (informational only). Checks both individually rather than assuming one - make_progenitor
+# alternates which physical partition ends up populated each run, migrating onto whichever
+# slot was inactive going in. ----
 for i in 1 2 3 5 6 7; do
   [[ -e "${diskpath}-part${i}" ]] || { echo "Error: ${diskpath}-part${i} not found - this doesn't look like a 7-partition A/B disk"; exit 1; }
 done
@@ -71,8 +67,12 @@ done
 mnt=$(mktemp -d)
 # A freshly-formatted, never-populated ext4 partition contains only lost+found. Anything else
 # means this slot has real content on it.
+#
+# A mount failure here is a hard error, not "slot must be empty" - this is called via `&&`
+# (`slot_populated ... && root_a_populated=true`), and `set -e` doesn't apply inside a command
+# tested by `&&`, so a silent mount failure would otherwise read as "0 entries found".
 slot_populated() {
-  sudo mount -o ro "$1" "$mnt"
+  retry_on_partition sudo mount -o ro "$1" "$mnt" || { echo "Error: couldn't mount $1 after retries - can't tell if this slot is populated"; exit 1; }
   local entries
   entries=$(sudo ls -A "$mnt" | grep -vc '^lost+found$' || true)
   sudo umount "$mnt"
@@ -115,15 +115,20 @@ fi
 #     tool already did for one-off customer units - if a support tunnel was ever activated on this
 #     reference unit before capture, its real WireGuard private key and device registration would
 #     otherwise get baked in and shared by every unit ever flashed from this image.
+#   - persisted journal (/var/log/journal): same "baked into every unit flashed from this image"
+#     problem as the credentials above. Removing the directory outright, not just its contents,
+#     also restores the normal Storage=auto shipped default (volatile-only) instead of leaving
+#     persistence on for every future unit from this image.
 scrub_slot_identity() {
   local part="$1"
   local mnt2
   mnt2=$(mktemp -d)
-  sudo mount "$part" "$mnt2"
-  sudo sed -i 's/^pi:\([^!][^:]*\):/pi:!\1:/' "$mnt2/etc/shadow"
+  retry_on_partition sudo mount "$part" "$mnt2" || { echo "Error: couldn't mount $part after retries"; exit 1; }
+  sudo sed -i '/^pi:!/!s/^pi:\([^:]*\):/pi:!\1:/' "$mnt2/etc/shadow"
   sudo rm -f "$mnt2/home/pi/.ssh/authorized_keys"
   sudo rm -f "$mnt2/var/lib/support_tunnel/device.db"
   sudo rm -f "$mnt2"/etc/wireguard/*
+  sudo rm -rf "$mnt2/var/log/journal"
   sudo umount "$mnt2"
   rmdir "$mnt2"
 }
@@ -136,15 +141,13 @@ if $root_b_populated; then
   scrub_slot_identity "${diskpath}-part6"
 fi
 
-# default_password.txt on p7 (shared, not per-slot) has to be cleared too, not just the password
-# hash locked above - amplipi-firstboot.service's guard is "does this file already
-# exist", and whatever build/dev password is currently recorded there (each build_golden_slot
-# rebuild writes one so the builder has something to log in with) would otherwise make that guard
-# true forever, silently skipping password generation on every unit's own real first boot.
-# configure.py's deploy-time _check_password has the identical guard for the same reason, for the same file -
-# this is the boot-time equivalent of resetting it.
+# default_password.txt on p7 has to be cleared too, not just the password hash locked above -
+# amplipi-firstboot.service's guard is "does this file already exist", and a leftover build/dev
+# password would make that guard true forever, silently skipping password generation on every
+# unit's real first boot. configure.py's _check_password has the identical guard for the same
+# reason - this is the boot-time equivalent of resetting it.
 echo "Clearing default_password.txt on /data (p7) so first boot regenerates a fresh one..."
-sudo mount "${diskpath}-part7" "$mnt"
+retry_on_partition sudo mount "${diskpath}-part7" "$mnt" || { echo "Error: couldn't mount ${diskpath}-part7 after retries"; exit 1; }
 sudo rm -f "$mnt/.config/amplipi/default_password.txt"
 
 # house.json on p7 is deliberately left untouched here - make_progenitor's Stage 6 already puts
@@ -168,9 +171,18 @@ unset mnt
 
 # ---- Step 3: clean each ext4 filesystem before imaging - an unclean unmount produces a
 # needlessly larger/inconsistent compressed image. ----
+# e2fsck's own exit code 1 ("errors corrected") is a normal success outcome, not a failure to
+# retry on - e2fsck_tolerant folds that in before retry_on_partition ever sees the result, so only
+# a genuine device-access failure (e.g. this bridge's own transient part-node drop) triggers a retry.
+e2fsck_tolerant() {
+  local rc
+  sudo e2fsck -p -f "$1"
+  rc=$?
+  [[ $rc -le 1 ]]
+}
 for part in 5 6 7; do
   echo "Cleaning filesystem on ${diskpath}-part${part}..."
-  sudo e2fsck -p -f "${diskpath}-part${part}" || { rc=$?; [[ $rc -le 1 ]] || { echo "Error: e2fsck exited $rc on ${diskpath}-part${part}"; exit 1; }; }
+  retry_on_partition e2fsck_tolerant "${diskpath}-part${part}" || { echo "Error: e2fsck failed on ${diskpath}-part${part} after retries"; exit 1; }
 done
 
 # ---- Step 4: dd the whole disk (partition table + every partition, p7 already extends to the
@@ -187,11 +199,9 @@ script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 version=$(grep -m1 -oP '(?<=version = ")[^"]+' "$script_dir/../../pyproject.toml" || echo unknown)
 
 manifest_file="$out_dir/progenitor-manifest.json"
-# Remove any pre-existing manifest before writing (rather than truncating it via `>` directly):
-# an old copy left behind by an accidental `sudo` invocation of this script would be root-owned,
-# and this script never runs as root itself, so overwriting its *content* would fail with
-# Permission denied even though this normal-user process can freely replace the file outright
-# (file deletion is governed by the containing directory's permissions, not the file's own).
+# Remove any pre-existing manifest before writing, rather than truncating via `>` directly - a
+# root-owned leftover (from an accidental sudo invocation) would reject overwriting its content
+# even though this normal-user process can freely replace the file outright (a directory-permission thing).
 rm -f "$manifest_file"
 cat > "$manifest_file" <<EOF
 {

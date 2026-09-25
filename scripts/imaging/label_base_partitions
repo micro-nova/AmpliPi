@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-# One-off fix for a gap nothing else in the pipeline ever closes: p1 (autoboot) and p7 (data) never
-# get an explicit filesystem label set anywhere - unlike p2/p3/p5/p6 (BOOT-A/BOOT-B/ROOT-A/ROOT-B),
-# which build_golden_slot and asgi.py's flash path actively (re)label on every build/flash, p1 and
-# p7's filesystems are never recreated by anything in this repo, so whatever label (if any) they
-# have just carries forward via dd from whichever image is at the root of the current progenitor
-# lineage. Run this once against that root image/disk and the label propagates forward forever -
-# no ongoing script change needed. Deliberately not folded into make_partition_base, which is
-# scoped to resetting slot B/p7's contents and identity, not general partition labeling.
+# One-off fix for a gap nothing else in the pipeline closes: p1/p7 never get an explicit
+# filesystem label, unlike p2/p3/p5/p6 which build_golden_slot/asgi.py's flash path actively
+# relabel on every build. Their filesystems are never recreated, so whatever label they have just
+# carries forward via dd - run this once and it propagates forever. Not folded into
+# make_partition_base, which is scoped to slot-B/p7 content reset, not general labeling.
 #
 # Needs a USB-to-service-port connection (rpiboot mass-storage mode). Only touches filesystem
-# label metadata via fatlabel/e2label - never mounts, writes, or reformats anything.
+# label metadata - never mounts, writes, or reformats anything.
 
 set -euo pipefail
 
@@ -58,10 +55,10 @@ else
 fi
 
 echo "Labeling p1 (vfat) as AUTOBOOT..."
-sudo fatlabel "${diskpath}-part1" AUTOBOOT
+retry_on_partition sudo fatlabel "${diskpath}-part1" AUTOBOOT
 
 echo "Labeling p7 (ext4) as DATA..."
-sudo e2label "${diskpath}-part7" DATA
+retry_on_partition sudo e2label "${diskpath}-part7" DATA
 
 echo ""
 echo "Done. Current labels:"

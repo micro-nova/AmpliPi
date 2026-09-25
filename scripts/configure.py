@@ -796,12 +796,17 @@ def _install_os_deps(env, progress, with_alsa, deps=_os_deps.keys(), dep_filter:
   # services, so one already mid-transaction can still finish safely) and wait out any in-flight
   # transaction (5 min cap) before proceeding.
   tasks += print_progress([Task('wait for any concurrent apt/dpkg activity to clear',
+                                # Exit code is deliberate: fuser exits non-zero when the lock is
+                                # free (the success case) and sleep exits 0 on the timeout path
+                                # (the failure case) - without an explicit exit, status is backwards.
                                 args='sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true; '
                                 'for i in $(seq 1 60); do '
-                                '  sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break; '
+                                '  sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || exit 0; '
                                 '  echo "dpkg lock held by another process, waiting... ($i/60)"; '
                                 '  sleep 5; '
-                                'done',
+                                'done; '
+                                'echo "dpkg lock still held after 5 minutes - continuing anyway, the next apt-get step will surface this clearly if it is still a problem"; '
+                                'exit 1',
                                 shell=True).run()])
 
   # TODO: add extra apt repos

@@ -31,9 +31,12 @@ Build a pristine progenitor image: bootstrap from a known-good baseline, migrate
 deploy AmpliPi, wipe the old slot, capture the disk.
 
   --bootstrap-img FILE.img.xz: Known-good, already-correctly-partitioned baseline image to write
-                               onto the target via a single dd (e.g. the current field progenitor
-                               image). Defaults to \$HOME/progenitor.img.xz if that file exists;
-                               required otherwise.
+                               onto the target via a single dd. Defaults to
+                               \$HOME/partition_base.img.xz if that file exists (a cruft-free seed,
+                               see scripts/imaging/make_partition_base - preferred, since it avoids
+                               each new progenitor implicitly carrying forward whatever the last one
+                               happened to accumulate), else \$HOME/progenitor.img.xz if that
+                               exists; required otherwise.
   --hostname NAME:             Hostname for the fresh slot, forwarded to build_golden_slot
                                 (default: amplipi)
   --trixie-img FILE.img:       Use this stock Trixie image instead of downloading one, forwarded
@@ -84,11 +87,10 @@ done
 # Only needed if Stage 1 (the dd bootstrap) is actually going to run - resuming from a later
 # stage via --start-stage shouldn't demand this at all, since it won't be used.
 if ((start_stage <= 1)); then
-  # Default to the current field progenitor image if one's sitting in the usual place on this
-  # machine, so the common case (rebuilding the progenitor on the same machine that already has
-  # it) needs no flags - only override with --bootstrap-img when using a different baseline, or
-  # on a machine where it lives somewhere else.
-  default_bootstrap_img="$HOME/progenitor.img.xz"
+  # This script should be ran with base_partition.img.xz (the output of make_partition_base.sh)
+  # A previous progenitor image works as well, it just takes longer to flash that way
+  default_bootstrap_img="$HOME/partition_base.img.xz"
+  [[ -f "$default_bootstrap_img" ]] || default_bootstrap_img="$HOME/progenitor.img.xz"
   if [[ -z "$bootstrap_img" && -f "$default_bootstrap_img" ]]; then
     bootstrap_img="$default_bootstrap_img"
     echo "No --bootstrap-img given - defaulting to $bootstrap_img"
@@ -104,23 +106,13 @@ source "$script_dir/modules/slot_switch.sh"
 # Provides: root_part, boot_part, other_slot, clear_stale_host_key, wait_for_reboot,
 # switch_active_slot - all operating against the $target global set above.
 
+# shellcheck source=modules/rpiboot_connect.sh
+source "$script_dir/modules/rpiboot_connect.sh"
+# Only used for retry_on_partition - Stage 1 does its own USB/rpiboot connection directly below.
+
 # shellcheck source=modules/ssh_password_shim.sh
 source "$script_dir/modules/ssh_password_shim.sh"
-# Without this, every phase below that talks to $target over SSH - this script's own direct calls
-# (Stage 2, Stage 6), plus the build_golden_slot and deploy subprocesses (Stages 3 and 5) - would
-# each open its own separate connection and prompt for the password independently, even though
-# they're all the same target in the same run. setup_ssh_password_shim is called once, either
-# below (Stage 1 case - the password is read directly off the freshly-bootstrapped disk instead of
-# prompted for, since it's genuinely unknown to anyone until the target's own first boot generates
-# it) or in the else branch (resuming case - prompted for normally, since no fresh bootstrap
-# happened in this invocation to read a password from).
-
-# One cleanup trap, set once, covers everything this script mounts/creates below - Stage 1's
-# seed_mnt_* directories (if start_stage <= 1) and _ssh_shim_dir (set by setup_ssh_password_shim,
-# in either branch). Set before anything is actually mounted, so a failure at ANY point - not just
-# after the happy path finishes - still cleans up rather than silently leaving a mount behind
-# (exactly what happened the first time this code shipped: a bug elsewhere caused an early exit
-# with p1 still mounted, unnoticed until the next command).
+# Set up a single sign-on ssh session so the user doesn't need to repeatedly type in the pi's password for each ssh step
 seed_mnt_boot=""; seed_mnt_root=""; seed_mnt_data=""; _ssh_shim_dir=""
 _stage1_cleanup() {
   [[ -n "$seed_mnt_boot" ]] && { sudo umount "$seed_mnt_boot" 2>/dev/null; rmdir "$seed_mnt_boot" 2>/dev/null; }
@@ -134,12 +126,10 @@ if ((start_stage <= 1)); then
   echo ""
   echo "=== Stage 1/7: Writing the known-good baseline image onto the target ==="
   "$script_dir/flash_bootstrap_image" --img "$bootstrap_img" --yes
-  # Disk is still connected via rpiboot at this point - seed SSH host keys and a known password
-  # directly while mounted, rather than waiting for a first boot to generate them and reconnecting
-  # to read them back. This baseline image predates build_golden_slot's amplipi-seed-ssh-host-keys
-  # .service, so nothing would otherwise regenerate /data/ssh (emptied by capture_disk_image's
-  # identity-scrub) on first boot; doing it here also skips a fragile retry loop and a second
-  # power-cycle for the password.
+  # Disk is still connected via rpiboot - seed SSH host keys and a known password directly while
+  # mounted, rather than waiting for a first boot to generate them and reconnecting to read them
+  # back. Needed since nothing else regenerates /data/ssh (emptied by capture_disk_image's scrub)
+  # on first boot; also skips a fragile retry loop and a second power-cycle for the password.
   echo ""
   echo "Seeding SSH host keys and a known password directly onto the disk while it's still"
   echo "connected, so the very first real boot has working SSH already, with no first-boot"
@@ -151,7 +141,7 @@ if ((start_stage <= 1)); then
   seed_mnt_boot=$(mktemp -d)
   seed_mnt_root=$(mktemp -d)
   seed_mnt_data=$(mktemp -d)
-  sudo mount -o ro "${diskpath}-part1" "$seed_mnt_boot"
+  retry_on_partition sudo mount -o ro "${diskpath}-part1" "$seed_mnt_boot" || { echo "Error: couldn't mount ${diskpath}-part1 after retries"; exit 1; }
   # -A2, not -A1: [all]'s boot_partition= is its second line (tryboot_a_b=1 comes first), unlike
   # [tryboot] elsewhere in this script where boot_partition= is the very next line.
   active_boot_part=$(grep -A2 '\[all\]' "$seed_mnt_boot/autoboot.txt" | grep -oP 'boot_partition=\K[0-9]+')
@@ -164,8 +154,8 @@ if ((start_stage <= 1)); then
   fi
   [[ "$active_boot_part" == "2" ]] && active_root_part=5 || active_root_part=6
 
-  sudo mount "${diskpath}-part${active_root_part}" "$seed_mnt_root"
-  sudo mount "${diskpath}-part7" "$seed_mnt_data"
+  retry_on_partition sudo mount "${diskpath}-part${active_root_part}" "$seed_mnt_root" || { echo "Error: couldn't mount ${diskpath}-part${active_root_part} after retries"; exit 1; }
+  retry_on_partition sudo mount "${diskpath}-part7" "$seed_mnt_data" || { echo "Error: couldn't mount ${diskpath}-part7 after retries"; exit 1; }
 
   sudo mkdir -p "$seed_mnt_data/ssh"
   seed_keys=$(mktemp -d)
@@ -348,16 +338,6 @@ if ((start_stage <= 6)); then
     sudo rmdir /mnt/bootp
   "
 
-  # /data/.config/amplipi/house.json lives on the shared p7 partition, not per-slot - a reference
-  # unit that's been through repeated dev/test cycles almost certainly still has whatever config
-  # was last live on it, not factory defaults, regardless of how many times the root slot itself
-  # has been rebuilt. factory_reset first guarantees a clean, correct-per-variant baseline
-  # (is_streamer/lms_mode are detected fresh from this unit's own hardware, so this is right for
-  # both Controller and Streamer units); the PATCHes after it reproduce the exact "Groove Salad on
-  # source 1/zone 1, Spotify + AirPlay 2 connected to sources with no zone assigned" state that
-  # scripts/imaging/cleanup has applied by hand before every prior shipment (see scripts/imaging/cleanup's own
-  # "Connecting Groove Salad, Spotify, Airplay sources" step) - done here so it's already baked
-  # into the image capture_disk_image is about to take, instead of a separate manual step per unit.
   echo "Resetting to factory config and connecting default streams..."
   # Streamer units ship with zero zones (STREAMER_CONFIG) - source 0-2 always exist on both
   # variants, but the zones PATCH only applies, and only ever fetches whatever zone ids this

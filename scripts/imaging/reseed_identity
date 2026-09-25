@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# Re-add ssh keys to a mounted pi after another script (such as capture_disk_image) stripped them out
+
+set -euo pipefail
+
+helptext="Usage: reseed_identity [OPTION]...
+Generate fresh SSH host keys and a new login password for a connected Pi's active slot, via
+rpiboot mass-storage mode - the same seeding make_progenitor's own Stage 1 does after a fresh
+flash, standalone.
+
+  --yes:      Skip the 'Type yes to continue' confirmation. For scripted use.
+  --debug:    Print all commands
+  -h, --help: Print this help text
+"
+
+assume_yes=false
+debug=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --yes) assume_yes=true ;;
+    --debug) debug=true ;;
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *) printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1 ;;
+  esac
+  shift
+done
+
+$debug && set -x
+
+script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+# shellcheck source=modules/rpiboot_connect.sh
+source "$script_dir/modules/rpiboot_connect.sh"
+rpiboot_connect
+# $diskpath is set by rpiboot_connect above.
+
+mnt_boot=""; mnt_root=""; mnt_data=""
+cleanup() {
+  set +e
+  [[ -n "$mnt_boot" ]] && { sudo umount "$mnt_boot" 2>/dev/null; rmdir "$mnt_boot" 2>/dev/null; }
+  [[ -n "$mnt_root" ]] && { sudo umount "$mnt_root" 2>/dev/null; rmdir "$mnt_root" 2>/dev/null; }
+  [[ -n "$mnt_data" ]] && { sudo umount "$mnt_data" 2>/dev/null; rmdir "$mnt_data" 2>/dev/null; }
+}
+trap cleanup EXIT
+
+mnt_boot=$(mktemp -d)
+retry_on_partition sudo mount -o ro "${diskpath}-part1" "$mnt_boot" || { echo "Error: couldn't mount ${diskpath}-part1 after retries"; exit 1; }
+active_boot_part=$(grep -A2 '\[all\]' "$mnt_boot/autoboot.txt" | grep -oP 'boot_partition=\K[0-9]+')
+sudo umount "$mnt_boot"; rmdir "$mnt_boot"; mnt_boot=""
+if [[ "$active_boot_part" != "2" ]] && [[ "$active_boot_part" != "3" ]]; then
+  echo "Error: couldn't determine the active slot from autoboot.txt (got '$active_boot_part')"
+  exit 1
+fi
+[[ "$active_boot_part" == "2" ]] && active_root_part=5 || active_root_part=6
+echo "Active slot: boot=p${active_boot_part} root=p${active_root_part}."
+
+echo ""
+echo "This will generate fresh SSH host keys and a new login password on $diskpath's active slot"
+echo "(p${active_root_part}) and /data (p7). Doesn't touch anything else - identity only, not a rebuild."
+if $assume_yes; then
+  echo "--yes given, skipping confirmation."
+else
+  read -rp "Type 'yes' to continue: " confirm
+  [[ "$confirm" == "yes" ]] || { echo "Aborted."; exit 1; }
+fi
+
+mnt_root=$(mktemp -d)
+mnt_data=$(mktemp -d)
+retry_on_partition sudo mount "${diskpath}-part${active_root_part}" "$mnt_root" || { echo "Error: couldn't mount ${diskpath}-part${active_root_part} after retries"; exit 1; }
+retry_on_partition sudo mount "${diskpath}-part7" "$mnt_data" || { echo "Error: couldn't mount ${diskpath}-part7 after retries"; exit 1; }
+
+echo "Generating fresh SSH host keys..."
+sudo mkdir -p "$mnt_data/ssh"
+seed_keys=$(mktemp -d)
+ssh-keygen -q -N "" -t rsa -b 3072 -f "$seed_keys/ssh_host_rsa_key"
+ssh-keygen -q -N "" -t ecdsa -b 256 -f "$seed_keys/ssh_host_ecdsa_key"
+ssh-keygen -q -N "" -t ed25519 -f "$seed_keys/ssh_host_ed25519_key"
+sudo cp "$seed_keys"/ssh_host_* "$mnt_data/ssh/"
+sudo chown root:root "$mnt_data"/ssh/ssh_host_*
+sudo chmod 600 "$mnt_data"/ssh/ssh_host_{rsa,ecdsa,ed25519}_key
+sudo chmod 644 "$mnt_data"/ssh/ssh_host_{rsa,ecdsa,ed25519}_key.pub
+rm -rf "$seed_keys"
+
+echo "Generating a new login password..."
+NEW_PASSWORD=$(xkcdpass -n 4 --min 3 --max 7 -d '' -C first)
+password_hash=$(openssl passwd -6 -stdin <<< "$NEW_PASSWORD")
+sudo sed -i "s#^pi:[^:]*:#pi:${password_hash}:#" "$mnt_root/etc/shadow"
+sudo mkdir -p "$mnt_data/.config/amplipi"
+echo "$NEW_PASSWORD" | sudo tee "$mnt_data/.config/amplipi/default_password.txt" >/dev/null
+pi_ids=$(sudo awk -F: '$1=="pi"{print $3":"$4}' "$mnt_root/etc/passwd")
+sudo chown -R "$pi_ids" "$mnt_data/.config"
+
+sudo umount "$mnt_root"; rmdir "$mnt_root"; mnt_root=""
+sudo umount "$mnt_data"; rmdir "$mnt_data"; mnt_data=""
+
+echo ""
+echo "Done. New login password for user 'pi': $NEW_PASSWORD"
+echo "Disconnect from rpiboot and power-cycle normally - SSH should come up cleanly on next boot."
