@@ -1251,7 +1251,10 @@ def _flash_partition_body(tryboot: bool, channel: SSEChannel = flash_channel):
     # All systems originate from the same ancestor image. The following tools cleanse the root partition of identifiable info
     # so that A and B don't have a case of mistaken identity by sharing these identifiers
     fsck = subprocess.run(["sudo", "e2fsck", "-p", f"/dev/mmcblk0p{target_slot.value.root}"])
-    if fsck.returncode not in (0, 1):
+    # rc=2 ("errors corrected, system should be reboot") only matters for a filesystem that's
+    # actively mounted/in use. This partition has never mounted at this point,
+    # so it's functionally the same as rc=1 (errors corrected) and can be ignored
+    if fsck.returncode not in (0, 1, 2):
       raise RuntimeError(f"e2fsck exited with code {fsck.returncode} on /dev/mmcblk0p{target_slot.value.root}")
     subprocess.run(["sudo", "tune2fs", "-U", "random", f"/dev/mmcblk0p{target_slot.value.root}"], check=True)
     # Relabel to match the slot actually being written, same as the boot partition above
