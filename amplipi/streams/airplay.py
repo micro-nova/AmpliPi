@@ -2,7 +2,7 @@ from typing import ClassVar, List, Optional
 from amplipi import models, utils
 from .base_streams import PersistentStream, InvalidStreamField, logger
 from amplipi.mpris import MPRIS
-from zeroconf import IPVersion, Zeroconf, ServiceBrowser
+from zeroconf import IPVersion, Zeroconf, ServiceBrowser, ServiceListener
 import ipaddress
 import subprocess
 import shutil
@@ -60,7 +60,7 @@ def _dacp_reachable(client_ip: str, timeout: float = 2.0) -> bool:
   """ Whether @client_ip advertises a DACP remote-control service reachable over mDNS """
   found = threading.Event()
 
-  class _Listener:
+  class _Listener(ServiceListener):
     def add_service(self, zc, type_, name):
       info = zc.get_service_info(type_, name)
       if info and client_ip in info.parsed_addresses(IPVersion.All):
@@ -203,7 +203,7 @@ class AirPlay(PersistentStream):
         break
       time.sleep(0.5)
 
-    supported = bool(client_ip) and _dacp_reachable(client_ip)
+    supported = client_ip is not None and _dacp_reachable(client_ip)
     if self.proc is proc:
       self.supported_cmds = ['play', 'pause', 'next', 'prev'] if supported else []
       logger.info(f"AirPlay remote control {'available' if supported else 'unavailable'} "
@@ -270,10 +270,11 @@ class AirPlay(PersistentStream):
           source.state = 'stopped'
 
       if source.state != 'stopped':
-        if not self._remote_control_check_started:
+        vsrc = self.vsrc
+        if not self._remote_control_check_started and vsrc is not None:
           self._remote_control_check_started = True
           threading.Thread(target=self._detect_remote_control_support,
-                           args=(5100 + 100 * self.vsrc, self.proc), daemon=True).start()
+                           args=(5100 + 100 * vsrc, self.proc), daemon=True).start()
 
         source.artist = md.artist
         source.track = md.title
