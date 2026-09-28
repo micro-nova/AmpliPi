@@ -368,8 +368,6 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         'copy': [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
                  {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
         'script': [
-            # Persistent D-Bus session bus - shairport-sync-ap2's MPRIS service (and our own
-            # MPRIS client) silently no-op without one.
             'sudo loginctl enable-linger pi',
             'set -e',
             'if which nqptp  > /dev/null; then exit 0; fi',
