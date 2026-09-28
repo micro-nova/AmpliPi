@@ -363,10 +363,14 @@ _os_deps: Dict[str, Dict[str, Any]] = {
     # streams
     # TODO: can stream dependencies be aggregated from the streams themselves?
     'airplay': {
-        'apt': ['shairport-sync'],
+        # libplist-2.0-4: required by the prebuilt shairport-sync-ap2 binary, not shairport-sync itself.
+        'apt': ['shairport-sync', 'libplist-2.0-4'],
         'copy': [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
                  {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
         'script': [
+            # Persistent D-Bus session bus - shairport-sync-ap2's MPRIS service (and our own
+            # MPRIS client) silently no-op without one.
+            'sudo loginctl enable-linger pi',
             'set -e',
             'if which nqptp  > /dev/null; then exit 0; fi',
             'pushd $(mktemp --directory)',
@@ -1105,6 +1109,8 @@ def _setup_tmpfs(config_dir, env):
 
 
 def _web_service(directory: str, user: str = 'pi'):
+  # %U resolves against the manager (root), not User=, inside Environment= - resolve uid ourselves.
+  uid = pwd.getpwnam(user).pw_uid
   return f"""\
 [Unit]
 Description=Amplipi Home Audio System
@@ -1115,6 +1121,10 @@ User={user}
 Group={user}
 Type=simple
 WorkingDirectory={directory}
+# A User=-scoped system service gets no D-Bus session bus even with linger enabled - set it
+# explicitly so shairport-sync-ap2's MPRIS service (and our own client) can reach it.
+Environment=XDG_RUNTIME_DIR=/run/user/{uid}
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus
 ExecStart=/usr/bin/authbind --deep {directory}/venv/bin/python -m uvicorn --host 0.0.0.0 --port 80 amplipi.asgi:application
 Restart=always
 

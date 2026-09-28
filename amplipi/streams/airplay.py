@@ -1,12 +1,17 @@
-from typing import ClassVar, Optional
+from typing import ClassVar, List, Optional
 from amplipi import models, utils
 from .base_streams import PersistentStream, InvalidStreamField, logger
 from amplipi.mpris import MPRIS
+from zeroconf import Zeroconf, ServiceBrowser
 import subprocess
 import shutil
+import socket
+import threading
 import time
 import os
 import io
+
+_DACP_SERVICE_TYPES = ['_dacp._tcp.local.', '_touch-able._tcp.local.']
 
 
 def write_sp_config_file(filename, config):
@@ -22,6 +27,46 @@ def write_sp_config_file(filename, config):
       cfg_file.write('};\n')
 
 
+def _rtsp_peer_ip(port: int) -> Optional[str]:
+  """ IP of the client with an established RTSP connection to @port, if any """
+  try:
+    result = subprocess.run(['ss', '-H', '-tn', 'state', 'established', f'( sport = :{port} )'],
+                            stdout=subprocess.PIPE, text=True, check=False, timeout=2)
+  except Exception:
+    return None
+  for line in result.stdout.splitlines():
+    fields = line.split()
+    if len(fields) >= 5:
+      return fields[4].rsplit(':', 1)[0]
+  return None
+
+
+def _dacp_reachable(client_ip: str, timeout: float = 2.0) -> bool:
+  """ Whether @client_ip advertises a DACP remote-control service reachable over mDNS """
+  target = socket.inet_aton(client_ip)
+  found = threading.Event()
+
+  class _Listener:
+    def add_service(self, zc, type_, name):
+      info = zc.get_service_info(type_, name)
+      if info and target in (info.addresses or []):
+        found.set()
+
+    def update_service(self, zc, type_, name):
+      pass
+
+    def remove_service(self, zc, type_, name):
+      pass
+
+  zc = Zeroconf()
+  try:
+    ServiceBrowser(zc, _DACP_SERVICE_TYPES, _Listener())
+    found.wait(timeout)
+  finally:
+    zc.close()
+  return found.is_set()
+
+
 class AirPlay(PersistentStream):
   """ An AirPlay Stream """
 
@@ -32,12 +77,9 @@ class AirPlay(PersistentStream):
     self.mpris: Optional[MPRIS] = None
     self.ap2 = ap2
     self.ap2_exists = False
-    self.supported_cmds = [
-      'play',
-      'pause',
-      'next',
-      'prev'
-    ]
+    # Populated once _detect_remote_control_support confirms the client's capabilities
+    # starts empty due to newer iOS versions locking third-party control access
+    self.supported_cmds: List[str] = []
     self.STATE_TIMEOUT = 300  # seconds
     self._connect_time = 0.0
     self._coverart_dir = ''
@@ -63,9 +105,11 @@ class AirPlay(PersistentStream):
     """
 
     # if stream is airplay2 check for other airplay2s and error if found
-    # pgrep has it's own process that will include the process name so we sub 1 from the results
     if self.ap2:
-      if len(os.popen("pgrep -f shairport-sync-ap2").read().strip().splitlines()) - 1 > 0:
+      # anchored to the exact binary path, a bare pattern can match unrelated processes
+      ap2_path = f"{utils.get_folder('streams')}/shairport-sync-ap2"
+      result = subprocess.run(['pgrep', '-f', f'^{ap2_path} '], stdout=subprocess.PIPE, text=True, check=False)
+      if result.stdout.strip():
         self.ap2_exists = True
         # TODO: we need a better way of showing errors to user
         logger.info(f'Another Airplay 2 stream is already in use, unable to start {self.name}, mocking connection')
@@ -118,6 +162,10 @@ class AirPlay(PersistentStream):
 
     self.proc = subprocess.Popen(args=shairport_args, stdin=subprocess.PIPE,
                                  stdout=self._log_file, stderr=self._log_file)
+    # Reset to default before validating available controls in case new client runs different iOS version
+    self.supported_cmds = []
+    threading.Thread(target=self._detect_remote_control_support,
+                     args=(config['general']['port'], self.proc), daemon=True).start()
 
     try:
       mpris_name = 'ShairportSync'
@@ -129,8 +177,31 @@ class AirPlay(PersistentStream):
     except Exception as exc:
       logger.exception(f'Error starting airplay MPRIS reader: {exc}')
 
+  def _detect_remote_control_support(self, rtsp_port: int, proc: subprocess.Popen):
+    """ Updates supported_cmds once the client's DACP reachability is known.
+    @proc guards against a stale result landing after a fast reconnect. """
+    client_ip = None
+    for _ in range(10):
+      client_ip = _rtsp_peer_ip(rtsp_port)
+      if client_ip or proc.poll() is not None:
+        break
+      time.sleep(0.5)
+
+    supported = bool(client_ip) and _dacp_reachable(client_ip)
+    if self.proc is proc:
+      self.supported_cmds = ['play', 'pause', 'next', 'prev'] if supported else []
+      logger.info(f"AirPlay remote control {'available' if supported else 'unavailable'} "
+                  f"for {self.name} (client {client_ip})")
+
   def _deactivate(self):
     if 'mpris' in self.__dir__() and self.mpris:
+      # When airplay disconnects, a phone will just output audio from it's own speakers at whatever volume it was set to for the airplay session
+      # This can be annoying if you prefer to use the amplipi-side volume slider and so keep your phone volume maxxed out
+      try:
+        self.mpris.set_volume(0.0)
+        time.sleep(0.3)
+      except Exception as e:
+        logger.info(f'Could not zero AirPlay client volume before disconnect: {e}')
       self.mpris.close()
     self.mpris = None
     if self._is_running():

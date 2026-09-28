@@ -91,6 +91,10 @@ class MPRIS:
     """Plays or pauses depending on current state."""
     self.mpris.PlayPause()
 
+  def set_volume(self, level: float) -> None:
+    """Sets MPRIS Volume (0.0-1.0); shairport-sync relays this to the client as a real volume change."""
+    self.mpris.SetVolume(level)
+
   def _load_metadata(self) -> Metadata:
     try:
       with open(self.metadata_path, 'r', encoding='utf-8') as f:
