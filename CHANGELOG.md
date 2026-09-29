@@ -12,6 +12,7 @@ Type: FULL
   * Fixed a Spotify Connect configuration issue affecting ALSA output
   * Fixed a "Mute All" preset issue in LMS mode
   * Added volume matching between AmpliPi and Spotify and vice-versa
+  * Added volume matching between AmpliPi and AirPlay and vice-versa
 * Updates
   * Rewrote the update system around dual A/B partitions - updates flash to an inactive slot and are health-checked before switching over, so a failed update can no longer leave a unit unbootable. See our [A:B design doc for more details](docs/a_b_design.md)
   * Added a new "full image" update type, and strengthened the old update type (which is now called a "delta update")
