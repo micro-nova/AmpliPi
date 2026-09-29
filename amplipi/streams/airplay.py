@@ -114,7 +114,9 @@ class AirPlay(PersistentStream):
         if self.src is not None:
           if self._volume_fifo is None and self.src_config_folder is not None:
             fifo_path = f"{self.src_config_folder}/vol"
-            if not os.path.isfile(fifo_path):
+            # os.path.isfile() is always False for a FIFO (it only recognizes regular files),
+            # so it never actually detects one left over from a prior connection - use exists()
+            if not os.path.exists(fifo_path):
               os.mkfifo(fifo_path)
             self._volume_fifo = os.open(fifo_path, os.O_WRONLY, os.O_NONBLOCK)
           data = json.dumps({
