@@ -1,11 +1,12 @@
 from amplipi import models, utils
 from .base_streams import BaseStream, logger
-from typing import ClassVar
+from typing import ClassVar, Optional
 import subprocess
 import os
 import json
 import sys
 import signal
+import threading
 import time
 import traceback
 
@@ -20,9 +21,35 @@ class Bluetooth(BaseStream):
     self.logo = "static/imgs/bluetooth.png"
     self.bt_proc = None
     self.supported_cmds = ['play', 'pause', 'next', 'prev', 'stop']
+    self.src_config_folder: Optional[str] = None
+    self.volume_watcher_process: Optional[threading.Thread] = None
+    """Populates the fifo that the vol sync process depends on"""
+    self.volume_sync_process: Optional[subprocess.Popen] = None
+    self._volume_fifo: Optional[int] = None
 
   def __del__(self):
     self.disconnect()
+
+  def watch_vol(self):
+    """Creates and supplies a FIFO with volume data for volume sync"""
+    while True:
+      try:
+        if self.src is not None:
+          if self._volume_fifo is None and self.src_config_folder is not None:
+            fifo_path = f"{self.src_config_folder}/vol"
+            # os.path.isfile() is always False for a FIFO (it only recognizes regular files),
+            # so it never actually detects one left over from a prior connection - use exists()
+            if not os.path.exists(fifo_path):
+              os.mkfifo(fifo_path)
+            self._volume_fifo = os.open(fifo_path, os.O_WRONLY, os.O_NONBLOCK)
+          data = json.dumps({
+            'zones': self.connected_zones,
+            'volume': self.volume,
+          })
+          os.write(self._volume_fifo, bytearray(f"{data}\r\n", encoding="utf8"))
+      except Exception as e:
+        logger.error(f"{self.name} volume thread ran into exception: {e}")
+      time.sleep(0.1)
 
   @staticmethod
   def is_hw_available():
@@ -75,13 +102,20 @@ class Bluetooth(BaseStream):
       logger.error(f'{self.name}: bluetooth adapter never powered on after 5 attempts, continuing anyway')
 
     # Start metadata watcher
-    src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
-    os.system(f'mkdir -p {src_config_folder}')
-    song_info_path = f'{src_config_folder}/currentSong'
-    device_info_path = f'{src_config_folder}/btDevice'
+    self.src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"
+    os.system(f'mkdir -p {self.src_config_folder}')
+    song_info_path = f'{self.src_config_folder}/currentSong'
+    device_info_path = f'{self.src_config_folder}/btDevice'
     btmeta_args = f'{sys.executable} {utils.get_folder("streams")}/bluetooth.py --song-info={song_info_path} ' \
                   f'--device-info={device_info_path} --output-device={utils.real_output_device(src)}'
     self.bt_proc = subprocess.Popen(args=btmeta_args.split(), preexec_fn=os.setpgrp)
+
+    vol_sync = f"{utils.get_folder('streams')}/bluetooth_volume_handler.py"
+    vol_args = [sys.executable, vol_sync, device_info_path, self.src_config_folder]
+    logger.info(f'{self.name}: starting vol synchronizer: {vol_args}')
+    self.volume_watcher_process = threading.Thread(target=self.watch_vol, daemon=True)
+    self.volume_watcher_process.start()
+    self.volume_sync_process = subprocess.Popen(args=vol_args, preexec_fn=os.setpgrp)
 
     self._connect(src)
     return
@@ -96,11 +130,23 @@ class Bluetooth(BaseStream):
       os.killpg(os.getpgid(self.bt_proc.pid), signal.SIGKILL)
       self.bt_proc = None
 
+      if self.volume_sync_process is not None:
+        os.killpg(os.getpgid(self.volume_sync_process.pid), signal.SIGKILL)
+
       # Power off Bluetooth and disable discoverability
       subprocess.run(args='bluetoothctl discoverable off'.split(), preexec_fn=os.setpgrp)
       subprocess.run(args='bluetoothctl power off'.split(), preexec_fn=os.setpgrp)
 
       self._disconnect()
+
+    if self._volume_fifo is not None:
+      try:
+        os.close(self._volume_fifo)
+      except OSError:
+        pass
+    self.volume_sync_process = None
+    self.volume_watcher_process = None
+    self._volume_fifo = None
 
   def info(self) -> models.SourceInfo:
     src_config_folder = f"{utils.get_folder('config')}/srcs/{self.src}"
