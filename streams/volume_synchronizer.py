@@ -155,13 +155,10 @@ class VolSyncDispatcher:
 
   def __init__(self, stream: StreamWatcher, config_dir: str, debug=False):
     logfile = f"{config_dir}/vol_log"
-    if not os.path.exists(logfile):
-      with open(logfile, "w", encoding="utf-8") as f:
-        f.write()
 
     self.logger = logging.getLogger(__name__)
     self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
-    sh = logging.StreamHandler(logfile)
+    sh = logging.FileHandler(logfile)
     self.logger.addHandler(sh)
 
     self.event_queue = queue.Queue()

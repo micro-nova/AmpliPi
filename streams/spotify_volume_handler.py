@@ -50,7 +50,6 @@ class SpotifyWatcher(StreamWatcher):
   def set_vol(self, new_vol: float, vol_set_point: float) -> float:
     """Update Spotify's volume slider"""
     try:
-      raise Exception("Fake exception that is used to test logging abilities")
       if new_vol is None:
         return vol_set_point
 
