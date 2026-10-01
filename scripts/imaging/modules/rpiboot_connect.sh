@@ -7,8 +7,11 @@ rpiboot_connect() {
 
   # Check if a pi is already mounted before demanding a mount
   # Useful since most scripts/imaging scripts use this and many are fired one after another
+  #
+  # `|| true` is required, not decorative: an unmatched glob here hits `ls` literally, which fails
+  # and (under set -e + pipefail) would otherwise kill the whole calling script silently.
   local candidate
-  candidate=$(ls ${disk_base_path}* 2>/dev/null | head -n1)
+  candidate=$(ls ${disk_base_path}* 2>/dev/null | head -n1) || true
   if [[ -n "$candidate" ]] && sudo blockdev --getsize64 "$candidate" >/dev/null 2>&1; then
     diskpath="$candidate"
     echo "Reusing already-connected Raspberry Pi device at $diskpath"
@@ -58,7 +61,9 @@ rpiboot_connect() {
     $connected || { echo "Error: Failed to connect to Raspberry Pi"; exit 1; }
 
     sleep 2  # let the device node settle
-    diskpath=$(ls ${disk_base_path}* 2>/dev/null | head -n1)
+    # Same unmatched-glob/pipefail issue as above - `|| true` keeps this from bypassing the error
+    # check on the next line.
+    diskpath=$(ls ${disk_base_path}* 2>/dev/null | head -n1) || true
     [[ -n "$diskpath" ]] || { echo "Error: No Raspberry Pi device found at ${disk_base_path}*"; exit 1; }
     echo "Raspberry Pi device found at $diskpath"
   fi
@@ -99,11 +104,22 @@ retry_on_partition() {
   return 1
 }
 
+# If you plug in another USB device while a pi is plugged in but not mounted, your computer will
+# scan for other USB devices and automount the pi when it shouldn't be mounted. Call unmount_if_mounted
+# before every step that requires the pi to not be mounted
+unmount_if_mounted() {
+  local mp
+  mp=$(lsblk -no MOUNTPOINT "$1" 2>/dev/null)
+  [[ -n "$mp" ]] && sudo umount "$1"
+  return 0
+}
+
 # e2fsck exit code 1 ("errors corrected") is a normal success outcome, not something to retry on -
 # folds that in before retry_on_partition sees the result, so only a genuine device-access failure
 # triggers a retry.
 e2fsck_tolerant() {
   local rc
+  unmount_if_mounted "$1"
   sudo e2fsck -p -f "$1"
   rc=$?
   [[ $rc -le 1 ]]

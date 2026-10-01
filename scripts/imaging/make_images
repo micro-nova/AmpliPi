@@ -16,6 +16,7 @@ SLOT = {
   'B': {'root': 6, 'boot': 3},
 }
 
+
 def ssh_control_path(via: str) -> str:
   return f"/tmp/amplipi-ssh-ctl-{via.replace('@', '_at_').replace('.', '_')}"
 
@@ -29,22 +30,22 @@ def ssh_control_opts(via: str) -> list:
 
 PREP_COMMANDS = [
   # Remove orphaned packages and cached .deb downloads
-  (['sudo', 'apt-get', 'autoremove', '--purge', '-y'],                                                                        True),
-  (['sudo', 'apt-get', 'clean'],                                                                                              True),
+  (['sudo', 'apt-get', 'autoremove', '--purge', '-y'], True),
+  (['sudo', 'apt-get', 'clean'], True),
   # apt package index — stale in the image anyway; re-fetched on next apt-get update
-  (['sudo', 'rm', '-rf', '/var/lib/apt/lists/*'],                                                                             False),
+  (['sudo', 'rm', '-rf', '/var/lib/apt/lists/*'], False),
   # Journals
-  (['sudo', 'journalctl', '--rotate'],                                                                                        False),
-  (['sudo', 'journalctl', '--vacuum-size=1M'],                                                                                False),
+  (['sudo', 'journalctl', '--rotate'], False),
+  (['sudo', 'journalctl', '--vacuum-size=1M'], False),
   # Rotated and archived log files outside journald
-  (['sudo', 'bash', '-c', 'find /var/log -type f \\( -name "*.log" -o -name "*.log.*" \\) -delete 2>/dev/null; true'],        False),
+  (['sudo', 'bash', '-c', 'find /var/log -type f \\( -name "*.log" -o -name "*.log.*" \\) -delete 2>/dev/null; true'], False),
   # Temp files and crash dumps
-  (['sudo', 'bash', '-c', 'rm -rf /tmp/* /var/tmp/*'],                                                                        False),
-  (['sudo', 'rm', '-rf', '/var/lib/systemd/coredump/*'],                                                                      False),
+  (['sudo', 'bash', '-c', 'rm -rf /tmp/* /var/tmp/*'], False),
+  (['sudo', 'rm', '-rf', '/var/lib/systemd/coredump/*'], False),
   # Python bytecode — rebuilt on first import
-  (['sudo', 'bash', '-c', 'find /home/pi/amplipi-dev/venv -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null; true'],  False),
+  (['sudo', 'bash', '-c', 'find /home/pi/amplipi-dev/venv -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null; true'], False),
   # User and root caches (pip downloads, thumbnails, etc.)
-  (['sudo', 'bash', '-c', 'rm -rf /home/pi/.cache/* /root/.cache/* 2>/dev/null; true'],                                       False),
+  (['sudo', 'bash', '-c', 'rm -rf /home/pi/.cache/* /root/.cache/* 2>/dev/null; true'], False),
 ]
 
 
@@ -57,8 +58,26 @@ def prep_device(via: str = None):
       subprocess.run(cmd, check=check)
 
 
+def unmount_if_mounted(device: str, via: str = None):
+  """ If you plug in another USB device while a pi is plugged in but not mounted, your computer will
+  scan for other USB devices and automount the pi when it shouldn't be mounted. Call unmount_if_mounted
+  before every step that requires the pi to not be mounted."""
+  check_cmd = ['lsblk', '-no', 'MOUNTPOINT', device]
+  if via:
+    result = subprocess.run(['ssh', *ssh_control_opts(via), via, shlex.join(check_cmd)], capture_output=True, text=True)
+  else:
+    result = subprocess.run(check_cmd, capture_output=True, text=True)
+  if result.stdout.strip():
+    umount_cmd = ['sudo', 'umount', device]
+    if via:
+      subprocess.run(['ssh', *ssh_control_opts(via), via, shlex.join(umount_cmd)], check=True)
+    else:
+      subprocess.run(umount_cmd, check=True)
+
+
 def e2fsck_device(device: str, via: str = None):
   print(f'Cleaning filesystem on {device}...')
+  unmount_if_mounted(device, via)
   cmd = ['sudo', 'e2fsck', '-p', device]
   result = subprocess.run(['ssh', *ssh_control_opts(via), via, ' '.join(cmd)] if via else cmd)
   if result.returncode not in (0, 1):
@@ -110,16 +129,16 @@ def inactive_slot_devices(via: str = None) -> tuple:
 def main():
   parser = argparse.ArgumentParser(description='Capture AmpliPi partition images from block devices')
   parser.add_argument('root', nargs='?',
-                       help='Root partition device (e.g. /dev/sda5 or /dev/mmcblk0p5). '
-                            'If omitted, auto-detects and captures the inactive A/B slot instead '
-                            '(requires --via - see below).')
+                      help='Root partition device (e.g. /dev/sda5 or /dev/mmcblk0p5). '
+                      'If omitted, auto-detects and captures the inactive A/B slot instead '
+                      '(requires --via - see below).')
   parser.add_argument('boot', nargs='?', help='Boot partition device (e.g. /dev/sda3 or /dev/mmcblk0p3)')
   parser.add_argument('--output-dir', '-o', default='.', help='Output directory (default: current directory)')
   parser.add_argument('--via', help='Capture from a remote Pi over SSH (e.g. pi@192.168.1.233). '
-                                     'These scripts are meant to be run from your laptop against a remote '
-                                     'Pi, not locally on the Pi itself - required whenever root is omitted.')
+                      'These scripts are meant to be run from your laptop against a remote '
+                      'Pi, not locally on the Pi itself - required whenever root is omitted.')
   parser.add_argument('--no-boot', action='store_true',
-                       help="Don't image the boot partition when auto-detecting (ignored if root is given explicitly)")
+                      help="Don't image the boot partition when auto-detecting (ignored if root is given explicitly)")
   args = parser.parse_args()
 
   root, boot = args.root, args.boot
