@@ -174,6 +174,12 @@ _os_deps: Dict[str, Dict[str, Any]] = {
             'sudo': 'true',
           },
           {
+            # Trixie's polkit no longer reads the .pkla above at all; this is what actually works there.
+            'from': 'config/10-udisks2-mount.rules',
+            'to': '/etc/polkit-1/rules.d/10-udisks2-mount.rules',
+            'sudo': 'true',
+          },
+          {
             'from': 'config/99-udisks2.rules',
             'to': '/etc/udev/rules.d/99-udisks2.rules',
             'sudo': 'true',
