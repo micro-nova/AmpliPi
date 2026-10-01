@@ -30,6 +30,7 @@ class MediaDevice(PersistentStream, Browsable):
     self.ended = False
     self._prev_timeout = datetime.datetime.now()
     self.playing = None
+    self._stopping = False
 
   def reconfig(self, **kwargs):
     reconnect_needed = False
@@ -76,7 +77,6 @@ class MediaDevice(PersistentStream, Browsable):
     self.bkg_thread = threading.Thread(target=self.wait_on_proc)
     self.bkg_thread.start()
     self.state = 'playing'
-    self.src = vsrc
     return
 
   def make_song_list(self, path):
@@ -94,11 +94,17 @@ class MediaDevice(PersistentStream, Browsable):
 
   def _deactivate(self):
     if self._is_running():
+      # Media player streams work by chaining together fresh instances of the fileplayer script,
+      # creating a new one any time we move to a different track
+      # To account for this, this function needs to say "Hey, this particular process end is
+      # intentional, don't go deciding whether to start the next song, stay stopped, or
+      # whatever else you'd normally do when you notice a process died on you"
+      self._stopping = True
       utils.careful_proc_shutdown(self.proc)
       if self.bkg_thread:
         self.bkg_thread.join()
+      self._stopping = False
     self.proc = None
-    self._disconnect()
 
   def wait_on_proc(self):
     """ Wait for the vlc process to finish """
@@ -107,7 +113,10 @@ class MediaDevice(PersistentStream, Browsable):
     else:
       time.sleep(0.3)  # handles mock case
 
-    src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
+    if self._stopping:
+      return  # deliberately stopped elsewhere (song change/stop) - not a real end, don't advance
+
+    src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.vsrc}"
     loc = f'{src_config_folder}/currentSong'
     try:
       with open(loc, 'r', encoding='utf-8') as file:
@@ -130,7 +139,10 @@ class MediaDevice(PersistentStream, Browsable):
   def change_song(self, new_song_id):
     self.song_index = new_song_id
     self.playing = self.song_list[self.song_index]
-    self.restart()
+    # This stream type implements a song change by killing the current VLC instance and spinning up a new one
+    # For this, we need to ensure we maintain the same vsrc between instances so we can also use the same audio pipes
+    self._deactivate()
+    self._activate(self.vsrc)
 
     f = open(self.command_file_path, 'w')
     f.write('play')
@@ -183,7 +195,7 @@ class MediaDevice(PersistentStream, Browsable):
                                supported_cmds=self.supported_cmds,
                                type=self.stream_type)
     if self.playing is not None:
-      src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.src}"
+      src_config_folder = f"{utils.get_folder('config')}/srcs/v{self.vsrc}"
       loc = f'{src_config_folder}/currentSong'
       try:
         with open(loc, 'r', encoding='utf-8'):
