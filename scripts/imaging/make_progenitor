@@ -39,6 +39,10 @@ deploy AmpliPi, wipe the old slot, capture the disk.
                                exists; required otherwise.
   --hostname NAME:             Hostname for the fresh slot, forwarded to build_golden_slot
                                 (default: amplipi)
+  --target USER@HOST:          SSH target for the unit - overrides the default pi@<hostname>.local
+                                address. Needed to run two units on the same network at once (mDNS
+                                can't disambiguate them by hostname alone) - point this at the
+                                unit's real IP instead, e.g. pi@192.168.1.50.
   --trixie-img FILE.img:       Use this stock Trixie image instead of downloading one, forwarded
                                 to build_golden_slot's --img for the migrate stage. Distinct from
                                 --bootstrap-img above.
@@ -55,6 +59,7 @@ deploy AmpliPi, wipe the old slot, capture the disk.
 
 bootstrap_img=''
 hostname='amplipi'
+target_override=''
 trixie_img=''
 out_dir='.'
 start_stage=1
@@ -66,6 +71,9 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     --hostname)
       if (($# > 1)); then hostname=$2; shift; else echo "--hostname requires a value"; exit 1; fi
+      ;;
+    --target)
+      if (($# > 1)); then target_override=$2; shift; else echo "--target requires a value"; exit 1; fi
       ;;
     --trixie-img)
       if (($# > 1)); then trixie_img=$2; shift; else echo "--trixie-img requires a value"; exit 1; fi
@@ -99,7 +107,7 @@ if ((start_stage <= 1)); then
 fi
 
 script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-target="pi@${hostname}.local"
+target="${target_override:-pi@${hostname}.local}"
 
 # shellcheck source=modules/slot_switch.sh
 source "$script_dir/modules/slot_switch.sh"
@@ -135,7 +143,9 @@ if ((start_stage <= 1)); then
   echo "connected, so the very first real boot has working SSH already, with no first-boot"
   echo "service needing to generate anything - no reconnect needed for this."
   disk_base_path=/dev/disk/by-id/usb-RPi-MSD
-  diskpath=$(ls ${disk_base_path}* 2>/dev/null | grep -v -- -part | head -n1)
+  # `|| true`: an unmatched glob hits `ls` literally, which fails - without this, set -e kills the
+  # script right here instead of reaching the proper error check below.
+  diskpath=$(ls ${disk_base_path}* 2>/dev/null | grep -v -- -part | head -n1) || true
   [[ -n "$diskpath" ]] || { echo "Error: lost track of the Pi device - is it still connected via rpiboot?"; exit 1; }
 
   seed_mnt_boot=$(mktemp -d)

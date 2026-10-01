@@ -18,8 +18,10 @@ bootstrapping from the previous build's own output). Needs a physical USB/rpiboo
   result as a new `progenitor.img.xz`. Supports `--start-stage N` to resume after a hiccup
   without redoing completed stages.
 - **`flash_bootstrap_image`** - writes a complete `.img.xz` onto a Pi's eMMC via a single atomic
-  `dd` over rpiboot. Used by `make_progenitor`'s Stage 1, but also a standalone tool for writing
-  any known-good image onto a unit directly.
+  `dd` over rpiboot, skipping any zero-padded root-slot space the image was captured with
+  (`modules/shrink_root.sh`) and growing that slot's filesystem back to full size afterward. Used
+  by `make_progenitor`'s Stage 1, but also a standalone tool for writing any known-good image onto
+  a unit directly.
 - **`make_partition_base`** - flashes a progenitor image, wipes slot B, clears `/data` (p7), and
   scrubs the active slot's identity, producing `partition_base.img.xz`. Also supports
   `--start-stage N`.
@@ -27,7 +29,9 @@ bootstrapping from the previous build's own output). Needs a physical USB/rpiboo
   explicit filesystem label anywhere else in the pipeline. Label-only, no content changes.
 - **`capture_disk_image`** - captures a connected Pi's entire eMMC (all 7 partitions) to
   `progenitor.img.xz`, scrubbing per-unit credentials (password, SSH host keys, journal,
-  support-tunnel/WireGuard state) first. The final step of `make_progenitor`, but also standalone.
+  support-tunnel/WireGuard state) first, and shrinking each populated root slot to its minimum
+  footprint before imaging (`modules/shrink_root.sh`, grown back immediately after so the source
+  disk itself is unaffected). The final step of `make_progenitor`, but also standalone.
 - **`reseed_identity`** - generates fresh SSH host keys and a new login password for a connected
   Pi's active slot, without touching anything else. For recovering SSH access to a unit whose
   identity was scrubbed by `capture_disk_image`, without a full rebuild. Not a substitute for

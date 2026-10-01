@@ -88,6 +88,8 @@ trap cleanup EXIT
 current_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 # shellcheck source=modules/rpiboot_connect.sh
 source "$current_dir/modules/rpiboot_connect.sh"
+# shellcheck source=modules/shrink_root.sh
+source "$current_dir/modules/shrink_root.sh"
 
 rpiboot_connect
 # $diskpath is set by rpiboot_connect above.
@@ -114,9 +116,19 @@ if ((start_stage <= 1)); then
   # Same dd/partprobe/sync sequence flash_bootstrap_image uses - don't casually change it, small
   # procedural variations here have caused write failures on this hardware.
   echo "Writing $img_file to $diskpath (this takes a while)..."
-  xzcat "$img_file" | sudo dd of="$diskpath" bs=4M status=progress conv=fsync
+  xzcat "$img_file" | sudo dd of="$diskpath" bs=4M status=progress conv=fsync,sparse
   sudo partprobe "$diskpath"
   sleep 2
+  # Grow each existing root slot back to its full fixed partition size, undoing whatever
+  # $img_file shipped shrunk (modules/shrink_root.sh) - a no-op for one already full-size, and
+  # skipped entirely for a slot with no filesystem at all (this script's own Step 3 below leaves
+  # the inactive slot raw/wiped, not mkfs'd - same situation as a partition_base.img.xz source).
+  for part in 5 6; do
+    if [[ -e "${diskpath}-part${part}" ]] && has_ext4_fs "${diskpath}-part${part}"; then
+      echo "Growing root (p${part}) filesystem to fill its full partition..."
+      retry_on_partition grow_root_fs "${diskpath}-part${part}"
+    fi
+  done
   sync
   sync
   sudo blockdev --flushbufs "$diskpath" 2>/dev/null || true
@@ -207,11 +219,25 @@ else
   echo "Skipping Stage 6 (--start-stage $start_stage)."
 fi
 
-# ---- Step 7: capture the result ----
+# ---- Step 7: shrink the active slot's filesystem to its minimum footprint, then capture - same
+# reasoning as capture_disk_image's equivalent step (modules/shrink_root.sh). The inactive slot
+# was already wiped raw (Step 3, no valid filesystem left on it at all) so there's nothing to
+# shrink there - it streams as real bytes below, which is already mostly/all zero from that wipe. ----
+echo "Shrinking root (p$active_root_part) filesystem to its minimum size before imaging..."
+active_shrunk=$(retry_on_partition shrink_root_fs "${diskpath}-part${active_root_part}")
+
 out_file="$out_dir/partition_base.img.xz"
 echo ""
 echo "Imaging $diskpath → $(basename "$out_file") (this takes a while)..."
-sudo dd if="$diskpath" bs=4M status=progress | xz -T0 > "$out_file"
+capture_ok=true
+if [[ "$active_root_part" == "5" ]]; then
+  stream_disk_shrunk "$diskpath" "$active_shrunk" '' | xz -T0 > "$out_file" || capture_ok=false
+else
+  stream_disk_shrunk "$diskpath" '' "$active_shrunk" | xz -T0 > "$out_file" || capture_ok=false
+fi
+echo "Growing root (p$active_root_part) filesystem back to its full size..."
+retry_on_partition grow_root_fs "${diskpath}-part${active_root_part}"
+$capture_ok || { echo "Error: capture failed"; exit 1; }
 
 echo "
 Wrote $out_file ($(du -h "$out_file" | cut -f1)).

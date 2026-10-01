@@ -41,6 +41,8 @@ command -v xzcat >/dev/null || { echo "missing dependency: xzcat (part of xz-uti
 current_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 # shellcheck source=modules/rpiboot_connect.sh
 source "$current_dir/modules/rpiboot_connect.sh"
+# shellcheck source=modules/shrink_root.sh
+source "$current_dir/modules/shrink_root.sh"
 
 rpiboot_connect
 # $diskpath is set by rpiboot_connect above.
@@ -54,13 +56,33 @@ else
   [[ "$confirm" == "yes" ]] || { echo "Aborted."; exit 1; }
 fi
 
-# Don't casually change this sequence (dd conv=fsync, partprobe, explicit double sync + blockdev
+# `conv=sparse` skips physically writing any all-zero block the image stream contains, which
+# capture_disk_image/make_partition_base now deliberately fill p5/p6's unused tail with (see
+# modules/shrink_root.sh) - safe with no TRIM/blkdiscard needed at all, since that space becomes
+# the filesystem's own free space the instant it's grown back below, before anything else can read
+# whatever stale bytes actually sit there.
+#
+# Don't casually change this sequence (dd conv=..., partprobe, explicit double sync + blockdev
 # --flushbufs) without re-validating against real hardware before telling the operator it's safe
 # to disconnect - small procedural variations here have caused write failures on this hardware.
 echo "Writing $img_file to $diskpath (this takes a while)..."
-xzcat "$img_file" | sudo dd of="$diskpath" bs=4M status=progress conv=fsync
+write_start=$(date +%s)
+xzcat "$img_file" | sudo dd of="$diskpath" bs=4M status=progress conv=fsync,sparse
+write_elapsed=$(( $(date +%s) - write_start ))
+echo "Write took ${write_elapsed}s ($((write_elapsed / 60))m $((write_elapsed % 60))s)."
 sudo partprobe "$diskpath"
 sleep 2
+
+# Grow each existing root slot's filesystem back out to fill its full fixed partition - a no-op if
+# the image shipped it full-size already (e.g. an unpopulated progenitor slot was never shrunk).
+# Skips a slot with no filesystem at all (e.g. partition_base.img.xz's deliberately-raw inactive
+# slot) rather than erroring - there's nothing to grow there, that's expected, not a failure.
+for part in 5 6; do
+  if [[ -e "${diskpath}-part${part}" ]] && has_ext4_fs "${diskpath}-part${part}"; then
+    echo "Growing root (p${part}) filesystem to fill its full partition..."
+    retry_on_partition grow_root_fs "${diskpath}-part${part}"
+  fi
+done
 
 echo "Flushing all writes to the device before it's safe to disconnect."
 sync

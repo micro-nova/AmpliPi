@@ -51,8 +51,11 @@ cleanup() {
 trap cleanup EXIT
 
 # ---- Step 1: get the Pi's eMMC exposed as a block device over USB ----
+script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 # shellcheck source=modules/rpiboot_connect.sh
-source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/modules/rpiboot_connect.sh"
+source "$script_dir/modules/rpiboot_connect.sh"
+# shellcheck source=modules/shrink_root.sh
+source "$script_dir/modules/shrink_root.sh"
 rpiboot_connect
 # $diskpath is set by rpiboot_connect above.
 
@@ -169,25 +172,44 @@ sudo umount "$mnt"
 rmdir "$mnt"
 unset mnt
 
-# ---- Step 3: clean each ext4 filesystem before imaging - an unclean unmount produces a
-# needlessly larger/inconsistent compressed image. e2fsck_tolerant (modules/rpiboot_connect.sh)
-# treats e2fsck's own exit code 1 as success before retry_on_partition ever sees the result. ----
-for part in 5 6 7; do
-  echo "Cleaning filesystem on ${diskpath}-part${part}..."
-  retry_on_partition e2fsck_tolerant "${diskpath}-part${part}" || { echo "Error: e2fsck failed on ${diskpath}-part${part} after retries"; exit 1; }
-done
+# ---- Step 3: shrink each populated root slot's filesystem to its minimum footprint before
+# imaging (modules/shrink_root.sh), so its unused tail streams as zero bytes below instead of real
+# (slow-to-read-over-USB) leftover ext4 data - grown back immediately after capture (Step 4) so the
+# source disk itself is left at its original size no matter what happens to it afterward. ----
+p5_shrunk=''
+p6_shrunk=''
+if $root_a_populated; then
+  echo "Shrinking root-A (p5) filesystem to its minimum size before imaging..."
+  p5_shrunk=$(retry_on_partition shrink_root_fs "${diskpath}-part5")
+fi
+if $root_b_populated; then
+  echo "Shrinking root-B (p6) filesystem to its minimum size before imaging..."
+  p6_shrunk=$(retry_on_partition shrink_root_fs "${diskpath}-part6")
+fi
+echo "Cleaning filesystem on ${diskpath}-part7..."
+retry_on_partition e2fsck_tolerant "${diskpath}-part7" || { echo "Error: e2fsck failed on ${diskpath}-part7 after retries"; exit 1; }
 
-# ---- Step 4: dd the whole disk (partition table + every partition, p7 already extends to the
-# physical end of the disk per build_golden_slot's own layout, so there's no unpartitioned tail
-# to worry about trimming) straight through xz. ----
+# ---- Step 4: stream the whole disk (partition table + every partition) straight through xz -
+# p5/p6's shrunk tail streams as zero bytes, everything else streams verbatim. Grow whichever
+# filesystem(s) were shrunk back to full size right after, regardless of whether the stream itself
+# succeeded, so a mid-capture failure never leaves the source disk shrunk. ----
 out_file="$out_dir/progenitor.img.xz"
 echo "Imaging $diskpath → $(basename "$out_file") (this takes a while)..."
-sudo dd if="$diskpath" bs=4M status=progress | xz -T0 > "$out_file"
+capture_ok=true
+stream_disk_shrunk "$diskpath" "$p5_shrunk" "$p6_shrunk" | xz -T0 > "$out_file" || capture_ok=false
+if [[ -n "$p5_shrunk" ]]; then
+  echo "Growing root-A (p5) filesystem back to its full size..."
+  retry_on_partition grow_root_fs "${diskpath}-part5"
+fi
+if [[ -n "$p6_shrunk" ]]; then
+  echo "Growing root-B (p6) filesystem back to its full size..."
+  retry_on_partition grow_root_fs "${diskpath}-part6"
+fi
+$capture_ok || { echo "Error: capture failed"; exit 1; }
 
 sha256=$(sha256sum "$out_file" | cut -d' ' -f1)
 size=$(stat -c%s "$out_file")
 
-script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 version=$(grep -m1 -oP '(?<=version = ")[^"]+' "$script_dir/../../pyproject.toml" || echo unknown)
 
 manifest_file="$out_dir/progenitor-manifest.json"
