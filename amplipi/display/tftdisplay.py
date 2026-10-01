@@ -190,6 +190,12 @@ class TFTDisplay(Display):
 
     return True
 
+  def display_delivery_message(self):
+    """Old (LCD/TFT) units don't get the quickstart QR code - deliberately a no-op, not the
+    base class's NotImplementedError, so calling --delivery-message against one of these exits
+    cleanly rather than failing loudly for a display type that was never meant to show it."""
+    log.info('TFTDisplay has no delivery message - skipping')
+
   def run(self):
     # AmpliPi connection
     connected = False

@@ -16,14 +16,22 @@ jobs:
       run: |
         mkdir web/dist
         touch web/dist/index.html
-    - name: Set up Python 3.7
+    - name: Make fake /data folder
+      run: |
+        # Real units have a 7 partition scheme where partition 7 is mounted as /data
+        # that's where .config is stored, so we have to mock it for tests to function
+        sudo mkdir -p /data
+        sudo chown "$USER":"$USER" /data
+    - name: Set up Python 3.8
       uses: actions/setup-python@v4
       with:
-        python-version: 3.7
+        python-version: 3.8
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
     # We go from quickest tests to most time consuming for quick turnaround/lower costs
     - name: Lint with pycodestyle
       run: |
-        pip install pycodestyle
+        uv pip install --system pycodestyle
         # E126: ignore bug due to indent-size=2: https://github.com/hhatto/autopep8/issues/588
         # E501: line too long
         # E722: do not use bare except, specify exception instead
@@ -33,23 +41,22 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libgirepository1.0-dev libcairo2-dev libdbus-1-dev # required for dbus
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements.txt ]; then uv pip install --system -r requirements.txt; fi
     - name: Lint with pylint
       run: |
-        pip install pylint
+        uv pip install --system pylint
         pylint --exit-zero amplipi --generated-members "signal.Signals,GPIO.*"
         pylint -E amplipi --generated-members "signal.Signals,GPIO.*"
         pylint -E streams
-        pylint -E scripts/increment_auto_off.py
+        pylint -E scripts/jobs/increment_auto_off.py
     - name: Lint with mypy, static type checker
       run: |
-        pip install mypy
+        uv pip install --system mypy
         mypy amplipi/ --ignore-missing-imports
-        mypy scripts/increment_auto_off.py --ignore-missing-imports
+        mypy scripts/jobs/increment_auto_off.py --ignore-missing-imports
     - name: Test mock using pytest # rpi cannot be tested directly due to hardware...
       run: |
-        pip install pytest pytest-cov
+        uv pip install --system pytest pytest-cov
         pytest tests/test_ctrl.py -vvv -k no_config
         pytest tests/test_ctrl.py -vvv -k good_config
         pytest tests/test_ctrl.py -vvv -k corrupted_config

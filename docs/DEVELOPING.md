@@ -49,14 +49,14 @@ If building directly on an AmpliPi, the `npm run build` step must be set to limi
 
 1. ssh into the AmpliPi with `ssh pi@amplipi.local`, the default password is raspberry (you can change it to whatever)
 1. Change directory to the development root `~/amplipi-dev` (this is where `deploy` put the software)
-1. To run the amplipi server in debug mode over an ssh connection, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
-1. Restart amplipi service (it was stopped by `./scripts/run_debug_webserver`) with `systemctl --user restart amplipi`.
+1. To run the amplipi server in debug mode over an ssh connection, run `./scripts/dev/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
+1. Restart amplipi service (it was stopped by `./scripts/dev/run_debug_webserver`) with `sudo systemctl restart amplipi`.
 
 ## Developing on an AmpliPi Controller over SSH
 1. Make a git checkout at `~/amplipi-dev` using `git checkout https://github.com/micro-nova/AmpliPi ~/amplipi-dev` (you may need to delete `amplipi-dev` if it already exists)
 1. Change directory to amplipi-dev `cd ~/amplipi-dev`
 1. Make changes using your favorite editor
-1. To run the amplipi server in debug mode, run `./scripts/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
+1. To run the amplipi server in debug mode, run `./scripts/dev/run_debug_webserver` it will run a debug webserver on [amplipi.local:5000](http://amplipi.local:5000).
 1. Once you are comfortable with your changes, run `./scripts/configure.py --python-deps --os-deps --display --web`. This will install any required dependencies and reconfigure the amplipi web and display services.
 
 ## Developing on an AmpliPi Controller remotely using vscode
@@ -111,7 +111,7 @@ The dependencies will be installed globally with apt.
 This is optional since it installs many packages needed by the various streaming sources.
 It could potentially cause package conflicts on your system.
 1. Install python dependencies to AmpliPi's virtual environment with `./scripts/configure.py --python-deps`
-1. Use ```./scripts/run_debug_webserver``` to start the mock server, if the streaming deps were not installed add the **--mock-streams** flag like ```./scripts/run_debug_webserver --mock-streams```.
+1. Use ```./scripts/dev/run_debug_webserver``` to start the mock server, if the streaming deps were not installed add the **--mock-streams** flag like ```./scripts/dev/run_debug_webserver --mock-streams```.
 
 ## Developing with a mocked out controller (with 4 stereo channel audio) on something running Raspberry Pi OS
 1. Start with a 32-bit version of Rasberry Pi OS. This needs to be older than december 2020 since our system only supports the ALSA audio backend currently.
@@ -119,7 +119,7 @@ It could potentially cause package conflicts on your system.
 1. Checkout this repo on a linux based system (a git bash shell on windows works fine as well)
 1. Edit config/asound.conf. Uncomment the "Old Prototype" section at the bottom, and comment out the similar configuration above. This should be the configuration needed for the 7.1 channel USB audio card. Depending on the setup the card will either show up as #2 or #3. That needs to be changed on lines 27 and 32. Find the card # using ```aplay -l | grep "USB Sound Device"``` and edit those lines to include the correct #.
 1. Execute ```scripts/deploy USER@HOSTNAME --mock-ctrl``` or ```scripts/deploy USER@IP_ADDRESS``` replacing USER and HOSTNAME/IP_ADDRESS with the appropriate values for the pi device
-1. Over ssh connection, run ```scripts/run_debug_webserver --mock-ctrl``` from the ```~/amplipi-dev``` directory.
+1. Over ssh connection, run ```scripts/dev/run_debug_webserver --mock-ctrl``` from the ```~/amplipi-dev``` directory.
 
 ## Installing AmpliPi from scratch on a Pi Compute Module
 1. For a fresh pi compute module, run `scripts/bootstrap-pi`.

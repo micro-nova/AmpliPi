@@ -1,0 +1,18 @@
+// polkit JS-rules replacement for 10-udisks.pkla, which modern polkit no longer reads at all.
+polkit.addRule(function(action, subject) {
+  var udisksActions = [
+    "org.freedesktop.udisks2.filesystem-mount",
+    "org.freedesktop.udisks2.filesystem-mount-system",
+    "org.freedesktop.udisks2.encrypted-unlock",
+    "org.freedesktop.udisks2.eject-media",
+    "org.freedesktop.udisks2.power-off-drive",
+    "org.freedesktop.udisks2.filesystem-mount-other-seat",
+    "org.freedesktop.udisks2.filesystem-unmount-others",
+    "org.freedesktop.udisks2.encrypted-unlock-other-seat",
+    "org.freedesktop.udisks2.eject-media-other-seat",
+    "org.freedesktop.udisks2.power-off-drive-other-seat"
+  ];
+  if (udisksActions.indexOf(action.id) !== -1 && subject.isInGroup("users")) {
+    return polkit.Result.YES;
+  }
+});

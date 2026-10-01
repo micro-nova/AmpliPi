@@ -18,7 +18,7 @@ This builds binaries on a Pi for now, TODO: cross compile everything!
 local_only=false
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
-    --local_only) local_only=true ;;
+    --only-local) local_only=true ;;
     -h|--help) printf "$helptext"; exit 0 ;;
     *)  printf "Unknown parameter passed: $1\n\n"
         printf "$helptext"
@@ -120,7 +120,7 @@ if [[ ! -d '/home/pi' ]] ; then
       echo "failed to build binaries, try running this script directly on the pi to debug"
       exit -1
     fi
-    scp $RPI_IP_ADDRESS:$x/* arm/
+    scp $RPI_IP_ADDRESS:$x/* arm64/
   fi
   # build files locally
   build

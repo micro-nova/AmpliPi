@@ -31,10 +31,9 @@ import subprocess
 import shlex
 import pathlib
 import pwd
+from importlib.metadata import version as pkg_version
 from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 from fastapi import HTTPException, status, Depends
-
-import pkg_resources  # version
 
 from amplipi import models
 from amplipi.defaults import USER_CONFIG_DIR
@@ -256,9 +255,9 @@ def get_folder(relative_folder, mock=False):
   Abstracts the directory structure. TODO: This does not find the correct directory when testing.
   """
   if relative_folder == "config":
-    folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi')
+    folder = os.path.join("/data", '.config', 'amplipi')
   elif relative_folder == "web":
-    folder = os.path.join(os.path.expanduser('~'), '.config', 'amplipi', 'web')
+    folder = os.path.join('/data', '.config', 'amplipi', 'web')
   else:
     folder = os.path.join(os.path.expanduser('~'), 'amplipi-dev', relative_folder)
 
@@ -291,7 +290,7 @@ def detect_version() -> str:
     pass
   if version == 'unknown':
     try:
-      version = pkg_resources.get_distribution('amplipi').version
+      version = pkg_version('amplipi')
     except:
       pass
   return version
@@ -490,7 +489,7 @@ def clear_custom_configs():
     logger.exception(f"failed to delete user {user.pw_name}: {e}")
 
   # Remove these paths whole-cloth. They do not need special permissions.
-  for path in ["/var/lib/support_tunnel/device.db", "/home/pi/.config/amplipi/users.json"]:
+  for path in ["/var/lib/support_tunnel/device.db", "/data/.config/amplipi/users.json"]:
     try:
       os.remove(path)
     except Exception as e:

@@ -30,14 +30,18 @@ def configure_adapter(idx=0):
   path = f'{ADAPTER_ROOT}{idx}'
   adapter_object = bus.get_object(BUS_NAME, path)
   adapter_props = dbus.Interface(adapter_object, dbus.PROPERTIES_IFACE)
+  # org.freedesktop.DBus.Properties.Set's real signature is "ssv" - the value must be a variant.
+  # variant_level=1 is what tells dbus-python to marshal it as one; without it, a plain
+  # dbus.UInt32/dbus.Boolean gets sent as "ssu"/"ssb", which newer BlueZ (Trixie onward) rejects
+  # outright ("Method \"Set\" with signature ... doesn't exist") instead of tolerating it.
   adapter_props.Set(ADAPTER_IFACE,
-                         'DiscoverableTimeout', dbus.UInt32(0))
+                         'DiscoverableTimeout', dbus.UInt32(0, variant_level=1))
   adapter_props.Set(ADAPTER_IFACE,
-                         'Discoverable', True)
+                         'Discoverable', dbus.Boolean(True, variant_level=1))
   adapter_props.Set(ADAPTER_IFACE,
-                         'PairableTimeout', dbus.UInt32(0))
+                         'PairableTimeout', dbus.UInt32(0, variant_level=1))
   adapter_props.Set(ADAPTER_IFACE,
-                         'Pairable', True)
+                         'Pairable', dbus.Boolean(True, variant_level=1))
 
 class Rejected(dbus.DBusException):
   _dbus_error_name = "org.bluez.Error.Rejected"

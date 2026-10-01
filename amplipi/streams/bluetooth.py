@@ -6,6 +6,7 @@ import os
 import json
 import sys
 import signal
+import time
 import traceback
 
 
@@ -38,6 +39,15 @@ class Bluetooth(BaseStream):
         logger.exception(f'Error checking for bluetooth hardware: {e}')
       return False
 
+  @staticmethod
+  def _adapter_powered() -> bool:
+    """ Whether bluetoothctl currently reports the adapter as powered on """
+    try:
+      result = subprocess.run('bluetoothctl show'.split(), stdout=subprocess.PIPE, text=True, timeout=2, check=False)
+      return 'Powered: yes' in result.stdout
+    except Exception:
+      return False
+
   def connect(self, src):
     """ Connect a bluealsa-aplay process with audio output to a given audio source """
     logger.info(f'connecting {self.name} to {src}...')
@@ -46,10 +56,23 @@ class Bluetooth(BaseStream):
       self._connect(src)
       return
 
-    # Power on Bluetooth and enable discoverability
-    subprocess.run(args='bluetoothctl power on'.split(), preexec_fn=os.setpgrp)
-    subprocess.run(args='bluetoothctl discoverable on'.split(), preexec_fn=os.setpgrp)
-    subprocess.run(args='sudo btmgmt fast-conn on'.split(), preexec_fn=os.setpgrp)
+    # Power on Bluetooth and enable discoverability.
+    # timeout=10: these have been observed to hang indefinitely against some adapters/states
+    # (e.g. a still-settling USB Bluetooth radio), which would otherwise take the whole service
+    # down with them since this runs synchronously on the startup path.
+    # Bluetooth adapters can also just forget to turn on, so we need a retry loop to ensure they report an "on" state
+    for attempt in range(5):
+      for cmd in ('bluetoothctl power on', 'bluetoothctl discoverable on', 'sudo btmgmt fast-conn on'):
+        try:
+          subprocess.run(args=cmd.split(), preexec_fn=os.setpgrp, timeout=10, check=False)
+        except subprocess.TimeoutExpired:
+          logger.error(f'{self.name}: "{cmd}" timed out (attempt {attempt + 1}/5)')
+      if self._adapter_powered():
+        break
+      logger.error(f'{self.name}: adapter not powered on after attempt {attempt + 1}/5')
+      time.sleep(2)
+    else:
+      logger.error(f'{self.name}: bluetooth adapter never powered on after 5 attempts, continuing anyway')
 
     # Start metadata watcher
     src_config_folder = f"{utils.get_folder('config')}/srcs/{src}"

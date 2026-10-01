@@ -208,7 +208,7 @@ def main():
 
         # open a new bluealsa process with the new mac address
         if bluealsa_proc is None and args.output_device is not None and selected_device is not None:
-          baplay_args = f'bluealsa-aplay -d {args.output_device} {selected_device} --single-audio'
+          baplay_args = f'bluealsa-aplay -D {args.output_device} {selected_device} --single-audio'
           bluealsa_proc = subprocess.Popen(args=baplay_args.split(), preexec_fn=os.setpgrp)
         # write the new mac address to the device info file, used by streams.py bluetooth send command
         if selected_device is not None:

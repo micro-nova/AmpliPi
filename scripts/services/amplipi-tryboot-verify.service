@@ -1,0 +1,12 @@
+[Unit]
+Description=AmpliPi tryboot verification and commit
+After=network-online.target amplipi.service amplipi-tasks.service redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/amplipi-tryboot-verify.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

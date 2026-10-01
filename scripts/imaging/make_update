@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""Capture a remote Pi's inactive slot and produce an OTA update package, locally.
+
+Meant to be run from your laptop, pointed at a Pi over SSH - not locally on the Pi itself (its
+own inactive slot's images have to land somewhere with room for them, and that somewhere is
+your laptop's disk, not the Pi's own limited /data). Thin wrapper around `make_images` +
+`make_image_manifest`, which do the actual slot auto-detection and manifest chaining. For a
+delta (AmpliPi-code-only) release, use `make_delta_manifest` instead - there's no image to
+capture, so this script doesn't apply."""
+
+import argparse
+import os
+import subprocess
+
+SCRIPTS = os.path.dirname(os.path.realpath(__file__))
+
+
+def main():
+  parser = argparse.ArgumentParser(description="Capture a remote Pi's inactive slot and produce an OTA update package")
+  parser.add_argument('via', metavar='USER@HOST', help='Remote Pi to capture the inactive slot from (e.g. pi@192.168.1.233)')
+  parser.add_argument('--output-dir', '-o', default='.', help='Local output directory (default: current directory)')
+  parser.add_argument('--no-boot', action='store_true', help='Skip imaging the boot partition')
+  args = parser.parse_args()
+
+  out_dir = os.path.abspath(args.output_dir)
+  os.makedirs(out_dir, exist_ok=True)
+
+  make_images_cmd = [f'{SCRIPTS}/make_images', '--via', args.via, '-o', out_dir]
+  if args.no_boot:
+    make_images_cmd.append('--no-boot')
+  subprocess.run(make_images_cmd, check=True)
+
+  # --target the same host we just imaged from - make_image_manifest's own --target handling
+  # covers both halves of this: it keeps a local copy (kept-<version>/, alongside update/) before
+  # replacing /data/update on the target, so the just-captured slot ends up packaged both here
+  # and back on the Pi it came from, ready for its own flash/apply mechanism to use.
+  make_manifest_cmd = [f'{SCRIPTS}/make_image_manifest', '-d', out_dir, '--target', args.via]
+  subprocess.run(make_manifest_cmd, check=True)
+
+  print(f'\nUpdate package ready in {out_dir}/update/, and pushed to {args.via}:/data/update/')
+
+
+if __name__ == '__main__':
+  main()

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Push the local updater to a remote AmpliPi and restart the service
+
+set -e
+
+cd "$( dirname "$0" )/../.."
+
+HELP="Push amplipi/updater/ to a remote AmpliPi and restart amplipi-updater.service
+  usage: deploy_updater [USER@HOST]
+
+  Default host: pi@amplipi.local"
+
+user_host='pi@amplipi.local'
+
+for arg in "$@"; do
+  case $arg in
+    -h|--help) echo "$HELP"; exit 0 ;;
+    *) user_host="$arg" ;;
+  esac
+done
+
+# setup ssh access if necessary - same as scripts/deploy, so repeated pushes don't demand a
+# password every time
+if ! ssh -o PasswordAuthentication=no "$user_host" 'echo "AmpliPi has your SSH Key"'; then
+  # By default ssh only searches the default keys, lets make sure one of them exist
+  if [[ ! -f ~/.ssh/id_ed25519 ]] && [[ ! -f ~/.ssh/id_ecdsa ]] && [[ ! -f ~/.ssh/id_rsa ]]; then
+    echo ""
+    echo "Generating new ssh key for amplipi"
+    ssh-keygen -P '' -N '' -t ed25519 -f ~/.ssh/id_ed25519
+  fi
+  echo ""
+  echo "Trying to copy your SSH id to AmpliPi, you will need to enter your AmpliPi's password below"
+  ssh-copy-id "$user_host"
+fi
+
+ctl_socket=$(mktemp -u /tmp/ssh-deploy-updater-XXXXXX)
+trap 'ssh -O exit -S "$ctl_socket" "$user_host" 2>/dev/null; rm -f "$ctl_socket"' EXIT
+
+echo "Connecting to $user_host..."
+ssh -M -S "$ctl_socket" -o ControlPersist=60 -fN "$user_host"
+
+echo "Deploying updater..."
+# --delete keeps the remote a mirror of the local folder rather than just overlaying onto it -
+# otherwise a file removed locally (or a stale __pycache__ from a different Python version)
+# would silently stick around on the remote. __pycache__ itself is excluded entirely since it's
+# regenerated automatically and versioned to whatever Python actually runs it.
+rsync -ah --delete --exclude '__pycache__' -e "ssh -S $ctl_socket" \
+  amplipi/updater/ "$user_host":/home/pi/amplipi-dev/amplipi/updater/
+
+echo "Restarting amplipi-updater..."
+ssh -S "$ctl_socket" "$user_host" "sudo systemctl restart amplipi-updater.service"
+
+echo "Done. Status:"
+ssh -S "$ctl_socket" "$user_host" "sudo systemctl is-active amplipi-updater.service"

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# One-off fix for a gap nothing else in the pipeline closes: p1/p7 never get an explicit
+# filesystem label, unlike p2/p3/p5/p6 which build_golden_slot/asgi.py's flash path actively
+# relabel on every build. Their filesystems are never recreated, so whatever label they have just
+# carries forward via dd - run this once and it propagates forever. Not folded into
+# make_partition_base, which is scoped to slot-B/p7 content reset, not general labeling.
+#
+# Needs a USB-to-service-port connection (rpiboot mass-storage mode). Only touches filesystem
+# label metadata - never mounts, writes, or reformats anything.
+
+set -euo pipefail
+
+helptext="Usage: label_base_partitions [OPTION]...
+Label a connected Pi's p1 (AUTOBOOT) and p7 (DATA) partitions, via rpiboot mass-storage mode.
+
+  --yes:     Skip the 'Type yes to continue' confirmation. For scripted use.
+  --debug:   Print all commands
+  -h, --help: Print this help text
+"
+
+assume_yes=false
+debug=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --yes) assume_yes=true ;;
+    --debug) debug=true ;;
+    -h|--help) printf "%s" "$helptext"; exit 0 ;;
+    *) printf "Unknown parameter passed: %s\n\n%s" "$1" "$helptext"; exit 1 ;;
+  esac
+  shift
+done
+
+$debug && set -x
+
+# ---- Step 1: get the Pi's eMMC exposed as a block device over USB ----
+# shellcheck source=modules/rpiboot_connect.sh
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/modules/rpiboot_connect.sh"
+rpiboot_connect
+# $diskpath is set by rpiboot_connect above.
+
+# ---- Step 2: sanity-check this looks like a real 7-partition A/B layout ----
+for i in 1 2 3 5 6 7; do
+  [[ -e "${diskpath}-part${i}" ]] || { echo "Error: ${diskpath}-part${i} not found - this doesn't look like a 7-partition A/B disk"; exit 1; }
+done
+
+echo ""
+echo "This will set filesystem labels on $diskpath: p1 -> AUTOBOOT, p7 -> DATA. Label-only, no"
+echo "mounting, no content changes - but p1 is the single most sensitive partition on this scheme."
+if $assume_yes; then
+  echo "--yes given, skipping confirmation."
+else
+  read -rp "Type 'yes' to continue: " confirm
+  [[ "$confirm" == "yes" ]] || { echo "Aborted."; exit 1; }
+fi
+
+echo "Labeling p1 (vfat) as AUTOBOOT..."
+retry_on_partition sudo fatlabel "${diskpath}-part1" AUTOBOOT
+
+echo "Labeling p7 (ext4) as DATA..."
+retry_on_partition sudo e2label "${diskpath}-part7" DATA
+
+echo ""
+echo "Done. Current labels:"
+sudo blkid "${diskpath}-part1" "${diskpath}-part7"

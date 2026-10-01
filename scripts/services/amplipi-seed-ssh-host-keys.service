@@ -1,0 +1,12 @@
+[Unit]
+Description=Generate SSH host keys into /data if this is a genuinely fresh unit
+RequiresMountsFor=/data
+Before=ssh.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ssh-keygen -A
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

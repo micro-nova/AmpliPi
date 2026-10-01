@@ -35,7 +35,7 @@ include = [
   "fw/*.sh", # no need to add full source tree
   "fw/bin/*",
   "hw/**",
-  "scripts/*",
+  "scripts/**",
   "streams/**/*",
   "bin/**",
   "docs/**",
@@ -44,7 +44,7 @@ include = [
   "web/templates"
 ]
 exclude = [
-  "scripts/deploy", "scripts/bootstrap_pi" # only support development
+  "scripts/deploy", "scripts/dev/bootstrap_pi" # only support development
 ]
 
 [tool.poetry.scripts]

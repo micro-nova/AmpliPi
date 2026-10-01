@@ -1,6 +1,30 @@
 # AmpliPi Software Releases
 
-# Future Release
+# A_B release
+Type: FULL
+
+* System
+  * Added `/data`: a new partition shared between both A/B slots that stores configs, logs, and other per-unit state so it survives slot swaps and full image reflashes
+  * Upgrade from 32 bit raspbian Bookworm Desktop to 64 bit raspbian Trixie Lite
+  * Update our spotify provider `go-librespot` to `0.10.0`
+  * Upgrade from `Lyrion Music Server 9.0.3` to `9.1.1`
+  * Switched the loopback playback devices from dmix to plugging directly to hardware, fixing a kernel 6.x incompatibility that could prevent them from opening
+  * Fixed a Spotify Connect configuration issue affecting ALSA output
+  * Fixed a "Mute All" preset issue in LMS mode
+* Updates
+  * Rewrote the update system around dual A/B partitions - updates flash to an inactive slot and are health-checked before switching over, so a failed update can no longer leave a unit unbootable. See our [A:B design doc for more details](docs/a_b_design.md)
+  * Added a new "full image" update type, and strengthened the old update type (which is now called a "delta update")
+  * Added two forms of update floor: One that prevents downgrading to non-A:B partitioned versions, and another to target against versions with security flaws. We do not currently have any security flawed versions, but we have a solution prepared should it come up.
+  * Settings, configuration, and logs now persist across updates and slot swaps
+  * Reorganized and rebuilt the image-provisioning/release-build tooling around the new A/B pipeline (`scripts/imaging`, `scripts/update`, `scripts/dev`, `scripts/services`, `scripts/jobs`)
+  * Preamp firmware now updates automatically as part of a normal software update
+  * Added support for user-provided post-update scripts and package lists (`/data/update_scripts/*.sh`, `/data/packages.apt`). Both are re-applied automatically after every update, so custom device configuration and manually-installed packages survive a full image reflash.
+* Web App
+  * Add progress bar(s) to the update flow
+  * Update button now shows what type of update it is: full image (large update) or delta (small and fast update)
+  * Removed auto-redirect back to app on update completion
+
+# 0.4.12
 * System
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
   * Update our spotify provider `go-librespot` to `0.7.3`

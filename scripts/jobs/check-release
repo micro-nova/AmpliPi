@@ -2,7 +2,7 @@
 # Update the latest release
 set -e
 
-USER_CONFIG_DIR="${HOME}/.config/amplipi"
+USER_CONFIG_DIR="/data/.config/amplipi"
 LATEST_RELEASE_FILE="${USER_CONFIG_DIR}/latest_release"
 
 # add file if needed
