@@ -3,7 +3,7 @@
 # Future Release
 * System
   * Upgraded volume calculations to preserve relative positions when hitting the min or max setting via source volume bar
-  * Update our spotify provider `go-librespot` to `0.7.3`
+  * Update our spotify provider `go-librespot` to `0.10.5`
   * Upgrade from Logitech Media Server 8.5.2 to Lyrion Music Server 9.0.3
   * Added in-place preamp recovery when I2C writes fail persistently
   * Fixed all loopback dmix devices sharing one ipc_key in asound.conf, which made loopback playback devices intermittently fail to open with EINVAL (#957)
