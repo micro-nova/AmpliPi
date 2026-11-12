@@ -213,11 +213,19 @@ _os_deps: Dict[str, Dict[str, Any]] = {
         'apt': ['shairport-sync'],
         'copy': [{'from': 'bin/ARCH/shairport-sync-ap2', 'to': 'streams/shairport-sync-ap2'},
                  {'from': 'bin/ARCH/shairport-sync', 'to': 'streams/shairport-sync'}],
+        # nqptp must speak the same shared memory interface (SMI) as the bundled shairport-sync-ap2
+        # (4.1.1, SMI 8), otherwise AirPlay 2 connects but plays only silence. nqptp's master and every
+        # release tag are on a different SMI, so pin the last commit before nqptp started requiring
+        # play-state (B/E/P) messages that shairport-sync 4.1.1 never sends.
+        # Bump this whenever the shairport-sync-ap2 binary is updated.
         'script': [
-            'if which nqptp  > /dev/null; then exit 0; fi',
+            'NQPTP_COMMIT=911bf84773037f9b58892e4557985bcafa791691',
+            'if nqptp -V 2>/dev/null | grep -q "g${NQPTP_COMMIT:0:7}"; then exit 0; fi',
+            'set -e',
             'pushd $(mktemp --directory)',
             'git clone https://github.com/mikebrady/nqptp.git',
             'pushd nqptp',
+            'git checkout $NQPTP_COMMIT',
             'autoreconf -fi',
             './configure --with-systemd-startup',
             'make',

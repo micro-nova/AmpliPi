@@ -63,9 +63,13 @@ class AirPlay(PersistentStream):
     """
 
     # if stream is airplay2 check for other airplay2s and error if found
-    # pgrep has it's own process that will include the process name so we sub 1 from the results
+    # Match only the actual binary at the start of the command line; a bare "pgrep -f shairport-sync-ap2"
+    # also matches any other process that merely mentions the name (e.g. a shell or editor), which
+    # would wrongly block the stream. Running pgrep directly (no shell) means it never matches itself.
     if self.ap2:
-      if len(os.popen("pgrep -f shairport-sync-ap2").read().strip().splitlines()) - 1 > 0:
+      ap2_path = f"{utils.get_folder('streams')}/shairport-sync-ap2"
+      result = subprocess.run(['pgrep', '-f', f'^{ap2_path} '], stdout=subprocess.PIPE, text=True, check=False)
+      if result.stdout.strip():
         self.ap2_exists = True
         # TODO: we need a better way of showing errors to user
         logger.info(f'Another Airplay 2 stream is already in use, unable to start {self.name}, mocking connection')
