@@ -8,6 +8,8 @@
   * Added in-place preamp recovery when I2C writes fail persistently
   * Fixed all loopback dmix devices sharing one ipc_key in asound.conf, which made loopback playback devices intermittently fail to open with EINVAL (#957)
   * Disabled USB autosuspend for the CM6206 USB audio device
+  * Fixed silent AirPlay 2 by pinning nqptp to a version compatible with the bundled shairport-sync-ap2; existing installs with a mismatched nqptp are rebuilt
+  * Fixed AirPlay 2 streams sometimes refusing to start ("Another Airplay 2 stream is already in use") when an unrelated process mentioned shairport-sync-ap2
 * Web App
   * Add warning for older versions of the webapp running on newer backends
   * Solve bug relating to single-zone groups
